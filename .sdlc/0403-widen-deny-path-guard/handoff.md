@@ -25,3 +25,10 @@ Fleet retro 2026-10-09 row 3 (ultimate-tokens, T-0044 step 8): "no criterion lin
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- Selftest cases `widen: (d)` cover a deny-path guard rewrite (red before, green after, lookalike still red), the rerun `widen: already applied`, a span with no allow-list and no exclude still refused with the existing "no criterion line" message, and a span with two exclude runs refused.
+- The allow-list forms F, E and A are unchanged (their `widen: (a)` and `(b)` cases still pass).
