@@ -775,6 +775,10 @@ def base_sha(top, step_dir=None):
             first = ((pathlib.Path(step_dir) / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
             if usable(first):
                 return usable(first)
+            # a recorded commit that is not an ancestor of HEAD (a stale tree vs the lane base) stays the base, so
+            # the span is red as before instead of silently going green against HEAD (T-0382)
+            if rev_commit(top, first):
+                return rev_commit(top, first)
     return rev_commit(top, 'HEAD')
 
 
@@ -2924,13 +2928,9 @@ def widen(step_dir, paths, timeout=300, reason=None, tree=None):
     except Fail as e:
         refuse(str(e).removeprefix('steps: '))
     cwd = top or str(d)
-<<<<<<< HEAD
     if top and os.path.realpath(top) != os.path.realpath(git_toplevel(d) or top):
         print(f'steps widen: {d}: evaluating the scope span in the work tree {top}', file=sys.stderr)
     base = base_sha(top, d)
-=======
-    base = base_sha(exec_toplevel(d), d)
->>>>>>> wave7-runbase2
     before = tree_state(top) if top else None
     detail, red = [], []
     rc, tail = run_guard(new, cwd, timeout, base)
@@ -5186,15 +5186,11 @@ def main(argv):
     p.add_argument('paths', nargs='*', metavar='path', help='repo-relative paths to allow (one or more)')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='timeout for the widened span (default 300); a timeout refuses. It runs with '
-<<<<<<< HEAD
-                        'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
+                        'SDLC_BASE_SHA from the handoff\'s `base:` line, else <step dir>/base-sha, else HEAD of the execution tree')
     p.add_argument('--tree', default=None, metavar='PATH',
                    help='the work tree the widened span runs in (default: the git toplevel of the step dir, or the '
                         'current work tree when that is another worktree of the same repository); it must belong '
                         'to the same repository as the step dir')
-=======
-                        'SDLC_BASE_SHA from the handoff\'s `base:` line, else <step dir>/base-sha, else HEAD of the execution tree')
->>>>>>> wave7-runbase2
     p.add_argument('--reason', metavar='WHY',
                    help='why the files are in scope; recorded on each ## Scope widened item. With no scope '
                         'criterion in the step it makes the path list the recorded allow-list')
