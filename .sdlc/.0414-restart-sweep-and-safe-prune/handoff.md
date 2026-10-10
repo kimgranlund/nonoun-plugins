@@ -2,7 +2,7 @@
 id: T-0414
 title: "Restart sweep, reused parent pids, and a safe prune --add"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0413]
@@ -57,3 +57,7 @@ No em or en dashes. No push or publish. The plan step is the contract: if it is 
 - `prune --add NAME` exits 2 with the ticket's refusal text when a running attempt for NAME exists under `<root>/.sdlc`; a completed or orphaned one does not block it. `fanout.py land` (calls `prune_add` directly) is unchanged.
 - `conductor.md` carries the restart rule and the verbatim Prune sentence; `sdlc-conductor-l1.toml` is regenerated; the `run_lifecycle.py recover` refusal text and its selftest case are unchanged.
 - The five labeled selftest cases print `ok:`; `lifecycle-selftest.py` and `codex_roles.py generate --check` pass; only the five named files changed.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
