@@ -12,7 +12,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Question
-The exact question this spike answers.
+Would a lint that flags tests mentioning an allowed source file's basename have caught the four recorded scope misses without burying them in noise on a step that passed?
 
 ## Goal
 Replay a scope-versus-tests heuristic and decide. Serves goal G-002 (docs/goals/002-restart-and-blocked-run-cost.md); spec: docs/specs/sdlc-lite/restart-and-blocked-run-plan.md; plan step 6 in .sdlc/plan-reliability-docs/plan.md.
@@ -39,3 +39,8 @@ Planner L3 output for the 2026-10-09 retros. KPIs: K-002 restart recovery minute
 
 ## Constraints
 No em or en dashes. No push or publish. The plan step is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Acceptance criteria
+- The dated report `docs/reports/<date>-scope-test-lint-replay.md` exists and names `mcp-enablement.test.ts`, `replay.test.ts`, `test/engine/semantic.mjs` and `test/engine/exports.mjs`.
+- It has a flagged-test table per plan (agent-ui T-0060 step 4, ultimate-tokens T-0040 step 2), a control-step table, the commands run, and ends with exactly `Verdict: build` or `Verdict: do not build`, consistent with its stated rule (at least one known miss flagged and three or fewer control flags).
+- Only that report changed outside `.sdlc`; `docs_check.py` reports 0 errors.
