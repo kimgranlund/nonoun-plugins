@@ -1421,14 +1421,15 @@ def selftest():
             case('result name is ' + want, os.path.basename(got['result']) == want)
         shutil.rmtree(nm)
 
-        # 6. Refusals: the same exit code as run.sh, nothing written, and a negative control that
+        # 6. Refusals: the same exit code as run.sh, nothing written (the audit log refusals.jsonl, T-0415, is the one
+        # allowed write), and a negative control that
         # disables the one gate and lets the bad input through.
         def refused(label, rc_want, role, level, rel, gate, **env):
-            before = sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts)
+            before = sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts and p.name != 'refusals.jsonl')
             rc, got, err = prep(repo, role, level, rel, **env)
             rrc = runsh(repo, role, level, rel, **env)[0]
             case('%s: prepare exits %d like run.sh (got %d, run.sh %d)' % (label, rc_want, rc, rrc), rc == rc_want == rrc)
-            case('%s: a refusal wrote nothing' % label, before == sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts))
+            case('%s: a refusal wrote nothing' % label, before == sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts and p.name != 'refusals.jsonl'))
             if gate:
                 with clean_env(**env), cwd(repo), contextlib.redirect_stderr(io.StringIO()):
                     try:
