@@ -425,5 +425,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0425 | [0425-redck-key-criterion-hash](0425-redck-key-criterion-hash/handoff.md) | redck keys the red checkpoint to the criterion text, so steps.py widen does not invalidate it | bug | L2 | P2 | none | 🔵 ready |
 | T-0426 | [0426-record-removes-tmp-prefix](0426-record-removes-tmp-prefix/handoff.md) | dispatch.py record removes the role's own tmp worktree prefix | bug | L2 | P2 | none | 🔵 ready |
 | T-0427 | [0427-cascade-guard-design](0427-cascade-guard-design/handoff.md) | Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review | idea | L3 | P2 | none | ⏳ proposed |
-| T-0428 | [0428-close-first-doctrine](0428-close-first-doctrine/handoff.md) | Close-first doctrine: builders, solo and conductor lean toward closing and merging, not layered verification | chore | L2 | P2 | none | 🔵 ready |
+| T-0428 | [.0428-close-first-doctrine](.0428-close-first-doctrine/handoff.md) | Close-first doctrine: builders, solo and conductor lean toward closing and merging, not layered verification | chore | L2 | P2 | none | 🟢 done |
 | T-0429 | [0429-skip-verifier-docs-only](0429-skip-verifier-docs-only/handoff.md) | No verifier for a ticket that changes only docs, records or reports | feature | L2 | P2 | none | 🔵 ready |
