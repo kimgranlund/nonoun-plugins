@@ -1526,7 +1526,7 @@ def tests_findings(plan, steps):
             for n, block in steps.items() for t in declared_tests(block)[1]]
 
 
-VERIFIER_RESULT_RE = re.compile(r'verifier-L\d')
+VERIFIER_RESULT_RE = re.compile(r'verifier-L[\d*?\[]')
 STEP_FOLDER_RE = re.compile(r'\bstep-(\d+)/')
 FINDING_STEP_RE = re.compile(r'\bstep (\d+):')
 REFUSALS = 'refusals.jsonl'
@@ -1538,7 +1538,7 @@ def reads_own_verifier(text, n):
     verifier passes. A span that names an earlier step's folder (step-1/verifier-L2.md from step 2) is fine."""
     if not VERIFIER_RESULT_RE.search(text):
         return False
-    if re.search(rf'\bstep-{n}/verifier-L\d', text):
+    if re.search(rf'\bstep-{n}/verifier-L[\d*?\[]', text):
         return True
     return all(int(m) == n for m in STEP_FOLDER_RE.findall(text))
 
@@ -5852,6 +5852,14 @@ def selftest():
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(circ) negative control: the same criterion with a held clause passes lint',
               rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err and not (d / REFUSALS).exists())
+        gl = 'grep -q pass .sdlc/x/step-2/verifier-L*.md'
+        d = task(plan=PLAN.replace('- two works', f'- `{gl}`'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        d2 = task(plan=PLAN.replace('- two works', f'- `{gl}` [stage: integration; owner: integration]'))
+        rc2, out2, err2 = run_main(['lint', str(d2 / 'planner-L2.md')])
+        check('(circ) the glob form verifier-L* is refused like the digit form, and a held clause exempts it',
+              rc == 1 and f'step 2: {circ_msg}: {gl}' in err and err.strip().splitlines()[-1] == PLAN_DEFECT
+              and rc2 == 0 and out2.startswith('steps lint: ok') and circ_msg not in err2)
         d = task(plan=PLAN.replace('- two works', '- `grep -q pass .sdlc/x/step-1/verifier-L2.md`'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(circ) negative control: a criterion that reads an earlier step verifier result passes lint',
