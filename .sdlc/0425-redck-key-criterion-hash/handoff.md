@@ -26,3 +26,11 @@ Maison, 2026-10-10: every step verifier reported a red-checkpoint process deviat
 
 ## Constraints
 No em or en dashes. No push or publish. Do not remove any worktree or branch outside the role's own tmp prefix.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/redck.py selftest` exits 0 and its output holds the cases "a widen that adds a path to the scope span leaves every control valid", "editing one criterion invalidates only that control", and "an old-format entry (handoff hash only) still verifies as before".
+- `grep -c criterion_sha256 plugins/sdlc-lite/scripts/redck.py` prints a number above 3, and a control entry still carries `handoff_sha256`.
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.

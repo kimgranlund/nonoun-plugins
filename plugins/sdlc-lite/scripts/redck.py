@@ -6,7 +6,8 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
             leading tags hold (red), outside ``` fences, the spans specgate.py red would run) runs once in the
             current tree (steps.red_first: the tree is snapshotted and restored, a timeout is a refusal) and one
             JSON line per span is appended to <handoff dir>/red-checkpoint.jsonl: type control, ts, attempt_id,
-            handoff_sha256, base_sha (the dir's base-sha, else HEAD), criterion (the exact line), span, exit,
+            handoff_sha256 (provenance), criterion_sha256 (sha256 of the criterion line, a newline, and the span: the
+            key an audit matches on, T-0425), base_sha (the dir's base-sha, else HEAD), criterion (the exact line), span, exit,
             result (red, green, or timeout), phase, dirty. phase is pre-edit only when the work tree holds no
             source change against base_sha (git diff against it plus untracked files, paths under .sdlc/ and
             the handoff dir left out); otherwise retrospective, with the changed paths in dirty. The phase is
@@ -23,7 +24,9 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
   audit     run by dispatch.py record and run.sh when a builder completes (also by hand). It reads only
             red-checkpoint.jsonl, never the builder's report and never a later baseline run, so the order is
             not inferred. For each (red) span of the handoff the entries must carry the handoff's current
-            sha256 and the dir's current base sha:
+            criterion_sha256 (an old-format entry without one: the handoff's current sha256) and the dir's current base
+            sha. A handoff edit that leaves a criterion line and its span intact, such as steps.py widen, keeps its
+            control valid; an edited criterion or span unbinds only that control:
               ok                this attempt has a pre-edit control and its latest one was red
               preserved         no pre-edit control of this attempt, but an earlier attempt has a pre-edit red
                                 one for the same handoff hash and base: a resumed build keeps the original
@@ -81,6 +84,12 @@ def red_items(handoff):
 
 def sha256(path):
     return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+
+
+def criterion_hash(criterion, span):
+    """T-0425: the key of one control, sha256 of its criterion line and span, so an edit elsewhere in the handoff (a
+    steps.py widen) does not unbind it."""
+    return hashlib.sha256(f'{criterion}\n{span}'.encode('utf-8')).hexdigest()
 
 
 def git_lines(top, *args):
@@ -170,7 +179,7 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
     refusals = steps.red_first([(None, span, timeout) for _, span in items], top, top or str(d), base, got)
     for (crit, span), (_, _, rc) in zip(items, got):
         result = 'timeout' if rc is None else 'green' if rc == 0 else 'red'
-        append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, tree=top, criterion=crit, span=span,
+        append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, criterion_sha256=criterion_hash(crit, span), base_sha=base, tree=top, criterion=crit, span=span,
                        exit=rc, result=result, phase=phase, dirty=dirty or [], prelude=prelude))
     if not aid:
         print('redck: no attempt id found; this control binds to no attempt and an audit will not accept it', file=sys.stderr)
@@ -197,9 +206,12 @@ def prelude_changed(top, e):
     return out
 
 
-def span_status(es, span, aid, sha, base, top=None):
-    mine = [e for e in es if e.get('type') == 'control' and e.get('span') == span
-            and e.get('handoff_sha256') == sha and e.get('base_sha') == base]
+def span_status(es, crit, span, aid, sha, base, top=None):
+    key = criterion_hash(crit, span)
+    # T-0425: a control binds to its own criterion and span; an old-format entry (no criterion_sha256) still binds
+    # to the whole handoff hash as before
+    mine = [e for e in es if e.get('type') == 'control' and e.get('span') == span and e.get('base_sha') == base
+            and (e['criterion_sha256'] == key if e.get('criterion_sha256') else e.get('handoff_sha256') == sha)]
     own = [e for e in mine if aid and e.get('attempt_id') == aid]
     pre = [e for e in own if e.get('phase') == 'pre-edit']
     if pre:
@@ -232,7 +244,7 @@ def cmd_audit(target, attempt_id=''):
     base, sha = steps.base_sha(top, d), sha256(handoff)
     aid = attempt_of(d, attempt_id)
     es = entries(d)
-    per = [(span,) + span_status(es, span, aid, sha, base, top) for _, span in items]
+    per = [(span,) + span_status(es, crit, span, aid, sha, base, top) for crit, span in items]
     status = max((s for _, s, _ in per), key=RANK.get)
     for span, s, src in per:
         note = f' (original from attempt {src})' if src and s == 'preserved' else f' (declared test changed: {src})' if src else ''
@@ -366,10 +378,14 @@ def selftest():
               and 'preserved (original from attempt A1)' in out2 and out2.rstrip().endswith('audit: preserved')
               and out3.rstrip().endswith('audit: preserved') and devs(d) == [])
         # controls: the evidence must bind to the handoff hash, the base, and an attempt id
-        (d / 'handoff.md').write_text(ticket(red, '- extra line'), encoding='utf-8')
+        (d / 'handoff.md').write_text(ticket('- (red) `test -f other.txt`'), encoding='utf-8')
         _, out4, _ = run_main(['audit', str(d), '--attempt-id', 'A2'])
-        check('a handoff changed after the original checkpoint no longer binds it or the later control (control)',
+        check('a criterion changed after the original checkpoint no longer binds it or the later control (control)',
               out4.rstrip().endswith('audit: missing') and len(devs(d)) == 1)
+        (d / 'handoff.md').write_text(ticket(red, '- extra line', '- (guard) `git diff --name-only | grep -vxF -e a`'), encoding='utf-8')
+        _, out4b, _ = run_main(['audit', str(d), '--attempt-id', 'A2'])
+        check('T-0425: other handoff lines changed (a widen), the criterion and span intact: the controls still bind',
+              out4b.rstrip().endswith('audit: preserved') and len(devs(d)) == 1)
         (d / 'handoff.md').write_text(ticket(red), encoding='utf-8')
         subprocess.run(['git', '-C', str(repo), 'commit', '-q', '--allow-empty', '-m', 'move'], check=True, capture_output=True)
         head = subprocess.run(['git', '-C', str(repo), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
@@ -447,6 +463,41 @@ def selftest():
         check('an unsafe tests: entry (.., glob, absolute, directory) declares nothing, so the new file is an edit',
               e[0]['phase'] == 'retrospective' and not e[0].get('prelude') and 'tests:' in err)
         clean()
+
+        # T-0425: the control keys to its own criterion and span, not to the whole handoff hash
+        (repo / 'out.txt').unlink(missing_ok=True)
+        scope = '- (guard) `git diff --name-only | grep -vxF -e a.txt`'
+        r1, r2 = '- (red) `test -f one.txt`', '- (red) `test -f two.txt`'
+        d = task(r1, r2, scope)
+        run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        (repo / 'one.txt').write_text('x\n')
+        (repo / 'two.txt').write_text('x\n')
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('criterion hash: each control stores criterion_sha256 beside handoff_sha256, and audit is ok',
+              len(e) == 2 and all(x['criterion_sha256'] == criterion_hash(x['criterion'], x['span']) and x['handoff_sha256'] for x in e)
+              and e[0]['criterion_sha256'] != e[1]['criterion_sha256'] and o.rstrip().endswith('audit: ok'))
+        (d / 'handoff.md').write_text(ticket(r1, r2, scope.replace('a.txt`', 'a.txt -e b.txt`')) + '\n## Scope widened\n- `b.txt`: allowed\n', encoding='utf-8')
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('T-0425: a widen that adds a path to the scope span leaves every control valid, no deviation',
+              o.rstrip().endswith('audit: ok') and devs(d) == [] and sha256(d / 'handoff.md') != e[0]['handoff_sha256'])
+        (d / 'handoff.md').write_text(ticket(r1, '- (red) `test -f two.txt || false`', scope), encoding='utf-8')
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('T-0425: editing one criterion invalidates only that control (control)',
+              o.count('audit: ok') == 1 and o.count('audit: missing') == 2 and len(devs(d)) == 1 and 'two.txt || false' in devs(d)[0]
+              and 'test -f one.txt' not in devs(d)[0])
+        # an old-format entry (no criterion_sha256) still binds on the whole handoff hash
+        for n in ('one.txt', 'two.txt'):
+            (repo / n).unlink(missing_ok=True)
+        d = task(r1)
+        run_main(['record', str(d), '--attempt-id', 'A1'])
+        old_e = [{k: v for k, v in x.items() if k != 'criterion_sha256'} for x in entries(d)]
+        (d / CHECKPOINT).write_text(''.join(json.dumps(x) + '\n' for x in old_e), encoding='utf-8')
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('T-0425: an old-format entry (handoff hash only) still verifies as before', o.rstrip().endswith('audit: ok') and devs(d) == [])
+        (d / 'handoff.md').write_text(ticket(r1, '- extra line'), encoding='utf-8')
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('T-0425: an old-format entry still goes stale when the handoff changes (control)', o.rstrip().endswith('audit: missing'))
 
         rc, out, err = run_main(['record', str(repo / '.sdlc' / 'nope')])
         check('a missing handoff exits 1 with a message', rc == 1 and 'no handoff' in err)
