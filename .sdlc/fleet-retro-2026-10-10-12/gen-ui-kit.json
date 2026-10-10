@@ -1,0 +1,155 @@
+{
+  "repo": "/Users/kimgranlund/Projects/adia/ui-kit/main",
+  "summary": "runs: 0 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-10",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.2",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.2",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.2",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.296 (Claude Code)",
+    "time": "2026-10-10T19:37:42Z",
+    "uptime_load": {
+      "uptime_s": 1999228,
+      "load1": 7.95,
+      "load5": 8.97,
+      "load15": 7.86,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 0,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 0,
+    "by_role": {},
+    "by_lane": {
+      "solo": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {},
+    "interrupted": {
+      "count": 0,
+      "attempts": [],
+      "lost_min_median": null,
+      "lost_min_total": 0
+    },
+    "orphaned": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 6,
+      "runs_files": 1
+    }
+  },
+  "plan_review_share": null,
+  "results": {
+    "builder": {
+      "total": 0,
+      "blocked": 0
+    }
+  },
+  "plan_defects": {
+    "late": 0,
+    "early": 0
+  },
+  "attempts": {
+    "by_role": {}
+  },
+  "tickets": {
+    "count": 1,
+    "items": []
+  },
+  "processes": {
+    "chromium": {
+      "count": 57,
+      "cpu_pct": 50.2,
+      "rss_mb": 13268.2
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 6,
+      "cpu_pct": 4.7,
+      "rss_mb": 3780.3
+    }
+  },
+  "worktrees": {
+    "count": 5,
+    "size": "941.3 MB",
+    "size_kb_known": 963916,
+    "items": [
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/selftest-entrypoints-sandbox-PfqcdP",
+        "size": "188.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/dev",
+        "size": "201.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/int16",
+        "size": "177.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/w11234",
+        "size": "374.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/.git-worktrees",
+        "size": "0.0 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-10",
+    "window_days": 0,
+    "runs": 2,
+    "wall_minutes": 0.5,
+    "failed": 0,
+    "by_workflow": {
+      "CI watchdog": {
+        "runs": 2,
+        "wall_minutes": 0.5,
+        "failed": 0,
+        "by_event": {
+          "schedule": 2
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,439 @@
+{
+  "repo": "/Users/kimgranlund/Projects/nonoun/agent-ui",
+  "summary": "runs: 0 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-10",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.2",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.2",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.2",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.296 (Claude Code)",
+    "time": "2026-10-10T19:37:41Z",
+    "uptime_load": {
+      "uptime_s": 1999227,
+      "load1": 7.95,
+      "load5": 8.97,
+      "load15": 7.86,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 0,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 0,
+    "by_role": {},
+    "by_lane": {
+      "solo": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {},
+    "interrupted": {
+      "count": 0,
+      "attempts": [],
+      "lost_min_median": null,
+      "lost_min_total": 0
+    },
+    "orphaned": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [
+      {
+        "ticket": "a2ui-test-kit",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user chose a solo builder after the second replan verdict (2026-10-06); steps.py lane prints full for size L"
+      },
+      {
+        "ticket": "agent-activity-steps",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user explicitly directed a solo builder for the whole ticket on 2026-10-06; steps.py lane printed full (size L)"
+      },
+      {
+        "ticket": "croupier-hand-consistency",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user asked for solo builders on new work for comparison (relayed 2026-10-06, same as T-0015) and said 'do it'; steps.py lane prints full for size L"
+      },
+      {
+        "ticket": "croupier-natural-blackjack",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M (steps.py lane)"
+      },
+      {
+        "ticket": "lazy-catalog-records",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user directed solo sub-agents for new sessions on 2026-10-07; steps.py lane printed full (size L)"
+      },
+      {
+        "ticket": "reasoning-panel",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M (steps.py lane)"
+      }
+    ],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 6,
+      "runs_files": 79
+    }
+  },
+  "plan_review_share": null,
+  "results": {
+    "builder": {
+      "total": 0,
+      "blocked": 0
+    }
+  },
+  "plan_defects": {
+    "late": 0,
+    "early": 0
+  },
+  "attempts": {
+    "by_role": {}
+  },
+  "tickets": {
+    "count": 73,
+    "items": [
+      {
+        "ticket": "a2ui-test-kit",
+        "id": "T-0011",
+        "size": "XL",
+        "criteria": 13
+      },
+      {
+        "ticket": "activity-errors-card-polish",
+        "id": "T-0019",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "activity-strip-polish",
+        "id": "T-0022",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "agent-activity-steps",
+        "id": "T-0016",
+        "size": "L",
+        "criteria": 10
+      },
+      {
+        "ticket": "claude-md-em-dash",
+        "id": "T-0054",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "croupier-hand-consistency",
+        "id": "T-0017",
+        "size": "L",
+        "criteria": 9
+      },
+      {
+        "ticket": "croupier-natural-blackjack",
+        "id": "T-0020",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "croupier-rerecord-haiku-5-5",
+        "id": "T-0033",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "default-lazy-slices",
+        "id": "T-0037",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "devtools-meta-replay",
+        "id": "T-0018",
+        "size": "M",
+        "criteria": 10
+      },
+      {
+        "ticket": "docs-stale-records",
+        "id": "T-0047",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "drop-unused-shared-deps",
+        "id": "T-0057",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "entry-docs-dag",
+        "id": "T-0048",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "explicit-low-effort",
+        "id": "T-0032",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "flagship-rerecord-haiku-5-5",
+        "id": "T-0056",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "haiku-5-5",
+        "id": "T-0030",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": "haiku-5-5-max-tokens",
+        "id": "T-0035",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "harness-wiring-fix",
+        "id": "T-0049",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-a2ui-tests",
+        "id": "T-0041",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-catalog-adr-seam",
+        "id": "T-0027",
+        "size": "M",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-catalog-records",
+        "id": "T-0029",
+        "size": "L3",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-catalog-renderer",
+        "id": "T-0028",
+        "size": "M",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-default-flip",
+        "id": "T-0042",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-settle-seam",
+        "id": "T-0039",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-site-callers",
+        "id": "T-0040",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "package-deps-audit",
+        "id": "T-0053",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "persona-registry",
+        "id": "T-0013",
+        "size": "M",
+        "criteria": 13
+      },
+      {
+        "ticket": "quizmaster-seed-bump",
+        "id": "T-0036",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "quizmaster-test-strengthen",
+        "id": "T-0045",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "reasoning-panel",
+        "id": "T-0021",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "renderer-lazy-spike",
+        "id": "T-0055",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "site-nav-red",
+        "id": "T-0043",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "size-budget-split-design",
+        "id": "T-0026",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "skills-em-dash-1",
+        "id": "T-0050",
+        "size": "S",
+        "criteria": 2
+      },
+      {
+        "ticket": "skills-em-dash-2",
+        "id": "T-0051",
+        "size": "S",
+        "criteria": 2
+      },
+      {
+        "ticket": "skills-em-dash-3",
+        "id": "T-0052",
+        "size": "S",
+        "criteria": 2
+      },
+      {
+        "ticket": "stringified-tool-input",
+        "id": "T-0034",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "sub-tag-aliases",
+        "id": "T-0015",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "swiper-disconnect-test",
+        "id": "T-0044",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "swiper-item-demo-red",
+        "id": "T-0038",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "thinking-blocks-passthrough",
+        "id": "T-0031",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "turn-deadline",
+        "id": "T-0023",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "visual-nav-overlay-red",
+        "id": "T-0046",
+        "size": "L1",
+        "criteria": 2
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 57,
+      "cpu_pct": 40.9,
+      "rss_mb": 13267.6
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 6,
+      "cpu_pct": 6.2,
+      "rss_mb": 3780.3
+    }
+  },
+  "worktrees": {
+    "count": 5,
+    "size": "294.5 MB",
+    "size_kb_known": 301584,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-msf",
+        "size": "48.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-rts",
+        "size": "61.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-1727",
+        "size": "72.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-planner",
+        "size": "56.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-reviewer",
+        "size": "55.8 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-10",
+    "window_days": 0,
+    "runs": 0,
+    "wall_minutes": 0.0,
+    "failed": 0,
+    "by_workflow": {}
+  }
+}
