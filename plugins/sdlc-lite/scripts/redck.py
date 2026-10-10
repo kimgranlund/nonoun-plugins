@@ -161,7 +161,7 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
     if not items:
         print(f'redck: no (red) criteria in {handoff}')
         return 0
-    top = steps.git_toplevel(d)
+    top = steps.exec_toplevel(d)
     base = steps.base_sha(top, d)
     dirty, prelude = split_prelude(top, handoff, dirty_paths(top, base, d))
     phase = 'pre-edit' if dirty == [] else 'retrospective'
@@ -170,7 +170,7 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
     refusals = steps.red_first([(None, span, timeout) for _, span in items], top, top or str(d), base, got)
     for (crit, span), (_, _, rc) in zip(items, got):
         result = 'timeout' if rc is None else 'green' if rc == 0 else 'red'
-        append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, criterion=crit, span=span,
+        append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, tree=top, criterion=crit, span=span,
                        exit=rc, result=result, phase=phase, dirty=dirty or [], prelude=prelude))
     if not aid:
         print('redck: no attempt id found; this control binds to no attempt and an audit will not accept it', file=sys.stderr)
@@ -228,7 +228,7 @@ def cmd_audit(target, attempt_id=''):
     if not items:
         print(f'redck: audit: none: no (red) criteria in {handoff}')
         return 0
-    top = steps.git_toplevel(d)
+    top = steps.exec_toplevel(d)
     base, sha = steps.base_sha(top, d), sha256(handoff)
     aid = attempt_of(d, attempt_id)
     es = entries(d)
@@ -450,6 +450,25 @@ def selftest():
 
         rc, out, err = run_main(['record', str(repo / '.sdlc' / 'nope')])
         check('a missing handoff exits 1 with a message', rc == 1 and 'no handoff' in err)
+
+        # shared handoff in the primary checkout, builder in an owned lane worktree (T-0420)
+        lane = repo.parent / 'lane'
+        git(repo, 'worktree', 'add', '-q', '-b', 'lane', str(lane))
+        (repo / 'primary-dirty.txt').write_text('p\n')
+        d = task(red)
+        here = os.getcwd()
+        try:
+            os.chdir(lane)
+            rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        finally:
+            os.chdir(here)
+        e = entries(d)
+        check('shared handoff, cwd in the lane: controls are pre-edit (clean lane) and the entry names the lane tree',
+              rc == 0 and len(e) == 1 and e[0]['phase'] == 'pre-edit' and e[0]['tree'] == str(lane.resolve()))
+        rc, out, err = run_main(['record', str(task(red)), '--attempt-id', 'A1'])
+        check('same handoff from the primary alone: unchanged, retrospective on the primary tree',
+              rc == 0 and 'retrospective' in err)
+        (repo / 'primary-dirty.txt').unlink()
 
     if misses:
         print('redck selftest: FAIL, these did not hold:', file=sys.stderr)
