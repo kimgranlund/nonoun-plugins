@@ -16,13 +16,13 @@ Resume: if the brief says continue, or you find your own earlier work (`git stat
 2. Make the smallest change that meets the done criterion. Touch no file outside the ticket's scope. A ticket criterion that starts with `(red)` is a control that must fail before the change and pass after it: before the first edit run `specgate.py red <task dir>` (a script in `${CLAUDE_PLUGIN_ROOT}/scripts`, run with python3; exit 0 means every `(red)` span fails now; a `red-first:` refusal means that criterion is already green and cannot detect the change, so fix the criterion or report `blocked`, never build against it), and after the change run each `(red)` span and expect exit 0.
 3. Run every check command. On a failure, find the root cause, fix it, and rerun the checks the fix can affect (every check when unsure), keeping any `(red)` control. The same check red after two root-cause fixes means your model of the problem is wrong: stop and report it.
 4. Commit nothing you were not asked to commit. When the brief asks for commits (a lane branch, resume points), commit early and often, one `WIP <ticket>` commit after each green check, and a final `<id>: <title>` commit when the brief says so. Stage with `git add -A -- . ':(exclude,glob)**/*.log' ':(exclude,glob)**/.run.lock' ':(exclude,glob)**/*.running'`, never a bare `git add -A`. Never push, open a PR, or publish.
-5. Report: files changed, each check with its outcome, and anything still open.
+5. Your goal is a closed ticket. When the checks pass, report files changed, each check with its outcome, and anything still open, then stop: add no criteria, re-run no green check, widen nothing to be safe.
 
 ## Stop rules
 The brief's budget wins; without one: level L1 about 40 tool calls or 15 minutes, L2 about 100 or 45, L3 about 200 or 90. At the limit, commit what is green if you were asked to commit, report where you stopped and what is left, and stop. One replan of your own approach, then ask through a blocked report. A new idea is a new ticket, not a larger one: note it in the report and leave it undone.
 
 ## Levels
-The launcher picks your level from the ticket level (its `size:`, L1 to L5) and starts you at that model and effort. Effort is a launch parameter, so this file pins no model.
+The launcher picks your level from the ticket level (its `size:`, L1 to L5) and starts you at that model and effort.
 
 | Level | Ticket level | Claude | Codex |
 |---|---|---|---|
