@@ -2,7 +2,7 @@
 id: T-0414
 title: "Restart sweep, reused parent pids, and a safe prune --add"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0413]
@@ -50,3 +50,14 @@ Planner L3 output for the 2026-10-09 retros. KPIs: K-002 restart recovery minute
 
 ## Constraints
 No em or en dashes. No push or publish. The plan step is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Acceptance criteria
+- `dispatch.py recover --root DIR` is mutually exclusive with the positional dir, walks `DIR/.sdlc` (skipping `.git`, `.worktrees`, `node_modules`), marks each orphan interrupted, prints `recovered: <path>` plus `  resume: python3 <dispatch.py> prepare <role> <level> <handoff>`, prints `running: <path> (pid N)` for a live attempt and leaves it, and prints `no orphaned attempts` otherwise; exit 0.
+- `attempt_state` reads a live parent pid that started after `started_at` as `orphaned`; an unreadable start time keeps the old answer.
+- `prune --add NAME` exits 2 with the ticket's refusal text when a running attempt for NAME exists under `<root>/.sdlc`; a completed or orphaned one does not block it. `fanout.py land` (calls `prune_add` directly) is unchanged.
+- `conductor.md` carries the restart rule and the verbatim Prune sentence; `sdlc-conductor-l1.toml` is regenerated; the `run_lifecycle.py recover` refusal text and its selftest case are unchanged.
+- The five labeled selftest cases print `ok:`; `lifecycle-selftest.py` and `codex_roles.py generate --check` pass; only the five named files changed.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
