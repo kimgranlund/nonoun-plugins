@@ -2,7 +2,7 @@
 id: T-0418
 title: "Replay solo-sized chunks on ultimate-tokens T-0040 and T-0044 to size the full-chain cost on L4"
 type: spike           # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No em or en dashes. No push or publish. Read-only on every consumer repo.
 - `python3 -c "import sys; t=open('docs/reports/2026-10-09-l4-full-chain-cost-replay.md').read(); sys.exit(1 if ('\u2014' in t or '\u2013' in t) else 0)"` exits 0 (no em or en dashes).
 - `python3 plugins/sdlc-lite/scripts/docs_check.py` ends `0 errors` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
 - Spot check of figures against the consumer repo (read only): the sums of `cost_usd` over `.sdlc/match-peer-lightness/runs.jsonl` plus `step-*/runs.jsonl` and over the same files in `.sdlc/ui-standardization` equal $93.38 and $65.31 as the report's totals table states.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

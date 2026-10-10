@@ -415,7 +415,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0415 | [.0415-lint-circular-criteria](.0415-lint-circular-criteria/handoff.md) | Lint refuses circular criteria and records every refusal | feature | L3 | P2 | none | 🟢 done |
 | T-0416 | [.0416-scope-vs-tests-heuristic-replay](.0416-scope-vs-tests-heuristic-replay/handoff.md) | Replay a scope-versus-tests heuristic and decide | spike | L2 | P2 | none | 🟢 done |
 | T-0417 | [.0417-verifier-minutes-delta-decision](.0417-verifier-minutes-delta-decision/handoff.md) | Measure verifier minutes and decide on a delta verifier | spike | L1 | P2 | T-0411 | 🟢 done |
-| T-0418 | [0418-l4-full-chain-cost-replay](0418-l4-full-chain-cost-replay/handoff.md) | Replay solo-sized chunks on ultimate-tokens T-0040 and T-0044 to size the full-chain cost on L4 | spike | L2 | P2 | none | 🔵 ready |
+| T-0418 | [.0418-l4-full-chain-cost-replay](.0418-l4-full-chain-cost-replay/handoff.md) | Replay solo-sized chunks on ultimate-tokens T-0040 and T-0044 to size the full-chain cost on L4 | spike | L2 | P2 | none | 🟢 done |
 | T-0419 | [.0419-standing-managed-block-auth](.0419-standing-managed-block-auth/handoff.md) | Write the standing narrow authorization for managed-block refresh in consumer repos | chore | L1 | P2 | none | 🟢 done |
 | T-0420 | [.0420-redck-execution-tree](.0420-redck-execution-tree/handoff.md) | redck record and verify resolve the shared handoff's checkout, not the lane worktree | bug | L1 | P2 | none | 🟢 done |
 | T-0421 | [0421-bounded-plan-correction-route](0421-bounded-plan-correction-route/handoff.md) | A bounded route for a two-line plan correction after design and criteria are accepted | idea | L2 | P2 | none | ⏳ proposed |
