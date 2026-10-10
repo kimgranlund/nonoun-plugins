@@ -26,3 +26,13 @@ Maintainer decision 2026-10-10: no verifier for docs, records and reports only. 
 
 ## Constraints
 No em or en dashes. No push or publish. Model and effort defaults are the maintainer's: change none. Independent verification at ticket close stays; this ticket removes layers above it, not that verifier.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` passes; with `docs_path` forced true its path cases fail, with `docs_problem` forced to None the docs_check case fails, and with `link_problem` forced to None the broken-link case fails.
+- [ ] `verify_scope.py <base>` prints `docs-only` and exits 0 for a diff of files under `docs/`, `.sdlc/` record files and a Markdown file outside any `agents`, `skills`, `commands` or `hooks` folder; it exits 1 and prints the first offending path for a script path or a Markdown file under `plugins/*/skills` or `plugins/*/agents`; it exits 1 for an empty diff, a failing docs_check, a new broken link, and a handoff with a `verifier: L1` to `verifier: L3` line.
+- [ ] `tickets.py selftest` `(docs-only)` cases pass: a docs-only diff closes with no verifier result and records `- skip: verifier; step: all; ...` under `## Skipped`; a script path, a skill or agent Markdown file, a record-only diff failing docs_check, a `verifier: L2` handoff line and a missing recorded base each still refuse with `no ## Skipped entry for verifier step 1`. With `docs_waiver` forced to None the accept case fails.
+- [ ] `agents/solo.md` tells the solo to run `verify_scope.py` after its checks and end with `verify: skipped (docs/records only; docs_check green)` on exit 0, else `verify: needed`; the generated `solo-L1|L2|L3.md` and `sdlc-solo-l1|l2|l3.toml` match (`claude_roles.py generate --check`, `codex_roles.py generate --check`).
+- [ ] `dispatch.py selftest`, `claude_roles.py selftest`, `fanout.py selftest`, `check.py` and `tickets.py --root .sdlc check` pass; `check.sh` runs the verify_scope selftest.
+- [ ] No model or effort default changed; no em or en dash added.
+
+verifier: L3
