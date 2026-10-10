@@ -2,7 +2,7 @@
 id: T-0422
 title: "lane-open, lane-close and lane-wait: design and build plan from the gen-ui-kit spec"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ Design only. No em or en dashes. No push or publish. Do not remove any worktree 
 5. `perl -CSD -ne 'print "$ARGV:$.: $_" if /[\x{2013}\x{2014}]/; close ARGV if eof' docs/specs/sdlc-lite/lane-lifecycle.md docs/specs/sdlc-lite/README.md docs/README.md docs/specs/sdlc-lite/AGENTS.md` prints nothing.
 6. Design only: `git status --porcelain` lists only the new design file, `docs/README.md`, `docs/specs/sdlc-lite/README.md`, `docs/specs/sdlc-lite/AGENTS.md` and files inside this ticket's folder; nothing under `plugins/`, no hook, no `.gitignore` and no `.sdlc/config` change, so no worktree or branch was removed by this ticket.
 7. `git grep -n "0422-lane-open-close-design" -- . ':!.sdlc'` prints nothing, so the numbered close's reference scan has no file to rewrite.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L3); one independent batched verifier passed before the merge
