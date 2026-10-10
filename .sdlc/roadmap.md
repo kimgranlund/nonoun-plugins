@@ -422,3 +422,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0422 | [0422-lane-open-close-design](0422-lane-open-close-design/handoff.md) | lane-open, lane-close and lane-wait: design and build plan from the gen-ui-kit spec | feature | L3 | P2 | none | 🔵 ready |
 | T-0423 | [0423-lane-directive-interim](0423-lane-directive-interim/handoff.md) | Interim written directive: where lanes live, how they open and close, how they are named | chore | L1 | P2 | none | 🔵 ready |
 | T-0424 | [0424-lane-lifecycle-git-native](0424-lane-lifecycle-git-native/handoff.md) | Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config | feature | L2 | P2 | T-0422 | ⏳ proposed |
+| T-0425 | [0425-redck-key-criterion-hash](0425-redck-key-criterion-hash/handoff.md) | redck keys the red checkpoint to the criterion text, so steps.py widen does not invalidate it | bug | L2 | P2 | none | 🔵 ready |
+| T-0426 | [0426-record-removes-tmp-prefix](0426-record-removes-tmp-prefix/handoff.md) | dispatch.py record removes the role's own tmp worktree prefix | bug | L2 | P2 | none | 🔵 ready |
+| T-0427 | [0427-cascade-guard-design](0427-cascade-guard-design/handoff.md) | Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review | idea | L3 | P2 | none | ⏳ proposed |
