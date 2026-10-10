@@ -2,7 +2,7 @@
 id: T-0416
 title: "Replay a scope-versus-tests heuristic and decide"
 type: spike           # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
@@ -44,3 +44,7 @@ No em or en dashes. No push or publish. The plan step is the contract: if it is 
 - The dated report `docs/reports/<date>-scope-test-lint-replay.md` exists and names `mcp-enablement.test.ts`, `replay.test.ts`, `test/engine/semantic.mjs` and `test/engine/exports.mjs`.
 - It has a flagged-test table per plan (agent-ui T-0060 step 4, ultimate-tokens T-0040 step 2), a control-step table, the commands run, and ends with exactly `Verdict: build` or `Verdict: do not build`, consistent with its stated rule (at least one known miss flagged and three or fewer control flags).
 - Only that report changed outside `.sdlc`; `docs_check.py` reports 0 errors.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
