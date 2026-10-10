@@ -25,3 +25,11 @@ Rules:
 - On a parse error (exit 1 naming a file and line), report the file and line and stop. Do not retry or patch the file.
 - Outside a Git work tree the script exits 1 and writes nothing; report the reason.
 - The default homes include `goals/` and `kpi/`; setup lists them in `docs/AGENTS.md` and never creates either folder empty, and `docs_check.py` rules G-1 to G-5 check the files a repository puts there.
+
+## Standing authorization: managed-block refresh
+
+Maintainer decision 2026-10-09. A conductor may refresh stale managed blocks in its own repository without asking, under this rule and nothing broader:
+1. Run `onboard.py check`, then `onboard.py setup --dry-run`.
+2. If the diff touches only `<!-- sdlc-lite:managed:start -->` blocks inside `docs/**/AGENTS.md` and the CLAUDE.md pairs of those files, run `onboard.py setup --yes` and commit the result in that repository. This replaces the step 3 question.
+3. Never run setup when the dry-run shows the root `AGENTS.md`, a template change, or a new managed file. Never pass `--force` over a hand-edited block. Never run `tickets.py migrate-size --apply` under this rule. Never run it in another repository.
+4. Otherwise report to the maintainer with the dry-run diff and stop.

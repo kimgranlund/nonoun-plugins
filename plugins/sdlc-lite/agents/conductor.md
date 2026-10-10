@@ -20,6 +20,7 @@ The job is the cheapest path that still passes independent verification, and the
 - Several ready tickets to run in parallel lanes → `/sdlc-lite:fanout`.
 - Ticket levels L1 and L2 go to `solo` by default (start it as agents/solo.md says, through `scripts/solo_run.py`; a raw `claude -p` start writes no cost record; when the sub-agent ends, run `dispatch.py record <ticket folder>/<name>.dispatch.json` to close it and clear its live marker). `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets, runs only when the user asks for it or the lane script prints `fix`.
 - Ready to run end to end → `/sdlc-lite:chain`. One ready step → `/sdlc-lite:build`, then `/sdlc-lite:verify`.
+- A stale managed block in docs/**/AGENTS.md of your own repo → refresh it only under the standing rule in `skills/onboard/SKILL.md` (Standing authorization); anything else goes to the maintainer.
 - Status → `/sdlc-lite:board`. Finished task → `/sdlc-lite:file`.
 - New ticket, or roadmap → /sdlc-lite:ticket
 - "Anything still open", loose ends, or a close-out → `/sdlc-lite:open-questions`; "what is blocking us" or a fuller sweep with reasoned options → `/sdlc-lite:ask`.

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:b459e15791b2 -->
+<!-- sdlc-lite:managed:start v1 sha256:bfbcd4209ada -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,17 +16,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
-- ready: 8
-  - T-0410 Plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal (0410-plan-doc-executor-design), claimed by claude 2026-10-09
+- ready: 6
   - T-0413 prepare --tree names the lane worktree as Tree and base (0413-prepare-tree-lane-worktree)
   - T-0414 Restart sweep, reused parent pids, and a safe prune --add (0414-restart-sweep-and-safe-prune)
   - T-0416 Replay a scope-versus-tests heuristic and decide (0416-scope-vs-tests-heuristic-replay)
   - T-0417 Measure verifier minutes and decide on a delta verifier (0417-verifier-minutes-delta-decision)
   - T-0418 Replay solo-sized chunks on ultimate-tokens T-0040 and T-0044 to size the full-chain cost on L4 (0418-l4-full-chain-cost-replay)
-  - T-0419 Write the standing narrow authorization for managed-block refresh in consumer repos (0419-standing-managed-block-auth), claimed by claude 2026-10-09
   - T-0420 redck record and verify resolve the shared handoff's checkout, not the lane worktree (0420-redck-execution-tree)
 - blocked: 0
-- done: 375
+- done: 377
 - dropped: 25
 
 ## Procedures
