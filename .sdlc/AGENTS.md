@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:95d028a6f663 -->
+<!-- sdlc-lite:managed:start v1 sha256:9eb4086894db -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,11 +16,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
-- ready: 2
-  - T-0413 prepare --tree names the lane worktree as Tree and base (0413-prepare-tree-lane-worktree), claimed by claude 2026-10-10
+- ready: 1
   - T-0414 Restart sweep, reused parent pids, and a safe prune --add (0414-restart-sweep-and-safe-prune), claimed by claude 2026-10-10
 - blocked: 0
-- done: 381
+- done: 382
 - dropped: 25
 
 ## Procedures
