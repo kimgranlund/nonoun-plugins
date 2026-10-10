@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:0fc078fc7f07 -->
+<!-- sdlc-lite:managed:start v1 sha256:3f1557b82e04 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,9 +18,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
   - T-0424 Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config (0424-lane-lifecycle-git-native)
   - T-0427 Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (0427-cascade-guard-design)
-- ready: 2
+- ready: 3
   - T-0426 dispatch.py record removes the role's own tmp worktree prefix (0426-record-removes-tmp-prefix), claimed by claude 2026-10-10
   - T-0429 No verifier for a ticket that changes only docs, records or reports (0429-skip-verifier-docs-only), claimed by claude 2026-10-10
+  - T-0430 steps.py lint misses a circular criterion written with a verifier-L* glob (0430-lint-verifier-glob-form), claimed by claude 2026-10-10
 - blocked: 0
 - done: 387
 - dropped: 25
