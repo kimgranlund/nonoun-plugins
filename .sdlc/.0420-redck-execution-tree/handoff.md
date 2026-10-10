@@ -2,7 +2,7 @@
 id: T-0420
 title: "redck record and verify resolve the shared handoff's checkout, not the lane worktree"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Maison and Codex, 2026-10-09 (0.22.2): maison .sdlc/tickets/0356-redck-shared-ha
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
