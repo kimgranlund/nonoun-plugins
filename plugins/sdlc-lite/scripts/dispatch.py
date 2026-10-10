@@ -341,13 +341,14 @@ def fork_floor(directory):
 NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
 
 
-def build_base(directory):
+def build_base(directory, tree=None):
     """The build-start commit run.sh stores in base-sha (T-0381), in this order: (1) a base the handoff names (a line
     `base: <sha>`), else (2) the sha recorded at the step's first dispatch, kept valid, else (3) HEAD of the execution
     tree, never the main checkout's HEAD. A supplied SDLC_BASE_SHA that resolves to another commit is refused and the
-    pick kept; a named base that is not an ancestor of HEAD raises Refuse. Git runs in the execution tree (the
-    handoff's own tree, or the lane worktree a main-checkout handoff is run from), and in a lane worktree a recorded
-    sha older than the lane's fork point is stale (T-0376). Returns (stored, base)."""
+    pick kept; a named base that is not an ancestor of HEAD raises Refuse. Git runs in the execution tree (tree when
+    given, as prepare --tree settles it, else the handoff's own tree, or the lane worktree a main-checkout handoff is
+    run from), and in a lane worktree a recorded sha older than the lane's fork point is stale (T-0376). Returns
+    (stored, base)."""
     stored = ''
     f = Path(directory) / 'base-sha'
     if f.is_file():
@@ -362,7 +363,7 @@ def build_base(directory):
                 stored = ''
             if stored:
                 break
-    cwd = exec_tree(directory)
+    cwd = tree if tree else exec_tree(directory)
     floor = fork_floor(cwd)
 
     def commit(sha):
@@ -543,11 +544,13 @@ def under(path, prefix):
     return real == base or real.startswith(base + os.sep)
 
 
-def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo='', prune=None, notify='', notify_re=''):
+def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo='', prune=None, notify='', notify_re='', tree=''):
     """Run the gates and write the records; returns the dispatch dict. skip names gates to disable (selftest only);
     solo is the model of a solo ticket whose runs.jsonl record is not in this tree (--solo-model); prune overrides the
     role's default prune flag (True, False, or None for the default); notify names the mailbox receiver that gets the
-    verdict message when record closes the attempt (T-0383), notify_re the message id it answers."""
+    verdict message when record closes the attempt (T-0383), notify_re the message id it answers; tree (--tree) names
+    the execution tree, a worktree of the handoff's repository, for a build run in a lane worktree whose handoff lives
+    in the primary checkout (T-0413)."""
     plugin = Path(plugin)
     if os.environ.get('SDLC_BACKEND', 'claude') != 'claude':
         raise Refuse(2, 'dispatch.py prepare is the Claude host path; Codex dispatches through run.sh')
@@ -571,6 +574,12 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             raise Refuse(2, 'not a git repo: run git init and commit first')
         if git('rev-parse', '--verify', '-q', 'HEAD').returncode != 0:
             raise Refuse(2, 'git repo has no commit: commit first')
+    if tree:  # T-0413: refused before the lock, so no record is written
+        known = {os.path.realpath(p) for p, _ in worktrees(git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip() or os.getcwd())}
+        if os.path.realpath(tree) not in known:
+            raise Refuse(2, 'dispatch.py: --tree %s is not a worktree of this repository' % tree)
+    # The execution tree, settled once: Tree, the tmp prefix, the worktree and branch snapshot, and the Base sha all follow it.
+    run_tree = os.path.realpath(tree) if tree else exec_tree(directory)
     definition = plugin / 'agents' / ('%s-%s.md' % (role, level))
     if not definition.is_file():
         raise Refuse(2, 'no generated definition %s; run: python3 %s generate' % (definition, HERE / 'claude_roles.py'))
@@ -653,12 +662,13 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         stem, k = next_stem(directory, role, level)
         name = agent_name(role, level, directory, k)
         result = directory / (stem + '.md')
-        toplevel = git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip() or git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()  # the handoff's own tree, so a lane worktree handoff gets the lane as Tree
+        # the execution tree's toplevel: a lane worktree handoff, a --tree lane, or a main-checkout handoff run from a lane all get the lane as Tree
+        toplevel = git('rev-parse', '--show-toplevel', cwd=run_tree).stdout.strip() or git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()
         tmp_prefix = str(Path(toplevel) / '.worktrees' / 'tmp' / name)
 
         base = None
         if role in ('builder', 'verifier'):
-            stored, base = build_base(directory)
+            stored, base = build_base(directory, run_tree)
             if not dry_run and base != stored:
                 (directory / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
@@ -1121,6 +1131,9 @@ def main(argv):
     pg.add_argument('--no-prune', dest='prune', action='store_false', help='never queue this agent for pruning')
     p.add_argument('--notify', default='', metavar='RECEIVER', help='mailbox receiver that gets the verdict message when record closes the attempt (T-0383)')
     p.add_argument('--notify-re', default='', metavar='ID', help='with --notify: the message id the verdict answers')
+    p.add_argument('--tree', default='', metavar='PATH',
+                   help='the lane worktree a build runs in when its handoff lives in the primary checkout: Tree, the tmp prefix, and the Base sha follow it; '
+                        'it must be a worktree of this repository, else exit 2 (T-0413)')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
     r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
@@ -1215,7 +1228,7 @@ def main(argv):
         os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     try:
         out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model, prune=args.prune,
-                      notify=args.notify, notify_re=args.notify_re)
+                      notify=args.notify, notify_re=args.notify_re, tree=args.tree)
     except Refuse as r:
         for line in r.lines:
             print(line, file=sys.stderr)
@@ -1690,6 +1703,27 @@ def selftest():
         got, _ = shared()
         case('a main-checkout handoff run from the lane with nothing recorded gets the lane HEAD, not the main checkout HEAD',
              got == lane_tip2 != main_head)
+        # T-0413: prepare settles the execution tree once (--tree, else exec_tree), and Tree, the tmp prefix and Base sha all name it.
+        real_lane = os.path.realpath(str(lw2))
+
+        def names_lane(d):
+            return (d['tree'] == real_lane and 'Tree: %s ' % real_lane in d['prompt'] and 'Tree: %s ' % rr not in d['prompt']
+                    and d['tmp_prefix'].startswith(real_lane + '/.worktrees/tmp/')
+                    and d['base_sha'] == lane_tip2 != main_head and 'Base sha: ' + lane_tip2 in d['prompt'])
+        with clean_env(), cwd(lw2), contextlib.redirect_stderr(io.StringIO()):
+            from_lane = prepare('verifier', 'L1', str(mhand), dry_run=True)
+        case('prepare from a lane worktree for a main-checkout handoff: Tree names the lane, as Base sha does', names_lane(from_lane))
+        rct, dtree, _ = prep(rr, 'builder', 'L1', str(mhand), '--dry-run', '--tree', str(lw2))
+        case('prepare --tree: Tree, Base sha and the tmp prefix name the given lane worktree', rct == 0 and names_lane(dtree))
+        rcm, dmain, _ = prep(rr, 'builder', 'L1', str(mhand), '--dry-run')
+        case('negative control: the same prepare from the main checkout without --tree names the main checkout as Tree',
+             rcm == 0 and dmain['tree'] == os.path.realpath(str(rr)) and dmain['base_sha'] == main_head and not names_lane(dmain))
+        sbd = rr / '.sdlc' / 'sb'
+        sb_before = sorted(p.name for p in sbd.iterdir())
+        refusals = [(bad,) + prep(rr, 'verifier', 'L1', '.sdlc/sb/handoff.md', '--tree', str(bad)) for bad in (repo, lw2 / '.sdlc')]
+        case('prepare --tree: a path that is not a worktree of this repository is refused, exit 2',
+             all(rcb == 2 and 'dispatch.py: --tree %s is not a worktree of this repository' % bad in errb for bad, rcb, _, errb in refusals)
+             and sorted(p.name for p in sbd.iterdir()) == sb_before)
         mbase.write_text(lane_head + '\n')
         got, err = shared(SDLC_BASE_SHA=main_head)
         case('a main-checkout handoff run from the lane refuses a wrong but valid supplied base and keeps the recorded one',

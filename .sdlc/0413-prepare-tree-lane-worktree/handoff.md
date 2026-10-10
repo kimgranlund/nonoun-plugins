@@ -36,6 +36,17 @@ Contract dependents: the selftest case "a verifier prompt for a lane worktree ha
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml -e docs/references/sdlc-internals.md)"`
 
+## Acceptance criteria
+verifier: L3
+
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and prints, each as its own line, the exact labels `ok: prepare --tree: Tree, Base sha and the tmp prefix name the given lane worktree`, `ok: prepare --tree: a path that is not a worktree of this repository is refused, exit 2`, and `ok: prepare from a lane worktree for a main-checkout handoff: Tree names the lane, as Base sha does`; each label is one string literal on one line of `plugins/sdlc-lite/scripts/dispatch.py`.
+- [ ] The existing case `ok: a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree` still prints, unchanged.
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py prepare --help` lists `--tree`; `prepare(..., tree='')` refuses a PATH whose `os.path.realpath` is not a path in `worktrees(<handoff's toplevel>)` with exit 2 and the message `dispatch.py: --tree PATH is not a worktree of this repository`, before the lock, so no file is written in the handoff dir.
+- [ ] The execution tree is settled once (PATH when given, else `exec_tree(directory)`): the `Tree:` line, the `tree` key, `tmp_prefix`, `worktrees_before` and `branches_before` use its toplevel, and `build_base(directory, tree)` uses it as its git `cwd`, so the Base sha comes from the same tree. With no `--tree`, only a main-checkout handoff dispatched from inside a linked lane worktree changes (Tree becomes the lane).
+- [ ] `plugins/sdlc-lite/agents/conductor.md` step 1 (Prepare) carries one sentence with `prepare --tree <lane worktree>` for a build run in a lane worktree whose handoff lives in the primary checkout, and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
+- [ ] `docs/references/sdlc-internals.md` lists `[--tree PATH]` in the prepare usage.
+- [ ] Outside `.sdlc/`, the diff against the base sha touches only `plugins/sdlc-lite/scripts/dispatch.py`, `plugins/sdlc-lite/agents/conductor.md`, `plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml`, and `docs/references/sdlc-internals.md`; no em or en dashes are added.
+
 ## Context
 Planner L3 output for the 2026-10-09 retros. KPIs: K-002 restart recovery minutes, K-003 blocked builders per wave, K-004 unsatisfiable criteria caught. The spec marks which candidates may already be fixed or need diagnosis first; follow it.
 
