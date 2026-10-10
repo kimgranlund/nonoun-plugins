@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1236ccb09e26 -->
+<!-- sdlc-lite:managed:start v1 sha256:58478943d9f9 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,15 +9,17 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 6
+- proposed: 7
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
-- ready: 1
+  - T-0424 Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config (0424-lane-lifecycle-git-native)
+- ready: 2
   - T-0422 lane-open, lane-close and lane-wait: design and build plan from the gen-ui-kit spec (0422-lane-open-close-design), claimed by claude 2026-10-10
+  - T-0423 Interim written directive: where lanes live, how they open and close, how they are named (0423-lane-directive-interim), claimed by claude 2026-10-10
 - blocked: 0
 - done: 383
 - dropped: 25
