@@ -26,3 +26,12 @@ Request from the gen-ui-kit conductor, 2026-10-10: 43 solo lanes and 8 integrati
 
 ## Constraints
 Design only. No em or en dashes. No push or publish. Do not remove any worktree or branch.
+
+## Acceptance criteria
+1. `docs/specs/sdlc-lite/lane-lifecycle.md` exists, opens with a status line saying it is a design, not built, for T-0422, and answers each of the ten Intent items in a section a reader can find: lane location with the hook, ignore and watcher changes; one authoritative home; the squash-merge landed test with its negative control; ports and their relation to gate_lock; how fanout land, tickets close and dispatch prune call close, with the `lane still open` line; the spec's checks; consumer repo changes; the known spec gaps as risks with the auto-merge authorization note (written opt-in, never default); the build tickets with sizes and a live-run plan; and a cleanup proposal for the existing pile that removes nothing.
+2. The design names every file each build ticket changes, gives each ticket a size and an order, has a lane-close truth table (one row per state with outcome, exit code and what changes), and pairs every new check with a negative control.
+3. `python3 plugins/sdlc-lite/scripts/docs_check.py` exits 0 and prints no finding for `docs/specs/sdlc-lite/lane-lifecycle.md`.
+4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and `python3 plugins/sdlc-lite/scripts/onboard.py check` reports `docs/specs/sdlc-lite/AGENTS.md` as current (the design file is in the index as intent-to-add, so both scripts see it through `git ls-files`).
+5. `perl -CSD -ne 'print "$ARGV:$.: $_" if /[\x{2013}\x{2014}]/; close ARGV if eof' docs/specs/sdlc-lite/lane-lifecycle.md docs/specs/sdlc-lite/README.md docs/README.md docs/specs/sdlc-lite/AGENTS.md` prints nothing.
+6. Design only: `git status --porcelain` lists only the new design file, `docs/README.md`, `docs/specs/sdlc-lite/README.md`, `docs/specs/sdlc-lite/AGENTS.md` and files inside this ticket's folder; nothing under `plugins/`, no hook, no `.gitignore` and no `.sdlc/config` change, so no worktree or branch was removed by this ticket.
+7. `git grep -n "0422-lane-open-close-design" -- . ':!.sdlc'` prints nothing, so the numbered close's reference scan has no file to rewrite.
