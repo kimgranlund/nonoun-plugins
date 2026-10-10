@@ -1106,11 +1106,12 @@ def skip_section(text, heading):
     return out
 
 
-def skip_missing(d):
+def skip_missing(d, covered=()):
     """(lane, [missing roles]) for ticket dir d's skips.md, or None when exempt: no skips.md, no ## Lane
     section, no `- lane:` line in it, or a last lane other than solo, lean, fix, or full. The full chain's planner,
     verifier per live step-<digits>/ and filer each need a counting `- skip: <role>; ...` entry under
-    ## Skipped when their result is missing (format: skills/handoff-format, Layout)."""
+    ## Skipped when their result is missing (format: skills/handoff-format, Layout). covered names roles to
+    count as skipped (close passes ('verifier',) for a docs-only diff, T-0429)."""
     f = d / 'skips.md'
     if not f.is_file():
         return None
@@ -1136,12 +1137,60 @@ def skip_missing(d):
         missing.append('planner')
     steps = sorted(int(p.name[5:]) for p in d.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
     for n in steps:
-        if not run_order.ordered(d / f'step-{n}', 'verifier') and not (
+        if 'verifier' not in covered and not run_order.ordered(d / f'step-{n}', 'verifier') and not (
                 cover.get('verifier', set()) & {str(n), 'all'}):
             missing.append(f'verifier step {n}')
     if not run_order.ordered(d, 'filer') and 'filer' not in cover:
         missing.append('filer')
     return (lanes[-1], missing) if missing else None
+
+
+def recorded_base(d):
+    """The commit a ticket's build started from: the first line of <d>/base-sha, else of the lowest live step-<n>/base-sha;
+    None when no role recorded one."""
+    steps = sorted((int(p.name[5:]), p) for p in d.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
+    for f in [d / 'base-sha'] + [p / 'base-sha' for _, p in steps]:
+        try:
+            first = (f.read_text(encoding='utf-8').splitlines() or [''])[0].strip()
+        except OSError:
+            continue
+        if first:
+            return first
+    return None
+
+
+def docs_waiver(d):
+    """The recorded base when the ticket's diff against it is docs, records and reports only and its checks are green
+    (verify_scope.scope), so close needs no verifier result; None otherwise, also with no recorded base or no git
+    (T-0429). A `verifier: L1`..`L3` line in the handoff keeps the verifier."""
+    import verify_scope  # local like steps: only close needs it
+    base = recorded_base(d)
+    top = verify_scope.toplevel(str(d))
+    if not base or not top:
+        return None
+    try:
+        ok, _ = verify_scope.scope(top, base, str(d / 'handoff.md'))
+    except ValueError:
+        return None
+    return base if ok else None
+
+
+def add_skip_line(f, line):
+    """Append one `- skip:` line to the end of the ## Skipped section of skips.md f, adding the section when it is absent."""
+    lines = f.read_text(encoding='utf-8').splitlines(keepends=True)
+    start = next((i for i, ln in enumerate(lines) if ln.rstrip() == '## Skipped'), None)
+    if start is None:
+        if lines and not lines[-1].endswith('\n'):
+            lines[-1] += '\n'
+        lines += ['\n', '## Skipped\n', line + '\n']
+    else:
+        pos = next((i for i in range(start + 1, len(lines)) if lines[i].startswith('## ')), len(lines))
+        while pos > start + 1 and not lines[pos - 1].strip():
+            pos -= 1
+        if not lines[pos - 1].endswith('\n'):
+            lines[pos - 1] += '\n'
+        lines.insert(pos, line + '\n')
+    f.write_text(''.join(lines), encoding='utf-8')
 
 
 def skip_line(folder, got):
@@ -1834,6 +1883,14 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                    + ', '.join(f"{i['ref']} {i['state']} {i['who']}" for i in held)
                    + '; settle them in the owner stage; nothing written')
     got = skip_missing(d)
+    docs_base = docs_waiver(d) if got and any(m.startswith('verifier') for m in got[1]) else None
+    if docs_base:  # T-0429: a docs, records and reports only diff closes on its own checks; the guard below still counts planner and filer
+        got = skip_missing(d, covered=('verifier',))
+
+    def note_docs_waiver():
+        if docs_base:
+            add_skip_line(d / 'skips.md', f'- skip: verifier; step: all; reason: docs-only diff against {docs_base[:12]} '
+                                          f'(verify_scope.py); decided: tickets.py close')
     if got:
         raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
                    f'decided: <who>" line per role under ## Skipped in {d / "skips.md"}; nothing written')
@@ -1870,6 +1927,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         body += f'\n## Closed\n\n{datetime.date.today().isoformat()}: {why}\n'
         if kept:
             body += f'\n{kept}\n'
+        note_docs_waiver()
         h.write_bytes((head + body).encode('utf-8'))
         if archive:
             d.rename(dot)
@@ -2003,6 +2061,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + ([f'keep {f}' for f in refs] if keep_refs else [])
                          + [f'expect {digest}'])
 
+    note_docs_waiver()
     for s, t in planned:
         (td / s).mkdir()
         (td / s / 'handoff.md').write_text(t, encoding='utf-8')
@@ -4596,6 +4655,62 @@ def selftest():
         rc, out, err = run(r, 'close', ('lean-a',), reason='x')
         expect(f'(skips) close --reason with entries succeeds: rc={rc} {err!r}',
                rc == 0 and status(r, 'lean-a') == 'done' and run(r, 'check')[0] == 0)
+
+        # ---- (docs-only) T-0429: a docs, records and reports only diff closes with no verifier result; anything else still needs one ----
+        import subprocess as _sp
+
+        def vs_root(name, change, handoff_tail='', base_files=(), recorded=True):
+            r = sk_root(name, ['lean'], PL + FL, files=('step-1/builder-L1.md',), status_done=False)
+            top = r.parent
+            for rel, text in base_files:
+                (top / rel).parent.mkdir(parents=True, exist_ok=True)
+                (top / rel).write_text(text, encoding='utf-8')
+            if handoff_tail:
+                with open(r / 'lean-a' / 'handoff.md', 'a', encoding='utf-8') as fh:
+                    fh.write(handoff_tail)
+            git = lambda *a: _sp.run(['git', '-C', str(top), *a], capture_output=True, text=True, check=True)
+            git('init', '-q')
+            git('config', 'user.email', 't@t')
+            git('config', 'user.name', 't')
+            git('add', '-A')
+            git('commit', '-qm', 'base')
+            if recorded:
+                (r / 'lean-a' / 'step-1' / 'base-sha').write_text(git('rev-parse', 'HEAD').stdout, encoding='utf-8')
+            for rel, text in change:
+                (top / rel).parent.mkdir(parents=True, exist_ok=True)
+                (top / rel).write_text(text, encoding='utf-8')
+            return r
+
+        NOVER = 'no ## Skipped entry for verifier step 1'
+        r = vs_root('vs-docs', [('docs/specs/x.md', '# x\n'), ('.sdlc/lean-a/notes.md', 'n\n')])
+        rc, out, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(docs-only) close --reason on a docs and records diff needs no verifier: rc={rc} {err!r}',
+               rc == 0 and status(r, 'lean-a') == 'done')
+        sk = (r / 'lean-a' / 'skips.md').read_text(encoding='utf-8')
+        expect('(docs-only) the waiver is recorded as a counting skip entry under ## Skipped',
+               '- skip: verifier; step: all; reason: docs-only diff against ' in sk and sk.index('## Skipped') < sk.index('- skip: verifier'))
+        expect(f'(docs-only) check passes after the waiver: {run(r, "check")[2]!r}', run(r, 'check')[0] == 0)
+        r = vs_root('vs-script', [('docs/specs/x.md', '# x\n'), ('scripts/tool.py', 'x = 1\n')])
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(docs-only) a diff touching one script path still needs a verifier: rc={rc} {err!r}',
+               rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed'
+               and 'docs-only diff' not in (r / 'lean-a' / 'skips.md').read_text(encoding='utf-8'))
+        for rel in ('plugins/p/skills/s/SKILL.md', 'plugins/p/agents/a.md'):
+            r = vs_root('vs-md-' + rel.split('/')[2], [(rel, '# role\n')])
+            rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+            expect(f'(docs-only) a Markdown file under {rel.split("/")[2]}/ still needs a verifier: rc={rc} {err!r}',
+                   rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
+        r = vs_root('vs-red', [('.sdlc/lean-a/notes.md', 'n\n')], base_files=[('docs/loose.md', '# loose\n')])
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(docs-only) a record-only diff that fails docs_check still needs a verifier: rc={rc} {err!r}',
+               rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
+        r = vs_root('vs-override', [('docs/specs/x.md', '# x\n')], handoff_tail='\nverifier: L2\n')
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(docs-only) a verifier: L2 line in the handoff keeps the verifier: rc={rc} {err!r}',
+               rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
+        r = vs_root('vs-nobase', [('docs/specs/x.md', '# x\n')], recorded=False)
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(docs-only) no recorded base keeps the verifier: rc={rc} {err!r}', rc == 1 and NOVER in err)
 
         # ---- migrate-layout: flat to topics, with the cite rewrite ----
         if shutil.which('git') is None:
