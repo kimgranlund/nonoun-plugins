@@ -6,6 +6,7 @@
   dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
+  dispatch.py recover --root DIR          the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414)
   dispatch.py resume [--root DIR] <name>  the ladder for an orphan: SendMessage by name, by id, then a new attempt
   dispatch.py selftest
 
@@ -121,6 +122,7 @@ import sys
 import tempfile
 import time
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -434,13 +436,33 @@ def read_attempt(path):
     return data if isinstance(data, dict) else {}
 
 
+def proc_start_epoch(pid):
+    """Start time of pid in epoch seconds from `ps -o lstart=` (as fleet_status.py reads it), or None when it cannot be read."""
+    try:
+        out = subprocess.run(['env', 'LC_ALL=C', 'ps', '-o', 'lstart=', '-p', str(pid)], capture_output=True, text=True, timeout=5).stdout
+        return time.mktime(time.strptime(' '.join(out.split()), '%a %b %d %H:%M:%S %Y'))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def pid_reused(pid, started_at):
+    """True when pid started after started_at (an ISO time): the host gave a dead parent's pid to a newer process.
+    A start time that cannot be read on either side keeps today's answer (False)."""
+    try:
+        began = datetime.fromisoformat(started_at).timestamp()
+    except (TypeError, ValueError):
+        return False
+    seen = proc_start_epoch(pid)
+    return seen is not None and seen > began
+
+
 def attempt_state(data):
-    """running, completed, failed, or orphaned (running, claude backend, parent pid dead); else the recorded status."""
+    """running, completed, failed, or orphaned (running, claude backend, parent pid dead or reused); else the recorded status."""
     status = data.get('status')
     if status != 'running':
         return status or 'unknown'
     pid = data.get('parent_pid') or data.get('owner_pid')
-    if data.get('backend', 'claude') == 'claude' and isinstance(pid, int) and not pid_alive(pid):
+    if data.get('backend', 'claude') == 'claude' and isinstance(pid, int) and (not pid_alive(pid) or pid_reused(pid, data.get('started_at'))):
         return 'orphaned'
     return 'running'
 
@@ -461,6 +483,44 @@ def recover_orphans(directory, dry_run=False, own=None):
         elif state == 'running' and (data.get('parent_pid') or data.get('owner_pid')) != own:
             live.append('%s (pid %s)' % (path.name, data.get('parent_pid') or data.get('owner_pid')))
     return recovered, live
+
+
+SWEEP_SKIP = ('.git', '.worktrees', 'node_modules')
+
+
+def attempt_dirs(root):
+    """Every folder under root/.sdlc that holds a *.attempt.json, sorted; .git, .worktrees and node_modules are not entered."""
+    found = []
+    for here, dirs, files in os.walk(str(Path(root) / '.sdlc')):
+        dirs[:] = sorted(d for d in dirs if d not in SWEEP_SKIP)
+        if any(f.endswith('.attempt.json') for f in files):
+            found.append(here)
+    return found
+
+
+def recover_root(root):
+    """Restart sweep (T-0414): mark every orphaned attempt under root/.sdlc interrupted. One 'recovered:' line and its
+    'resume:' prepare command per orphan, one 'running:' line per live attempt, else 'no orphaned attempts'."""
+    lines, me = [], Path(__file__).resolve()
+    for directory in attempt_dirs(root):
+        before = {p.name: read_attempt(p) for p in Path(directory).glob('*.attempt.json')}
+        recovered, live = recover_orphans(directory)
+        for name in recovered:
+            data = before[name]
+            lines += ['recovered: %s' % (Path(directory) / name),
+                      '  resume: python3 %s prepare %s %s %s' % (me, data.get('role'), data.get('level'), data.get('handoff'))]
+        lines += ['running: %s' % (Path(directory) / entry) for entry in live]
+    return lines or ['no orphaned attempts']
+
+
+def running_attempt(root, name):
+    """The path of an attempt record under root/.sdlc for agent name that attempt_state reads as running, else None."""
+    for directory in attempt_dirs(root):
+        for path in sorted(Path(directory).glob('*.attempt.json')):
+            data = read_attempt(path)
+            if name in (data.get('agent_name'), data.get('name')) and attempt_state(data) == 'running':
+                return path
+    return None
 
 
 def settle(directory, dry_run):
@@ -1150,7 +1210,8 @@ def main(argv):
     st.add_argument('directory')
     st.add_argument('--orphans', action='store_true', help='print only orphaned attempts')
     rc_ = sub.add_parser('recover', help='mark orphaned attempts interrupted')
-    rc_.add_argument('directory')
+    rc_.add_argument('directory', nargs='?', help='the handoff dir to recover')
+    rc_.add_argument('--root', metavar='DIR', help='instead of a handoff dir: sweep every attempt under DIR/.sdlc (run once after a host or session restart)')
     rs = sub.add_parser('resume', help='print the resume ladder for an orphaned attempt')
     rs.add_argument('name', help='the attempt stem or Agent name')
     rs.add_argument('--root', default='.', help='where to search for attempt records')
@@ -1170,10 +1231,18 @@ def main(argv):
             if args.done:
                 print('pruned: ' + args.done if prune_done(args.root, args.done) else 'not queued: ' + args.done)
             elif args.add:
+                busy = running_attempt(args.root, args.add)
+                if busy:
+                    print('dispatch.py: %s has a running attempt %s; record it before queueing it for pruning' % (args.add, busy), file=sys.stderr)
+                    return 2
                 prune_add(args.root, args.add, args.role, args.level)
                 print('queued: ' + args.add)
             else:
                 print('\n'.join(prune_lines(args.root)))
+        except Refuse as r:
+            for line in r.lines:
+                print(line, file=sys.stderr)
+            return r.rc
         except OSError as e:
             print('dispatch.py: ' + str(e), file=sys.stderr)
             return 2
@@ -1190,6 +1259,14 @@ def main(argv):
                 out = status(args.directory, args.orphans)
             elif args.cmd == 'resume':
                 out = resume(args.name, args.root)
+            elif args.cmd == 'recover' and args.root:
+                if args.directory:
+                    print('dispatch.py: recover takes a handoff dir or --root, not both', file=sys.stderr)
+                    return 2
+                out = recover_root(args.root)
+            elif args.cmd == 'recover' and not args.directory:
+                print('dispatch.py: recover needs a handoff dir or --root DIR', file=sys.stderr)
+                return 2
             else:
                 out = ['marked interrupted: ' + n for n in recover_orphans(args.directory)[0]] or ['no orphaned attempts']
         except Refuse as r:
@@ -2282,6 +2359,53 @@ def selftest():
         with contextlib.redirect_stdout(empty):
             main(['prune', '--root', str(rp)])
         case('prune on an empty queue says so', empty.getvalue().strip() == 'prune: nothing queued')
+
+        # 10b. T-0414: the restart sweep, reused parent pids, and a safe prune --add.
+        sw = tmp / 'sw'
+        init_repo(sw)
+        long_ago = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+
+        def attempt(rel, stem, pid, status='running', started=None, agent=None):
+            path = sw / '.sdlc' / rel / (stem + '.attempt.json')
+            put(path, json.dumps(dict(name=stem, agent_name=agent or stem, role='builder', level='L1', backend='claude', status=status,
+                                      started_at=started or run_lifecycle.now(), parent_pid=pid, handoff=str(sw / '.sdlc' / rel / 'handoff.md'))))
+            return path
+        orphan_a, orphan_b = attempt('t1', 'builder-L1', dead), attempt('t2/step-1', 'builder-L1', dead)
+        skipped = attempt('.worktrees/x', 'builder-L1', dead)
+        liv = attempt('t3', 'verifier-L1', live)
+        out_sw = io.StringIO()
+        with contextlib.redirect_stdout(out_sw):
+            rc_sw = main(['recover', '--root', str(sw)])
+        lines_sw = out_sw.getvalue().splitlines()
+        state_of = lambda path: json.loads(path.read_text(encoding='utf-8')).get('status')
+        case('recover --root marks every orphan under the root interrupted and prints its prepare command',
+             rc_sw == 0 and state_of(orphan_a) == state_of(orphan_b) == 'interrupted' and state_of(skipped) == 'running'
+             and all(('recovered: %s' % o) in lines_sw and lines_sw[lines_sw.index('recovered: %s' % o) + 1]
+                     == '  resume: python3 %s prepare builder L1 %s' % (HERE / 'dispatch.py', o.parent / 'handoff.md') for o in (orphan_a, orphan_b)))
+        case('negative control: recover --root leaves a live-parent attempt running',
+             state_of(liv) == 'running' and 'running: %s (pid %d)' % (liv, live) in lines_sw and 'recovered: %s' % liv not in lines_sw)
+        again_sw = io.StringIO()
+        with contextlib.redirect_stdout(again_sw):
+            main(['recover', '--root', str(sw)])
+        case('recover --root a second time recovers nothing more', again_sw.getvalue().splitlines() == ['running: %s (pid %d)' % (liv, live)])
+        case('orphaned: a parent pid that started after the attempt is read as dead (reused)',
+             attempt_state(dict(status='running', backend='claude', parent_pid=live, started_at=long_ago)) == 'orphaned'
+             and attempt_state(dict(status='running', backend='claude', parent_pid=live, started_at=run_lifecycle.now())) == 'running'
+             and attempt_state(dict(status='running', backend='claude', parent_pid=live, started_at='not a time')) == 'running')
+        busy = attempt('t4', 'solo-T-0414', live, agent='busy-agent')
+        done = attempt('t5', 'solo-T-0415', live, status='completed', agent='done-agent')
+        gone = attempt('t6', 'solo-T-0416', dead, agent='gone-agent')
+        pr_err, pr_out = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(pr_err), contextlib.redirect_stdout(pr_out):
+            rc_busy = main(['prune', '--root', str(sw), '--add', 'busy-agent'])
+            rc_done = main(['prune', '--root', str(sw), '--add', 'done-agent'])
+            rc_gone = main(['prune', '--root', str(sw), '--add', 'gone-agent'])
+        queued_sw = [e['name'] for e in prune_read(str(sw))]
+        case('prune --add refuses an agent whose attempt is still running, exit 2',
+             rc_busy == 2 and 'dispatch.py: busy-agent has a running attempt %s; record it before queueing it for pruning' % busy in pr_err.getvalue()
+             and 'busy-agent' not in queued_sw)
+        case('negative control: prune --add queues an agent whose attempt is completed',
+             rc_done == 0 and queued_sw == ['done-agent', 'gone-agent'] and rc_gone == 0 and 'queued: done-agent' in pr_out.getvalue())
 
         # 11. T-0383: a recorded verdict reaches the requesting receiver with no manual conductor step, and a miss is observable.
         vr = mk(tmp / 'V')
