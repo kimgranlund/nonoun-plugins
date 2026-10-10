@@ -30,6 +30,18 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 - Runner-created temporary worktrees use `SDLC_TMP_WORKTREES`; preserve owned cleanup and stray-worktree reporting. Fanout worktrees (`.worktrees/`, and `.claude/worktrees/` for sub-agent lanes) require project watcher/test exclusions as well as Git ignores.
 - `scripts/supervisor.py` never claims, moves, or reads a message body; a wake it starts follows unattended-run rules (`SDLC_HEADLESS=1`, never push or publish).
 
+## Lanes
+
+Interim directive until the plugin ships its own sweep.
+
+- Where: fanout lanes are `<repo>/.worktrees/fanout/<lane>`, sub-agent lanes `.claude/worktrees/`, role temp trees under `$SDLC_TMP_WORKTREES`. All are gitignored and excluded from watchers.
+- Open: `fanout.py run` or `prep` opens a lane; the ticket is claimed with `claimed_by:`.
+- Close: after `fanout.py land` and `tickets.py close`, remove the lane worktree and branch once their content is on the default branch (ancestor, a MERGED PR whose head sha equals the tip, or every changed file equal).
+- Before removal keep the branch reachable as `refs/archive/<date>/<branch>` and archive its untracked records.
+- Never delete unmerged work. A locked worktree (`git worktree lock`) is a running lane: skip it.
+- Names for new work: `lane/<ticket>-<slug>`, `wave/<N>`, `release/<X.Y.Z>`, annotated tags `vX.Y.Z`. Existing branches keep their names.
+- Until the sweep ships, the maintainer's tool `~/.claude/lane/sweep.py` does the removal; it is a dry run by default.
+
 ## Verification
 
 Use the root validation matrix. Useful focused checks, run from the repository root:
