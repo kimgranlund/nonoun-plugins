@@ -419,3 +419,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0419 | [.0419-standing-managed-block-auth](.0419-standing-managed-block-auth/handoff.md) | Write the standing narrow authorization for managed-block refresh in consumer repos | chore | L1 | P2 | none | 🟢 done |
 | T-0420 | [.0420-redck-execution-tree](.0420-redck-execution-tree/handoff.md) | redck record and verify resolve the shared handoff's checkout, not the lane worktree | bug | L1 | P2 | none | 🟢 done |
 | T-0421 | [0421-bounded-plan-correction-route](0421-bounded-plan-correction-route/handoff.md) | A bounded route for a two-line plan correction after design and criteria are accepted | idea | L2 | P2 | none | ⏳ proposed |
+| T-0422 | [0422-lane-open-close-design](0422-lane-open-close-design/handoff.md) | lane-open, lane-close and lane-wait: design and build plan from the gen-ui-kit spec | feature | L3 | P2 | none | 🔵 ready |
