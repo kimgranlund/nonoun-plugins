@@ -801,12 +801,16 @@ def validate_result(role, path):
 
 def remove_tmp(tree, prefix):
     """Remove the worktrees and directory under the dispatch's tmp prefix, then the empty parents, and say how many worktrees
-    went (T-0426). The prefix must sit strictly under <tree>/.worktrees/tmp and not be a symlink, else nothing is removed. Never raises."""
+    went (T-0426). The prefix must sit strictly under <tree>/.worktrees/tmp, hold no . or .. component, and not be a symlink, else nothing is removed. Never raises."""
     root = os.path.realpath(os.path.join(tree, '.worktrees', 'tmp'))
-    real = os.path.join(os.path.realpath(os.path.dirname(prefix.rstrip('/'))), os.path.basename(prefix.rstrip('/')))
-    if os.path.islink(prefix.rstrip('/')):
+    bare = prefix.rstrip('/')
+    if not bare or any(part in ('.', '..') for part in bare.split(os.sep)):
+        say('refusing to remove %s: it has a . or .. component' % prefix)
+        return
+    if os.path.islink(bare):
         say('refusing to remove %s: it is a symlink' % prefix)
         return
+    real = os.path.join(os.path.realpath(os.path.dirname(bare)), os.path.basename(bare))
     if not real.startswith(root + os.sep):
         say('refusing to remove %s: not under %s' % (prefix, root))
         return
@@ -2328,6 +2332,14 @@ def selftest():
         rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/k3/handoff.md', body=BODY['builder'], validate=lambda role, path: None, mutate={'tmp_prefix': str(tmp_root)})
         case('T-0426 a tmp_prefix equal to .worktrees/tmp itself is refused and the sibling survives',
              rc == 0 and 'refusing to remove' in err and sibling.is_dir())
+        for name, bits in (('k5', ('sibling-role', 'x', '..')), ('k6', ('.',)), ('k7', ('sibling-role', 'x', '..', 'y'))):
+            put(rb / '.sdlc' / name / 'handoff.md')
+            (tmp_root / 'sibling-role' / 'x').mkdir(parents=True, exist_ok=True)
+            odd = os.path.join(str(tmp_root), *bits)
+            rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/%s/handoff.md' % name, body=BODY['builder'], validate=lambda role, path: None, mutate={'tmp_prefix': odd})
+            listed = subprocess.run(['git', '-C', str(rb), 'worktree', 'list', '--porcelain'], capture_output=True, text=True).stdout
+            case('T-0426 a tmp_prefix of %s (a . or .. component) is refused and the sibling survives' % '/'.join(bits),
+                 rc == 0 and 'refusing to remove' in err and 'cleaned:' not in err and sibling.is_dir() and str(sibling) in listed)
         rc, got, _ = prep(rb, 'verifier', 'L1', '.sdlc/k4/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
         failed_wt = Path(got['tmp_prefix']) / 'f'
         subprocess.run(['git', '-C', str(rb), 'worktree', 'add', '--detach', str(failed_wt), 'HEAD'], check=True, capture_output=True)
