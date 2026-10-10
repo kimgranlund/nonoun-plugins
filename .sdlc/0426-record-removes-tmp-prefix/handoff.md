@@ -26,3 +26,9 @@ Maison, 2026-10-10: roles cannot rm -rf their tmp prefix (denied), so the conduc
 
 ## Constraints
 No em or en dashes. No push or publish. Do not remove any worktree or branch outside the role's own tmp prefix.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` passes, including the five `T-0426` cases (two detached worktrees under a recorded role's prefix leave none and print `cleaned: 2 tmp worktrees`; a sibling prefix and an outside worktree survive; a symlinked `tmp_prefix` and `.worktrees/tmp` itself are refused with a message; a failed attempt cleans too).
+- Those cases failed before the change to `remove_tmp` in `scripts/dispatch.py` (symlink case, cleaned line, failed-attempt line).
+- `python3 plugins/sdlc-lite/scripts/check.py`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` pass.
+- No path outside the role's own prefix is removed (inspect `remove_tmp`).

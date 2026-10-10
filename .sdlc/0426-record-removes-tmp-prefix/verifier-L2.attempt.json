@@ -1,0 +1,21 @@
+{
+  "attempt_id": "cad17bf7e879495ca2ba0727ded71208",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-10T21:51:17.839142+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f47/rt",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f47/rt/.sdlc/0426-record-removes-tmp-prefix/handoff.md",
+  "owner_pid": 14371,
+  "handoff_sha256": "1e641b62540d5cf8bb68998628d8db98f55778d57aba360be2a8cc062c070338",
+  "process_pid": 14406,
+  "exit_code": 0,
+  "finished_at": "2026-10-10T21:57:45.275589+00:00"
+}

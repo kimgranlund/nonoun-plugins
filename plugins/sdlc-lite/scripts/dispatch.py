@@ -800,16 +800,23 @@ def validate_result(role, path):
 
 
 def remove_tmp(tree, prefix):
-    """Remove the worktrees and directory under the dispatch's tmp prefix, then the empty parents. Never raises."""
+    """Remove the worktrees and directory under the dispatch's tmp prefix, then the empty parents, and say how many worktrees
+    went (T-0426). The prefix must sit strictly under <tree>/.worktrees/tmp and not be a symlink, else nothing is removed. Never raises."""
     root = os.path.realpath(os.path.join(tree, '.worktrees', 'tmp'))
-    if not os.path.realpath(prefix).startswith(root + os.sep):
+    real = os.path.join(os.path.realpath(os.path.dirname(prefix.rstrip('/'))), os.path.basename(prefix.rstrip('/')))
+    if os.path.islink(prefix.rstrip('/')):
+        say('refusing to remove %s: it is a symlink' % prefix)
+        return
+    if not real.startswith(root + os.sep):
         say('refusing to remove %s: not under %s' % (prefix, root))
         return
+    removed = 0
     try:
         for path, _ in worktrees(tree):
-            if under(path, prefix) or path == prefix:
-                git('worktree', 'remove', '--force', '--force', path, cwd=tree)
-        shutil.rmtree(prefix, ignore_errors=True)
+            if under(path, real):
+                if git('worktree', 'remove', '--force', '--force', path, cwd=tree).returncode == 0:
+                    removed += 1
+        shutil.rmtree(real, ignore_errors=True)
         git('worktree', 'prune', cwd=tree)
         for parent in (root, os.path.dirname(root)):
             try:
@@ -818,6 +825,7 @@ def remove_tmp(tree, prefix):
                 pass
     except OSError as e:
         say('could not clean %s: %s' % (prefix, e))
+    say('cleaned: %d tmp worktrees' % removed)
 
 
 def strays(tree, prefix, attempt):
@@ -2087,7 +2095,7 @@ def selftest():
             rc, cgot, err, out = go(rb, role, 'L1', '.sdlc/ctl%d/handoff.md' % i, body=bad, validate=accept_all)
             case('negative control (%s): an accept-all validator lets the same bad result pass' % label,
                  rc == 0 and attempt_of(cgot)['status'] == 'completed'
-                 and all(l.startswith('dispatch.py: unpriced: ') for l in err.splitlines()))  # T-0402: only the unpriced note
+                 and all(l.startswith(('dispatch.py: unpriced: ', 'dispatch.py: cleaned: ')) for l in err.splitlines()))  # T-0402: only the unpriced note; T-0426: and the cleanup count
 
         # A failed sub-agent: error text and no result; a limit text also leaves the resume marker.
         for name in ('f1', 'f2', 'f3'):
@@ -2289,6 +2297,45 @@ def selftest():
         case('a header the role wrote is replaced by the dispatch header, once', rc == 0 and head_lines[0] == '<!-- role=builder level=L1 model=sonnet effort=low -->'
              and not head_lines[1].startswith('<!--'))
         case('a lane_override carried by the dispatch reaches the runs.jsonl line', lines_of(rb / '.sdlc' / 'g4')[-1].get('lane_override') == 'chain needed')
+
+        # T-0426: record removes every detached worktree under the role's own prefix and says how many; nothing else.
+        for name in ('k1', 'k2', 'k3', 'k4'):
+            put(rb / '.sdlc' / name / 'handoff.md')
+        tmp_root = rb / '.worktrees' / 'tmp'
+        rc, got, _ = prep(rb, 'verifier', 'L1', '.sdlc/k1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        mine = [Path(got['tmp_prefix']) / 'a', Path(got['tmp_prefix']) / 'b']
+        sibling, away = tmp_root / 'sibling-role' / 'wt', tmp / 'away-wt'
+        for path in mine + [sibling, away]:
+            subprocess.run(['git', '-C', str(rb), 'worktree', 'add', '--detach', str(path), 'HEAD'], check=True, capture_output=True)
+        Path(got['result']).write_text(BODY['builder'])
+        e, o = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+            rc = record(got['dispatch_file'], validate=lambda role, path: None)
+        listed = subprocess.run(['git', '-C', str(rb), 'worktree', 'list', '--porcelain'], capture_output=True, text=True).stdout
+        case('T-0426 a recorded role with two detached worktrees under its prefix leaves none and says cleaned: 2 tmp worktrees',
+             rc == 0 and not Path(got['tmp_prefix']).exists() and not any(str(p) in listed for p in mine)
+             and 'cleaned: 2 tmp worktrees' in e.getvalue())
+        case('T-0426 a sibling role prefix and a worktree outside .worktrees/tmp are untouched',
+             sibling.is_dir() and str(sibling) in listed and away.is_dir() and str(away) in listed)
+        link, target = tmp_root / 'link-role', tmp_root / 'link-target'
+        subprocess.run(['git', '-C', str(rb), 'worktree', 'add', '--detach', str(target / 'wt'), 'HEAD'], check=True, capture_output=True)
+        link.symlink_to(target)
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/k2/handoff.md', body=BODY['builder'], validate=lambda role, path: None, mutate={'tmp_prefix': str(link)})
+        listed = subprocess.run(['git', '-C', str(rb), 'worktree', 'list', '--porcelain'], capture_output=True, text=True).stdout
+        case('T-0426 a symlinked tmp_prefix is refused with a message and nothing under it is removed',
+             rc == 0 and 'refusing to remove' in err and 'symlink' in err and link.is_symlink() and (target / 'wt').is_dir()
+             and str(target / 'wt') in listed and 'cleaned:' not in err)
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/k3/handoff.md', body=BODY['builder'], validate=lambda role, path: None, mutate={'tmp_prefix': str(tmp_root)})
+        case('T-0426 a tmp_prefix equal to .worktrees/tmp itself is refused and the sibling survives',
+             rc == 0 and 'refusing to remove' in err and sibling.is_dir())
+        rc, got, _ = prep(rb, 'verifier', 'L1', '.sdlc/k4/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        failed_wt = Path(got['tmp_prefix']) / 'f'
+        subprocess.run(['git', '-C', str(rb), 'worktree', 'add', '--detach', str(failed_wt), 'HEAD'], check=True, capture_output=True)
+        e, o = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+            rc = record(got['dispatch_file'], no_result=True)
+        case('T-0426 a failed attempt also cleans its prefix and says cleaned: 1 tmp worktrees',
+             rc == 1 and not Path(got['tmp_prefix']).exists() and 'cleaned: 1 tmp worktrees' in e.getvalue())
 
         # T-0368 prune: prepare sets the flag per role; record queues exactly the pruneable agents; prune lists and clears the queue.
         for i, role in enumerate(PRUNE_ROLES + ('builder',)):
