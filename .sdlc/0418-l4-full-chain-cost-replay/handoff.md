@@ -29,3 +29,9 @@ Keep-or-loosen list item 1 (plan file /Users/kimgranlund/.claude/plans/inherited
 
 ## Constraints
 No em or en dashes. No push or publish. Read-only on every consumer repo.
+
+## Acceptance criteria
+- `test -f docs/reports/2026-10-09-l4-full-chain-cost-replay.md && grep -q '^## Verdict' docs/reports/2026-10-09-l4-full-chain-cost-replay.md && grep -q '^## Per-step table, T-0040' docs/reports/2026-10-09-l4-full-chain-cost-replay.md && grep -q '^## Per-step table, T-0044' docs/reports/2026-10-09-l4-full-chain-cost-replay.md && grep -q '^## Follow-up ticket text' docs/reports/2026-10-09-l4-full-chain-cost-replay.md && grep -q '^## What would be lost' docs/reports/2026-10-09-l4-full-chain-cost-replay.md` exits 0.
+- `python3 -c "import sys; t=open('docs/reports/2026-10-09-l4-full-chain-cost-replay.md').read(); sys.exit(1 if ('\u2014' in t or '\u2013' in t) else 0)"` exits 0 (no em or en dashes).
+- `python3 plugins/sdlc-lite/scripts/docs_check.py` ends `0 errors` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
+- Spot check of figures against the consumer repo (read only): the sums of `cost_usd` over `.sdlc/match-peer-lightness/runs.jsonl` plus `step-*/runs.jsonl` and over the same files in `.sdlc/ui-standardization` equal $93.38 and $65.31 as the report's totals table states.
