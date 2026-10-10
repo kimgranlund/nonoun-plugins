@@ -2,7 +2,7 @@
 id: T-0423
 title: "Interim written directive: where lanes live, how they open and close, how they are named"
 type: chore           # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Maintainer direction 2026-10-10: finished lanes pile up (sdlc-lite 144 worktrees
 
 ## Constraints
 No em or en dashes. No push or publish. Do not remove any worktree or branch.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
