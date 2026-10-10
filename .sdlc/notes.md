@@ -254,3 +254,5 @@
 2026-10-09: Codex coordination for T-0411 to T-0417 (goal 002 plan). No codex receiver is registered in this repo, so the claim is the claimed_by line in each handoff: claude holds T-0411, T-0412, T-0415; T-0413, T-0414, T-0416, T-0417 are open for Codex until 2026-10-09 +30 min after the maison conductor relay, then claude runs them. Asked via the maison conductor (SendMessage).
 
 2026-10-09: maintainer decision (T-0419): conductors may refresh managed blocks of docs/**/AGENTS.md in their own repo under the narrow rule in `plugins/sdlc-lite/skills/onboard/SKILL.md` (Standing authorization). Anything else (root AGENTS.md, template change, new file, `--force`, other repos) is reported to the maintainer with the diff.
+
+2026-10-10: maintainer decision: the L4 full-chain cost replay (docs/reports/2026-10-09-l4-full-chain-cost-replay.md, verdict: allow chunked solo for L3/L4 with at most 4 chunks) stays a report; no build ticket. Revisit when a solo run is priced (K-001) and n is above 2. The scope-vs-tests lint (T-0416) and the delta verifier (T-0417) were both decided "do not build".
