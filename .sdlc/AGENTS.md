@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a8596ac1a4a1 -->
+<!-- sdlc-lite:managed:start v1 sha256:a71538665b29 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,11 +18,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
   - T-0424 Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config (0424-lane-lifecycle-git-native)
   - T-0427 Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (0427-cascade-guard-design)
-- ready: 4
+- ready: 6
   - T-0422 lane-open, lane-close and lane-wait: design and build plan from the gen-ui-kit spec (0422-lane-open-close-design), claimed by claude 2026-10-10
   - T-0423 Interim written directive: where lanes live, how they open and close, how they are named (0423-lane-directive-interim), claimed by claude 2026-10-10
   - T-0425 redck keys the red checkpoint to the criterion text, so steps.py widen does not invalidate it (0425-redck-key-criterion-hash), claimed by claude 2026-10-10
   - T-0426 dispatch.py record removes the role's own tmp worktree prefix (0426-record-removes-tmp-prefix), claimed by claude 2026-10-10
+  - T-0428 Close-first doctrine: builders, solo and conductor lean toward closing and merging, not layered verification (0428-close-first-doctrine), claimed by claude 2026-10-10
+  - T-0429 No verifier for a ticket that changes only docs, records or reports (0429-skip-verifier-docs-only), claimed by claude 2026-10-10
 - blocked: 0
 - done: 383
 - dropped: 25
