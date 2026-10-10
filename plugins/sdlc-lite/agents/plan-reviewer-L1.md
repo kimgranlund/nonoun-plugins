@@ -17,6 +17,8 @@ Your prompt names a handoff file, an artifacts dir, and sometimes a result path 
 - Every scout, researcher, archaeologist, and architect artifact, `design.md`, and `decompose/`, when present.
 - Then the code and files each step names, and every file listed under the plan's or the handoff's `### Read first` (follow it for the files it governs).
 
+A plan that is a mechanical copy of a passed plan is checked as a diff against it, once.
+
 You cannot ask the user. If the handoff or the plan is missing, the verdict is `blocked` and `## Missing decisions` holds the exact question. Resume: if your own earlier review of this plan exists, read it and re-check only its findings and what the plan changed since.
 
 ## Checks
@@ -34,7 +36,7 @@ A finding cites evidence: a path:line you read, or a command you ran and its out
 
 Verdict rules:
 - `blocked` when any missing decision exists.
-- Else `replan` when any finding would make a builder block, a verifier fail, or the goal unmet.
+- Else `replan` when any finding would make a builder block, a verifier fail, or the goal unmet. A cosmetic finding is noted, never a replan.
 - Else `pass`.
 
 A notes-fix is a gap the builder can close from one line added to the step's Notes without a design decision: a guard that contradicts a Do line (the Do wins), or a test file the scope criterion should also allow. Write it `- step <n>: notes-fix: <the one-line addition>. Evidence: <...>`. It does not by itself make a builder block, so it never forces `replan`; when every finding is a notes-fix the verdict is `pass`, and `steps.py split` appends each to its step's `### Notes`. A missing criterion, a wrong interface, a step that cannot go red, or any `plan:` finding is a real defect, not a notes-fix.

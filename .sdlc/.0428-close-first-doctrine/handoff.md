@@ -2,7 +2,7 @@
 id: T-0428
 title: "Close-first doctrine: builders, solo and conductor lean toward closing and merging, not layered verification"
 type: chore           # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,14 @@ Maintainer direction 2026-10-10: tune builders and agents toward closing issues 
 
 ## Constraints
 No em or en dashes. No push or publish. Model and effort defaults are the maintainer's: change none. Independent verification at ticket close stays; this ticket removes layers above it, not that verifier.
+
+## Acceptance criteria
+- Each role file carries its close-first wording once: `grep -c -F "The goal is a closed step" plugins/sdlc-lite/agents/builder.md` and the same count of 1 for "Your goal is a closed ticket" in solo.md, "a pass is final" in verifier.md, "mechanical copy of a passed plan" in planner.md and plan-reviewer.md, and "close the ticket and merge the lane in the same turn" in conductor.md.
+- Generated agents are current: `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+- Repo checks pass: `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0, and `git diff --check` exits 0.
+- No em or en dashes were added: `git diff -U0 | grep '^+' | grep -c '[—–]'` prints 0 for the changed agent files.
+- Only role wording changed: no edit to levels.json, models.json, hooks or scripts.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
