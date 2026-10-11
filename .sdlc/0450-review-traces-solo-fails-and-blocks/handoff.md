@@ -28,3 +28,7 @@ Baseline and method: `docs/reports/2026-10-11-solo-campaign-baseline.md`. Cost p
 
 ## Constraints
 Read-only against every repo it inspects. Budget: stop at $10 and report. One independent verifier checks a sample of the report's evidence pointers. Mark unchecked claims [U].
+
+## Plan review
+- steps.py split refused planner-L2.md step 1: acceptance criterion compares a count over a changing set with a fixed number: f=$(ls docs/reports/*-solo-fails-and-blocks.md) && test "$(grep -c "propose a ticket" "$f")" -le 3. other lanes change the set: derive the set at run time, or check only this step's own items. plan defect: replan this step (/chain 3)
+- dispatch.py prepare builder L3 refused step-1/handoff.md (steps.py lint links): cited path does not exist: .sdlc/0450-review-traces-solo-fails-and-blocks/sample.py; cited path does not exist: .sdlc/tickets/ (a ui-kit-maison path resolved against this repo). plan defect: replan this step (/chain 3). Second plan-defect refusal for this task: stopped unattended per /chain 3. Note: steps.py lint rejects a .sdlc/ path a step is told to create, and a foreign-repo .sdlc/ path.
