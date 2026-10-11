@@ -26,3 +26,16 @@ Maintainer approved building T-0410 on 2026-10-10 (the plan-doc workflow: plan w
 
 ## Constraints
 No em or en dashes. No push or publish. No model, effort, levels.json or models.json change. The design is the contract; if it is wrong or silent, stop and report a plan defect. One writer at a time on check.py and check.sh: this ticket runs in the same lane as its predecessors. Close-first: run the Done-when checks once, fix what fails, report.
+
+## Acceptance criteria
+- (red) `python3 plugins/sdlc-lite/scripts/plan_check.py plan --text x >/dev/null 2>&1; test $? -eq 1`
+- (red) `out=$(python3 plugins/sdlc-lite/scripts/plan_check.py selftest 2>&1) && for r in plan-front no-approval outcome-block done-measured measure-row measure-safe later-named step-shape depends-order cap-sum executor-unknown verifier-seat review-missing upsert-shape upsert-sweep authorization stop-rules goal-line done-plan-done; do printf '%s\n' "$out" | grep -qE "^ok: plan: $r " || exit 1; done`
+- `python3 plugins/sdlc-lite/scripts/plan_check.py selftest`
+- `out=$(python3 plugins/sdlc-lite/scripts/plan_check.py selftest 2>&1) && printf '%s\n' "$out" | grep -qxF 'ok: plan: steps.py lint accepts the step blocks of GOOD_PLAN'`
+- `python3 plugins/sdlc-lite/scripts/plan_doc.py selftest`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `bash plugins/sdlc-lite/scripts/check.sh`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/plan_doc.py -e plugins/sdlc-lite/scripts/plan_check.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py)"`
+
+verifier: L3

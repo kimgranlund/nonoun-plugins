@@ -190,6 +190,10 @@
    reference; references/outcome-block.md names `Outcome`, `Measured by`, `Rubric`, `Negative control`, `outcome-block`, and `done-measured`; skills/plan-goal/SKILL.md
    names `plan-verification`; skills/plan-goal/references/goal-rules.md names `outcome-block.md`; skills/sdlc-lite/SKILL.md routes to `plan-verification`.
    Item 31 stays for the four block-returning plan skills. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
+49. Plan-doc parser and linter (T-0431): scripts/plan_doc.py exists and names `def parse`, `def table`, `def goal_line`, and `steps.STEP_RE`; scripts/plan_check.py names
+   `GOOD_PLAN`, `def check_plan`, `plan_doc`, and every one of the 19 rule ids of docs/specs/sdlc-lite/plan-doc-executor.md section 3.3 (the list in `PLAN_RULES`) plus the
+   warnings `l1-unverified`, `kpi-drift`, and `kpi-unresolved`; scripts/check.sh runs `plan_check.py" selftest` and `plan_doc.py" selftest`. Negative controls: each phrase and
+   each rule id removed from its file must be flagged. The mutants themselves run in plan_check.py selftest (one case per rule, flagged as exactly that rule).
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -983,6 +987,19 @@ for _name, _phrases in PV_NEEDS:
     for _ph in _phrases:
         if not pv_bad(dict(_pv, **{_name: _pv[_name].replace(_ph, '')})): errors.append(f'check.py: plan verification negative control not flagged for {_name} without "{_ph}"')
 if not pv_bad(dict(_pv, skill=_pv['skill'] + ' harness:x')): errors.append('check.py: plan verification negative control not flagged for a harness reference')
+# Plan-doc parser and linter (docstring item 49): the shared parser, the 19 rule ids of section 3.3 of the plan-doc design, and the selftest wiring.
+PLAN_RULES = ('plan-front', 'no-approval', 'outcome-block', 'done-measured', 'measure-row', 'measure-safe', 'later-named', 'step-shape', 'depends-order', 'cap-sum',
+              'executor-unknown', 'verifier-seat', 'review-missing', 'upsert-shape', 'upsert-sweep', 'authorization', 'stop-rules', 'goal-line', 'done-plan-done')
+PLAN_DOC_NEEDS = (('plan_doc.py', ('def parse', 'def table', 'def goal_line', 'steps.STEP_RE')),
+                  ('plan_check.py', ('GOOD_PLAN', 'def check_plan', 'plan_doc', 'l1-unverified', 'kpi-drift', 'kpi-unresolved') + PLAN_RULES),
+                  ('check.sh', ('plan_check.py" selftest', 'plan_doc.py" selftest')))
+def plan_doc_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in PLAN_DOC_NEEDS for ph in phrases if ph not in texts[name]]
+_pd = {'plan_doc.py': _rd(root/'scripts/plan_doc.py'), 'plan_check.py': _rd(root/'scripts/plan_check.py'), 'check.sh': _rd(root/'scripts/check.sh')}
+errors.extend(f'check.py: plan doc: {m}' for m in plan_doc_bad(_pd))
+for _name, _phrases in PLAN_DOC_NEEDS:
+    for _ph in _phrases:
+        if not plan_doc_bad(dict(_pd, **{_name: _pd[_name].replace(_ph, '')})): errors.append(f'check.py: plan doc negative control not flagged for {_name} without "{_ph}"')
 # Broken-link baseline (docstring item 32): runs only where the repository root is a git work tree (not in a consumer install).
 def links_bad(broken, allowed):
     got, want = set(broken), set(allowed)

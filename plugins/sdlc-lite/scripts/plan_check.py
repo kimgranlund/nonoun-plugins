@@ -2,6 +2,7 @@
 """Lint a planned /goal, /loop, fanout, or campaign block before it is handed to the user.
 
   plan_check.py goal|loop|fanout|campaign [--text T | --file F] [--root .sdlc]
+  plan_check.py plan [--text T | --file F] [--root .sdlc] [--run]
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -10,10 +11,17 @@ A goal also carries the plan-verification outcome block (Outcome, Measured by, R
 `done-measured` are shape checks only, since the script cannot know a `before` value is true. Deterministic: no model call, no network. Fanout flags are read from fanout.py's own parser text, so a flag fanout.py
 does not have is a finding. /goal and /loop cannot run headlessly: their rules come from the skills'
 references (the stop hook checks the goal each turn; /loop parses a leading interval token or a trailing `every N unit`).
+A plan doc (kind `plan`, docs/specs/sdlc-lite/plan-doc-executor.md section 3) is read through plan_doc.py, the parser plan_done.py shares, and
+checked by 19 rules (plan-front, no-approval, outcome-block, done-measured, measure-row, measure-safe, later-named, step-shape, depends-order,
+cap-sum, executor-unknown, verifier-seat, review-missing, upsert-shape, upsert-sweep, authorization, stop-rules, goal-line, done-plan-done) and
+three warnings (l1-unverified, kpi-drift, kpi-unresolved). `--run` adds no-approval, the check that applies only before execution starts. The
+text is never unwrapped, since a plan doc holds a fenced Goal line. The selftest prints one `ok: plan: <rule> ...` line per case.
 """
-import argparse, glob, os, pathlib, re, shlex, subprocess, sys, tempfile
+import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import plan_doc  # noqa: E402  (the shared plan-doc parser)
 HOT = {'check.py', 'check.sh', 'AGENTS.md', 'README.md'}  # shared files that conflict at merge: warn, not fail
 VAGUE = re.compile(r"(?i)looks? good|feels?|seems?|good enough|as needed|when (it's|it is) done|everything works|all done")
 CHECKABLE = re.compile(r"(?i)exit(s)? 0|rc=0|rc 0|\btag\b|origin/main|published|pushed|merged|closed|status: done|\.md\b|"
@@ -444,10 +452,389 @@ def check_campaign(text, root='.sdlc', load=None):
     return fails, warns
 
 
+# ---- plan doc ------------------------------------------------------------------------------------------------
+# docs/specs/sdlc-lite/plan-doc-executor.md section 3.3. plan_doc.py is the one parser (plan_done.py reads it too).
+PLAN_STATUS = ('draft', 'approved', 'running', 'done', 'stopped')
+PLAN_FRONT = ('id', 'title', 'status', 'goal', 'driver')
+UNSAFE_NOW = re.compile(r'\brm\b|git push|\bgh |npm publish|curl -X')
+AUTH_WORDS = (('git push', r'push'), ('git tag', r'\btag'), ('gh pr', r'gh pr|pull request|\bPRs?\b'),
+              ('npm publish', r'publish'), ('onboard.py setup', r'onboard'))
+DRIVER_VERIFIES = re.compile(r'(?i)\bdriver\b[^.\n]{0,40}\bverif(?:y|ies|ier)\b|\bverif\w*\s+(?:is\s+)?(?:done\s+)?by\s+(?:the\s+)?driver\b')
+UPSERT_HOMES = ('docs/', 'plugins/', 'scripts/')
+UPSERT_ROOT_FILES = ('AGENTS.md', 'CLAUDE.md', 'README.md')
+TICKET_RE = re.compile(r'T-\d+|new (?:feature|bug|chore|spike|idea) [\w-]+')
+MEASURE_COLS = ('id', 'command', 'read', 'target', 'direction')
+
+
+def writes_file(cmd):
+    """True when a command redirects into a file; `2>&1` and `>/dev/null` are not writes."""
+    for m in re.finditer(r'(?<![=-])>>?(?![=>])\s*(\S*)', cmd):
+        if not (m.group(1).startswith('&') or m.group(1) == '/dev/null'):
+            return True
+    return False
+
+
+def same_path(a, b):
+    a, b = os.path.normpath(a), os.path.normpath(b)
+    return a == b or a.endswith(os.sep + b) or b.endswith(os.sep + a)
+
+
+def level_rows():
+    try:
+        data = json.loads((HERE.parent / 'adapters' / 'claude' / 'levels.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    return {f'{role}-{lvl}' for role in ('solo', 'builder') for lvl in data.get(role, {})}
+
+
+def goal_kpis(goal, root):
+    """The kpis: ids of the goal file docs/goals/NNN-*.md named by a front matter goal id (G-002), else []."""
+    m = re.fullmatch(r'G-(\d+)', goal or '')
+    d = pathlib.Path(root).resolve().parent / 'docs' / 'goals'
+    if not m or not d.is_dir():
+        return []
+    for f in sorted(d.glob(f'{m.group(1)}-*.md')):
+        k = re.search(r'(?m)^kpis:\s*\[([^\]]*)\]', f.read_text(encoding='utf-8', errors='replace'))
+        if k:
+            return re.findall(r'K-\d+', k.group(1))
+    return []
+
+
+def kpi_drift(rows, root):
+    """Advice only: a Measures row whose command script or target differs from its docs/kpi/NNN-*.md file."""
+    kpi = pathlib.Path(root).resolve().parent / 'docs' / 'kpi'
+    out = []
+    for r in rows:
+        m = re.fullmatch(r'K-(\d+)', r.get('id', ''))
+        files = sorted(kpi.glob(f'{m.group(1)}-*.md')) if m and kpi.is_dir() else []
+        if not files:
+            continue
+        t = files[0].read_text(encoding='utf-8', errors='replace')
+        meas, tgt = re.search(r'(?m)^measure:\s*(.+)$', t), re.search(r'(?m)^target:\s*"?([^"\n]+?)"?\s*$', t)
+        cmd = r.get('command', '').strip('`').split()[:3]
+        if meas and cmd and meas.group(1).split()[:3] != cmd:
+            out.append(('kpi-drift', f'{r["id"]}: the Measures command starts `{" ".join(cmd)}`, the KPI file says `{" ".join(meas.group(1).split()[:3])}`'))
+        elif tgt and r.get('target') and tgt.group(1).strip() != r['target'].strip():
+            out.append(('kpi-drift', f'{r["id"]}: the Measures target is {r["target"]}, the KPI file says {tgt.group(1).strip()}'))
+    return out
+
+
+def check_plan(text, root='.sdlc', run=False, path=None):
+    """(fails, warns) for a plan doc. run adds the checks that apply only before execution starts; path is the file's own path."""
+    fails, warns = [], []
+
+    def bad(rule, why):
+        fails.append((rule, why))
+    doc = plan_doc.parse(text)
+    sec = doc.section
+    # plan-front
+    if not doc.front_ok:
+        bad('plan-front', 'the file must open with a `---` front matter block that is closed')
+    for k in PLAN_FRONT:
+        if doc.front_ok and not doc.front.get(k):
+            bad('plan-front', f'front matter lacks `{k}:`')
+    status = doc.front.get('status', '')
+    if status and status not in PLAN_STATUS:
+        bad('plan-front', f'status `{status}` is not one of {", ".join(PLAN_STATUS)}')
+    if sec('Goal') is None:
+        bad('plan-front', 'missing the `## Goal` section (steps.py reads it)')
+    # no-approval
+    if run:
+        if status not in ('approved', 'running'):
+            bad('no-approval', f'--run needs status approved or running, found `{status or "none"}`')
+        for k in ('approved_by', 'approved_on'):
+            if not doc.front.get(k):
+                bad('no-approval', f'--run needs `{k}:` in the front matter')
+    # outcome-block, done-measured
+    outcome = sec('Outcome')
+    measure = None
+    if outcome is None:
+        bad('outcome-block', 'missing the `## Outcome` section (Outcome, Measured by, Rubric, Negative control)')
+    else:
+        f2, w2, measure = check_outcome(outcome)
+        fails.extend(f2)
+        warns.extend(w2)
+    done = sec('Done when')
+    goal_text, done_rest = plan_doc.goal_line(done)
+    if measure and done is not None:
+        ids, cmds, target = measure
+        d = re.sub(r'\s+', ' ', done_rest)
+        if not (any(i in d for i in ids) or any(c in d for c in cmds) or (target and target in d)):
+            bad('done-measured', 'Done when must name the Measured by id or command, or its target, so closing tickets alone cannot end the plan')
+    # measure-row, measure-safe
+    mrows = []
+    if sec('Measures') is None:
+        bad('measure-row', 'missing the `## Measures` section: one row per KPI the plan reads')
+    else:
+        mhead, mrows = plan_doc.rows_as_dicts(sec('Measures'))
+        miss = [c for c in MEASURE_COLS if c not in mhead]
+        if miss:
+            bad('measure-row', f'the Measures table lacks the column(s) {", ".join(miss)}')
+        elif not mrows:
+            bad('measure-row', 'the Measures table has no rows')
+        for r in [] if miss else mrows:
+            who = r.get('id') or '?'
+            for c in MEASURE_COLS:
+                if not r.get(c):
+                    bad('measure-row', f'Measures row {who} has an empty `{c}` cell')
+            if r.get('command') and not re.fullmatch(r'`[^`]+`', r['command']):
+                bad('measure-row', f'Measures row {who}: the command must be one backticked span')
+            if r.get('direction') and r['direction'] not in ('up', 'down', 'hold'):
+                bad('measure-row', f'Measures row {who}: direction must be up, down or hold')
+            if not r.get('when') or r['when'] == 'now':
+                cmd = r.get('command', '').strip('`')
+                hit = UNSAFE_NOW.search(cmd)
+                if hit or writes_file(cmd):
+                    why = f'contains `{hit.group(0).strip()}`' if hit else 'writes with >'
+                    bad('measure-safe', f'Measures row {who} runs now but its command {why}; a measure only reads')
+    # later-named
+    later = sec('Later measures') or ''
+    named = {r.get('id') for r in mrows} | set(re.findall(r'\bK-\d+\b', later))
+    cited = list(dict.fromkeys(re.findall(r'\bK-\d+\b', outcome or '') + goal_kpis(doc.front.get('goal'), root)))
+    for k in cited:
+        if k not in named:
+            bad('later-named', f'{k} is cited by the Outcome or the goal but is in neither Measures nor Later measures')
+    # steps
+    levels = level_rows()
+    total = None
+    budget = sec('Budget and stop rules')
+    if budget is not None:
+        m = re.search(r'\$\s?(\d+(?:\.\d+)?)\s*(?:total|overall)\b|\b(?:total|overall)\b[^$\n]{0,30}\$\s?(\d+(?:\.\d+)?)', budget)
+        if m:
+            total = float(m.group(1) or m.group(2))
+    if not doc.steps:
+        bad('step-shape', 'no `## Step <n>: <title>` blocks')
+    caps, owners = 0.0, {}
+    for n, st in sorted(doc.steps.items()):
+        k, tag = st.keys, f'step {n}'
+        if st.level is None:
+            if st.level_lines:
+                bad('step-shape', f'{tag}: the level line must read exactly `level: L1` to `level: L5` with nothing after it (steps.py reads it)')
+            else:
+                bad('step-shape', f'{tag}: lacks `level: L1` to `level: L5`')
+        for key in ('ticket', 'depends', 'cap'):
+            if not k.get(key):
+                bad('step-shape', f'{tag}: lacks `{key}:`')
+        if k.get('ticket') and not TICKET_RE.fullmatch(k['ticket']):
+            bad('step-shape', f'{tag}: ticket must be an id like T-0413 or `new feature <slug>`')
+        if k.get('depends') and st.depends() is None:
+            bad('step-shape', f'{tag}: depends must be a list of step numbers like [1, 2]')
+        if k.get('cap'):
+            if st.cap() is None:
+                bad('step-shape', f'{tag}: cap must be a dollar amount like $12')
+            else:
+                caps += st.cap()
+        if not st.criteria:
+            bad('step-shape', f'{tag}: needs a numbered or bulleted list under `### Acceptance criteria`')
+        for crit, spans in zip(st.criteria, st.spans):
+            if VAGUE.search(crit):
+                bad('step-shape', f'{tag}: criterion is vague ("{VAGUE.search(crit).group(0)}"): {crit[:60]}')
+            elif not spans and not re.search(r'(?i)^see ticket\b|[\w-]+\.(?:py|sh|md|json|toml|js)\b', crit):
+                bad('step-shape', f'{tag}: criterion names no backticked command or file: {crit[:60]}')
+        for d in st.depends() or []:
+            if d == n:
+                bad('depends-order', f'{tag}: depends on itself')
+            elif d > n:
+                bad('depends-order', f'{tag}: depends on step {d}, which comes later')
+            elif d not in doc.steps:
+                bad('depends-order', f'{tag}: depends on step {d}, which does not exist')
+        ex = k.get('executor', 'auto')
+        if ex != 'auto' and (levels is None or ex not in levels):
+            bad('executor-unknown', f'{tag}: executor `{ex}` is neither auto nor a solo or builder row of adapters/claude/levels.json')
+        if k.get('verify', 'auto') not in ('auto', 'required'):
+            bad('verifier-seat', f'{tag}: verify must be auto or required, found `{k["verify"]}`')
+        if DRIVER_VERIFIES.search(st.text):
+            bad('verifier-seat', f'{tag}: the text assigns verification to the driver; the verifier is a separate sub-agent')
+        if st.level == 'L1' and k.get('verify', 'auto') == 'auto':
+            warns.append(('l1-unverified', f'{tag} is L1 with verify: auto, so no independent verifier will run'))
+        if st.upserts() and not any(re.search(r'git grep|docs_check\.py', c) for c in st.criteria):
+            bad('upsert-sweep', f'{tag}: lists upserts but no criterion runs `git grep` or `docs_check.py`')
+        for p in st.upserts():
+            owners.setdefault(p, set()).add(n)
+    if total is None:
+        bad('cap-sum', 'Budget and stop rules needs a total dollar cap like `$60 total`')
+    elif caps > total + 1e-9:
+        bad('cap-sum', f'the step caps sum to ${caps:g}, above the total cap of ${total:g}')
+    big = [n for n, st in sorted(doc.steps.items()) if st.level in ('L4', 'L5')]
+    if big and not doc.front.get('reviewed'):
+        bad('review-missing', f'step {big[0]} is {doc.steps[big[0]].level} and the front matter has no `reviewed:` plan-reviewer result')
+    # upsert-shape
+    up = sec('Upserts')
+    if up:
+        _, urows = plan_doc.rows_as_dicts(up)
+        for r in urows:
+            p, mode, stp = r.get('path', '').strip('`'), r.get('mode', ''), r.get('step', '')
+            if mode not in ('create', 'edit', 'retire'):
+                bad('upsert-shape', f'Upserts row {p or "?"}: mode `{mode}` is not create, edit or retire')
+            if not p or p.startswith('/') or '..' in pathlib.PurePosixPath(p).parts or not (
+                    p.startswith(UPSERT_HOMES) or p in UPSERT_ROOT_FILES):
+                bad('upsert-shape', f'Upserts row {p or "?"}: the path must sit in docs/, plugins/, scripts/ or be a root entry file, inside the repository')
+            if not re.fullmatch(r'\d+', stp) or int(stp) not in doc.steps:
+                bad('upsert-shape', f'Upserts row {p or "?"}: step `{stp}` is not a step of this plan')
+            elif p:
+                owners.setdefault(p, set()).add(int(stp))
+    for p, who in sorted(owners.items()):
+        if len(who) > 1:
+            bad('upsert-shape', f'{p} is owned by steps {", ".join(map(str, sorted(who)))}: one writer per file')
+    # authorization
+    auth = sec('Authorization')
+    if auth is None or not auth.strip():
+        bad('authorization', 'state exactly what is authorized (publish, push, tag, onboard.py setup, external writes) or `None`')
+        auth = ''
+    elif not re.match(r'(?i)\s*none\b', auth) and not (
+            re.search(r'(?i)\b(none|not implied|never implied|only|authori[sz]ed)\b', auth)
+            and re.search(r'(?i)publish|push|tag|release|external|write', auth)):
+        bad('authorization', 'state exactly what is authorized (publish, push, tag, onboard.py setup, external writes) or `None`')
+    given = '\n'.join(s for s in re.split(r'(?<=[.;])\s+|\n', '' if re.match(r'(?i)\s*none\b', auth) else auth)
+                      if not re.search(r'(?i)\bnot\b|\bnever\b|\bnone\b|\bno\b', s))
+    for cmd, name in AUTH_WORDS:
+        where = [n for n, st in sorted(doc.steps.items()) if cmd in st.text]
+        if where and not re.search(name, given, re.I):
+            bad('authorization', f'step {where[0]} runs `{cmd}` but Authorization does not name it')
+    # stop-rules
+    if budget is None:
+        bad('stop-rules', 'missing the `## Budget and stop rules` section')
+    else:
+        for why, ok in (('a dollar cap (a number)', re.search(r'\$\s?\d+', budget)), ('the three-529s rule', '529' in budget),
+                        ('the rate or weekly limit rule', re.search(r'(?i)rate|weekly|limit', budget)),
+                        ('where state is written (.sdlc/notes.md, or .sdlc/notes/notes.md)', re.search(r'\.sdlc/notes(/notes)?\.md', budget)),
+                        ('`replan cap: 1`', re.search(r'(?i)replan cap\W{0,3}1\b', budget))):
+            if not ok:
+                bad('stop-rules', f'Budget and stop rules needs {why}')
+    # goal-line, done-plan-done
+    if done is None:
+        bad('goal-line', 'missing the `## Done when` section holding `Goal line:`')
+        bad('done-plan-done', 'missing the `## Done when` section')
+    else:
+        if not goal_text:
+            bad('goal-line', 'Done when needs `Goal line:` with the fenced one-line /goal text')
+        else:
+            mp = re.search(r'plan_done\.py\s+([^\s`]+\.md)\b', goal_text)
+            if not goal_text.startswith('/goal'):
+                bad('goal-line', 'the Goal line must start with `/goal`')
+            elif not mp:
+                bad('goal-line', 'the Goal line must run `plan_done.py <this plan doc>`')
+            elif path and not same_path(mp.group(1), path):
+                bad('goal-line', f'the Goal line runs plan_done.py on {mp.group(1)}, not this file ({path})')
+            elif not (re.search(r'exits?\s+0', goal_text) and re.search(r'exits?\s+4', goal_text) and 'plan done' in goal_text):
+                bad('goal-line', 'the Goal line needs the stop clause: exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop`')
+        if not (re.search(r'plan_done\.py', done_rest) and re.search(r'exits?\s+0', done_rest) and re.search(r'exits?\s+4', done_rest)):
+            bad('done-plan-done', 'Done when must require `plan_done.py` to exit 0, or exit 4 (stopped with state written)')
+    warns.extend(kpi_drift(mrows, root))
+    warns.extend(kpi_unresolved(text, root))
+    return fails, warns
+
+
+GOOD_PLAN = r"""---
+id: PD-reliability
+title: Restart and blocked run reliability
+status: approved
+goal: G-002
+driver: sonnet-high            # the session that runs run-plan
+approved_by: maintainer
+approved_on: 2026-10-09
+---
+## Goal
+Build the restart and blocked run tickets in order, one step per ticket, so G-002 has its measures and its fixes.
+
+## Outcome
+Outcome: a host restart or a blocked run costs minutes, not hours. Why: lost work per interrupted run is the largest cost of unattended runs.
+Measured by: K-002 (`python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d`), before: 34.3, target: <= 15.
+Rubric:
+1. Lost minutes | pass: K-002 reads 15 or below.
+2. No regression | pass: check.sh exits 0 on main.
+3. Time measures listed | pass: K-004 sits under Later measures with an owner and a date.
+Negative control: K-002 reads 34.3 now, above the target of 15, so it is red before any step lands.
+
+## Measures
+| id | command | read | target | direction | before | when |
+|---|---|---|---|---|---|---|
+| K-002 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` | runs.interrupted.lost_min_median | <= 15 | down | 34.3 | now |
+| K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` | results.builder.blocked | <= 1 | down | 4 | now |
+
+## Authorization
+`onboard.py setup` in step 4 only, after `onboard.py check` exits 0. Publish, push, tag and external writes are not implied.
+
+## Budget and stop rules
+Stop and write state to .sdlc/notes.md at $60 total, $20 per step, a rate or weekly limit, or three 529s in a row. replan cap: 1, then stop.
+
+## Step 1: Collector fields for K-002 and K-003
+level: L2
+ticket: new feature collector-fields
+depends: []
+executor: auto
+verify: auto
+cap: $12
+### Do
+Add the new keys to `fleet_collect.py` and the matching selftest cases.
+### Acceptance criteria
+- (red) `out=$(python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest 2>&1) && printf '%s\n' "$out" | grep -qxF 'ok: results: a builder result whose Status is blocked is counted'`
+- (guard) `python3 plugins/sdlc-lite/scripts/fleet_detect.py selftest`
+
+## Step 2: Resume partial work
+level: L2
+ticket: T-0413
+depends: [1]
+executor: solo-L2
+verify: auto
+cap: $12
+### Do
+Make the dispatch record name the lane worktree.
+### Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`
+2. (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
+
+## Step 3: Restart sweep and the internals reference
+level: L3
+ticket: T-0414
+depends: [1, 2]
+executor: builder-L3
+verify: required
+cap: $20
+upserts: [docs/references/sdlc-internals.md]
+### Do
+Add the sweep and describe it in the internals reference.
+### Acceptance criteria
+- (red) `grep -qF 'recover --root' plugins/sdlc-lite/scripts/dispatch.py`
+- `git grep -qF 'recover --root' -- docs/references/sdlc-internals.md`
+- (guard) `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`
+
+## Step 4: Close-out
+level: L1
+ticket: new chore close-out
+depends: [2, 3]
+executor: auto
+verify: required
+cap: $10
+### Do
+Refresh the entry file blocks with `python3 plugins/sdlc-lite/scripts/onboard.py setup`.
+### Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/onboard.py check`
+
+## Upserts
+| path | mode | step |
+|---|---|---|
+| docs/references/sdlc-internals.md | edit | 3 |
+
+## Later measures
+| id | read | owner | date |
+|---|---|---|---|
+| K-004 | per-retro median | maintainer | 2026-11-09 |
+
+## Done when
+Measure: K-002 reads <= 15 by the Measured by command.
+Plan: `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/demo/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote state to .sdlc/notes.md.
+Goal line:
+```
+/goal complete build and verify .sdlc/demo/plan-doc.md by the run-plan skill: done when `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/demo/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote the state. Do not end the turn while it exits 1 and an item is open that you can work on.
+```
+"""
+GOOD_PLAN_PATH = '.sdlc/demo/plan-doc.md'
+
 # ---- driver --------------------------------------------------------------------------------------------------
-def run_check(kind, text, root='.sdlc'):
+def run_check(kind, text, root='.sdlc', run=False, path=None):
     return {'goal': lambda t: check_goal(t, root), 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
-            'campaign': lambda t: check_campaign(t, root)}[kind](text)
+            'campaign': lambda t: check_campaign(t, root), 'plan': lambda t: check_plan(t, root, run, path)}[kind](text)
 
 
 def report(kind, fails, warns, out=print):
@@ -456,7 +843,7 @@ def report(kind, fails, warns, out=print):
     for r, w in warns:
         out(f'warn {r}: {w}')
     if not fails:
-        out(f'ok: {kind} plan passes')
+        out('ok: plan doc passes' if kind == 'plan' else f'ok: {kind} plan passes')
     return 1 if fails else 0
 
 
@@ -535,11 +922,187 @@ GOOD_CAMPAIGN = GOOD_CAMPAIGN.replace('__ROWS__', GOOD_ROWS)
 GOOD_LOOP = "/loop 20m a status update with progress since the last run; stop when .sdlc/notes.md says done"
 
 
+def plan_selftest(expect):
+    """One observed-failing mutant per rule of section 3.3, each of which must be flagged as exactly its rule."""
+    with tempfile.TemporaryDirectory() as d:
+        root = os.path.join(d, '.sdlc')
+        os.makedirs(root)
+        P = GOOD_PLAN
+
+        def rules(text, run=False, root=root, path=GOOD_PLAN_PATH):
+            return sorted({r for r, _ in check_plan(text, root=root, run=run, path=path)[0]})
+
+        def mutant(rule, why, text, run=False, **kw):
+            got = rules(text, run=run, **kw)
+            expect(f'plan: {rule} mutant "{why}" is flagged as exactly {rule}', got == [rule])
+            if got != [rule]:
+                print('  got', got, [w for r, w in check_plan(text, root=root, run=run, path=GOOD_PLAN_PATH)[0]][:3])
+
+        def swap(old, new, count=1):
+            assert old in P, old
+            return P.replace(old, new, count)
+        f, w = check_plan(P, root=root, path=GOOD_PLAN_PATH)
+        expect('plan: GOOD_PLAN passes with no FAIL and no warning', not f and not w)
+        f, w = check_plan(P, root=root, run=True, path=GOOD_PLAN_PATH)
+        expect('plan: GOOD_PLAN passes with --run', not f)
+        expect('plan: GOOD_PLAN passes without a known path', not check_plan(P, root=root)[0])
+        expect('plan: a plan that reports ok exits 0 through report()', report('plan', *check_plan(P, root=root), out=lambda s: None) == 0)
+        expect('plan: a failing plan exits 1 through report()', report('plan', *check_plan('x', root=root), out=lambda s: None) == 1)
+        # plan-front
+        mutant('plan-front', 'driver line deleted', swap('driver: sonnet-high            # the session that runs run-plan\n', ''))
+        mutant('plan-front', 'status: busy', swap('status: approved', 'status: busy'))
+        mutant('plan-front', 'front matter deleted', P[P.index('## Goal'):])
+        mutant('plan-front', 'Goal section deleted', re.sub(r'(?ms)^## Goal\n.*?(?=^## Outcome)', '', P))
+        # no-approval (with --run)
+        mutant('no-approval', 'status: draft with --run', swap('status: approved', 'status: draft'), run=True)
+        mutant('no-approval', 'approved_on deleted with --run', swap('approved_on: 2026-10-09\n', ''), run=True)
+        mutant('no-approval', 'approved_by deleted with --run', swap('approved_by: maintainer\n', ''), run=True)
+        expect('plan: no-approval is silent without --run: a draft plan passes', not check_plan(swap('status: approved', 'status: draft'), root=root)[0])
+        expect('plan: no-approval accepts status running with --run', not check_plan(swap('status: approved', 'status: running'), root=root, run=True)[0])
+        # outcome-block, done-measured (the goal check's own mutants, applied to the plan text)
+        mutant('outcome-block', 'Outcome line deleted', re.sub(r'(?m)^Outcome:.*\n', '', P))
+        mutant('outcome-block', 'Why deleted', swap(' Why: lost work per interrupted run is the largest cost of unattended runs.', ''))
+        mutant('outcome-block', 'before deleted', swap(' before: 34.3,', ''))
+        mutant('outcome-block', 'target deleted', swap(', target: <= 15', ''))
+        mutant('outcome-block', 'Rubric cut to 2', swap('3. Time measures listed | pass: K-004 sits under Later measures with an owner and a date.\n', ''))
+        mutant('outcome-block', 'one pass deleted', swap(' | pass: check.sh exits 0 on main.', ''))
+        mutant('outcome-block', 'Negative control deleted', re.sub(r'(?m)^Negative control:.*\n', '', P))
+        mutant('outcome-block', 'Outcome section deleted', re.sub(r'(?ms)^## Outcome\n.*?(?=^## Measures)', '', P))
+        mutant('done-measured', 'Done when only closes tickets', swap('Measure: K-002 reads <= 15 by the Measured by command.', 'All step tickets are closed.'))
+        mutant('done-measured', 'Done when names a different K id', swap('Measure: K-002 reads <= 15 by the Measured by command.', 'Measure: K-003 reads below its limit.'))
+        expect('plan: done-measured accepts the Measured by command in Done when',
+               not check_plan(swap('Measure: K-002 reads <= 15 by the Measured by command.',
+                                   'Measure: `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` reads 15 or below.'), root=root)[0])
+        # measure-row, measure-safe
+        mutant('measure-row', 'target cell emptied', swap('| runs.interrupted.lost_min_median | <= 15 |', '| runs.interrupted.lost_min_median |  |'))
+        mutant('measure-row', 'command unquoted', swap('| K-002 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-002 | python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d |'))
+        mutant('measure-row', 'direction sideways', swap('| <= 15 | down |', '| <= 15 | sideways |'))
+        expect('plan: measure-row flags a plan with no Measures section',
+               'measure-row' in rules(re.sub(r'(?ms)^## Measures\n.*?(?=^## Authorization)', '', P)))
+        mutant('measure-row', 'direction column deleted', swap('| id | command | read | target | direction | before | when |', '| id | command | read | target | before | when |'))
+        mutant('measure-safe', 'now command contains git push', swap('| K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-003 | `git push origin main` |'))
+        mutant('measure-safe', 'now command writes with >', swap('| K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-003 | `python3 x.py > out.txt` |'))
+        mutant('measure-safe', 'now command contains rm', swap('| K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-003 | `rm -rf out` |'))
+        expect('plan: measure-safe lets a redirect to /dev/null and 2>&1 through',
+               not check_plan(swap('| K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-003 | `python3 x.py 2>&1 >/dev/null` |'), root=root)[0])
+        expect('plan: measure-safe ignores a later measure', not check_plan(swap('| results.builder.blocked | <= 1 | down | 4 | now |', '| results.builder.blocked | <= 1 | down | 4 | later: owner, 2026-11-09 |').replace(
+            '| K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-003 | `git push origin main` |'), root=root)[0])
+        # later-named
+        mutant('later-named', 'Later measures row for K-004 deleted', swap('| K-004 | per-retro median | maintainer | 2026-11-09 |\n', ''))
+        docs = os.path.join(d, 'docs')
+        os.makedirs(os.path.join(docs, 'goals'))
+        goal = pathlib.Path(docs, 'goals', '002-x.md')
+        goal.write_text('---\nid: G-002\nkpis: [K-002, K-004, K-005]\n---\n')
+        mutant('later-named', 'the goal file lists K-005 that the plan never names', P)
+        goal.write_text('---\nid: G-002\nkpis: [K-002, K-003, K-004]\n---\n')
+        expect('plan: later-named is satisfied when Measures and Later measures name every goal KPI', not check_plan(P, root=root, path=GOOD_PLAN_PATH)[0])
+        # kpi warnings never fail
+        os.makedirs(os.path.join(docs, 'kpi'))
+        pathlib.Path(docs, 'kpi', '002-x.md').write_text('---\nid: K-002\ntarget: "<= 20"\nmeasure: python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since <date>\n---\n')
+        f, w = check_plan(P, root=root, path=GOOD_PLAN_PATH)
+        expect('plan: a Measures target that differs from docs/kpi warns kpi-drift and does not fail', not f and any(r == 'kpi-drift' for r, _ in w))
+        expect('plan: a K id with no docs/kpi file warns kpi-unresolved and does not fail', not f and any(r == 'kpi-unresolved' for r, _ in w))
+        pathlib.Path(docs, 'kpi', '002-x.md').write_text('---\nid: K-002\ntarget: "<= 15"\nmeasure: python3 x/other.py collect\n---\n')
+        f, w = check_plan(P, root=root, path=GOOD_PLAN_PATH)
+        expect('plan: a Measures command that differs from docs/kpi warns kpi-drift and does not fail', not f and any(r == 'kpi-drift' for r, _ in w))
+        # step-shape
+        mutant('step-shape', 'cap deleted from step 2', swap('executor: solo-L2\nverify: auto\ncap: $12\n', 'executor: solo-L2\nverify: auto\n'))
+        mutant('step-shape', 'a criterion reading "looks good"', swap('1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`', '1. the record looks good'))
+        mutant('step-shape', 'a criterion with no command or file', swap('1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`', '1. the dispatch record is correct'))
+        mutant('step-shape', 'ticket deleted from step 1', swap('ticket: new feature collector-fields\n', ''))
+        mutant('step-shape', 'depends deleted from step 2', swap('depends: [1]\nexecutor: solo-L2', 'executor: solo-L2'))
+        mutant('step-shape', 'level line with a trailing note', swap('level: L2\nticket: T-0413', 'level: L2  # note\nticket: T-0413'))
+        mutant('step-shape', 'level line deleted', swap('level: L2\nticket: T-0413\n', 'ticket: T-0413\n'))
+        mutant('step-shape', 'criteria list deleted from step 4', swap('- `python3 plugins/sdlc-lite/scripts/onboard.py check`\n', ''))
+        mutant('step-shape', 'ticket that is not an id', swap('ticket: T-0413', 'ticket: soon'))
+        mutant('step-shape', 'cap that is not a dollar amount', swap('cap: $10', 'cap: ten'))
+        expect('plan: step-shape accepts a `see ticket` criterion', not check_plan(swap('1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`', '1. see ticket'), root=root)[0])
+        # depends-order
+        mutant('depends-order', 'step 2 depends on step 3', swap('depends: [1]\nexecutor: solo-L2', 'depends: [3]\nexecutor: solo-L2'))
+        mutant('depends-order', 'step 2 depends on itself', swap('depends: [1]\nexecutor: solo-L2', 'depends: [2]\nexecutor: solo-L2'))
+        mutant('depends-order', 'step 2 depends on an absent step 9', swap('depends: [1]\nexecutor: solo-L2', 'depends: [1, 9]\nexecutor: solo-L2'))
+        # cap-sum
+        mutant('cap-sum', 'a step cap raised so the sum passes the total by $1', swap('cap: $12', 'cap: $19'))
+        mutant('cap-sum', 'total cap missing', swap('at $60 total, $20 per step,', 'at $20 per step,'))
+        expect('plan: cap-sum accepts caps that equal the total', not check_plan(swap('cap: $12', 'cap: $18'), root=root)[0])
+        # executor-unknown
+        mutant('executor-unknown', 'executor: haiku-5.5-high on a step', swap('executor: solo-L2', 'executor: haiku-5.5-high'))
+        mutant('executor-unknown', 'a planner row is not a worker row', swap('executor: solo-L2', 'executor: planner-L2'))
+        mutant('executor-unknown', 'a solo level that does not exist', swap('executor: solo-L2', 'executor: solo-L5'))
+        # verifier-seat
+        mutant('verifier-seat', 'verify: none on an L2 step', swap('verify: auto\ncap: $12\n### Do\nMake', 'verify: none\ncap: $12\n### Do\nMake'))
+        mutant('verifier-seat', 'step text assigns verification to the driver', swap('Make the dispatch record name the lane worktree.', 'Make the dispatch record name the lane worktree. The driver verifies this step.'))
+        mutant('verifier-seat', 'verified by the driver', swap('Make the dispatch record name the lane worktree.', 'Make the dispatch record name the lane worktree; verification is done by the driver.'))
+        f, w = check_plan(swap('verify: required\ncap: $10', 'verify: auto\ncap: $10'), root=root)
+        expect('plan: an L1 step with verify: auto warns l1-unverified and does not fail', not f and any(r == 'l1-unverified' for r, _ in w))
+        # review-missing
+        mutant('review-missing', 'a step raised to L4 with no reviewed:', swap('level: L2\nticket: new feature collector-fields', 'level: L4\nticket: new feature collector-fields'))
+        expect('plan: review-missing is satisfied by a reviewed: line', not check_plan(swap('level: L2\nticket: new feature collector-fields', 'level: L5\nticket: new feature collector-fields').replace(
+            'approved_on: 2026-10-09\n', 'approved_on: 2026-10-09\nreviewed: .sdlc/demo/plan-reviewer-L1.md\n'), root=root)[0])
+        # upsert-shape
+        mutant('upsert-shape', 'the same path listed for steps 3 and 4', swap('| docs/references/sdlc-internals.md | edit | 3 |', '| docs/references/sdlc-internals.md | edit | 3 |\n| docs/references/sdlc-internals.md | edit | 4 |'))
+        mutant('upsert-shape', 'a mode outside the three', swap('| edit | 3 |', '| delete | 3 |'))
+        mutant('upsert-shape', 'a path outside the repository', swap('| docs/references/sdlc-internals.md | edit | 3 |', '| ../outside.md | edit | 3 |'))
+        mutant('upsert-shape', 'a path outside the allowed homes', swap('| docs/references/sdlc-internals.md | edit | 3 |', '| src/app.py | edit | 3 |'))
+        mutant('upsert-shape', 'a step that does not exist', swap('| edit | 3 |', '| edit | 9 |'))
+        expect('plan: upsert-shape accepts a root entry file and a retire row', not check_plan(swap('| docs/references/sdlc-internals.md | edit | 3 |', '| docs/references/sdlc-internals.md | edit | 3 |\n| AGENTS.md | retire | 4 |'), root=root)[0])
+        # upsert-sweep
+        mutant('upsert-sweep', 'the sweep criterion of step 3 deleted', swap("- `git grep -qF 'recover --root' -- docs/references/sdlc-internals.md`\n", ''))
+        # authorization
+        mutant('authorization', 'Authorization reduced to None while step 4 runs onboard.py setup',
+               swap('`onboard.py setup` in step 4 only, after `onboard.py check` exits 0. Publish, push, tag and external writes are not implied.', 'None.'))
+        mutant('authorization', 'a step runs git push that Authorization never names',
+               swap('Add the sweep and describe it in the internals reference.', 'Add the sweep and describe it in the internals reference, then run git push origin main.'))
+        mutant('authorization', 'Authorization section deleted', re.sub(r'(?ms)^## Authorization\n.*?(?=^## Budget)', '', P))
+        mutant('authorization', 'a criterion runs gh pr create', swap("- `python3 plugins/sdlc-lite/scripts/onboard.py check`", "- `gh pr create --fill`"))
+        mutant('authorization', 'Authorization says only that it is vague', swap('`onboard.py setup` in step 4 only, after `onboard.py check` exits 0. Publish, push, tag and external writes are not implied.', 'See the maintainer.'))
+        expect('plan: authorization accepts a push that Authorization names with its condition',
+               not check_plan(swap('Add the sweep and describe it in the internals reference.', 'Add the sweep, then run git push origin lane.').replace(
+                   '`onboard.py setup` in step 4 only,', 'A plain push of the lane branch in step 3 only; `onboard.py setup` in step 4 only,'), root=root)[0])
+        # stop-rules
+        mutant('stop-rules', 'the replan cap clause deleted', swap(' replan cap: 1, then stop.', ''))
+        mutant('stop-rules', 'the three-529s rule deleted', swap(', or three 529s in a row', ''))
+        mutant('stop-rules', 'the state path deleted', swap('write state to .sdlc/notes.md at', 'write state at'))
+        mutant('stop-rules', 'the rate or weekly limit deleted', swap(', a rate or weekly limit', ''))
+        mutant('stop-rules', 'a replan cap of 2', swap('replan cap: 1,', 'replan cap: 2,'))
+        # goal-line
+        mutant('goal-line', 'Goal line pointing at another file', swap(
+            '/goal complete build and verify .sdlc/demo/plan-doc.md by the run-plan skill: done when `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/demo/plan-doc.md`',
+            '/goal complete build and verify .sdlc/other/plan-doc.md by the run-plan skill: done when `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/other/plan-doc.md`'))
+        mutant('goal-line', 'Goal line deleted', re.sub(r'(?ms)^Goal line:\n```.*?```\n', '', P))
+        mutant('goal-line', 'Goal line without the stop clause', swap(', or exits 4 after `plan_done.py stop` wrote the state. Do not end', '. Do not end'))
+        mutant('goal-line', 'Goal line that does not start with /goal', swap('\n/goal complete build', '\ncomplete build'))
+        expect('plan: goal-line accepts the same file named by a different relative form', not check_plan(P, root=root, path='/work/repo/.sdlc/demo/plan-doc.md')[0])
+        # done-plan-done
+        mutant('done-plan-done', 'Done when reduced to "all tickets closed"', swap(
+            'Plan: `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/demo/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote state to .sdlc/notes.md.',
+            'Plan: all step tickets are closed.'))
+        mutant('done-plan-done', 'Done when without the exit 4 clause', swap(', or exits 4 after `plan_done.py stop` wrote state to .sdlc/notes.md.', '.'))
+        # the step blocks the parser extracts are accepted by steps.py lint
+        p = pathlib.Path(d) / 'plan-doc.md'
+        p.write_text(P, encoding='utf-8')
+        r = subprocess.run([sys.executable, str(HERE / 'steps.py'), 'lint', str(p)], capture_output=True, text=True)
+        expect('plan: steps.py lint accepts the step blocks of GOOD_PLAN', r.returncode == 0 and 'steps lint: ok' in r.stdout)
+        if r.returncode:
+            print(r.stdout, r.stderr)
+        r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'plan', '--file', str(p), '--root', root], capture_output=True, text=True)
+        expect('plan: the plan kind on a file other than its Goal line names exits 1 with goal-line', r.returncode == 1 and 'FAIL goal-line' in r.stdout)
+        p2 = pathlib.Path(d) / 'sub' / 'plan-doc.md'
+        p2.parent.mkdir()
+        p2.write_text(P.replace('.sdlc/demo/plan-doc.md', 'sub/plan-doc.md'), encoding='utf-8')
+        r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'plan', '--file', str(p2), '--root', root, '--run'], capture_output=True, text=True, cwd=d)
+        expect('plan: plan --file --run on a good plan exits 0 and prints ok', False if r.returncode else 'ok: plan doc passes' in r.stdout)
+        r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'plan', '--text', 'x'], capture_output=True, text=True)
+        expect('plan: plan --text x exits 1 with FAIL lines', r.returncode == 1 and 'FAIL plan-front' in r.stdout)
+
+
 def selftest():
     bad, n = [], [0]
 
     def expect(label, cond):
         n[0] += 1
+        if label.startswith('plan: '):
+            print(('ok: ' if cond else 'FAIL: ') + label)
         if not cond:
             bad.append(label)
     f, _ = check_goal(GOOD_GOAL)
@@ -690,6 +1253,7 @@ def selftest():
         expect('campaign: a ticket root with 0 tickets warns and does not fail', not f and any(r == 'ticket-root' for r, _ in w))
     f, w = check_campaign(GOOD_CAMPAIGN, root='x/.sdlc', load=(0.5, 8))
     expect('campaign: a root named .sdlc never warns about the ticket root', not any(r == 'ticket-root' for r, _ in w))
+    plan_selftest(expect)
     rc = report('goal', *check_goal(GOOD_GOAL), out=lambda s: None)
     expect('report: a passing block exits 0', rc == 0)
     rc = report('goal', *check_goal('nope'), out=lambda s: None)
@@ -704,14 +1268,17 @@ def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
     ap = argparse.ArgumentParser(prog='plan_check.py', description=__doc__.split('\n')[0])
-    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign'))
+    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign', 'plan'))
     g = ap.add_mutually_exclusive_group()
     g.add_argument('--text')
     g.add_argument('--file')
     ap.add_argument('--root', default='.sdlc')
+    ap.add_argument('--run', action='store_true', help='plan only: add the checks that apply before execution starts')
     a = ap.parse_args(argv)
+    if a.run and a.kind != 'plan':
+        ap.error('--run applies to the plan kind only')
     text = a.text if a.text is not None else (pathlib.Path(a.file).read_text(encoding='utf-8') if a.file else sys.stdin.read())
-    return report(a.kind, *run_check(a.kind, text, a.root))
+    return report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
 
 
 if __name__ == '__main__':
