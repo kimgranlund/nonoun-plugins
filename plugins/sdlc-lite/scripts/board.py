@@ -50,7 +50,8 @@ A step whose newest build a task-dir verifier lists under ## Verified with Verdi
 
 Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
 tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
-where ID is the ticket id and Ticket its status; a task without front matter (or with an unreadable
+where ID is the ticket id and Ticket its status, or `<status> · <area>` when the ticket has a non-empty
+`area:` (area_of; ticket_of keeps its (id, status) tuple); a task without front matter (or with an unreadable
 handoff.md) gets empty cells there. With no front matter anywhere the table stays
 | Task | Step | Status | % |. --summary never shows ticket fields.
 
@@ -316,6 +317,17 @@ def ticket_of(task: pathlib.Path):
     return tuple(v if isinstance(v, str) else '' for v in (meta.get('id'), meta.get('status')))
 
 
+def area_of(task: pathlib.Path) -> str:
+    """The ticket's non-empty string `area:` from its front matter, stripped, else ''. Any read or parse
+    error counts as no area. Kept apart from ticket_of, whose (id, status) tuple other scripts use."""
+    try:
+        meta = tickets.parse((task / 'handoff.md').read_text(encoding='utf-8'))
+    except Exception:
+        return ''
+    a = meta.get('area') if isinstance(meta, dict) else None
+    return a.strip() if isinstance(a, str) else ''
+
+
 def budget_cell(task: pathlib.Path) -> str:
     """'$<spend>/$<ceiling> <percent>%' from budget.report, or '' with no budget or on any error."""
     try:
@@ -338,7 +350,7 @@ def has_step_work(task: pathlib.Path) -> bool:
 # classified in exactly one of these sets; selftest() fails until it is.
 ALWAYS_HIDDEN = frozenset({'dropped'})
 HIDDEN_WITHOUT_STEP_WORK = frozenset({'done'})
-ALWAYS_SHOWN = frozenset({'proposed', 'ready', 'blocked'})
+ALWAYS_SHOWN = frozenset({'proposed', 'ready', 'claimed', 'paused', 'blocked'})
 
 
 def belongs_on_board(task: pathlib.Path) -> bool:
@@ -435,6 +447,9 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
         rows, steps = task_rows(t)
         total_cost += cost(t, est_cost)
         tid, tstatus = fronts[t] or ('', '')
+        area = area_of(t) if fronts[t] is not None else ''
+        if area:
+            tstatus = f'{tstatus} · {area}'
         for task, step, glyph, status, pct in rows:
             key = f'{task}/{step}'
             cell = f'{glyph} {status}'
@@ -943,6 +958,24 @@ def selftest() -> int:
         os.environ.pop('SDLC_BOARD_STATE_DIR', None)
     else:
         os.environ['SDLC_BOARD_STATE_DIR'] = saved_state_dir
+
+    # 6a. A ticket with an area shows `<status> · <area>` in the Ticket cell; one without stays `<status>`.
+    with tempfile.TemporaryDirectory() as atmp:
+        atmp = pathlib.Path(atmp)
+        ar = atmp / 'areas'
+        with_area = task_dir(ar, '0001-a', front.replace('T-0042', 'T-0001').replace(
+            'status: ready\n', 'status: claimed\nclaimed_by: claude 2026-10-11\narea: ui-kit\n'))
+        no_area = task_dir(ar, '0002-b', front.replace('T-0042', 'T-0002'))
+        os.environ['SDLC_BOARD_STATE_DIR'] = str(atmp / 'state')  # keep the state file out of the user cache
+        out = render(ar, [with_area, no_area])
+        if saved_state_dir is None:
+            os.environ.pop('SDLC_BOARD_STATE_DIR', None)
+        else:
+            os.environ['SDLC_BOARD_STATE_DIR'] = saved_state_dir
+        expect(f'a ticket with an area shows status · area, got {out!r}',
+               '| T-0001 | 0001-a | claimed · ui-kit |' in out)
+        expect(f'a ticket without an area shows its bare status, got {out!r}',
+               '| T-0002 | 0002-b | ready |' in out and 'ready ·' not in out)
 
     # 6. Every ticket status is classified for board visibility, and the guard bites.
     known = set(tickets.ENUMS['status'])

@@ -88,14 +88,16 @@ In numbered mode, `close` renames the folder `NNNN-<slug>` to `.NNNN-<slug>`; to
 id: T-NNNN
 title: "..."
 type: feature|bug|chore|spike|idea
-status: proposed|ready|blocked|done|dropped
+status: proposed|ready|claimed|paused|blocked|done|dropped
 size: L1|L2|L3|L4|L5   # the ticket level: L1 small, L2 medium, L3 large, L4 extra large, L5 reserved
 priority: P1|P2|P3
 depends: [T-NNNN, file:<path>, cap:<name>, ...]
 created: YYYY-MM-DD
 from: T-NNNN   # optional, origin ticket id
 provides: [name, ...]   # optional, capability names this ticket delivers
-claimed_by: <harness> <YYYY-MM-DD>   # optional, who works on it; shown in the router; a second claimant checks it first
+claimed_by: <harness> <YYYY-MM-DD>   # optional, who works on it; shown in the router; a second claimant checks it first; required when status is claimed
+paused_reason: <one line>   # required when status is paused
+area: <name>   # optional, one of the areas: line in .sdlc/config; a domain, never a lane
 router: .sdlc/AGENTS.md   # stamped by new: the folder rules (.sdlc/tickets/AGENTS.md with ticket_root: tickets)
 ---
 ```
@@ -106,7 +108,7 @@ Front matter is purely additive: a handoff with no front matter keeps working un
 
 `size` is the ticket level, on the same L1 to L5 scale as the role levels: L1 and L2 go to the `solo` lane by default, L3 and above to the chain (`steps.py lane` decides). A ticket written by an older plugin version may still carry the one-letter size names; `tickets.py` reads each as its level and stores the level whenever it writes the front matter, and `tickets.py migrate-size --apply` rewrites them all at once.
 
-`status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
+`status` here is a person's decision (proposed, ready to build, claimed by someone working on it, paused with a reason, blocked, done, dropped), not build progress. `claimed` requires `claimed_by:` and `paused` requires `paused_reason:`; `area:` must name one of the `areas: a, b, c` names in `.sdlc/config`. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
 
 Origin: this convention comes from the `.sdlc/_templates/` and `CONTEXT.md` of the gen-ui-system-svelte-lite project. The ticket templates this plugin ships are in `skills/ticket/templates/`.
 

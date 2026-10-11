@@ -165,6 +165,24 @@ The lane lifecycle skills and commands carry one directive, whatever tracker the
 
 The rule in four words: no ticket, no lane; no merge, no close. `lane-open` refuses a lane with no claimed ticket; `lane-close` prints `ticket still open` when it closes a merged lane whose ticket is open. Local tickets are enforced by `tickets.py` and `lanes.py`; for GitHub and Linear the skills carry the directive and call the repo's own CLI or MCP tool (`gh issue`, `gh pr`, the Linear tool) when present, and say `ticket not updated: <why>` when absent. This section adds scope to T-0422; the GitHub and Linear half is directive text in the skills only, with no new script.
 
+### 8.2 Ticket fields on Linear and GitHub
+
+How the local ticket fields map onto each tracker. This is mapping text only: no integration is built.
+
+| Field | Linear | GitHub |
+|---|---|---|
+| status proposed | Backlog | open, label `status:proposed` |
+| status ready | Todo | open, label `status:ready` |
+| status claimed | In Progress, with the assignee | open, the assignee, label `status:claimed` |
+| status paused | a `Paused` state when the team has one, else Backlog with label `paused` | open, label `status:paused`, the `paused_reason` as a comment |
+| status blocked | label `blocked` (Linear has no default blocked state) | open, label `status:blocked` |
+| status done | Done | closed as completed |
+| status dropped | Canceled | closed as not planned |
+| area | a team when the workspace has one team per area, else label `area:<name>` | label `area:<name>` |
+| size L1 to L4 | estimate 1 to 4 on the linear scale | labels `size:L1` to `size:L4` |
+
+L5 is reserved and unmapped. No migration: existing tickets need no migration, an absent `area` is valid and every existing status stays valid.
+
 ## 9. Wait and auto-merge
 
 `lanes.py wait <name> <pr>` polls `gh pr view <pr> --json state` every 45 seconds up to `--timeout` (default 6 hours; the spec's loop has no limit and spins forever on a `gh` error). `MERGED` runs `close` with `into` the PR's base as a fetched remote-tracking ref, which closes by content after a squash merge. `CLOSED` prints `PR <n> closed, lane <name> left open` and exits 1. A timeout exits 3 and leaves the lane.
