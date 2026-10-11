@@ -1,0 +1,38 @@
+{
+  "attempt_id": "2c6fae4dbe0747cf8ce7f9345231c449",
+  "name": "planner-L2",
+  "agent_name": "0441-planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "subagent",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "normal feature with an existing architect design (T-0440); planner L2 per rubric",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-11T19:35:52.990367+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/a",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/a/.sdlc/0441-overlay-mechanism-builder-ends/handoff.md",
+  "parent_pid": 46734,
+  "parent_pid_source": "claude",
+  "handoff_sha256": "814784c4753b411ea1cd682a9f32b50272237221c020017c563fd8d8b326c79e",
+  "worktrees_before": [
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/a",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/b",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/c",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/integration"
+  ],
+  "branches_before": [
+    "fanout/2026-10-11",
+    "fanout/2026-10-11-a",
+    "fanout/2026-10-11-b",
+    "fanout/2026-10-11-c",
+    "main"
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-11T19:59:19.580968+00:00",
+  "result_sha256": "3011e46c39c70a0a8d1408a3c586ab54efcba8e4af62239966d9ce22f943acd6",
+  "agent_id": "a4cb9777acc05135c"
+}

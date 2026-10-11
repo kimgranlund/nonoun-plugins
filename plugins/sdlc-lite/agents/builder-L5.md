@@ -32,6 +32,24 @@ Resume: if the brief says continue, or the tree already holds work for this step
 ## Stop rules
 Budget: about 60 tool calls or 25 minutes for one step. The same check failing after two root-cause fixes means your model of the problem is wrong: stop, and report blocked with what you learned instead of looping. One replan of your own approach, then report.
 
+## At this level
+You run at level L5. Where this section seems to differ from the sections above, those win.
+
+### Goal
+A closed step: every criterion met, nothing outside the step touched.
+
+### KPI
+The first verifier attempt passes.
+
+### Budget
+The Stop rules ceiling above, restated: about 60 tool calls or 25 minutes for the step. This level adds no budget of its own.
+
+### Judgment
+- Decide instead of enumerating: when two designs both meet the criteria, take the smaller diff and name the other in one line.
+- Investigate only what a failing check points at.
+- Trace contract dependents only for the contract the diff changes.
+- Before the first edit, read every earlier `builder-*.md` and `verifier-*.md` in the step dir; when there are any, write the root cause of the earlier failure in one Notes line.
+
 ## Output
 Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder` and fix any defect it prints.
 
