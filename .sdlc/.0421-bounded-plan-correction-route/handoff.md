@@ -2,7 +2,7 @@
 id: T-0421
 title: "A bounded route for a two-line plan correction after design and criteria are accepted"
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,7 @@ No em or en dashes. No push or publish.
 - [ ] It defines what counts as bounded, the review the correction gets, what forces the normal route, the interaction with the replan cap, and a negative control.
 - [ ] `python3 plugins/sdlc-lite/scripts/docs_check.py` reports 0 errors and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - [ ] The design contains no em or en dash, and `git diff --check` is clean.
+
+## Closed
+
+2026-10-11: built and verified in wave 32 (verifier L2 pass), merged

@@ -2,7 +2,7 @@
 id: T-0441
 title: "Per-level prompt overlays: generator mechanism plus builder L1 and L5 overlays"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,12 @@ Model and effort rows unchanged. Hard invariants never vary by tier. Never hand-
 
 ## Plan review
 - plan defect: step 2: dispatch.py prepare refused the step handoff (steps.py lint): cited path does not exist: .sdlc/0441-overlay-mechanism-builder-ends/live-builder-L1.md and .sdlc/0441-overlay-mechanism-builder-ends/live-builder-L1.cmd. These are outputs the step creates; name them so lint does not read them as cited inputs (for example put them in the step dir, not as backticked paths that must exist). Step 1 passed verification (step-1/verifier-L2.md); replan step 2 only and keep step 1 unchanged.
+
+## Closed
+
+2026-10-11: warnings acknowledged: red controls recorded after the first edit in step 2; every step verifier passed, check.sh exit 0 on the integration branch; the live run shows the overlay in the definition, not changed behavior, which T-0442 measures
+
+> - process deviation: red-checkpoint: retrospective: attempt 7814d8e5fd81416c80aa2e7b16a4fe9f, handoff sha256 6888c4b7a99c, 4 of 4 (red) criteria in step 2 had no pre-edit red control. These are the live-run file checks (`test -s` and `test -f` on the live-run files). The builder says `redck.py record` ran before any edit in step 2 but logged the controls as retrospective, because step 1's files already differed from base. The step 2 verifier passed, and a passing verdict does not clear this deviation. The verifier did run its own red checks: the AGENTS.md grep counts 0 at base, and the live-run files do not exist at base.
+> - Both steps passed: step 1 (verifier L2) and step 2 (verifier L1). Step 1 has no `process-deviations.md`.
+> - The handoff's Plan review records one plan defect: step 2's first handoff cited output paths that did not exist yet. The planner replanned step 2 only, and step 1 stayed unchanged.
+> - The step 2 live run proves less than the "Done when" line suggests. It shows that `claude -p --agent sdlc-lite:builder-L1` exited 0 and that its report has `## Status` and no `## At this level`. That the generated builder-L1 definition carries the overlay block rests on a grep of `agents/builder-L1.md`. Nothing in the artifacts shows the live agent acting on the overlay's content.

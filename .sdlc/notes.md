@@ -269,3 +269,15 @@
 - 2026-10-11T13:33:15Z plan plan-doc-hardening stopped: fanout.py land exit 2: fanout: T-0437: no ticket on branch worktree-agent-a0579753badd86311 has this id (host made the sub-agent worktree from base a9d42334, before the T-0437 claim commit d7bea393; solo built 4a59f78c); resume: python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/plan-doc-hardening/plan-doc.md
 
 2026-10-11: retro 12h (docs/reports/2026-10-11-fleet-retro-12.md) approved for filing by the maintainer: T-0445 (collector and recover: a completed attempt is never counted or marked interrupted, outcome metric K-002 lost_min_total, before 1364.7) and T-0446 (record finds the sub-agent transcript without a flag, outcome metric K-001). Both L2; queue after wave 32.
+
+## T-0441: Per-level prompt overlays: generator mechanism plus builder L1 and L5 overlays (2026-10-11)
+
+- note: T-0441's live run shows only that the builder-L1 dispatch ran, exited 0 and reported without the overlay heading. Whether the overlay changes builder behavior is left to the A/B in T-0442.
+- note: Step 2's four (red) live-run criteria were recorded retrospectively, because step 1's changes already existed when `redck.py record` ran. A later multi-step task that edits files in step 1 and checks them in step 2 will hit the same deviation.
+- note: `check.py` item 52 was not mutation-tested by the verifier. Its three controls were read, not broken, so the gate's bite rests on reading alone.
+
+## T-0444: Ticket vocabulary: add area, status claimed and status paused (2026-10-11)
+
+- decide: `fanout.py prep` and the run-plan rules claim a lane with `claimed_by:` alone and leave `status: ready`. That stays valid, but the roadmap and `/board` never show `claimed` for fanout lanes until they also set `status: claimed`. A person must choose whether they should.
+- note: `.sdlc/config` has no `areas:` line in this repo, so the area check and Area column are untested against a real populated root. The handoff names `ui-kit, front-end, back-end, data-lake, agent-os` as the intended list.
+- note: The 7-status list is copied into the router block, the ticket templates and the handoff-format and ticket skills. A future status must be edited in each of those places.
