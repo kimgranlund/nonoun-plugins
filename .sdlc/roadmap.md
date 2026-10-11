@@ -431,4 +431,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0431 | [.0431-plan-doc-parser-and-check](.0431-plan-doc-parser-and-check/handoff.md) | Plan-doc parser and plan_check.py plan | feature | L2 | P2 | none | 🟢 done |
 | T-0432 | [.0432-plan-done-script](.0432-plan-done-script/handoff.md) | plan_done.py: the condition a /goal stop hook evaluates | feature | L2 | P2 | T-0431 | 🟢 done |
 | T-0433 | [.0433-plan-doc-and-run-plan-skills](.0433-plan-doc-and-run-plan-skills/handoff.md) | The plan-doc and run-plan skills, with the live rehearsal | feature | L2 | P2 | T-0432 | 🟢 done |
-| T-0434 | [0434-plan-doc-docs-and-first-plan](0434-plan-doc-docs-and-first-plan/handoff.md) | Docs and the first customer plan doc (goal 002 wrapped) | chore | L1 | P2 | T-0433 | 🔵 ready |
+| T-0434 | [.0434-plan-doc-docs-and-first-plan](.0434-plan-doc-docs-and-first-plan/handoff.md) | Docs and the first customer plan doc (goal 002 wrapped) | chore | L1 | P2 | T-0433 | 🟢 done |
