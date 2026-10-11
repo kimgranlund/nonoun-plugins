@@ -30,4 +30,6 @@ These are descriptive views, not mandatory stored states or a strictly linear pr
 
 Before claiming reuse, exercise the public interface from a separate consumer context with only the advertised dependencies and context. Record what it needed, what failed, and what remains platform-specific. Portable is always qualified: across which hosts, environments, versions, and uses?
 
+For that consumer exercise, distinguish the advertised inputs, context actually delivered, explicit retrievals and observed behavior. Extra undeclared context narrows the supported reuse claim until declarations are repaired and the affected exercise repeats. A fresh session is not filesystem isolation; qualify any required access boundary separately and label an unenforced exercise accordingly. Keep experimental enforcement with the runner owner.
+
 A release pointer is optional. If used, point to an immutable revision plus the applicable assessment; avoid copying mutable “passed” flags into a catalog. One-off deliverables can be complete without being released.
