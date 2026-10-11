@@ -86,7 +86,8 @@ it then does the following.
                "tokens x blended"); with no tokens it is null with cost_reason "subagent usage not priced", never zero, the row holds unpriced true and stderr
                says `unpriced: <name> has no cost row; pass --transcript <jsonl>` (T-0402);
                usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given; --transcript <jsonl>
-               replaces the token count with the transcript's summed usage fields, priced per field (T-0328).
+               replaces the token count with the transcript's summed usage fields, priced per field (T-0328); with --agent-id and no
+               --transcript, the one file <projects>/*/*/subagents/agent-<id>.jsonl is used (T-0446; none or several: unpriced as above).
   validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
                <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3.
   no result yet  no result file, empty stdin, and no transcript result: record prints `no result yet at <path>; the
@@ -965,6 +966,20 @@ def queue_prune(d, attempt, agent_id):
     return True
 
 
+def find_subagent_transcript(agent_id):
+    """T-0446: the host keeps a sub-agent's transcript at <projects>/<project>/<session>/subagents/agent-<agent id>.jsonl
+    (projects: SDLC_CLAUDE_PROJECTS, else ~/.claude/projects). Returns its path when exactly one such file exists, else None:
+    several matches are never guessed between, and an id that is not a plain file-name part reads nothing."""
+    if not agent_id or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', agent_id):
+        return None
+    base = Path(os.environ.get('SDLC_CLAUDE_PROJECTS') or Path.home() / '.claude' / 'projects')
+    try:
+        hits = [p for p in base.glob('*/*/subagents/agent-%s.jsonl' % agent_id) if p.is_file() and not p.is_symlink()]
+    except OSError:
+        return None
+    return str(hits[0]) if len(hits) == 1 else None
+
+
 def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None, transcript=None, no_result=False):
     """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused or no result yet, 3 invalid result).
 
@@ -1230,7 +1245,7 @@ def main(argv):
     r.add_argument('--agent-id', help='the sub-agent id the Agent tool returned')
     r.add_argument('--tokens', type=int, help='subagent_tokens from the completion notice')
     r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
-    r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run')
+    r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run (default with --agent-id: found under ~/.claude/projects)')
     r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
     r.add_argument('--no-result', action='store_true', help='close the attempt failed when no result file, stdin, or transcript result exists (default: exit 2 and leave it running)')
     dl = sub.add_parser('deliver', help='send (or confirm sent) the verdict message a dispatch asked for with --notify; idempotent')
@@ -1309,6 +1324,8 @@ def main(argv):
         print('\n'.join(out))
         return 0
     if args.cmd == 'record':
+        if args.agent_id and not args.transcript:  # T-0446: no flag, find the sub-agent's own transcript; none found keeps the unpriced line
+            args.transcript = find_subagent_transcript(args.agent_id)
         used = {k: v for k, v in (('subagent_tokens', args.tokens), ('tool_uses', args.tool_uses)) if v is not None}
         if args.transcript:  # T-0328: the notice count excludes cache reads; the transcript usage does not
             used = {**(cost_estimate.transcript_usage(args.transcript) or {}), **{k: v for k, v in used.items() if k != 'subagent_tokens'}} \
@@ -2222,6 +2239,32 @@ def selftest():
         case('record with notice tokens writes no unpriced field', 'unpriced' not in line)
         case('record with a transcript writes resolved_model beside the alias', lines_of(rb / '.sdlc' / 'c3')[-1].get('resolved_model') == 'claude-haiku-5-5')
         case('record with no transcript writes no resolved_model', 'resolved_model' not in lines_of(rb / '.sdlc' / 'c4')[-1])
+        # T-0446: --agent-id alone finds subagents/agent-<id>.jsonl under the Claude projects folder and prices as --transcript does.
+        proj = rb / 'claude-projects'
+        for d in ('-p1/s1/subagents', '-p2/s2/subagents'):
+            (proj / d).mkdir(parents=True, exist_ok=True)
+        (proj / '-p1/s1/subagents/agent-ag-find.jsonl').write_text(tr.read_text())
+        (proj / '-p1/s1/subagents/agent-ag-two.jsonl').write_text(tr.read_text())
+        (proj / '-p2/s2/subagents/agent-ag-two.jsonl').write_text(tr.read_text())
+        env_find = {**env_cli, 'SDLC_CLAUDE_PROJECTS': str(proj)}
+        found = {}
+        for nm, aid in (('f1', 'ag-find'), ('f2', 'ag-none'), ('f3', 'ag-two'), ('f4', '../ag-find')):
+            put(rb / '.sdlc' / nm / 'handoff.md')
+            rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
+            Path(got['result']).write_text(BODY['builder'])
+            up = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--agent-id', aid, got['dispatch_file']],
+                                capture_output=True, text=True, env=env_find, stdin=subprocess.DEVNULL)
+            found[nm] = (up.returncode, up.stderr, got['name'], lines_of(rb / '.sdlc' / nm)[-1])
+        case('record with --agent-id and no --transcript finds the sub-agent transcript: priced row, resolved_model, no unpriced line',
+             found['f1'][0] == 0 and 'unpriced' not in found['f1'][1] and 'unpriced' not in found['f1'][3]
+             and isinstance(found['f1'][3].get('cost_usd'), float) and found['f1'][3].get('resolved_model') == 'claude-haiku-5-5')
+        case('record with an --agent-id that has no transcript still prints the unpriced line, exit 0, and the row holds unpriced true',
+             found['f2'][0] == 0 and ('unpriced: %s has no cost row; pass --transcript <jsonl>' % found['f2'][2]) in found['f2'][1]
+             and found['f2'][3].get('unpriced') is True and found['f2'][3].get('cost_usd') is None)
+        case('record with an --agent-id matching two transcripts takes none: unpriced',
+             found['f3'][0] == 0 and 'unpriced:' in found['f3'][1] and found['f3'][3].get('unpriced') is True)
+        case('record with a path-shaped --agent-id reads no transcript: unpriced',
+             found['f4'][0] == 0 and 'unpriced:' in found['f4'][1] and found['f4'][3].get('unpriced') is True)
         # T-0343: the artifact comes from the transcript when the file and stdin are empty.
         good = {'message': {'id': 'm2', 'role': 'assistant', 'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': BODY['builder']}]}}
         for nm, rec_ in (('c5', good), ('c6', {'message': {**good['message'], 'stop_reason': 'max_tokens'}})):

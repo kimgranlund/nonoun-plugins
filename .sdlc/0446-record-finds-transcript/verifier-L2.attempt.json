@@ -1,0 +1,21 @@
+{
+  "attempt_id": "6ccee425c90f4ea3bacadb5bf331ab55",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-11T23:25:25.897506+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/d",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/d/.sdlc/0446-record-finds-transcript/handoff.md",
+  "owner_pid": 12464,
+  "handoff_sha256": "c0972699661749de1beaaf27b4962598e88aa4d36e9736b86b31f2cfbcf2ab48",
+  "process_pid": 12508,
+  "exit_code": 0,
+  "finished_at": "2026-10-11T23:50:57.310082+00:00"
+}
