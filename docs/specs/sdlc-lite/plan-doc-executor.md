@@ -1,6 +1,6 @@
 # Plan doc, plan_done.py and run-plan
 
-Status: design, not built, awaiting the maintainer's approval (ticket T-0410, 2026-10-09). Version 0.1. Nothing in section 8 is built by T-0410: the build is four tickets filed after approval. Evidence labels: [V] read in the file or command named, [I] inferred, [D] a decision this design makes for approval.
+Status: built (design T-0410, approved 2026-10-10; build tickets A to D, T-0431 to T-0434). Version 0.2. The first customer plan doc is `.sdlc/plan-reliability-docs/plan-doc.md`; its live run is the maintainer's call (section 8). Evidence labels: [V] read in the file or command named, [I] inferred, [D] a decision this design makes for approval.
 
 ## 1. Answer in one paragraph
 
