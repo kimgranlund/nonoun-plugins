@@ -1,8 +1,0 @@
-{
-  "replans": 0,
-  "stopped": {
-    "reason": "step 1 (T-0436): the host made the solo sub-agent worktree from base 80773960 (release-0.22.3), not from main HEAD d873037e, so run-rules.md, the ticket folder and the live-run report are missing there; the solo reported blocked with nothing changed. No run-rule covers a stale host worktree base.",
-    "time": "2026-10-11T13:04:30Z",
-    "resume": "python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/plan-doc-hardening/plan-doc.md"
-  }
-}
