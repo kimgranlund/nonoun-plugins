@@ -475,6 +475,8 @@ def recover_orphans(directory, dry_run=False, own=None):
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
         state = attempt_state(data)
+        if state == 'orphaned' and results.attempt_reported(path, data.get('role')):
+            continue  # T-0445: its result file holds a verdict; never mark it interrupted (status shows report-written-unrecorded)
         if state == 'orphaned':
             if not dry_run:
                 data.update(status='interrupted', finished_at=run_lifecycle.now(), recovery=RECOVERY)
@@ -1912,6 +1914,12 @@ def selftest():
         case('resume refuses a running attempt', refused)
         a['parent_pid'] = dead
         (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (w / 'builder-L1.md').write_text('<!-- role=builder level=L1 model=sonnet effort=low -->\n## Status\ndone\n')
+        rec_rep, _ = recover_orphans(w)
+        rep_r = json.loads((w / 'builder-L1.attempt.json').read_text())
+        case('recover leaves a dead-parent attempt whose result holds a verdict alone (T-0445)',
+             rec_rep == [] and rep_r['status'] == 'running' and 'recovery' not in rep_r)
+        (w / 'builder-L1.md').unlink()
         rec, _ = recover_orphans(w)
         old_r = json.loads((w / 'builder-L1.attempt.json').read_text())
         case('recover marks it interrupted with run_lifecycle.py text', rec == ['builder-L1.attempt.json'] and old_r['status'] == 'interrupted'
