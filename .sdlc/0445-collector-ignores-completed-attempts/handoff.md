@@ -24,3 +24,10 @@ Evidence: `docs/reports/2026-10-11-fleet-retro-12.md` row 1; the files `.sdlc/.0
 
 ## Constraints
 No model or effort change. Preserve the K-002 definition in `docs/kpi/002-*.md`; update it only if the definition text is now wrong.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest` exits 0 and prints `ok: interrupted: an attempt whose result file holds a verdict is not counted` and `ok: negative control: an interrupted attempt whose result holds no verdict is still counted`.
+2. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and prints `ok: recover leaves a dead-parent attempt whose result holds a verdict alone (T-0445)` and `ok: recover marks it interrupted with run_lifecycle.py text` (the negative control).
+3. `python3 plugins/sdlc-lite/scripts/results.py selftest` exits 0.
+4. `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 2026-10-11` reports `runs.interrupted.lost_min_total` 0.
+5. `bash plugins/sdlc-lite/scripts/check.sh` exits 0.

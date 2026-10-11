@@ -22,8 +22,8 @@ A verifier criterion has four states (T-0408, docs/specs/sdlc-lite/verifier-held
 structure_error) refuses Verdict pass beside any criterion line that is not pass, and a held line with no #ref
 or no Evidence text. criteria_states and settled_refs read those lines for steps.py.
 
-Importable from the same scripts/ dir: SCHEMA, ROLES, validate, structure_error, key_value, criteria_states,
-settled_refs.
+Importable from the same scripts/ dir: SCHEMA, ROLES, validate, structure_error, key_value, attempt_reported,
+criteria_states, settled_refs.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile
 
@@ -167,6 +167,15 @@ def key_value(path, role):
         return _token(role, value) if present else None
     except Exception:
         return None
+
+
+def attempt_reported(attempt_path, role):
+    """True when the result file beside an attempt record (<stem>.md for <stem>.attempt.json) holds a key-section
+    value from SCHEMA (a verdict): the role finished and reported, whatever the record's status says (T-0445)."""
+    name = os.path.basename(attempt_path)
+    if not name.endswith('.attempt.json'):
+        return False
+    return key_value(os.path.join(os.path.dirname(attempt_path), name[:-len('.attempt.json')] + '.md'), role) is not None
 
 
 CRITERION_RE = re.compile(

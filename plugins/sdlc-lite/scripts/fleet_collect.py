@@ -47,7 +47,8 @@ the repo's whole history, not one checkout. The lane of a run is the effective l
 `skips.md`: the last `Lane: <lane> ...` prose line (a conductor override) wins over the last `- lane: <lane>;`
 line under `## Lane` (the steps.py record); `lean` counts as `full`; role `solo` is always `solo`; no skips.md
 means `full` unless the role is solo. interrupted counts `*.attempt.json` files whose status is `interrupted`,
-deduplicated by attempt_id. lost_min of an interrupted attempt is the minutes from its started_at to the started_at
+deduplicated by attempt_id; one whose result file (<stem>.md beside <stem>.attempt.json) already holds a verdict
+is not counted (T-0445). lost_min of an interrupted attempt is the minutes from its started_at to the started_at
 of the next attempt record of the same role in the same directory, else to its own finished_at (null with neither);
 the median and total skip a null. orphaned counts attempt records still `running` on the claude backend (the default)
 that started in the window and whose parent_pid (else owner_pid) is dead now (the kill(pid, 0) test of
@@ -63,6 +64,8 @@ Exit codes: 0 ok (a repo with no `.sdlc` included), 2 usage or a missing repo.
 import collections, datetime, json, math, os, re, shutil, signal, statistics, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import results  # noqa: E402
 PLUGIN_ROOT = os.path.dirname(HERE)
 UTC = datetime.timezone.utc
 
@@ -472,6 +475,8 @@ def collect_runs(repo, window, dedupe=True, extra=None):
         aid = rec.get('attempt_id')
         key = aid if isinstance(aid, str) and aid else p
         if status == 'interrupted':
+            if results.attempt_reported(p, rec.get('role')):
+                continue                  # T-0445: its result file holds a verdict, so nothing was lost
             if not window.active or window.has(rec.get('started_at') or rec.get('finished_at')):
                 if not (dedupe and key in attempts_seen):
                     attempts_seen.add(key)
@@ -1145,6 +1150,23 @@ def selftest():
            all(a['attempt_id'] != 'RS' for a in kr['orphaned']['attempts']))
         ok('orphaned: a codex attempt and one started before the window are not counted',
            all(a['attempt_id'] not in ('RC', 'RO') for a in kr['orphaned']['attempts']))
+        # T-0445: an interrupted record whose result file holds a verdict is not a lost run; one with no result still is
+        write(os.path.join(k1, 'step-3', 'verifier-L2.attempt.json'), att(
+            'IR', 'verifier', 'interrupted', '2026-10-06T09:00:00+00:00', finished_at='2026-10-06T09:40:00+00:00'))
+        write(os.path.join(k1, 'step-3', 'verifier-L2.md'), '<!-- role=verifier level=L2 model=sonnet effort=high -->\n## Verdict\npass\n')
+        write(os.path.join(k1, 'step-4', 'verifier-L2.attempt.json'), att(
+            'IN', 'verifier', 'interrupted', '2026-10-06T09:00:00+00:00', finished_at='2026-10-06T09:40:00+00:00'))
+        write(os.path.join(k1, 'step-4', 'verifier-L2.md'), '<!-- role=verifier level=L2 model=sonnet effort=high -->\n## Findings\nno verdict\n')
+        kr2 = collect_runs(kp, Window(since='2026-10-01'))
+        ok('interrupted: an attempt whose result file holds a verdict is not counted',
+           all(a['attempt_id'] != 'IR' for a in kr2['interrupted']['attempts']))
+        ok('negative control: an interrupted attempt whose result holds no verdict is still counted',
+           sorted(a['attempt_id'] for a in kr2['interrupted']['attempts']) == ['I1', 'IN']
+           and kr2['interrupted']['lost_min_total'] == 60.0)
+        os.remove(os.path.join(k1, 'step-3', 'verifier-L2.md'))
+        os.remove(os.path.join(k1, 'step-3', 'verifier-L2.attempt.json'))
+        os.remove(os.path.join(k1, 'step-4', 'verifier-L2.md'))
+        os.remove(os.path.join(k1, 'step-4', 'verifier-L2.attempt.json'))
         ok('interrupted: lost_min falls back to finished_at with no later attempt',
            kr['interrupted']['attempts'][0]['lost_min'] == 20.0)
         ok('results: a builder result whose Status is blocked is counted',
