@@ -1,0 +1,19 @@
+<!-- role=verifier level=L2 model=opus effort=high -->
+## Verdict
+pass
+
+## Criteria
+- #1 `docs/specs/sdlc-lite/bounded-plan-correction.md` exists with a `Status:` line and names the files a build would change, the boundedness check, and the rejected alternatives: pass. Evidence: I read the file. Line 3 is `Status: design, proposed. Ticket T-0421 ...`. §10 (lines 90-101) lists the files a build would change: steps.py, order.py, plan-reviewer.md, planner.md, chain SKILL.md, results.py, check.py and the specs README. §5 (lines 33-52) gives the boundedness check as a command, `steps.py correct <task dir> --check <old> <new>`, with exact checks on regions, digests and the line diff. §11 (lines 103-110) lists 6 rejected alternatives, including maison's model author revision, widening notes-fix, and a reviewer-written fix. I checked the design's factual claims against the source and they hold. `steps.py:2684` has `if len(replans) >= 2:`, which is the stop/ask cap. `steps.py:2586-2593` (`review_required`) asks for a review only when a step is at builder L4 or L5. `order.py:16` says "Unrecorded sorts first". `plan-reviewer.md:39` says "a wrong interface is a real defect, not a notes-fix".
+- #2 It defines what counts as bounded, the review the correction gets, what forces the normal route, the interaction with the replan cap, and a negative control: pass. Evidence: what counts as bounded is in §4 (lines 23-31, five rules: token-fix-only findings, at most 2 pairs and 6 lines, `<old>` absent from the tree, `<new>` present in the cited file, and changes only in the Do and Read first sections). The review is in §6 (lines 54-58): a new `correct` action, then the existing resume review when a step is L4 or L5, otherwise split. What forces the normal route is in §7 (lines 60-70). The replan cap is in §8 (lines 72-77). It covers both the two-replan-review stop and the planner's one-replan budget, and states a worst case. The negative control is in §9 (lines 79-88): one positive case and four negatives with exact refusal text. It also requires that disabling the region comparison makes negatives 2 and 3 pass wrongly, which is a stated biting variable.
+- #3 `python3 plugins/sdlc-lite/scripts/docs_check.py` reports 0 errors and `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass. Evidence: on the built tree, docs_check printed `docs_check: 0 errors, 23 warnings (B-2a 9, B-3a 7, D-10 3, D-11 4)` and exited 0. `check.py` exited 0 with last line `ok: 19 role levels, 9 agents, 22 generated definitions checked`. This is a repo-wide gate criterion. As a bite probe, I copied the new doc into a throwaway worktree at `$SDLC_BASE_SHA` without the AGENTS.md index entry. docs_check still reported 0 errors there, so it does not flag a missing index entry. That does not bear on this criterion: the gate is green as written.
+- #4 The design contains no em or en dash, and `git diff --check` is clean: pass. Evidence: `grep -nP '[\x{2013}\x{2014}]' docs/specs/sdlc-lite/bounded-plan-correction.md` matched nothing (exit 1). The same pattern on a sample `a — b` returned 1, so the grep does go red. `git diff --check` exited 0 with no output, and the new file is in the diff as intent-to-add.
+
+## Out of scope changes
+None. I read each change in the diff.
+- `.sdlc/0421-bounded-plan-correction-route/handoff.md`: the solo agent added `## Acceptance criteria`, as `plugins/sdlc-lite/agents/solo.md:48` requires ("write the task handoff's `## Acceptance criteria` if it has none"). The added criteria match the original Done-when.
+- `docs/specs/sdlc-lite/AGENTS.md`: the managed Documents index gains the new spec, plus the hash update for that block.
+
+I made one process slip. A `git add -N .` I ran briefly marked four untracked artifact files as intent-to-add. I reverted that with `git rm --cached` on exactly those four paths, and `git status --short` now matches the state before I started.
+
+## For the next attempt
+None
