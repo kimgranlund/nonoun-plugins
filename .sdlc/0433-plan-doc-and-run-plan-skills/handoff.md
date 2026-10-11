@@ -25,3 +25,11 @@ Maintainer approved building T-0410 on 2026-10-10 (the plan-doc workflow: plan w
 
 ## Constraints
 No em or en dashes. No push or publish. No model, effort, levels.json or models.json change. The design is the contract; if it is wrong or silent, stop and report a plan defect. One writer at a time on check.py and check.sh: this ticket runs in the same lane as its predecessors. Close-first: run the Done-when checks once, fix what fails, report.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (item 51 covers both skills, their references and both routes, with negative controls).
+2. `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exit 0.
+3. `python3 scripts/check-packaging.py` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0.
+4. `grep -qF 'plan-doc / run-plan' plugins/sdlc-lite/skills/sdlc-lite/SKILL.md` and `grep -qF 'sdlc-lite:run-plan' plugins/sdlc-lite/agents/conductor.md`.
+5. `test -f docs/reports/2026-10-10-plan-doc-live-run.md`, and the report holds a result or `unverified` for items 1 to 4 of section 8.1.
+6. The skills folders and the report hold no em or en dash (a grep for U+2013 and U+2014 over `plugins/sdlc-lite/skills/plan-doc`, `plugins/sdlc-lite/skills/run-plan` and the report prints nothing).

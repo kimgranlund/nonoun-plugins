@@ -199,6 +199,10 @@
    (it reuses the parser and the verifier family, order and held rules, and copies none); scripts/check.sh runs `plan_done.py" selftest`; docs/references/sdlc-internals.md has
    a `scripts/plan_done.py` section where that file exists. Negative controls: each phrase removed from each file must be flagged. The cases themselves run in plan_done.py selftest
    (one `plan_done: <row>` case per truth-table row and control of docs/specs/sdlc-lite/plan-doc-executor.md section 4.2).
+51. Plan-doc skills (T-0433): skills/plan-doc/SKILL.md names `## 1. Gather`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`;
+   skills/run-plan/SKILL.md names `Read`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`; references/plan-doc-format.md names `plan_check.py plan`
+   and `Goal line`; references/run-rules.md names `plan_done.py`, `steps.py next`, and `fanout.py prep`; neither skill references `harness:` or another plugin; skills/sdlc-lite/SKILL.md
+   and agents/conductor.md route to `plan-doc` and `run-plan`. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1017,6 +1021,23 @@ errors.extend(f'check.py: plan done: {m}' for m in plan_done_bad(_pn))
 for _name, _phrases in PLAN_DONE_NEEDS:
     for _ph in _phrases:
         if not plan_done_bad(dict(_pn, **{_name: _pn[_name].replace(_ph, '')})): errors.append(f'check.py: plan done negative control not flagged for {_name} without "{_ph}"')
+# Plan-doc skills (docstring item 51): the writing skill, the running skill, their references, and the routes to them.
+PDS_NEEDS = (('doc', ('## 1. Gather', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host', 'SDLC_ROLE')),
+             ('run', ('Read', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host', 'SDLC_ROLE')),
+             ('format', ('plan_check.py plan', 'Goal line')), ('rules', ('plan_done.py', 'steps.py next', 'fanout.py prep')),
+             ('entry', ('plan-doc', 'run-plan')), ('cond', ('plan-doc', 'run-plan')))
+def pds_bad(texts):
+    out = [f'{name} missing "{ph}"' for name, phrases in PDS_NEEDS for ph in phrases if ph not in texts[name]]
+    out += [f'{name} references harness:' for name in ('doc', 'run', 'format', 'rules') if 'harness:' in texts[name]]
+    return out
+_pds = {'doc': _rd(root/'skills/plan-doc/SKILL.md'), 'run': _rd(root/'skills/run-plan/SKILL.md'), 'format': _rd(root/'skills/plan-doc/references/plan-doc-format.md'),
+        'rules': _rd(root/'skills/run-plan/references/run-rules.md'), 'entry': _entry, 'cond': _cond}
+errors.extend(f'check.py: plan-doc skills: {m}' for m in pds_bad(_pds))
+for _name, _phrases in PDS_NEEDS:
+    for _ph in _phrases:
+        if not pds_bad(dict(_pds, **{_name: _pds[_name].replace(_ph, '')})): errors.append(f'check.py: plan-doc skills negative control not flagged for {_name} without "{_ph}"')
+for _name in ('doc', 'run', 'format', 'rules'):
+    if not pds_bad(dict(_pds, **{_name: _pds[_name] + ' harness:x'})): errors.append(f'check.py: plan-doc skills negative control not flagged for a harness reference in {_name}')
 # Broken-link baseline (docstring item 32): runs only where the repository root is a git work tree (not in a consumer install).
 def links_bad(broken, allowed):
     got, want = set(broken), set(allowed)

@@ -29,6 +29,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Plan a goal, loop, or fanout run and get a paste-ready command | plan-goal / plan-loop / plan-fanout |
 | Plan a wave-based campaign (tool and gate, parallel lanes, bulk review, bulk PRs) | plan-campaign |
 | Capture an outcome, measure, rubric and negative control before a plan | plan-verification |
+| Write a plan doc (goal, measures, authorization, ticket steps) for a smaller session to run / run an approved plan doc to completion | plan-doc / run-plan |
 | Set up or check entry files and docs layout | onboard |
 | Review sdlc run traces for sdlc-lite waste and bugs | review-traces |
 | Retro of how the plugin served several repos, one cost-ranked report | fleet-retro |
@@ -44,6 +45,7 @@ Read referenced rubric, handoff format, templates, or scripts only as required. 
 - AskUserQuestion means ask using the host's supported question mechanism or ordinary chat. Respect its question-count limits. For approvals use a supported approval channel or ordinary chat; never substitute an unavailable tool. Existing user authorization still applies.
 - Ignore Claude-specific background/Monitor instructions for the outer Codex session. Start shell processes with Codex's execution tool and await completion using its returned session ID. If the tool yields, resume/poll that session. Do not end the turn with a required run still active. Do not use `run_in_background` or a fictional notification mechanism.
 - A launcher skill's Claude dispatch (`dispatch.py prepare`, an `Agent` spawn, `dispatch.py record`) has no Codex counterpart: use its Codex line, the `SDLC_BACKEND=codex` runner call and the native exchange under "Native execution" below. `dispatch.py` and the `sdlc-lite:<role>-L<n>` sub-agent definitions are the Claude backend only.
+- `plan-doc` and `run-plan`: `plan-doc` runs as written (the `/goal` line is emitted and its registration on Codex is unverified). `run-plan` uses the Codex runner line and native exchange under "Native execution" for every dispatch in place of `fanout.py prep` spawns and `dispatch.py record`; its loop, `plan_done.py` routing and stop rules are unchanged. The unattended publish guard is the instruction text only, since Claude hooks are not Codex enforcement. A plan run on Codex is unverified.
 - Native Claude agent frontmatter, output styles, and statusline installation are not Codex features. Do not invoke root agent files as Codex subagents.
 
 ## Lane per ticket
