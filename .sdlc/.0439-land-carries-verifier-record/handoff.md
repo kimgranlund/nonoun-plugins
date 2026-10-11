@@ -2,7 +2,7 @@
 id: T-0439
 title: "Fanout land carries the verifier result for every verified step, then one more rehearsal plan runs to plan done"
 type: bug             # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ Verifier result with the finding: `.sdlc/.0438-executor-live-run-fixes/verifier-
 
 ## Constraints
 No push, tag or publish. Smallest change.
+
+## Closed
+
+2026-10-11: verified pass (opus L2, red observed); live rehearsal is the maintainer check
