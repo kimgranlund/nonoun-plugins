@@ -8,7 +8,7 @@ A shared gate counts the agent runs already recorded for the scope a dispatch is
 
 ## 2. Sources
 
-- The maison conductor's report and the maintainer's decisions of 2026-10-10: the `## Context` of the T-0427 ticket handoff, `.sdlc/0427-cascade-guard-design/handoff.md`.
+- The maison conductor's report and the maintainer's decisions of 2026-10-10: the `## Context` of the T-0427 ticket handoff, `.sdlc/.0427-cascade-guard-design/handoff.md`.
 - Maison evidence, read as data (never written):
   - T-0378 plan reviews `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/plan-reviewer-L1.md` (replan) and `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/plan-reviewer-L1-2.md` (pass); its plans `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/planner-L3-2.md` and `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/planner-L3-3.md`.
   - T-0379 plan reviews `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0379-integration-wave-4/plan-reviewer-L1.md` and `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0379-integration-wave-4/plan-reviewer-L1-2.md` (both replan).

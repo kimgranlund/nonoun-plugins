@@ -281,3 +281,11 @@
 - decide: `fanout.py prep` and the run-plan rules claim a lane with `claimed_by:` alone and leave `status: ready`. That stays valid, but the roadmap and `/board` never show `claimed` for fanout lanes until they also set `status: claimed`. A person must choose whether they should.
 - note: `.sdlc/config` has no `areas:` line in this repo, so the area check and Area column are untested against a real populated root. The handoff names `ui-kit, front-end, back-end, data-lake, agent-os` as the intended list.
 - note: The 7-status list is copied into the router block, the ticket templates and the handoff-format and ticket skills. A future status must be edited in each of those places.
+
+## T-0427: Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (2026-10-11)
+
+- decide: Approve or change cascade-guard.md as written. Section 4's proof refuses the T-0378 plan, so the template-instance lane would not have saved those runs, and the four build tickets (L3, L3, L3, L2) wait on that call.
+- decide: Section 11 of cascade-guard.md leaves two questions open: which roles count toward the cap of 6, and whether a verifier's own test run that changes the tree counts as "a verified file changed since".
+- fix-now: `conductor.md` line 9 still says the cap is "6 until T-0427 sets it". Once the design is approved, T-0428 updates it to point at the design.
+- note: `check.py` counts only git-tracked files in its broken-link check, so a new doc linked from an index needs `git add -N` first. The handoff expected this only for `onboard.py check`.
+- note: The first step handoff was refused by the `steps.py lint` check because it cited relative `.sdlc/tickets/...` paths that resolve against this repo. The replan cites every maison file by absolute path under `/Users/kimgranlund/Projects/maison/ui-kit-maison`.
