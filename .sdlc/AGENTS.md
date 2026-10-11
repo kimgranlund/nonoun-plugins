@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:80b4dc44da9a -->
+<!-- sdlc-lite:managed:start v1 sha256:d9176123eb0f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 8
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -18,8 +18,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
   - T-0424 Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config (0424-lane-lifecycle-git-native)
   - T-0427 Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (0427-cascade-guard-design)
-  - T-0438 Plan-doc executor: close the live-run gaps (host base, stop record, recover scope, integration branch, verifier record, ticket fields) (0438-executor-live-run-fixes)
-- ready: 0
+- ready: 1
+  - T-0438 Plan-doc executor: close the live-run gaps (host base, stop record, recover scope, integration branch, verifier record, ticket fields) (0438-executor-live-run-fixes), claimed by claude 2026-10-11
 - blocked: 0
 - done: 397
 - dropped: 25
