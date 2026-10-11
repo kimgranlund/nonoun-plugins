@@ -151,6 +151,20 @@ A close (rows 9, 10, 12) runs these steps in order, so a failure leaves a lane t
 
 `lanes.still_open(root, ticket)` builds the line; the callers only print it. steps.py does not change: `tickets.py close` is the one place a ticket closes.
 
+### 8.1 Every lane has a ticket (tracker-agnostic) [D]
+
+The lane lifecycle skills and commands carry one directive, whatever tracker the repo uses (local `.sdlc` tickets, GitHub Issues, or Linear): no ticket, no lane.
+
+| Phase | Directive |
+|---|---|
+| Open | Claim the existing ticket, or create one if none exists, before any lane, branch or worktree. A claim names who holds it and when: `claimed_by: <who> <date>` for local tickets, the assignee on GitHub or Linear. The branch carries the ticket id (`lane/<ticket>-<slug>`). |
+| Work | One lane per ticket. A new idea becomes a new ticket, not a larger lane. |
+| Finish | In a repo that uses pull requests, open a PR that links the ticket (`Closes #123`, `Fixes ENG-45`, or the local id). A repo with no PR flow merges the lane directly. |
+| Close | After the work is merged, close the ticket with a one-line result and a link to the PR or commit, then close the lane (archive ref first). An unmerged lane keeps its ticket open. |
+| Detect | Use the tracker the repo already has (`.sdlc/`, a Linear config, a GitHub remote). Never create a second tracker. With none, use local `.sdlc` tickets. |
+
+The rule in four words: no ticket, no lane; no merge, no close. `lane-open` refuses a lane with no claimed ticket; `lane-close` prints `ticket still open` when it closes a merged lane whose ticket is open. Local tickets are enforced by `tickets.py` and `lanes.py`; for GitHub and Linear the skills carry the directive and call the repo's own CLI or MCP tool (`gh issue`, `gh pr`, the Linear tool) when present, and say `ticket not updated: <why>` when absent. This section adds scope to T-0422; the GitHub and Linear half is directive text in the skills only, with no new script.
+
 ## 9. Wait and auto-merge
 
 `lanes.py wait <name> <pr>` polls `gh pr view <pr> --json state` every 45 seconds up to `--timeout` (default 6 hours; the spec's loop has no limit and spins forever on a `gh` error). `MERGED` runs `close` with `into` the PR's base as a fetched remote-tracking ref, which closes by content after a squash merge. `CLOSED` prints `PR <n> closed, lane <name> left open` and exits 1. A timeout exits 3 and leaves the lane.
