@@ -436,4 +436,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0436 | [.0436-run-rules-two-rules](.0436-run-rules-two-rules/handoff.md) | Two preflight and stop rules in run-rules.md | chore | L1 | P2 | none | 🟢 done |
 | T-0437 | [.0437-design-links-live-run](.0437-design-links-live-run/handoff.md) | Link the live-run record from the design doc | chore | L1 | P2 | none | 🟢 done |
 | T-0438 | [.0438-executor-live-run-fixes](.0438-executor-live-run-fixes/handoff.md) | Plan-doc executor: close the live-run gaps (host base, stop record, recover scope, integration branch, verifier record, ticket fields) | feature | L2 | P2 | none | 🟢 done |
-| T-0439 | [0439-land-carries-verifier-record](0439-land-carries-verifier-record/handoff.md) | Fanout land carries the verifier result for every verified step, then one more rehearsal plan runs to plan done | bug | L1 | P2 | none | ⏳ proposed |
+| T-0439 | [0439-land-carries-verifier-record](0439-land-carries-verifier-record/handoff.md) | Fanout land carries the verifier result for every verified step, then one more rehearsal plan runs to plan done | bug | L2 | P2 | none | 🔵 ready |
