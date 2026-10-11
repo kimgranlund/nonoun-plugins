@@ -2,7 +2,7 @@
 id: T-0433
 title: "The plan-doc and run-plan skills, with the live rehearsal"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0432]
@@ -33,3 +33,7 @@ No em or en dashes. No push or publish. No model, effort, levels.json or models.
 4. `grep -qF 'plan-doc / run-plan' plugins/sdlc-lite/skills/sdlc-lite/SKILL.md` and `grep -qF 'sdlc-lite:run-plan' plugins/sdlc-lite/agents/conductor.md`.
 5. `test -f docs/reports/2026-10-10-plan-doc-live-run.md`, and the report holds a result or `unverified` for items 1 to 4 of section 8.1.
 6. The skills folders and the report hold no em or en dash (a grep for U+2013 and U+2014 over `plugins/sdlc-lite/skills/plan-doc`, `plugins/sdlc-lite/skills/run-plan` and the report prints nothing).
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
