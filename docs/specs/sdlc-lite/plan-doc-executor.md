@@ -270,6 +270,8 @@ Version targeted: 0.22.3 or later, the release owner's call.
 
 The structural checks (`plan_check.py plan`, `plan_done.py` selftest) do not show that a small model finishes unattended work, so the live run is part of the acceptance of ticket C, recorded in `docs/reports/<date>-plan-doc-live-run.md`. If a step cannot run it is reported unverified, not substituted.
 
+The first live run and rehearsal are recorded in `docs/reports/2026-10-11-plan-doc-live-run.md`.
+
 1. Dry state. Wrap `.sdlc/plan-reliability-docs/plan.md` as `plan-doc.md` (its steps 3, 4, 6 and 7 already have tickets T-0413, T-0414, T-0416, T-0417 [V, roadmap]; the others are `ticket: new`). `plan_check.py plan --run` exits 0. `plan_done.py` on the unstarted plan exits 1 and lists every step open (the plan's own negative control: red before any work).
 2. Throwaway rehearsal, no repo risk. In a scratch project, a two-step plan (an L1 doc line and an L1 script fix, one `verify: required`) driven by the cheapest candidate driver, Haiku 5.5 high. Pass: `plan_done.py` exits 0; the verifier model differs from the worker's; zero `AskUserQuestion` calls; the driver edited no product file.
 3. Crash drill on the rehearsal. Kill the session after the first solo is spawned and again during the verifier. Restart with the same `/goal` line. Pass: the second session finishes; no step is built twice; each step has exactly one passing verifier result; `dispatch.py status` shows interrupted attempts re-dispatched, not failed rows.
