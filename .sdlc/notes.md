@@ -283,3 +283,5 @@
 - note: The 7-status list is copied into the router block, the ticket templates and the handoff-format and ticket skills. A future status must be edited in each of those places.
 
 2026-10-11: maintainer set the T-0442 A/B budget at $15 (budget_usd: 15). Starts after wave 33.
+
+2026-10-11: maintainer decisions via /ask: push main ff only (done, origin/main ad35eaaa); fanout and run-plan set `status: claimed` (T-0455); build the lane lifecycle A to D as a chain (T-0451 to T-0454); leave the uncommitted plugins/progressive-context edits (SKILL.md, references/performance-contract.json) alone, they are not from this session.
