@@ -2,7 +2,7 @@
 id: T-0438
 title: "Plan-doc executor: close the live-run gaps (host base, stop record, recover scope, integration branch, verifier record, ticket fields)"
 type: feature        # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ Evidence: `docs/reports/2026-10-11-plan-doc-live-run.md`. Executor files: `plugi
 
 ## Constraints
 No push, tag or publish by any role. Keep changes small; one lane, one ticket, split by item only if a verifier fails.
+
+## Closed
+
+2026-10-11: items 2 to 5, 7, 8 verified pass (opus L2, red runs observed); item 6 and the live rehearsal criterion moved to T-0439
