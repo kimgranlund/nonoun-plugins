@@ -432,3 +432,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0432 | [.0432-plan-done-script](.0432-plan-done-script/handoff.md) | plan_done.py: the condition a /goal stop hook evaluates | feature | L2 | P2 | T-0431 | 🟢 done |
 | T-0433 | [.0433-plan-doc-and-run-plan-skills](.0433-plan-doc-and-run-plan-skills/handoff.md) | The plan-doc and run-plan skills, with the live rehearsal | feature | L2 | P2 | T-0432 | 🟢 done |
 | T-0434 | [.0434-plan-doc-docs-and-first-plan](.0434-plan-doc-docs-and-first-plan/handoff.md) | Docs and the first customer plan doc (goal 002 wrapped) | chore | L1 | P2 | T-0433 | 🟢 done |
+| T-0435 | [0435-collector-fields](0435-collector-fields/handoff.md) | Collector fields for K-002, K-003, K-004 and verifier minutes | feature | L2 | P2 | none | ⏳ proposed |
