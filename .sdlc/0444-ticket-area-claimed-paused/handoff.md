@@ -23,3 +23,6 @@ Today: status is `proposed | ready | blocked | done | dropped`; a claim is a `cl
 
 ## Constraints
 Existing tickets stay valid with no migration required. Keep the status set small; do not add a status the board cannot show. No model or effort change.
+
+## Plan review
+- plan defect: dispatch.py prepare builder L3 step-1: steps.py lint refused cited paths `.sdlc/0001-a` and `.sdlc/0001-a/handoff.md` (cited path does not exist). The fixture spans write `"$d/.sdlc/0001-a/handoff.md"`, and the link lint reads the `.sdlc/...` part as a repo path. Replan so no criterion or Do text spells a nonexistent repo-relative `.sdlc/<dir>` path (for example build the fixture dir from a variable such as `t="$d/.sdlc"; mkdir -p "$t/0001-a"`), and recheck each step handoff with `steps.py lint`.

@@ -28,7 +28,7 @@ def read(root):
     ts = tickets.load(tdir)
     return {
         'by_slug': {slug: (m.get('id'), m.get('status')) for slug, m in ts},
-        'problems': tickets.problems(ts, tickets.config_numbered(root)),
+        'problems': tickets.problems(ts, tickets.config_numbered(root), areas=tickets.config_areas(root)),
         'external': tickets.external_branches(root),
         'notes': os.path.isfile(notes),
     }
