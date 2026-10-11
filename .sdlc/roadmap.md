@@ -446,3 +446,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0446 | [0446-record-finds-transcript](0446-record-finds-transcript/handoff.md) | dispatch.py record finds the sub-agent transcript without a flag | feature | L2 | P2 | none | ⏳ proposed |
 | T-0447 | [0447-doc-standards-suite](0447-doc-standards-suite/handoff.md) | Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers | feature | L4 | P2 | none | ⏳ proposed |
 | T-0448 | [0448-clarify-v2-intent-to-plan](0448-clarify-v2-intent-to-plan/handoff.md) | Modernize clarify (our port of find-intent): plan-ready intent, runnable done-when, cost-aware asks | feature | L3 | P2 | none | ⏳ proposed |
+| T-0449 | [0449-solo-campaign-stats](0449-solo-campaign-stats/handoff.md) | Committed solo lane stats script and a KPI with a baseline | feature | L2 | P2 | none | ⏳ proposed |
