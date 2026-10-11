@@ -50,13 +50,19 @@ def verifier_alternates():
     return dict(config().get(ALTERNATES) or {})
 
 
-def instructions(role):
+def instructions(role, level):
+    """The role contract for one row; a level with a section in overlays/<role>.md gets it before `## Output`."""
+    import claude_roles
     src = ROOT / 'agents' / (role + '.md')
     text = src.read_text()
     header = text.split('---', 2)[1]
     skills = re.findall(r'^  - ([a-z-]+)$', header, re.M)
     prelude = (ADAPTER / 'instructions.md').read_text()
-    parts = [prelude, '# Shared role contract\n' + body(src)]
+    contract = body(src)
+    sections = claude_roles.overlay(ROOT, role)
+    if level in sections:
+        contract = claude_roles.insert_overlay(contract, level, sections[level])
+    parts = [prelude, '# Shared role contract\n' + contract]
     for skill in skills:
         parts.append('# Required skill: ' + skill + '\nResources: ' + TOKEN + '/skills/' + skill + '/\n' + body(ROOT / 'skills' / skill / 'SKILL.md'))
     return '\n\n'.join(parts).replace('${CLAUDE_PLUGIN_ROOT}', TOKEN)
@@ -139,7 +145,7 @@ def raw_definitions():
             data = dict(name=name, description=f'SDLC Lite {role} {level}. Read the handoff; follow the shared role contract.', model=model,
                             model_reasoning_effort=effort,
                             sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect', 'messenger', 'solo') else 'read-only',
-                            developer_instructions=instructions(role))
+                            developer_instructions=instructions(role, level))
             yield name, data
             if role in PAIRED and model in alternates:
                 alternate = dict(data, name=name+'-alternate', model=alternates[model])
@@ -360,6 +366,15 @@ def preflight(project, roles, catalog):
 
 
 def main():
+    import claude_roles
+    try:
+        command()
+    except claude_roles.TableError as exc:
+        print('codex_roles.py: ' + str(exc), file=sys.stderr)
+        sys.exit(2)
+
+
+def command():
     parser = argparse.ArgumentParser(description=__doc__)
     subs = parser.add_subparsers(dest='command', required=True)
     gen = subs.add_parser('generate'); gen.add_argument('--check', action='store_true')

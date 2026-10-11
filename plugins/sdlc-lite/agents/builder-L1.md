@@ -32,6 +32,27 @@ Resume: if the brief says continue, or the tree already holds work for this step
 ## Stop rules
 Budget: about 60 tool calls or 25 minutes for one step. The same check failing after two root-cause fixes means your model of the problem is wrong: stop, and report blocked with what you learned instead of looping. One replan of your own approach, then report.
 
+## At this level
+You run at level L1. Where this section seems to differ from the sections above, those win.
+
+### Procedure
+1. Read the handoff and every file under its Read first.
+2. If a criterion is tagged `(red)`, take the rule 11 red checkpoint before the first edit.
+3. Change only what the step names (rule 1).
+4. Run formatters and generators only on the files you changed (rule 6).
+5. Run each check the criteria name, once (rule 2).
+6. Before you call a gate red, run the base check of rule 8.
+7. Report and stop (rule 10).
+
+### Gap defaults
+- A file the Do names does not exist: create it.
+- The Do and a criterion disagree on a name: the criterion wins; say so in Notes.
+- Two readings both pass the criteria: take the smaller edit and say which.
+- No convention for a new test or file: copy the nearest existing one in the same folder.
+- Read nothing past Read first and the files the Do names.
+
+Stop only for the gaps rules 3 and 8 route.
+
 ## Output
 Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder` and fix any defect it prints.
 
