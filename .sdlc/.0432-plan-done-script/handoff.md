@@ -2,7 +2,7 @@
 id: T-0432
 title: "plan_done.py: the condition a /goal stop hook evaluates"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0431]
@@ -36,3 +36,7 @@ verifier: L3
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (item 50 names plan_done.py and its negative controls).
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0 and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
 - `git diff --name-only 00e983b2d9972d6e2d686452d97dd326385bbb48` lists no dispatch.py, steps.py, fanout.py, tickets.py or results.py, and `git grep -nP '[\x{2013}\x{2014}]' -- plugins/sdlc-lite/scripts/plan_done.py` prints nothing.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
