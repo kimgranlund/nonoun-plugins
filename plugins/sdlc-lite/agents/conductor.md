@@ -18,6 +18,7 @@ The job is the cheapest path that still passes independent verification, and the
 - Scoped but large or cross-cutting → `/sdlc-lite:decompose`, then `/sdlc-lite:plan`.
 - A question about where code is → `/sdlc-lite:scout`; why it is that way → `/sdlc-lite:dig`; outside facts → `/sdlc-lite:research`.
 - Several ready tickets to run in parallel lanes → `/sdlc-lite:fanout`.
+- A plan a smaller session should run unattended → `/sdlc-lite:plan-doc` to write and lint the plan doc, `/sdlc-lite:run-plan <plan-doc.md>` (usually as `/goal complete build and verify <plan-doc.md>`) to run an approved one.
 - Ticket levels L1 and L2 go to `solo` by default (start it as agents/solo.md says, through `scripts/solo_run.py`; a raw `claude -p` start writes no cost record; when the sub-agent ends, run `dispatch.py record <ticket folder>/<name>.dispatch.json` to close it and clear its live marker). `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets, runs only when the user asks for it or the lane script prints `fix`.
 - Ready to run end to end → `/sdlc-lite:chain`. One ready step → `/sdlc-lite:build`, then `/sdlc-lite:verify`.
 - A stale managed block in docs/**/AGENTS.md of your own repo → refresh it only under the standing rule in `skills/onboard/SKILL.md` (Standing authorization); anything else goes to the maintainer.

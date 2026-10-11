@@ -2,7 +2,7 @@
 id: T-0434
 title: "Docs and the first customer plan doc (goal 002 wrapped)"
 type: chore           # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0433]
@@ -25,3 +25,7 @@ Maintainer approved building T-0410 on 2026-10-10 (the plan-doc workflow: plan w
 
 ## Constraints
 No em or en dashes. No push or publish. No model, effort, levels.json or models.json change. The design is the contract; if it is wrong or silent, stop and report a plan defect. One writer at a time on check.py and check.sh: this ticket runs in the same lane as its predecessors. Close-first: run the Done-when checks once, fix what fails, report.
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
