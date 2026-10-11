@@ -2,7 +2,7 @@
 id: T-0429
 title: "No verifier for a ticket that changes only docs, records or reports"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,7 @@ No em or en dashes. No push or publish. Model and effort defaults are the mainta
 - [ ] No model or effort default changed; no em or en dash added.
 
 verifier: L3
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); verified pass by the 0.22.3 L2 recheck verifier
