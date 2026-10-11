@@ -194,6 +194,11 @@
    `GOOD_PLAN`, `def check_plan`, `plan_doc`, and every one of the 19 rule ids of docs/specs/sdlc-lite/plan-doc-executor.md section 3.3 (the list in `PLAN_RULES`) plus the
    warnings `l1-unverified`, `kpi-drift`, and `kpi-unresolved`; scripts/check.sh runs `plan_check.py" selftest` and `plan_doc.py" selftest`. Negative controls: each phrase and
    each rule id removed from its file must be flagged. The mutants themselves run in plan_check.py selftest (one case per rule, flagged as exactly that rule).
+50. Plan-doc stop condition (T-0432): scripts/plan_done.py exists and names `plan done`, `plan defect:`, `ticket-absent`, `records ok; measures not read`,
+   `replan cap reached: stopped`, `held_items`, `def assess`, `def selftest`, and `import dispatch, order, plan_check, plan_doc, results, steps, tickets`
+   (it reuses the parser and the verifier family, order and held rules, and copies none); scripts/check.sh runs `plan_done.py" selftest`; docs/references/sdlc-internals.md has
+   a `scripts/plan_done.py` section where that file exists. Negative controls: each phrase removed from each file must be flagged. The cases themselves run in plan_done.py selftest
+   (one `plan_done: <row>` case per truth-table row and control of docs/specs/sdlc-lite/plan-doc-executor.md section 4.2).
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1000,6 +1005,18 @@ errors.extend(f'check.py: plan doc: {m}' for m in plan_doc_bad(_pd))
 for _name, _phrases in PLAN_DOC_NEEDS:
     for _ph in _phrases:
         if not plan_doc_bad(dict(_pd, **{_name: _pd[_name].replace(_ph, '')})): errors.append(f'check.py: plan doc negative control not flagged for {_name} without "{_ph}"')
+# Plan-doc stop condition (docstring item 50): plan_done.py, its selftest wiring, and the internals reference.
+PLAN_DONE_NEEDS = (('plan_done.py', ('plan done', 'plan defect:', 'ticket-absent', 'records ok; measures not read', 'replan cap reached: stopped', 'held_items', 'def assess',
+                                     'def selftest', 'import dispatch, order, plan_check, plan_doc, results, steps, tickets')),
+                   ('check.sh', ('plan_done.py" selftest',)),
+                   ) + ((('internals', ('scripts/plan_done.py',)),) if (root/'../../docs/references/sdlc-internals.md').is_file() else ())  # absent in a consumer install
+def plan_done_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in PLAN_DONE_NEEDS for ph in phrases if ph not in texts[name]]
+_pn = {'plan_done.py': _rd(root/'scripts/plan_done.py'), 'check.sh': _rd(root/'scripts/check.sh'), 'internals': _rd(root/'../../docs/references/sdlc-internals.md')}
+errors.extend(f'check.py: plan done: {m}' for m in plan_done_bad(_pn))
+for _name, _phrases in PLAN_DONE_NEEDS:
+    for _ph in _phrases:
+        if not plan_done_bad(dict(_pn, **{_name: _pn[_name].replace(_ph, '')})): errors.append(f'check.py: plan done negative control not flagged for {_name} without "{_ph}"')
 # Broken-link baseline (docstring item 32): runs only where the repository root is a git work tree (not in a consumer install).
 def links_bad(broken, allowed):
     got, want = set(broken), set(allowed)
