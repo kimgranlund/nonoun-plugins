@@ -2,7 +2,7 @@
 id: T-0445
 title: "Collector and recover: a completed attempt is never counted or marked interrupted"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ No model or effort change. Preserve the K-002 definition in `docs/kpi/002-*.md`;
 3. `python3 plugins/sdlc-lite/scripts/results.py selftest` exits 0.
 4. `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 2026-10-11` reports `runs.interrupted.lost_min_total` 0.
 5. `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+
+## Closed
+
+2026-10-11: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

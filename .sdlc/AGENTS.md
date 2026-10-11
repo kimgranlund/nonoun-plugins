@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:33d3c14bdde9 -->
+<!-- sdlc-lite:managed:start v1 sha256:84f4900f5389 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 8
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -17,13 +17,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0442 Replay A/B of builder overlays on the five bench tasks (0442-builder-overlay-ab)
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
-  - T-0445 Collector and recover: a completed attempt is never counted or marked interrupted (0445-collector-ignores-completed-attempts)
   - T-0446 dispatch.py record finds the sub-agent transcript without a flag (0446-record-finds-transcript)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 405
+- done: 406
 - dropped: 25
 
 ## Procedures

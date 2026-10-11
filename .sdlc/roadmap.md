@@ -442,5 +442,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0442 | [0442-builder-overlay-ab](0442-builder-overlay-ab/handoff.md) | Replay A/B of builder overlays on the five bench tasks | spike | L3 | P2 | T-0441 | ⏳ proposed |
 | T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0442 | ⏳ proposed |
 | T-0444 | [.0444-ticket-area-claimed-paused](.0444-ticket-area-claimed-paused/handoff.md) | Ticket vocabulary: add area, status claimed and status paused | feature | L3 | P2 | none | 🟢 done |
-| T-0445 | [0445-collector-ignores-completed-attempts](0445-collector-ignores-completed-attempts/handoff.md) | Collector and recover: a completed attempt is never counted or marked interrupted | bug | L2 | P2 | none | ⏳ proposed |
+| T-0445 | [.0445-collector-ignores-completed-attempts](.0445-collector-ignores-completed-attempts/handoff.md) | Collector and recover: a completed attempt is never counted or marked interrupted | bug | L2 | P2 | none | 🟢 done |
 | T-0446 | [0446-record-finds-transcript](0446-record-finds-transcript/handoff.md) | dispatch.py record finds the sub-agent transcript without a flag | feature | L2 | P2 | none | ⏳ proposed |
