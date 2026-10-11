@@ -2,7 +2,7 @@
 id: T-0436
 title: "Two preflight and stop rules in run-rules.md"
 type: chore           # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ Read first: plugins/sdlc-lite/skills/run-plan/references/run-rules.md and docs/r
 
 ## Constraints
 Edit only the file named in Upserts. Add the two rules and nothing else.
+
+## Closed
+
+2026-10-11: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
