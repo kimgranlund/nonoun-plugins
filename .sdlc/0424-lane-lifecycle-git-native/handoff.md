@@ -20,6 +20,7 @@ The lane lifecycle design (docs/specs/sdlc-lite/lane-lifecycle.md, T-0422) carri
   - The design names every file a build changes, each new check with a negative control, and the ordered build tickets; docs_check.py and check.py pass; no dashes.
 
 ## Context
+gen-ui-kit, 2026-10-10: `lane-wait`'s `gh pr merge --auto` is tested; it needs `--squash` (or `--merge`, `--rebase`) and merged PR 425 on green. Merges were approved by the owner per PR, so keep the opt-in per PR, never default or blanket. The design records this instead of listing the merge call as untested.
 Maintainer decision 2026-10-10: adopt all of the git-native conventions including worktree config. Depends on T-0422, whose design lane is running; its handoff stays frozen, so this is the addendum.
 
 ## Constraints
