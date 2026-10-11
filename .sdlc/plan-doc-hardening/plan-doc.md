@@ -12,7 +12,7 @@ Close two gaps the live run found in the run-plan run rules (a driver started ou
 
 ## Outcome
 Outcome: a smaller driver stops or proceeds correctly from the run rules alone in two cases that stalled the live run. Why: both cases cost a run with no rule to follow.
-Measured by: M-1 (`git grep -c 'show-toplevel' -- plugins/sdlc-lite/skills/run-plan/references/run-rules.md`), before: 0, target: >= 1.
+Measured by: M-1 (`git grep -c 'show-toplevel' -- plugins/sdlc-lite/skills/run-plan/references/run-rules.md | cut -d: -f2`), before: 0, target: >= 1.
 Rubric:
 1. Wrong-repo preflight | pass: run-rules.md names `git rev-parse --show-toplevel` in Preflight and a stop when it differs from the plan doc's repository.
 2. Already-built rule | pass: run-rules.md says a solo that reports no diff possible because the (red) criterion already passes is a plan defect stop that names the commit, and the driver does not close the ticket.
@@ -22,7 +22,7 @@ Negative control: M-1 reads 0 now, below the target of 1, so it is red before st
 ## Measures
 | id | command | read | target | direction | before | when |
 |---|---|---|---|---|---|---|
-| M-1 | `git grep -c 'show-toplevel' -- plugins/sdlc-lite/skills/run-plan/references/run-rules.md` | value | >= 1 | up | 0 | now |
+| M-1 | `git grep -c 'show-toplevel' -- plugins/sdlc-lite/skills/run-plan/references/run-rules.md | cut -d: -f2` | value | >= 1 | up | 0 | now |
 
 ## Authorization
 None. Publish, push, tag, `onboard.py setup` and external writes are not implied.

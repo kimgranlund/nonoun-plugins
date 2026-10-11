@@ -2,7 +2,7 @@
 id: T-0437
 title: "Link the live-run record from the design doc"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Read first: docs/specs/sdlc-lite/plan-doc-executor.md. Upserts: only docs/specs/
 
 ## Constraints
 None.
+
+## Closed
+
+2026-10-11: built by the solo as 4a59f78c, landed by cherry-pick after the host base excluded the claim commit
