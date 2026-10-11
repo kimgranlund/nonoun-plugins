@@ -24,3 +24,9 @@ Maison and Codex, 2026-10-09: T-0351 (buildPrompt to assemblePrompt) needed a fu
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- [ ] `docs/specs/sdlc-lite/bounded-plan-correction.md` exists with a `Status:` line and names the files a build would change, the boundedness check, and the rejected alternatives.
+- [ ] It defines what counts as bounded, the review the correction gets, what forces the normal route, the interaction with the replan cap, and a negative control.
+- [ ] `python3 plugins/sdlc-lite/scripts/docs_check.py` reports 0 errors and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- [ ] The design contains no em or en dash, and `git diff --check` is clean.

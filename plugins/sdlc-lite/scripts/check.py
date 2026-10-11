@@ -203,6 +203,9 @@
    skills/run-plan/SKILL.md names `Read`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`; references/plan-doc-format.md names `plan_check.py plan`
    and `Goal line`; references/run-rules.md names `plan_done.py`, `steps.py next`, `fanout.py prep`, `plan_done.py resume PD`, `recover --root . --open`, `fanout.py settle`, `status: ready`, and `Close a step only through `land``; neither skill references `harness:` or another plugin; skills/sdlc-lite/SKILL.md
    and agents/conductor.md route to `plan-doc` and `run-plan`. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
+52. Level overlays (T-0441): every overlays/<role>.md stem has levels.json rows, and no .md file sits in a subdirectory of agents/ (an overlay placed in
+   agents/overlays/ instead of the plugin's top-level overlays/). The overlay content rules run in claude_roles.py (generate exits 2; its selftest has the cases).
+   Negative controls: a planted overlays/ghost.md stem and a planted agents/overlays/x.md path must each be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1147,6 +1150,7 @@ elif GENERATED:
         _tp = pathlib.Path(_td)
         shutil.copytree(root/'agents', _tp/'agents'); (_tp/'adapters/claude').mkdir(parents=True)
         shutil.copy(root/'adapters/claude/levels.json', _tp/'adapters/claude/levels.json')
+        if (root/'overlays').exists(): shutil.copytree(root/'overlays', _tp/'overlays')
         _gen = _tp/'agents'/(sorted(GENERATED)[0] + '.md')
         _gen.write_text(_gen.read_text() + 'hand edit\n')
         if claude_roles_check(_tp).returncode != 1: errors.append('check.py: generated definitions negative control not flagged for a hand edit')
@@ -1267,6 +1271,17 @@ if len(_vp_files) < 30: errors.append(f'version-free entry point: only {len(_vp_
 for _why, _bad in (('a skill', 'run python3 ~/.claude/plugins/cache/x/sdlc-lite/0.22.0/scripts/messages.py'), ('an agent', 'path .../sdlc-lite/1.2.3/scripts/messages.py')):
     if not versioned_path_bad('skills/x/SKILL.md', 'clean\n' + _bad + '\n'): errors.append(f'check.py: version-free negative control not flagged for {_why}')
 if versioned_path_bad('skills/x/SKILL.md', 'the folder sdlc-lite/<version>/scripts and ${CLAUDE_PLUGIN_ROOT}/scripts/messages.py\n'): errors.append('check.py: version-free guard flagged an allowed line')
+# Level overlays (docstring item 52, T-0441): overlays/<role>.md only for a levels.json role, and nothing .md under an agents/ subdirectory.
+def overlay_placement_bad(overlay_stems, roles, agent_paths):
+    out = [f'overlays/{s}.md has no levels.json rows' for s in sorted(overlay_stems) if s not in roles]
+    return out + [f'agents/{p}: an .md file in a subdirectory of agents/; overlays live in the top-level overlays/' for p in sorted(agent_paths) if '/' in p]
+_ov_roles = {r for r, _ in levels} | ({'solo'} if solo_levels else set())
+_ov_stems = {p.stem for p in (root/'overlays').glob('*.md')}
+_ov_agents = {p.relative_to(root/'agents').as_posix() for p in (root/'agents').rglob('*.md')}
+errors.extend(f'check.py: level overlays: {m}' for m in overlay_placement_bad(_ov_stems, _ov_roles, _ov_agents))
+if not overlay_placement_bad(_ov_stems | {'ghost'}, _ov_roles, _ov_agents): errors.append('check.py: level overlays negative control not flagged for a planted overlays/ghost.md')
+if not overlay_placement_bad(_ov_stems, _ov_roles, _ov_agents | {'overlays/x.md'}): errors.append('check.py: level overlays negative control not flagged for a planted agents/overlays/x.md')
+if overlay_placement_bad({'builder'}, {'builder'}, {'builder.md'}): errors.append('check.py: level overlays guard flagged an allowed overlay')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

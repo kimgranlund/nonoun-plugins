@@ -1,0 +1,38 @@
+{
+  "attempt_id": "7814d8e5fd81416c80aa2e7b16a4fe9f",
+  "name": "builder-L2",
+  "agent_name": "0441-s2-builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "subagent",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step 2 level L2 per replanned plan (planner-L3): gates, guidance line, live builder L1 run",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-11T20:41:04.235289+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/a",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/a/.sdlc/0441-overlay-mechanism-builder-ends/step-2/handoff.md",
+  "parent_pid": 46734,
+  "parent_pid_source": "claude",
+  "handoff_sha256": "6888c4b7a99ccef64f41110396ad66cc9d86d1527a1c771bd8366c3b103637c7",
+  "worktrees_before": [
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/a",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/b",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/c",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/integration"
+  ],
+  "branches_before": [
+    "fanout/2026-10-11",
+    "fanout/2026-10-11-a",
+    "fanout/2026-10-11-b",
+    "fanout/2026-10-11-c",
+    "main"
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-11T20:57:34.681071+00:00",
+  "result_sha256": "a5e5fe6cd936038612a957f00cdd3c0e9aceb7e06c77e8a58e9fa6d44ca93efb",
+  "agent_id": "a4b038958e5509cb1"
+}

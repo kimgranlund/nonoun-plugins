@@ -23,3 +23,6 @@ Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (read all of it). H
 
 ## Constraints
 Model and effort rows unchanged. Hard invariants never vary by tier. Never hand-edit a generated file; run both `generate` commands.
+
+## Plan review
+- plan defect: step 2: dispatch.py prepare refused the step handoff (steps.py lint): cited path does not exist: .sdlc/0441-overlay-mechanism-builder-ends/live-builder-L1.md and .sdlc/0441-overlay-mechanism-builder-ends/live-builder-L1.cmd. These are outputs the step creates; name them so lint does not read them as cited inputs (for example put them in the step dir, not as backticked paths that must exist). Step 1 passed verification (step-1/verifier-L2.md); replan step 2 only and keep step 1 unchanged.

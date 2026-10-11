@@ -183,8 +183,9 @@ worktree stays unseen; check catches a clash after merge (duplicate id, naming b
 
 Router: write_roadmap also keeps a managed router block current, so an agent reads one short file and opens only
 the tickets in the stage it needs. The managed files are <root>/AGENTS.md (the router: stage counts, one line
-per proposed, ready or blocked ticket as `  - <id> <title> (<folder>)`, plus `, claimed by <value>` when the
-ticket's front matter has a non-empty `claimed_by:`, and the create, claim and close procedures) and
+per proposed, ready, claimed, paused or blocked ticket as `  - <id> <title> (<folder>)`, plus `, claimed by <value>`
+when the ticket's front matter has a non-empty `claimed_by:` and then `, paused: <reason>` for a paused ticket's
+`paused_reason:`, the ticket fields, and the create, claim and close procedures) and
 <root>/CLAUDE.md, and with `ticket_root: tickets` also <root>/tickets/AGENTS.md (the same procedures) and
 <root>/tickets/CLAUDE.md, and with `layout: topics` also work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and
 notes/CLAUDE.md (short entry blocks); the topics router opens with a topic-folder paragraph and both procedures
@@ -197,7 +198,12 @@ one appended (a missing one is created as that line). Paths in the text are rela
 (else root's parent) in posix form, so the text is the same on every machine. new, close (--dry-run
 included), roadmap, archive and number refuse, writing nothing, while a managed AGENTS.md holds a malformed
 block. new and close follow-ups stamp `router: <ticket dir>/AGENTS.md  # how to claim and close this ticket` as
-the last front matter line; neither `router` nor `claimed_by` is validated, so older tickets stay valid.
+the last front matter line. `router` is never validated. Status is set by hand: `status: claimed` needs a
+non-empty `claimed_by:` and `status: paused` a non-empty `paused_reason:`; on any other status neither field is
+validated, so a `claimed_by:` on a ready ticket stays valid. An optional `area:` is the ticket's domain and must
+be one of the `areas: a, b, c` names in <root>/config (config_areas); it is never a lane or branch name. When some
+ticket has an area, the roadmap gains an Area column after Type; a paused Status cell reads
+`<glyph> paused (<paused_reason>)`. No migration: an absent `area` is valid and every existing status stays valid.
 check fails, after the ticket problems and the stale-roadmap check, with one line per cause:
 `<label>: router block missing`, `router block stale`, `router block malformed: <reason>`, or
 `no @AGENTS.md import`, where <label> is AGENTS.md, CLAUDE.md, tickets/AGENTS.md, tickets/CLAUDE.md, or under
@@ -243,7 +249,7 @@ PLUGIN = pathlib.Path(__file__).resolve().parent.parent
 REQUIRED = ('id', 'title', 'type', 'status', 'size', 'priority', 'depends', 'created')
 ENUMS = {
     'type': ('feature', 'bug', 'chore', 'spike', 'idea'),
-    'status': ('proposed', 'ready', 'blocked', 'done', 'dropped'),
+    'status': ('proposed', 'ready', 'claimed', 'paused', 'blocked', 'done', 'dropped'),
     'size': ('L1', 'L2', 'L3', 'L4', 'L5'),
     'priority': ('P1', 'P2', 'P3'),
 }
@@ -252,7 +258,8 @@ ENUMS = {
 # (new, close, migrate-size) stores the level. ALIAS_OK: the retired-vocabulary guard in check.py allows this line.
 SIZE_ALIASES = {'S': 'L1', 'M': 'L2', 'L': 'L3', 'XL': 'L4'}  # ALIAS_OK
 SIZE_COMMENT = '# L1 | L2 | L3 | L4 (L5 reserved)'
-GLYPH = {'proposed': '⏳', 'ready': '🔵', 'blocked': '🔴', 'done': '🟢', 'dropped': '⚪'}
+GLYPH = {'proposed': '⏳', 'ready': '🔵', 'claimed': '🟡', 'paused': '⏸️', 'blocked': '🔴', 'done': '🟢',
+         'dropped': '⚪'}
 ID_RE = re.compile(r'T-\d{4}')
 CAP_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]*')  # a capability name, fullmatch (cap:<name>, provides)
 DATE_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
@@ -264,6 +271,7 @@ EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
 HASH_BOUND_RE = re.compile(r'\s*hash_bound\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0374: one or more globs per line
 TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
+AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
 
 HEADER = """# Roadmap
 
@@ -362,6 +370,24 @@ def config_numbered(root):
         if CONFIG_RE.fullmatch(line):
             return True
     return False
+
+
+def config_areas(root):
+    """The allowed ticket areas: the comma-separated names on every `areas: a, b, c` line of <root>/config, in
+    order, each stripped, empty names dropped. A missing file or no such line gives []. Blank and # comment lines
+    are ignored. An area is a ticket's domain (the `area:` front matter value), never a lane or branch name:
+    lanes stay `lane/<ticket>-<slug>`."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        mo = AREAS_RE.fullmatch(line)
+        if mo:
+            out += [a.strip() for a in mo.group(1).split(',') if a.strip() and a.strip() not in out]
+    return out
 
 
 def ensure_numbered_config(root):
@@ -1031,10 +1057,14 @@ def cycles(ts):
     return found
 
 
-def problems(ts, numbered=False):
+def problems(ts, numbered=False, areas=None):
     """One line per problem, each naming the ticket slug.
     numbered also fails a NNNN-<slug> (or .NNNN-<slug>) folder whose id is not T-NNNN; plain slugs are never
-    prefix-checked. In any mode, a .NNNN-<slug> folder fails unless its status is done or dropped."""
+    prefix-checked. In any mode, a .NNNN-<slug> folder fails unless its status is done or dropped.
+    status: claimed needs a non-empty string claimed_by, and status: paused a non-empty string paused_reason;
+    on any other status neither field is validated. areas is config_areas(root): an `area:` must be a non-empty
+    string in it, and with areas == [] any `area:` fails naming the config line to add. areas=None (a caller
+    with no root) skips the area check. An absent `area:` is always valid; an area is never a lane name."""
     errs, ids = [], {}
     for slug, m in ts:
         if DOT_RE.fullmatch(slug) and m.get('status') not in ('done', 'dropped'):
@@ -1072,6 +1102,17 @@ def problems(ts, numbered=False):
                         errs.append(f"{slug}: provides item '{x}' is not a name like [A-Za-z0-9][A-Za-z0-9._-]*")
         if 'from' in m and not isinstance(m['from'], str):
             errs.append(f'{slug}: from {m["from"]!r} is not a single ticket id')
+        for st, field in (('claimed', 'claimed_by'), ('paused', 'paused_reason')):
+            v = m.get(field)
+            if m.get('status') == st and not (isinstance(v, str) and v.strip()):
+                errs.append(f'{slug}: status {st} needs a non-empty {field}: line in its front matter')
+        if 'area' in m and areas is not None:
+            a = m['area']
+            if not areas:
+                errs.append(f'{slug}: area {a!r} but no areas are configured; add `areas: <name>, ...` to '
+                            f'<root>/config')
+            elif not (isinstance(a, str) and a.strip() in areas):
+                errs.append(f'{slug}: area {a!r} not in the config areas {", ".join(areas)}')
     prov = providers(ts)
     for slug, m in ts:
         for dep in deps_of(m):
@@ -1334,9 +1375,22 @@ def render_dep(d, met_caps, base):
     return d.replace('|', '\\|')
 
 
+def area_of(m):
+    """A ticket's non-empty string area, stripped, else ''."""
+    a = m.get('area')
+    return a.strip() if isinstance(a, str) else ''
+
+
 def render(ts, root):
-    rows = ['| ID | Ticket | Title | Type | Size | Pri | Depends on | Status |',
-            '|---|---|---|---|---|---|---|---|']
+    """The roadmap text. An Area column after Type appears only when some ticket has a non-empty area, so a
+    root with no area renders byte for byte as before. A paused Status cell carries its paused_reason."""
+    with_area = any(area_of(m) for _, m in ts)
+    if with_area:
+        rows = ['| ID | Ticket | Title | Type | Area | Size | Pri | Depends on | Status |',
+                '|---|---|---|---|---|---|---|---|---|']
+    else:
+        rows = ['| ID | Ticket | Title | Type | Size | Pri | Depends on | Status |',
+                '|---|---|---|---|---|---|---|---|']
     ordered, _, _ = order(ts)
     met_caps = {name for _, m in ts if m.get('status') == 'done' for name in provides_of(m)}
     cache = []
@@ -1350,8 +1404,12 @@ def render(ts, root):
     for slug, m in ordered:
         deps = ', '.join(render_dep(d, met_caps, base) for d in m['depends']) or 'none'
         title = m['title'].replace('|', '\\|')
-        rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} | {m['size']} | "
-                    f"{m['priority']} | {deps} | {GLYPH[m['status']]} {m['status']} |")
+        status = f"{GLYPH[m['status']]} {m['status']}"
+        if m['status'] == 'paused' and isinstance(m.get('paused_reason'), str):
+            status += f" ({m['paused_reason'].strip()})".replace('|', '\\|')
+        area = ' ' + area_of(m).replace('|', '\\|') + ' |' if with_area else ''
+        rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} |{area} {m['size']} | "
+                    f"{m['priority']} | {deps} | {status} |")
     return HEADER + '\n' + '\n'.join(rows) + '\n'
 
 
@@ -1386,14 +1444,22 @@ Create a ticket:
 Never pick an id by hand: `new` stamps the next id above every worktree's.
 2. Fill in the body sections of the new `handoff.md`.
 
+Ticket fields:
+status: proposed | ready | claimed | paused | blocked | done | dropped
+- `area:` is optional: the ticket's domain, one of the `areas:` names in `<R>/config`. It is never a lane or \
+branch name.
+- `paused_reason:` is the one-line reason a `status: paused` ticket waits; `status: claimed` needs `claimed_by:`.
+
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
 ask the user.
-2. Add `claimed_by: <claude|codex> <YYYY-MM-DD>` to the front matter, then run \
+2. Set `status: claimed` and add `claimed_by: <claude|codex> <YYYY-MM-DD>` to the front matter, then run \
 `python3 <plugin-root>/scripts/tickets.py --root <R> roadmap`.
 3. Start the work through `run.sh`, which puts it in progress: \
 `<plugin-root>/scripts/run.sh planner <level> <T>/<folder>/handoff.md`, or `/sdlc-lite:chain <T>/<folder>`. \
-`status` stays a person's decision; progress shows on `/board`.
+Progress shows on `/board`.
+4. Release: remove the `claimed_by:` line and set `status: ready`. Pause: set `status: paused` and add a one-line \
+`paused_reason:`. Rerun `roadmap` after either.
 
 Close a ticket:
 1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 <T>/<folder>/handoff.md`.
@@ -1462,7 +1528,7 @@ tickets. It names no folder paths. `tickets.py roadmap` generates this block: do
 
 ROUTER_HERE = '- Ticket folders: next to this file.'
 ROUTER_TICKETS = '- Ticket folders: `tickets/`; the same procedures are in `tickets/AGENTS.md`.'
-ACTIVE = ('proposed', 'ready', 'blocked')
+ACTIVE = ('proposed', 'ready', 'claimed', 'paused', 'blocked')
 
 
 def router_paths(root):
@@ -1494,9 +1560,10 @@ def router_files(root):
 
 
 def stage_lines(ts):
-    """One `- <stage>: <count>` line per status in ENUMS order; under proposed, ready and blocked one
-    `  - <id> <title> (<folder>)` line per ticket in id order, with `, claimed by <value>` for a non-empty
-    string claimed_by. The folder is the bare folder name, never a path."""
+    """One `- <stage>: <count>` line per status in ENUMS order; under each ACTIVE status (proposed, ready,
+    claimed, paused, blocked) one `  - <id> <title> (<folder>)` line per ticket in id order, with
+    `, claimed by <value>` for a non-empty string claimed_by, then `, paused: <reason>` for a paused ticket's
+    non-empty string paused_reason. The folder is the bare folder name, never a path."""
     out = []
     for st in ENUMS['status']:
         group = sorted(((m.get('id') if isinstance(m.get('id'), str) else '', slug, m)
@@ -1509,6 +1576,9 @@ def stage_lines(ts):
                 c = m.get('claimed_by')
                 if isinstance(c, str) and c.strip():
                     line += f', claimed by {c.strip()}'
+                r = m.get('paused_reason')
+                if st == 'paused' and isinstance(r, str) and r.strip():
+                    line += f', paused: {r.strip()}'
                 out.append(line)
     return out
 
@@ -1668,7 +1738,7 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
     if numbered and meta.get('id') != tid:
         raise Fail(f'{tpl}: template has no id: T-0000 line to stamp, so the folder cannot be numbered; '
                    f'nothing written')
-    errs = problems(ts + [(name, meta)], numbered)
+    errs = problems(ts + [(name, meta)], numbered, areas=config_areas(root))
     if errs:
         raise Fail('\n'.join(errs + [f'{tpl}: template gives a bad ticket; nothing written']))
     return text, meta
@@ -1687,7 +1757,7 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
     if not numbered and (td / slug).exists():
         raise Fail(f'{slug}: {td / slug} already exists; nothing written')
     ts = load(td)
-    errs = problems(ts, numbered) + strays(root)
+    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
     router_preflight(root)
@@ -1868,7 +1938,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if archive and dot.exists():
         raise Fail(f'{slug}: close would rename it to {dot.name}, but {dot} already exists; nothing written')
     ts = load(td)
-    errs = problems(ts, numbered) + strays(root)
+    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to close: fix the problems above first']))
     router_preflight(root)
@@ -2038,7 +2108,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if dry_run:
         opens = [f'open {m["id"]} {m.get("title", "")} [{x}]'
                  for x, m in sorted(ts, key=lambda e: e[1]['id'])
-                 if m.get('status') in ('proposed', 'ready', 'blocked') and m['id'] != pid]
+                 if m.get('status') in ACTIVE and m['id'] != pid]
         local_ids = {m.get('id') for _, m in ts}
         seen = {}
         for wdir, r in other_ticket_dirs(root):
@@ -2049,7 +2119,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             for x, m in ots:
                 i = m.get('id')
                 if (not isinstance(i, str) or not ID_RE.fullmatch(i) or i in local_ids or i == pid or i in seen
-                        or m.get('status') not in ('proposed', 'ready', 'blocked')):
+                        or m.get('status') not in ACTIVE):
                     continue
                 seen[i] = f'open {i} {m.get("title", "")} [{x}] (worktree {wdir.name})'
         other_opens = [seen[i] for i in sorted(seen)]
@@ -2102,7 +2172,7 @@ def cmd_roadmap(root, numbered=False):
     td = layout_paths(root).tickets
     numbered = numbered or config_numbered(root)
     ts = load(td)
-    errs = problems(ts, numbered) + strays(root)
+    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['roadmap not written: fix the problems above first']))
     router_preflight(root)
@@ -2114,7 +2184,7 @@ def cmd_check(root, numbered=False):
     td = layout_paths(root).tickets
     numbered = numbered or config_numbered(root)
     ts = load(td)
-    errs = problems(ts, numbered) + strays(root) + root_strays(root)
+    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root) + root_strays(root)
     if errs:
         raise Fail('\n'.join(errs))
     if stale(root, ts):
@@ -2146,7 +2216,7 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
         raise Fail(f'archive renames NNNN-<slug> folders and needs numbered mode (--numbered or '
                    f'ticket_folders: numbered in {root}/config); nothing written')
     ts = load(td)
-    errs = problems(ts, numbered) + strays(root)
+    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
     router_preflight(root)
@@ -2220,7 +2290,7 @@ def cmd_number(root, dry_run=False):
     With `ticket_root: tickets` the folders are under <root>/tickets; config and roadmap.md stay at <root>."""
     td = layout_paths(root).tickets
     ts = load(td)
-    errs = problems(ts) + strays(root)
+    errs = problems(ts, areas=config_areas(root)) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
     router_preflight(root)
@@ -2291,7 +2361,7 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
     td = lp.tickets
     at_root = [(n, m) for n, m in load(root) if n not in ROOT_ALLOWED]
     ts = sorted((load(td) if td != root else []) + at_root)
-    errs = problems(ts, config_numbered(root))
+    errs = problems(ts, config_numbered(root), areas=config_areas(root))
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
     router_preflight(root)
@@ -4312,23 +4382,24 @@ def selftest():
         rc, _, err = run(rl, 'new', ('feature', 'alpha', 'Alpha'))
         st = stage_text(rl)
         expect(f'router: new writes proposed 1 and the ticket line: rc={rc} {err!r} {st!r}',
-               rc == 0 and st == '- proposed: 1\n  - T-0001 Alpha (alpha)\n- ready: 0\n- blocked: 0\n- done: 0\n'
-                                 '- dropped: 0' and tr_text(rl / 'CLAUDE.md') == '@AGENTS.md\n'
+               rc == 0 and st == '- proposed: 1\n  - T-0001 Alpha (alpha)\n- ready: 0\n- claimed: 0\n- paused: 0\n'
+                                 '- blocked: 0\n- done: 0\n- dropped: 0' and tr_text(rl / 'CLAUDE.md') == '@AGENTS.md\n'
                and run(rl, 'check')[0] == 0)
         edit(rl, 'alpha', r'^status:.*$', 'status: ready')
         rc_c, _ = check_err(rl)
         run(rl, 'roadmap')
         st = stage_text(rl)
         expect(f'router: a status edit plus roadmap moves the line to ready: rc_check={rc_c} {st!r}',
-               rc_c == 1 and st == '- proposed: 0\n- ready: 1\n  - T-0001 Alpha (alpha)\n- blocked: 0\n- done: 0\n'
-                                    '- dropped: 0' and run(rl, 'check')[0] == 0)
+               rc_c == 1 and st == '- proposed: 0\n- ready: 1\n  - T-0001 Alpha (alpha)\n- claimed: 0\n- paused: 0\n'
+                                    '- blocked: 0\n- done: 0\n- dropped: 0' and run(rl, 'check')[0] == 0)
         filer('filer-L1.md', 'None', '- decide: Add retry to fetch')(rl)
         rc, out, err = close_one(rl, 1)
         st = stage_text(rl)
         expect(f'router: close raises done, drops the line, and the follow-up adds a proposed line: rc={rc} {out!r} '
                f'{err!r} {st!r}',
                rc == 0 and st == '- proposed: 1\n  - T-0002 Add retry to fetch (add-retry-to-fetch)\n- ready: 0\n'
-                                 '- blocked: 0\n- done: 1\n- dropped: 0' and run(rl, 'check')[0] == 0)
+                                 '- claimed: 0\n- paused: 0\n- blocked: 0\n- done: 1\n- dropped: 0'
+               and run(rl, 'check')[0] == 0)
         expect(f'router: new and follow-up tickets carry the router line: '
                f'{router_line(rl / "alpha" / "handoff.md")!r} {router_line(rl / "add-retry-to-fetch" / "handoff.md")!r}',
                router_line(rl / 'alpha' / 'handoff.md') == router_line(rl / 'add-retry-to-fetch' / 'handoff.md')
@@ -4340,20 +4411,24 @@ def selftest():
                and '<plugin-root>/scripts/run.sh filer L1 .sdlc/<folder>/handoff.md' in b
                and '${CLAUDE_PLUGIN_ROOT}' in b and str(tmp) not in b and ROUTER_HERE in b)
 
-        # contents with tickets in all five statuses, closed dot folders included
+        # contents with tickets in every status, closed dot folders included
         r5 = pathlib.Path(tmp) / 'rt-five' / '.sdlc'
-        for sl in ('a', 'b', 'c', 'd', 'e', 'f'):
+        for sl in ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'):
             run(r5, 'new', ('feature', sl, sl.upper()), numbered=True)
-        for sl, s in (('0002-b', 'ready'), ('0003-c', 'blocked'), ('0004-d', 'done'), ('0005-e', 'dropped')):
+        for sl, s in (('0002-b', 'ready'), ('0003-c', 'blocked'), ('0004-d', 'done'), ('0005-e', 'dropped'),
+                      ('0007-g', 'claimed\nclaimed_by: codex 2026-10-11'),
+                      ('0008-h', 'paused\npaused_reason: waiting on vendor')):
             edit(r5, sl, r'^status:.*$', f'status: {s}')
         run(r5, 'roadmap')
         rc_a, out_a, err_a = run(r5, 'archive')
         rc_f, out_f, err_f = run(r5, 'close', ('0006-f',), reason='done elsewhere')
         st = stage_text(r5)
-        expect(f'router: five statuses, dot folders counted under their status, done and dropped count only: '
+        expect(f'router: every status, dot folders counted under their status, done and dropped count only: '
                f'rc={rc_a},{rc_f} {err_a!r} {err_f!r} tree={tree(r5)} {st!r}',
                rc_a == rc_f == 0 and (r5 / '.0004-d').is_dir() and (r5 / '.0006-f').is_dir()
-               and st == '- proposed: 1\n  - T-0001 A (0001-a)\n- ready: 1\n  - T-0002 B (0002-b)\n- blocked: 1\n'
+               and st == '- proposed: 1\n  - T-0001 A (0001-a)\n- ready: 1\n  - T-0002 B (0002-b)\n- claimed: 1\n'
+                         '  - T-0007 G (0007-g), claimed by codex 2026-10-11\n- paused: 1\n'
+                         '  - T-0008 H (0008-h), paused: waiting on vendor\n- blocked: 1\n'
                          '  - T-0003 C (0003-c)\n- done: 2\n- dropped: 1' and run(r5, 'check')[0] == 0)
         # claimed_by shows on an active line; while only the router is stale, check names AGENTS.md, not roadmap.md
         edit(r5, '0002-b', r'^created:(.*)$', r'created:\1\nclaimed_by: claude 2026-09-30')
@@ -4364,6 +4439,56 @@ def selftest():
         run(r5, 'roadmap')
         expect(f'router: claimed_by shows on the active line: {stage_text(r5)!r}',
                '  - T-0002 B (0002-b), claimed by claude 2026-09-30\n' in stage_text(r5) and run(r5, 'check')[0] == 0)
+
+        # area, claimed and paused: validation runs one way; the Area column shows only when an area exists
+        ra = pathlib.Path(tmp) / 'rt-area' / '.sdlc'
+        run(ra, 'new', ('feature', 'alpha', 'Alpha'))
+        rm = tr_text(ra / 'roadmap.md')
+        expect(f'area: no area anywhere keeps the header without an Area column: {rm!r}',
+               '| ID | Ticket | Title | Type | Size | Pri | Depends on | Status |\n' in rm and '| Area |' not in rm)
+        edit(ra, 'alpha', r'^status:.*$', 'status: ready\nclaimed_by: claude 2026-10-11')
+        run(ra, 'roadmap')
+        rc, err = check_err(ra)
+        expect(f'claimed_by on a ready ticket stays valid: rc={rc} {err!r}', rc == 0)
+        edit(ra, 'alpha', r'^created:(.*)$', r'created:\1\narea: ui-kit')
+        rc, err = check_err(ra)
+        expect(f'area: an area with no areas: line fails naming the config line to add: rc={rc} {err!r}',
+               rc == 1 and 'alpha' in err and "'ui-kit'" in err and '`areas: <name>, ...`' in err)
+        with (ra / 'config').open('a', encoding='utf-8') as f:
+            f.write('# ticket areas\nareas: ui-kit, back-end  # domains\n')
+        edit(ra, 'alpha', r'^area:.*$', 'area: nope')
+        rc, err = check_err(ra)
+        expect(f'area: an unknown area fails naming the value and the list: rc={rc} {err!r}',
+               rc == 1 and 'alpha' in err and "'nope'" in err and 'ui-kit, back-end' in err)
+        edit(ra, 'alpha', r'^area:.*$', 'area: ui-kit')
+        rc, _, err = run(ra, 'new', ('feature', 'beta', 'Beta'))
+        rm = tr_text(ra / 'roadmap.md')
+        expect(f'area: a listed area passes and an Area column appears, empty for a ticket without one: '
+               f'rc={rc} {err!r} {rm!r}',
+               rc == 0 and run(ra, 'check')[0] == 0
+               and '| ID | Ticket | Title | Type | Area | Size | Pri | Depends on | Status |\n' in rm
+               and '|---|---|---|---|---|---|---|---|---|\n' in rm
+               and '| feature | ui-kit | ' in rm and '| feature |  | ' in rm)
+        edit(ra, 'beta', r'^status:.*$', 'status: claimed')
+        rc, err = check_err(ra)
+        expect(f'claimed without claimed_by fails naming claimed_by: rc={rc} {err!r}',
+               rc == 1 and 'beta' in err and 'claimed_by' in err)
+        edit(ra, 'beta', r'^status:.*$', 'status: paused')
+        rc, err = check_err(ra)
+        expect(f'paused without paused_reason fails naming paused_reason: rc={rc} {err!r}',
+               rc == 1 and 'beta' in err and 'paused_reason' in err)
+        edit(ra, 'beta', r'^status:.*$', 'status: paused\npaused_reason: waiting on vendor | api')
+        edit(ra, 'alpha', r'^status:.*$', 'status: claimed')
+        rc_r, _, err_r = run(ra, 'roadmap')
+        rm, st = tr_text(ra / 'roadmap.md'), stage_text(ra)
+        expect(f'paused reason shows in the roadmap and the router, claimed counts: rc={rc_r} {err_r!r} {rm!r} {st!r}',
+               rc_r == 0 and run(ra, 'check')[0] == 0
+               and '| ⏸️ paused (waiting on vendor \\| api) |\n' in rm and '| \U0001f7e1 claimed |\n' in rm
+               and '- claimed: 1\n  - T-0001 Alpha (alpha), claimed by claude 2026-10-11\n' in st
+               and '- paused: 1\n  - T-0002 Beta (beta), paused: waiting on vendor | api\n' in st)
+        b = block_of(ra / 'AGENTS.md')
+        expect(f'router: the Ticket fields line lists every status in order: {b!r}',
+               '\nstatus: proposed | ready | claimed | paused | blocked | done | dropped\n' in b)
 
         # text outside the block and existing CLAUDE.md content are kept; one block and one import after reruns
         rk = pathlib.Path(tmp) / 'rt-keep' / '.sdlc'
