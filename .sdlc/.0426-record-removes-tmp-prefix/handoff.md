@@ -2,7 +2,7 @@
 id: T-0426
 title: "dispatch.py record removes the role's own tmp worktree prefix"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ No em or en dashes. No push or publish. Do not remove any worktree or branch out
 - Those cases failed before the change to `remove_tmp` in `scripts/dispatch.py` (symlink case, cleaned line, failed-attempt line).
 - `python3 plugins/sdlc-lite/scripts/check.py`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` pass.
 - No path outside the role's own prefix is removed (inspect `remove_tmp`).
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); verified pass by an independent L2 verifier on the second round
