@@ -10,7 +10,7 @@
   "effort": "high",
   "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
   "reason_source": "fallback",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-09T00:02:54.342195+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f27/gk",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f27/gk/.sdlc/0392-goals-and-kpi-homes/handoff.md",
@@ -318,5 +318,7 @@
     "worktree-agent-ae11c915f68bab1f5",
     "worktree-agent-ae9ec401bb7128396",
     "worktree-agent-afafb1b20c1d0dd6f"
-  ]
+  ],
+  "finished_at": "2026-10-11T13:29:16.159420+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }

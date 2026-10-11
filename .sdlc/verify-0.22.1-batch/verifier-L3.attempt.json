@@ -10,7 +10,7 @@
   "effort": "xhigh",
   "routing_reason": "independent L3 batch verification of tickets merged since v0.22.0",
   "reason_source": "caller",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-09T01:42:47.391046+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/verify-0.22.1-batch/handoff.md",
@@ -340,5 +340,7 @@
     "worktree-agent-ae11c915f68bab1f5",
     "worktree-agent-ae9ec401bb7128396",
     "worktree-agent-afafb1b20c1d0dd6f"
-  ]
+  ],
+  "finished_at": "2026-10-11T13:29:16.213738+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }

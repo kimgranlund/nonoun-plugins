@@ -10,7 +10,7 @@
   "effort": "high",
   "routing_reason": "T-0368 batched verifier",
   "reason_source": "caller",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-08T16:44:48.792947+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f17/prune",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f17/prune/.sdlc/0368-prune-flag/handoff.md",
@@ -265,5 +265,7 @@
     "worktree-agent-ae11c915f68bab1f5",
     "worktree-agent-ae9ec401bb7128396",
     "worktree-agent-afafb1b20c1d0dd6f"
-  ]
+  ],
+  "finished_at": "2026-10-11T13:29:16.149818+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }

@@ -10,7 +10,7 @@
   "effort": "xhigh",
   "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
   "reason_source": "fallback",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-11T02:30:49.244522+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f50/pd",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f50/pd/.sdlc/0432-plan-done-script/handoff.md",
@@ -34,5 +34,7 @@
     "wave30-gl",
     "wave31",
     "wave31-pd"
-  ]
+  ],
+  "finished_at": "2026-10-11T13:29:16.193753+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }

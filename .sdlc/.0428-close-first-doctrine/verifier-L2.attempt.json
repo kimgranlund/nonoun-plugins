@@ -10,7 +10,7 @@
   "effort": "high",
   "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
   "reason_source": "fallback",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-10T21:54:37.915378+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f48/cd",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f48/cd/.sdlc/0428-close-first-doctrine/handoff.md",
@@ -46,5 +46,7 @@
     "wave29",
     "wave29-cd",
     "wave29-sk"
-  ]
+  ],
+  "finished_at": "2026-10-11T13:29:16.192110+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }
