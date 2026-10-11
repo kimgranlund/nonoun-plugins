@@ -122,7 +122,7 @@ Each FAIL row is a selftest case with the label `plan: <rule> ...`, and the buil
 
 ## 4. `plan_done.py`
 
-`plan_done.py <plan-doc> [--root .sdlc] [--records-only] [--json]`, plus two writers: `plan_done.py stop <plan-doc> --reason R` and `plan_done.py replan <plan-doc> --reason R`. It is deterministic, calls no model, and reads files and runs only the commands the plan lists as `now` measures.
+`plan_done.py <plan-doc> [--root .sdlc] [--records-only] [--json]`, plus three writers: `plan_done.py stop <plan-doc> --reason R`, `plan_done.py replan <plan-doc> --reason R` and `plan_done.py resume <plan-doc>` (clears the stop record once its cause is fixed, keeps the replan count; T-0438). It is deterministic, calls no model, and reads files and runs only the commands the plan lists as `now` measures.
 
 ### 4.1 What it reads
 
@@ -247,7 +247,7 @@ What stays with a stronger or separate seat:
    Limit [V conductor.md, hooks/_role.sh]: `block-publish.sh` applies only when `SDLC_ROLE` is set or the caller is a pipeline sub-agent; an interactive driver session has neither, so the hook does not guard the driver itself. The `run-plan` skill therefore tells the person to start an unattended driver with `SDLC_ROLE=conductor` and `SDLC_HEADLESS=1` exported, and the skill's first preflight line prints `SDLC_ROLE` so a missing value is visible [D]. Whether the `/goal` evaluator environment honors those variables on a live session is unverified and is a live-run item.
 3. Replan cap is one: `plan_done.py replan` counts in a file; the second call stops the run and writes state. A recurring finding (same criterion, same root cause) is a replan of the plan, never a level bump, as the conductor already rules.
 4. Spend: `cap` becomes the ticket's `budget_usd`; the budget gate exits 4 at 80 percent with no ack, which `run-plan` treats as a stop; the total cap is checked against the sum of ticket spend by `budget.py` before each step. No ack is ever invented.
-5. State on stop: `plan_done.py stop` writes `plan-state.json` and the notes line, so a stopped run is a known state and exit 4 is a valid end of the goal.
+5. State on stop: `plan_done.py stop` writes `plan-state.json` and the notes line, so a stopped run is a known state and exit 4 is a valid end of the goal. `plan_done.py resume` is the only way back from it.
 6. The executor never asks a person. `AskUserQuestion` is not used; a missing input is a plan defect found by `plan_check.py plan --run` before the run starts.
 7. A new idea becomes a new ticket, not a larger step; a step whose ticket is frozen is changed only by the one replan.
 

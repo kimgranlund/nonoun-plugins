@@ -4,6 +4,7 @@
   plan_done.py <plan-doc> [--root .sdlc] [--records-only] [--json]
   plan_done.py stop <plan-doc> --reason R [--resume CMD] [--root .sdlc]
   plan_done.py replan <plan-doc> --reason R [--root .sdlc]
+  plan_done.py resume <plan-doc> [--root .sdlc]
   plan_done.py selftest
 
 Deterministic: no model call. It reads the plan (through plan_doc.py, after the plan_check.py `plan` shape rules), each step's ticket,
@@ -24,7 +25,8 @@ number; anything else, a failing command or a timeout reads `unreadable`, never 
 (`<= 15`), else the direction (down `<=`, up `>=`, hold `=`).
 `stop` writes plan-state.json beside the plan and one line to the notes file the plan names, exit 0. `replan` counts in the same file:
 the first call exits 0, the second refuses (exit 2), writes the stop record and prints `replan cap reached: stopped`. plan-state.json
-holds `replans` and `stopped` and nothing else, and never contributes to done.
+holds `replans` and `stopped` and nothing else, and never contributes to done. `resume` clears the stop record (keeps `replans`) and
+writes one notes line, exit 0: the step after the cause of a stop is fixed, so a stop record never needs hand removal.
 """
 import argparse, json, os, pathlib, re, subprocess, sys, tempfile, time
 
@@ -90,7 +92,7 @@ def verifier_problem(folder):
     """None when the ticket's newest verifier result is an independent pass (or a verified hold, which C3 then lists), else the reason."""
     v = order.newest(str(folder), 'verifier')
     if not v:
-        return 'no verifier result'
+        return 'no verifier result; fanout.py land carries a lane\'s record onto this checkout, a hand merge or cherry-pick leaves it on the lane branch'
     err = results.validate(v, 'verifier')
     if err:
         return f'{os.path.basename(v)} is invalid: {err}'
@@ -316,7 +318,19 @@ def note(plan, root, line):
 
 
 def default_resume(plan):
-    return f'python3 plugins/sdlc-lite/scripts/plan_done.py {plan}'
+    return f'python3 plugins/sdlc-lite/scripts/plan_done.py resume {plan}'
+
+
+def do_resume(plan, root):
+    """Clear the stop record, keep the replan count; returns the cleared stop's reason, or None when none was recorded."""
+    state = read_state(plan)
+    stopped = state.pop('stopped', None)
+    if not isinstance(stopped, dict):
+        return None
+    state['replans'] = int(state.get('replans', 0) or 0)
+    write_state(plan, state)
+    note(plan, root, f'- {time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())} plan {pathlib.Path(plan).parent.name} resumed after: {stopped.get("reason", "")}')
+    return str(stopped.get('reason', ''))
 
 
 def do_stop(plan, root, reason, resume=None):
@@ -395,7 +409,7 @@ def selftest():
         return assess(plan, root, **kw)
 
     def cli(plan, root, *args):
-        p = subprocess.run([sys.executable, str(HERE / 'plan_done.py'), *args, '--root', str(root)] if args[:1] in (('stop',), ('replan',)) else
+        p = subprocess.run([sys.executable, str(HERE / 'plan_done.py'), *args, '--root', str(root)] if args[:1] in (('stop',), ('replan',), ('resume',)) else
                            [sys.executable, str(HERE / 'plan_done.py'), str(plan), '--root', str(root), *args], capture_output=True, text=True)
         return p.returncode, p.stdout.strip().splitlines()
 
@@ -441,6 +455,7 @@ def selftest():
     tmp, root, plan = fresh()
     (root / '0902-close-out' / 'verifier-L2.md').unlink()
     row('C2 a verify: required L1 step with no verifier exits 1', run_all(root, plan), 1, 'open: step 4: no independent verifier pass (no verifier result')
+    expect('plan_done: C2 the no-record reason names fanout.py land (T-0438: the record stays on the lane after a hand merge)', 'fanout.py land' in run_all(root, plan)['last'])
     tmp, root, plan = fresh()
     ed(plan, 'verify: required\ncap: $10', 'verify: auto\ncap: $10')
     (root / '0902-close-out' / 'verifier-L2.md').unlink()
@@ -500,6 +515,20 @@ def selftest():
     state = json.loads((plan.parent / STATE).read_text(encoding='utf-8'))
     expect('plan_done: plan-state.json holds replans and stopped and nothing else', sorted(state) == ['replans', 'stopped'] and state['replans'] == 0, state)
     expect('plan_done: stop appended one line to the notes file the plan names', (root / 'notes.md').read_text(encoding='utf-8').count('stopped: weekly limit') == 1)
+    # resume (T-0438): the stop record clears without hand removal; the replan count survives
+    tmp, root, plan = fresh()
+    ed(root / '0413-resume' / 'handoff.md', 'status: done', 'status: ready')
+    cli(plan, root, 'replan', str(plan), '--reason', 'defect')
+    cli(plan, root, 'stop', str(plan), '--reason', 'merge conflict')
+    expect('plan_done: the default resume command names the resume subcommand', f'plan_done.py resume {plan}' in run_all(root, plan)['last'], run_all(root, plan)['last'])
+    rc, out = cli(plan, root, 'resume', str(plan))
+    expect('plan_done: resume exits 0 and prints what it cleared', rc == 0 and out == ['resumed: cleared stop "merge conflict"'], (rc, out))
+    st = json.loads((plan.parent / STATE).read_text(encoding='utf-8'))
+    row('resume: the open item is exit 1 again, no longer the sticky exit 4', run_all(root, plan), 1, 'open: step 2')
+    expect('plan_done: resume keeps the replan count and holds no stop', st == {'replans': 1}, st)
+    expect('plan_done: resume appended one notes line', (root / 'notes.md').read_text(encoding='utf-8').count('resumed after: merge conflict') == 1)
+    rc, out = cli(plan, root, 'resume', str(plan))
+    expect('plan_done: resume with no stop record exits 0 and says so', rc == 0 and out == ['resumed: no stop record'], (rc, out))
     # records only
     tmp, root, plan = fresh()
     row('records-only an all-green fixture exits 3 and never 0', run_all(root, plan, records_only=True), 3, 'records ok; measures not read')
@@ -557,11 +586,11 @@ def main(argv):
         return selftest()
     ap = argparse.ArgumentParser(prog='plan_done.py', description=__doc__.split('\n')[0])
     sub = None
-    if argv[:1] in (['stop'], ['replan']):
+    if argv[:1] in (['stop'], ['replan'], ['resume']):
         sub, argv = argv[0], argv[1:]
     ap.add_argument('plan')
     ap.add_argument('--root', default='.sdlc')
-    if sub:
+    if sub in ('stop', 'replan'):
         ap.add_argument('--reason', required=True)
     if sub == 'stop':
         ap.add_argument('--resume')
@@ -573,6 +602,10 @@ def main(argv):
         if not pathlib.Path(a.plan).is_file():
             print(f'plan defect: unreadable: {a.plan}', file=sys.stderr)
             return 2
+        if sub == 'resume':
+            why = do_resume(a.plan, a.root)
+            print(f'resumed: cleared stop "{why}"' if why is not None else 'resumed: no stop record')
+            return 0
         if sub == 'replan':
             return do_replan(a.plan, a.root, a.reason)
         do_stop(a.plan, a.root, a.reason, a.resume)

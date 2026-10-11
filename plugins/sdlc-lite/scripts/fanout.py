@@ -13,6 +13,7 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
                       [--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
        fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]...
                       [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
+       fanout.py settle <integration>
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
@@ -377,7 +378,7 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
 HOST_WORKTREES = '.claude/worktrees'
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
 HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
-SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nBrief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
+SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\n{sync}Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and after a fix rerun the checks that fix can affect (every check when unsure), keeping any `(red)` control, and report files changed, each check '
                         'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
@@ -1470,12 +1471,17 @@ def subagent_head(tid, title, tier, limit=50):
     return f'{tid} {cut}{tail}' if cut else f'{tid}{tail}'
 
 
+SOLO_SYNC = ('Base sha: {sha}. The host may make your worktree from origin/main, which can lack the claim commit: before anything else run '
+             '`git merge --ff-only {sha}` in your worktree so the ticket folder is visible, and stop with a blocked report if it refuses.\n')
+
+
 def subagent_dispatch(ctx, t, tier):
     """The Agent call for one solo ticket: a background sub-agent in its own worktree, told to commit `<id>: <title>`."""
     tier = solo_tier(tier)
     model, effort, _ = SOLO_TIERS[tier]
     name = subagent_name(t.id)
     handoff = (ctx['trel'] / t.slug / 'handoff.md').as_posix()
+    base_sha = subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None
     verifier = None
     if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports; the level is the ticket's at prep
         verifier = ' '.join(shlex.quote(x) for x in (
@@ -1483,11 +1489,12 @@ def subagent_dispatch(ctx, t, tier):
             f'{HOST_WORKTREES}/{name}/{handoff}'))
     return {'subagent_type': f'sdlc-lite:solo-{tier}', 'name': name, 'description': ' '.join(([t.id, 'solo', tier] + t.title.split())[:5]),  # 3 to 5 words
             'model': model, 'effort': effort,
-            'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title),
+            'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title,
+                                                  sync=SOLO_SYNC.format(sha=base_sha) if base_sha else ''),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
             'handoff': handoff, 'verifier': verifier,
-            'base_sha': subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None}
+            'base_sha': base_sha}
 
 
 def write_solo_row(taskdir, tier):
@@ -2021,6 +2028,35 @@ def roll_ticket(ctx, lock):
         if p.returncode:
             return f'main not advanced: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', new[:7]
         return 'merged', commit
+
+
+def cmd_settle(a):
+    """Bring a landed integration branch back into the checkout it was cut from and retire it (T-0438): fast-forward the
+    current branch to it (nothing to do when it is already merged, as after a hand merge), remove its worktree, delete the
+    branch. A branch that is neither merged nor a fast-forward is refused and left whole. Local only, never a push."""
+    cwd = pathlib.Path.cwd()
+    try:
+        if git(cwd, 'rev-parse', '--verify', '-q', f'refs/heads/{a.integration}').returncode:
+            print(f'settle: no branch {a.integration}: nothing to settle')
+            return 0
+        head = git_out(cwd, 'symbolic-ref', '--short', '-q', 'HEAD')
+        if git(cwd, 'merge-base', '--is-ancestor', a.integration, 'HEAD').returncode:
+            p = git(cwd, 'merge', '--ff-only', a.integration)
+            if p.returncode:
+                raise Refuse(f'{a.integration} is not a fast-forward of {head}: {(p.stderr or p.stdout).strip().splitlines()[0] if (p.stderr or p.stdout).strip() else p.returncode}; '
+                             f'stop with state written, the branch is kept')
+        wt = None
+        for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+            if line.startswith('worktree '):
+                wt = line[len('worktree '):]
+            elif line == f'branch refs/heads/{a.integration}':
+                git_out(cwd, 'worktree', 'remove', wt)
+        git_out(cwd, 'branch', '-d', a.integration)
+    except Refuse as e:
+        print(f'fanout: {e}', file=sys.stderr)
+        return 2
+    print(f'settled: {a.integration} is in {head}; its worktree and branch are removed')
+    return 0
 
 
 def cmd_roll(a):
@@ -3348,6 +3384,10 @@ def selftest():
         expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
                'final commit `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
                and 'Never commit' not in d1.get('prompt', ''))
+        # T-0438: the host makes the worktree from origin/main, so the brief syncs it to the local base before the solo reads the ticket
+        expect(f'case 22 prep: the brief starts with `git merge --ff-only <base sha>` (negative control: a wrong sha is absent), got {d1.get("prompt")!r}',
+               f'`git merge --ff-only {main_p1}`' in d1.get('prompt', '') and d1.get('base_sha') == main_p1
+               and d1.get('prompt', '').splitlines()[1].startswith('Handoff: ') and '--ff-only 0000' not in d1.get('prompt', ''))
         expect(f'case 22 prep: level L1 has no verifier, level L2 prepares verifier L2 (negative control: not L3) against the '
                f'worktree, got {d1.get("verifier")!r} {d2.get("verifier")!r}',
                d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'
@@ -3694,6 +3734,48 @@ def selftest():
             expect(f'case 27 roll refusal ({label}): exit 2 naming {want!r}, got rc={ro.returncode} err={ro.stderr!r}',
                    ro.returncode == 2 and want in ro.stderr and 'Traceback' not in ro.stderr)
 
+        # case 28 (T-0438): settle brings the integration branch back and retires it, so the next prep starts at the current tip
+        sv = tmp / 'settle'
+        sized_repo(sv, ['L1', 'L1', 'L1'], {'.gitignore': gi})
+        sv_lanes = tmp / 'settle-lanes'
+
+        def integration_with(name, fname):
+            sh(sv, 'branch', name, 'main')
+            sh(sv, 'worktree', 'add', '-q', str(sv_lanes / name.replace('/', '-')), name)
+            wt_ = sv_lanes / name.replace('/', '-')
+            (wt_ / fname).write_text('x\n', encoding='utf-8')
+            sh(wt_, 'add', '-A')
+            sh(wt_, 'commit', '-q', '-m', f'lane work {fname}')
+            return wt_, sh(sv, 'rev-parse', name).stdout.strip()
+        wt_a, tip_a = integration_with('fanout/ff', 'a.txt')
+        st = verb(sv, 'settle', 'fanout/ff')
+        expect(f'case 28 settle: a fast-forward integration branch is merged into main, its worktree removed and its branch deleted, '
+               f'got rc={st.returncode} out={st.stdout!r} err={st.stderr!r}',
+               st.returncode == 0 and sh(sv, 'rev-parse', 'main').stdout.strip() == tip_a and not wt_a.exists()
+               and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/ff').returncode != 0)
+        wt_b, tip_b = integration_with('fanout/hand', 'b.txt')
+        (sv / 'c.txt').write_text('c\n', encoding='utf-8')
+        sh(sv, 'add', '-A')
+        sh(sv, 'commit', '-q', '-m', 'main moved')
+        sh(sv, 'merge', '-q', '--no-ff', '-m', 'merge by hand', 'fanout/hand')
+        st = verb(sv, 'settle', 'fanout/hand')
+        expect(f'case 28 settle: a branch the maintainer already merged with a non-ff merge is only retired (main untouched), '
+               f'got rc={st.returncode} err={st.stderr!r}',
+               st.returncode == 0 and not wt_b.exists() and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/hand').returncode != 0
+               and sh(sv, 'merge-base', '--is-ancestor', tip_b, 'main').returncode == 0)
+        wt_c, tip_c = integration_with('fanout/div', 'd.txt')
+        (sv / 'e.txt').write_text('e\n', encoding='utf-8')
+        sh(sv, 'add', '-A')
+        sh(sv, 'commit', '-q', '-m', 'main moved again')
+        main_c = sh(sv, 'rev-parse', 'main').stdout.strip()
+        st = verb(sv, 'settle', 'fanout/div')
+        expect(f'case 28 settle negative control: a diverged integration branch is refused (exit 2) and left whole, '
+               f'got rc={st.returncode} err={st.stderr!r}',
+               st.returncode == 2 and 'not a fast-forward' in st.stderr and wt_c.exists()
+               and sh(sv, 'rev-parse', 'fanout/div').stdout.strip() == tip_c and sh(sv, 'rev-parse', 'main').stdout.strip() == main_c)
+        st = verb(sv, 'settle', 'fanout/none')
+        expect(f'case 28 settle: an absent branch is nothing to settle (exit 0), got rc={st.returncode}', st.returncode == 0 and 'nothing to settle' in st.stdout)
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -3712,6 +3794,7 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
          '[--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] | '
          'fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]... '
          '[--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] | '
+         'fanout.py settle <integration> | '
          'fanout.py selftest\n'
          '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
          '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
@@ -3721,9 +3804,14 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
 def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
-    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll']):
+    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle']):
         print(USAGE, file=sys.stderr)
         return 2
+    if argv[0] == 'settle':
+        sp = argparse.ArgumentParser(prog='fanout.py settle', description='Fast-forward the current branch to a landed '
+                                     'integration branch, then remove its worktree and delete it (local only).')
+        sp.add_argument('integration', help='the integration branch `prep` printed, for example fanout/2026-10-11')
+        return cmd_settle(sp.parse_args(argv[1:]))
     if argv[0] == 'roll':
         rp = argparse.ArgumentParser(prog='fanout.py roll', description='Land one rolling lane on main at once (T-0374): '
                                      'verified, based on an ancestor of main, touching no hash_bound path in '

@@ -201,7 +201,7 @@
    (one `plan_done: <row>` case per truth-table row and control of docs/specs/sdlc-lite/plan-doc-executor.md section 4.2).
 51. Plan-doc skills (T-0433): skills/plan-doc/SKILL.md names `## 1. Gather`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`;
    skills/run-plan/SKILL.md names `Read`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`; references/plan-doc-format.md names `plan_check.py plan`
-   and `Goal line`; references/run-rules.md names `plan_done.py`, `steps.py next`, and `fanout.py prep`; neither skill references `harness:` or another plugin; skills/sdlc-lite/SKILL.md
+   and `Goal line`; references/run-rules.md names `plan_done.py`, `steps.py next`, `fanout.py prep`, `plan_done.py resume PD`, `recover --root . --open`, `fanout.py settle`, `status: ready`, and `Close a step only through `land``; neither skill references `harness:` or another plugin; skills/sdlc-lite/SKILL.md
    and agents/conductor.md route to `plan-doc` and `run-plan`. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
@@ -1024,7 +1024,7 @@ for _name, _phrases in PLAN_DONE_NEEDS:
 # Plan-doc skills (docstring item 51): the writing skill, the running skill, their references, and the routes to them.
 PDS_NEEDS = (('doc', ('## 1. Gather', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host', 'SDLC_ROLE')),
              ('run', ('Read', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host', 'SDLC_ROLE')),
-             ('format', ('plan_check.py plan', 'Goal line')), ('rules', ('plan_done.py', 'steps.py next', 'fanout.py prep')),
+             ('format', ('plan_check.py plan', 'Goal line')), ('rules', ('plan_done.py', 'steps.py next', 'fanout.py prep', 'plan_done.py resume PD', 'recover --root . --open', 'fanout.py settle', 'status: ready', 'Close a step only through `land`')),
              ('entry', ('plan-doc', 'run-plan')), ('cond', ('plan-doc', 'run-plan')))
 def pds_bad(texts):
     out = [f'{name} missing "{ph}"' for name, phrases in PDS_NEEDS for ph in phrases if ph not in texts[name]]

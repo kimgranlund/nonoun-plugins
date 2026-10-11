@@ -122,10 +122,10 @@ def check_outcome(text):
         warns.append(('no-measure', 'Measured by is `none`: the goal cannot show the outcome moved'))
     else:
         body = m.group(1)
-        ids, cmds = re.findall(r'\bK-\d+\b', body), [re.sub(r'\s+', ' ', c) for c in re.findall(r'`([^`]+)`', body)]
+        ids, cmds = re.findall(r'\b[A-Z]-\d+\b', body), [re.sub(r'\s+', ' ', c) for c in re.findall(r'`([^`]+)`', body)]
         before, target = re.search(r'before\s*:\s*(\S[^,]*)', body), re.search(r'target\s*:\s*(\S[^\n]*?)\s*\.?\s*$', body)
         if not (ids or cmds):
-            bad('Measured by must name a KPI id (K-001) or a backticked command')
+            bad('Measured by must name a measure id (K-001, M-001) or a backticked command')
         if not before:
             bad('Measured by needs `before: <value>` read by running the measure now')
         elif re.match(r'unmeasured\b', before.group(1), re.I):
@@ -973,6 +973,11 @@ def plan_selftest(expect):
         expect('plan: done-measured accepts the Measured by command in Done when',
                not check_plan(swap('Measure: K-002 reads <= 15 by the Measured by command.',
                                    'Measure: `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` reads 15 or below.'), root=root)[0])
+        # T-0438: a measure id of any letter is the id Done when must name (an M- id used to pass only when the target text was named too)
+        pm = P.replace('K-002', 'M-002').replace('Measure: M-002 reads <= 15 by the Measured by command.', 'Measure: M-002 reads below its limit.')
+        expect('plan: done-measured accepts an M- measure id named in Done when', not check_plan(pm, root=root)[0])
+        expect('plan: done-measured control: the M- plan with Done when naming no id still fails',
+               any(r == 'done-measured' for r, _ in check_plan(pm.replace('Measure: M-002 reads below its limit.', 'All step tickets are closed.'), root=root)[0]))
         # measure-row, measure-safe
         mutant('measure-row', 'target cell emptied', swap('| runs.interrupted.lost_min_median | <= 15 |', '| runs.interrupted.lost_min_median |  |'))
         mutant('measure-row', 'command unquoted', swap('| K-002 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` |', '| K-002 | python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d |'))

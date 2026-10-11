@@ -6,7 +6,8 @@
   dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
-  dispatch.py recover --root DIR          the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414)
+  dispatch.py recover --root DIR [--open] the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414);
+                                          --open skips closed (done or dropped) ticket folders, so history is not rewritten (T-0438)
   dispatch.py resume [--root DIR] <name>  the ladder for an orphan: SendMessage by name, by id, then a new attempt
   dispatch.py selftest
 
@@ -488,21 +489,35 @@ def recover_orphans(directory, dry_run=False, own=None):
 SWEEP_SKIP = ('.git', '.worktrees', 'node_modules')
 
 
-def attempt_dirs(root):
-    """Every folder under root/.sdlc that holds a *.attempt.json, sorted; .git, .worktrees and node_modules are not entered."""
+def ticket_closed(folder):
+    """True when folder holds a handoff.md whose status is done or dropped (a closed ticket: its attempt files are history)."""
+    try:
+        meta = tickets.parse((Path(folder) / 'handoff.md').read_text(encoding='utf-8')) or {}
+    except OSError:
+        return False
+    return meta.get('status') in ('done', 'dropped')
+
+
+def attempt_dirs(root, open_only=False):
+    """Every folder under root/.sdlc that holds a *.attempt.json, sorted; .git, .worktrees and node_modules are not entered.
+    With open_only, a ticket folder whose status is done or dropped is not entered either (T-0438)."""
     found = []
     for here, dirs, files in os.walk(str(Path(root) / '.sdlc')):
         dirs[:] = sorted(d for d in dirs if d not in SWEEP_SKIP)
+        if open_only and 'handoff.md' in files and ticket_closed(here):
+            dirs[:] = []
+            continue
         if any(f.endswith('.attempt.json') for f in files):
             found.append(here)
     return found
 
 
-def recover_root(root):
+def recover_root(root, open_only=False):
     """Restart sweep (T-0414): mark every orphaned attempt under root/.sdlc interrupted. One 'recovered:' line and its
-    'resume:' prepare command per orphan, one 'running:' line per live attempt, else 'no orphaned attempts'."""
+    'resume:' prepare command per orphan, one 'running:' line per live attempt, else 'no orphaned attempts'.
+    With open_only, closed (done or dropped) ticket folders are left untouched: no rewrite of history (T-0438)."""
     lines, me = [], Path(__file__).resolve()
-    for directory in attempt_dirs(root):
+    for directory in attempt_dirs(root, open_only):
         before = {p.name: read_attempt(p) for p in Path(directory).glob('*.attempt.json')}
         recovered, live = recover_orphans(directory)
         for name in recovered:
@@ -1224,6 +1239,7 @@ def main(argv):
     rc_ = sub.add_parser('recover', help='mark orphaned attempts interrupted')
     rc_.add_argument('directory', nargs='?', help='the handoff dir to recover')
     rc_.add_argument('--root', metavar='DIR', help='instead of a handoff dir: sweep every attempt under DIR/.sdlc (run once after a host or session restart)')
+    rc_.add_argument('--open', action='store_true', help='with --root: leave ticket folders whose status is done or dropped untouched (the driver\'s form)')
     rs = sub.add_parser('resume', help='print the resume ladder for an orphaned attempt')
     rs.add_argument('name', help='the attempt stem or Agent name')
     rs.add_argument('--root', default='.', help='where to search for attempt records')
@@ -1275,7 +1291,7 @@ def main(argv):
                 if args.directory:
                     print('dispatch.py: recover takes a handoff dir or --root, not both', file=sys.stderr)
                     return 2
-                out = recover_root(args.root)
+                out = recover_root(args.root, args.open)
             elif args.cmd == 'recover' and not args.directory:
                 print('dispatch.py: recover needs a handoff dir or --root DIR', file=sys.stderr)
                 return 2
@@ -2447,6 +2463,17 @@ def selftest():
         with contextlib.redirect_stdout(again_sw):
             main(['recover', '--root', str(sw)])
         case('recover --root a second time recovers nothing more', again_sw.getvalue().splitlines() == ['running: %s (pid %d)' % (liv, live)])
+        # T-0438: recover --open leaves a closed ticket's attempt files alone; the plain sweep still rewrites them (control)
+        put(sw / '.sdlc' / 'c1' / 'handoff.md', '---\nid: T-9001\nstatus: done\n---\n')
+        put(sw / '.sdlc' / 'o1' / 'handoff.md', '---\nid: T-9002\nstatus: ready\n---\n')
+        closed_o, open_o = attempt('c1', 'builder-L1', dead), attempt('o1', 'builder-L1', dead)
+        scoped_sw = io.StringIO()
+        with contextlib.redirect_stdout(scoped_sw):
+            rc_open = main(['recover', '--root', str(sw), '--open'])
+        case('recover --root --open recovers an open ticket\'s orphan and leaves a closed ticket\'s attempt running',
+             rc_open == 0 and state_of(open_o) == 'interrupted' and state_of(closed_o) == 'running' and 'recovered: %s' % closed_o not in scoped_sw.getvalue().splitlines())
+        main(['recover', '--root', str(sw)])
+        case('negative control: recover --root without --open rewrites the closed ticket\'s attempt', state_of(closed_o) == 'interrupted')
         case('orphaned: a parent pid that started after the attempt is read as dead (reused)',
              attempt_state(dict(status='running', backend='claude', parent_pid=live, started_at=long_ago)) == 'orphaned'
              and attempt_state(dict(status='running', backend='claude', parent_pid=live, started_at=run_lifecycle.now())) == 'running'

@@ -1,0 +1,18 @@
+{
+  "subagent_type": "sdlc-lite:solo-L2",
+  "name": "0438-solo-L2",
+  "description": "T-0438 solo L2 Plan-doc executor:",
+  "model": "sonnet",
+  "effort": "high",
+  "prompt": "T-0438 Plan-doc executor: close the | solo L2\nHandoff: /Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0438-executor-live-run-fixes/handoff.md\nArtifacts dir: /Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0438-executor-live-run-fixes\n---\nid: T-0438\ntitle: \"Plan-doc executor: close the live-run gaps (host base, stop record, recover scope, integration branch, verifier record, ticket fields)\"\ntype: feature        # feature | bug | chore | spike | idea\nstatus: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)\nsize: L2             # L1 | L2 | L3 | L4 (L5 reserved)\npriority: P2         # P1 | P2 | P3\ndepends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]\ncreated: 2026-10-11\nclaimed_by: claude 2026-10-11\nrouter: .sdlc/AGENTS.md  # how to claim and close this ticket\n---\n\n## Goal\nA smaller driver runs a plan doc to done with no maintainer hand-fixes, in the cases the 2026-10-11 live run and rehearsal hit.\n\n## Intent\n- Do: fix items 2 to 8 of `docs/reports/2026-10-11-plan-doc-live-run.md` (rehearsal section), smallest change each: (2) `fanout.py prep` prompt tells the solo to first run `git merge --ff-only <base sha>` so a claim commit not on origin is visible, with a selftest; (3) `plan_done.py` gains a documented resume that clears a stop record (or the run rules name `rm` of `plan-state.json` as the maintainer step); (4) `dispatch.py recover` run by the driver is scoped to the plan's open ticket folders; (5) `fanout.py land` or the run rules delete `fanout/<date>` after a non-ff merge; (6) `plan_done.py` or the run rules read a verifier record from the landed lane; (7) `plan_check.py plan` accepts any `[A-Z]-\\d+` measure id in Done when and the format doc says a measure prints one bare number; (8) the run rules name the ticket fields to set from a step (`size`, `status: ready`, `verify`).\n- Non-goals: model or effort rows, a Haiku row, the crash drill (separate run).\n- Done when: each item has a selftest case that fails before and passes after; `check.sh` exits 0; one more rehearsal plan runs to `plan done` with no hand step.\n\n## Context\nEvidence: `docs/reports/2026-10-11-plan-doc-live-run.md`. Executor files: `plugins/sdlc-lite/scripts/{plan_check,plan_doc,plan_done,fanout,dispatch}.py`, `plugins/sdlc-lite/skills/run-plan/`. Host fact: sub-agent worktrees are made from origin/main (observed a9d42334 after the push), not local HEAD. If item 2 is judged a host limit, the fallback is a run rule that pushes the claim, which needs the maintainer's authorization.\n\n## Constraints\nNo push, tag or publish by any role. Keep changes small; one lane, one ticket, split by item only if a verifier fails.\n",
+  "run_in_background": true,
+  "role": "solo",
+  "level": "L2",
+  "tier": "L2",
+  "prune": false,
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0438-executor-live-run-fixes/handoff.md",
+  "artifacts_dir": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0438-executor-live-run-fixes",
+  "attempt_id": "684f5a09725d4f8e91d26da324976e42",
+  "base_sha": "e8154f3cb9a81e71d08f13d6489b2d67057a776b",
+  "verifier": "python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/dispatch.py prepare verifier L2 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0438-executor-live-run-fixes/handoff.md"
+}

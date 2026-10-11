@@ -23,7 +23,7 @@ reviewed: <plan-reviewer result path>   # required when any step is size L4 or L
 |---|---|
 | `## Goal` | One paragraph: what the steps build |
 | `## Outcome` | The lines of the plan-verification outcome block: `Outcome:` with `Why:`, `Measured by:`, `Rubric:`, `Negative control:` |
-| `## Measures` | Table `id, command, read, target, direction, before, when`. The command is backticked and read-only: no `rm`, no push or publish command, no `gh `, no `curl -X`, no `>` redirect. `read` is never empty: a dotted path into the JSON the command prints, or any label (`value`) when it prints one bare number. `when` is `now` or `later: <owner>, <date or event>` |
+| `## Measures` | Table `id, command, read, target, direction, before, when`. The command is backticked and read-only: no `rm`, no push or publish command, no `gh `, no `curl -X`, no `>` redirect. `read` is never empty: a dotted path into the JSON the command prints, or any label (`value`) when it prints one bare number (a command that prints `path:count`, as `git grep -c` does, is `unreadable`: reduce it to one number, for example `git grep -l X | wc -l`). A measure id is a letter, a dash and digits (`K-002`, `M-001`); `Done when` names it. `when` is `now` or `later: <owner>, <date or event>` |
 | `## Authorization` | Exactly what the run may do beyond editing the repository and running checks, each with its condition, or `None` |
 | `## Budget and stop rules` | Total dollar cap, per-step caps, three 529s in a row, a rate or weekly limit, `replan cap: 1, then stop`, and the notes path (`.sdlc/notes.md`, or `.sdlc/notes/notes.md`) |
 | `## Step <n>: <title>` | One block per ticket (below) |
