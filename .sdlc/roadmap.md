@@ -428,3 +428,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0428 | [.0428-close-first-doctrine](.0428-close-first-doctrine/handoff.md) | Close-first doctrine: builders, solo and conductor lean toward closing and merging, not layered verification | chore | L2 | P2 | none | 🟢 done |
 | T-0429 | [.0429-skip-verifier-docs-only](.0429-skip-verifier-docs-only/handoff.md) | No verifier for a ticket that changes only docs, records or reports | feature | L2 | P2 | none | 🟢 done |
 | T-0430 | [.0430-lint-verifier-glob-form](.0430-lint-verifier-glob-form/handoff.md) | steps.py lint misses a circular criterion written with a verifier-L* glob | bug | L1 | P2 | none | 🟢 done |
+| T-0431 | [0431-plan-doc-parser-and-check](0431-plan-doc-parser-and-check/handoff.md) | Plan-doc parser and plan_check.py plan | feature | L2 | P2 | none | 🔵 ready |
+| T-0432 | [0432-plan-done-script](0432-plan-done-script/handoff.md) | plan_done.py: the condition a /goal stop hook evaluates | feature | L2 | P2 | T-0431 | 🔵 ready |
+| T-0433 | [0433-plan-doc-and-run-plan-skills](0433-plan-doc-and-run-plan-skills/handoff.md) | The plan-doc and run-plan skills, with the live rehearsal | feature | L2 | P2 | T-0432 | 🔵 ready |
+| T-0434 | [0434-plan-doc-docs-and-first-plan](0434-plan-doc-docs-and-first-plan/handoff.md) | Docs and the first customer plan doc (goal 002 wrapped) | chore | L1 | P2 | T-0433 | 🔵 ready |
