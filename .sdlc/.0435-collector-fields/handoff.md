@@ -2,7 +2,7 @@
 id: T-0435
 title: "Collector fields for K-002, K-003, K-004 and verifier minutes"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,7 @@ Only the files named in the acceptance criteria scope guard may change.
 - (guard) `python3 plugins/sdlc-lite/scripts/fleet_detect.py selftest`
 - (guard) `python3 plugins/sdlc-lite/scripts/fleet_status.py selftest`
 - (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/fleet_collect.py -e docs/kpi/002-restart-recovery-minutes.md -e docs/kpi/003-blocked-builders-per-wave.md -e docs/kpi/004-unsatisfiable-criteria-caught.md)"`
+
+## Closed
+
+2026-10-11: done by T-0411 (c10b01de); goal 002 plan was stale
