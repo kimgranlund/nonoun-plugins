@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:b9a0727fd423 -->
+<!-- sdlc-lite:managed:start v1 sha256:5c3b38b08cbc -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,13 +18,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0421 A bounded route for a two-line plan correction after design and criteria are accepted (0421-bounded-plan-correction-route)
   - T-0424 Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config (0424-lane-lifecycle-git-native)
   - T-0427 Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (0427-cascade-guard-design)
-- ready: 4
-  - T-0431 Plan-doc parser and plan_check.py plan (0431-plan-doc-parser-and-check), claimed by claude 2026-10-10
+- ready: 3
   - T-0432 plan_done.py: the condition a /goal stop hook evaluates (0432-plan-done-script), claimed by claude 2026-10-10
   - T-0433 The plan-doc and run-plan skills, with the live rehearsal (0433-plan-doc-and-run-plan-skills), claimed by claude 2026-10-10
   - T-0434 Docs and the first customer plan doc (goal 002 wrapped) (0434-plan-doc-docs-and-first-plan), claimed by claude 2026-10-10
 - blocked: 0
-- done: 390
+- done: 391
 - dropped: 25
 
 ## Procedures

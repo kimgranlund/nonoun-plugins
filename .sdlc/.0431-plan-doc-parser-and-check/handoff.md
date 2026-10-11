@@ -2,7 +2,7 @@
 id: T-0431
 title: "Plan-doc parser and plan_check.py plan"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
@@ -39,3 +39,7 @@ No em or en dashes. No push or publish. No model, effort, levels.json or models.
 - (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/plan_doc.py -e plugins/sdlc-lite/scripts/plan_check.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py)"`
 
 verifier: L3
+
+## Closed
+
+2026-10-10: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
