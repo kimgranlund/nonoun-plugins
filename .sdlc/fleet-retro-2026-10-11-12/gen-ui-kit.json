@@ -1,0 +1,207 @@
+{
+  "repo": "/Users/kimgranlund/Projects/adia/ui-kit/main",
+  "summary": "runs: 1 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-11",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.4",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.4",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.4",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.296 (Claude Code)",
+    "time": "2026-10-11T19:37:30Z",
+    "uptime_load": {
+      "uptime_s": 2085615,
+      "load1": 4.95,
+      "load5": 5.66,
+      "load15": 5.95,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 1,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 1,
+    "by_role": {
+      "solo": {
+        "count": 1,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 1,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      "flow-m": {
+        "solo": 1
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": [],
+      "lost_min_median": null,
+      "lost_min_total": 0
+    },
+    "orphaned": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 5,
+      "runs_files": 1
+    }
+  },
+  "plan_review_share": null,
+  "results": {
+    "builder": {
+      "total": 0,
+      "blocked": 0
+    }
+  },
+  "plan_defects": {
+    "late": 0,
+    "early": 0
+  },
+  "attempts": {
+    "by_role": {}
+  },
+  "tickets": {
+    "count": 1,
+    "items": []
+  },
+  "processes": {
+    "chromium": {
+      "count": 57,
+      "cpu_pct": 3.4,
+      "rss_mb": 12593.7
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 9,
+      "cpu_pct": 7.3,
+      "rss_mb": 6495.2
+    }
+  },
+  "worktrees": {
+    "count": 4,
+    "size": "548.7 MB",
+    "size_kb_known": 561900,
+    "items": [
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/selftest-entrypoints-sandbox-PfqcdP",
+        "size": "188.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/devserver",
+        "size": "184.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/flow-m",
+        "size": "175.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/.git-worktrees",
+        "size": "0.0 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-11",
+    "window_days": 0,
+    "runs": 115,
+    "wall_minutes": 379.7,
+    "failed": 3,
+    "by_workflow": {
+      "CI": {
+        "runs": 45,
+        "wall_minutes": 303.9,
+        "failed": 3,
+        "by_event": {
+          "pull_request": 30,
+          "push": 15
+        },
+        "push_runs_7d": 15,
+        "pull_request_runs_7d": 30,
+        "push_dup_7d": 0
+      },
+      "CI watchdog": {
+        "runs": 2,
+        "wall_minutes": 0.5,
+        "failed": 0,
+        "by_event": {
+          "schedule": 2
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Corpus freshness": {
+        "runs": 12,
+        "wall_minutes": 40.6,
+        "failed": 0,
+        "by_event": {
+          "push": 12
+        },
+        "push_runs_7d": 12,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Deploy site (ui-kit.exe.xyz)": {
+        "runs": 2,
+        "wall_minutes": 20.2,
+        "failed": 0,
+        "by_event": {
+          "workflow_dispatch": 2
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "PR gates": {
+        "runs": 54,
+        "wall_minutes": 14.5,
+        "failed": 0,
+        "by_event": {
+          "pull_request": 40,
+          "push": 14
+        },
+        "push_runs_7d": 14,
+        "pull_request_runs_7d": 40,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
