@@ -8,6 +8,7 @@ priority: P2         # P1 | P2 | P3
 depends: [T-0441]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-11
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
+budget_usd: 15
 ---
 
 ## Question
@@ -25,7 +26,7 @@ A dated report with a keep, extend or drop verdict backed by priced runs.
 - Done when: the report states the verdict and numbers, and whether the result is a null at this sample size.
 
 ## Context
-Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (Proof, drop rules, Risks). Depends on T-0441. Cost budget: state a dollar cap in the ticket before starting and stop at it.
+Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (Proof, drop rules, Risks). Depends on T-0441. Cost budget: $15 total (set by the maintainer 2026-10-11, `budget_usd: 15`); stop at it and report what was run.
 
 ## Constraints
 No model or effort change. Report unverified anything not run. One ticket, one lane.

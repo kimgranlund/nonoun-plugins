@@ -281,3 +281,5 @@
 - decide: `fanout.py prep` and the run-plan rules claim a lane with `claimed_by:` alone and leave `status: ready`. That stays valid, but the roadmap and `/board` never show `claimed` for fanout lanes until they also set `status: claimed`. A person must choose whether they should.
 - note: `.sdlc/config` has no `areas:` line in this repo, so the area check and Area column are untested against a real populated root. The handoff names `ui-kit, front-end, back-end, data-lake, agent-os` as the intended list.
 - note: The 7-status list is copied into the router block, the ticket templates and the handoff-format and ticket skills. A future status must be edited in each of those places.
+
+2026-10-11: maintainer set the T-0442 A/B budget at $15 (budget_usd: 15). Starts after wave 33.
