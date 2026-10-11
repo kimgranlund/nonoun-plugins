@@ -444,3 +444,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0444 | [.0444-ticket-area-claimed-paused](.0444-ticket-area-claimed-paused/handoff.md) | Ticket vocabulary: add area, status claimed and status paused | feature | L3 | P2 | none | 🟢 done |
 | T-0445 | [0445-collector-ignores-completed-attempts](0445-collector-ignores-completed-attempts/handoff.md) | Collector and recover: a completed attempt is never counted or marked interrupted | bug | L2 | P2 | none | ⏳ proposed |
 | T-0446 | [0446-record-finds-transcript](0446-record-finds-transcript/handoff.md) | dispatch.py record finds the sub-agent transcript without a flag | feature | L2 | P2 | none | ⏳ proposed |
+| T-0447 | [0447-doc-standards-suite](0447-doc-standards-suite/handoff.md) | Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers | feature | L4 | P2 | none | ⏳ proposed |

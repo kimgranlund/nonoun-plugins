@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:baed61b1f1a2 -->
+<!-- sdlc-lite:managed:start v1 sha256:0848af13953a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 11
+- proposed: 12
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -21,6 +21,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0445 Collector and recover: a completed attempt is never counted or marked interrupted (0445-collector-ignores-completed-attempts)
   - T-0446 dispatch.py record finds the sub-agent transcript without a flag (0446-record-finds-transcript)
+  - T-0447 Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers (0447-doc-standards-suite)
 - ready: 0
 - claimed: 0
 - paused: 0
