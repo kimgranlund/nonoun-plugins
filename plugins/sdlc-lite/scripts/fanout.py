@@ -54,7 +54,7 @@ land
   `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
   nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
-  and, for a solo level L2 or L3, `no verifier result` or `verifier <verdict>` read from the verifier results committed on
+  and, after committing any record left in the sub-agent worktree's ticket folder onto the branch (T-0439), for a solo level L2 or L3, `no verifier result` or `verifier <verdict>` read from the verifier results committed on
   the branch that the integration branch does not hold (git objects, newest by order.py). Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
   (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
@@ -1786,7 +1786,7 @@ def land_preflight(a):
                      f'or pass another --lanes-dir')
     lane = Lane(land_lane_name(branch, tid), [tid], branch)
     lane.branch, lane.tip, lane.tickets = branch, tip, [t]
-    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
+    return {'lane_wt': checked_out.get(branch), 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
             'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
             'gates': list(a.gate or []), 'driver': None, 'rewrite_refs': bool(a.rewrite_refs),
@@ -1822,6 +1822,19 @@ def land_setup(ctx):
         raise
 
 
+def commit_lane_records(ctx, t):
+    """T-0439: the verifier result and run records a driver left in the sub-agent worktree's ticket folder (ignored or
+    untracked there) go onto the lane branch, so the merge carries them in: git add -f of the ticket folder without
+    logs or lock files, then one commit of that folder only. Nothing when the branch has no worktree or no change."""
+    wt = ctx.get('lane_wt')
+    if not wt or not pathlib.Path(wt).is_dir():
+        return
+    folder = (ctx['trel'] / t.slug).as_posix()
+    git(wt, 'add', '-f', '--', folder, ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock', ':(exclude,glob)**/*.running')
+    if git(wt, 'diff', '--cached', '--quiet', '--', folder).returncode:
+        git(wt, 'commit', '-q', '-m', f'{t.id}: run records', '--', folder)
+
+
 def land_ticket(ctx, lock):
     """One finished branch through the external-lane merge: `no changes` when it adds nothing, the verifier verdict
     for a solo level L2 or L3, then the locked merge, gates, and close. Returns (outcome, commit)."""
@@ -1831,6 +1844,8 @@ def land_ticket(ctx, lock):
     p = git(ctx['cwd'], 'rev-list', '--count', f"{ctx['integration']}..{ref}")
     if p.returncode == 0 and p.stdout.strip() == '0':
         return 'no changes', tip[:7]
+    commit_lane_records(ctx, t)
+    tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'{ref}^{{commit}}')
     kind, tier = ctx['kinds'][t.id]
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict, held = branch_verdict(ctx, ref, t, with_held=True)
@@ -3618,6 +3633,29 @@ def selftest():
                    want in lm.stdout and (lm.returncode == 0) == (want == 'merged'))
         expect('case 23 land level L2: the report names the L2 model',
                '- Lane for `T-0002`: solo (level L2: sonnet high)' in lm.stdout)
+        # T-0439: a verifier result left uncommitted in the sub-agent worktree (the host's worktree, the record ignored by
+        # git) is committed onto the lane by land, so it reaches the integration branch with no hand step
+        lw = tmp / 'land-wt'
+        sized_repo(lw, ['L2', 'L2'], {'.gitignore': gi + '.sdlc/*/verifier-L*.md\n'})
+        lw_pin = ('--integration', 'fanout/w', '--lanes-dir', str(tmp / 'land-wt-lanes'), '--base', 'main')
+        for k in (1, 2):
+            wt_ = tmp / f'land-wt-agent{k}'
+            sh(lw, 'worktree', 'add', '-q', '-b', f'worktree-agent-w{k}', str(wt_), 'main')
+            (wt_ / f'w{k}.txt').write_text('w\n', encoding='utf-8')
+            sh(wt_, 'add', '-A')
+            sh(wt_, 'commit', '-q', '-m', f'T-000{k}: Ticket t{k}')
+        (tmp / 'land-wt-agent1' / '.sdlc' / 't1' / 'verifier-L3.md').write_text(vhead + '## Verdict\npass\n', encoding='utf-8')
+        (tmp / 'land-wt-agent1' / '.sdlc' / 't1' / 'runs.jsonl').write_text(
+            json.dumps({'role': 'verifier', 'level': 'L3', 'model': 'fable', 'file': 'verifier-L3.md'}) + '\n', encoding='utf-8')
+        lw1 = verb(lw, 'land', 'worktree-agent-w1', '--ticket', 'T-0001', *lw_pin, '--gate', 'test -e w1.txt')
+        expect(f'case 23 land worktree record: an uncommitted verifier result in the lane worktree is carried in, got '
+               f'rc={lw1.returncode} out={lw1.stdout[-400:]!r} err={lw1.stderr!r}', lw1.returncode == 0 and 'T-0001 | merged |' in lw1.stdout
+               and sh(lw, 'cat-file', '-e', 'fanout/w:.sdlc/t1/verifier-L3.md').returncode == 0
+               and sh(lw, 'cat-file', '-e', 'fanout/w:.sdlc/t1/runs.jsonl').returncode == 0)
+        lw2 = verb(lw, 'land', 'worktree-agent-w2', '--ticket', 'T-0002', *lw_pin, '--gate', 'test -e w2.txt')
+        expect(f'case 23 land worktree record: control, a worktree with no verifier result is still refused, got '
+               f'rc={lw2.returncode} out={lw2.stdout[-300:]!r}', lw2.returncode == 1 and 'no verifier result' in lw2.stdout
+               and sh(lw, 'cat-file', '-e', 'fanout/w:w2.txt').returncode != 0)
         # refusals, each exit 2 with nothing created
         sh(ld, 'branch', 'weird-branch', 'main')
         for label, args_, want in (('a branch that does not exist', ('no-such-branch',), 'not a local branch'),
