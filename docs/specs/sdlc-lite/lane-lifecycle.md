@@ -1,6 +1,6 @@
 # Lane lifecycle: open, close, wait
 
-Status: design, not built, awaiting the maintainer's approval (ticket T-0422, 2026-10-10). Version 0.1. Targets 0.22.4 unless the maintainer says otherwise. Nothing in section 13 is built by T-0422, and nothing in section 14 is removed by it. Evidence labels: [V] read in the file or command named, [I] inferred, [D] a decision this design makes for approval. Plugin paths are under `plugins/sdlc-lite/` unless they start with `docs/`.
+Status: design, not built, awaiting the maintainer's approval (ticket T-0422, 2026-10-10; git-native addendum T-0424, section 17, which wins where it differs). Version 0.2. Targets 0.22.4 unless the maintainer says otherwise. Nothing in section 13 is built by T-0422, and nothing in section 14 is removed by it. Evidence labels: [V] read in the file or command named, [I] inferred, [D] a decision this design makes for approval. Plugin paths are under `plugins/sdlc-lite/` unless they start with `docs/`.
 
 ## 1. Answer in one paragraph
 
@@ -187,7 +187,7 @@ L5 is reserved and unmapped. No migration: existing tickets need no migration, a
 
 `lanes.py wait <name> <pr>` polls `gh pr view <pr> --json state` every 45 seconds up to `--timeout` (default 6 hours; the spec's loop has no limit and spins forever on a `gh` error). `MERGED` runs `close` with `into` the PR's base as a fetched remote-tracking ref, which closes by content after a squash merge. `CLOSED` prints `PR <n> closed, lane <name> left open` and exits 1. A timeout exits 3 and leaves the lane.
 
-It calls `gh pr merge <pr> --auto` only when `.sdlc/config` has `lane_auto_merge: on` [D]. That merge runs as the account `gh` is logged in as, the owner's, so it is a publish action: the line is a written opt-in the maintainer adds, and it is never a default. `wait` also refuses the merge call, and says why, when `SDLC_ROLE` is set or the caller is a role sub-agent, because block-publish.sh would not see a `gh` call made inside this script. Without the line, `wait` only watches a PR a person merges.
+It calls `gh pr merge <pr> --auto --<method>` only when the caller passes `--auto-merge <method>` for that PR (17.8, which replaces the blanket `lane_auto_merge: on` of the first draft) [D]. That merge runs as the account `gh` is logged in as, the owner's, so it is a publish action: the flag is the owner's per-PR opt-in, and it is never a default. `wait` also refuses the merge call, and says why, when `SDLC_ROLE` is set or the caller is a role sub-agent, because block-publish.sh would not see a `gh` call made inside this script. Without the flag, `wait` only watches a PR a person merges.
 
 ## 10. Checks, each with a negative control (item 6)
 
@@ -220,13 +220,13 @@ Optional, each one `.sdlc/config` line:
 - `lanes_root: ../lanes` moves lanes outside the checkout. Then also add `lane_setup: <cmd>`, which `open` runs in the new tree, because a sibling lane borrows no `node_modules`. A failed setup keeps the lane and records `setup: failed rc=<n>` in the record and the solo brief.
 - `lane_ports: <lo>-<hi>` for lanes that run a dev server or browser probe; gates read `$SDLC_LANE_PORT` or call `lanes.py port`.
 - `lane_stale_days: <n>` and `lane_sweep: off`.
-- `lane_auto_merge: on`, a written opt-in only the maintainer adds (section 9).
+- No config line for auto-merge: it is a per-PR `--auto-merge <method>` flag (section 9, 17.8).
 
 The plugin pins no Node binary: `lane_setup` is the repo's own command and selects Node through the repo's version manager (`fnm exec --using .nvmrc`, `mise exec`, or a `.nvmrc`-aware script). For gen-ui-kit the lines would be `lanes_root: ../lanes`, `lane_ports: 7400-7699`, `lane_into: origin/main`, and `lane_setup:` running `pnpm install` then `node scripts/dev/bootstrap-worktree.mjs` under their Node 22 lookup, which replaces `~/.claude/lane/`.
 
 ## 12. Risks and known gaps (item 8)
 
-- `gh pr merge --auto` is untested (spec, known gaps), and the earlier waiter merged as the owner's account on green. Mitigation: off by default, a written opt-in, refused inside a role (section 9). Authorization note: auto-merge acts under the owner account, so it needs the maintainer's written opt-in in `.sdlc/config` and is never default; its live run on a throwaway GitHub repository needs the maintainer's authorization (ticket F), and until then the merge call is reported unverified.
+- `gh pr merge --auto --<method>` worked in gen-ui-kit's `lane-wait` (PR 425, per T-0424) but lanes.py's own call is unrun, and the merge acts as the owner's account. Mitigation: off by default, a per-PR flag, refused inside a role (section 9, 17.8). Authorization note: auto-merge acts under the owner account, so it needs the owner's per-PR flag and is never default; its live run on a throwaway GitHub repository needs the maintainer's authorization (ticket F), and until then the merge call is reported unverified.
 - The hard-coded Node path in `env.sh` is not ported; `lane_setup` is the repo's own command (section 11).
 - The branch-name-equals-remote-ref crash in `reap-branches.mjs` (`pr/4297` beside `refs/remotes/pr/4297`): lanes.py names every ref in full and deletes with `update-ref -d refs/heads/<b> <sha>`. A selftest case makes a local `pr/1` beside `refs/remotes/pr/1` and closes only the local branch.
 - Two more gaps found here, both reproduced [V]: the shell close passes when its target does not resolve, and rename detection hides a deleted path. Row 5 and test step 3 cover them.
@@ -308,3 +308,144 @@ Steps:
 - Auto-merge in `wait`: off, written opt-in only (recommended; the authorization rule requires it).
 - Where `closed-lanes.txt` and the archive live: under the lanes root (this design), or outside the repository as the 2026-10-10 cleanup did (`~/.claude/lane/`), which survives deleting the lanes root.
 - What remains of this repo's pile (ticket H): the two kept unmerged branches and their trees.
+- Archive expiry (T-0424): never (recommended), or an `archive prune --older-than <days>` the maintainer runs by hand (17.2).
+- The maintainer's `~/.claude/lane/sweep.py` (T-0424): retire it, or keep a three-line shim that runs `lanes.py sweep` (17.6).
+
+## 17. Git-native conventions (T-0424, addendum of 2026-10-11)
+
+Maintainer decision 2026-10-10: adopt names, archive refs, the worktree lock, worktree config and branch descriptions, and fold the maintainer's `~/.claude/lane/sweep.py` into the plugin. Design only: no script is written and no branch or worktree is removed. Where this section differs from sections 1 to 16, this section wins; 17.10 lists each place. Labels as above, plus [T] observed in a throwaway repo with git 2.54.0 in this session. A role cannot create a worktree (block-stray-worktree.sh), so worktree and lock behavior is [I, git documentation] until the selftest of ticket A2 observes it.
+
+### 17.1 Branch names and the clash rule (item 1)
+
+| Namespace | Holds | Made by | Replaces |
+|---|---|---|---|
+| `lane/<ticket>-<slug>` | one lane's work, for example `lane/T-0424-git-native` | `lanes.py open`, kinds fanout and solo | `<integration>-<lane>` and a solo's `<name>` |
+| `wave/<N>` | a fanout integration branch; N is one above the highest `wave/<N>`, legacy `wave<N>` or archived `wave/<N>` | fanout `run`, when `--integration` is not given | `fanout/<date>` |
+| `release/<X.Y.Z>` | a release branch | a person or the release step; lanes.py only reads it | `release-X.Y.Z` |
+
+The slug is lowercase `[a-z0-9-]`, at most 40 characters, from the ticket slug or the lane name; the ticket is `T-NNNN`. A lane that runs several tickets is named for its first. `open` refuses a `lane/` branch with no `--ticket` (section 8.1). The host's `worktree-<name>` stays, because the host names it [I]. Annotated tags `vX.Y.Z` are out of scope here.
+
+Clash rule [T]: refs are paths, so `lane` and `lane/x` cannot both exist; creating `lane/x` fails with `'refs/heads/lane' exists`, and creating `lane` fails with `'refs/heads/lane/x' exists`.
+
+- `lane`, `wave` and `release` are reserved. `open` runs `git check-ref-format --branch` and a `git for-each-ref` over the namespace before it creates anything, so a refusal leaves no directory and no record, and it names the flat branch to rename.
+- The same rule covers `refs/archive/<date>/` (17.2).
+- A worktree directory is a leaf, `<lanes root>/<ticket>-<slug>`, never `<lanes root>/lane/...`. An entry under the lanes root is a lane tree or a lanes dir (it holds `merge.lock`, like `fanout/`); `open` refuses a tree where a lanes dir exists and the reverse.
+
+Migration: no branch is renamed, because a rename breaks open PRs, `into` records and `fanout land`'s lookup by branch. Ownership never came from a name (section 3), so `close`, `sweep` and `list` read old and new names alike. `list` marks a plugin lane whose branch lies outside the three namespaces `legacy`. A repo whose CI filters by branch pattern widens it to `lane/**`, `wave/**` and `release/**`, or sets `lane_names: legacy` in `.sdlc/config`, which keeps fanout's old names for new lanes [D].
+
+### 17.2 Archive refs replace the text log (item 2)
+
+`close` writes `refs/archive/<UTC date>/<branch>` before it removes anything, and `closed-lanes.txt` and `refs/sdlc/discarded/<b>` go away. The ref points at an annotated tag object, not at the bare commit, so its message carries what the branch loses on deletion: `<ticket> <title>`, the reason (`ancestor`, `content in <into>`, `discarded`), `into`, the tip sha and the UTC time. Git removes a branch's description with the branch [T], so this message is the one place the title survives. The ref keeps the objects through `git gc` and is not listed by `git branch`; a default `git push` and `git fetch` do not carry it [I].
+
+- Recreate: `git branch <branch> refs/archive/<date>/<branch>`; git peels the tag to its commit [T]. `lanes.py archive list [<branch>]` prints date, branch, sha, reason and title; `lanes.py archive restore <date>/<branch>` runs that `git branch` and refuses when the branch exists.
+- Never overwrite: the ref is created with an expected old value of zero. When it exists, or a directory clash fails it (`refs/archive/<date>/lane` against `lane/x`, observed [T]), the leaf becomes `<branch>.<sha7>`, which is a valid ref name [T].
+- Order in the close of section 7: step 1 becomes this ref write, and a failed write stops the close with the branch intact. The `.sdlc/` copy of step 2 moves from `<lanes root>/archive/<lane>/` to `<git common dir>/sdlc-lane-archive/<lane>/`, so it survives deleting the lanes root and needs no ignore entry.
+- The plugin never pushes, never expires and never deletes an archive ref. The objects of a landed lane are already in the target; only discarded work costs space. Expiry (`archive prune --older-than <days>`) waits for the maintainer's word (section 16).
+- Existing history: `~/.claude/lane/closed-lanes-*.txt` and the archive folders stay as history and nothing reads them. The maintainer's sweep.py already writes plain commit refs under `refs/archive/<date>/<branch>` [V, its docstring]; `archive list` reads commit and tag targets alike.
+
+### 17.3 Worktree lock (item 3)
+
+- Set: `open` runs `git worktree lock --reason "<run_id> <tickets> <UTC>" <path>` right after it adds the worktree. A locked tree is a lane owned by a run.
+- Cleared: `close` runs `git worktree unlock <path>` before `git worktree remove --force`; a locked tree needs a second `--force` otherwise, and `git worktree prune` skips it [I]. A run that ends with a stopped lane unlocks it, so a later `sweep` sees it and keeps it for its own reason.
+- Skipped: `sweep` and `prep` read `git worktree list --porcelain` and skip a locked tree: `kept <lane>: locked: <reason>`, exit 0, row 8 of section 7 generalised. `prep` also does not reuse a locked lane's name or branch. Nothing passes an include-locked flag: a lock is cleared by its owner or by the rule below, never by the sweep.
+- The finished-agent lock: the host may lock a sub-agent's tree with a reason that names the agent and a pid [I: no host lock exists in this checkout to read, and the maintainer's sweep.py skips locked trees]. After `dispatch.py prune --done <name>` has the agent stopped, `close` unlocks that lane only when the reason names a pid and `kill -0 <pid>` says it is gone. A live pid refuses with `locked by live pid <p>`, and a lock with no pid refuses with its reason, for the maintainer. Without this rule every host lane stays locked and unclosable after its agent ends.
+- Not a replacement: the `*.running` files and `merge.lock` stay as they are; the git lock is one more guard.
+
+### 17.4 Worktree config replaces `.lane.json` (item 4)
+
+With `extensions.worktreeConfig` on, each lane tree has its own config file in git's per-worktree admin directory, removed with the worktree [I]. `open` writes the record there:
+
+```
+git config --worktree lane.kind fanout        lane.into wave/26    lane.base wave/26   lane.baseSha <sha>
+git config --worktree lane.port 7412          lane.runId fanout-<hex>   lane.opened <UTC>   lane.setup ok
+git config --worktree --add lane.ticket T-0424
+```
+
+A probe in the lane reads `git config --worktree lane.port`, or `lanes.py port`, which wraps it. No file lands in the tree, so there is no `info/exclude` line and `git add -A` cannot stage a record. Port uniqueness reads each tree's value through `git -C <path> config --worktree` over `git worktree list --porcelain`, under the flock of section 6. A host lane has no tree before its spawn, so `prep` writes its record to a shared-config section `sdlc-host.<name>.*`, copied into the tree's config at spawn and unset at close [D].
+
+Consumer setup cost, paid once per repo and printed by `open --dry-run`:
+
+- `open` runs `git config extensions.worktreeConfig true` the first time. Git older than 2.20 [I] and tools that parse the config strictly may refuse a repo with that extension. The git here is 2.54.0 [T].
+- A bare or `core.worktree` layout (gen-ui-kit's `<root>/main` toplevel with `core.bare = true`) needs `core.bare` and `core.worktree` moved into the main worktree's own config first [I, git-worktree documentation]. `open` reads both keys in the shared config and, when either is set, does not enable the extension.
+- Fallback: with the extension off, or refused as above, `open` writes `.lane.json` as sections 6 and 7 describe, adds it to `info/exclude`, and prints `worktree config off: using .lane.json`. The reader tries worktree config, then `.lane.json`.
+- The silent hazard [T]: with the extension off, `git config --worktree lane.port 7401` exits 0 and writes the shared config, so two lanes would overwrite each other. lanes.py therefore reads `git config --get extensions.worktreeConfig` and uses `--worktree` only when it prints `true`, on write and on read.
+
+### 17.5 Branch description (item 5)
+
+`open` runs `git config branch.<b>.description "<ticket> <title>"`: one line, the title cut to 120 characters, shared config, no extension needed [T]. `list` and `board.py --lanes` show it beside each lane, and `open` also sets it on a legacy-named branch it adopts. Git drops it when the branch is deleted [T], so `close` copies it into the archive tag message (17.2) first.
+
+### 17.6 One authoritative sweep (item 6)
+
+`~/.claude/lane/sweep.py` (183 lines, a maintainer tool outside any repo [V]) becomes `lanes.py sweep`, and lanes.py is the only script that closes a landed lane or deletes its branch. What sweep.py tests that section 7 did not is added to the truth table:
+
+| Added to section 7 | Rule | Outcome |
+|---|---|---|
+| landed by pull request | `gh pr list --state merged --head <b> --json headRefOid` reports a head sha equal to the branch tip; read only, skipped when `gh` or a remote is absent | `closed <lane> (pr merged)`, as row 9 |
+| age | `sweep` only: the tip is younger than `lane_min_age_hours` (default 2) | `kept <lane>: recent` |
+| in use | `sweep` only: a running process mentions the lane path (`ps`) | `kept <lane>: in use by pid <p>` |
+| locked | 17.3 | `kept <lane>: locked: <reason>` |
+
+The age, in use and locked rows sit after row 6 and before row 9. The landed test of section 7 runs ancestor first, then merged PR, then content, and its negative controls stay.
+
+Default mode: a bare `lanes.py sweep` is a dry run, as sweep.py is, and `--apply` acts; this replaces `--dry-run` in section 5. The callers pass `--apply`, and none of them copies a rule:
+
+| Caller | Call | When |
+|---|---|---|
+| `fanout.py run`, `prep` | `lanes.sweep(apply=True)`, unless `lane_sweep: off` | start |
+| `fanout.py land` | `lanes.close(lane)` for a `full` lane after its last ticket | after the ticket lands |
+| fanout step 5 | `lanes.py sweep --apply` | after the user-approved `git merge --ff-only` |
+| `tickets.py close` | `lanes.still_open(root, ticket)`, print only | after a successful close |
+| `dispatch.py prune --done` | `lanes.close(host lane)` | after the agent is stopped |
+
+sweep.py's `--discard-dirty` becomes `close --discard`, its `--keep` becomes a `lane_keep:` list in `.sdlc/config`, and its `--include-locked` is dropped (17.3). The maintainer's copy may stay as a three-line shim that runs `lanes.py sweep "$@"`, or be retired (section 16); no plugin script reads `~/.claude/lane`.
+
+### 17.7 Checks (item 7)
+
+Each is a `lanes.py` mode or selftest case in a throwaway repo, with a mutant that drops the guard and must then fail the case. C1 and C4 of section 10 are the two the ticket names; they are restated with the change.
+
+| Check | Fails when | Negative control |
+|---|---|---|
+| C1 amended, no lane worktree under a checkout | with `lanes_root` outside the toplevel, a plugin lane (by record) lies under any worktree's toplevel, compared by real path | `lanes_root: ../lanes` and a lane at `<top>/.worktrees/x` exits 1 naming `x`; the same lane under `../lanes` exits 0; the mutant comparing unresolved strings passes a symlinked path and fails the case |
+| C4 amended, stale lane report | a report, exit 0 (`--fail` exits 1 on any entry): `closable` (landed and open), `stale` (not landed, tip older than `lane_stale_days`, no open PR), and now `locked` with the reason | a tip 11 days old is `stale` and one at 9 is not; a landed lane of any age is `closable`; a stale lane whose lock names a live pid prints `stale, locked`, and `sweep --apply` still keeps it |
+| C9 names | `open` accepts `lane` beside `lane/x`, `lane/x` beside `lane`, or a lane branch with no ticket | the three refuse with no directory and no record left; `lane/T-1-a` opens; the mutant that creates the directory first leaves one and fails |
+| C10 archive | a close leaves no `refs/archive/<date>/<branch>` that `git branch` can restore, overwrites an earlier ref, or deletes the branch after a failed write | close, delete, `archive restore` returns the tip; two closes of one name on one date leave two refs (the mutant without the zero old value leaves one); a forced directory clash stops the close with the branch present (the mutant that ignores the failure deletes it) |
+| C11 lock | `open` leaves a tree unlocked, `sweep` closes a locked lane, `close` leaves a lock behind, or a live pid's lock is cleared | `git worktree list --porcelain` shows `locked` after open and none after close; a landed locked lane survives `sweep --apply` (the mutant without the lock check closes it); a host-style lock naming a reaped child pid is cleared and one naming the test's own pid refuses |
+| C12 worktree config | two lanes read one port, the main checkout reads a `lane.*` key, or the fallback is silent | with the extension on, two lanes read distinct ports and `git config --get lane.port` in main is empty; with it off or `core.bare` set, `.lane.json` appears and `worktree config off` is printed; the mutant that uses `--worktree` without the check gives two lanes one port [T] and fails the case |
+| C13 description | the branch description is not `<ticket> <title>` after open, or the archive tag message lacks it after close | read back both; the mutant that skips the copy fails the second |
+| C14 one home | a script other than lanes.py names `sweep.py`, `closed-lanes` or `~/.claude/lane`, or closes a landed lane without `lanes.close` | a `grep` in `check.sh`; a copy of fanout.py with one planted `sweep.py` line exits 1, the tree as built exits 0. fanout's own undo of a branch it just made in a failed start is not a close and stays [I] |
+
+C1 gates `check.sh` here once ticket A exists, as section 10 says (ticket I). C14 lands with ticket G, after every caller moved.
+
+### 17.8 Auto-merge is per pull request, with a merge method
+
+Evidence from the ticket, gen-ui-kit, 2026-10-10 (the ticket's account, not re-run here): `lane-wait`'s `gh pr merge --auto` works, needs one of `--squash`, `--merge` or `--rebase`, and merged PR 425 once its checks were green. The owner approved each merge per PR. So the call is `gh pr merge <pr> --auto --<method>`, and section 9's blanket `lane_auto_merge: on` goes: the opt-in is per PR and per call, `lanes.py wait <name> <pr> --auto-merge squash|merge|rebase`, typed by the owner's conductor for that PR after the owner's go. There is no config line, no default and no default method; `wait` without the flag only watches. The role refusal of section 9 stays. Section 12 no longer lists the merge call as untested: it is observed in the upstream script. lanes.py's own call stays unverified until ticket F's live run on a throwaway repository, which the maintainer authorizes per run.
+
+### 17.9 Build tickets and the files each changes (item 8)
+
+Section 13's tickets stand except where these change. Order: A, A2; D at any time; then B, C, E, F, G; H and I after A, H only with the maintainer's go. Sizes are estimates. `check.sh`, `check.py`, `fanout.py` and `lanes.py` have one writer at a time.
+
+| # | Ticket | Size | Files changed | Done when |
+|---|---|---|---|---|
+| A | `lanes.py` core, amended | L3 | new `scripts/lanes.py` (open, close, sweep with the 17.6 rows and `--apply`, list, check, port, archive list and restore, selftest; names, clash rule, archive refs, branch description, the `.lane.json` record; the tables in its docstring); `scripts/check.sh` (selftest line); `docs/references/sdlc-internals.md` (entry, and the keys `lane_names`, `lane_min_age_hours`, `lane_keep`) | `(red)` `python3 plugins/sdlc-lite/scripts/lanes.py selftest` fails now (no file); after, exit 0 with a case per truth-table row and per C1, C4, C9, C10, C13 control, each mutant observed failing; `check.sh` exits 0 |
+| A2 | lock and worktree config | L2 | `scripts/lanes.py` (lock at open, unlock at close, the locked rows, the finished-agent rule, `extensions.worktreeConfig` setup, the `--worktree` record with the `.lane.json` fallback, `lanes.py port`); `docs/references/sdlc-internals.md` (setup cost and fallback) | `(red)` `lanes.py selftest` has no C11 or C12 case now; after, both pass with their mutants failing |
+| B | fanout and solo_run use lanes, amended | L3 | as section 13, plus `scripts/fanout.py` (`wave/<N>` default, `lane/<ticket>-<slug>` lane branches, lock at open, `lane_names: legacy`) and `scripts/solo_run.py` (`--worktree` branch `lane/<ticket>-<NAME>` when the ticket is known, else the old name) | as section 13 |
+| E | board and fleet, amended | L2 | as section 13; the `--lanes` cell also shows `legacy`, `locked` and the branch description | as section 13 |
+| F | `lanes.py wait`, amended | L2 | `scripts/lanes.py` (wait, `--auto-merge <method>` per PR, the role refusal, a stub `gh` selftest) | the selftest covers MERGED, CLOSED, timeout, no flag (no merge call), each method passed through, and the role refusal; the live run stays unverified until authorized |
+| G | docs and one home, amended | L1 | this file (status built); `docs/specs/sdlc-lite/README.md`; `docs/README.md`; `plugins/sdlc-lite/AGENTS.md` (the `## Lanes` interim directive and its `sweep.py` line replaced by a pointer to `lanes.py`); `scripts/check.sh` (the C14 grep) | `docs_check.py` and `check.py` exit 0, and the C14 control behaves |
+
+C, D, H and I are as in section 13, except that H's report names the archive refs it wrote instead of lines in a text log. No ticket removes a worktree or branch here, and none writes `~/.claude/lane`.
+
+### 17.10 Earlier text this section replaces
+
+| Place | Was | Now |
+|---|---|---|
+| 1, 3, 8 (kinds, `into` names) | `<integration>-<lane>`, `<name>` | the namespaces of 17.1; old names read alike |
+| 5 | `sweep [--dry-run]`, no archive command | `sweep` is a dry run by default with `--apply`; `archive list` and `restore` |
+| 6, 7 row 6, 13.1 step 1 | `.lane.json`, in `info/exclude` | worktree config, with `.lane.json` as the fallback (17.4) |
+| 7 step 1, row 12, 13.1 step 6, 14, 15 | `closed-lanes.txt`, `refs/sdlc/discarded/<b>` | `refs/archive/<date>/<branch>` annotated tags (17.2) |
+| 7 step 2 | untracked copy under `<lanes root>/archive/<lane>/` | `<git common dir>/sdlc-lane-archive/<lane>/` |
+| 7 row 8 | host lane queued in `prune.json` | and any locked tree (17.3) |
+| 9, 11, 12, 13 F, 13.1 step 7 | `gh pr merge --auto`, `lane_auto_merge: on`, untested | per PR `--auto-merge <method>` (17.8) |
+| 10 C1, C4 | placement and stale report | restated in 17.7 |
+| 13 | tickets A to I | 17.9 |
+| 16 | six decisions | two more, above; the archive location is settled by 17.2 |
