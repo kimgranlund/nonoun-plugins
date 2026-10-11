@@ -1,0 +1,21 @@
+{
+  "subagent_type": "sdlc-lite:solo-L1",
+  "name": "T-0436-solo",
+  "description": "T-0436 solo L1 Two preflight",
+  "model": "sonnet",
+  "effort": "low",
+  "prompt": "T-0436 Two preflight and stop rules in | solo L1\nHandoff: .sdlc/0436-run-rules-two-rules/handoff.md\nBrief: deliver ticket .sdlc/0436-run-rules-two-rules/handoff.md end to end in this session as the solo agent. Read the ticket and the files it names, make the smallest change that meets its done criterion, run every check command it names and after a fix rerun the checks that fix can affect (every check when unsure), keeping any `(red)` control, and report files changed, each check with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff's ## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the parent runs the one batched independent verifier. No person is present: never ask the user and never use AskUserQuestion. You work on your own worktree branch: commit early and often, one `WIP T-0436` commit after each green check and a final commit `T-0436: Two preflight and stop rules in run-rules.md` when every check is green. Never push, open a PR, or publish: fanout.py land merges your branch, runs the gates, and closes the ticket.",
+  "run_in_background": true,
+  "isolation": "worktree",
+  "ticket": "T-0436",
+  "tier": "L1",
+  "prune": false,
+  "branch": "worktree-T-0436-solo",
+  "worktree": ".claude/worktrees/T-0436-solo",
+  "handoff": ".sdlc/0436-run-rules-two-rules/handoff.md",
+  "verifier": null,
+  "base_sha": "d873037edc767ad9973d752d17002f9c553e5bad",
+  "attempt_id": "a24ce0d3e52043c2ad97234bf2d9e18f",
+  "role": "solo",
+  "level": "L1"
+}
