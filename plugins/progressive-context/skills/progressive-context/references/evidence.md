@@ -12,6 +12,10 @@ A base commit alone does not identify a dirty working tree. Commit the checked m
 
 Use “not assessed” for missing evidence, “failed” for a demonstrated violation, and “stale” when relevant checked inputs changed. Changes invalidate affected claims, not every unrelated claim in the project. A proposed test is not an assessment. Schema validation establishes structural validity only.
 
+For a new or changed checker, demonstrate acceptance of a known-valid case and rejection of an intentional defect for the expected reason before using its verdict to qualify a capability. Confirm the defect reaches the material exercised. Reuse that qualification for an unchanged checker within its tested scope. If the checker was wrong, retain the original verdict and link a corrected assessment of affected results; do not report reanalysis as an implementation improvement.
+
+Trace change impact through existing contract and dependency links. For example, a changed shared date parser affects an invoice view's boundary-date claim and dependent consumers of that behavior; rerun those checks. Unchanged row-selection evidence can remain current if its inputs and behavior do not depend on the parser. Record uncertain impact as needing assessment rather than assuming independence; no separate dependency registry is required.
+
 Useful lifecycle views:
 
 | Available facts | Description |
