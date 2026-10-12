@@ -2,7 +2,7 @@
 id: T-0455
 title: "fanout prep and run-plan rules set status: claimed with claimed_by"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0452]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Design (approved by the maintainer 2026-10-11, build A to D as a chain): `docs/s
 
 ## Constraints
 No model or effort change. Never delete unmerged work; archive ref `refs/archive/<date>/<branch>` before any removal. A locked worktree is a running lane. No push, tag or publish. Read-only against any repo it does not own.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed

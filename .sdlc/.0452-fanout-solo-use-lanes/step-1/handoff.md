@@ -18,7 +18,7 @@ Targets are `plugins/sdlc-lite/scripts/lanes.py` and `plugins/sdlc-lite/scripts/
    - `path` sets the tree; the leaf is its basename. `branch` is used verbatim. `git check-ref-format --branch`, the clash test and the existing-tree refusal still run. The `.lane.json` record, the `info/exclude` line, the description, the port and `lane_setup` are unchanged.
    - With `check_claim=False`, `claim()` is skipped for local ids. The ids are still recorded, and the title for the description comes from the ticket when it is readable.
    - Why: fanout keeps its layout (`<lanes-dir>/<lane>` on `<integration>-<lane>`). Its selftest stubs read `../alpha/shared.txt` and `../logs/fanout.log` (`OVERLAP_STUB` in fanout.py), and `land_lane_name`, `docs/references/sdlc-internals.md`, `skills/fanout/SKILL.md` and selftest case 22 all name `<integration>-<lane>`.
-   - Why the claim bypass: fanout and solo_run lanes hold `ready`, unclaimed tickets. Setting `claimed_by:` from fanout is ticket T-0455 (`.sdlc/0455-fanout-claimed-status/handoff.md`), so these callers pass `check_claim=False` until it lands.
+   - Why the claim bypass: fanout and solo_run lanes hold `ready`, unclaimed tickets. Setting `claimed_by:` from fanout is ticket T-0455 (`.sdlc/.0455-fanout-claimed-status/handoff.md`), so these callers pass `check_claim=False` until it lands.
    - The CLI `open` gains matching `--path DIR`, `--branch NAME` and `--no-claim`. Add them to the docstring usage.
    - The default CLI and API path still refuses an unclaimed ticket, so `case_claim_unclaimed` stays green.
 3. New `host_record(name, branch, into, tickets, base=None, cwd='.')`. It writes `<lanes root>/host/<name>.lane.json` with every key of `FIELDS`:
