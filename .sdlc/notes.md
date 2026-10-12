@@ -298,3 +298,10 @@
 - note: The 6 of 6 replay result was not independently confirmed. The builder's replay outputs were not preserved, and a rerun by an independent model would settle it.
 - note: The replay is a builder run with Sonnet sub-agents that skipped the Tracker section and `steps.py lane`, so those two parts of the new skill have no replay evidence.
 - note: In the replay, case 05 came out at L2 against the expected L4 and case 06 at L3 against the expected L2. The lint checks shape only, so level calibration of the skill is unmeasured.
+
+## T-0442: Replay A/B of builder overlays on the five bench tasks (2026-10-11)
+
+- decide: The "Null at this sample size" rule returns `no` whenever the four L1 rule outcomes agree across reps and L5 has no reps. This is a different meaning from "no visible effect at this cost", which is what the data shows. Choose whether to repair the rule before the verdict is relied on.
+- decide: The L5 overlay is unverified (six pairs skipped at the 10 USD run stop of the 15 USD ticket budget, estimated at about 8 USD). Choose whether to fund an L5-only run or leave it as drop-by-default.
+- note: `figma-stale-skip-report` failed the hidden `staleskipnotice` gate in all four runs in both arms, and the 2026-09-27 archived run also failed it. The task is probably uninformative for this comparison.
+- note: `button-geometry-model.md` and `svelte-icon-component.md` still carry `/Users/kimba/...` repo paths. Their repos are not on this machine, so those two tasks cannot run here.
