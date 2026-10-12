@@ -1,10 +1,12 @@
 ---
-status: proposed
+status: built
 owner: maintainer
 ---
 # Light merge lane
 
-Proposal from the T-0480 architect pass (2026-10-12), requested by the maison conductor. Not built. Adopting it in a repo needs that repo owner's written approval to loosen the full-gate-before-ff rule.
+Built by T-0481 (`fanout.py` gate class, `--light-gate`, `cover`, `settle --require-covered`); the class is computed in `fanout.py` `gate_class`, not in `steps.py` as the Interfaces below proposed.
+
+Proposal from the T-0480 architect pass (2026-10-12), requested by the maison conductor. Adopting it in a repo needs that repo owner's written approval to loosen the full-gate-before-ff rule.
 
 <!-- role=architect level=L1 model=fable effort=high -->
 ### Approach
