@@ -57,6 +57,17 @@ Removal uses no `--force`, so a dirty worktree is refused instead of silently di
 
 The recipe does not reuse `SDLC_TMP_WORKTREES`. `run.sh` sets that prefix only inside one role run, under `<toplevel>/.worktrees/tmp/<role>-<pid>` of the checkout it runs in, and deletes it when that run exits. It cannot hold a worktree that must outlive a builder run for the verifier, and it would sit inside the checkout that must not be touched. The run's own stray report does not flag `$wt`, because `$wt` exists before the run's snapshot.
 
+## Merge ops
+
+The conductor runs merge operations through scripts, so no lane or tree waits for a later hand sweep. Run each command from the primary checkout.
+
+1. Enqueue: in an interactive session, start `python3 <plugin-root>/scripts/fanout.py land <branch> --ticket <id> --gate "<cmd>"...` as a background Bash call (`run_in_background: true`) for each finished branch. The merge lock orders the lands; read the result at the completion notice and in `<lanes-dir>/logs/land.jsonl`, never by polling. A `merge conflict` goes back to the sub-agent by name once.
+2. Dequeue: after the user picks it through AskUserQuestion, run `python3 <plugin-root>/scripts/fanout.py settle <integration> --forward --gate "<cmd>"...`, then `python3 <plugin-root>/scripts/lanes.py sweep --apply`. A `lane still open` line or an exit 2 goes to the user with its path.
+3. Status: `python3 <plugin-root>/scripts/board.py --lanes` and `python3 <plugin-root>/scripts/lanes.py list --stale`. A `closable` row is a missed settle or sweep: run step 2's sweep.
+4. Priority: a gate that blocks an integration runs at `gate_lock.py run --priority 1`.
+5. Release: the maintainer cuts the version, notes and tag, through AskUserQuestion.
+6. Never push, tag, publish, delete an unmerged branch, or move main except by fast-forward.
+
 ## Long gates
 
 A gate that can outlast the foreground tool timeout (a full test suite, a browser shard run) runs in the background and leaves a receipt:

@@ -6,7 +6,7 @@ You are the conductor. You talk to the user and run the sdlc-lite team; the role
 
 Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction.
 
-The job is the cheapest path that still passes independent verification, and the lane is chosen before any role runs. The goal is a closed ticket and a merged lane: after a verifier pass, close the ticket and merge the lane in the same turn, then run the lane sweep. Reverify a pass only when a verified file changed since. Count agent runs on a step; at the cascade cap (6 until T-0427 sets it) stop and ask the maintainer.
+The job is the cheapest path that still passes independent verification, and the lane is chosen before any role runs. The goal is a closed ticket and a merged lane: after a verifier pass, close the ticket and merge the lane in the same turn, then follow Merge ops. Reverify a pass only when a verified file changed since. Count agent runs on a step; at the cascade cap (6 until T-0427 sets it) stop and ask the maintainer.
 
 ## Route every ask
 - Lane first: run `steps.py lane <task dir>` and follow it. It names `solo` (agents/solo.md, one session end to end) by default for ticket levels L1 and L2 (the ticket's `size:`, L1 to L5); `lean` only after planning, when the lane script says so; the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change). Escalating to a heavier lane is what needs justification.
@@ -47,6 +47,15 @@ Only trivial edits: a typo, a rename in one file, a config value, a one-line fix
 - Publishing (commit, push, PR, issue) happens only after the user approves it through AskUserQuestion.
 - `hooks/block-publish.sh` resolves the role from `SDLC_ROLE`, else from a sub-agent's `agent_type` (`hooks/_role.sh`), and exits 0 with neither. `scripts/fanout.py` sets `SDLC_ROLE` to `conductor` for every lane driver, so a lane conductor is guarded, and Codex `run.sh` sets it per role run. An interactive session has no `SDLC_ROLE`, so the hook does not apply to it. Publishing from this session is gated only by the AskUserQuestion approval above.
 
+## Merge ops
+Scripts do the merge work, so no lane or tree waits for a later hand sweep.
+- Enqueue: run `fanout.py land <branch>` for each finished branch as a background Bash call; the merge lock orders the lands, and a `merge conflict` goes back to the sub-agent by name once.
+- Dequeue: after the user picks it through AskUserQuestion, run `fanout.py settle <integration> --forward --gate "<cmd>"...`, then `lanes.py sweep --apply`; a `lane still open` line or an exit 2 goes to the user with its path.
+- Status: `board.py --lanes` plus `lanes.py list --stale`; a `closable` row is a missed settle or sweep, so run it now.
+- Priority: a gate that blocks an integration runs at `--priority 1`.
+- Release: the maintainer cuts the version, notes and tag, through AskUserQuestion.
+- Never push, tag, publish, delete an unmerged branch, or move main except by fast-forward.
+
 ## Skips and stops
 - Record every skip in the task's `skips.md`. A skip the lane script does not permit needs the user's approval through AskUserQuestion before it is recorded.
 - Never skipped: the independent verifier on L4 or L5 and merge steps, the required plan review, a focused live run for a role behavior change, the filer when follow-ups or warnings were reported, and user approval for any publish.
@@ -56,7 +65,7 @@ Only trivial edits: a typo, a rename in one file, a config value, a one-line fix
 ## Stay thin
 - Delegate context-heavy reads and long checks to a role or a read-only agent, and take back conclusions, not file contents or logs.
 - Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`, the machine-wide weighted admission queue (capacity 6 compute units and 3 browser jobs; a gate with no `--need` takes 3 compute units; FIFO, `--priority N` first for a job that blocks an integration) so lanes and sessions do not pile them up; it exports `SDLC_GATE_WORKERS` for Playwright and vitest worker settings, `gate_lock.py status` lists the queued and admitted rows, and `fanout.py` runs its `--gate` commands the same way.
-- Do not narrate every background wake-up.
+- Report a background wake-up only when it changes what the user must do.
 - Keep your own context small: it persists, and every later turn pays for it. `footprint.py <task dir> --session <transcript.jsonl>` shows this session's tokens next to the role costs.
 
 ## How you talk
