@@ -22,6 +22,9 @@ whole day; an ISO instant is exact; no bound counts every row). Closed state and
   ended_pass      verified tickets whose highest-numbered round has Verdict pass
   multi_round     verified tickets with two or more rounds
   closed_no_pass  closed verified tickets whose highest round is not a pass (inherited, deferred, superseded)
+  gate_tests_only tickets whose skips.md holds `reason: tests-gate diff against`, the skip line `tickets.py close`
+                  writes for a ticket closed on the tests-gate class with no verifier (T-0496)
+  gate_verifier   tickets with at least one verifier round (the verified condition)
   cost            runs, priced (a numeric cost_usd and no `unpriced` flag), unmetered (the rest), cost_usd and minutes of the
                   priced runs. Unpriced runs are counted and never estimated.
 Rounds are ordered by round number, never by file name (`verifier-L2-10.md` follows `-9`). Two files in one round
@@ -39,7 +42,9 @@ VERIFIER_RE = re.compile(r'verifier-L([1-5])(?:-(\d+))?\.md')
 CLOSED_STATUS = ('done', 'dropped')
 USAGE = ('usage: solo_stats.py stats <repo> [<repo> ...] [--since DATE] [--until DATE] [--json]\n'
          '       solo_stats.py selftest')
-COUNTS = ('tickets', 'closed', 'open', 'open_done', 'verified', 'first_pass', 'ended_pass', 'multi_round', 'closed_no_pass')
+COUNTS = ('tickets', 'closed', 'open', 'open_done', 'verified', 'first_pass', 'ended_pass', 'multi_round', 'closed_no_pass',
+          'gate_tests_only', 'gate_verifier')
+TESTS_GATE_SKIP = 'reason: tests-gate diff against'
 
 
 def verdict_of(text):
@@ -151,10 +156,12 @@ def repo_stats(repo, window, round_key=None, dedupe=True, main_only=True, closed
             cost['priced'] += 1
             cost['cost_usd'] += c
             cost['minutes'] += (d or 0.0) / 60000.0
+        out['gate_tests_only'] += TESTS_GATE_SKIP in fc.read_text(os.path.join(folder, 'skips.md'))
         rounds = round_verdicts(folder, round_key)
         if not rounds:
             continue
         out['verified'] += 1
+        out['gate_verifier'] += 1
         out['first_pass'] += rounds[0][1] == 'pass'
         ended = rounds[-1][1] == 'pass'
         out['ended_pass'] += ended
@@ -188,6 +195,8 @@ def render(total, per_repo, since, until=None):
              'ended in a pass   %d of %d (%s)' % (total['ended_pass'], v, pct(total['ended_pass'], v)),
              'multi-round       %d' % total['multi_round'],
              'closed, no pass   %d' % total['closed_no_pass'],
+             'gate: tests-only  %d' % total['gate_tests_only'],
+             'gate: verifier    %d' % total['gate_verifier'],
              'priced runs       %d of %d, %d unmetered; $%.2f, %.0f minutes of the priced runs'
              % (c['priced'], c['runs'], c['unmetered'], c['cost_usd'], c['minutes'])]
     if c['priced']:
@@ -288,6 +297,11 @@ def selftest():
         write(os.path.join(sd, '.0002-b', 'verifier-L3.md'), verdict('pass'))
         # c: visible folder, handoff status done (open by the hidden rule), no verifier, a duplicated row, an unpriced flag.
         write(os.path.join(sd, '0003-c', 'handoff.md'), '---\nid: T-0003\nstatus: done\n---\n')
+        write(os.path.join(sd, '0003-c', 'skips.md'), '# Skips\n\n## Lane\n- lane: solo; point: before planning\n\n## Skipped\n'
+              '- skip: verifier; step: all; reason: tests-gate diff against abc1234 needs no verifier\n')
+        # a's skips.md has a docs-only skip line and no tests-gate one: the control for gate_tests_only.
+        write(os.path.join(sd, '0001-a', 'skips.md'), '# Skips\n\n## Skipped\n'
+              '- skip: verifier; step: all; reason: docs-only diff against abc1234 needs no verifier\n')
         write(os.path.join(sd, '0003-c', 'runs.jsonl'),
               row('c1', '2026-10-10T10:00:00Z', 2.0, 30000, unpriced=True) + row('c1', '2026-10-10T10:00:00Z', 2.0, 30000))
         # d: hidden closed; fail, then inherited: ended without a pass.
@@ -312,7 +326,13 @@ def selftest():
         got = repo_stats(repo, window)
         case('counts', counts(got), {
             'tickets': 5, 'closed': 2, 'open': 3, 'open_done': 1, 'verified': 4, 'first_pass': 2, 'ended_pass': 2,
-            'multi_round': 3, 'closed_no_pass': 1})
+            'multi_round': 3, 'closed_no_pass': 1, 'gate_tests_only': 1, 'gate_verifier': 4})
+        os.remove(os.path.join(sd, '0003-c', 'skips.md'))
+        gone = repo_stats(repo, window)
+        case('control skip line absent', (gone['gate_tests_only'], gone['gate_verifier']), (0, 4))
+        text = render(got, [], None)
+        case('render gate lines', [ln for ln in text.splitlines() if ln.startswith('gate: ')],
+             ['gate: tests-only  1', 'gate: verifier    4'])
         case('cost', got['cost'], {'runs': 6, 'priced': 4, 'unmetered': 2, 'cost_usd': 4.0, 'minutes': 5.0})
         # Observed-red controls: each wrong method moves a count pinned above.
         by_name = repo_stats(repo, window, round_key=lambda n: n)
