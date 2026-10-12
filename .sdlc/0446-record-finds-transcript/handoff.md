@@ -24,3 +24,10 @@ Evidence: `docs/reports/2026-10-11-fleet-retro-12.md` row 3 and row 2; sdlc-lite
 
 ## Constraints
 Never read a transcript outside the agent's own file; do not guess between several matches: take none and print `unpriced:`. No model or effort change.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and its output holds `ok: record with --agent-id and no --transcript finds the sub-agent transcript` (priced row, resolved_model, no `unpriced:` line).
+- Negative controls in the same selftest pass: an `--agent-id` with no transcript prints `unpriced: <name> has no cost row; pass --transcript <jsonl>` with exit 0 and `unpriced: true` in the row; two matching transcripts and a path-shaped id (`../x`) both take none and stay unpriced.
+- Before the change the new find case fails (observed red).
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+- `agents/conductor.md` no longer says `--transcript` is required for a priced record, and `codex_roles.py generate --check` passes.
