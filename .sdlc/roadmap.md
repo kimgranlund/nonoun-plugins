@@ -456,4 +456,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0457 | [.0457-lint-cited-paths-future-and-foreign](.0457-lint-cited-paths-future-and-foreign/handoff.md) | steps.py lint refuses cited paths a step will create and paths from another repo | bug | L2 | P2 | none | 🟢 done |
 | T-0458 | [0458-builder-overlay-retest](0458-builder-overlay-retest/handoff.md) | Retest the builder overlays on tasks where builders actually block, plus one L5 pair | spike | L3 | P2 | T-0450 | ⏳ proposed |
 | T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⏳ proposed |
-| T-0459 | [0459-gate-lock-selftest-real-root-flake](0459-gate-lock-selftest-real-root-flake/handoff.md) | gate_lock selftest isolation case fails when other sessions use the real gate-lock state | bug | L2 | P2 | none | ⏳ proposed |
+| T-0459 | [.0459-gate-lock-selftest-real-root-flake](.0459-gate-lock-selftest-real-root-flake/handoff.md) | gate_lock selftest isolation case fails when other sessions use the real gate-lock state | bug | L2 | P2 | none | 🟢 done |

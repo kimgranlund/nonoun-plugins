@@ -2,7 +2,7 @@
 id: T-0459
 title: "gate_lock selftest isolation case fails when other sessions use the real gate-lock state"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ No model or effort change. The selftest must still prove the real root is not to
 - Observed-red controls print `negative control observed (isolation, ...)` for a real-root env, a missing root, an outside root, and an in-process write under a watched root.
 - A copy of `gate_lock.py` whose `env_for` hands out a root outside the temp dir makes `selftest` exit 1 with `isolation:` lines.
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
