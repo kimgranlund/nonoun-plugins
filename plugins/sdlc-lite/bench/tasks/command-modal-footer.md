@@ -1,4 +1,4 @@
-repo: /Users/kimba/Projects/nonoun/agent-ui
+repo: /Users/kimgranlund/Projects/nonoun/agent-ui
 base: 220ae0acc679f6b610a27da8af1f3c38b9adf8b6
 solution: 51a8cceb2d6ef62213536f6d7634bfa818e0029e
 level: L3
