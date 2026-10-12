@@ -7,12 +7,14 @@ An external lane merges a registered branch an outside agent owns, with no workt
 Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH]
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
                      [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate]
-                     [--no-gate-lock]
+                     [--no-gate-lock] [--gate-need [PREFIX::]RES=N]...
        fanout.py prep <spec>... [the run flags but --driver and --dry-run]
        fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR]
                       [--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
+                      [--gate-need [PREFIX::]RES=N]...
        fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]...
                       [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
+                      [--gate-need [PREFIX::]RES=N]...
        fanout.py settle <integration>
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
@@ -216,8 +218,14 @@ run
        `gate_lock.py run --name <lane>/<id> --` (T-0303, T-0409: the machine-wide weighted
        FIFO admission, built-in capacity 6 compute units and 3 browser jobs, two undeclared gates at once;
        `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
-       bare; a wait past the lock's timeout is gate rc 3 with the `gate_lock: timeout` line in the
-       log), output to
+       bare; T-0456: a cheap gate (a command with `check.py` or `check-packaging.py` as a word, or
+       `claude_roles.py`/`codex_roles.py generate --check`) asks for `--need compute_units=1`, so it is admitted
+       next to heavy browser jobs, and `--gate-need [PREFIX::]RES=N[,RES=N...]` (repeatable; the first spec
+       whose PREFIX starts the gate wins, no PREFIX matches every gate) sets any gate's need; `SDLC_GATE_TIMEOUT=SECS`
+       passes `--timeout SECS` to the lock. A wait past the lock's timeout is gate rc 3 with the `gate_lock: timeout`
+       line in the log: the command never ran, so it is never `red`; the gate is run once more, and a second
+       timeout resets the merge and ends the ticket as `gate waited <N> s for a slot, not run: <gate>`; a command
+       that itself exits 3 stays `red: <gate> rc=3`), output to
        logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
        the highest attempt already logged for that gate, so it grows on each rerun); the first red one runs `git reset --hard <pre-merge HEAD>`
        (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
@@ -344,6 +352,14 @@ selftest
   prints SDLC_GATE_WORKERS and SDLC_GATE_LOCK_HELD and the output of `gate_lock.py context --json`. The gate log of a
   default run shows 3 workers, the marker set and `alpha/T-0001` as the grant's name; SDLC_GATE_SLOTS=3 gives 2
   workers (6 // 3); the same run with --no-gate-lock, and with SDLC_GATE_SLOTS=0, shows neither and no holder.
+  A gate weight and timeout case (case 21b, T-0456): the probe gate of a cheap command (`check.py`) sees 1 worker, a gate
+  that is not cheap 3, `--gate-need compute_units=2` gives 2 to every gate (cheap or not), `--gate-need 'sh -c::compute_units=4'`
+  gives 4 to a gate starting `sh -c` and `zzz::compute_units=4` leaves 3 to a gate it does not match, and a bad spec is refused
+  with exit 2. With a peer holding 5 of the 6 compute units, a cheap gate merges at once while a default gate with
+  SDLC_GATE_TIMEOUT=1 runs twice (logs a1 and a2) and ends as `gate waited 1 s for a slot, not run: ...` (exit 1, no `red:`,
+  the integration tip back at its pre-merge commit); a peer that lets go after the first timeout lets the retry run and merge.
+  Negative control: a gate command that exits 3 itself is `red: exit 3 rc=3`. Each rule was also observed red in a mutant copy
+  (cheap need empty, timeout never detected, no retry, prefix ignored).
   A prep case (case 22, T-0285): three tickets (sizes L1, L2, and the alias of L1) in two lanes print one lane line each, the T-0001 dispatch JSON
   (name T-0001-solo, sdlc-lite:solo-L1, sonnet, isolation worktree, branch worktree-T-0001-solo, the brief carrying
   `T-0001: Ticket t1` and no "Never commit"), a level L2 verifier command against the worktree and none for level L1, a land
@@ -499,12 +515,64 @@ def gate_slots_off():
         return False
 
 
+# T-0456: a cheap gate (a check script, a generator's --check) asks the gate lock for one compute unit, not the
+# default three, so it is admitted next to heavy browser jobs. An explicit --gate-need always wins.
+CHEAP_GATE = re.compile(r'(?:^|[\s/;&|(])(?:check|check-packaging)\.py(?:\s|$)|(?:claude|codex)_roles\.py\s+generate\s+--check')
+CHEAP_NEED = 'compute_units=1'
+LOCK_TIMEOUT = re.compile(r'gate_lock: timeout after (\S+?)s\b')
+
+
+def split_gate_need(spec):
+    """(prefix, need) of one --gate-need `[PREFIX::]RES=N[,RES=N...]`; the prefix '' matches every gate. Raises Refuse."""
+    prefix, sep, need = spec.rpartition('::')
+    if not re.fullmatch(r'[A-Za-z_]\w*=\d+(?:,[A-Za-z_]\w*=\d+)*', need) or any(
+            int(x.split('=')[1]) < 1 for x in need.split(',')):
+        raise Refuse(f'--gate-need {spec!r}: want [PREFIX::]RES=N[,RES=N...] with N 1 or more, for example compute_units=1')
+    return prefix, need
+
+
+def gate_need(ctx, gate):
+    """The --need text for one gate, or '' for the lock's default: the first --gate-need whose prefix starts the
+    gate command, else CHEAP_NEED for a cheap gate, else none."""
+    for spec in ctx.get('gate_needs') or []:
+        prefix, need = split_gate_need(spec)
+        if gate.startswith(prefix):
+            return need
+    return CHEAP_NEED if CHEAP_GATE.search(gate) else ''
+
+
 def gate_argv(ctx, lane, t, gate):
-    """The argv that runs one --gate command: bash -c, through gate_lock.py run unless the lock is off."""
+    """The argv that runs one --gate command: bash -c, through gate_lock.py run unless the lock is off, with its
+    --need (gate_need) and the wait limit SDLC_GATE_TIMEOUT seconds when that is set."""
     argv = ['bash', '-c', gate]
     if ctx.get('gate_lock'):
-        argv = [sys.executable, str(SCRIPTS / 'gate_lock.py'), 'run', '--name', f'{lane.name}/{t.id}', '--', *argv]
+        pre = [sys.executable, str(SCRIPTS / 'gate_lock.py'), 'run', '--name', f'{lane.name}/{t.id}']
+        need = gate_need(ctx, gate)
+        if need:
+            pre += ['--need', need]
+        try:
+            wait = float(ENV.get('SDLC_GATE_TIMEOUT') or 0)
+        except ValueError:
+            wait = 0
+        if wait > 0:
+            pre += ['--timeout', f'{wait:g}']
+        argv = [*pre, '--', *argv]
     return argv
+
+
+def gate_timeout(rc, text):
+    """The wait in seconds (text) when a gate run is rc 3 with the lock's `gate_lock: timeout after Ns` line: the
+    command never ran, so it is not red. None for any other result, including a command that itself exits 3."""
+    m = LOCK_TIMEOUT.search(text) if rc == 3 else None
+    return m.group(1) if m else None
+
+
+def gate_needs_of(a):
+    """The validated --gate-need specs of a parsed command line (Refuse on a bad one)."""
+    specs = list(getattr(a, 'gate_need', None) or [])
+    for spec in specs:
+        split_gate_need(spec)
+    return specs
 
 
 def gate_vacuous(rc, text, gate=''):
@@ -775,6 +843,7 @@ def preflight(a):
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
+            'gate_needs': gate_needs_of(a),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
             'numbered': tickets.config_numbered(root), 'lane_mode': getattr(a, 'lane', 'auto') or 'auto',
             'max_lanes': getattr(a, 'max_lanes', MAX_LANES_DEFAULT), 'stagger': getattr(a, 'stagger', STAGGER_DEFAULT),
@@ -1372,13 +1441,23 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             pat = re.compile(re.escape(stem) + r'(\d+)\.log$')
             n = 1 + max((int(m.group(1)) for f in ctx['logs'].iterdir() if (m := pat.match(f.name))), default=0)
             genv = lane_port_env(dict(ENV, FANOUT_RUN_ID=ctx['run_id']), lane)
-            rc = run_logged(gate_argv(ctx, lane, t, gate), str(integ), genv, ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
-            logtext = ''
-            if rc in (0, 5):
-                try:
-                    logtext = (ctx['logs'] / f'{stem}{n}.log').read_text(errors='replace')
-                except OSError:
-                    pass
+            for attempt in (1, 2):  # a gate that waited out the lock's timeout is retried once (T-0456)
+                glog = ctx['logs'] / f'{stem}{n}.log'
+                rc = run_logged(gate_argv(ctx, lane, t, gate), str(integ), genv, glog, ctx['run_id'])
+                logtext = ''
+                if rc in (0, 3, 5):
+                    try:
+                        logtext = glog.read_text(errors='replace')
+                    except OSError:
+                        pass
+                waited = gate_timeout(rc, logtext)
+                if waited is None:
+                    break
+                if attempt == 2:
+                    git_out(integ, 'reset', '-q', '--hard', before)
+                    return f'gate waited {waited} s for a slot, not run: {gate}', cell
+                say(ctx, lane, t.id, f'gate waited {waited} s for a slot, not run: {gate} (retrying once)')
+                n += 1
             if gate_vacuous(rc, logtext, gate):
                 if not ctx.get('allow_empty_gate'):
                     git_out(integ, 'reset', '-q', '--hard', before)
@@ -1649,6 +1728,8 @@ def land_command(ctx, branch, tid):
         argv += ['--root', os.path.relpath(ctx['root'], ctx['cwd'])]
     for g in ctx['gates']:
         argv += ['--gate', g]
+    for spec in ctx.get('gate_needs') or []:
+        argv += ['--gate-need', spec]
     if ctx['allow_empty_gate']:
         argv.append('--allow-empty-gate')
     if ctx['rewrite_refs']:
@@ -1927,7 +2008,7 @@ def land_preflight(a):
     return {'lane_wt': checked_out.get(branch), 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
             'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
-            'gates': list(a.gate or []), 'driver': None, 'rewrite_refs': bool(a.rewrite_refs),
+            'gates': list(a.gate or []), 'gate_needs': gate_needs_of(a), 'driver': None, 'rewrite_refs': bool(a.rewrite_refs),
             'numbered': tickets.config_numbered(root), 'kinds': {tid: (kind, tier)}, 'land': True,
             'allow_empty_gate': bool(a.allow_empty_gate), 'gate_lock': not a.no_gate_lock and not gate_slots_off()}
 
@@ -2161,8 +2242,8 @@ def roll_preflight(a):
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': main, 'main': main,
             'main_wt': next((w for w, b in wts if b == main), None), 'lanes_dir': lanes_dir, 'integ_dir': roll_dir,
-            'roll_exists': registered, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []), 'driver': None,
-            'rewrite_refs': bool(a.rewrite_refs), 'numbered': tickets.config_numbered(root), 'kinds': {t.id: (kind, tier)},
+            'roll_exists': registered, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []), 'gate_needs': gate_needs_of(a),
+            'driver': None, 'rewrite_refs': bool(a.rewrite_refs), 'numbered': tickets.config_numbered(root), 'kinds': {t.id: (kind, tier)},
             'land': True, 'roll': True, 'globs': tickets.hash_bound_globs(root),
             'allow_empty_gate': bool(a.allow_empty_gate), 'gate_lock': not a.no_gate_lock and not gate_slots_off()}
 
@@ -3567,6 +3648,99 @@ def selftest():
             expect(f'case 21 {name}: the grant context names the lane and ticket is {locked}, log={text!r}',
                    ('"name": "alpha/T-0001"' in text) == locked)
 
+        # case 21b (T-0456): a cheap gate asks the lock for one compute unit, --gate-need sets any gate's need, and a
+        # gate that waits out the lock's timeout is `gate waited N s for a slot, not run` after one retry, never red
+        probe = ('sh -c \'echo "W=[$SDLC_GATE_WORKERS]"; echo "Ran 1 tests"\' ')  # + a word that names the gate
+
+        def gate_b(name, gate, *extra, **extra_env):
+            gr = tmp / f'gb-{name}'
+            make_repo(gr, [('a', 'T-0001', 'ready')])
+            lanes_b = tmp / f'gbl-{name}'
+            args = ('alpha=T-0001', '--integration', f'fanout/b{name}', '--lanes-dir', str(lanes_b), '--driver', vdrv,
+                    '--gate', gate, *extra, '--stagger', '0')
+            cmd = [sys.executable, str(pathlib.Path(__file__).resolve()), 'run', *args]
+            return gr, lanes_b, subprocess.Popen(cmd, cwd=str(gr), env=gate_env(**extra_env), stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE, text=True)
+
+        def gate_b_done(name, gate, *extra, **extra_env):
+            gr, lanes_b, proc = gate_b(name, gate, *extra, **extra_env)
+            out, err = proc.communicate(timeout=300)
+            log = lanes_b / 'logs' / 'gate-alpha-T-0001-1-a1.log'
+            return proc.returncode, out, err, log.read_text() if log.is_file() else ''
+
+        for name, word, extra, workers in (
+                ('cheap', 'check.py', (), '1'),                                       # a cheap gate asks for one unit
+                ('heavy', 'probe.py', (), '3'),                                       # control: not cheap, the default 3
+                ('cheapbig', 'check.py', ('--gate-need', 'compute_units=2'), '2'),    # an explicit need wins over cheap
+                ('all', 'probe.py', ('--gate-need', 'compute_units=2'), '2'),         # no prefix: every gate
+                ('prefix', 'probe.py', ('--gate-need', 'sh -c::compute_units=4'), '4'),
+                ('noprefix', 'probe.py', ('--gate-need', 'zzz::compute_units=4'), '3')):  # control: prefix not matched
+            rc_b, out_b, err_b, text_b = gate_b_done(name, probe + word, *extra)
+            expect(f'case 21b {name}: merges, got rc={rc_b} out={out_b[-300:]!r} err={err_b[-300:]!r}', rc_b == 0)
+            expect(f'case 21b {name}: the gate saw SDLC_GATE_WORKERS=[{workers}], log={text_b!r}', f'W=[{workers}]' in text_b)
+        rc_b, out_b, err_b, _ = gate_b_done('badspec', 'true', '--gate-need', 'nonsense')
+        expect(f'case 21b bad spec: refused with rc 2 naming --gate-need, got rc={rc_b} err={err_b!r}',
+               rc_b == 2 and '--gate-need' in err_b)
+
+        gl_py = str(SCRIPTS / 'gate_lock.py')
+        rel_b = tmp / 'gb-release'
+
+        def peer(units):
+            """A peer holding `units` compute units of the shared lock until rel_b appears."""
+            env_p = gate_env()
+            rel_b.unlink(missing_ok=True)
+            hp = subprocess.Popen([sys.executable, gl_py, 'run', '--name', 'peer', '--need', f'compute_units={units}',
+                                   '--timeout', '60', '--', 'sh', '-c', f'while [ ! -e {shlex.quote(str(rel_b))} ]; do sleep 0.1; done'],
+                                  env=env_p, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            for _ in range(100):
+                st = subprocess.run([sys.executable, gl_py, 'status'], env=env_p, capture_output=True, text=True).stdout
+                if 'admitted' in st and 'peer' in st:
+                    break
+                time.sleep(0.1)
+            else:
+                expect('case 21b: the peer holder was admitted', False)
+            return hp
+
+        def release(hp):
+            rel_b.write_text('x')
+            try:
+                hp.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                hp.kill()
+
+        hold = peer(5)  # 1 of 6 compute units left: a cheap gate (1) fits, a default gate (3) does not
+        try:
+            rc_b, out_b, err_b, text_b = gate_b_done('cheapfit', probe + 'check.py', SDLC_GATE_TIMEOUT='2')
+            expect(f'case 21b cheap gate beside a heavy peer: merges, got rc={rc_b} out={out_b[-300:]!r} err={err_b[-300:]!r}',
+                   rc_b == 0 and 'W=[1]' in text_b and 'gate_lock: timeout' not in text_b)
+            gr_b, lanes_b, proc_b = gate_b('stuck', probe + 'probe.py', SDLC_GATE_TIMEOUT='1')
+            out_b, err_b = proc_b.communicate(timeout=300)
+            logs_b = sorted(p_.name for p_ in (lanes_b / 'logs').glob('gate-alpha-T-0001-1-a*.log'))
+            expect(f'case 21b timed-out gate: exits 1 as `gate waited 1 s for a slot, not run`, got rc={proc_b.returncode} out={out_b[-400:]!r}',
+                   proc_b.returncode == 1 and 'gate waited 1 s for a slot, not run' in out_b)
+            expect(f'case 21b timed-out gate: not red, got out={out_b[-400:]!r}', 'red:' not in out_b)
+            expect(f'case 21b timed-out gate: retried once (logs a1 and a2), got {logs_b}',
+                   logs_b == ['gate-alpha-T-0001-1-a1.log', 'gate-alpha-T-0001-1-a2.log'])
+            expect('case 21b timed-out gate: the merge was reset, the ticket is still ready',
+                   'status: ready' in (sh(lanes_b / 'integration', 'show', 'HEAD:.sdlc/a/handoff.md').stdout))
+            # retry succeeds: the peer lets go after the first attempt timed out
+            gr_b, lanes_b, proc_b = gate_b('retry', probe + 'probe.py', SDLC_GATE_TIMEOUT='1')
+            first = lanes_b / 'logs' / 'gate-alpha-T-0001-1-a1.log'
+            for _ in range(600):
+                if first.is_file() and 'gate_lock: timeout' in first.read_text(errors='replace'):
+                    break
+                time.sleep(0.1)
+            release(hold)
+            out_b, err_b = proc_b.communicate(timeout=300)
+            expect(f'case 21b retry: the second attempt runs and merges, got rc={proc_b.returncode} out={out_b[-300:]!r} err={err_b[-300:]!r}',
+                   proc_b.returncode == 0 and (lanes_b / 'logs' / 'gate-alpha-T-0001-1-a2.log').is_file())
+        finally:
+            release(hold)
+        # control: a command that exits 3 itself is red, not a lock wait
+        rc_b, out_b, err_b, _ = gate_b_done('exit3', 'exit 3', SDLC_GATE_TIMEOUT='1')
+        expect(f'case 21b control: a gate command that exits 3 is `red: ... rc=3`, got rc={rc_b} out={out_b[-300:]!r}',
+               rc_b == 1 and 'red: exit 3 rc=3' in out_b and 'gate waited' not in out_b)
+
         # case 22 (T-0285): prep prints the lane and the dispatch JSON per ticket, refuses what run refuses, creates nothing
         gi = '.worktrees/\n.claude/worktrees/\n'
 
@@ -4223,6 +4397,15 @@ def selftest():
                and sh(fl, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/f-alpha').returncode != 0
                and faref and sh(fl, 'rev-parse', f'{faref}^{{commit}}').stdout.strip() == ftip)
 
+    # case 33 (T-0455): the run-plan claim step sets status: claimed together with claimed_by
+    def claim_rule_ok(text):
+        m = re.search(r'(?m)^\s*- Claim it \((.*)$', text)
+        return bool(m and 'status: claimed' in m.group(0).split('claimed_by', 1)[0] + m.group(0).split('claimed_by', 1)[-1][:60])
+    rules = (PLUGIN / 'skills/run-plan/references/run-rules.md').read_text(encoding='utf-8')
+    expect('case 33 run-plan claim step sets status: claimed beside claimed_by', claim_rule_ok(rules))
+    expect('case 33 negative control: a claim step without status: claimed is rejected',
+           not claim_rule_ok(rules.replace('status: claimed', 'status: ready')))
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -4235,12 +4418,12 @@ def selftest():
 USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
          '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
          '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] '
-         '[--no-gate-lock] | '
+         '[--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
          'fanout.py prep <spec>... [the run flags but --driver and --dry-run] | '
          'fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR] '
-         '[--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] | '
+         '[--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
          'fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]... '
-         '[--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] | '
+         '[--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
          'fanout.py settle <integration> | '
          'fanout.py selftest\n'
          '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
@@ -4276,6 +4459,7 @@ def main(argv):
         rp.add_argument('--lane', choices=('auto', 'solo', 'full'), default='auto', help='as for land')
         rp.add_argument('--allow-empty-gate', action='store_true', help='as for run')
         rp.add_argument('--no-gate-lock', action='store_true', help='as for run')
+        rp.add_argument('--gate-need', action='append', metavar='[PREFIX::]RES=N', help='as for run')
         return cmd_roll(rp.parse_args(argv[1:]))
     if argv[0] == 'land':
         lp = argparse.ArgumentParser(prog='fanout.py land', description='Merge one finished sub-agent branch behind the '
@@ -4298,6 +4482,7 @@ def main(argv):
                         help='auto (default): a worktree-<id>-solo branch is a solo delivery, any other a full one')
         lp.add_argument('--allow-empty-gate', action='store_true', help='as for run')
         lp.add_argument('--no-gate-lock', action='store_true', help='as for run')
+        lp.add_argument('--gate-need', action='append', metavar='[PREFIX::]RES=N', help='as for run')
         return cmd_land(lp.parse_args(argv[1:]))
     ap = argparse.ArgumentParser(prog=f'fanout.py {argv[0]}', description=__doc__.split('\n')[0])
     ap.add_argument('lanes', nargs='+', metavar='<lane>[@<branch>]=<id>[,<id>...]',
@@ -4333,6 +4518,10 @@ def main(argv):
                     help='merge although a gate ran no tests (unittest "Ran 0 tests", pytest "no tests ran" or rc 5)')
     ap.add_argument('--no-gate-lock', action='store_true',
                     help='run each gate bare, not through gate_lock.py (as does SDLC_GATE_SLOTS=0)')
+    ap.add_argument('--gate-need', action='append', metavar='[PREFIX::]RES=N',
+                    help='the gate lock need of the gates whose command starts with PREFIX (every gate when omitted), '
+                    'for example compute_units=1; a cheap gate (check.py, generate --check) defaults to compute_units=1 '
+                    '(repeatable)')
     if argv[0] == 'prep':  # prep never runs a driver and never creates anything, so it has neither flag
         ap.set_defaults(driver=None, dry_run=True)
         return cmd_prep(ap.parse_intermixed_args(argv[1:]))

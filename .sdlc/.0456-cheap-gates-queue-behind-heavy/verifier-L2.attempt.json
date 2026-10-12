@@ -1,0 +1,21 @@
+{
+  "attempt_id": "e9757cfa6a714e9ebd6707df314a843a",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-12T12:26:54.716349+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout39/r",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout39/r/.sdlc/0456-cheap-gates-queue-behind-heavy/handoff.md",
+  "owner_pid": 66162,
+  "handoff_sha256": "7346a66ec4908df0e3710311d35a31501e1a242b8bbf79937f0f773f30b28a04",
+  "process_pid": 66262,
+  "exit_code": 0,
+  "finished_at": "2026-10-12T12:53:16.790953+00:00"
+}

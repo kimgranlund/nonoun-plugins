@@ -990,6 +990,41 @@ def waitfor(pred, secs=15):
     return pred()
 
 
+_ISO = {'issued': [], 'watch': [], 'hits': [], 'hooked': False}  # the selftest's own isolation record
+
+
+def _iso_hook(event, args):
+    """Audit hook: while armed, an open for writing under a watched (real) state root is recorded."""
+    if event != 'open' or not _ISO['watch']:
+        return
+    path, mode, flags = (list(args) + [None, None])[:3]
+    if not isinstance(path, (str, bytes, os.PathLike)):
+        return
+    path = os.fsdecode(path)
+    writes = (isinstance(flags, int) and flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC)) or \
+             (isinstance(mode, str) and any(c in mode for c in 'wax+'))
+    if writes and any(path == w or path.startswith(w.rstrip(os.sep) + os.sep) for w in _ISO['watch']):
+        _ISO['hits'].append(path)
+
+
+def iso_misses(base, real_root, issued, hits):
+    """What the selftest itself could have done to the real state root: handed a case a state root outside its own
+    temp dir (or the real root, or none), or opened a file under the real root for writing in this process."""
+    out = []
+    real = str(real_root.resolve())
+    for r in issued:
+        if not r:
+            out.append('a case ran with no private SDLC_GATE_DIR')
+            continue
+        rp = str(pathlib.Path(r).resolve())
+        if rp == real or rp.startswith(real + os.sep):
+            out.append(f'a case was given the real state root {rp}')
+        elif not (rp == str(base) or rp.startswith(str(base) + os.sep)):
+            out.append(f'a case was given a state root outside the selftest temp dir: {rp}')
+    out.extend(f'the selftest opened {h} for writing' for h in hits)
+    return out
+
+
 def env_for(base, label, **extra):
     """A clean environment with a private state root and TMPDIR (the legacy dir), so no selftest case touches the real namespace."""
     tm = base / f'tmp-{label}'
@@ -998,10 +1033,12 @@ def env_for(base, label, **extra):
     env['TMPDIR'] = str(tm)
     env['SDLC_GATE_DIR'] = str(base / f'state-{label}')
     env.update(extra)
+    _ISO['issued'].append(env.get('SDLC_GATE_DIR'))
     return env
 
 
 def gl(py, env, *args, timeout=60, **kw):
+    _ISO['issued'].append(env.get('SDLC_GATE_DIR'))
     return subprocess.run([sys.executable, str(py), *args], env=env, capture_output=True, text=True, timeout=timeout, **kw)
 
 
@@ -1292,8 +1329,13 @@ def selftest():
         if not cond:
             misses.append(label)
 
-    default_ledger = pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / '.local' / 'state' / 'sdlc-lite' / 'gate-lock' / 'ledger.json'
-    ledger_before = default_ledger.stat().st_mtime_ns if default_ledger.exists() else None
+    # Isolation compares only what this selftest could have written. The real root is shared with every other
+    # session's gate run, so a snapshot of it (its ledger mtime) changes without any fault here.
+    real_root = pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / '.local' / 'state' / 'sdlc-lite' / 'gate-lock'
+    _ISO.update(issued=[], hits=[], watch=[str(real_root), str(real_root.resolve())])
+    if not _ISO['hooked']:
+        sys.addaudithook(_iso_hook)
+        _ISO['hooked'] = True
     with tempfile.TemporaryDirectory() as t:
         base = pathlib.Path(t).resolve()
         src = script.read_text()
@@ -1517,8 +1559,28 @@ def selftest():
                 print(f'gate_lock selftest: negative control observed (no parent check): {x[:150]}')
                 break
 
-    after = default_ledger.stat().st_mtime_ns if default_ledger.exists() else None
-    expect('isolation: the real state root was not touched by the selftest', ledger_before == after)
+        # 8. isolation, with negative controls: a real-root env or a write under a watched root must be caught
+        for label, issued, want in (('the real root', [str(real_root)], 'real state root'), ('no root at all', [None], 'no private'),
+                                    ('a root outside the temp dir', ['/tmp/elsewhere-gl'], 'outside the selftest temp dir')):
+            got = iso_misses(base, real_root, issued, [])
+            expect(f'negative control: a case given {label} must be flagged, got {got}', any(want in x for x in got))
+            if got:
+                print(f'gate_lock selftest: negative control observed (isolation, {label}): {got[0][:120]}')
+        fake_real = base / 'fake-real-root'
+        fake_real.mkdir()
+        keep_watch, keep_hits = _ISO['watch'], _ISO['hits']
+        _ISO['watch'], _ISO['hits'] = [str(fake_real)], []
+        (fake_real / 'ledger.json').write_text('{}')
+        wrote = list(_ISO['hits'])
+        _ISO['watch'], _ISO['hits'] = keep_watch, keep_hits
+        expect(f'negative control: an in-process write under a watched root must be recorded, got {wrote}', len(wrote) >= 1)
+        if wrote:
+            print(f'gate_lock selftest: negative control observed (isolation, in-process write): {wrote[0][-60:]}')
+        issued, hits = list(_ISO['issued']), list(_ISO['hits'])
+        expect('isolation: the selftest handed out private state roots', len(issued) > 0)
+        for x in iso_misses(base, real_root, issued, hits):
+            expect(f'isolation: {x}', False)
+
     if misses:
         print('gate_lock selftest: FAIL, these did not hold:', file=sys.stderr)
         for x in misses:
