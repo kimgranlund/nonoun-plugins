@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Decide whether a ticket's diff is docs, records or reports only, so no independent verifier is needed (T-0429).
+"""Decide whether a ticket's diff needs no independent verifier: docs, records or reports only (T-0429), or the
+tests-gate class of the pilot (T-0496).
 
 Usage:
-  verify_scope.py <base> [--root DIR] [--handoff FILE]
+  verify_scope.py <base> [--root DIR] [--handoff FILE] [--report FILE]
   verify_scope.py selftest
 
 Reads `git diff --name-only <base>` (the working tree against the base) plus the untracked files, then:
@@ -16,6 +17,32 @@ Reads `git diff --name-only <base>` (the working tree against the base) plus the
 A path is docs-only when it is under docs/; or under .sdlc/ and a record file (.md, .json, .jsonl, .txt, or the
 extensionless names config and base-sha), never a script; or a *.md file with no agents, skills, commands or hooks folder in its
 path (a plugin's role, skill and hook text carries behavior). Reads and writes nothing in the repository.
+
+tests-gate (T-0496, a pilot): evaluated only when the diff holds a path that is not docs-only, --handoff is given, and
+<root>/.sdlc/config has the line `tests_gate: pilot`; in every other case the output is the one above. With every
+condition met it prints `tests-gate` and exits 0. Otherwise it prints `tests-gate: <label>: <detail>` for the first
+unmet condition and exits 1. The conditions, in the order checked:
+  level           the handoff front matter `size:` is L2 (legacy M counts)
+  lane            the last `- lane:` line of <handoff dir>/skips.md is solo
+  criteria        the criteria set (the bullets under `## Acceptance criteria` plus the `- Done when:` lines, outside
+                  fences) is not empty and every bullet holds a command span (steps.line_spans)
+  red-control     the handoff has a (red) criterion, and for each (red) span the newest `type: control` entry of
+                  <handoff dir>/red-checkpoint.jsonl with its criterion_sha256 has phase pre-edit and result red
+                  (redck.py record writes them; the attempt id is not checked)
+  protected-path  no changed path outside .sdlc/ has a component agents, hooks or adapters, a basename levels.json,
+                  models.json, run.sh, dispatch.py, results.py or gate_lock.py, or a component holding security,
+                  secret, auth, credential or permission in any case
+  size            the changed paths outside .sdlc/ are at most 8 files and 300 changed lines (added plus deleted,
+                  plus every line of an untracked file; a binary file is over)
+  shared-name     no name the diff removes has a dependent outside it: a quoted literal of 4 or more characters, a
+                  name defined on the line (def, class, function, a line-start `X =`, a JSON "key":, a --flag) or
+                  the basename of a deleted file, taken from the `-` lines outside .sdlc/ and found on no `+` line,
+                  that `git grep -F -l` finds in a tracked file that is not a changed path and not under .sdlc/ or
+                  docs/reports/. An added name has no dependents and is not searched
+  report          only with --report: the report file is readable and, for every criterion span
+                  (results.criterion_spans), holds a line with the span in backticks and `exit 0`
+The `verifier requested by <handoff>` line above is the ninth condition. Solo calls the CLI without --report, because
+its report file is written after it ends; `tickets.py close` is the authority and always requires the report.
 """
 import os
 import re
@@ -31,6 +58,15 @@ RECORD_NAMES = ('config', 'base-sha')
 BEHAVIOR_DIRS = ('agents', 'skills', 'commands', 'hooks')
 VERIFIER_LINE = re.compile(r'^verifier:[ \t]*L[123][ \t]*$', re.M)
 ALLOWLIST = 'docs/reports/broken-links-allowlist.md'
+PILOT_RE = re.compile(r'\s*tests_gate\s*:\s*pilot\s*(?:#.*)?')
+PROTECTED_DIRS = ('agents', 'hooks', 'adapters')
+PROTECTED_NAMES = ('levels.json', 'models.json', 'run.sh', 'dispatch.py', 'results.py', 'gate_lock.py')
+SENSITIVE = ('security', 'secret', 'auth', 'credential', 'permission')
+MAX_FILES, MAX_LINES = 8, 300
+OUTSIDE_SDLC = ('--', '.', ':(exclude).sdlc')
+QUOTED_RES = (re.compile(r"'([^'\n]{4,})'"), re.compile(r'"([^"\n]{4,})"'), re.compile(r'`([^`\n]{4,})`'))
+NAME_RES = (re.compile(r'\b(?:def|class|function)\s+([A-Za-z_]\w*)'), re.compile(r'^\s*([A-Za-z_]\w*)\s*=(?!=)'),
+            re.compile(r'"([^"\n]+)"\s*:'), re.compile(r'(?<![\w-])(--[A-Za-z][\w-]*)'))
 
 
 def docs_path(path):
@@ -100,8 +136,173 @@ def docs_problem(root):
     return 'docs_check: ' + (lines[0] if lines else (p.stderr.strip() or p.stdout.strip() or f'rc={p.returncode}').splitlines()[0])
 
 
-def scope(root, base, handoff=None):
-    """(True, 'docs-only') when the diff against base is docs-only and its checks are green, else (False, the first reason)."""
+def pilot_on(root):
+    """True when <root>/.sdlc/config has a `tests_gate: pilot` line."""
+    try:
+        with open(os.path.join(root, '.sdlc', 'config'), encoding='utf-8') as fh:
+            return any(PILOT_RE.fullmatch(ln) for ln in fh.read().splitlines())
+    except OSError:
+        return False
+
+
+def criteria_bullets(text):
+    """The criteria set of a ticket handoff: the bullets under `## Acceptance criteria` plus the `Done when:` lines,
+    outside ``` fences (the lines results.criterion_spans reads its spans from)."""
+    out, inside, fenced = [], False, False
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside, fenced = line.rstrip() == '## Acceptance criteria', False
+        elif line.lstrip().startswith('```'):
+            fenced = not fenced
+        elif not fenced and ((inside and re.match(r'\s*[-*] ', line)) or re.match(r'\s*[-*] Done when:', line)):
+            out.append(line)
+    return out
+
+
+def protected_path(path):
+    """True when one repo-relative path is one the tests-gate class never covers."""
+    parts = path.split('/')
+    return (any(p in PROTECTED_DIRS for p in parts) or parts[-1] in PROTECTED_NAMES
+            or any(w in p.lower() for p in parts for w in SENSITIVE))
+
+
+def size_problem(root, base, untracked):
+    """None, or why the changed paths outside .sdlc/ are over MAX_FILES files or MAX_LINES changed lines."""
+    stat = git(root, 'diff', '--numstat', '--no-renames', '-z', base, *OUTSIDE_SDLC)
+    if stat.returncode != 0:
+        raise ValueError(stat.stderr.strip() or f'git diff failed against {base}')
+    files, lines = set(), 0
+    for row in stat.stdout.split('\0'):
+        cols = row.split('\t', 2)
+        if len(cols) != 3:
+            continue
+        if not (cols[0].isdigit() and cols[1].isdigit()):
+            return f'binary file {cols[2]}'
+        files.add(cols[2])
+        lines += int(cols[0]) + int(cols[1])
+    for p in untracked:
+        try:
+            with open(os.path.join(root, p), 'rb') as fh:
+                data = fh.read()
+        except OSError:
+            return f'unreadable file {p}'
+        if b'\0' in data:
+            return f'binary file {p}'
+        files.add(p)
+        lines += data.count(b'\n') + (1 if data and not data.endswith(b'\n') else 0)
+    if len(files) > MAX_FILES:
+        return f'{len(files)} files, over {MAX_FILES}'
+    return f'{lines} changed lines, over {MAX_LINES}' if lines > MAX_LINES else None
+
+
+def removed_names(root, base):
+    """The shared-name tokens the diff against base removes outside .sdlc/, in order, a repeat once: quoted literals of
+    4 or more characters, names defined on a `-` line and the basenames of deleted files, each found on no `+` line."""
+    diff = git(root, 'diff', '-U0', '--no-renames', '--no-color', '--no-ext-diff', base, *OUTSIDE_SDLC)
+    gone = git(root, 'diff', '--name-only', '--no-renames', '--diff-filter=D', '-z', base, *OUTSIDE_SDLC)
+    if diff.returncode != 0 or gone.returncode != 0:
+        raise ValueError((diff.stderr or gone.stderr).strip() or f'git diff failed against {base}')
+    minus, plus, hunk = [], [], False
+    for ln in diff.stdout.splitlines():
+        if ln.startswith('diff --git '):
+            hunk = False
+        elif ln.startswith('@@'):
+            hunk = True
+        elif hunk and ln[:1] in '-+' and ln:
+            (minus if ln[0] == '-' else plus).append(ln[1:])
+    tokens = [m.group(1) for ln in minus for rx in QUOTED_RES + NAME_RES for m in rx.finditer(ln)]
+    tokens += [p.split('/')[-1] for p in gone.stdout.split('\0') if p]
+    added = '\n'.join(plus)
+    out = []
+    for t in tokens:
+        if t not in out and not re.search(r'(?<![\w-])' + re.escape(t) + r'(?![\w-])', added):
+            out.append(t)
+    return out
+
+
+def shared_name(root, base, changed):
+    """None, or `<token> in <path>` for the first removed name a tracked file outside the diff still holds."""
+    for t in removed_names(root, base):
+        hits = git(root, 'grep', '-F', '-l', '-z', '-e', t, '--', '.', ':(exclude).sdlc', ':(exclude)docs/reports')
+        for p in hits.stdout.split('\0'):
+            if p and p not in changed:
+                return f'{t} in {p}'
+    return None
+
+
+def clip(s, n=80):
+    s = ' '.join(s.split())
+    return s if len(s) <= n else s[:n - 3] + '...'
+
+
+def tests_gate(root, base, handoff, paths, report=None, need_report=False):
+    """None when the diff qualifies for the tests-gate class (T-0496), else `<label>: <detail>` for the first unmet
+    condition, in the order of the module docstring."""
+    import redck    # local: only a pilot diff needs them, and redck imports steps
+    import results
+    import steps
+    try:
+        with open(handoff, encoding='utf-8') as fh:
+            text = fh.read()
+    except OSError:
+        return f'level: cannot read {handoff}'
+    d = os.path.dirname(os.path.abspath(handoff))
+    fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', text, re.S | re.M)
+    size = re.search(r'^[ \t]*size[ \t]*:[ \t]*([^\s#]+)', fm.group(0), re.M) if fm else None
+    if not size or size.group(1) not in ('L2', 'M'):
+        return 'level: ' + (f'size is {size.group(1)}, not L2' if size else 'no size: line in the front matter')
+    try:
+        with open(os.path.join(d, 'skips.md'), encoding='utf-8') as fh:
+            lanes = re.findall(r'(?m)^- lane:[ \t]*([^;\n]*)', fh.read())
+    except OSError:
+        lanes = []
+    if not lanes or lanes[-1].strip() != 'solo':
+        return 'lane: ' + (f'lane is {lanes[-1].strip()}, not solo' if lanes else 'no - lane: line in skips.md')
+    bullets = criteria_bullets(text)
+    if not bullets:
+        return 'criteria: no acceptance criterion'
+    for b in bullets:
+        if not steps.line_spans(b):
+            return f'criteria: no command span in {clip(b)}'
+    reds = redck.red_items(handoff)
+    if not reds:
+        return 'red-control: no (red) criterion'
+    controls = [e for e in redck.entries(d) if e.get('type') == 'control']
+    for line, span in reds:
+        key = redck.criterion_hash(line, span)
+        last = next((e for e in reversed(controls) if e.get('criterion_sha256') == key), None)
+        if last is None:
+            return f'red-control: no control for {clip(span)}'
+        if last.get('phase') != 'pre-edit':
+            return f'red-control: {last.get("phase")} control for {clip(span)}'
+        if last.get('result') != 'red':
+            return f'red-control: control was {last.get("result")} for {clip(span)}'
+    outside = [p for p in paths if not p.startswith('.sdlc/')]
+    bad = next((p for p in outside if protected_path(p)), None)
+    if bad is not None:
+        return f'protected-path: {bad}'
+    new = git(root, 'ls-files', '--others', '--exclude-standard', '-z').stdout.split('\0')
+    why = size_problem(root, base, [p for p in new if p and not p.startswith('.sdlc/')])
+    if why:
+        return f'size: {why}'
+    why = shared_name(root, base, set(outside))
+    if why:
+        return f'shared-name: {why}'
+    if need_report:
+        try:
+            with open(report, encoding='utf-8') as fh:
+                lines = fh.read().splitlines()
+        except (OSError, TypeError, ValueError):
+            return 'report: no readable solo report'
+        for span in results.criterion_spans(text):
+            if not any(f'`{span}`' in ln and re.search(r'\bexit 0\b', ln) for ln in lines):
+                return f'report: no exit 0 line for {clip(span)}'
+    return None
+
+
+def scope(root, base, handoff=None, report=None, need_report=False):
+    """(True, 'docs-only') when the diff against base is docs-only and its checks are green, (True, 'tests-gate') when
+    the pilot is on and the diff meets every tests-gate condition, else (False, the first reason)."""
     if handoff:
         try:
             with open(handoff, encoding='utf-8') as fh:
@@ -114,7 +315,10 @@ def scope(root, base, handoff=None):
         return False, f'no changes against {base}'
     bad = first_non_docs(paths)
     if bad is not None:
-        return False, bad
+        if not handoff or not pilot_on(root):
+            return False, bad
+        why = tests_gate(root, base, handoff, paths, report, need_report)
+        return (False, f'tests-gate: {why}') if why else (True, 'tests-gate')
     return (False, why) if (why := docs_problem(root) or link_problem(root)) else (True, 'docs-only')
 
 
@@ -127,19 +331,20 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv == ['selftest']:
         return selftest()
-    root = handoff = None
+    opt = {'--root': None, '--handoff': None, '--report': None}
     rest = []
     it = iter(argv)
     for a in it:
-        if a in ('--root', '--handoff'):
+        if a in opt:
             v = next(it, None)
             if v is None:
                 break
-            root, handoff = (v, handoff) if a == '--root' else (root, v)
+            opt[a] = v
         else:
             rest.append(a)
-    if len(rest) != 1 or rest[0].startswith('-') or (argv and argv[-1] in ('--root', '--handoff')):
-        sys.stderr.write('usage: verify_scope.py <base> [--root DIR] [--handoff FILE] | selftest\n')
+    root, handoff, report = opt['--root'], opt['--handoff'], opt['--report']
+    if len(rest) != 1 or rest[0].startswith('-') or (argv and argv[-1] in opt):
+        sys.stderr.write('usage: verify_scope.py <base> [--root DIR] [--handoff FILE] [--report FILE] | selftest\n')
         return 2
     top = toplevel(root or os.getcwd())
     if not top:
@@ -149,7 +354,7 @@ def main(argv=None):
         sys.stderr.write(f'verify_scope.py: {rest[0]} is not a commit\n')
         return 2
     try:
-        ok, detail = scope(top, rest[0], handoff)
+        ok, detail = scope(top, rest[0], handoff, report, report is not None)
     except ValueError as e:
         sys.stderr.write(f'verify_scope.py: {e}\n')
         return 2
@@ -250,6 +455,80 @@ def selftest():
         expect('cli script path exits 1', (p.returncode, p.stdout.strip()) == (1, 'tool.py'))
         expect('cli bad base exits 2', subprocess.run(exe + ['nope', '--root', r], capture_output=True, text=True).returncode == 2)
         expect('cli no args exits 2', subprocess.run(exe, capture_output=True, text=True).returncode == 2)
+
+    # ---- tests-gate (T-0496): one qualifying L2 solo fixture, then one flipped property per negative control ----
+    import hashlib
+    import json
+    RED = '- (red) `grep -q 2 tool.py`'
+    SPAN = 'grep -q 2 tool.py'
+    TOOL = 'x = 1\n\n\ndef helper():\n    return 1\n'
+
+    def gate(tmp, name, size='L2', lane='solo', crit=RED, extra_crit='', tail='', phase='pre-edit', pilot=True,
+             tool=TOOL.replace('x = 1', 'x = 2'), more=(), report=f'- `{SPAN}` exit 0\n'):
+        """(root, base, handoff, report) of the positive fixture with the named properties flipped."""
+        r = os.path.join(tmp, name)
+        os.makedirs(r)
+        sh(r, 'init', '-q')
+        sh(r, 'config', 'user.email', 't@t')
+        sh(r, 'config', 'user.name', 't')
+        put(r, 'tool.py', TOOL)
+        put(r, 'other.py', 'from tool import helper\n')
+        sh(r, 'add', '-A')
+        sh(r, 'commit', '-qm', 'base')
+        b = subprocess.run(['git', '-C', r, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+        if pilot:
+            put(r, '.sdlc/config', 'tests_gate: pilot\n')
+        put(r, '.sdlc/t/handoff.md', f'---\nid: T-1\nsize: {size}   # level\n---\n\n## Goal\ng\n\n'
+                                     f'## Acceptance criteria\n{crit}\n{extra_crit}{tail}')
+        put(r, '.sdlc/t/skips.md', f'# Skips\n\n## Lane\n- lane: lean; point: p; reasons: r\n- lane: {lane}; point: p; reasons: r\n')
+        key = hashlib.sha256(f'{RED}\n{SPAN}'.encode('utf-8')).hexdigest()
+        put(r, '.sdlc/t/red-checkpoint.jsonl', ''.join(json.dumps(
+            {'type': 'control', 'criterion_sha256': key, 'phase': ph, 'result': 'red'}) + '\n' for ph in ('pre-edit', phase)))
+        put(r, '.sdlc/t/solo-L2-a.md', report)
+        put(r, 'tool.py', tool)
+        for rel, text in more:
+            put(r, rel, text)
+        return r, b, os.path.join(r, '.sdlc', 't', 'handoff.md'), os.path.join(r, '.sdlc', 't', 'solo-L2-a.md')
+
+    def why(tmp, name, **flip):
+        r, b, h, rep = gate(tmp, name, **flip)
+        return scope(r, b, h, report=rep, need_report=True)[1]
+
+    with tempfile.TemporaryDirectory() as tmp:
+        r, b, h, rep = gate(tmp, 'ok')
+        got = scope(r, b, h, report=rep, need_report=True)
+        expect(f'tests-gate ok: a qualifying L2 solo diff with its report: {got}', got == (True, 'tests-gate'))
+        expect('tests-gate ok: solo call without a report', scope(r, b, h) == (True, 'tests-gate'))
+        p = subprocess.run(exe + [b, '--root', r, '--handoff', h, '--report', rep], capture_output=True, text=True)
+        expect(f'tests-gate ok: cli with --report prints tests-gate and exits 0: {p.returncode} {p.stdout!r}',
+               (p.returncode, p.stdout.strip()) == (0, 'tests-gate'))
+        expect('tests-gate ok: legacy size M counts as L2', why(tmp, 'm', size='M') == 'tests-gate')
+        got = why(tmp, 'level', size='L3')
+        expect(f'tests-gate red: level: {got}', got.startswith('tests-gate: level'))
+        got = why(tmp, 'lane', lane='full')
+        expect(f'tests-gate red: lane: {got}', got.startswith('tests-gate: lane'))
+        got = why(tmp, 'criteria', extra_crit='- the output reads well\n')
+        expect(f'tests-gate red: criteria: {got}', got.startswith('tests-gate: criteria'))
+        got = why(tmp, 'retro', phase='retrospective')
+        expect(f'tests-gate red: red-control, a retrospective entry: {got}', got.startswith('tests-gate: red-control'))
+        got = why(tmp, 'nored', crit=f'- `{SPAN}`')
+        expect(f'tests-gate red: red-control, no (red) criterion: {got}', got.startswith('tests-gate: red-control'))
+        got = why(tmp, 'protected', more=[('pkg/hooks/h.py', 'y = 1\n')])
+        expect(f'tests-gate red: protected-path: {got}', got.startswith('tests-gate: protected-path'))
+        got = why(tmp, 'size', more=[('big.py', 'y = 1\n' * 301)])
+        expect(f'tests-gate red: size: {got}', got.startswith('tests-gate: size'))
+        got = why(tmp, 'shared', tool=TOOL.replace('x = 1', 'x = 2').replace('helper', 'helper2'))
+        expect(f'tests-gate red: shared-name: {got}', got == 'tests-gate: shared-name: helper in other.py')
+        got = why(tmp, 'report', report=f'- `{SPAN}` exit 1\n')
+        expect(f'tests-gate red: report: {got}', got.startswith('tests-gate: report'))
+        got = why(tmp, 'verifier', tail='\nverifier: L2\n')
+        expect(f'tests-gate red: the verifier line: {got}', got.startswith('verifier requested by'))
+        got = why(tmp, 'off', pilot=False)
+        expect(f'tests-gate red: pilot off keeps the first non-docs path: {got}', got == 'tool.py')
+        r, b, h, rep = gate(tmp, 'cli-red', size='L3')
+        p = subprocess.run(exe + [b, '--root', r, '--handoff', h, '--report', rep], capture_output=True, text=True)
+        expect(f'cli tests-gate reason exits 1: {p.returncode} {p.stdout!r}',
+               p.returncode == 1 and p.stdout.startswith('tests-gate: level'))
     if failed:
         print(f'verify_scope.py selftest: {len(failed)} failed')
         return 1

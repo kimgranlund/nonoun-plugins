@@ -462,7 +462,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0462 | [.0462-plan-skills-merge-design](.0462-plan-skills-merge-design/handoff.md) | Design: merge the plan-* skills into /plan with kinds, shared rules and one lint | spike | L3 | P2 | none | 🟢 done |
 | T-0464 | [.0464-ceremony-audit](.0464-ceremony-audit/handoff.md) | Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture | spike | L3 | P2 | none | 🟢 done |
 | T-0466 | [.0466-reply-lint](.0466-reply-lint/handoff.md) | reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison | chore | L2 | P2 | none | 🟢 done |
-| T-0467 | [0467-plan-merge-a-skill](0467-plan-merge-a-skill/handoff.md) | Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout | feature | L3 | P2 | T-0461 | ⏳ proposed |
+| T-0467 | [.0467-plan-merge-a-skill](.0467-plan-merge-a-skill/handoff.md) | Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout | feature | L3 | P2 | T-0461 | 🟢 done |
 | T-0465 | [0465-compaction-prompt](0465-compaction-prompt/handoff.md) | /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) | feature | L3 | P2 | T-0461, T-0467 | ⏳ proposed |
 | T-0468 | [0468-plan-merge-b-stubs](0468-plan-merge-b-stubs/handoff.md) | Merge plan skills B: redirect stubs for the four retired names and retargeted checks | chore | L2 | P2 | T-0467 | ⏳ proposed |
 | T-0463 | [0463-skill-ui-hints](0463-skill-ui-hints/handoff.md) | Standardize skill argument hints and question UI across all skills, with a parity lint | chore | L3 | P2 | T-0461, T-0468 | ⏳ proposed |
@@ -493,10 +493,17 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0493 | [.0493-industry-alternatives-review](.0493-industry-alternatives-review/handoff.md) | Research: industry standards and alternatives to plan, build, verify, close, and what they mean for the queue | spike | L3 | P2 | none | 🟢 done |
 | T-0494 | [.0494-subagent-notice-routing](.0494-subagent-notice-routing/handoff.md) | A role that spawns background sub-agents then ends its turn never wakes: completion notices go to the parent session (T-0493) | bug | L1 | P2 | none | 🟢 done |
 | T-0495 | [.0495-clarify-v3-independent-replay](.0495-clarify-v3-independent-replay/handoff.md) | Independent replay of the clarify v3 skill on the ten eval cases (T-0461 follow-up) | chore | L2 | P2 | none | 🟢 done |
+<<<<<<< HEAD
 | T-0496 | [0496-tests-gate-pilot](0496-tests-gate-pilot/handoff.md) | Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception | feature | L3 | P2 | none | ⏳ proposed |
 | T-0497 | [.0497-gate-lock-load-cap](.0497-gate-lock-load-cap/handoff.md) | gate_lock.py: cap admission by load average, with per-repo fairness (retro 12h rows 1 and 2) | feature | L3 | P2 | none | 🟢 done |
 | T-0498 | [.0498-planner-run-each-criterion](.0498-planner-run-each-criterion/handoff.md) | agents/planner.md: run each criterion against a reference sibling before shipping (retro 12h row 5) | chore | L1 | P2 | none | 🟢 done |
 | T-0499 | [.0499-close-skips-for-ran-roles](.0499-close-skips-for-ran-roles/handoff.md) | tickets.py close: no skip entry required for a role with a run record (retro 12h row 6) | bug | L1 | P2 | none | 🟢 done |
+=======
+| T-0496 | [.0496-tests-gate-pilot](.0496-tests-gate-pilot/handoff.md) | Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception | feature | L3 | P2 | none | 🟢 done |
+| T-0497 | [0497-gate-lock-load-cap](0497-gate-lock-load-cap/handoff.md) | gate_lock.py: cap admission by load average, with per-repo fairness (retro 12h rows 1 and 2) | feature | L3 | P2 | none | ⏳ proposed |
+| T-0498 | [0498-planner-run-each-criterion](0498-planner-run-each-criterion/handoff.md) | agents/planner.md: run each criterion against a reference sibling before shipping (retro 12h row 5) | chore | L1 | P2 | none | ⏳ proposed |
+| T-0499 | [0499-close-skips-for-ran-roles](0499-close-skips-for-ran-roles/handoff.md) | tickets.py close: no skip entry required for a role with a run record (retro 12h row 6) | bug | L1 | P2 | none | ⏳ proposed |
+>>>>>>> fanout/wave50
 | T-0500 | [0500-solo-brief-regenerate-scan](0500-solo-brief-regenerate-scan/handoff.md) | agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8) | chore | L1 | P2 | none | ⏳ proposed |
 | T-0501 | [.0501-inner-loop-profile](.0501-inner-loop-profile/handoff.md) | Design: an inner-loop conductor profile (local gate setting, pass with notes, UI parity criterion, single merge path) from agent-ui | spike | L3 | P2 | none | 🟢 done |
 | T-0502 | [0502-lane-copies-local-settings](0502-lane-copies-local-settings/handoff.md) | lanes.py: a new lane worktree gets the gitignored .claude/settings.local.json (agent-ui retro row 7) | bug | L1 | P2 | none | ⏳ proposed |

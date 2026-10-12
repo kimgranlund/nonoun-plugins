@@ -236,6 +236,7 @@ import collections
 import datetime
 import hashlib
 import heapq
+import json
 import os
 import pathlib
 import posixpath
@@ -1186,7 +1187,7 @@ def skip_missing(d, covered=()):
     section, no `- lane:` line in it, or a last lane other than solo, lean, fix, or full. The full chain's planner,
     verifier per live step-<digits>/ and filer each need a counting `- skip: <role>; ...` entry under
     ## Skipped when their result is missing (format: skills/handoff-format, Layout). covered names roles to
-    count as skipped (close passes ('verifier',) for a docs-only diff, T-0429)."""
+    count as skipped (close passes ('verifier',) for a docs-only diff, T-0429, or a tests-gate one, T-0496)."""
     f = d / 'skips.md'
     if not f.is_file():
         return None
@@ -1236,20 +1237,40 @@ def recorded_base(d):
     return None
 
 
+def solo_report(d):
+    """The report file of the ticket's last `role: solo` row in <d>/runs.jsonl, resolved in d; None when there is no
+    such row or its `file` is empty."""
+    name = None
+    try:
+        rows = (d / 'runs.jsonl').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    for line in rows:
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict) and rec.get('role') == 'solo':
+            name = rec.get('file')
+    return str(d / name) if name and isinstance(name, str) else None
+
+
 def docs_waiver(d):
-    """The recorded base when the ticket's diff against it is docs, records and reports only and its checks are green
-    (verify_scope.scope), so close needs no verifier result; None otherwise, also with no recorded base or no git
-    (T-0429). A `verifier: L1`..`L3` line in the handoff keeps the verifier."""
+    """(recorded base, class) when the ticket's diff against that base needs no verifier result at close
+    (verify_scope.scope); None otherwise, also with no recorded base or no git. The class is `docs-only` (T-0429: docs,
+    records and reports only, with their checks green) or `tests-gate` (T-0496, the pilot: every tests-gate condition
+    holds, the solo report with an `exit 0` line per criterion span included). A `verifier: L1`..`L3` line in the
+    handoff keeps the verifier."""
     import verify_scope  # local like steps: only close needs it
     base = recorded_base(d)
     top = verify_scope.toplevel(str(d))
     if not base or not top:
         return None
     try:
-        ok, _ = verify_scope.scope(top, base, str(d / 'handoff.md'))
+        ok, klass = verify_scope.scope(top, base, str(d / 'handoff.md'), report=solo_report(d), need_report=True)
     except ValueError:
         return None
-    return base if ok else None
+    return (base, klass) if ok else None
 
 
 def add_skip_line(f, line):
@@ -2008,12 +2029,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                    + '; settle them in the owner stage; nothing written')
     got = skip_missing(d)
     docs_base = docs_waiver(d) if got and any(m.startswith('verifier') for m in got[1]) else None
-    if docs_base:  # T-0429: a docs, records and reports only diff closes on its own checks; the guard below still counts planner and filer
+    if docs_base:  # T-0429, T-0496: a docs-only or tests-gate diff closes on its own checks; the guard below still counts planner and filer
         got = skip_missing(d, covered=('verifier',))
 
     def note_docs_waiver():
         if docs_base:
-            add_skip_line(d / 'skips.md', f'- skip: verifier; step: all; reason: docs-only diff against {docs_base[:12]} '
+            add_skip_line(d / 'skips.md', f'- skip: verifier; step: all; reason: {docs_base[1]} diff against {docs_base[0][:12]} '
                                           f'(verify_scope.py); decided: tickets.py close')
     if got:
         raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
@@ -4918,8 +4939,8 @@ def selftest():
         # ---- (docs-only) T-0429: a docs, records and reports only diff closes with no verifier result; anything else still needs one ----
         import subprocess as _sp
 
-        def vs_root(name, change, handoff_tail='', base_files=(), recorded=True):
-            r = sk_root(name, ['lean'], PL + FL, files=('step-1/builder-L1.md',), status_done=False)
+        def vs_root(name, change, handoff_tail='', base_files=(), recorded=True, lane='lean'):
+            r = sk_root(name, [lane], PL + FL, files=('step-1/builder-L1.md',), status_done=False)
             top = r.parent
             for rel, text in base_files:
                 (top / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -4970,6 +4991,42 @@ def selftest():
         r = vs_root('vs-nobase', [('docs/specs/x.md', '# x\n')], recorded=False)
         rc, _, err = run(r, 'close', ('lean-a',), reason='x')
         expect(f'(docs-only) no recorded base keeps the verifier: rc={rc} {err!r}', rc == 1 and NOVER in err)
+
+        # ---- (tests-gate) T-0496: a qualifying L2 solo pilot ticket closes with no verifier result; pilot off or a report gap keeps it ----
+        import redck as _redck
+
+        def tg_root(name, pilot=True, exits=0):
+            span = 'grep -q beta tool.py'
+            files = [('tool.py', 'alpha\n'), ('.sdlc/lean-a/runs.jsonl', '{"role":"solo","level":"L2","file":"solo-L2-a.md"}\n'),
+                     ('.sdlc/lean-a/solo-L2-a.md', f'- `{span}` exit {exits}\n')]
+            if pilot:
+                files.append(('.sdlc/config', 'tests_gate: pilot\n'))
+            r = vs_root(name, [('tool.py', 'beta\n')], lane='solo', base_files=files,
+                        handoff_tail=f'\n## Acceptance criteria\n- (red) `{span}`\n')
+            edit(r, 'lean-a', r'^- Done when:.*$', f'- Done when: `{span}` exits 0')
+            with open(r / 'lean-a' / 'red-checkpoint.jsonl', 'w', encoding='utf-8') as fh:
+                for line, sp in _redck.red_items(r / 'lean-a' / 'handoff.md'):
+                    fh.write(json.dumps({'type': 'control', 'criterion_sha256': _redck.criterion_hash(line, sp),
+                                         'phase': 'pre-edit', 'result': 'red'}) + '\n')
+            return r
+
+        r = tg_root('tg-ok')
+        rc, out, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(tests-gate) a qualifying pilot ticket closes with no verifier result: rc={rc} {err!r}',
+               rc == 0 and status(r, 'lean-a') == 'done')
+        sk = (r / 'lean-a' / 'skips.md').read_text(encoding='utf-8')
+        expect('(tests-gate) the skip is recorded as a counting entry under ## Skipped',
+               '- skip: verifier; step: all; reason: tests-gate diff against ' in sk and sk.index('## Skipped') < sk.index('- skip: verifier'))
+        expect(f'(tests-gate) check passes after the skip: {run(r, "check")[2]!r}', run(r, 'check')[0] == 0)
+        r = tg_root('tg-off', pilot=False)
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(tests-gate) the same ticket without the config line still needs a verifier: rc={rc} {err!r}',
+               rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed'
+               and 'tests-gate diff' not in (r / 'lean-a' / 'skips.md').read_text(encoding='utf-8'))
+        r = tg_root('tg-report', exits=1)
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(tests-gate) a report missing one exit line still needs a verifier: rc={rc} {err!r}',
+               rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
 
         # ---- migrate-layout: flat to topics, with the cite rewrite ----
         if shutil.which('git') is None:

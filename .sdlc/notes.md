@@ -378,6 +378,7 @@
 - note: `fanout.py selftest` takes about 240 to 250 s here against an 800 s guard timeout. A heavily loaded host could approach it.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - 2026-10-12: maintainer asked to review T-0503 to T-0509 (filed 25fc8d35 from the Codex Astra review) after waves 49 to 51 and the T-0501 design finish, accounting for the tickets and merges since they were written (0.22.5 shipped, T-0472 to T-0502). Verdict per ticket: still valid, already fixed, reshape, or drop.
 - 2026-10-12: maintainer: cut the next patch (0.22.6) after T-0503 to T-0509 are resolved (built, dropped or reshaped). Release steps as 0.22.5: release worktree, version bump, regenerate Codex agents, record, full check.sh on a git archive copy, tag, ff main, push, tell the fleet. Includes T-0492, T-0494, T-0496 (if kept), T-0497 to T-0502 and the plan merge chain if landed.
 =======
@@ -388,3 +389,19 @@
 - note: The 1-minute load average lags, so several queued heads can be admitted in the seconds after the load drops under the cap. Per-job priority was a handoff non-goal, to be revisited if the cap is not enough.
 - note: The `check.sh` guard took 1202 s in this tree against the 897 s recorded earlier, so it needs a Bash timeout well above 20 minutes. The `(guard)` scope check passes vacuously if `SDLC_BASE_SHA` is unset.
 >>>>>>> fanout/wave49
+=======
+## T-0496: Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception (2026-10-12)
+
+- decide: `tickets.py close` writes the tests-gate skip line only for a solo ticket with a `step-<n>/` dir, so a real solo ticket with no step dir never gets the line, `gate_tests_only` never counts it, and the pilot barely reaches the tickets it targets; decide whether close should consult the gate on that path.
+- decide: the handoff asks `lanes.py` to print `gate: tests-only` or `gate: verifier`, but `lanes.py list` has no per-ticket surface; the unattended run left `lanes.py` untouched and put the field in `solo_stats.py` only (skips.md decision); name a surface (a lane column, the `/report` lanes view) or drop it.
+- decide: the 20-ticket readout needs K-005 for tests-gate tickets and rework after close (a reopen, or a follow-up citing a closed ticket within 7 days), and neither is built; `first_pass / verified` excludes tickets with no verifier round, so the revert rule cannot be evaluated yet.
+- note: the `shared-name` check counts a removed token on a `+` line only as a whole token, so a rename `helper` to `helper2` still searches `helper`. `protected-path` matches its sensitive words as substrings of any path component (`auth` also matches `author`). Both lean toward keeping the verifier, which lowers the qualifying rate.
+
+## T-0467: Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (2026-10-12)
+
+- decide: `plan_check.py fanout` refused with `FAIL overlap` for T-0498 and T-0499 because both cite the same evidence report, while `fanout.py run --dry-run` printed `overlap (planned scope): none` for the same pair; say which definition should win.
+- note: the replay did not exercise the `steps`, `doc` and `campaign` kinds, so their dry-run output and first-return lint results are unobserved.
+- note: the replay's old-versus-new comparison came from one reader doing both skills, so it cannot show a difference between them; a second reader per skill would.
+- note: the `cost:` line for a missing spend cap reads `$10 of $unknown ...; warn: no cap given`. The plan rules define `unknown` only for a missing ticket size, so this form was the builder's choice and no rule covers it.
+- note: the new reference files are untracked. Track them in the commit; after that the code-span paths in `SKILL.md` could become Markdown links.
+>>>>>>> fanout/wave50
