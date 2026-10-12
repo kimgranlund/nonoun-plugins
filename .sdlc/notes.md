@@ -331,3 +331,5 @@
 - note: the Loose ends step has no artifact, so no loose-end verdict exists for this task.
 
 2026-10-12: T-0465 placement corrected by the maintainer: the compaction skill authors a /compact prompt, so it is a plan-family skill (`plan-compaction`, like `plan-goal` and `plan-loop`) with a `plan_check.py compaction` kind, not a `report` view. T-0462 (plan merge design, running) should list `compaction` as a block-returning kind; reconcile when its result lands.
+
+2026-10-12: T-0465 invocation fixed by the maintainer: /sdlc-lite:plan compaction <prose>, a kind of /plan (the router rule and first kind are built in T-0465; T-0462 and its build add the other kinds).

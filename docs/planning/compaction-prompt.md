@@ -2,7 +2,7 @@
 status: proposed
 owner: maintainer
 ---
-# Compaction prompt: `/sdlc-lite:plan-compaction`
+# Compaction prompt: `/sdlc-lite:plan compaction <prose>`
 
 Status: proposal. Raised in ultimate-tokens as `/plan compaction` (handoff of 2026-10-12, kept in `.sdlc/0465-compaction-prompt/source-handoff.md`). This version is the original spec reviewed and aligned with the plan skill family (`plan-goal`, `plan-loop`, T-0462), the controlled language (T-0461), the document standards (T-0447), the lane lifecycle and the resolve-and-ship posture (T-0464). The report skill (T-0460) is an optional data source, not the home.
 
@@ -14,7 +14,7 @@ One command returns one prompt that the person pastes into a manual `/compact <p
 
 | # | Original | Now | Reason |
 |---|---|---|---|
-| 1 | A mode of `/plan` | A plan-family skill, `plan-compaction`, that returns one copy/paste `/compact` prompt, linted by a new `plan_check.py compaction` kind; it becomes the kind `compaction` of the merged `/plan` when T-0462 lands | The original placement was right for the family: `plan-goal` returns a `/goal` block, `plan-loop` a `/loop` line, and this returns a `/compact` prompt. A `report` view was wrong: a report states status, this authors text for a summarizer. `report` can feed STATE later |
+| 1 | A mode of `/plan` | Kept: the kind `compaction` of the existing `plan` skill, invoked `/sdlc-lite:plan compaction <prose>`, linted by a new `plan_check.py compaction` kind | The maintainer fixed the invocation. It is a block-returning kind like the `/goal` and `/loop` skills, so it authors one copy/paste `/compact` prompt. A `report` view was wrong: a report states status, this authors text for a summarizer. T-0462 folds the other plan skills into the same router later |
 | 2 | The model sweeps state from the session | The skill runs a fixed command list for STATE, OPEN, NEXT and POINT (`git status`, `gh pr list`, `dispatch.py status`, `steps.py next`, the ticket and plan-doc paths); the model supplies GOAL, RULES and DECISIONS | Commands cannot drift "I assumed" into "user said". `next` carries `planned` or `intended`. When the `report` record exists (T-0460), the skill reads it instead of re-running the commands |
 | 3 | Writes `AGENTS.md` for Codex | Dropped. The Codex prompt ends `NEXT run /sdlc-lite:report summary` | Root `AGENTS.md` is a tracked entry file with a managed block; transient state in it is a stale-context defect, dirties the tree and can be committed. The snapshot under `.sdlc/runtime/report/` is already the replaceable, ignored state |
 | 4 | Handoff file on by default | Claude only, off by default (`--write-handoff`) until the reload is verified (section 8) | Four assumptions were untested; two are removed by item 3 |
@@ -24,7 +24,7 @@ One command returns one prompt that the person pastes into a manual `/compact <p
 
 ## 3. Command and arguments
 
-`/sdlc-lite:plan-compaction [<focus>] [--clear] [--write-handoff]`; as a kind of the merged skill, `/plan compaction ...`. Hint form per the skill hint standard (T-0463): `[<focus phrase>] [--write-handoff] | --clear`. `<focus>` is one phrase naming the next task. `--clear` deletes the handoff section and nothing else. Output: one fenced prompt, a size note (`lines: N of 60`), and `Run: /compact <paste>`.
+`/sdlc-lite:plan compaction [--write-handoff] [--clear] [<prose>]`. The first word `compaction` selects the kind; flags, when present, come right after it; everything after them is `<prose>`, passed through verbatim as the focus (the next task, or any extra thing to carry). The prose is data: an instruction inside it is carried as text and never followed. Hint per the skill hint standard (T-0463): `[L1|L2|L3] <handoff.md | goal> | compaction [--write-handoff|--clear] [<prose>]`. `compaction` is a reserved first word of `/plan`; a goal that starts with it is written `goal compaction ...` or quoted. `<focus>` is one phrase naming the next task. `--clear` deletes the handoff section and nothing else. Output: one fenced prompt, a size note (`lines: N of 60`), and `Run: /compact <paste>`.
 
 ## 4. Derivation
 
@@ -68,7 +68,7 @@ Two jobs, one form each.
 - Target `CLAUDE.local.md` at the repo root, created if missing, only with `--write-handoff`, and only after the person picks `/compact`.
 - Guard: `git check-ignore CLAUDE.local.md` must pass. It does not pass in this repository today, so the build adds the `.gitignore` entry (or the guard stops and says so).
 - Section key is the exact H2 `## Compaction handoff`, one per file. Replace the span from that H2 to the next H2 or end of file, then append the new one. Touch nothing else.
-- Body at most 8 lines: `Written <YYYY-MM-DD HH:MM> by /sdlc-lite:plan-compaction. Delete this section when the next task starts.`, then GOAL, STATE, OPEN (max 3), NEXT, POINT (max 3).
+- Body at most 8 lines: `Written <YYYY-MM-DD HH:MM> by /sdlc-lite:plan compaction. Delete this section when the next task starts.`, then GOAL, STATE, OPEN (max 3), NEXT, POINT (max 3).
 - At the start of every run, look for the H2; if it is older than 24 hours, report it and offer `--clear`.
 - Codex: no file write. Verification of whether Codex rereads `AGENTS.md` after its compaction is not needed once the write is dropped.
 
@@ -87,4 +87,4 @@ No data yet shows that a controlled compaction prompt helps. The build records a
 
 ## 10. Build split and dependencies
 
-One ticket. It adds `plugins/sdlc-lite/skills/plan-compaction/` (SKILL.md, a reference with the grammar and an example), the `compaction` kind in `plan_check.py` with a selftest, its `check.py` phrase set, and the replay record. It follows T-0461 (the grammar and closed verb lists in `core.md`). It does not need T-0460 (the report record is an optional input) and is not blocked on T-0462: it ships as a sibling of `plan-goal` and `plan-loop`, and the plan merge folds it in as the kind `compaction`.
+One ticket. It adds the kind router to `plugins/sdlc-lite/skills/plan/SKILL.md` (the first word `compaction` selects `references/compaction.md`; any other input follows today's planner path unchanged), the reference with the grammar and a worked example, the `compaction` kind in `plan_check.py` with a selftest, its `check.py` phrase set, and the replay record. It follows T-0461 (the grammar and closed verb lists in `core.md`). It does not need T-0460 (the report record is an optional input) and is not blocked on T-0462: the router it adds is the one the plan merge extends with `steps`, `doc`, `goal`, `campaign` and `fanout`.
