@@ -2,7 +2,7 @@
 id: T-0471
 title: "solo.md: search dependents before changing a shared name; run each criterion verbatim before verify: needed"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No model or effort change. One writer on `agents/solo.md` at a time (T-0443 and 
 - [ ] `python3 plugins/sdlc-lite/scripts/results.py selftest` exits 0, and its cases show a `verify: needed` solo report missing one criterion exit-code line, a paraphrased span, and a line with no exit code each flagged
 - [ ] `grep -c "Search-dependents" plugins/sdlc-lite/agents/solo-L1.md plugins/sdlc-lite/agents/solo-L2.md plugins/sdlc-lite/agents/solo-L3.md` and the same for `Run-verbatim` print 1 for each file
 - [ ] `bash plugins/sdlc-lite/scripts/check.sh` exits 0
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
