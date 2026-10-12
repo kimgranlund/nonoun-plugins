@@ -24,3 +24,10 @@ Tally method and caveats: `docs/reports/2026-10-11-solo-campaign-baseline.md` (w
 
 ## Constraints
 Read-only against every repo it inspects. No model call. State unpriced runs; never estimate cost.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/solo_stats.py selftest` exits 0, and each of its controls (name-ordered rounds, a worktree copy, the hidden closed folder rule, duplicate rows) changes a count the fixture pins: remove or alter the matching rule in a scratch copy and the selftest exits 1.
+- `python3 plugins/sdlc-lite/scripts/solo_stats.py stats ~/Projects/maison/ui-kit-maison ~/Projects/nonoun/agent-ui ~/Projects/nonoun/ultimate-tokens ~/Projects/nonoun/sdlc-lite --since 2026-10-08 --until 2026-10-11T20:00:00Z` prints 166 solo tickets, 122 closed, 123 verified, 89 first-pass, 107 ended in a pass, 32 multi-round, matching `docs/reports/2026-10-11-solo-campaign-baseline.md`, and writes nothing under any repo it reads.
+- Unpriced runs are counted as unmetered and never estimated; the output states the unmetered count.
+- `docs/kpi/005-solo-first-pass-rate.md` has command, unit, target, goal and a `before` baseline of 72 percent; `docs/goals/003-solo-lane-first-pass.md` cites it; both are in their folder index; `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` reports 0 errors.
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0 and runs `solo_stats.py selftest`.
