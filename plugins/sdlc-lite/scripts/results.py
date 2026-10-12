@@ -4,6 +4,8 @@
 Usage: results.py validate <result.md> [--role R]   exit 0, or print one "results.py: <file>: <reason>" line and exit 1
        results.py schema [--role R]                 print <role> TAB <key> TAB <allowed|-> TAB <sections>, one line per role
        results.py key <role>                        print the key section name of the role
+       results.py solo-report <report.md> --handoff <handoff.md>
+                                                    exit 0, or print the spans a `verify: needed` solo report left without an exit-code line and exit 1
        results.py selftest                          prove the rules on temp fixtures
 
 SCHEMA below is the only copy of the table. Each role has a key section (required), an allowed set for the
@@ -256,6 +258,33 @@ def _criteria_error(lines):
     return None
 
 
+def criterion_spans(handoff_text):
+    """The command-like code spans of a ticket handoff's acceptance criteria: the bullets under `## Acceptance
+    criteria` and the `Done when:` lines, outside ``` fences, a repeat once (steps.line_spans picks the spans)."""
+    import steps
+    out, inside, fenced = [], False, False
+    for line in handoff_text.splitlines():
+        if line.startswith('## '):
+            inside, fenced = line.rstrip() == '## Acceptance criteria', False
+        elif line.lstrip().startswith('```'):
+            fenced = not fenced
+        elif not fenced and ((inside and re.match(r'\s*[-*] ', line)) or re.match(r'\s*[-*] Done when:', line)):
+            out += [t for t in steps.line_spans(line) if t not in out]
+    return out
+
+
+def solo_report_error(report_text, spans):
+    """None, or the spans a solo report that says `verify: needed` lists without an exit-code line (T-0471, the
+    Run-verbatim rule in agents/solo.md): a report line holds the span exactly as written in backticks and `exit <n>`."""
+    if not re.search(r'(?m)^\s*(?:[-*] )?verify: needed\b', report_text):
+        return None
+    lines = report_text.splitlines()
+    missing = [s for s in spans if not any(f'`{s}`' in ln and re.search(r'\bexit \d+\b', ln) for ln in lines)]
+    if not missing:
+        return None
+    return 'verify: needed without an exit-code line for: ' + '; '.join(f'`{s}`' for s in missing)
+
+
 def schema_lines(role=None):
     out = []
     for r in ROLES:
@@ -452,6 +481,32 @@ def selftest():
     case('negative control: a results.py with the criteria rule removed validates Verdict pass with a deferred line',
          p.returncode, 0)
 
+    # solo report detect rule (T-0471): verify: needed needs one exit-code line per criterion span.
+    ho = ('## Acceptance criteria\n- [ ] `python3 a.py check` exits 0\n- [ ] `python3 b.py selftest` exits 0\n'
+          '\n## Notes\n- `python3 c.py not-a-criterion` is prose\n```\n- [ ] `python3 fenced.py x`\n```\n')
+    sp = criterion_spans(ho)
+    case('criterion_spans reads the criteria bullets and skips prose and fences',
+         sp, ['python3 a.py check', 'python3 b.py selftest'])
+    full = 'files: x\n- `python3 a.py check` exit 0\n- `python3 b.py selftest` exit 0\nverify: needed\n'
+    case('a verify: needed report with an exit-code line per span passes', solo_report_error(full, sp), None)
+    case('a report with no verify: needed line passes without exit-code lines',
+         solo_report_error('files: x\nverify: skipped (docs/records only; docs_check green)\n', sp), None)
+    short = 'files: x\n- `python3 a.py check` exit 0\nverify: needed\n'
+    case('observed red: a verify: needed report missing one span line is flagged',
+         solo_report_error(short, sp) is not None and 'b.py selftest' in solo_report_error(short, sp), True)
+    para = 'files: x\n- `python3 a.py check` exit 0\n- `python3 b.py` exit 0\nverify: needed\n'
+    case('observed red: a paraphrased span (not verbatim) is flagged', solo_report_error(para, sp) is not None, True)
+    noexit = 'files: x\n- `python3 a.py check` ok\n- `python3 b.py selftest` ok\nverify: needed\n'
+    case('observed red: span lines with no exit code are flagged', solo_report_error(noexit, sp) is not None, True)
+    rp, hp = write('solo-report.md', short), write('solo-handoff.md', ho)
+    p = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results.py'),
+                        'solo-report', rp, '--handoff', hp], capture_output=True, text=True)
+    case('solo-report exits 1 on the short report and names the span', (p.returncode, 'b.py selftest' in p.stderr), (1, True))
+    rp = write('solo-report-ok.md', full)
+    p = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results.py'),
+                        'solo-report', rp, '--handoff', hp], capture_output=True, text=True)
+    case('solo-report exits 0 on the full report', p.returncode, 0)
+
     for name in os.listdir(tmp):
         os.remove(os.path.join(tmp, name))
     os.rmdir(tmp)
@@ -473,6 +528,9 @@ def main(argv):
     s.add_argument('--role', choices=ROLES)
     k = sub.add_parser('key', help='print the key section of a role')
     k.add_argument('role', choices=ROLES)
+    r = sub.add_parser('solo-report', help='check a solo report that says verify: needed against its handoff')
+    r.add_argument('report')
+    r.add_argument('--handoff', required=True)
     sub.add_parser('selftest', help='run the selftest')
     a = ap.parse_args(argv)
     if a.cmd == 'validate':
@@ -487,6 +545,13 @@ def main(argv):
     if a.cmd == 'key':
         print(SCHEMA[a.role]['key'])
         return 0
+    if a.cmd == 'solo-report':
+        with open(a.report, encoding='utf-8') as f, open(a.handoff, encoding='utf-8') as h:
+            reason = solo_report_error(f.read(), criterion_spans(h.read()))
+        if reason is None:
+            return 0
+        print(f'results.py: {a.report}: {reason}', file=sys.stderr)
+        return 1
     return selftest()
 
 
