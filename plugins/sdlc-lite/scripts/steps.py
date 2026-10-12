@@ -1422,12 +1422,14 @@ def sdlc_base(folder):
 def cited_sdlc_paths(text):
     """[(start, end, rel, anchor)] for each .sdlc/... path in text: rel starts at .sdlc/, [start, end) is its
     span in text; anchor is the absolute folder the path was written under (so it resolves exactly as written),
-    or None for a relative citation, which resolves against sdlc_base. A path that runs into a placeholder or glob (<n>, *, {a,b}, $VAR, ?) or is only a folder stem is no
+    or None for a relative citation, which resolves against sdlc_base. A path whose prefix is exactly / is no citation (T-0474). A path that runs into a placeholder or glob (<n>, *, {a,b}, $VAR, ?) or is only a folder stem is no
     citation; a trailing sentence dot or :line is trimmed."""
     out = []
     for m in CITE_RE.finditer(text):
         raw, at = m.group(1), m.start(1)
         i = raw.index('.sdlc/')
+        if raw[:i] == '/':
+            continue
         rel, start = raw[i:], at + i
         rel = PATH_LINENO_RE.sub('', rel.rstrip('.:')).rstrip('.:')
         end = start + len(rel)
@@ -5817,6 +5819,10 @@ def selftest():
         rc, _, err = f_lint('### Do\nRead ui-kit-maison/.sdlc/tickets/0001-x/handoff.md.\n')
         check('(L) T-0457 control: the same prefix with no Other repo line is still refused',
               rc == 1 and 'tickets/0001-x/handoff.md' in err)
+        rc, _, err = f_lint("### Do\nBuild it.\n### Acceptance criteria\n- `python3 -c \"open(P + '/.sdlc/out/x.json')\"` exits 0\n")
+        check('(L) T-0474: a citation whose prefix is exactly / is no citation', rc == 0 and err == '')
+        rc, _, err = f_lint("### Do\nBuild it.\n### Acceptance criteria\n- `python3 -c \"open(P + '.sdlc/out/x.json')\"` exits 0\n")
+        check('(L) T-0474 control: the same path with no leading / is still refused', rc == 1 and '.sdlc/out/x.json' in err)
         gr = lroot / f'gitrepo{counter[0]}'
         subprocess.run(['git', 'init', '-q', str(gr)], check=True, capture_output=True)
         gh = gr / '.sdlc' / '0001-x' / 'step-1' / 'handoff.md'
