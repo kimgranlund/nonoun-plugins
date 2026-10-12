@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:078cd6de2056 -->
+<!-- sdlc-lite:managed:start v1 sha256:603f53fe08d4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 12
+- proposed: 11
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -18,7 +18,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0452 fanout.py and solo_run.py use lanes.py (lane lifecycle B) (0452-fanout-solo-use-lanes)
   - T-0453 tickets.py close and dispatch.py prune report open lanes (lane lifecycle C) (0453-close-prune-report-lanes)
-  - T-0454 Stray-worktree hook message points to lanes.py (lane lifecycle D) (0454-hook-message-lanes)
   - T-0455 fanout prep and run-plan rules set status: claimed with claimed_by (0455-fanout-claimed-status)
   - T-0456 Cheap fanout gates time out in the machine-wide gate lock behind heavy browser jobs (0456-cheap-gates-queue-behind-heavy)
   - T-0458 Retest the builder overlays on tasks where builders actually block, plus one L5 pair (0458-builder-overlay-retest)
@@ -26,7 +25,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 414
+- done: 415
 - dropped: 25
 
 ## Procedures
