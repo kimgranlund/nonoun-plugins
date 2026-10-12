@@ -500,3 +500,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0500 | [0500-solo-brief-regenerate-scan](0500-solo-brief-regenerate-scan/handoff.md) | agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8) | chore | L1 | P2 | none | ⏳ proposed |
 | T-0501 | [0501-inner-loop-profile](0501-inner-loop-profile/handoff.md) | Design: an inner-loop conductor profile (local gate setting, pass with notes, UI parity criterion, single merge path) from agent-ui | spike | L3 | P2 | none | ⏳ proposed |
 | T-0502 | [0502-lane-copies-local-settings](0502-lane-copies-local-settings/handoff.md) | lanes.py: a new lane worktree gets the gitignored .claude/settings.local.json (agent-ui retro row 7) | bug | L1 | P2 | none | ⏳ proposed |
+| T-0503 | [0503-claude-agent-frontmatter](0503-claude-agent-frontmatter/handoff.md) | bug: Claude agents: serialize valid YAML descriptions | bug | L2 | P1 | none | 🔵 ready |
+| T-0504 | [0504-claude-dispatch-space-paths](0504-claude-dispatch-space-paths/handoff.md) | bug: Claude dispatch: preserve handoff paths containing spaces | bug | L2 | P2 | none | 🔵 ready |
+| T-0505 | [0505-claude-prepared-handoff-freeze](0505-claude-prepared-handoff-freeze/handoff.md) | bug: Claude hooks: freeze handoffs during prepared attempts | bug | L3 | P2 | none | 🔵 ready |
+| T-0506 | [0506-codex-profile-output-envelope](0506-codex-profile-output-envelope/handoff.md) | bug: Codex profiles: reconcile fingerprint and report contracts | bug | L2 | P2 | none | 🔵 ready |
+| T-0507 | [0507-codex-exchange-fingerprint-binding](0507-codex-exchange-fingerprint-binding/handoff.md) | bug: Codex exchange: enforce the dispatched profile binding | bug | L3 | P2 | T-0506 | 🔵 ready |
+| T-0508 | [0508-ask-ticket-layout-sweep](0508-ask-ticket-layout-sweep/handoff.md) | bug: ask: discover blockers in every supported ticket layout | bug | L2 | P2 | none | 🔵 ready |
+| T-0509 | [0509-operator-recovery-agent-inventory](0509-operator-recovery-agent-inventory/handoff.md) | chore: guidance: align recovery behavior and Codex agent counts | chore | L1 | P3 | none | 🔵 ready |

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c3a6691d9f9f -->
+<!-- sdlc-lite:managed:start v1 sha256:31bb9ceb849b -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -24,7 +24,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0500 agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8) (0500-solo-brief-regenerate-scan)
   - T-0501 Design: an inner-loop conductor profile (local gate setting, pass with notes, UI parity criterion, single merge path) from agent-ui (0501-inner-loop-profile)
   - T-0502 lanes.py: a new lane worktree gets the gitignored .claude/settings.local.json (agent-ui retro row 7) (0502-lane-copies-local-settings)
-- ready: 0
+- ready: 7
+  - T-0503 bug: Claude agents: serialize valid YAML descriptions (0503-claude-agent-frontmatter)
+  - T-0504 bug: Claude dispatch: preserve handoff paths containing spaces (0504-claude-dispatch-space-paths)
+  - T-0505 bug: Claude hooks: freeze handoffs during prepared attempts (0505-claude-prepared-handoff-freeze)
+  - T-0506 bug: Codex profiles: reconcile fingerprint and report contracts (0506-codex-profile-output-envelope)
+  - T-0507 bug: Codex exchange: enforce the dispatched profile binding (0507-codex-exchange-fingerprint-binding)
+  - T-0508 bug: ask: discover blockers in every supported ticket layout (0508-ask-ticket-layout-sweep)
+  - T-0509 chore: guidance: align recovery behavior and Codex agent counts (0509-operator-recovery-agent-inventory)
 - claimed: 0
 - paused: 0
 - blocked: 0
