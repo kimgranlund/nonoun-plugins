@@ -166,7 +166,7 @@ Measure: the `plan-defect-refusal` detector count per repo per window (now maiso
 ### Not ranked
 
 These have no single agent rule that would have prevented them; the verifier caught them as designed:
-- Probe-found defects (4): `~/Projects/nonoun/sdlc-lite/.sdlc/0381-runner-wrong-lane-base/verifier-L2.md`, `~/Projects/nonoun/sdlc-lite/.sdlc/.0426-record-removes-tmp-prefix/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/.0323-component-file-dropzone/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/0366-table-expansion-header-text/verifier-L2.md`.
+- Probe-found defects (4): `~/Projects/nonoun/sdlc-lite/.sdlc/.0381-runner-wrong-lane-base/verifier-L2.md`, `~/Projects/nonoun/sdlc-lite/.sdlc/.0426-record-removes-tmp-prefix/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/.0323-component-file-dropzone/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/0366-table-expansion-header-text/verifier-L2.md`.
 - Incomplete deliverables (4): 0216, 0321, 0446, 0410.
 - Scope widened (1): 0138.
 

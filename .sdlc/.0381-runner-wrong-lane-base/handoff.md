@@ -2,7 +2,7 @@
 id: T-0381
 title: "Native runner accepts a valid ancestor that is the wrong lane base"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped      # dropped by the maintainer 2026-10-12: Claude path covered by T-0376 and T-0413; Codex run.sh path not rechecked
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]

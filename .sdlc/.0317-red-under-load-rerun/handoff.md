@@ -2,7 +2,7 @@
 id: T-0317
 title: "Verifier policy: a browser-test red under measured load re-runs once alone before it counts"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped      # dropped by the maintainer 2026-10-12: gate fixes T-0456 and T-0459 cover the gate side
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]

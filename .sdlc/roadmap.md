@@ -298,7 +298,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0298 | [.0298-limit-marker-reset-time](.0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | L1 | P2 | none | 🟢 done |
 | T-0299 | [.0299-fanout-bare-ticket-ids](.0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | L1 | P2 | none | 🟢 done |
 | T-0300 | [.0300-board-solo-merged-done](.0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | L1 | P2 | none | 🟢 done |
-| T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | L2 | P2 | none | ⏳ proposed |
+| T-0301 | [.0301-limit-conductor-rerun](.0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | L2 | P2 | none | ⚪ dropped |
 | T-0302 | [.0302-adr-number-allocator-note](.0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | L2 | P2 | none | 🟢 done |
 | T-0303 | [.0303-gate-lock-semaphore](.0303-gate-lock-semaphore/handoff.md) | gate_lock.py machine-wide semaphore for heavy gates | feature | L2 | P2 | none | 🟢 done |
 | T-0304 | [.0304-gate-lock-reap](.0304-gate-lock-reap/handoff.md) | gate_lock.py reap suggests orphaned browser processes | feature | L2 | P2 | T-0303 | 🟢 done |
@@ -314,7 +314,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0314 | [.0314-red-first-control](.0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | L2 | P2 | none | 🟢 done |
 | T-0315 | [.0315-replan-cost-remeasure](.0315-replan-cost-remeasure/handoff.md) | Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule | spike | L1 | P2 | none | 🟢 done |
 | T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | L2 | P2 | none | ⏳ proposed |
-| T-0317 | [0317-red-under-load-rerun](0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | L2 | P2 | none | ⏳ proposed |
+| T-0317 | [.0317-red-under-load-rerun](.0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | L2 | P2 | none | ⚪ dropped |
 | T-0318 | [.0318-fleet-status-noise](.0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | L1 | P2 | none | 🟢 done |
 | T-0319 | [.0319-fleet-verify-0307-0310](.0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | L1 | P2 | none | 🟢 done |
 | T-0320 | [.0320-fleet-config-nameless-entry-line](.0320-fleet-config-nameless-entry-line/handoff.md) | fleet_config.py reports line 1 for a nameless or non-object repo entry (T-0310 verifier B3) | bug | L1 | P2 | none | 🟢 done |
@@ -378,7 +378,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0378 | [.0378-red-checkpoint-builder](.0378-red-checkpoint-builder/handoff.md) | Record required red checks before a builder implements, and record a deviation when a run lacks them | feature | L2 | P2 | none | 🟢 done |
 | T-0379 | [.0379-replan-prior-report-links](.0379-replan-prior-report-links/handoff.md) | Split and supersede keep references to a superseded step's reports pointing at the old attempt | bug | L2 | P2 | none | 🟢 done |
 | T-0380 | [.0380-messenger-lifecycle](.0380-messenger-lifecycle/handoff.md) | Mailbox activation states its delivery lifetime and an explicit idle-parent continuation route | feature | L2 | P2 | T-0369 | 🟢 done |
-| T-0381 | [0381-runner-wrong-lane-base](0381-runner-wrong-lane-base/handoff.md) | Native runner accepts a valid ancestor that is the wrong lane base | bug | L2 | P2 | none | ⏳ proposed |
+| T-0381 | [.0381-runner-wrong-lane-base](.0381-runner-wrong-lane-base/handoff.md) | Native runner accepts a valid ancestor that is the wrong lane base | bug | L2 | P2 | none | ⚪ dropped |
 | T-0382 | [.0382-widen-in-lane-tree](.0382-widen-in-lane-tree/handoff.md) | steps.py widen evaluates the scope span in the lane work tree, not the stale root | bug | L2 | P2 | none | 🟢 done |
 | T-0383 | [.0383-verdict-delivery-gap](.0383-verdict-delivery-gap/handoff.md) | A recorded verifier verdict reaches the requesting receiver without a manual step | bug | L2 | P2 | none | 🟢 done |
 | T-0384 | [.0384-lint-rejects-grep-p](.0384-lint-rejects-grep-p/handoff.md) | steps.py lint rejects grep -P, which is vacuous on macOS | bug | L1 | P2 | none | 🟢 done |
