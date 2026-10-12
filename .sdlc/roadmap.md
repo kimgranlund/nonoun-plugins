@@ -480,3 +480,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0480 | [.0480-light-merge-lane](.0480-light-merge-lane/handoff.md) | Design: a light merge lane with a cadence full gate (from maison, after T-0470) | spike | L3 | P2 | none | 🟢 done |
 | T-0481 | [0481-light-merge-gate-class](0481-light-merge-gate-class/handoff.md) | fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) | feature | L3 | P2 | none | ⏳ proposed |
 | T-0482 | [0482-light-merge-uncovered-board](0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | ⏳ proposed |
+| T-0483 | [0483-report-lanes-waves-views](0483-report-lanes-waves-views/handoff.md) | /report lanes and /report waves views: lane and wave status with tickets and percent | feature | L2 | P2 | none | ⏳ proposed |
