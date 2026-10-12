@@ -16,6 +16,16 @@
 | `children` | running and finished child roles with elapsed time | work.children |
 | `identity` | session id, role, level, model, effort, repo, lane, parent, host | identity |
 | `evidence` | the pointer behind each line | every group |
+| `lanes` | one row per lane worktree or branch from `lanes.py list --all`: lane, ticket, stage, driver alive, commits ahead of main, landed, dir | work |
+| `waves` | one block per integration branch (`fanout/waveNN`): tickets with stage and percent, wave percent, commits ahead of main, merged into main | work |
+
+## Lanes and waves
+
+`lanes` and `waves` read `lanes.py list --all --json`, `git rev-list`, `ps` and each lanes dir's `logs/land.jsonl` (else the `merged` lines of `logs/fanout.log`); `full` and `summary` do not print them, and `--format json` adds `lanes` and `waves` only when a view asks. A field that cannot be read prints `unknown`; both views write nothing.
+
+- Driver alive: `yes (pid N)` when a process other than this report names the lane directory in its command line, else `no`.
+- Landed: `yes` when `lanes.py` calls the lane closable and it has commits since its base; an integration branch is landed when it is closable and the journal shows a merged ticket.
+- Ticket percent, one derivation: closed 100 (ticket `status: done`); merged 90 (journal outcome `merged`); a plan, the mean of the `board.py` step percents (queued 0, building 10, built 50, verifying 70, verified 100) with the weakest step's word; no plan, building 10 (live driver), built 50 (commits since base), queued 0. Wave percent is the mean over its tickets, `unknown` when none has one.
 
 ## Options
 
