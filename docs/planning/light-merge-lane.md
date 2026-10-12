@@ -1,5 +1,5 @@
 ---
-status: built
+status: accepted
 owner: maintainer
 ---
 # Light merge lane
