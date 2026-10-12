@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:b8c833def6fe -->
+<!-- sdlc-lite:managed:start v1 sha256:0833ee000975 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 16
+- proposed: 15
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
@@ -18,7 +18,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
   - T-0482 board.py --lanes shows light merges not yet covered by the full gate (T-0480) (0482-light-merge-uncovered-board)
   - T-0485 solo has no validatable result file (0485-solo-result-file)
-  - T-0486 red-checkpoint marked retrospective though controls were recorded first (0486-redck-retrospective-checkpoint)
   - T-0487 loaded_context shows rollout absent on codex exec runs (0487-codex-exec-rollout-absent)
   - T-0489 fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) (0489-settle-forward)
   - T-0490 solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488) (0490-solo-worktree-default)
@@ -30,7 +29,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 444
+- done: 445
 - dropped: 28
 
 ## Procedures

@@ -483,7 +483,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0483 | [.0483-report-lanes-waves-views](.0483-report-lanes-waves-views/handoff.md) | /report lanes and /report waves views: lane and wave status with tickets and percent | feature | L2 | P2 | none | 🟢 done |
 | T-0484 | [.0484-gate-lock-policy-reload](.0484-gate-lock-policy-reload/handoff.md) | gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it | bug | L1 | P2 | none | 🟢 done |
 | T-0485 | [0485-solo-result-file](0485-solo-result-file/handoff.md) | solo has no validatable result file | bug | L1 | P2 | none | ⏳ proposed |
-| T-0486 | [0486-redck-retrospective-checkpoint](0486-redck-retrospective-checkpoint/handoff.md) | red-checkpoint marked retrospective though controls were recorded first | bug | L1 | P2 | none | ⏳ proposed |
+| T-0486 | [.0486-redck-retrospective-checkpoint](.0486-redck-retrospective-checkpoint/handoff.md) | red-checkpoint marked retrospective though controls were recorded first | bug | L1 | P2 | none | 🟢 done |
 | T-0487 | [0487-codex-exec-rollout-absent](0487-codex-exec-rollout-absent/handoff.md) | loaded_context shows rollout absent on codex exec runs | bug | L1 | P2 | none | ⏳ proposed |
 | T-0488 | [.0488-merge-ops-and-queue](.0488-merge-ops-and-queue/handoff.md) | Design: worktree per builder plus a merge queue, and merge-ops as a conductor duty | spike | L3 | P2 | none | 🟢 done |
 | T-0489 | [0489-settle-forward](0489-settle-forward/handoff.md) | fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) | feature | L3 | P2 | T-0481 | ⏳ proposed |
