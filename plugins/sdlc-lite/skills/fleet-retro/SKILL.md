@@ -5,6 +5,8 @@ argument-hint: "<repo>..."
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_collect.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_detect.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_config.py show:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Agent, Read, Write, Grep, Glob, SendMessage, AskUserQuestion
 ---
 
+Read first: `docs/specs/doc-standards/knowledge-ops.md`, when that file exists in this repository, for the document this skill writes.
+
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. SendMessage becomes the host's way to message another session; with none, run step 3 as skipped. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (one repo path per word; none means the active entries of `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_config.py show --active`, whose second column names each repo's conductor session).

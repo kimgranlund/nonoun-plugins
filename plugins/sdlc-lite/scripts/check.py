@@ -206,6 +206,10 @@
 52. Level overlays (T-0441): every overlays/<role>.md stem has levels.json rows, and no .md file sits in a subdirectory of agents/ (an overlay placed in
    agents/overlays/ instead of the plugin's top-level overlays/). The overlay content rules run in claude_roles.py (generate exits 2; its selftest has the cases).
    Negative controls: a planted overlays/ghost.md stem and a planted agents/overlays/x.md path must each be flagged.
+53. Prompt references (T-0447): scripts/prompt_lint.py reports no P-1 to P-3 error over agents/*.md, skills/*/SKILL.md, and overlays/*.md
+   (a `rule N` cite names a numbered line of the role body, a script subcommand or `--flag` exists, a plugin path resolves), and scripts/check.sh
+   runs `prompt_lint.py" selftest`. P-4 to P-6 are advisory and never fail here. Negative controls: an unresolved `rule 99` cite in an overlay,
+   an unknown `--flag` on a real script, and a bare `scripts/coverage_check.py` in an agent file must each be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1282,6 +1286,19 @@ errors.extend(f'check.py: level overlays: {m}' for m in overlay_placement_bad(_o
 if not overlay_placement_bad(_ov_stems | {'ghost'}, _ov_roles, _ov_agents): errors.append('check.py: level overlays negative control not flagged for a planted overlays/ghost.md')
 if not overlay_placement_bad(_ov_stems, _ov_roles, _ov_agents | {'overlays/x.md'}): errors.append('check.py: level overlays negative control not flagged for a planted agents/overlays/x.md')
 if overlay_placement_bad({'builder'}, {'builder'}, {'builder.md'}): errors.append('check.py: level overlays guard flagged an allowed overlay')
+# Prompt references (docstring item 53, T-0447): no P-1 to P-3 error in the prompt files; P-4 to P-6 are advisory.
+import prompt_lint
+PL_ERRORS = ('P-1', 'P-2', 'P-3')
+def prompt_ref_bad(found): return [f.line() for f in found if f.level == 'error' and f.rule in PL_ERRORS]
+_pl_ctx = prompt_lint.Ctx(root)
+_pl_files = prompt_lint.default_files(root)
+errors.extend(f'check.py: prompt references: {m}' for m in prompt_ref_bad(prompt_lint.lint_files(_pl_ctx, [(p, p.relative_to(root).as_posix()) for p in _pl_files])))
+if len(_pl_files) < 30: errors.append(f'prompt references: only {len(_pl_files)} files scanned; the scan roots moved')
+if 'prompt_lint.py" selftest' not in (root/'scripts/check.sh').read_text(): errors.append('scripts/check.sh: no prompt_lint.py selftest line')
+for _why, _rel, _bad in (('an unresolved rule 99 cite in an overlay', 'overlays/builder.md', 'Follow rule 99.'),
+                         ('an unknown --flag on a real script', 'skills/chain/SKILL.md', 'Run `steps.py next --no-such-flag`.'),
+                         ('a bare scripts/coverage_check.py in an agent file', 'agents/architect.md', 'Run `scripts/coverage_check.py`.')):
+    if not prompt_ref_bad(prompt_lint.lint_text(_pl_ctx, _rel, 'clean line\n' + _bad + '\n')): errors.append(f'check.py: prompt references negative control not flagged for {_why}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

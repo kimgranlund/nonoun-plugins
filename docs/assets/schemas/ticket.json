@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket.json",
+  "title": "Ticket front matter",
+  "description": "Front matter of an SDLC Lite ticket handoff.md, as in plugins/sdlc-lite/skills/ticket/templates/*.md.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "type",
+    "status",
+    "size",
+    "priority",
+    "depends",
+    "created"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^T-[0-9]{4}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "feature",
+        "bug",
+        "chore",
+        "spike",
+        "idea"
+      ]
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "ready",
+        "claimed",
+        "paused",
+        "blocked",
+        "done",
+        "dropped"
+      ]
+    },
+    "size": {
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ]
+    },
+    "priority": {
+      "enum": [
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "depends": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "T-NNNN, file:<path>, or cap:<name>"
+      }
+    },
+    "created": {
+      "type": "string",
+      "format": "date"
+    },
+    "area": {
+      "type": "string",
+      "description": "One of the areas: names in .sdlc/config."
+    },
+    "claimed_by": {
+      "type": "string",
+      "description": "<claude|codex> <YYYY-MM-DD>; required when status is claimed."
+    },
+    "paused_reason": {
+      "type": "string",
+      "description": "One line; required when status is paused."
+    }
+  }
+}
