@@ -2,7 +2,7 @@
 id: T-0447
 title: "Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L4             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Prompt lens inputs: `.sdlc/0447-doc-standards-suite/upstream/` (read-only copies
 
 ## Constraints
 One lane, one build, hot files one writer at a time (`docs_check.py`, `check.py`, `onboard.py`). Never edit a generated file. Docs edits to `docs/AGENTS.md` only inside the managed block via `onboard.py`. State only what a file or command shows; mark unverified claims. If the build passes its budget, stop and report.
+
+## Closed
+
+2026-10-11: built and verified in wave 34: four step verifiers passed (L2, L2, L2, L2); red controls for steps 2 to 4 recorded after the edit on a shared base; the step 4 gate_lock selftest red was a flaky selftest under concurrent gate-lock use, green on main and in the verifier run; filer skipped (close-first)
