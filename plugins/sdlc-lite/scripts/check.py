@@ -218,6 +218,10 @@
    `git grep`, `plan defect: scope misses`, `plan defect: <criterion>`, and `results.py" solo-report`; scripts/results.py names `solo_report_error`
    and `criterion_spans`; the generated solo-L1, solo-L2, and solo-L3 carry both handles. Negative controls: each phrase removed from each file
    must be flagged, and a `verify: needed` report missing one criterion exit-code line must fail `solo_report_error`.
+56. Merge ops (T-0492): agents/conductor.md, skills/fanout/SKILL.md, and skills/handoff-format/run-operations.md each name `fanout.py land <branch>`,
+   `lanes.py sweep --apply`, `lanes.py list --stale`, `board.py --lanes`, and `--priority 1`, and carry the same settle command, the conductor's
+   `fanout.py settle <integration> --forward`; the conductor and run-operations.md carry `Merge ops` and the conductor also `## Merge ops`. Negative
+   controls: each phrase removed from each file, and the settle command changed in one file (the other two then disagree), must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1337,6 +1341,24 @@ for _rel, _phrases in SOLO_RULES:
 _sp = ['python3 a.py check', 'python3 b.py selftest']
 if results.solo_report_error('- `python3 a.py check` exit 0\n- `python3 b.py selftest` exit 0\nverify: needed\n', _sp) is not None: errors.append('check.py: solo report rule flags a complete report')
 if results.solo_report_error('- `python3 a.py check` exit 0\nverify: needed\n', _sp) is None: errors.append('check.py: solo report negative control not flagged for a missing exit-code line')
+# Merge ops (docstring item 56, T-0492): the conductor, the fanout skill and run-operations.md name the same merge commands and the same settle command.
+MERGE_OPS_FILES = ('agents/conductor.md', 'skills/fanout/SKILL.md', 'skills/handoff-format/run-operations.md')
+MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops')
+SETTLE_RE = re.compile(r'fanout\.py settle <integration>(?: --forward)?')
+def merge_ops_bad(texts):
+    out = [f'{rel} missing "{ph}"' for rel, text in texts.items() for ph in MERGE_OPS_PHRASES if ph not in text and not (ph == 'Merge ops' and rel == 'skills/fanout/SKILL.md')]
+    if '## Merge ops' not in texts.get('agents/conductor.md', ''): out.append('agents/conductor.md missing "## Merge ops"')
+    m = SETTLE_RE.search(texts.get('agents/conductor.md', ''))
+    canon = m.group(0) if m else ''
+    if '--forward' not in canon: out.append('agents/conductor.md settle command lacks --forward')
+    out.extend(f'{rel} settle command disagrees with the conductor ({canon or "none"})' for rel, text in texts.items() if canon not in text)
+    return out
+_mo_texts = {rel: _rd(root/rel) for rel in MERGE_OPS_FILES}
+errors.extend(f'check.py: merge ops: {m}' for m in merge_ops_bad(_mo_texts))
+for _rel in MERGE_OPS_FILES:
+    for _ph in MERGE_OPS_PHRASES:
+        if _ph in _mo_texts[_rel] and not (_ph == 'Merge ops' and _rel == 'skills/fanout/SKILL.md') and not merge_ops_bad(dict(_mo_texts, **{_rel: _mo_texts[_rel].replace(_ph, '')})): errors.append(f'check.py: merge ops negative control not flagged for {_rel} without {_ph}')
+    if not merge_ops_bad(dict(_mo_texts, **{_rel: _mo_texts[_rel].replace('settle <integration> --forward', 'settle <integration>')})): errors.append(f'check.py: merge ops negative control not flagged for a settle command changed in {_rel}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)
