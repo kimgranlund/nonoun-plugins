@@ -2,7 +2,7 @@
 id: T-0481
 title: "fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,10 @@ Design and risks: `docs/planning/light-merge-lane.md` (Approach and Risks). A re
 
 ## Constraints
 A merge is never ungated: a light class with no `--light-gate` runs the full set, and the vacuous-gate refusal at `fanout.py:1461` stays. No prompt wording change. One writer on `fanout.py` at a time.
+
+## Closed
+
+2026-10-12: warnings acknowledged: criterion 9 negative control ran from a cp -R copy because block-stray-worktree.sh denied git worktree add (SDLC_TMP_WORKTREES unset); builder and verifier both observed the red; verifier passed all 12 criteria
+
+> - None of the planned steps failed. The verifier passed step 1 (L2 verifier, all 12 criteria), and no `process-deviations.md` exists.
+> - The criterion-9 negative control did not run in a `git worktree add --detach` copy as the plan says. `block-stray-worktree.sh` denied the add because `SDLC_TMP_WORKTREES` is unset, so the builder and the verifier each ran it from a `cp -R` copy of `plugins/sdlc-lite`. In both runs `gate_class` forced to full made `fanout.py selftest` exit 1, with 5 `T-0481` labels under `these did not hold:`.

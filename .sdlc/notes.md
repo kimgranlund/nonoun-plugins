@@ -355,3 +355,10 @@
 
 - note: `plugins/sdlc-lite/agents/builder.md:28`, its generated `builder-L*.md` files and the Codex TOMLs still say a second `record` "is only a base control and is stored as retrospective". That is now partly stale. The handoff forbade prompt wording changes, so it was left alone; revise it in a prompt-wording ticket.
 - note: `cmd_record` still exits 1 on a green span. That was outside the three rules and left unchanged.
+
+## T-0481: fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) (2026-10-12)
+
+- note: `roll` now prints `gate: full (roll)` and a solo roll's close reason ends `; gate: full`, because `merge_gate_close` is shared. The behavior is intended, and roll gating is unchanged.
+- note: `block-stray-worktree.sh` denies `git worktree add --detach` under the brief's tmp prefix when `SDLC_TMP_WORKTREES` is unset. The plan's negative control therefore falls back to a `cp -R` copy.
+- note: A red `cover` still appends and commits its ledger entry, and `settle --require-covered` also checks a branch already merged by hand. These choices are the builder's, where the handoff left room.
+- note: The design doc `docs/planning/light-merge-lane.md` still names `steps.gate_class` in its Interfaces text, but the classifier lives in `fanout.py`, and its line numbers are about 20 low.
