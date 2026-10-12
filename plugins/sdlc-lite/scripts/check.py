@@ -1363,7 +1363,7 @@ if results.solo_report_error('- `python3 a.py check` exit 0\n- `python3 b.py sel
 if results.solo_report_error('- `python3 a.py check` exit 0\nverify: needed\n', _sp) is None: errors.append('check.py: solo report negative control not flagged for a missing exit-code line')
 # Merge ops (docstring item 56, T-0492): the conductor, the fanout skill and run-operations.md name the same merge commands and the same settle command.
 MERGE_OPS_FILES = ('agents/conductor.md', 'skills/fanout/SKILL.md', 'skills/handoff-format/run-operations.md')
-MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops')
+MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops', 'merge-base --is-ancestor origin/main HEAD', 'gh pr checks <n> --watch --fail-fast')
 SETTLE_RE = re.compile(r'fanout\.py settle <integration>(?: --forward)?')
 def merge_ops_bad(texts):
     out = [f'{rel} missing "{ph}"' for rel, text in texts.items() for ph in MERGE_OPS_PHRASES if ph not in text and not (ph == 'Merge ops' and rel == 'skills/fanout/SKILL.md')]
