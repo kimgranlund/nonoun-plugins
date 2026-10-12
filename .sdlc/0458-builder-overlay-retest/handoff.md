@@ -8,7 +8,7 @@ priority: P2         # P1 | P2 | P3
 depends: [T-0450]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-11
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
-budget_usd: 20
+budget_usd: 30
 ---
 
 ## Question

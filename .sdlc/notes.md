@@ -348,3 +348,5 @@
 - note: A sub-agent inherits `CLAUDE_PID` and `CLAUDE_CODE_SESSION_ID`, so a report run inside a role describes the conductor's thread, not the role's own.
 - note: Thresholds are the draft's starting values, and `check first run late`, `dead-end work` and `dead` are fixed in code without a `report.*` key. A later retro calibrates them.
 - note: `waiting-on-user` is partly guessed from transcript text: an `AskUserQuestion` with no result, or a last assistant line that ends in `?`.
+
+- 2026-10-12: maintainer raised the T-0458 cap from $20 to $30 to run the missing L5 arm B (ndc-step2, rep 1, about $8.50). Closes inconclusive afterward either way.
