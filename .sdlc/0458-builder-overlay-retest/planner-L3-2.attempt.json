@@ -1,0 +1,42 @@
+{
+  "attempt_id": "a69d7e4249e54c84a82f3f75b585addd",
+  "name": "planner-L3-2",
+  "agent_name": "0458-planner-L3-2",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "subagent",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "planner L3 replan: builder blocked on budget plan defect; rescope to report from existing evidence within the cap",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-12T13:08:14.012729+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v/.sdlc/0458-builder-overlay-retest/handoff.md",
+  "parent_pid": 59641,
+  "parent_pid_source": "claude",
+  "handoff_sha256": "7c9cfe17654f60b6e53731592e4de97e18d6cb569e1ecaa74b5398d34d7073e9",
+  "worktrees_before": [
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/integration",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/t",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/integration",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/w",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/x"
+  ],
+  "branches_before": [
+    "fanout/wave40",
+    "fanout/wave40-t",
+    "fanout/wave40-v",
+    "fanout/wave41",
+    "fanout/wave41-w",
+    "fanout/wave41-x",
+    "main"
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-12T13:22:20.620861+00:00",
+  "result_sha256": "9161e9bfe5f0a0b8b161ab982cdb91bb3d219c4c99c9fb2bb23f591831773a80",
+  "agent_id": "a8e685c4d9079e9a4"
+}

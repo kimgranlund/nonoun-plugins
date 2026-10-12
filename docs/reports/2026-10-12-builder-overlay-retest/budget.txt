@@ -1,0 +1,3 @@
+start pair rts-step10 L1 rep 1: spend 0.00 + estimate 2.00 <= 14.00
+start pair ndc-step2 L5 rep 1: spend 1.50 + estimate 8.00 <= 14.00 (plan estimate)
+stop after half pair ndc-step2 L5 rep 1: spend 10.04; arm B estimate 8.54 -> 18.58 > 14.00; three more L1 rep-1 pairs (2 x (0.34 + 0.51) = 1.70 each) cannot follow under the 20 USD cap; blocked as plan defect
