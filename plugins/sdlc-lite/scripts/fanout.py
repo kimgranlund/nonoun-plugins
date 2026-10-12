@@ -4223,6 +4223,15 @@ def selftest():
                and sh(fl, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/f-alpha').returncode != 0
                and faref and sh(fl, 'rev-parse', f'{faref}^{{commit}}').stdout.strip() == ftip)
 
+    # case 33 (T-0455): the run-plan claim step sets status: claimed together with claimed_by
+    def claim_rule_ok(text):
+        m = re.search(r'(?m)^\s*- Claim it \((.*)$', text)
+        return bool(m and 'status: claimed' in m.group(0).split('claimed_by', 1)[0] + m.group(0).split('claimed_by', 1)[-1][:60])
+    rules = (PLUGIN / 'skills/run-plan/references/run-rules.md').read_text(encoding='utf-8')
+    expect('case 33 run-plan claim step sets status: claimed beside claimed_by', claim_rule_ok(rules))
+    expect('case 33 negative control: a claim step without status: claimed is rejected',
+           not claim_rule_ok(rules.replace('status: claimed', 'status: ready')))
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:

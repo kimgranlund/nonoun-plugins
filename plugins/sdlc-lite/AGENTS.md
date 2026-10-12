@@ -35,7 +35,7 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 Interim directive until the plugin ships its own sweep.
 
 - Where: fanout lanes are `<repo>/.worktrees/fanout/<lane>`, sub-agent lanes `.claude/worktrees/`, role temp trees under `$SDLC_TMP_WORKTREES`. All are gitignored and excluded from watchers.
-- Open: `fanout.py run` or `prep` opens a lane; the ticket is claimed with `claimed_by:`.
+- Open: `fanout.py run` or `prep` opens a lane; the ticket is claimed with `status: claimed` and `claimed_by:`.
 - Close: after `fanout.py land` and `tickets.py close`, remove the lane worktree and branch once their content is on the default branch (ancestor, a MERGED PR whose head sha equals the tip, or every changed file equal).
 - Before removal keep the branch reachable as `refs/archive/<date>/<branch>` and archive its untracked records.
 - Never delete unmerged work. A locked worktree (`git worktree lock`) is a running lane: skip it.
