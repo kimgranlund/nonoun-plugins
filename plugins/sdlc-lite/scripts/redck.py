@@ -8,10 +8,12 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
             JSON line per span is appended to <handoff dir>/red-checkpoint.jsonl: type control, ts, attempt_id,
             handoff_sha256 (provenance), criterion_sha256 (sha256 of the criterion line, a newline, and the span: the
             key an audit matches on, T-0425), base_sha (the dir's base-sha, else HEAD), criterion (the exact line), span, exit,
-            result (red, green, or timeout), phase, dirty. phase is pre-edit only when the work tree holds no
-            source change against base_sha (git diff against it plus untracked files, paths under .sdlc/ and
-            the handoff dir left out); otherwise retrospective, with the changed paths in dirty. The phase is
-            derived from the tree, never claimed by the caller. Test prelude (T-0395): a dirty path that the
+            result (red, green, or timeout), phase, dirty, at_sha (HEAD at record time, None outside git). phase is
+            read against the working tree at HEAD, not base_sha (T-0473): pre-edit only when no source path differs
+            from HEAD (git diff against HEAD plus untracked files, paths under .sdlc/ and the handoff dir left out),
+            so a resumed builder on a branch that already holds earlier commits records pre-edit; otherwise
+            retrospective, with the changed paths in dirty. The phase is derived from the tree, never claimed by
+            the caller. Test prelude (T-0395): a dirty path that the
             handoff names on a `tests:` line (comma-separated exact repo-relative files, steps.declared_tests)
             and that exists is the regression fixture written before the implementation: it does not make the
             phase retrospective, and the control stores {path: sha256} in prelude; any other dirty path,
@@ -24,13 +26,17 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
   audit     run by dispatch.py record and run.sh when a builder completes (also by hand). It reads only
             red-checkpoint.jsonl, never the builder's report and never a later baseline run, so the order is
             not inferred. For each (red) span of the handoff the entries must carry the handoff's current
-            criterion_sha256 (an old-format entry without one: the handoff's current sha256) and the dir's current base
-            sha. A handoff edit that leaves a criterion line and its span intact, such as steps.py widen, keeps its
-            control valid; an edited criterion or span unbinds only that control:
+            criterion_sha256 (an old-format entry without one: the handoff's current sha256) and a base_sha that is
+            the dir's current base sha or an ancestor of HEAD (T-0473: the same lineage; outside git, equality
+            only). A control from a different lineage stays unbound. A handoff edit that leaves a criterion line
+            and its span intact, such as steps.py widen, keeps its control valid; an edited criterion or span
+            unbinds only that control:
               ok                this attempt has a pre-edit control and its latest one was red
-              preserved         no pre-edit control of this attempt, but an earlier attempt has a pre-edit red
-                                one for the same handoff hash and base: a resumed build keeps the original
-              green-baseline    this attempt's pre-edit control was green or timed out (not a red control)
+              preserved         this attempt has no pre-edit red control (none, or its latest was green or timed
+                                out), but an earlier attempt has a bound pre-edit red one: a resumed build keeps
+                                the original
+              green-baseline    this attempt's pre-edit control was green or timed out and no earlier attempt
+                                has a bound pre-edit red one (not a red control)
               retrospective     only post-edit controls (phase retrospective)
               prelude-changed   the pre-edit control is red but a declared test no longer matches the sha256 it stored
               missing           no control bound to this attempt (or the attempt id is empty)
@@ -97,12 +103,13 @@ def git_lines(top, *args):
     return r.stdout.splitlines() if r.returncode == 0 else None
 
 
-def dirty_paths(top, base, d):
-    """Paths that differ from base (tracked diff plus untracked), .sdlc/ and the handoff dir left out; None when
-    git cannot say. Splitting off the declared test prelude is split_prelude's job."""
-    if not top or not base:
+def dirty_paths(top, d):
+    """Paths that differ from HEAD (tracked diff plus untracked, T-0473: the working tree, not the base, so a
+    resumed builder on a branch holding earlier commits sees a clean tree), .sdlc/ and the handoff dir left out;
+    None when git cannot say. Splitting off the declared test prelude is split_prelude's job."""
+    if not top:
         return None
-    tracked = git_lines(top, 'diff', '--name-only', base, '--')
+    tracked = git_lines(top, 'diff', '--name-only', 'HEAD', '--')
     untracked = git_lines(top, 'ls-files', '--others', '--exclude-standard')
     if tracked is None or untracked is None:
         return None
@@ -172,19 +179,20 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
         return 0
     top = steps.exec_toplevel(d)
     base = steps.base_sha(top, d)
-    dirty, prelude = split_prelude(top, handoff, dirty_paths(top, base, d))
+    dirty, prelude = split_prelude(top, handoff, dirty_paths(top, d))
     phase = 'pre-edit' if dirty == [] else 'retrospective'
+    at = (git_lines(top, 'rev-parse', 'HEAD') or [None])[0] if top else None
     aid, sha = attempt_of(d, attempt_id), sha256(handoff)
     got = []
     refusals = steps.red_first([(None, span, timeout) for _, span in items], top, top or str(d), base, got)
     for (crit, span), (_, _, rc) in zip(items, got):
         result = 'timeout' if rc is None else 'green' if rc == 0 else 'red'
-        append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, criterion_sha256=criterion_hash(crit, span), base_sha=base, tree=top, criterion=crit, span=span,
+        append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, criterion_sha256=criterion_hash(crit, span), base_sha=base, at_sha=at, tree=top, criterion=crit, span=span,
                        exit=rc, result=result, phase=phase, dirty=dirty or [], prelude=prelude))
     if not aid:
         print('redck: no attempt id found; this control binds to no attempt and an audit will not accept it', file=sys.stderr)
     if phase == 'retrospective':
-        why = 'git cannot say' if dirty is None else f'{len(dirty)} source path(s) already differ from the base'
+        why = 'git cannot say' if dirty is None else f'{len(dirty)} source path(s) already differ from HEAD'
         print(f'redck: retrospective: {why}; this is a base control, not a red-before-edit checkpoint', file=sys.stderr)
     for m in refusals:
         print(f'redck: {m}', file=sys.stderr)
@@ -206,23 +214,43 @@ def prelude_changed(top, e):
     return out
 
 
-def span_status(es, crit, span, aid, sha, base, top=None):
+def same_lineage(top, b, base, cache):
+    """T-0473: a control's base binds when it is the current base or, inside git, an ancestor of HEAD; the ancestor
+    answer is cached per sha for one audit."""
+    if b == base:
+        return True
+    if not top or not b:
+        return False
+    if b not in cache:
+        try:
+            r = subprocess.run(['git', '-C', top, 'merge-base', '--is-ancestor', b, 'HEAD'], capture_output=True,
+                               stdin=subprocess.DEVNULL, timeout=30)
+            cache[b] = r.returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            cache[b] = False
+    return cache[b]
+
+
+def span_status(es, crit, span, aid, sha, base, top=None, cache=None):
     key = criterion_hash(crit, span)
+    cache = {} if cache is None else cache
     # T-0425: a control binds to its own criterion and span; an old-format entry (no criterion_sha256) still binds
     # to the whole handoff hash as before
-    mine = [e for e in es if e.get('type') == 'control' and e.get('span') == span and e.get('base_sha') == base
-            and (e['criterion_sha256'] == key if e.get('criterion_sha256') else e.get('handoff_sha256') == sha)]
+    mine = [e for e in es if e.get('type') == 'control' and e.get('span') == span
+            and (e['criterion_sha256'] == key if e.get('criterion_sha256') else e.get('handoff_sha256') == sha)
+            and same_lineage(top, e.get('base_sha'), base, cache)]
     own = [e for e in mine if aid and e.get('attempt_id') == aid]
     pre = [e for e in own if e.get('phase') == 'pre-edit']
-    if pre:
-        if pre[-1].get('result') != 'red':
-            return 'green-baseline', ''
+    if pre and pre[-1].get('result') == 'red':
         bad = prelude_changed(top, pre[-1])
         return ('prelude-changed', ', '.join(bad)) if bad else ('ok', '')
+    # T-0473: an own pre-edit control that is not red defers to an earlier attempt's pre-edit red original
     earlier = [e for e in mine if e.get('attempt_id') != aid and e.get('phase') == 'pre-edit' and e.get('result') == 'red']
     if earlier:
         bad = prelude_changed(top, earlier[-1])
         return ('prelude-changed', ', '.join(bad)) if bad else ('preserved', earlier[-1].get('attempt_id') or '')
+    if pre:
+        return 'green-baseline', ''
     return ('retrospective' if own else 'missing'), ''
 
 
@@ -244,7 +272,8 @@ def cmd_audit(target, attempt_id=''):
     base, sha = steps.base_sha(top, d), sha256(handoff)
     aid = attempt_of(d, attempt_id)
     es = entries(d)
-    per = [(span,) + span_status(es, crit, span, aid, sha, base, top) for crit, span in items]
+    cache = {}
+    per = [(span,) + span_status(es, crit, span, aid, sha, base, top, cache) for crit, span in items]
     status = max((s for _, s, _ in per), key=RANK.get)
     for span, s, src in per:
         note = f' (original from attempt {src})' if src and s == 'preserved' else f' (declared test changed: {src})' if src else ''
@@ -391,7 +420,8 @@ def selftest():
         head = subprocess.run(['git', '-C', str(repo), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
         (d / 'base-sha').write_text(head + '\n')
         _, out5, _ = run_main(['audit', str(d), '--attempt-id', 'A3'])
-        check('control: a different base sha no longer binds the original', out5.rstrip().endswith('audit: missing'))
+        check('T-0473: base moved to HEAD, no A3 control: the A1 original on an ancestor base is preserved',
+              out5.rstrip().endswith('audit: preserved'))
         (repo / 'src.txt').unlink()
         d = task(red)
         run_main(['record', str(d), '--attempt-id', ''])
@@ -520,6 +550,78 @@ def selftest():
         check('same handoff from the primary alone: unchanged, retrospective on the primary tree',
               rc == 0 and 'retrospective' in err)
         (repo / 'primary-dirty.txt').unlink()
+
+        # T-0473: the phase is read against HEAD and a control binds on an ancestor base; these cases commit, so they
+        # run in their own repo and leave the shared one untouched
+        r2 = pathlib.Path(tmp).resolve() / 'repo2'
+        r2.mkdir()
+        git(r2, 'init', '-q')
+        git(r2, 'config', 'user.email', 't@t')
+        git(r2, 'config', 'user.name', 't')
+        (r2 / 'README').write_text('r\n')
+        git(r2, 'add', '-A')
+        git(r2, 'commit', '-qm', 'base')
+
+        def head2():
+            return subprocess.run(['git', '-C', str(r2), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+
+        def task2(*crit):
+            count[0] += 1
+            d = r2 / '.sdlc' / f't{count[0]}'
+            d.mkdir(parents=True)
+            (d / 'handoff.md').write_text(ticket(*crit), encoding='utf-8')
+            return d
+
+        # T1: A1 records at the base, its work is committed, A3 records at a clean tree on the new HEAD
+        d = task2(red)
+        (d / 'base-sha').write_text(head2() + '\n')
+        run_main(['record', str(d), '--attempt-id', 'A1'])
+        (r2 / 'src.txt').write_text('a1 work\n')
+        git(r2, 'add', 'src.txt')
+        git(r2, 'commit', '-qm', 'a1 work')
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A3'])
+        e = [x for x in entries(d) if x.get('type') == 'control']
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A3'])
+        check('T-0473: base kept, A1 work committed: the A3 record is pre-edit at a clean tree and stores at_sha',
+              rc == 0 and len(e) == 2 and e[-1]['phase'] == 'pre-edit' and e[-1].get('at_sha') == head2()
+              and o.rstrip().endswith('audit: ok'))
+
+        # T3: a control whose base is a parentless commit (not an ancestor of HEAD) does not bind
+        d = task2(red)
+        run_main(['record', str(d), '--attempt-id', 'A1'])
+        tree = subprocess.run(['git', '-C', str(r2), 'rev-parse', 'HEAD^{tree}'], capture_output=True, text=True).stdout.strip()
+        orphan = subprocess.run(['git', '-C', str(r2), 'commit-tree', tree, '-m', 'orphan'], capture_output=True, text=True).stdout.strip()
+        moved = [dict(x, base_sha=orphan) for x in entries(d)]
+        (d / CHECKPOINT).write_text(''.join(json.dumps(x) + '\n' for x in moved), encoding='utf-8')
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A3'])
+        check('T-0473: a control whose base is not an ancestor of HEAD is not bound (control)',
+              bool(orphan) and o.rstrip().endswith('audit: missing'))
+
+        # T4: A1 red at B0, out.txt committed, base moved to the new HEAD, A3 records green
+        d = task2(red)
+        run_main(['record', str(d), '--attempt-id', 'A1'])
+        (r2 / 'out.txt').write_text('x\n')
+        git(r2, 'add', 'out.txt')
+        git(r2, 'commit', '-qm', 'out')
+        (d / 'base-sha').write_text(head2() + '\n')
+        rc, _, _ = run_main(['record', str(d), '--attempt-id', 'A3'])
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A3'])
+        check('T-0473: an own pre-edit green defers to an earlier same-lineage pre-edit red: preserved',
+              rc == 1 and o.rstrip().endswith('audit: preserved'))
+        git(r2, 'rm', '-q', 'out.txt')
+        git(r2, 'commit', '-qm', 'rm out')
+
+        # T5: out.txt committed after the base before any record: a green pre-edit control, no earlier red
+        d = task2(red)
+        (d / 'base-sha').write_text(head2() + '\n')
+        (r2 / 'out.txt').write_text('x\n')
+        git(r2, 'add', 'out.txt')
+        git(r2, 'commit', '-qm', 'out again')
+        run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        _, o, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('T-0473: work committed after the base with no earlier red is green-baseline (control)',
+              len(e) == 1 and e[0]['phase'] == 'pre-edit' and e[0]['result'] == 'green' and o.rstrip().endswith('audit: green-baseline'))
 
     if misses:
         print('redck selftest: FAIL, these did not hold:', file=sys.stderr)
