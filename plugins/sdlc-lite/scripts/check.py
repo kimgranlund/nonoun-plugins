@@ -329,6 +329,25 @@ for p in sorted((root/'agents').glob('*.md')):
         if not (root/'skills'/sk/'SKILL.md').exists():
             errors.append(f'agents/{p.name} declares missing skill: {sk}')
 
+# Agent declarations parse as YAML (T-0503): a description with a colon-space or text after its closing quote is a silent frontmatter error.
+try: import yaml
+except ImportError: yaml = None; errors.append('agents/*.md: PyYAML is required to validate agent frontmatter (pip install pyyaml)')
+def agent_yaml_problems(name, text):
+    m = re.fullmatch(r'---\n(.*?)\n---\n.*', text, re.S)
+    if not m: return [f'agents/{name}: no frontmatter block']
+    try: data = yaml.safe_load(m.group(1))
+    except yaml.YAMLError as e: return [f'agents/{name}: frontmatter is not valid YAML: {" ".join(str(e).split())}']
+    if not isinstance(data, dict): return [f'agents/{name}: frontmatter is not a mapping']
+    return [f'agents/{name}: frontmatter field {k} is missing or not text' for k in ('name', 'description') if not isinstance(data.get(k), str) or not data[k].strip()]
+if yaml:
+    for p in sorted((root/'agents').glob('*.md')): errors.extend(agent_yaml_problems(p.name, p.read_text()))
+    _good = '---\nname: x\ndescription: "A role: with a colon. Level L1: sonnet low."\n---\nbody\n'
+    _bad = '---\nname: x\ndescription: "A role." Level L1: sonnet low.\n---\nbody\n'  # the T-0503 defect: text after the closing quote
+    _colon = '---\nname: x\ndescription: A role: with an unquoted colon.\n---\nbody\n'
+    if agent_yaml_problems('good.md', _good): errors.append('check.py: agent YAML check rejects a valid quoted description')
+    for _why, _t in (('text after a closing quote', _bad), ('an unquoted colon-space', _colon)):
+        if not agent_yaml_problems('bad.md', _t): errors.append(f'check.py: agent YAML negative control not flagged for {_why}')
+
 # Long role runs: interactive sessions background them; headless sessions keep them in the foreground.
 for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKILL.md', 'agents/conductor.md',
             'skills/fix/SKILL.md'):

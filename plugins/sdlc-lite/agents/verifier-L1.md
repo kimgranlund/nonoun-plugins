@@ -1,6 +1,6 @@
 ---
 name: verifier-L1
-description: "Use to independently check one built step or ticket against its acceptance criteria and return pass or fail with evidence. Runs checks, never edits. Run it on a different model family than the builder. NOT for building or fixing, reviewing a plan (plan-reviewer), or a second opinion on its own earlier verdict." Level L1: sonnet medium.
+description: "Use to independently check one built step or ticket against its acceptance criteria and return pass or fail with evidence. Runs checks, never edits. Run it on a different model family than the builder. NOT for building or fixing, reviewing a plan (plan-reviewer), or a second opinion on its own earlier verdict. Level L1: sonnet medium."
 model: sonnet
 effort: medium
 disallowedTools: Edit, NotebookEdit

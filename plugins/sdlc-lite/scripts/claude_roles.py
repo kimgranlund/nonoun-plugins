@@ -14,7 +14,7 @@ Agent call, so each row gets its own definition in agents/ (T-0276):
 Each file is the role body of agents/<role>.md verbatim, under a generated frontmatter, except that a row whose level
 has a `## L<n>` section in overlays/<role>.md gets that section as an `## At this level` block inserted immediately
 before the body's `## Output` line (insert_overlay). The frontmatter: name, description (the
-role's, without its run.sh launch sentence, plus the level), model, effort, disallowedTools (every role but
+role's, without its run.sh launch sentence, plus the level, serialized once as one double-quoted YAML scalar), model, effort, disallowedTools (every role but
 builder and solo: Edit and NotebookEdit; Write stays open for the role's one result file, which a hook scopes),
 and skills (the role's own list). The verifier and plan-reviewer family remap changes only the Agent `model`
 argument, so it adds no definition.
@@ -101,7 +101,20 @@ def source(plugin, role):
     skills = []
     if re.search(r'^skills:\s*$', head, re.M):
         skills = re.findall(r'^  - ([a-z][a-z0-9-]*)$', head.split('skills:', 1)[1], re.M)
-    return desc.group(1).strip().removesuffix(LAUNCH_SENTENCE.strip()).rstrip(), skills, body
+    return scalar_text(desc.group(1).strip(), path).removesuffix(LAUNCH_SENTENCE.strip()).rstrip(), skills, body
+
+
+def scalar_text(raw, path):
+    """The text of a one-line YAML scalar: a double-quoted one is decoded (JSON escapes, a subset of YAML's), a plain one is taken as is."""
+    if not raw.startswith('"'):
+        return raw
+    try:
+        value = json.loads(raw)
+    except ValueError as e:
+        raise TableError('%s: the description is not a valid double-quoted scalar: %s' % (path, e))
+    if not isinstance(value, str):
+        raise TableError('%s: the description is not a string' % path)
+    return value
 
 
 def overlay(plugin, role):
@@ -177,7 +190,7 @@ def definitions(plugin):
         for level, (model, effort) in levels.items():
             name = '%s-%s' % (role, level)
             lines = ['---', 'name: ' + name,
-                     'description: %s Level %s: %s %s.' % (desc, level, model, effort),
+                     'description: ' + json.dumps('%s Level %s: %s %s.' % (desc, level, model, effort), ensure_ascii=False),
                      'model: ' + model, 'effort: ' + effort]
             if role not in WRITERS:
                 lines.append('disallowedTools: ' + DISALLOWED)
@@ -279,6 +292,11 @@ def selftest(plugin):
                 ('%s: %s\n' % (k, v)) in head + '\n' for k, v in zip(('model', 'effort'), data[role][name.rsplit('-', 1)[1]])))
             case('%s disallowedTools only for a read-only role' % name,
                  ('disallowedTools: ' + DISALLOWED in head) == (role not in WRITERS))
+        built = (d / 'agents' / 'builder-L2.md').read_text(encoding='utf-8')
+        want_desc = source(d, 'builder')[0] + ' Level L2: %s %s.' % tuple(data['builder']['L2'])
+        case('builder-L2 description is one quoted scalar holding the whole text, level included',
+             SOURCE_RE.fullmatch(built).group(1).split('\n')[1] == 'description: ' + json.dumps(want_desc))
+        case('a double-quoted source description is decoded once (no quote characters kept)', not source(d, 'builder')[0].startswith('"'))
         skills = (d / 'agents' / 'verifier-L3.md').read_text(encoding='utf-8')
         case('verifier-L3 carries the role skills', 'skills:\n  - checks-that-bite\n  - checking-rules\n---\n' in skills)
 
