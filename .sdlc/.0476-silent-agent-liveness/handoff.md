@@ -2,7 +2,7 @@
 id: T-0476
 title: "dispatch.py started and status last-activity age for silent agents (T-0470 finding 5)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ The failing test lands before or with the fix, with an observed-red control. No 
 - Observed red: with the `started` and `status` changes removed, those cases fail (recorded: 5 FAIL before the change).
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - No agent or skill prompt wording changed (`git diff --stat` touches only `dispatch.py`, `docs/references/sdlc-internals.md`, and this ticket folder).
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
