@@ -382,7 +382,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             A deny-path guard is also accepted: a span with git diff --name-only, no grep -v, and
             exactly one run of ':(exclude)<path>' pathspecs; each path is appended as another
             ':(exclude)<path>' after that run, in its quote style (a span with several runs refuses).
-            Several such lines, or an unrecognized form, refuses. Zero such lines refuses too,
+            Several such lines refuses. An unrecognized form, or zero such lines, refuses too,
             unless --reason WHY is given: the path list is then the explicit allow-list, recorded
             with the reason as "- `<path>`: allowed by a conductor scope decision (steps.py widen):
             <why>" under ## Scope widened (no span is rewritten or run), and it prints "steps widen:
@@ -3482,6 +3482,8 @@ def widen(step_dir, paths, timeout=300, reason=None, tree=None):
     else:
         forms = widen_forms(old)
         if not forms:
+            if reason is not None:
+                return widen_recorded(h, text, paths, reason)
             refuse('the scope criterion has an unrecognized allow-list form (want grep -vxF -e <word>..., '
                    f'grep -vxE "<pattern>", or grep -vE "^(...)$"): {old}')
         if len(forms) > 1:
@@ -5085,6 +5087,11 @@ def selftest():
         widen_refused('(c) two scope criterion lines', d, ['b.txt'], '2 criterion lines')
         r, d = w_repo(w_handoff(f'`{W_LIST} | grep -v -e a.txt | {{ ! grep -q .; }}`'))
         widen_refused('(c) an unrecognized allow-list form (grep -v -e)', d, ['b.txt'], 'unrecognized')
+        rc, out, err = run_main(['widen', str(d), 'b.txt', '--reason', 'conductor decision'])
+        check('widen: (e) an unrecognized allow-list form plus --reason records the list under Scope widened',
+              rc == 0 and 'recorded b.txt under' in out and '(reason: conductor decision)' in out
+              and (d / 'handoff.md').read_text(encoding='utf-8').endswith(
+                  '- `b.txt`: allowed by a conductor scope decision (steps.py widen): conductor decision\n'))
         r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`'))
         for bad in ('../x', '/x', '-x', 'a b', 'x/../y'):
             widen_refused(f'(c) a bad path {bad!r}', d, ['b.txt', bad], 'not a repo-relative path')
