@@ -2,7 +2,7 @@
 id: T-0501
 title: "Design: an inner-loop conductor profile (local gate setting, pass with notes, UI parity criterion, single merge path) from agent-ui"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Origin: agent-ui conductor message 2026-10-12 and /Users/kimgranlund/Projects/no
 
 ## Constraints
 Read-only design, one architect pass, no replan. Prefer config and existing scripts to new roles.
+
+## Closed
+
+2026-10-12: design delivered: docs/planning/inner-loop-profile.md; builds filed as B1 to B6

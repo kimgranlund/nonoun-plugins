@@ -1,0 +1,25 @@
+---
+id: T-0513
+title: "A (parity) criterion for styling tickets: screenshot pair with named properties (T-0501 B4)"
+type: feature        # feature | bug | chore | spike | idea
+status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
+priority: P2         # P1 | P2 | P3
+depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+created: 2026-10-12
+router: .sdlc/AGENTS.md  # how to claim and close this ticket
+---
+
+## Goal
+A `(parity)` criterion makes a styling approval checkable: a capture command writes a real screenshot, the verifier compares it with a named mockup on at most five named properties.
+
+## Intent
+- Do: the form ``- (parity) `<capture command>` writes `<real.png>`; against `<mock.png>`: <property>, <property>`` (at most five properties, never "matches"); `steps.py lint` refuses a `(parity)` line with fewer than two image paths or no property list; one line in `agents/verifier.md` (run the capture as an observed run, Read both images, record pass or fail per property, unnamed differences are notes); document the form in `skills/handoff-format/SKILL.md`. A styling ticket writes `verifier: L3` when the owner wants it.
+- Non-goals: image diff tooling; any change to levels.
+- Done when: a `steps.py selftest` lint case for each refusal (red first) and one accepted form; `check.py` item for the verifier line observed red; `generate --check` for both hosts and `check.py` exit 0.
+
+## Context
+Design: `docs/planning/inner-loop-profile.md`. Opt-in by `profile: inner-loop` in `.sdlc/config`; a repo that does not declare it sees no change. Evidence: agent-ui QuestionCard shipped far from the approved mockup because the verifier checked behavior only.
+
+## Constraints
+No new prohibition in `verifier.md`. One writer on `verifier.md` (after B2).
