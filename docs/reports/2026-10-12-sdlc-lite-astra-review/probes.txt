@@ -1,4 +1,4 @@
-prepared spawn plain hook_exit= 0 stderr= 
+prepared spawn plain hook_exit= 0 stderr=
 handoff guard plain attempt_status= running running_markers= 0 deny_exit= 0 stderr= ''
 handoff guard positive control plain marker_added_deny_exit= 2
 prepared spawn with spaces hook_exit= 2 stderr= conductor session: no dispatch record for 'task-scout-L1' beside /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-astra-review-3nn2gnq8/with (looked for task-scout-L1.dispatch.json and a *.dispatch.json naming it). prepare the dispatch with dispatch.py prepare <role> <level> <handoff.md> and spawn with exactly the JSON it prints (subagent_type, name, model, prompt)
@@ -19,9 +19,9 @@ expected <block end>, but found '<scalar>'
                                          ^
 conductor.md mapping values are not allowed here
   in "<unicode string>", line 3, column 355:
-     ... f. Declare per repo with "agent": "sdlc-lite:conductor" in .clau ... 
+     ... f. Declare per repo with "agent": "sdlc-lite:conductor" in .clau ...
                                          ^
 skills count= 38 invalid= 0
 quoted whole description positive control: parsed
 ask probe: ['grep', '-rl', '^status: blocked', '.sdlc/tickets'] exit= 2 stdout=  stderr= grep: .sdlc/tickets: No such file or directory
-ask probe: ['grep', '-rl', '^status: blocked', '.sdlc'] exit= 0 stdout= .sdlc/0001-blocked/handoff.md stderr= 
+ask probe: ['grep', '-rl', '^status: blocked', '.sdlc'] exit= 0 stdout= .sdlc/0001-blocked/handoff.md stderr=
