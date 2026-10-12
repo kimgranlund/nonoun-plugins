@@ -119,7 +119,7 @@ Origin: this convention comes from the `.sdlc/_templates/` and `CONTEXT.md` of t
 One or two sentences: the outcome, not the method.
 
 ## Intent
-Written by /clarify: literal ask, deltas, do, non-goals, done when. Optional.
+Written by /clarify: literal ask, level, verify, deltas, do, non-goals, done when. Optional.
 
 ## Context
 Decisions already made, relevant paths, links. Point to `design.md` and `decompose/report.md` when they exist. Everything a clean-context agent needs; it sees nothing else.

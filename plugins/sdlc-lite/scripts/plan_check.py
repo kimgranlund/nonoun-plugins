@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Lint a planned /goal, /loop, fanout, or campaign block before it is handed to the user.
+"""Lint a planned /goal, /loop, fanout, campaign, plan-doc, or clarify block before it is handed to the user.
 
   plan_check.py goal|loop|fanout|campaign [--text T | --file F] [--root .sdlc]
   plan_check.py plan [--text T | --file F] [--root .sdlc] [--run]
+  plan_check.py clarify [--text T | --file F]
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -16,6 +17,12 @@ checked by 19 rules (plan-front, no-approval, outcome-block, done-measured, meas
 cap-sum, executor-unknown, verifier-seat, review-missing, upsert-shape, upsert-sweep, authorization, stop-rules, goal-line, done-plan-done) and
 three warnings (l1-unverified, kpi-drift, kpi-unresolved). `--run` adds no-approval, the check that applies only before execution starts. The
 text is never unwrapped, since a plan doc holds a fenced Goal line. The selftest prints one `ok: plan: <rule> ...` line per case.
+A clarify block (kind `clarify`, the output of the clarify skill) is a task handoff with `## Goal` and `## Intent`; it is never unwrapped,
+since it holds backticks. One non-empty line starting `already scoped: ` or `follow-up: ` is a pass-through and passes. Six rules:
+clarify-goal, clarify-non-goals, clarify-level (`Level: L1` to `L4`), clarify-done (every `Done when:` item holds a backticked command or
+`unverifiable: <why>`), clarify-done-defect (an item reads its own verifier result, names a fixed sha, or needs a live run), and
+clarify-pass-through (a pass-through line followed by more text). An item starting `[owner: maintainer]` is exempt from the two Done when
+rules. The selftest prints one `ok: clarify: <rule> ...` line per case.
 """
 import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
@@ -831,10 +838,86 @@ Goal line:
 """
 GOOD_PLAN_PATH = '.sdlc/demo/plan-doc.md'
 
+# ---- clarify -------------------------------------------------------------------------------------------------
+CLARIFY_PASS = ('already scoped: ', 'follow-up: ')
+CLARIFY_OWNER = '[owner: maintainer]'
+CLARIFY_VERIFIER = re.compile(r'verifier-L[0-9]|verifier-\*|(?i:verifier result)')
+CLARIFY_SHA = re.compile(r'(?<![\w$])[0-9a-f]{7,40}(?!\w)')
+CLARIFY_LIVE = re.compile(r'(?i)live run|rehearsal|throwaway project')
+
+
+def clarify_section(text, name):
+    """The body of `## <name>` up to the next level-1 or level-2 heading, or None when the heading is missing."""
+    m = re.search(rf'(?m)^##[ \t]+{re.escape(name)}[ \t]*$', text)
+    if not m:
+        return None
+    end = re.search(r'(?m)^#{1,2}[ \t]', text[m.end():])
+    return text[m.end():m.end() + end.start()] if end else text[m.end():]
+
+
+def clarify_done_items(intent):
+    """The Done when items of an Intent body: inline text is one item, then the `- ` list lines that follow. None when absent."""
+    lines = intent.splitlines()
+    for i, line in enumerate(lines):
+        m = re.match(r'^([ \t]*)(?:-[ \t]+)?Done when:[ \t]*(.*)$', line)
+        if not m:
+            continue
+        bulleted = line.lstrip().startswith('-')
+        items = [m.group(2).strip()] if m.group(2).strip() else []
+        for nxt in lines[i + 1:]:
+            li = re.match(r'^([ \t]*)-[ \t]+(.*)$', nxt)
+            if not li or (bulleted and len(li.group(1)) <= len(m.group(1))):
+                break
+            items.append(li.group(2).strip())
+        return items
+    return None
+
+
+def clarify_defect(item):
+    if CLARIFY_VERIFIER.search(item):
+        return 'reads its own step\'s verifier result'
+    for tok in CLARIFY_SHA.findall(item):
+        if re.search(r'[0-9]', tok) and re.search(r'[a-f]', tok):
+            return f'names a fixed sha ({tok})'
+    if CLARIFY_LIVE.search(item):
+        return 'needs a live run a verifier cannot do; move it to [owner: maintainer]'
+    return None
+
+
+def check_clarify(text):
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if lines and lines[0].startswith(CLARIFY_PASS):
+        if len(lines) == 1:
+            return [], []
+        return [('clarify-pass-through', 'a pass-through (`already scoped: ` or `follow-up: `) must be the only line')], []
+    fails = []
+    goal = clarify_section(text, 'Goal')
+    if goal is None or not goal.strip():
+        fails.append(('clarify-goal', '`## Goal` is missing or empty'))
+    intent = clarify_section(text, 'Intent') or ''
+    if not re.search(r'(?m)^[ \t]*(?:-[ \t]+)?Non-goals:[ \t]*\S', intent):
+        fails.append(('clarify-non-goals', '`## Intent` has no `Non-goals:` line with text'))
+    if not re.search(r'(?m)^[ \t]*(?:-[ \t]+)?Level:[ \t]*L[1-4]\b', intent):
+        fails.append(('clarify-level', '`## Intent` has no `Level: L1` to `L4` line'))
+    items = clarify_done_items(intent)
+    if not items:
+        fails.append(('clarify-done', '`## Intent` has no `Done when:` line with an item'))
+    for it in items or []:
+        if it.startswith(CLARIFY_OWNER):
+            continue
+        if not (re.search(r'`[^`\n]+`', it) or re.search(r'unverifiable: \S', it)):
+            fails.append(('clarify-done', f'Done when item has no backticked command and no `unverifiable: <why>`: {it[:80]}'))
+        why = clarify_defect(it)
+        if why:
+            fails.append(('clarify-done-defect', f'Done when item {why}: {it[:80]}'))
+    return fails, []
+
+
 # ---- driver --------------------------------------------------------------------------------------------------
 def run_check(kind, text, root='.sdlc', run=False, path=None):
     return {'goal': lambda t: check_goal(t, root), 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
-            'campaign': lambda t: check_campaign(t, root), 'plan': lambda t: check_plan(t, root, run, path)}[kind](text)
+            'campaign': lambda t: check_campaign(t, root), 'plan': lambda t: check_plan(t, root, run, path),
+            'clarify': check_clarify}[kind](text)
 
 
 def report(kind, fails, warns, out=print):
@@ -1101,12 +1184,80 @@ def plan_selftest(expect):
         expect('plan: plan --text x exits 1 with FAIL lines', r.returncode == 1 and 'FAIL plan-front' in r.stdout)
 
 
+GOOD_CLARIFY = """## Goal
+A ticket whose diff touches only docs or records closes on its own checks, with no verifier run.
+
+## Intent
+Literal ask: skip the verifier when a ticket only changes docs.
+Deltas:
+- missing done-condition: defaulted: a selftest case per path class, observed failing first
+Do: add `scripts/verify_scope.py <base>` that prints `docs-only` for a docs-only diff, and let `tickets.py close` accept that diff.
+Level: L2, one script and one close rule; lane solo; reversible.
+Non-goals: skipping the verifier for any code, skill, agent or hook change.
+Done when:
+- `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` exits 0
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 against `$SDLC_BASE_SHA`
+- unverifiable: the close message reads well to a maintainer
+"""
+
+
+def clarify_selftest(expect):
+    """One observed-failing mutant per clarify rule, each flagged as exactly its rule; no rule flags GOOD_CLARIFY."""
+    C = GOOD_CLARIFY
+    RULES = ('clarify-goal', 'clarify-non-goals', 'clarify-level', 'clarify-done', 'clarify-done-defect', 'clarify-pass-through')
+
+    def rules(text):
+        return sorted({r for r, _ in check_clarify(text)[0]})
+
+    def swap(old, new):
+        assert old in C, old
+        return C.replace(old, new, 1)
+
+    def mutant(rule, why, text):
+        got = rules(text)
+        expect(f'clarify: {rule} mutant "{why}" is flagged as exactly {rule}', got == [rule])
+        if got != [rule]:
+            print('  got', got)
+    good = rules(C)
+    for rule in RULES:
+        expect(f'clarify: {rule} does not flag GOOD_CLARIFY', rule not in good)
+    expect('clarify: clarify-pass-through a one-line already scoped: passes', rules('already scoped: add one link, done = `docs_check.py` exits 0\n') == [])
+    expect('clarify: clarify-pass-through a one-line follow-up: passes', rules('\nfollow-up: "any updates" points at session state\n\n') == [])
+    mutant('clarify-goal', 'Goal body emptied', re.sub(r'(?s)(## Goal\n).*?(\n## Intent)', r'\1\2', C))
+    mutant('clarify-goal', 'Goal heading deleted', swap('## Goal\n', ''))
+    mutant('clarify-non-goals', 'Non-goals line deleted', re.sub(r'(?m)^Non-goals:.*\n', '', C))
+    mutant('clarify-non-goals', 'Non-goals emptied', re.sub(r'(?m)^Non-goals:.*$', 'Non-goals:', C))
+    mutant('clarify-level', 'Level line deleted', re.sub(r'(?m)^Level:.*\n', '', C))
+    mutant('clarify-level', 'Level L5', swap('Level: L2', 'Level: L5'))
+    mutant('clarify-done', 'Done when deleted', re.sub(r'(?ms)^Done when:.*', '', C))
+    mutant('clarify-done', 'an item with no command', swap('- unverifiable: the close message reads well to a maintainer', '- the close message reads well'))
+    mutant('clarify-done-defect', 'an item reads its own verifier result',
+           swap('- unverifiable:', '- `cat .sdlc/x/step-1/verifier-L2.md` says pass\n- unverifiable:'))
+    mutant('clarify-done-defect', 'an item names a fixed sha', swap('against `$SDLC_BASE_SHA`', 'against `a9d42334`'))
+    mutant('clarify-done-defect', 'an item needs a live rehearsal',
+           swap('- unverifiable:', '- one more rehearsal plan runs to `plan done` with no hand step\n- unverifiable:'))
+    mutant('clarify-pass-through', 'a pass-through line followed by a handoff', 'already scoped: x\n' + C)
+    expect('clarify: clarify-done-defect an [owner: maintainer] live rehearsal item is exempt',
+           rules(swap('- unverifiable:', '- [owner: maintainer] one more rehearsal plan runs to plan done with no hand step\n- unverifiable:')) == [])
+    expect('clarify: clarify-done-defect the same rehearsal item without [owner: maintainer] is flagged',
+           rules(swap('- unverifiable:', '- one more rehearsal plan runs to `plan done` with no hand step\n- unverifiable:')) == ['clarify-done-defect'])
+    expect('clarify: clarify-done inline Done when text counts as one item',
+           rules(re.sub(r'(?ms)^Done when:.*', 'Done when: `python3 x.py selftest` exits 0\n', C)) == [])
+    expect('clarify: clarify-done a bulleted Done when with indented items passes',
+           rules(re.sub(r'(?ms)^Done when:.*', '- Done when:\n  - `python3 x.py selftest` exits 0\n', C)) == [])
+    expect('clarify: clarify-done-defect ordinary words and $SDLC_BASE_SHA are not a sha',
+           rules(swap('- unverifiable:', '- `git diff --name-only $SDLC_BASE_SHA` lists a decade of facade changes\n- unverifiable:')) == [])
+    expect('clarify: clarify-goal a passing block exits 0 through report()', report('clarify', *check_clarify(C), out=lambda s: None) == 0)
+    r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'clarify', '--text', 'x'], capture_output=True, text=True)
+    expect('clarify: clarify-goal clarify --text x exits 1 with FAIL clarify-goal', r.returncode == 1 and 'FAIL clarify-goal' in r.stdout)
+
+
 def selftest():
     bad, n = [], [0]
 
     def expect(label, cond):
         n[0] += 1
-        if label.startswith('plan: '):
+        if label.startswith(('plan: ', 'clarify: ')):
             print(('ok: ' if cond else 'FAIL: ') + label)
         if not cond:
             bad.append(label)
@@ -1259,6 +1410,7 @@ def selftest():
     f, w = check_campaign(GOOD_CAMPAIGN, root='x/.sdlc', load=(0.5, 8))
     expect('campaign: a root named .sdlc never warns about the ticket root', not any(r == 'ticket-root' for r, _ in w))
     plan_selftest(expect)
+    clarify_selftest(expect)
     rc = report('goal', *check_goal(GOOD_GOAL), out=lambda s: None)
     expect('report: a passing block exits 0', rc == 0)
     rc = report('goal', *check_goal('nope'), out=lambda s: None)
@@ -1273,7 +1425,7 @@ def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
     ap = argparse.ArgumentParser(prog='plan_check.py', description=__doc__.split('\n')[0])
-    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign', 'plan'))
+    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign', 'plan', 'clarify'))
     g = ap.add_mutually_exclusive_group()
     g.add_argument('--text')
     g.add_argument('--file')
