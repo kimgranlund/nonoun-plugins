@@ -20,7 +20,7 @@ This spike produces one report. It changes no agent file, script, or ticket, and
 2. Cost and minutes: run `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since 2026-10-08` for each repo. This is the command form `docs/reports/2026-10-10-verifier-minutes.md` uses; it prints to stdout and writes no file. Rank causes by count, then by minutes. Use dollars only where a repo is priced: the baseline says only sdlc-lite is metered (K-001).
 3. Draw the sample with a script you write at `.sdlc/0450-review-traces-solo-fails-and-blocks/sample.py`, so the verifier can rerun it. Follow the method of the baseline report (`docs/reports/2026-10-11-solo-campaign-baseline.md`):
    - A solo ticket has a `solo` row in `runs.jsonl` dated 2026-10-08 or later.
-   - Include the hidden closed `.NNNN-*` folders. ui-kit-maison keeps its tickets under `.sdlc/tickets/`.
+   - Include the hidden closed `.NNNN-*` folders. ui-kit-maison keeps its tickets in a tickets subfolder of its own .sdlc folder.
    - Exclude worktree copies.
    - Order verifier rounds by round number (`verifier-L2.md`, then `-2`, then `-3`), not by name.
 
