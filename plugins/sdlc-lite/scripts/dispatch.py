@@ -599,8 +599,21 @@ def status(directory, orphans_only=False):
     return lines
 
 
+def inner_loop(path):
+    """True when the nearest .sdlc/config above path declares `profile: inner-loop` (T-0514); a repo without it sees no change."""
+    for parent in Path(os.path.abspath(path)).parents:
+        cfg = parent / '.sdlc' / 'config'
+        if cfg.is_file():
+            try:
+                return any(re.fullmatch(r'profile:\s*inner-loop\s*(#.*)?', ln.strip()) for ln in cfg.read_text(encoding='utf-8').splitlines())
+            except (OSError, ValueError):
+                return False
+    return False
+
+
 def resume(name, root='.'):
-    """The resume ladder for an orphaned or interrupted attempt found by stem or Agent name under root."""
+    """The resume ladder for an orphaned or interrupted attempt found by stem or Agent name under root.
+    Under `profile: inner-loop` a running attempt with a stored agent id whose transcript is silent (SILENT_SECONDS) also gets it (T-0514)."""
     for path in sorted(Path(root).glob('**/*.attempt.json')):
         if '.git' in path.parts or '.worktrees' in path.parts:
             continue
@@ -608,7 +621,14 @@ def resume(name, root='.'):
         if name not in (data.get('name'), data.get('agent_name')):
             continue
         state = attempt_state(data)
-        if state not in ('orphaned', 'interrupted'):
+        silent = False
+        if state == 'running' and inner_loop(path):
+            transcript = find_subagent_transcript(data.get('agent_id'))
+            try:
+                silent = bool(transcript) and time.time() - Path(transcript).stat().st_mtime >= SILENT_SECONDS
+            except OSError:
+                silent = False
+        if state not in ('orphaned', 'interrupted') and not silent:
             raise Refuse(2, 'dispatch.py: %s is %s, not orphaned or interrupted; nothing to resume' % (name, state))
         agent = data.get('agent_name') or data.get('name')
         aid = data.get('agent_id') or 'unknown'
@@ -2025,6 +2045,46 @@ def selftest():
         except Refuse:
             refused = True
         case('resume refuses a running attempt', refused)
+        # T-0514: a running attempt with a silent transcript gets the ladder under profile: inner-loop only
+        proj = Path(tempfile.mkdtemp(prefix='b5-proj-'))
+        tdir = proj / 'p' / 's' / 'subagents'
+        tdir.mkdir(parents=True)
+        tfile = tdir / 'agent-ag-7.jsonl'
+        tfile.write_text('{}\n')
+        os.utime(tfile, (time.time() - 7200, time.time() - 7200))
+        a['agent_id'] = 'ag-7'
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        cfgdir = rr / '.sdlc'
+        cfgdir.mkdir(exist_ok=True)
+        cfgfile = cfgdir / 'config'
+        had = cfgfile.read_text() if cfgfile.is_file() else None
+
+        def silent_resume():
+            try:
+                return resume('builder-L1', str(rr))
+            except Refuse:
+                return None
+        old_proj = os.environ.get('SDLC_CLAUDE_PROJECTS')
+        os.environ['SDLC_CLAUDE_PROJECTS'] = str(proj)
+        try:
+            cfgfile.write_text((had or '') + '\nprofile: inner-loop\n')
+            lad = silent_resume()
+            case('resume under inner-loop prints the ladder for a running attempt silent for 2 hours',
+                 lad is not None and len(lad) == 3 and 'ag-7' in lad[1] and lad[2].startswith('3. python3 dispatch.py prepare builder L1'))
+            os.utime(tfile, None)
+            case('negative control: inner-loop resume still refuses a running attempt written to just now', silent_resume() is None)
+            os.utime(tfile, (time.time() - 7200, time.time() - 7200))
+            cfgfile.write_text(had or '')
+            case('negative control: without the inner-loop profile a silent running attempt is still refused', silent_resume() is None)
+        finally:
+            if old_proj is None:
+                os.environ.pop('SDLC_CLAUDE_PROJECTS', None)
+            else:
+                os.environ['SDLC_CLAUDE_PROJECTS'] = old_proj
+            if had is None:
+                cfgfile.unlink()
+            shutil.rmtree(proj, ignore_errors=True)
+        a.pop('agent_id')
         a['parent_pid'] = dead
         (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
         (w / 'builder-L1.md').write_text('<!-- role=builder level=L1 model=sonnet effort=low -->\n## Status\ndone\n')
