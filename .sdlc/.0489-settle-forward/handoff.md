@@ -2,7 +2,7 @@
 id: T-0489
 title: "fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0481]

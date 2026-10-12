@@ -368,3 +368,11 @@
 - fix-now: Rerun the 10-case replay with an independent model run (the spawning builder judged the first one); the current result is unverified.
 - note: Replay level estimates differ from the expected outputs in cases 02, 04, 05 and 06; the skill was left unchanged.
 - note: The measured A/B of clarified versus unclarified tickets (K-005 first-pass rate, before 89 of 123) and the first `plan_check.py clarify` refusals-per-handoff baseline are left for a later retro or spike.
+
+## T-0489: fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) (2026-10-12)
+
+- decide: The handoff lists the `check.sh` header comment among auto-resolved generated files, but the build refuses it as a hand-edited conflict. Decide whether to add an auto-resolve rule or keep the refusal.
+- note: `--forward` writes no `land.jsonl` line, so `report.py` does not see forward settles. Build one only if `report.py` needs to show them.
+- note: Cross-wave settle ordering (design section 2) is not built. Concurrent settles into different integration branches serialize only through `merge.lock`.
+- note: The T-0489 selftest fixture has no `notes.md`, so the notes-union path is not exercised. The verifier accepted this because the regeneration alone bites.
+- note: `fanout.py selftest` takes about 240 to 250 s here against an 800 s guard timeout. A heavily loaded host could approach it.

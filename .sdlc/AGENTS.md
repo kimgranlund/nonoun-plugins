@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e0b3ae70c878 -->
+<!-- sdlc-lite:managed:start v1 sha256:1613650bab85 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 11
+- proposed: 10
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0467 Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (0467-plan-merge-a-skill)
@@ -18,14 +18,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0485 solo has no validatable result file (0485-solo-result-file)
   - T-0486 red-checkpoint marked retrospective though controls were recorded first (0486-redck-retrospective-checkpoint)
   - T-0487 loaded_context shows rollout absent on codex exec runs (0487-codex-exec-rollout-absent)
-  - T-0489 fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) (0489-settle-forward)
   - T-0490 solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488) (0490-solo-worktree-default)
   - T-0492 Merge ops duty block in conductor.md, fanout skill steps 4 and 5, and a recipe in run-operations.md (T-0488) (0492-merge-ops-duty-block)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 445
+- done: 446
 - dropped: 29
 
 ## Procedures
