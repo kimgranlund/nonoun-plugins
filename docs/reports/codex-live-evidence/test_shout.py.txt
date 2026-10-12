@@ -1,0 +1,11 @@
+import unittest
+
+from kit.shout import shout
+
+
+class ShoutTests(unittest.TestCase):
+    def test_shout_text(self):
+        self.assertEqual(shout("hi"), "HI!")
+
+    def test_shout_empty_text(self):
+        self.assertEqual(shout(""), "!")
