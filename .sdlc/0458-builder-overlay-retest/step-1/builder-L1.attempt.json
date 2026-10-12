@@ -1,0 +1,42 @@
+{
+  "attempt_id": "7daddc1571174d6e86da2e430ce16719",
+  "name": "builder-L1",
+  "agent_name": "0458-s1-builder-L1",
+  "role": "builder",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "subagent",
+  "model": "sonnet",
+  "effort": "low",
+  "routing_reason": "builder L1: replanned step is a pinned-value report write, no model spend, under budget",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-12T13:22:21.917343+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v/.sdlc/0458-builder-overlay-retest/step-1/handoff.md",
+  "parent_pid": 59641,
+  "parent_pid_source": "claude",
+  "handoff_sha256": "e97b3ef0b2fcea00ee19349f02dd5f8ed3a94b818efb0faea06cf35b38142b5c",
+  "worktrees_before": [
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/integration",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/t",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/integration",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/w",
+    "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/x"
+  ],
+  "branches_before": [
+    "fanout/wave40",
+    "fanout/wave40-t",
+    "fanout/wave40-v",
+    "fanout/wave41",
+    "fanout/wave41-w",
+    "fanout/wave41-x",
+    "main"
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-12T13:23:38.377836+00:00",
+  "result_sha256": "dbbc167abb480f9735149496e85fbecbc3ef1226e59583dc273c3f26e0c6116e",
+  "agent_id": "a2f306d836292ccf5"
+}
