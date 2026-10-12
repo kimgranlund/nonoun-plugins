@@ -2,7 +2,7 @@
 id: T-0449
 title: "Committed solo lane stats script and a KPI with a baseline"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Read-only against every repo it inspects. No model call. State unpriced runs; ne
 - Unpriced runs are counted as unmetered and never estimated; the output states the unmetered count.
 - `docs/kpi/005-solo-first-pass-rate.md` has command, unit, target, goal and a `before` baseline of 72 percent; `docs/goals/003-solo-lane-first-pass.md` cites it; both are in their folder index; `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` reports 0 errors.
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0 and runs `solo_stats.py selftest`.
+
+## Closed
+
+2026-10-11: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

@@ -81,7 +81,7 @@ Why the cap criterion changed: `steps.py split` refused the planner-L2 form as a
 - `fleet_collect.py collect` writes no file: verified by a grep of `plugins/sdlc-lite/scripts/fleet_collect.py`, whose only file write is in `selftest`.
 - The repo paths are `~/Projects/maison/ui-kit-maison` and `~/Projects/nonoun/{agent-ui,ultimate-tokens,sdlc-lite}`: verified by `ls -d` of each `.sdlc` dir.
 - `traces.py detect` and `clusters` take `--repo`, and `ingest` has `--rerun-criteria`: verified by each subcommand's `--help`.
-- K-005 has no file in `docs/kpi/` yet: verified by `ls docs/kpi` (001 to 004 only). `.sdlc/0449-solo-campaign-stats/handoff.md:20` names the planned path and the 89 of 123 baseline.
+- K-005 has no file in `docs/kpi/` yet: verified by `ls docs/kpi` (001 to 004 only). `.sdlc/.0449-solo-campaign-stats/handoff.md:20` names the planned path and the 89 of 123 baseline.
 - Stages 2 to 4 run in the builder, not as separate role dispatches. Three things settle this: the $10 ticket budget, the review-traces rule that a headless session files nothing (`plugins/sdlc-lite/skills/review-traces/SKILL.md:110`), and the handoff's single independent verifier.
 
 ## Risks
