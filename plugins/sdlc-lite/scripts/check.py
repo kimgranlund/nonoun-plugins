@@ -214,6 +214,10 @@
    `references/views.md`, and `references/record-schema.md`, and holds no `harness:` reference; scripts/report.py names `VERBS`, `CollectorError`,
    `session-status/1`, and `def selftest`; scripts/check.sh runs `report.py" selftest`; skills/sdlc-lite/SKILL.md routes to `report`.
    Negative controls: each phrase removed from each file, a harness reference added, and the routing row removed must each be flagged.
+55. Solo dependents and verbatim criteria (T-0471): agents/solo.md carries the rule handles `Search-dependents` and `Run-verbatim`, names
+   `git grep`, `plan defect: scope misses`, `plan defect: <criterion>`, and `results.py" solo-report`; scripts/results.py names `solo_report_error`
+   and `criterion_spans`; the generated solo-L1, solo-L2, and solo-L3 carry both handles. Negative controls: each phrase removed from each file
+   must be flagged, and a `verify: needed` report missing one criterion exit-code line must fail `solo_report_error`.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1318,6 +1322,21 @@ for _name, _phrases in REPORT_NEEDS:
         if not report_bad(dict(_rp_texts, **{_name: _rp_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: report negative control not flagged for {_name} without "{_ph}"')
 if not report_bad(dict(_rp_texts, skill=_rp_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: report negative control not flagged for a harness reference')
 if not report_bad(_rp_texts, _entry.replace('| report |', '|')): errors.append('check.py: report negative control not flagged for a missing entry route')
+# Solo dependents and verbatim criteria (docstring item 55, T-0471): the two Loop rules and the report detect rule.
+SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report')),
+              ('scripts/results.py', ('def solo_report_error', 'def criterion_spans')),
+              ('agents/solo-L1.md', ('Search-dependents', 'Run-verbatim')), ('agents/solo-L2.md', ('Search-dependents', 'Run-verbatim')),
+              ('agents/solo-L3.md', ('Search-dependents', 'Run-verbatim')))
+def solo_rules_bad(rel, text): return [f'{rel} missing "{ph}"' for r, phrases in SOLO_RULES if r == rel for ph in phrases if ph not in text]
+for _rel, _phrases in SOLO_RULES:
+    _f = root/_rel
+    _text = _f.read_text() if _f.is_file() else ''
+    errors.extend(f'check.py: solo rules: {m}' for m in solo_rules_bad(_rel, _text))
+    if not solo_rules_bad(_rel, _text) and any(not solo_rules_bad(_rel, _text.replace(_ph, '')) for _ph in _phrases):
+        errors.append(f'check.py: solo rules negative control not flagged for {_rel}')
+_sp = ['python3 a.py check', 'python3 b.py selftest']
+if results.solo_report_error('- `python3 a.py check` exit 0\n- `python3 b.py selftest` exit 0\nverify: needed\n', _sp) is not None: errors.append('check.py: solo report rule flags a complete report')
+if results.solo_report_error('- `python3 a.py check` exit 0\nverify: needed\n', _sp) is None: errors.append('check.py: solo report negative control not flagged for a missing exit-code line')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

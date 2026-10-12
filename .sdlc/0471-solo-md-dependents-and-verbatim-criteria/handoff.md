@@ -24,3 +24,12 @@ Origin: T-0450 report `docs/reports/2026-10-11-solo-fails-and-blocks.md`, Ranked
 
 ## Constraints
 No model or effort change. One writer on `agents/solo.md` at a time (T-0443 and T-0461 also edit it; this ticket runs first). Never hand-edit a generated file. State only what a command shows.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/prompt_lint.py plugins/sdlc-lite/agents/solo.md` exits 0 and prints a prohibition count not above 19, the count before this ticket (the ticket text says 17; the file read 19 before the edit)
+- [ ] `python3 plugins/sdlc-lite/scripts/results.py selftest` exits 0, and its cases show a `verify: needed` solo report missing one criterion exit-code line, a paraphrased span, and a line with no exit code each flagged
+- [ ] `grep -c "Search-dependents" plugins/sdlc-lite/agents/solo-L1.md plugins/sdlc-lite/agents/solo-L2.md plugins/sdlc-lite/agents/solo-L3.md` and the same for `Run-verbatim` print 1 for each file
+- [ ] `bash plugins/sdlc-lite/scripts/check.sh` exits 0
