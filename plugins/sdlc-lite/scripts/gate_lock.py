@@ -6,7 +6,7 @@ CPU and memory. Design: docs/specs/sdlc-lite/gate-lock-admission.md (protocol sd
 Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--name X] [--repo PATH] [--nice]
                         [--timeout SECS] [--receipt FILE] -- <cmd...>
        gate_lock.py context [--json] | capabilities --json | status [--json]
-       gate_lock.py policy show | policy set RES=N... [--default RES=N...] | policy reset
+       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [--default RES=N...] | policy reset
        gate_lock.py reset --confirm | reap [--older-than MIN] [--kill] [--match REGEX] | selftest
 
   run     queues for a grant of the weighted demand (a vector of resources, all or none), waits in order, runs the
@@ -24,7 +24,13 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           too_large at once. Order: highest --priority (default 0, or SDLC_GATE_PRIORITY) first, then FIFO by
           arrival; among the repos at the top priority, round robin after the repo granted last; the head keeps its
           turn until it fits (no backfill); a queued job is never preempted by a later one and a running job is
-          never stopped by admission. A grant stays charged while its wrapper is alive with the recorded start
+          never stopped by admission. Load cap: when policy.json has a top-level max_load (a whole number, set
+          with `policy set max_load=N`; absent or 0 is off, the default), no new grant is admitted while the
+          host's 1-minute load average (os.getloadavg) is above it; a load equal to it admits, a held grant is
+          never stopped, the refused head keeps its round-robin turn, and a host that reports no load average
+          is not capped. It is an absolute load, so pick load per CPU times the CPU count. SDLC_GATE_LOAD_FILE
+          (tests only) names a file holding the load to use.
+          A grant stays charged while its wrapper is alive with the recorded start
           identity or its process group has a member; a dead holder with no live group is reclaimed, a dead
           wrapper with a live group stays charged (an orphaned group). The command gets SDLC_GATE_GRANT,
           SDLC_GATE_WORKERS (the granted compute units), SDLC_GATE_DIR and SDLC_GATE_LOCK_HELD=1. A `run` inside
@@ -37,7 +43,9 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           receipt last (outcome, rc, wait_ms, run_ms, cleanup_ms, total_ms).
   context   exit 0 and print the grant when the caller runs inside a valid grant, else exit 1.
   status    queued and admitted rows (name, pid, need, repo, priority, age); `no holders` when empty; legacy
-            slot holders from older plugin versions are listed and called a partial protection. --json for tools.
+            slot holders from older plugin versions are listed and called a partial protection. With max_load
+            set, a queue that waits on the load ends with `waiting: load <n.n> over cap <N>`. --json for tools
+            (it gains `load`: value, max_load, over, only when max_load is set).
   capabilities  read only: protocol, state root, boot id, the policy in force, legacy holders seen.
   policy / reset  operator only: show, set or reset policy.json; `reset --confirm` replaces an unparseable ledger.
   reap    lists leftover browser processes from finished runs and stops nothing: a process whose command line
@@ -51,7 +59,7 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           Admission never calls it.
   selftest  real child processes in a temp SDLC_GATE_DIR: weighted caps, FIFO, priority, liveness (a dead holder
           reclaimed, a live group not), nesting, cancel, timeout, reboot, corrupt ledger, receipts, status, the
-          legacy bridge and the old exit codes, each control observed failing in a mutant copy of this script;
+          legacy bridge, the load cap and the old exit codes, each control observed failing in a mutant copy of this script;
           then the reap cases with a fake orphan and a live-parent fake.
 """
 import argparse, contextlib, fcntl, json, os, pathlib, pwd, re, secrets, shlex, shutil, signal, struct, subprocess, sys, tempfile, time
@@ -313,6 +321,11 @@ def load_policy(root):
                 if not (isinstance(d[key], dict) and all(isinstance(v, int) and not isinstance(v, bool) and v >= 0 for v in d[key].values())):
                     raise ValueError(f'{key} must map resources to whole numbers')
                 pol[key] = dict(d[key])
+        if 'max_load' in d:
+            if not (isinstance(d['max_load'], int) and not isinstance(d['max_load'], bool) and d['max_load'] >= 0):
+                raise ValueError('max_load must be a whole number')
+            if d['max_load']:
+                pol['max_load'] = d['max_load']  # absent or 0 is off
     except (OSError, ValueError) as e:
         raise GateError('state_unavailable', f'{path} is not a usable policy: {e}')
     return pol, 'file'
@@ -374,10 +387,29 @@ def add_usage(usage, need):
 def order_key(e): return (-e['priority'], e['seq'])  # QUEUE-ORDER
 
 
-def schedule(ledger, pol, legacy_n=0):
+def host_load():
+    """The host's 1-minute load average, or None when the host does not report one (the load cap is then not
+    applied). SDLC_GATE_LOAD_FILE (tests only) names a file holding the number to use instead."""
+    path = os.environ.get('SDLC_GATE_LOAD_FILE')
+    if path:
+        try:
+            return float(pathlib.Path(path).read_text().strip())
+        except (OSError, ValueError):
+            pass
+    try:
+        return os.getloadavg()[0]
+    except (OSError, AttributeError):
+        return None
+
+
+def schedule(ledger, pol, legacy_n=0, load=None):
     """Grant queue heads while they fit: highest priority first, then arrival; among the repos at the top priority
-    round robin after the repo granted last; the selected head keeps its turn until it fits (no backfill)."""
+    round robin after the repo granted last; the selected head keeps its turn until it fits (no backfill). With a
+    max_load in the policy, nothing is granted while the load (read once per call when not given) is above it."""
     cap, usage = pol['capacity'], {}
+    max_load = pol.get('max_load')
+    if max_load and load is None:
+        load = host_load()
     for g in ledger['grants']:
         add_usage(usage, g['need'])
     for _ in range(legacy_n):
@@ -395,6 +427,7 @@ def schedule(ledger, pol, legacy_n=0):
             i = cl.index(ledger['rr']) + 1
             cl = cl[i:] + cl[:i]
         entry = heads[cl[0]]
+        if max_load and load is not None and load > max_load: break  # LOAD-CAP
         if not fits(usage, entry['need'], cap):
             break
         ledger['queue'].remove(entry)
@@ -732,7 +765,15 @@ def status_data(root):
                       'name': e.get('name', '?'), 'pid': e['pid'], 'need': e['need'], 'repo': e['repo'], 'priority': e['priority'],
                       'waited_s': int(now - e.get('enqueued_at', now)), 'ahead': ahead, 'blocking': holders})
         ahead += e['need'].get(COMPUTE, 0)
-    return {'protocol': PROTOCOL, 'state_root': str(root), 'boot': L.get('boot', ''), 'grants': grants, 'queue': queue, 'legacy': legacy_holders()}
+    d = {'protocol': PROTOCOL, 'state_root': str(root), 'boot': L.get('boot', ''), 'grants': grants, 'queue': queue, 'legacy': legacy_holders()}
+    try:
+        max_load = load_policy(root)[0].get('max_load')
+    except GateError:
+        max_load = None  # a policy that does not load gives no load fact and never fails status
+    if max_load:
+        load = host_load()
+        d['load'] = {'value': load, 'max_load': max_load, 'over': load is not None and load > max_load}
+    return d
 
 
 def cmd_status(argv):
@@ -755,6 +796,8 @@ def cmd_status(argv):
         rows.append(f"{'queued' if q['state'] == 'queued' else 'dead':<9} name {q['name']}  pid {q['pid']}  #{q['position']}  need {need_text(q['need'])}  "
                     f"repo {os.path.basename(q['repo'])}  priority {q['priority']}  age {q['waited_s']}s  "
                     f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}")
+    if d['queue'] and d.get('load', {}).get('over'):
+        rows.append(f"waiting: load {d['load']['value']:.1f} over cap {d['load']['max_load']}")
     for h in d['legacy']:
         rows.append(f"legacy    name {h['name']}  pid {h['pid']}  {h['slot']} in {h['dir']} (charged the default need; never touched)")
     if d['legacy']:
@@ -819,8 +862,9 @@ def cmd_policy(argv):
             except ValueError as e:
                 print(f'gate_lock.py policy set: {e}', file=sys.stderr)
                 return 2
-            if not caps and not defs:
-                print('usage: gate_lock.py policy set RES=N... [--default RES=N...]', file=sys.stderr)
+            max_load = caps.pop('max_load', None)  # a top-level key, never a capacity; 0 turns it off
+            if not caps and not defs and max_load is None:
+                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [--default RES=N...]', file=sys.stderr)
                 return 2
             if any(v < 1 for v in caps.values()):
                 print('gate_lock.py policy set: a capacity must be 1 or more', file=sys.stderr)
@@ -829,15 +873,20 @@ def cmd_policy(argv):
                 pol, _ = load_policy(root)
                 pol['capacity'].update(caps)
                 pol['default_need'].update(defs)
+                if max_load:
+                    pol['max_load'] = max_load
+                elif max_load is not None:
+                    pol.pop('max_load', None)
                 tmp = root / f'.policy-{os.getpid()}.tmp'
                 tmp.write_text(json.dumps(pol, sort_keys=True))
                 os.replace(tmp, root / 'policy.json')
-            print(f'policy set: capacity {need_text(pol["capacity"])}; default need {need_text(pol["default_need"])}')
+            print(f'policy set: capacity {need_text(pol["capacity"])}; default need {need_text(pol["default_need"])}'
+                  + (f'; max load {pol["max_load"]}' if pol.get('max_load') else ''))
             return 0
     except GateError as e:
         print(f'gate_lock: {e.code}: {e.detail}', file=sys.stderr)
         return 3
-    print('usage: gate_lock.py policy show | set RES=N... [--default RES=N...] | reset', file=sys.stderr)
+    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [--default RES=N...] | reset', file=sys.stderr)
     return 2
 
 
@@ -978,6 +1027,7 @@ M_ORDER = "return (-e['priority'], e['seq'])" + '  # QUEUE-ORDER'
 M_LIVE = "return wrapper or group_alive(g.get('pgid'))" + '  # GRANT-LIVE'
 M_IDENT = 'if start and cur and cur != start: return False' + '  # IDENT'
 M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
+M_LOAD = 'if max_load and load is not None and load > max_load: break' + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
 REAP_FAKE = "import os,time; open(os.environ['GL_PIDFILE'],'w').write(str(os.getpid())); time.sleep(300)"
@@ -1249,19 +1299,85 @@ def case_drain(py, base, label):
             pass
 
 
+def case_load(py, base, label):
+    """The load cap: with max_load 24 and a load of 36.5 a second gate that fits the capacity is not admitted, the
+    holder keeps its grant, and status says why; once the load is 10 the waiter runs. The load comes from one file
+    every process of the case reads (SDLC_GATE_LOAD_FILE), replaced atomically so no poll reads half a write."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    lf = base / f'load-{label}'
+    env = env_for(base, label, SDLC_GATE_LOAD_FILE=str(lf))
+
+    def set_load(v):
+        tmp = base / f'load-{label}.tmp'
+        tmp.write_text(f'{v}\n')
+        os.replace(tmp, lf)
+    try:
+        set_load(1)
+        r = gl(py, env, 'policy', 'set', 'max_load=24')
+        if r.returncode != 0 or 'max load 24' not in r.stdout:
+            return [f'policy set max_load=24 did not take, rc={r.returncode} {r.stdout!r} {r.stderr!r}']
+        procs = [holder(py, env, m, 1)]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start with the load under the cap']
+        set_load(36.5)
+        procs.append(holder(py, env, m, 2))  # two default needs fit the capacity, so only the load holds it
+        waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
+        time.sleep(3 * POLL)
+        if (m / 'started-2').exists():
+            return ['the waiter ran over the load cap']
+        st = gl(py, env, 'status')
+        rows = st.stdout.splitlines()
+        if not any(x.startswith('admitted') and 'name H1' in x for x in rows):
+            bad.append(f'the holder lost its grant when the load rose, got {st.stdout!r}')
+        if not (any(x.startswith('queued') and 'name H2' in x for x in rows) and 'waiting: load 36.5 over cap 24' in rows):
+            bad.append(f'status does not show the waiter and the load reason, got {st.stdout!r}')
+        js = {}
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout).get('load') or {}
+        except ValueError:
+            pass
+        if js != {'value': 36.5, 'max_load': 24, 'over': True}:
+            bad.append(f'status --json does not carry the load fact, got {js}')
+        set_load(10)
+        if not waitfor(lambda: (m / 'started-2').exists()):
+            bad.append('the waiter did not run after the load dropped under the cap')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
 def case_rr():
-    """Round robin across repos with FIFO inside a repo, on a fabricated ledger (no processes)."""
+    """Round robin across repos with FIFO inside a repo, on a fabricated ledger (no processes); then the same
+    ledger with a max_load: under the cap the order holds, over it nothing is granted and the turn does not move."""
     pol = {k: dict(v) for k, v in BUILTIN_POLICY.items()}
 
     def entry(i, repo):
         return {'id': i, 'seq': int(i[1:]), 'repo': repo, 'need': {COMPUTE: 6}, 'priority': 0}
-    L = {'grants': [], 'rr': '', 'queue': [entry('a1', 'A'), entry('a2', 'A'), entry('b3', 'B')]}
-    got = []
-    for _ in range(3):
-        schedule(L, pol)
-        got += [g['id'] for g in L['grants']]
-        L['grants'] = []
-    return [] if got == ['a1', 'b3', 'a2'] else [f'repos A,A,B were granted {got}, wanted a1, b3, a2']
+
+    def fresh(rr):
+        return {'grants': [], 'rr': rr, 'queue': [entry('a1', 'A'), entry('a2', 'A'), entry('b3', 'B')]}
+
+    def rounds(pol, **kw):
+        L, got = fresh(''), []
+        for _ in range(3):
+            schedule(L, pol, **kw)
+            got += [g['id'] for g in L['grants']]
+            L['grants'] = []
+        return got
+    got = rounds(pol)
+    bad = [] if got == ['a1', 'b3', 'a2'] else [f'repos A,A,B were granted {got}, wanted a1, b3, a2']
+    capped = dict(pol, max_load=24)
+    got = rounds(capped, load=10)
+    if got != ['a1', 'b3', 'a2']:
+        bad.append(f'under the load cap repos A,A,B were granted {got}, wanted a1, b3, a2')
+    if rounds(capped, load=24) != ['a1', 'b3', 'a2']:
+        bad.append('a load equal to the cap did not admit')
+    L = fresh('A')
+    granted = schedule(L, capped, load=36.5)
+    if granted or L['grants'] or L['rr'] != 'A' or len(L['queue']) != 3:
+        bad.append(f'over the load cap the schedule granted {granted} and left rr {L["rr"]!r}, wanted nothing granted and rr A')
+    return bad
 
 
 def clean_env(tmp, **extra):
@@ -1359,7 +1475,8 @@ def selftest():
             ('dead holder reclaimed', case_reclaim, M_LIVE, 'return True  # GRANT-LIVE', 'not reclaimed'),
             ('live group not reclaimed', case_livegroup, M_LIVE, 'return wrapper  # GRANT-LIVE', 'lost its charge'),
             ('start identity', case_ident, M_IDENT, 'pass  # IDENT', 'reused pid'),
-            ('group drain', case_drain, M_DRAIN, 'pass  # DRAIN', 'still runs'))
+            ('group drain', case_drain, M_DRAIN, 'pass  # DRAIN', 'still runs'),
+            ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')
             expect(f'{label}: {got}', not got)
