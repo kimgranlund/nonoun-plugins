@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:3d18216c96ff -->
+<!-- sdlc-lite:managed:start v1 sha256:4ebe7780753e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 15
+- proposed: 14
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0461 Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals (0461-clarify-controlled-language)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
@@ -20,7 +20,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0481 fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) (0481-light-merge-gate-class)
   - T-0482 board.py --lanes shows light merges not yet covered by the full gate (T-0480) (0482-light-merge-uncovered-board)
   - T-0484 gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it (0484-gate-lock-policy-reload)
-  - T-0488 Design: worktree per builder plus a merge queue, and merge-ops as a conductor duty (0488-merge-ops-and-queue)
   - T-0489 fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) (0489-settle-forward)
   - T-0490 solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488) (0490-solo-worktree-default)
   - T-0491 fanout land gates run at --priority 1; gate_lock status shows ahead and blocking (T-0488, T-0470 finding 7) (0491-land-gate-priority)
@@ -30,7 +29,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 438
+- done: 439
 - dropped: 28
 
 ## Procedures

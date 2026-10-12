@@ -2,7 +2,7 @@
 id: T-0488
 title: "Design: worktree per builder plus a merge queue, and merge-ops as a conductor duty"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Origin: maintainer question 2026-10-12 ("should we always have builders open a n
 
 ## Constraints
 Read-only design, one architect pass, no replan. Plugin size and role count are costs: prefer a section plus skill over a new role unless the evidence says otherwise.
+
+## Closed
+
+2026-10-12: design delivered: docs/planning/merge-ops-and-queue.md; builds filed as T-0489 to T-0492
