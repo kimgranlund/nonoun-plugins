@@ -463,4 +463,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0463 | [0463-skill-ui-hints](0463-skill-ui-hints/handoff.md) | Standardize skill argument hints and question UI across all skills, with a parity lint | chore | L3 | P2 | T-0461 | ⏳ proposed |
 | T-0464 | [.0464-ceremony-audit](.0464-ceremony-audit/handoff.md) | Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture | spike | L3 | P2 | none | 🟢 done |
 | T-0465 | [0465-compaction-prompt](0465-compaction-prompt/handoff.md) | /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) | feature | L3 | P2 | T-0461 | ⏳ proposed |
-| T-0466 | [0466-reply-lint](0466-reply-lint/handoff.md) | reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison | chore | L2 | P2 | none | ⏳ proposed |
+| T-0466 | [.0466-reply-lint](.0466-reply-lint/handoff.md) | reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison | chore | L2 | P2 | none | 🟢 done |

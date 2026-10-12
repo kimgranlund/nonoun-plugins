@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:25032d854d9d -->
+<!-- sdlc-lite:managed:start v1 sha256:a3be19df5be0 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 13
+- proposed: 12
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -22,12 +22,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0462 Design: merge the plan-* skills into /plan with kinds, shared rules and one lint (0462-plan-skills-merge-design)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
-  - T-0466 reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison (0466-reply-lint)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 421
+- done: 422
 - dropped: 25
 
 ## Procedures

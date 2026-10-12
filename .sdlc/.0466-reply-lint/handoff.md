@@ -2,7 +2,7 @@
 id: T-0466
 title: "reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Read-only against transcripts. No model call. No quoting of a transcript beyond 
 3. `bash plugins/sdlc-lite/scripts/check.sh` exits 0 and runs the reply_lint selftest.
 4. `docs/reports/2026-10-12-author-output-comparison.md` holds baseline numbers that match criterion 2's output, the two outcome signals, the confound, and lists the V1 and V2 arms as unverified.
 5. `.claude/agents/sdlc-lite-author.md` is unchanged and the script reads transcripts only (no write to them).
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
