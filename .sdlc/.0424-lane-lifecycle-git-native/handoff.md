@@ -2,7 +2,7 @@
 id: T-0424
 title: "Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0422]
@@ -25,3 +25,7 @@ Maintainer decision 2026-10-10: adopt all of the git-native conventions includin
 
 ## Constraints
 No em or en dashes. No push or publish. Do not remove any worktree or branch.
+
+## Closed
+
+2026-10-11: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

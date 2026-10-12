@@ -16,7 +16,7 @@ goals: [G-002]
 ## Definition
 For each attempt record with status `interrupted` in the window, the minutes from its `started_at` to the `started_at` of the next attempt of the same role in the same handoff dir (to its own `finished_at` when no next attempt exists). The KPI is the median over the window. It counts the work a restart threw away plus the time until the run was dispatched again, which is what "a restart costs minutes, not hours" means for one run.
 
-Excluded: attempts still `running` whose parent session is dead (orphans nobody recovered). They have no next attempt and no recovery stamp, so they are counted apart as `runs.orphaned.count`.
+Excluded: an interrupted record whose result file (`<stem>.md` beside `<stem>.attempt.json`) already holds a verdict, because the run finished and reported (T-0445); and attempts still `running` whose parent session is dead (orphans nobody recovered). They have no next attempt and no recovery stamp, so they are counted apart as `runs.orphaned.count`.
 
 ## Reading it
 - `fleet_collect.py` reads it: each interrupted attempt carries `lost_min`, and `runs.interrupted` carries `lost_min_median` and `lost_min_total` (null and 0 with no interrupted attempt); `runs.orphaned` holds the count and list of orphans.

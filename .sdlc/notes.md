@@ -285,3 +285,10 @@
 2026-10-11: maintainer set the T-0442 A/B budget at $15 (budget_usd: 15). Starts after wave 33.
 
 2026-10-11: maintainer decisions via /ask: push main ff only (done, origin/main ad35eaaa); fanout and run-plan set `status: claimed` (T-0455); build the lane lifecycle A to D as a chain (T-0451 to T-0454); leave the uncommitted plugins/progressive-context edits (SKILL.md, references/performance-contract.json) alone, they are not from this session.
+## T-0427: Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (2026-10-11)
+
+- decide: Approve or change cascade-guard.md as written. Section 4's proof refuses the T-0378 plan, so the template-instance lane would not have saved those runs, and the four build tickets (L3, L3, L3, L2) wait on that call.
+- decide: Section 11 of cascade-guard.md leaves two questions open: which roles count toward the cap of 6, and whether a verifier's own test run that changes the tree counts as "a verified file changed since".
+- fix-now: `conductor.md` line 9 still says the cap is "6 until T-0427 sets it". Once the design is approved, T-0428 updates it to point at the design.
+- note: `check.py` counts only git-tracked files in its broken-link check, so a new doc linked from an index needs `git add -N` first. The handoff expected this only for `onboard.py check`.
+- note: The first step handoff was refused by the `steps.py lint` check because it cited relative `.sdlc/tickets/...` paths that resolve against this repo. The replan cites every maison file by absolute path under `/Users/kimgranlund/Projects/maison/ui-kit-maison`.

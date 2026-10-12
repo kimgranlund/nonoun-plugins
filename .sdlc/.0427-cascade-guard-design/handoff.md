@@ -2,7 +2,7 @@
 id: T-0427
 title: "Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review"
 type: idea            # feature | bug | chore | spike | idea
-status: proposed
+status: done
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -22,6 +22,10 @@ A design for stopping a "verify the verifier" cascade: a per-ticket count of age
 ## Context
 Maintainer decisions 2026-10-10: doctrine plus hard caps (the wording is T-0428); two skip rules belong in this design: a mechanical template instance gets its diff reviewed once and a pass is never re-verified unless a verified file changed since; the docs-only skip is T-0429. Choose the cascade cap N from the maison and agent-ui run counts and state it; T-0428 uses 6 until this lands.
 Maison conductor bug report, 2026-10-10 (user asked it to send): the pipeline rewards more checking of checks. T-0378 and T-0379 plans were the T-0362 plan with shas and counts swapped, yet each got two plan-review runs and a replan (maison .sdlc/tickets/.0378-integration-wave-3/plan-reviewer-L1.md and plan-reviewer-L1-2.md; .sdlc/tickets/0379-integration-wave-4/plan-reviewer-L1.md and plan-reviewer-L1-2.md; about 40 to 60 minutes and 2 runs each); the second-replan stop then forced an override question to the user. T-0339 verifier-L3 failed a ticket on a Done-when that contradicted its Non-goals, which spawned an L2 reverify and a second verifier (.sdlc/tickets/.0339-examples-axe-inherited-nodes/verifier-L3.md). Maison counted 11 agent runs on T-0378 steps 1 and 2. Maison suggested: a template-instance lane, red-checkpoint keyed to criterion text (T-0425), record removing the tmp prefix (T-0426), a verifier never spawning a verifier, a cascade counter. Maison applies a self-cap on T-0379: one plan review, one verifier per step, no reverify of a pass.
+Maison repo root for the paths above: /Users/kimgranlund/Projects/maison/ui-kit-maison (read-only; its runs.jsonl lives under its .sdlc). Plugin paths in Intent are under plugins/sdlc-lite/.
 
 ## Constraints
 No em or en dashes. No push or publish. Do not remove any worktree or branch outside the role's own tmp prefix.
+
+## Plan review
+- plan defect: dispatch.py prepare builder refused step-1/handoff.md (steps.py lint): cited path does not exist: .sdlc/tickets/.0339-examples-axe-inherited-nodes/verifier-L3.md. Cite every maison file by its absolute path under /Users/kimgranlund/Projects/maison/ui-kit-maison so the link lint resolves it.

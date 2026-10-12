@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:0086469a05d3 -->
+<!-- sdlc-lite:managed:start v1 sha256:f65e16698174 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,17 +9,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 20
+- proposed: 17
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
-  - T-0424 Add the git-native conventions to the lane lifecycle design: names, archive refs, worktree lock, worktree config (0424-lane-lifecycle-git-native)
-  - T-0427 Design a cascade guard: a per-ticket agent-run counter that stops and asks, and a template-instance plan review (0427-cascade-guard-design)
   - T-0442 Replay A/B of builder overlays on the five bench tasks (0442-builder-overlay-ab)
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
-  - T-0445 Collector and recover: a completed attempt is never counted or marked interrupted (0445-collector-ignores-completed-attempts)
   - T-0446 dispatch.py record finds the sub-agent transcript without a flag (0446-record-finds-transcript)
   - T-0447 Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers (0447-doc-standards-suite)
   - T-0448 Modernize clarify (our port of find-intent): plan-ready intent, runnable done-when, cost-aware asks (0448-clarify-v2-intent-to-plan)
@@ -34,7 +31,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 403
+- done: 406
 - dropped: 25
 
 ## Procedures
