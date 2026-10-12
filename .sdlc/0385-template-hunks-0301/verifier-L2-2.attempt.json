@@ -1,0 +1,21 @@
+{
+  "attempt_id": "6f8463308c4742df8f4b3780f18d6af5",
+  "name": "verifier-L2-2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-12T15:08:32.841603+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout43/j",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout43/j/.sdlc/0385-template-hunks-0301/handoff.md",
+  "owner_pid": 76503,
+  "handoff_sha256": "1ff03e99561ec2b30b0292eb7d0650c8c404e15ea91600c783ea18a12b29d986",
+  "process_pid": 77091,
+  "exit_code": 0,
+  "finished_at": "2026-10-12T15:15:56.456379+00:00"
+}
