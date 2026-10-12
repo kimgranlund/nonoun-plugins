@@ -2,7 +2,7 @@
 id: T-0461
 title: "Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0460]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,13 @@ Design thread: the maintainer's controlled-language request and the three-surfac
 
 ## Constraints
 No model or effort change. The dialog stays natural: controlled language applies to the artifact and the question options only. One writer on `plan_check.py` and `core.md` at a time. State only what a file or command shows; mark the replay unverified if it was not an independent run.
+
+## Closed
+
+2026-10-12: warnings acknowledged: both steps verifier pass; red-checkpoint retrospective deviations are the resumed-work gap T-0473 fixes; the clarify v3 replay was judged by its own builder, not independent, and the report says so (docs/reports/2026-10-12-clarify-v3-replay.md)
+
+> - process deviation: red-checkpoint: retrospective: step 2 (attempt a5f852571a3946c0ba694a1f5a41b5a5, handoff sha256 ec6a39a6e6e3): 1 of 1 (red) criteria had no pre-edit red control, namely the report-file grep for `docs/reports/2026-10-12-clarify-v3-replay.md`. The control was recorded after step 1's files already differed from HEAD. The step 2 verifier passed the step. That verdict does not clear this deviation.
+> - Step 1 criterion 7 (the 11 literal strings in SKILL.md) has no pre-edit control in `step-1/red-checkpoint.jsonl`. The builder disclosed this. The verifier showed it red at base by checking `git show 01a8cca7:...SKILL.md` for the missing strings. No `process-deviations.md` exists for step 1.
+> - The replay result is unverified. The step 2 builder spawned the ten Sonnet replay sub-agents and judged their outputs itself, so this was not an independent run. The report `docs/reports/2026-10-12-clarify-v3-replay.md` says so.
+> - Both steps have a pass verdict (step 1 verifier L2, step 2 verifier L1). The planner file was truncated in my read, so I did not see the full criteria list for step 1.
+> - The ticket-level "Done when" asks for `check.sh`, `check.py` and `check-packaging.py` to exit 0. These ran at step 2 only, and the verifier ran them directly. I did not see a step 1 run of `check.sh` or `check-packaging.py`.

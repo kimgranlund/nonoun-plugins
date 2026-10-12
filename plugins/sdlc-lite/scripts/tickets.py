@@ -153,6 +153,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             change nothing.
             `hash_bound: <glob> [<glob>...]` lines (same comment rules) declare the hash-bound and generated paths of
             the fanout merge class (hash_bound_globs); tickets.py itself never acts on them.
+            A `merge_gate: light` line and `light_scope: <glob> [<glob>...]` lines (same comment rules, T-0481)
+            opt a repo into the fanout light gate class (merge_gate_declared, light_scope_globs): a merge whose paths
+            outside the ticket root all match a light_scope glob runs the --light-gate set; tickets.py never acts on them.
             A `ticket_root: tickets` line (same comment rules) puts the ticket dirs in <root>/tickets for new, close,
             roadmap, check, archive and number; `tickets` is the only supported value, and any other value refuses
             every command, writing nothing. Without the line the ticket dirs are <root>/<slug> as before. With it,
@@ -269,6 +272,8 @@ DOT_RE = re.compile(r'\.\d{4}-[a-z0-9]+(-[a-z0-9]+)*')  # a closed-ticket folder
 CONFIG_RE = re.compile(r'\s*ticket_folders\s*:\s*numbered\s*(?:#.*)?')
 EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
 HASH_BOUND_RE = re.compile(r'\s*hash_bound\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0374: one or more globs per line
+LIGHT_SCOPE_RE = re.compile(r'\s*light_scope\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0481: one or more globs per line
+MERGE_GATE_RE = re.compile(r'\s*merge_gate\s*:\s*light\s*(?:#.*)?')  # T-0481: the light gate class opt-in
 TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
@@ -462,6 +467,35 @@ def hash_bound_globs(root):
             if g not in out:
                 out.append(g)
     return out
+
+
+def light_scope_globs(root):
+    """The paths a repo declares for the fanout light gate class (T-0481): the globs on every
+    `light_scope: <glob> [<glob>...]` line in <root>/config, in file order, deduplicated; blank and # comment lines and
+    a trailing # comment are ignored, as for hash_bound. [] when the file or the line is missing. Each glob is a git
+    :(glob) pathspec relative to the repository root."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = LIGHT_SCOPE_RE.fullmatch(line)
+        for g in (m.group(1).split() if m else []):
+            if g not in out:
+                out.append(g)
+    return out
+
+
+def merge_gate_declared(root):
+    """True only when <root>/config holds an uncommented `merge_gate: light` line (T-0481): the owner's opt-in to the
+    fanout light gate class. A missing file, a # comment line or any other value is False."""
+    path = root / 'config'
+    if not path.is_file():
+        return False
+    return any(MERGE_GATE_RE.fullmatch(line) for line in path.read_text(encoding='utf-8').splitlines()
+               if line.strip() and not line.lstrip().startswith('#'))
 
 
 def ticket_dir(root):

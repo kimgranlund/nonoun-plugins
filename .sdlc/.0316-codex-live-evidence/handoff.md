@@ -2,7 +2,7 @@
 id: T-0316
 title: "Live headless chain run on Codex, recorded"
 type: feature        # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,7 @@ No change to any model or effort value. No em dashes. No push, tag or publish. I
 
 ## Rerun note (2026-10-12)
 The first attempt failed its verifier on a plan defect (criterion 1 asked for a solo result file; no such file exists). Criterion 1 is reworded above. The evidence is already merged under `docs/reports/codex-live-evidence*`. Remaining work: file the three failure candidates listed at the end of `docs/reports/codex-live-evidence.md` as tickets (solo has no validatable result file; red-checkpoint marked retrospective though controls were recorded first; `loaded_context` shows `rollout absent` on `codex exec` runs), then verify. Do not rerun the live Codex chain.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

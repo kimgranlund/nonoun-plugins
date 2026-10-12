@@ -7,15 +7,17 @@ An external lane merges a registered branch an outside agent owns, with no workt
 Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH]
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
                      [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate]
-                     [--no-gate-lock] [--gate-need [PREFIX::]RES=N]...
+                     [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... [--light-gate CMD]...
        fanout.py prep <spec>... [the run flags but --driver and --dry-run]
        fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR]
-                      [--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
-                      [--gate-need [PREFIX::]RES=N]...
+                      [--gate CMD]... [--light-gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate]
+                      [--no-gate-lock] [--gate-need [PREFIX::]RES=N]...
        fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]...
                       [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
                       [--gate-need [PREFIX::]RES=N]...
-       fanout.py settle <integration>
+       fanout.py settle <integration> [--root .sdlc] [--require-covered]
+       fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]...
+                       [--no-gate-lock] [--allow-empty-gate]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
@@ -92,6 +94,30 @@ settle (T-0438, T-0452)
   .sdlc/config does not stop it) and the branch deleted, and the close message prints. A close that refuses (not a
   plugin lane, lanes still open into the branch, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
   keeps the branch and exits 1.
+  --require-covered (T-0481; --root, default .sdlc, names the ledger <rel>/gate-ledger.jsonl) runs before the
+  fast-forward: it reads the ledger with `git show <integration>:<rel>/gate-ledger.jsonl` and refuses (exit 2, branch
+  kept, nothing merged, the uncovered range `<from-or-to>..<tip>` printed) unless the newest entry has rc 0 and either
+  its `to` is the integration tip or `git diff --name-only <to> <integration>` lists only the ledger path.
+
+Gate class (T-0481; docs/references/sdlc-internals.md, fanout gate class)
+  In merge_gate_close, before the merge, gate_class(ctx, ref) is `light` only when the run is not a roll, <root>/config
+  has an uncommented `merge_gate: light` line and `light_scope: <glob>...` lines (tickets.merge_gate_declared,
+  tickets.light_scope_globs), --light-gate was given, and every path `git diff --name-only HEAD...<ref>` lists outside
+  the ticket root matches a light_scope glob (steps.declared_hits, the :(top,glob) matcher); else `full (<reason>)`.
+  A light merge runs the --light-gate set, a full one the --gate set; the vacuous-gate refusal and the reset are the
+  same. The class prints as `gate: light` or `gate: full (<reason>)`, is the `gate` key of the land.jsonl line, and a
+  solo close reason ends `; gate: <class>`. --light-gate with no `merge_gate: light` line refuses (exit 2, nothing
+  created) in run, prep and land; land_command passes each --light-gate on; roll has no flag and is always full.
+
+cover (T-0481)
+  `cover <integration> --gate CMD...` finds the integration worktree in `git worktree list --porcelain` (none, or no
+  --gate, refuses with exit 2), then under <lanes-dir>/merge.lock (default the worktree's parent) runs each --gate at the
+  tip through gate_argv and run_logged (logs <lanes-dir>/logs/cover-<run_id>-<k>.log; the first red one stops; a
+  vacuous gate is red unless --allow-empty-gate), appends one line to <tree>/<rel>/gate-ledger.jsonl with at, run_id,
+  integration, from (the previous entry's `to`, else `git merge-base <integration> HEAD`), to (the tip), gates, rc,
+  log and merges ([{sha, ticket}] from the first-parent `Merge <branch>: <id>` commits in from..to), and commits it
+  there (`git add -f`, message `cover <to7>: rc=<rc>`); the primary checkout is never written. Red prints
+  `git bisect start <to> <from> --first-parent` and exits 1; green exits 0.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
   the lane and appends its record to the task's skips.md (committed with the lane): `solo` (ticket level L1 and
@@ -394,8 +420,14 @@ selftest
   roll and after a refused one, <lanes-dir>/rolling is absent and `git worktree list` names no rolling tree. Case 32
   (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
   and, after the land of its last ticket, is gone with an archive ref and its branch deleted.
+  Case 34 (T-0481, light gate class): config `merge_gate: light` and `light_scope: src/components/** src/registry.ts`, a
+  solo lane touching only src/components/x/a.txt and src/registry.ts landed with `--gate false --light-gate true` merges
+  with `"gate": "light"` in land.jsonl and `gate: light` in the ## Closed note; the same lane also touching README.md is
+  `red: false rc=1`; land_command emits --light-gate; settle --require-covered exits 2 before cover and 0 after it,
+  cover writing one committed ledger entry naming T-0001; without the declaration a land with no --light-gate is
+  `red: false rc=1` and one with it exits 2; a red cover prints the bisect line.
 """
-import argparse, contextlib, datetime, fcntl, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
+import argparse, contextlib, datetime, fcntl, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, types, uuid
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
@@ -645,6 +677,7 @@ class Lane:
         self.results = []  # (ticket id, outcome, commit)
         self.files = set()  # every path this lane brought to a merge (report.md's Overlap lines)
         self.done = False  # set when run_lane returns, under ctx['cond']; a later lane stops waiting on it
+        self.gate = None  # the gate class of the last merge_gate_close (T-0481): 'light' or 'full'
 
 
 def branch_clash(name, refs):
@@ -698,6 +731,7 @@ def preflight(a, copy_ignored=False):
         raise Refuse(f'--root {a.root} is {root}, outside the git toplevel {top}')
     if not root.is_dir():
         raise Refuse(f'--root {a.root}: {root} is not a dir')
+    light_refusal(a, root)
 
     try:
         tdir = tickets.ticket_dir(root)
@@ -850,7 +884,7 @@ def preflight(a, copy_ignored=False):
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'copy_dirs': copy_dirs, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
-            'gate_needs': gate_needs_of(a),
+            'light_gates': list(getattr(a, 'light_gate', None) or []), 'gate_needs': gate_needs_of(a),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
             'numbered': tickets.config_numbered(root), 'lane_mode': getattr(a, 'lane', 'auto') or 'auto',
             'max_lanes': getattr(a, 'max_lanes', MAX_LANES_DEFAULT), 'stagger': getattr(a, 'stagger', STAGGER_DEFAULT),
@@ -896,14 +930,56 @@ def driver_for(ctx, t, kind='full'):
     return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
 
 
-def close_reason(ctx, t):
+def close_reason(ctx, t, gate=None):
     """The `tickets.py close --reason` text for a ticket a solo agent delivered (a solo lane writes no filer
-    file, which close needs otherwise), or None for every other lane."""
+    file, which close needs otherwise), or None for every other lane. gate, the merge's gate class (T-0481), adds
+    `; gate: <class>`."""
     kind, tier = ctx['kinds'].get(t.id, ('', None))
     if kind != 'solo':
         return None
-    return (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
-            if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
+    why = (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
+           if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
+    return why + (f'; gate: {gate}' if gate else '')
+
+
+def light_refusal(a, root):
+    """Refuse --light-gate when <root>/config does not declare `merge_gate: light` (T-0481): the owner opts in there."""
+    if getattr(a, 'light_gate', None) and not tickets.merge_gate_declared(root):
+        raise Refuse(f'--light-gate needs a `merge_gate: light` line in {root / "config"}: the repo owner declares the '
+                     f'light gate class there, with its `light_scope: <glob>...` lines')
+
+
+def gate_class(ctx, ref):
+    """The gate class of merging ref into the integration worktree (T-0481): ('light', '') when the repo declares
+    `merge_gate: light` and `light_scope:` globs, --light-gate was given, and every path ref brings outside the ticket
+    root matches a light_scope glob (the :(top,glob) matcher of steps.declared_hits); else ('full', reason). roll
+    is always full. Called before the merge, so HEAD is the pre-merge commit."""
+    if ctx.get('roll'):
+        return 'full', 'roll'
+    root, integ = ctx['root'], ctx['integ_dir']
+    if not tickets.merge_gate_declared(root):
+        return 'full', 'no merge_gate: light'
+    globs = tickets.light_scope_globs(root)
+    if not globs:
+        return 'full', 'no light_scope'
+    p = git(integ, 'diff', '--name-only', f'HEAD...{ref}')
+    if p.returncode:
+        return 'full', f'diff failed: {first_line(p.stderr, f"rc={p.returncode}")}'
+    relp = ctx['rel'].as_posix()
+    paths = [x for x in p.stdout.splitlines()
+             if x and not (relp != '.' and (x == relp or x.startswith(relp + '/')))]
+    if not paths:
+        return 'full', 'no path outside the ticket root'
+    try:
+        hits = set(steps.declared_hits(integ, globs, f'HEAD...{ref}'))
+    except ValueError as e:
+        return 'full', f'light_scope match failed: {first_line(str(e))}'
+    out = [x for x in paths if x not in hits]
+    if out:
+        return 'full', f'outside light_scope: {out[0]}' + (f' and {len(out) - 1} more' if len(out) > 1 else '')
+    if not ctx.get('light_gates'):
+        return 'full', 'no --light-gate'
+    return 'light', ''
 
 
 def write_solo_skips(taskdir, tier):
@@ -1043,6 +1119,8 @@ def print_plan(ctx):
         out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
     else:
         out.append('gates: none given (merges will not be gated)')
+    out += [f'light gate {k}: {g} (a merge inside light_scope; else the gates above)'
+            for k, g in enumerate(ctx.get('light_gates') or [], 1)]
     if deps_note(ctx):
         out.append(deps_note(ctx))
     if ctx['driver']:
@@ -1438,6 +1516,9 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         p = git(integ, 'diff', '--name-only', f'HEAD...{ref}')
         if p.returncode == 0:
             lane.files.update(ln for ln in p.stdout.splitlines() if ln)
+        cls, why = gate_class(ctx, ref)
+        lane.gate = cls
+        say(ctx, lane, t.id, 'gate: light' if cls == 'light' else f'gate: full ({why})')
         before = git_out(integ, 'rev-parse', 'HEAD')
         p = git(integ, 'merge', '--no-ff', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}', ref)
         if p.returncode:
@@ -1448,7 +1529,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 return 'merge conflict', cell
             return f'merge failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', cell
         merge_sha = git_out(integ, 'rev-parse', 'HEAD')
-        gates = ctx['gates']
+        gates = ctx['light_gates'] if cls == 'light' else ctx['gates']
         if merge_sha == before:  # nothing new came in, so there is nothing to gate
             say(ctx, lane, t.id, f'{lane.branch} already merged: nothing new, gates skipped')
             gates = []
@@ -1493,7 +1574,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             record_solo_lane(integ / trel / t.slug, ctx['kinds'][t.id][1])
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
         if close_reason(ctx, t):
-            argv += ['--reason', close_reason(ctx, t)]
+            argv += ['--reason', close_reason(ctx, t, cls)]
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
         pre = porcelain(integ)
@@ -1748,6 +1829,8 @@ def land_command(ctx, branch, tid):
         argv += ['--root', os.path.relpath(ctx['root'], ctx['cwd'])]
     for g in ctx['gates']:
         argv += ['--gate', g]
+    for g in ctx.get('light_gates') or []:
+        argv += ['--light-gate', g]
     for spec in ctx.get('gate_needs') or []:
         argv += ['--gate-need', spec]
     if ctx['allow_empty_gate']:
@@ -1836,6 +1919,8 @@ def print_prep(ctx):
         out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
     else:
         out.append('gates: none given (merges will not be gated)')
+    out += [f'light gate {k}: {g} (a merge inside light_scope; else the gates above)'
+            for k, g in enumerate(ctx.get('light_gates') or [], 1)]
     if deps_note(ctx):
         out.append(deps_note(ctx))
     out.append(f"logs: {ctx['logs']}")
@@ -1985,6 +2070,7 @@ def branch_ticket(a, root, branch):
 def land_preflight(a):
     """Every check before any write for one `land <branch>`. Returns the run context; raises Refuse."""
     cwd, top, root, rel, tdir, tip = branch_repo(a)
+    light_refusal(a, root)
     branch = a.branch
     integration = a.integration or f'fanout/{datetime.date.today().isoformat()}'
     if git(cwd, 'check-ref-format', '--branch', integration).returncode:
@@ -2028,7 +2114,8 @@ def land_preflight(a):
     return {'lane_wt': checked_out.get(branch), 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
             'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
-            'gates': list(a.gate or []), 'gate_needs': gate_needs_of(a), 'driver': None, 'rewrite_refs': bool(a.rewrite_refs),
+            'gates': list(a.gate or []), 'light_gates': list(a.light_gate or []), 'gate_needs': gate_needs_of(a),
+            'driver': None, 'rewrite_refs': bool(a.rewrite_refs),
             'numbered': tickets.config_numbered(root), 'kinds': {tid: (kind, tier)}, 'land': True,
             'allow_empty_gate': bool(a.allow_empty_gate), 'gate_lock': not a.no_gate_lock and not gate_slots_off()}
 
@@ -2188,7 +2275,7 @@ def cmd_land(a):
     with open(journal, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'run_id': ctx['run_id'], 'lane': lane.name, 'branch': lane.branch, 'ticket': t.id,
                             'outcome': outcome, 'commit': commit, 'kind': kind, 'tier': tier,
-                            'files': sorted(lane.files)}) + '\n')
+                            'gate': lane.gate or 'full', 'files': sorted(lane.files)}) + '\n')
     prior = read_journal(journal)  # report every ticket landed so far in this lanes dir, the latest outcome each
     lanes, kinds = [], {}
     for tid, rec in prior.items():
@@ -2262,7 +2349,8 @@ def roll_preflight(a):
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': main, 'main': main,
             'main_wt': next((w for w, b in wts if b == main), None), 'lanes_dir': lanes_dir, 'integ_dir': roll_dir,
-            'roll_exists': registered, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []), 'gate_needs': gate_needs_of(a),
+            'roll_exists': registered, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []), 'light_gates': [],
+            'gate_needs': gate_needs_of(a),
             'driver': None, 'rewrite_refs': bool(a.rewrite_refs), 'numbered': tickets.config_numbered(root), 'kinds': {t.id: (kind, tier)},
             'land': True, 'roll': True, 'globs': tickets.hash_bound_globs(root),
             'allow_empty_gate': bool(a.allow_empty_gate), 'gate_lock': not a.no_gate_lock and not gate_slots_off()}
@@ -2333,13 +2421,16 @@ def cmd_settle(a):
     through lanes.close_lane, which writes refs/archive/<UTC date>/<branch> before it removes the tree and deletes the
     branch. A branch that is neither merged nor a fast-forward is refused (exit 2) and left whole; a close that refuses
     (not a plugin lane, lanes still open into it, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
-    keeps the branch and exits 1. Local only, never a push."""
+    keeps the branch and exits 1. Local only, never a push. --require-covered (T-0481) first reads the newest
+    gate-ledger.jsonl entry on the branch (require_covered) and refuses (exit 2, nothing merged) an uncovered tip."""
     cwd = pathlib.Path.cwd()
     try:
         if git(cwd, 'rev-parse', '--verify', '-q', f'refs/heads/{a.integration}').returncode:
             print(f'settle: no branch {a.integration}: nothing to settle')
             return 0
         head = git_out(cwd, 'symbolic-ref', '--short', '-q', 'HEAD')
+        if a.require_covered:
+            require_covered(cwd, a)
         if git(cwd, 'merge-base', '--is-ancestor', a.integration, 'HEAD').returncode:
             p = git(cwd, 'merge', '--ff-only', a.integration)
             if p.returncode:
@@ -2366,6 +2457,130 @@ def cmd_settle(a):
         return 1
     print(r['message'])
     print(f'settled: {a.integration} is in {head or "HEAD"}; its worktree and branch are removed (archive {r.get("archive")})')
+    return 0
+
+
+LEDGER = 'gate-ledger.jsonl'  # <root>/gate-ledger.jsonl on the integration branch, one line per `cover` run (T-0481)
+MERGE_SUBJECT = re.compile(r'Merge (\S+): (T-\d+)')  # the subject merge_gate_close writes
+
+
+def ledger_rel(cwd, root_arg):
+    """The ledger path relative to the toplevel (<rel>/gate-ledger.jsonl) and the toplevel. Raises Refuse."""
+    top = pathlib.Path(git_out(cwd, 'rev-parse', '--show-toplevel')).resolve()
+    root = (cwd / root_arg).resolve()
+    try:
+        rel = root.relative_to(top)
+    except ValueError:
+        raise Refuse(f'--root {root_arg} is {root}, outside the git toplevel {top}')
+    return (rel / LEDGER).as_posix(), top
+
+
+def read_ledger(text):
+    out = []
+    for line in text.splitlines():
+        if line.strip():
+            try:
+                out.append(json.loads(line))
+            except ValueError:
+                continue
+    return out
+
+
+def require_covered(cwd, a):
+    """settle --require-covered (T-0481): the newest gate-ledger.jsonl entry on the integration branch has rc 0 and
+    either `to` is the branch tip or the only path changed since `to` is the ledger. Raises Refuse naming the
+    uncovered range."""
+    lpath, _top = ledger_rel(cwd, a.root)
+    tip = git_out(cwd, 'rev-parse', f'refs/heads/{a.integration}')
+    p = git(cwd, 'show', f'{a.integration}:{lpath}')
+    entries = read_ledger(p.stdout) if p.returncode == 0 else []
+    last = entries[-1] if entries else None
+    if last and last.get('rc') == 0 and last.get('to'):
+        if last['to'] == tip:
+            return
+        d = git(cwd, 'diff', '--name-only', last['to'], a.integration)
+        if d.returncode == 0 and [x for x in d.stdout.splitlines() if x] == [lpath]:
+            return
+        start, what = last['to'], 'the newest cover entry is green but older than the tip'
+    elif last:
+        start, what = last.get('from') or last.get('to') or '?', f"the newest cover entry is red (rc={last.get('rc')})"
+    else:
+        start = git(cwd, 'merge-base', a.integration, 'HEAD').stdout.strip() or '?'
+        what = f'no {lpath} entry on the branch'
+    raise Refuse(f'{a.integration} is uncovered: {what}; uncovered range {start[:7]}..{tip[:7]}. Run fanout.py cover '
+                 f'{a.integration} --gate CMD... first; the branch is kept and nothing is merged')
+
+
+def cmd_cover(a):
+    """Run the full gate set at the integration tip under the merge lock and append one gate-ledger.jsonl entry,
+    committed in the integration worktree (T-0481). Exit 0 green, 1 red (with the bisect line), 2 refused."""
+    cwd = pathlib.Path.cwd()
+    try:
+        if git(cwd, 'rev-parse', '--is-inside-work-tree').returncode:
+            raise Refuse('not a git repo: run fanout.py inside a git work tree with a commit')
+        if not a.gate:
+            raise Refuse('cover needs at least one --gate CMD: the full gate set to run at the integration tip')
+        lpath, top = ledger_rel(cwd, a.root)
+        wt, cur = None, None
+        for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+            if line.startswith('worktree '):
+                cur = line[len('worktree '):]
+            elif line == f'branch refs/heads/{a.integration}':
+                wt = pathlib.Path(cur)
+        if wt is None:
+            raise Refuse(f'no worktree has {a.integration} checked out: cover runs the gates in the integration worktree')
+        lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else wt.parent
+        ctx = {'gate_needs': gate_needs_of(a), 'gate_lock': not a.no_gate_lock and not gate_slots_off(),
+               'run_id': 'fanout-' + uuid.uuid4().hex[:12]}
+    except Refuse as e:
+        print(f'fanout: {e}', file=sys.stderr)
+        return 2
+    logs = lanes_dir / 'logs'
+    logs.mkdir(parents=True, exist_ok=True)
+    ledger = wt / lpath
+    try:
+        with MergeLock(lanes_dir / 'merge.lock'):
+            to = git_out(wt, 'rev-parse', 'HEAD')
+            prior = read_ledger(ledger.read_text(encoding='utf-8')) if ledger.is_file() else []
+            frm = (prior[-1].get('to') if prior else None) or git(cwd, 'merge-base', a.integration, 'HEAD').stdout.strip()
+            rc, log = 0, ''
+            who = types.SimpleNamespace(name='cover')
+            for k, gate in enumerate(a.gate, 1):
+                glog = logs / f"cover-{ctx['run_id']}-{k}.log"
+                log = str(glog)
+                rc = run_logged(gate_argv(ctx, who, types.SimpleNamespace(id=to[:7]), gate), str(wt),
+                                dict(ENV, FANOUT_RUN_ID=ctx['run_id']), glog, ctx['run_id'])
+                text = glog.read_text(errors='replace') if rc in (0, 5) else ''
+                if gate_vacuous(rc, text, gate) and not a.allow_empty_gate:
+                    print(f'gate vacuous: {gate} ran no tests (--allow-empty-gate accepts it)')
+                    rc = rc or 1
+                if rc:
+                    print(f'red: {gate} rc={rc}')
+                    break
+            merges = []
+            if frm:
+                for line in git_out(wt, 'log', '--first-parent', '--format=%H%x09%s', f'{frm}..{to}').splitlines():
+                    sha, _, subj = line.partition('\t')
+                    m = MERGE_SUBJECT.fullmatch(subj.strip())
+                    if m:
+                        merges.append({'sha': sha, 'ticket': m.group(2)})
+            merges.reverse()  # oldest first
+            entry = {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'), 'run_id': ctx['run_id'],
+                     'integration': a.integration, 'from': frm, 'to': to, 'gates': list(a.gate), 'rc': rc, 'log': log,
+                     'merges': merges}
+            ledger.parent.mkdir(parents=True, exist_ok=True)
+            with open(ledger, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(entry) + '\n')
+            git_out(wt, 'add', '-f', '--', lpath)
+            git_out(wt, 'commit', '-q', '-m', f'cover {to[:7]}: rc={rc}', '--', lpath)
+    except Refuse as e:  # a git failure after the gates: the ledger entry may be uncommitted in the tree
+        print(f'fanout: cover: {e}', file=sys.stderr)
+        return 2
+    print(f"cover {a.integration} at {to[:7]}: rc={rc}, {len(merges)} merge(s) since {frm[:7] if frm else '?'}; "
+          f"ledger {ledger} (committed)")
+    if rc:
+        print(f'git bisect start {to} {frm} --first-parent')
+        return 1
     return 0
 
 
@@ -4438,6 +4653,86 @@ def selftest():
                and sh(fl, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/f-alpha').returncode != 0
                and faref and sh(fl, 'rev-parse', f'{faref}^{{commit}}').stdout.strip() == ftip)
 
+        # case 34 (T-0481): the light gate class. A lane whose merged paths outside the ticket root all match a declared
+        # light_scope glob runs --light-gate instead of --gate; cover runs the full set at the tip into gate-ledger.jsonl,
+        # and settle --require-covered refuses an uncovered tip.
+        lg = tmp / 'light'
+        light_cfg = 'merge_gate: light\nlight_scope: src/components/** src/registry.ts  # owner approved\n'
+        sized_repo(lg, ['L1', 'L1', 'L1'], {'.gitignore': gi})
+        (lg / '.sdlc' / 'config').write_text(light_cfg, encoding='utf-8')
+        sh(lg, 'add', '-A')
+        sh(lg, 'commit', '-q', '-m', 'light config')
+        lg_lanes, lg_integ = tmp / 'light-lanes', 'fanout/lg'
+        lg_pin = ('--integration', lg_integ, '--lanes-dir', str(lg_lanes), '--base', 'main')
+        make_branch(lg, 'worktree-T-0001-solo', {'src/components/x/a.txt': 'a\n', 'src/registry.ts': 'x\n'}, 'T-0001: Ticket t1')
+        make_branch(lg, 'worktree-T-0002-solo', {'src/components/x/b.txt': 'b\n', 'README.md': 'r\n'}, 'T-0002: Ticket t2')
+        g1 = verb(lg, 'land', 'worktree-T-0001-solo', *lg_pin, '--gate', 'false', '--light-gate', 'true')
+        journal = (lg_lanes / 'logs' / 'land.jsonl').read_text() if (lg_lanes / 'logs' / 'land.jsonl').is_file() else ''
+        closed = sh(lg, 'show', f'{lg_integ}:.sdlc/t1/handoff.md').stdout
+        expect(f'T-0481 light: a lane inside light_scope runs --light-gate and merges, got rc={g1.returncode} '
+               f'out={g1.stdout[-500:]!r} err={g1.stderr[-300:]!r}', g1.returncode == 0 and 'merged' in g1.stdout
+               and 'gate: light' in g1.stdout)
+        expect(f'T-0481 light: the land.jsonl line carries "gate": "light", got {journal!r}', '"gate": "light"' in journal)
+        expect(f'T-0481 light: the ticket\'s ## Closed note names gate: light, got {closed[-400:]!r}',
+               '## Closed' in closed and 'gate: light' in closed.split('## Closed', 1)[-1])
+        g2 = verb(lg, 'land', 'worktree-T-0002-solo', *lg_pin, '--gate', 'false', '--light-gate', 'true')
+        expect(f'T-0481 light negative control: a lane also touching README.md runs the full set, got rc={g2.returncode} '
+               f'out={g2.stdout[-400:]!r}', g2.returncode == 1 and 'red: false rc=1' in g2.stdout
+               and 'gate: full (outside light_scope' in g2.stdout)
+        lc = land_command({'integration': 'i', 'start': 's', 'lanes_dir': pathlib.Path('/x'), 'root': pathlib.Path('/r/.sdlc'),
+                           'top': pathlib.Path('/r'), 'cwd': pathlib.Path('/r'), 'gates': ['false'], 'gate_needs': [],
+                           'allow_empty_gate': False, 'rewrite_refs': False, 'light_gates': ['true', 'make lint']}, 'b', 'T-1')
+        expect(f'T-0481 land_command emits one --light-gate per light gate after the --gates, got {lc!r}',
+               "--gate false --light-gate true --light-gate 'make lint'" in lc)
+        lg_tip0 = sh(lg, 'rev-parse', lg_integ).stdout.strip()
+        main_lg = sh(lg, 'rev-parse', 'main').stdout.strip()
+        su = verb(lg, 'settle', lg_integ, '--require-covered')
+        expect(f'T-0481 settle --require-covered refuses before cover (exit 2, branch kept, main untouched), '
+               f'got rc={su.returncode} out={su.stdout!r} err={su.stderr!r}',
+               su.returncode == 2 and 'uncovered' in su.stderr and f'..{lg_tip0[:7]}' in su.stderr
+               and sh(lg, 'rev-parse', 'main').stdout.strip() == main_lg
+               and sh(lg, 'rev-parse', lg_integ).stdout.strip() == lg_tip0)
+        cv = verb(lg, 'cover', lg_integ, '--gate', 'true')
+        ledger = sh(lg, 'show', f'{lg_integ}:.sdlc/gate-ledger.jsonl').stdout.splitlines()
+        try:
+            entry = json.loads(ledger[0]) if len(ledger) == 1 else {}
+        except ValueError:
+            entry = {}
+        expect(f'T-0481 cover: one green ledger entry over the tip, naming the merged ticket, committed in the integration '
+               f'tree, got rc={cv.returncode} out={cv.stdout!r} err={cv.stderr!r} ledger={ledger!r}',
+               cv.returncode == 0 and entry.get('rc') == 0 and entry.get('to') == lg_tip0 and entry.get('from') == main_lg
+               and [m.get('ticket') for m in entry.get('merges') or []] == ['T-0001']
+               and entry.get('gates') == ['true'] and entry.get('integration') == lg_integ
+               and sh(lg, 'log', '-1', '--format=%s', lg_integ).stdout.strip() == f'cover {lg_tip0[:7]}: rc=0'
+               and not (lg / '.sdlc' / 'gate-ledger.jsonl').exists())
+        sc = verb(lg, 'settle', lg_integ, '--require-covered')
+        expect(f'T-0481 settle --require-covered passes after cover and fast-forwards, got rc={sc.returncode} '
+               f'out={sc.stdout!r} err={sc.stderr!r}',
+               sc.returncode == 0 and sh(lg, 'merge-base', '--is-ancestor', lg_tip0, 'main').returncode == 0)
+        # the negative controls on a fresh integration branch: no declaration, then --light-gate with no declaration
+        (lg / '.sdlc' / 'config').write_text('light_scope: src/components/** src/registry.ts\n', encoding='utf-8')
+        sh(lg, 'add', '-A')
+        sh(lg, 'commit', '-q', '-m', 'no merge_gate line')
+        make_branch(lg, 'worktree-T-0003-solo', {'src/components/x/c.txt': 'c\n'}, 'T-0003: Ticket t3')
+        lg_pin2 = ('--integration', 'fanout/lg2', '--lanes-dir', str(tmp / 'light-lanes2'), '--base', 'main')
+        g3 = verb(lg, 'land', 'worktree-T-0003-solo', *lg_pin2, '--gate', 'false')
+        expect(f'T-0481 light negative control: without merge_gate: light the full set runs, got rc={g3.returncode} '
+               f'out={g3.stdout[-400:]!r}', g3.returncode == 1 and 'red: false rc=1' in g3.stdout)
+        g4 = verb(lg, 'land', 'worktree-T-0003-solo', *lg_pin2, '--gate', 'false', '--light-gate', 'true')
+        expect(f'T-0481 light refusal: --light-gate without merge_gate: light exits 2, got rc={g4.returncode} err={g4.stderr!r}',
+               g4.returncode == 2 and 'merge_gate: light' in g4.stderr)
+        tip2 = sh(lg, 'rev-parse', 'fanout/lg2').stdout.strip()
+        cr = verb(lg, 'cover', 'fanout/lg2', '--gate', 'false')
+        rled = [json.loads(x) for x in sh(lg, 'show', 'fanout/lg2:.sdlc/gate-ledger.jsonl').stdout.splitlines() if x.strip()]
+        expect(f'T-0481 cover red: exit 1, the bisect line printed and a red entry committed, got rc={cr.returncode} '
+               f'out={cr.stdout!r} err={cr.stderr!r} ledger={rled!r}',
+               cr.returncode == 1 and f'git bisect start {tip2} ' in cr.stdout and '--first-parent' in cr.stdout
+               and rled and rled[-1].get('rc') == 1)
+        sr = verb(lg, 'settle', 'fanout/lg2', '--require-covered')
+        expect(f'T-0481 settle --require-covered refuses a red newest entry, got rc={sr.returncode} err={sr.stderr!r}',
+               sr.returncode == 2 and 'uncovered' in sr.stderr)
+
+
     # case 33 (T-0455): the run-plan claim step sets status: claimed together with claimed_by
     def claim_rule_ok(text):
         m = re.search(r'(?m)^\s*- Claim it \((.*)$', text)
@@ -4459,13 +4754,16 @@ def selftest():
 USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
          '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
          '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] '
-         '[--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
+         '[--no-gate-lock] [--gate-need [PREFIX::]RES=N]... [--light-gate CMD]... | '
          'fanout.py prep <spec>... [the run flags but --driver and --dry-run] | '
          'fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR] '
-         '[--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
+         '[--gate CMD]... [--light-gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] '
+         '[--gate-need [PREFIX::]RES=N]... | '
          'fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]... '
          '[--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
-         'fanout.py settle <integration> | '
+         'fanout.py settle <integration> [--root .sdlc] [--require-covered] | '
+         'fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]... '
+         '[--no-gate-lock] [--allow-empty-gate] | '
          'fanout.py selftest\n'
          '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
          '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
@@ -4475,7 +4773,7 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
 def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
-    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle']):
+    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover']):
         print(USAGE, file=sys.stderr)
         return 2
     if argv[0] == 'settle':
@@ -4483,7 +4781,24 @@ def main(argv):
                                      'integration branch, then close its worktree through lanes.py: the archive ref '
                                      'first, then the tree and the branch (local only).')
         sp.add_argument('integration', help='the integration branch `prep` printed, for example fanout/2026-10-11')
+        sp.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc): the ledger is '
+                        f'<root>/{LEDGER} on the integration branch')
+        sp.add_argument('--require-covered', action='store_true', help='refuse (exit 2, nothing merged) unless the newest '
+                        f'{LEDGER} entry is green and covers the integration tip (fanout.py cover, T-0481)')
         return cmd_settle(sp.parse_args(argv[1:]))
+    if argv[0] == 'cover':
+        cp = argparse.ArgumentParser(prog='fanout.py cover', description='Run the full gate set at the integration tip '
+                                     f'under the merge lock and append one <root>/{LEDGER} entry, committed on the '
+                                     'integration branch (T-0481). Red prints the git bisect line and exits 1.')
+        cp.add_argument('integration', help='the integration branch, checked out in its worktree')
+        cp.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc)')
+        cp.add_argument('--lanes-dir', help='where merge.lock and logs/ are (default: the integration worktree\'s parent)')
+        cp.add_argument('--gate', action='append', metavar='CMD', help='the full gate set, run in the integration '
+                        'worktree at its tip (repeatable, in order; the first red one stops)')
+        cp.add_argument('--gate-need', action='append', metavar='[PREFIX::]RES=N', help='as for run')
+        cp.add_argument('--no-gate-lock', action='store_true', help='as for run')
+        cp.add_argument('--allow-empty-gate', action='store_true', help='as for run')
+        return cmd_cover(cp.parse_args(argv[1:]))
     if argv[0] == 'roll':
         rp = argparse.ArgumentParser(prog='fanout.py roll', description='Land one rolling lane on main at once (T-0374): '
                                      'verified, based on an ancestor of main, touching no hash_bound path in '
@@ -4518,6 +4833,9 @@ def main(argv):
                         '(default <toplevel>/.worktrees/fanout)')
         lp.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after the '
                         'merge; red resets the merge (repeatable, in order)')
+        lp.add_argument('--light-gate', action='append', metavar='CMD', help='the light set, run instead of --gate when '
+                        'every merged path outside the ticket root matches a light_scope glob and <root>/config declares '
+                        '`merge_gate: light` (else exit 2; repeatable, T-0481)')
         lp.add_argument('--rewrite-refs', action='store_true', help='as for run')
         lp.add_argument('--lane', choices=('auto', 'solo', 'full'), default='auto',
                         help='auto (default): a worktree-<id>-solo branch is a solo delivery, any other a full one')
@@ -4539,6 +4857,9 @@ def main(argv):
                     '(add .worktrees/ or the dir to .gitignore) or run refuses with exit 2')
     ap.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after each merge; '
                     'red resets the merge (repeatable, in order)')
+    ap.add_argument('--light-gate', action='append', metavar='CMD', help='the light set, run instead of --gate for a '
+                    'merge whose paths outside the ticket root all match a light_scope glob; needs `merge_gate: light` '
+                    'in <root>/config (else exit 2; repeatable, T-0481)')
     if argv[0] == 'run':
         ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '
                         '(default: a headless sdlc-lite conductor running /sdlc-lite:chain; on Claude it needs SDLC_CLAUDE_EXEC=1)')

@@ -313,7 +313,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0313 | [.0313-solo-worktree-hook](.0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | L1 | P2 | none | 🟢 done |
 | T-0314 | [.0314-red-first-control](.0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | L2 | P2 | none | 🟢 done |
 | T-0315 | [.0315-replan-cost-remeasure](.0315-replan-cost-remeasure/handoff.md) | Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule | spike | L1 | P2 | none | 🟢 done |
-| T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | L2 | P2 | none | 🔵 ready |
+| T-0316 | [.0316-codex-live-evidence](.0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | L2 | P2 | none | 🟢 done |
 | T-0317 | [.0317-red-under-load-rerun](.0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | L2 | P2 | none | ⚪ dropped |
 | T-0318 | [.0318-fleet-status-noise](.0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | L1 | P2 | none | 🟢 done |
 | T-0319 | [.0319-fleet-verify-0307-0310](.0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | L1 | P2 | none | 🟢 done |
@@ -458,7 +458,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⏳ proposed |
 | T-0459 | [.0459-gate-lock-selftest-real-root-flake](.0459-gate-lock-selftest-real-root-flake/handoff.md) | gate_lock selftest isolation case fails when other sessions use the real gate-lock state | bug | L2 | P2 | none | 🟢 done |
 | T-0460 | [.0460-report-skill](.0460-report-skill/handoff.md) | Build /sdlc-lite:report: scripts/report.py and the skill (executive summary, views, health signals, hygiene grade) | feature | L4 | P2 | none | 🟢 done |
-| T-0461 | [0461-clarify-controlled-language](0461-clarify-controlled-language/handoff.md) | Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals | feature | L3 | P2 | T-0460 | ⏳ proposed |
+| T-0461 | [.0461-clarify-controlled-language](.0461-clarify-controlled-language/handoff.md) | Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals | feature | L3 | P2 | T-0460 | 🟢 done |
 | T-0462 | [.0462-plan-skills-merge-design](.0462-plan-skills-merge-design/handoff.md) | Design: merge the plan-* skills into /plan with kinds, shared rules and one lint | spike | L3 | P2 | none | 🟢 done |
 | T-0464 | [.0464-ceremony-audit](.0464-ceremony-audit/handoff.md) | Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture | spike | L3 | P2 | none | 🟢 done |
 | T-0466 | [.0466-reply-lint](.0466-reply-lint/handoff.md) | reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison | chore | L2 | P2 | none | 🟢 done |
@@ -478,10 +478,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0478 | [.0478-widen-reason-fallthrough](.0478-widen-reason-fallthrough/handoff.md) | steps.py widen --reason records an unrecognized scope form (T-0470 finding 10) | bug | L1 | P2 | none | 🟢 done |
 | T-0479 | [.0479-long-gate-recipe](.0479-long-gate-recipe/handoff.md) | Long gates recipe in run-operations.md (T-0470 finding 12) | chore | L1 | P2 | none | 🟢 done |
 | T-0480 | [.0480-light-merge-lane](.0480-light-merge-lane/handoff.md) | Design: a light merge lane with a cadence full gate (from maison, after T-0470) | spike | L3 | P2 | none | 🟢 done |
-| T-0481 | [0481-light-merge-gate-class](0481-light-merge-gate-class/handoff.md) | fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) | feature | L3 | P2 | none | ⏳ proposed |
+| T-0481 | [.0481-light-merge-gate-class](.0481-light-merge-gate-class/handoff.md) | fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) | feature | L3 | P2 | none | 🟢 done |
 | T-0482 | [0482-light-merge-uncovered-board](0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | ⏳ proposed |
 | T-0483 | [.0483-report-lanes-waves-views](.0483-report-lanes-waves-views/handoff.md) | /report lanes and /report waves views: lane and wave status with tickets and percent | feature | L2 | P2 | none | 🟢 done |
-| T-0484 | [0484-gate-lock-policy-reload](0484-gate-lock-policy-reload/handoff.md) | gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it | bug | L1 | P2 | none | ⏳ proposed |
+| T-0484 | [.0484-gate-lock-policy-reload](.0484-gate-lock-policy-reload/handoff.md) | gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it | bug | L1 | P2 | none | 🟢 done |
+| T-0485 | [0485-solo-result-file](0485-solo-result-file/handoff.md) | solo has no validatable result file | bug | L1 | P2 | none | ⏳ proposed |
+| T-0486 | [0486-redck-retrospective-checkpoint](0486-redck-retrospective-checkpoint/handoff.md) | red-checkpoint marked retrospective though controls were recorded first | bug | L1 | P2 | none | ⏳ proposed |
+| T-0487 | [0487-codex-exec-rollout-absent](0487-codex-exec-rollout-absent/handoff.md) | loaded_context shows rollout absent on codex exec runs | bug | L1 | P2 | none | ⏳ proposed |
 | T-0488 | [.0488-merge-ops-and-queue](.0488-merge-ops-and-queue/handoff.md) | Design: worktree per builder plus a merge queue, and merge-ops as a conductor duty | spike | L3 | P2 | none | 🟢 done |
 | T-0489 | [0489-settle-forward](0489-settle-forward/handoff.md) | fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) | feature | L3 | P2 | T-0481 | ⏳ proposed |
 | T-0490 | [0490-solo-worktree-default](0490-solo-worktree-default/handoff.md) | solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488) | feature | L2 | P2 | none | ⏳ proposed |

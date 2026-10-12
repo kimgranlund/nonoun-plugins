@@ -630,6 +630,10 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
             schedule(L, pol, legacy_n)
         next_report, last_legacy = t0 + report, time.monotonic()
         while True:
+            try:
+                pol, _ = load_policy(root)  # a capacity set by `policy set` after this run queued reaches it
+            except GateError:
+                pass  # keep the last good policy for this poll
             with txn(root) as L:
                 prune(L)
                 schedule(L, pol, legacy_n)
@@ -1466,6 +1470,16 @@ def selftest():
             expect(f'cancel: a queued run exits 143, got {rc}', rc == 143)
             expect('cancel: the cancelled waiter never ran', not (m / 'wait-ran').exists())
             expect(f'cancel: its queue entry is removed, got {queued_names(script, env)}', queued_names(script, env) == [])
+            # a queued waiter sees a capacity raised after it queued
+            w = subprocess.Popen([sys.executable, str(script), 'run', '--name', 'REPOL', '--need', 'compute_units=1', '--timeout', '60', '--',
+                                  'touch', str(m / 'repol-ran')], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            expect('policy reload: the waiter queues behind the full holder', waitfor(lambda: 'REPOL' in queued_names(script, env)))
+            time.sleep(0.6)
+            expect('policy reload: it has not run while the capacity is 6', not (m / 'repol-ran').exists())
+            gl(script, env, 'policy', 'set', 'compute_units=20')
+            expect('policy reload: the queued waiter is admitted after policy set compute_units=20', waitfor(lambda: (m / 'repol-ran').exists()))
+            w.wait(timeout=30)
+            gl(script, env, 'policy', 'reset')
         finally:
             release_all(m, [h])
 
