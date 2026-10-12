@@ -552,8 +552,13 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
     if request is not None:
         clean_exchange(request)
     rec = build_record(tier, backend, model, effort, result, attempt, started, rc, transport='subagent' if request is not None else None)
-    append(task_dir, rec)
     text = (result or {}).get('result')
+    if isinstance(text, str) and text.strip():  # T-0485: a result file results.py validate --role solo can check
+        name = f"solo-{rec['level']}-{attempt[:8]}.md"
+        head = f"<!-- role=solo level={rec['level']} model={model} effort={effort} -->\n"
+        (pathlib.Path(task_dir) / name).write_text(head + '## Output\n' + text.rstrip() + '\n', encoding='utf-8')
+        rec['file'] = name
+    append(task_dir, rec)
     if isinstance(text, str) and text:
         print(text)
     elif out and result is None:
@@ -638,6 +643,11 @@ def selftest():
                    and rec.get('turns') == 7 and rec.get('duration_ms') == 4321)
             expect('attempt id set', isinstance(rec.get('attempt_id'), str) and len(rec['attempt_id']) >= 8)
             expect('exit status 0', rc == 0)
+            rf = d / rec.get('file', '')
+            vr = subprocess.run([sys.executable, str(SCRIPTS / 'results.py'), 'validate', str(rf), '--role', 'solo'],
+                                capture_output=True, text=True) if rec.get('file') else None
+            expect('record file is a solo result that results.py validates (T-0485)',
+                   vr is not None and vr.returncode == 0 and 'done report' in rf.read_text())
             s, un, _est = budget.spend(d)
             expect('budget counts the solo cost', abs(s - 3.25) < 1e-9 and un == 0)
 
