@@ -2,7 +2,7 @@
 id: T-0499
 title: "tickets.py close: no skip entry required for a role with a run record (retro 12h row 6)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Evidence: `docs/reports/2026-10-12-fleet-retro-12.md` row 6, 4 extra commands pe
 
 ## Constraints
 Red check: a `tickets.py selftest` case with run records and no skip line closes (red first), and a case with a role that neither ran nor has a skip entry still refuses.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
