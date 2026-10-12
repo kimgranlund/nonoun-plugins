@@ -9,10 +9,10 @@ read(log_path, backend=None, codex_home=None) returns one dict, never None, neve
                                               against the command's workdir;
   {'status': 'log absent'}                    no file at log_path;
   {'status': 'log unreadable'}                the log could not be read;
-  {'status': 'rollout absent'}                Codex arm: the log has no thread id, or no rollout
-                                              file for it exists under <codex home>/sessions
-                                              (`codex exec --ephemeral`, which codex_exec.py uses,
-                                              writes none);
+  {'status': 'exec ephemeral: no rollout written'}  Codex arm: the log has a thread id but no rollout file
+                                              exists under <codex home>/sessions (`codex exec --ephemeral`,
+                                              which codex_exec.py uses, writes none);
+  {'status': 'rollout absent'}                Codex arm: the log has no thread id;
   {'status': 'rollout unreadable'}            the rollout exists but could not be read.
 A record with a status has no paths key: an empty `paths` list means the run read nothing through
 the recognized channels, and a missing log or rollout is never reported that way. Paths keep the
@@ -146,7 +146,8 @@ def read(log_path, backend=None, codex_home=None):
     thread = _thread_id(events)
     rollout = _rollout(thread, codex_home) if thread else None
     if rollout is None:
-        return {'status': 'rollout absent'}
+        # codex_exec.py runs `codex exec --ephemeral`, which writes no rollout: a thread id with none is that.
+        return {'status': 'exec ephemeral: no rollout written' if thread and re.fullmatch(r'[0-9A-Za-z-]+', thread) else 'rollout absent'}
     try:
         return {'paths': _uniq(_codex_paths(_events(rollout))), 'source': 'rollout'}
     except OSError:

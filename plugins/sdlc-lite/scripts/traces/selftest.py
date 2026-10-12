@@ -564,9 +564,12 @@ def _context_codex_absent():
         _write(tmp, 'a.log', _codex_log('01a113e7-1ca9-7c62-8c76-9879b9631837'))
         _write(tmp, 'b.log', _codex_log(None))
         _write(tmp, 'c.log', _codex_log('../../x'))
-        for name in ('a.log', 'b.log', 'c.log'):
+        for name in ('b.log', 'c.log'):
             got = context.read(os.path.join(tmp, name), codex_home=os.path.join(tmp, 'home'))
             assert got == {'status': 'rollout absent'}, (name, got)
+        # A thread id with no rollout is a `codex exec --ephemeral` run (codex_exec.py): none is ever written.
+        got = context.read(os.path.join(tmp, 'a.log'), codex_home=os.path.join(tmp, 'home'))
+        assert got == {'status': 'exec ephemeral: no rollout written'}, got
         # The same log read as Claude has no thread lookup at all.
         assert context.read(os.path.join(tmp, 'a.log'), backend='claude')['source'] == 'stream-json'
 
@@ -600,7 +603,7 @@ def _context_ingest():
         assert rows['a3']['loaded_context'] == recorded, 'the run record wins over the log'
         assert rows['a4']['loaded_context'] == {'status': 'log absent'}, rows['a4']
         # a2 has a Codex log; its run record carries no backend, so the log's codex_event picks the arm.
-        assert rows['a2']['loaded_context'] == {'status': 'rollout absent'}, rows['a2']
+        assert rows['a2']['loaded_context'] == {'status': 'exec ephemeral: no rollout written'}, rows['a2']
 
 
 # --- fanout -------------------------------------------------------------------------------------

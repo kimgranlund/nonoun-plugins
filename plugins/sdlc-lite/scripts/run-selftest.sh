@@ -854,7 +854,7 @@ est=$(jq -r '.status' "$edir/planner-L3.attempt.json" 2>/dev/null || echo MISSIN
 # gives their paths (deduplicated, Bash ignored) and no stderr line; a log with no Read gives paths [] with a
 # source; a collector that fails is recorded as {"status":"collector failed"}, reported on stderr, and does
 # not change the exit code; traces.py context on a missing log prints {"status":"log absent"} and exits 0
-# (never an empty list), and on a Codex log with no rollout prints {"status":"rollout absent"}.
+# (never an empty list), and on a Codex log with a thread id and no rollout prints {"status":"exec ephemeral: no rollout written"}.
 ctx_run() { # <stub log file> <run.sh> -> exit code in ctx_rc, stderr in $tmp/cerr, last runs.jsonl line in ctx_line
   rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
   ctx_rc=0
@@ -888,7 +888,7 @@ nolog=$(python3 "$here/traces.py" context "$tmp/no-such.log") || fail "loaded co
 printf '%s\n' '{"type":"codex_event","event":{"type":"thread.started","thread_id":"01a113e7-1ca9-7c62-8c76-9879b9631837"}}' >"$tmp/codex.log"
 norollout=$(CODEX_HOME="$tmp/no-codex-home" python3 "$here/traces.py" context "$tmp/codex.log" --backend codex) \
   || fail "loaded context control: traces.py context on a Codex log exited non-zero"
-[[ "$norollout" == '{"status": "rollout absent"}' ]] || fail "loaded context control: a Codex log with no rollout printed '$norollout', want status rollout absent"
+[[ "$norollout" == '{"status": "exec ephemeral: no rollout written"}' ]] || fail "loaded context control: a Codex log with a thread id and no rollout printed '$norollout', want status exec ephemeral"
 
 # Mailbox notice.
 mrepo="$tmp/mrepo"
