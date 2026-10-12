@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:04e9dcf09419 -->
+<!-- sdlc-lite:managed:start v1 sha256:a7fe690f82f1 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 9
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0468 Merge plan skills B: redirect stubs for the four retired names and retargeted checks (0468-plan-merge-b-stubs)
@@ -18,7 +18,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0511 verifier: a Notes section for nits, carried into the close reason (T-0501 B2) (0511-inner-loop-b2-notes)
   - T-0512 steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) (0512-inner-loop-b3-l3-solo)
   - T-0513 A (parity) criterion for styling tickets: screenshot pair with named properties (T-0501 B4) (0513-inner-loop-b4-parity)
-  - T-0514 dispatch.py resume accepts a running attempt whose transcript is silent (T-0501 B5) (0514-inner-loop-b5-resume-silent)
   - T-0515 Merge ops names the two PR merge invariants; fanout skill and run-operations (T-0501 B6) (0515-inner-loop-b6-merge-contract)
 - ready: 7
   - T-0503 bug: Claude agents: serialize valid YAML descriptions (0503-claude-agent-frontmatter)
@@ -31,7 +30,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 462
+- done: 463
 - dropped: 29
 
 ## Procedures
