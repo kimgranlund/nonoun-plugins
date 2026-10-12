@@ -23,3 +23,8 @@ Design: `docs/planning/merge-ops-and-queue.md` (Approach 1, later build B). Lowe
 
 ## Constraints
 Never delete unmerged work; reuse the lane open/close rules in `lanes.py`.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0, and its `integration lane:` cases show an open integration lane (unlanded work) defaults the solo to a worktree, a closable lane and a repo with no lane keep the checkout, `--no-worktree` wins, and a solo already inside a lane tree does not nest a worktree.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- (red) with the new `open_integration_lane` condition removed from `auto_worktree`, the `integration lane: an open lane defaults the solo to a worktree` case fails.
