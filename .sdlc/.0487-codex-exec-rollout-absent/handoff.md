@@ -2,7 +2,7 @@
 id: T-0487
 title: "loaded_context shows rollout absent on codex exec runs"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Found by T-0316. Guess: `codex exec` writes no rollout file at the path the reco
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
