@@ -64,6 +64,7 @@ SCHEMA = {
         'key': 'Warnings', 'allowed': (),
         'sections': ('Warnings', 'PR title', 'PR body', 'Changelog entry', 'Follow-ups'),
     },
+    'solo': {'key': 'Output', 'allowed': (), 'sections': ('Output',)},
 }
 ROLES = tuple(SCHEMA)
 
@@ -361,9 +362,10 @@ def selftest():
         'archaeologist': '## Summary\ns\n\n## Decisions\nd\n\n## Landmines\nl\n\n## Inferred\ni\n\n## Carry forward\n- x\n',
         'architect': '## Approach\na\n\n## Interfaces\ni\n\n## Constraints and assumptions\nc\n\n'
                      '## Rejected alternatives\nr\n\n## Risks\nr\n\n## Carry forward\n- x\n',
+        'solo': '## Output\nfiles: x\nverify: skipped\n',
         'filer': '## Warnings\nNone\n\n## PR title\nt\n\n## PR body\nb\n\n## Changelog entry\nc\n\n## Follow-ups\nNone\n',
     }
-    case('the schema covers the nine roles', set(bodies), set(ROLES))
+    case('the schema covers the ten roles', set(bodies), set(ROLES))
     for role, body in bodies.items():
         case(f'a valid {role} result passes', validate(write(f'{role}-ok.md', head(role) + body)), None)
         case(f'a valid {role} result passes with --role', validate(write(f'{role}-ok2.md', head(role) + body), role), None)
