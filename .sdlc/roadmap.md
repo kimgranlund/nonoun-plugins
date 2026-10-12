@@ -458,3 +458,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⏳ proposed |
 | T-0459 | [0459-gate-lock-selftest-real-root-flake](0459-gate-lock-selftest-real-root-flake/handoff.md) | gate_lock selftest isolation case fails when other sessions use the real gate-lock state | bug | L2 | P2 | none | ⏳ proposed |
 | T-0460 | [0460-report-skill](0460-report-skill/handoff.md) | Build /sdlc-lite:report: scripts/report.py and the skill (executive summary, views, health signals, hygiene grade) | feature | L4 | P2 | none | ⏳ proposed |
+| T-0461 | [0461-clarify-controlled-language](0461-clarify-controlled-language/handoff.md) | Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals | feature | L3 | P2 | T-0460 | ⏳ proposed |
