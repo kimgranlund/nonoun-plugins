@@ -1,0 +1,2 @@
+# Process deviations (written by redck.py audit; the verifier and filer read this file)
+process deviation: red-checkpoint: retrospective: attempt 5cde5f81297b421892c1bb8c26875006, handoff sha256 4b04d1922281, 4 of 4 (red) criteria without a pre-edit red control: `grep -qF 'lanes.py" selftest' plugins/sdlc-lite/scripts/check.sh`; `grep -qE '^## .scripts/lanes\.py.$' docs/references/sdlc-internals.md`; `for k in lanes_root lane_into lane_setup lane_ports lane_stale_days...`; `grep -qF 'lanes.py --help' docs/references/sdlc-internals.md`
