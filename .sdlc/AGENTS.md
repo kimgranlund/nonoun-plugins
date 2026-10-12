@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a8064895ca45 -->
+<!-- sdlc-lite:managed:start v1 sha256:d06434334b00 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -30,14 +30,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0477 fanout copies an uncommitted ticket folder into fanout-owned lane worktrees (T-0470 finding 8) (0477-fanout-gitignored-sdlc)
   - T-0478 steps.py widen --reason records an unrecognized scope form (T-0470 finding 10) (0478-widen-reason-fallthrough)
   - T-0479 Long gates recipe in run-operations.md (T-0470 finding 12) (0479-long-gate-recipe)
-  - T-0480 Design: a light merge lane with a cadence full gate (from maison, after T-0470) (0480-light-merge-lane)
+  - T-0481 fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) (0481-light-merge-gate-class)
 - ready: 2
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 422
+- done: 423
 - dropped: 28
 
 ## Procedures

@@ -2,7 +2,7 @@
 id: T-0480
 title: "Design: a light merge lane with a cadence full gate (from maison, after T-0470)"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -11,7 +11,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Question
-The exact question this spike answers.
+Should SDLC Lite add a light merge lane (targeted gate per merge, full gate on a cadence with a ledger of covered merges), and what is the smallest first build? Four sub-questions are under Intent.
 
 ## Goal
 A written design, with a recommendation, for a light merge lane: self-contained work lands on a targeted gate and the full gate runs on a cadence with a ledger of the merges it covers. The output is `docs/planning/light-merge-lane.md`; no code.
@@ -28,3 +28,7 @@ Origin: maison conductor message after the T-0470 report (`docs/reports/2026-10-
 
 ## Constraints
 Read-only design. One architect pass; no replan. A repo adopts the light lane only with its owner's written approval.
+
+## Closed
+
+2026-10-12: design delivered: docs/planning/light-merge-lane.md; first build filed
