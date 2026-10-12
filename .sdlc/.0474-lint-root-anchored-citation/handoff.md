@@ -2,7 +2,7 @@
 id: T-0474
 title: "steps.py lint: a citation whose prefix is exactly / is no citation (T-0470 finding 3b)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Origin: T-0470 investigation, `docs/reports/2026-10-12-maison-wave-7b-mechanics.
 
 ## Constraints
 The failing test lands before or with the fix, with an observed-red control. No prompt wording change.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
