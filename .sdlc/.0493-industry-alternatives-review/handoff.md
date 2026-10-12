@@ -2,7 +2,7 @@
 id: T-0493
 title: "Research: industry standards and alternatives to plan, build, verify, close, and what they mean for the queue"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Origin: maintainer question 2026-10-12 after the merge queue design (T-0488). Pr
 
 ## Constraints
 Read-only except the report file and the architect result. One architect pass, no replan. Cite, do not paraphrase from memory: a claim with no source is marked unverified. No em dashes.
+
+## Closed
+
+2026-10-12: research report delivered: docs/reports/2026-10-12-industry-alternatives-review.md; queue changes for the maintainer to decide

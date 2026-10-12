@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 A pipeline role that delegates to sub-agents gets their results inside its own turn, so it never ends a turn waiting for a notice that goes to another session.
 
 ## Repro
-1. Dispatch `architect-L1` on a handoff that asks for parallel research (T-0493, `.sdlc/0493-industry-alternatives-review/handoff.md`).
+1. Dispatch `architect-L1` on a handoff that asks for parallel research (T-0493, `.sdlc/.0493-industry-alternatives-review/handoff.md`).
 2. The architect spawns researchers with `Agent` and `run_in_background` set (or defaulted), then continues two of them with `SendMessage`, then ends its turn with "Nothing to do until the two research continuations report."
 3. Watch the parent session.
 
