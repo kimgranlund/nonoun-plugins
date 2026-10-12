@@ -15,6 +15,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 |---|---|
 | Status or progress | board |
 | Status across every active repo, what needs the user, what is stuck | fleet-status |
+| This thread's state: what finished, what runs, what is next, what needs the user, what is wrong | report |
 | Create, inspect, prioritize tickets | ticket |
 | Capture work context | handoff |
 | Clarify one ask / explore design decisions | clarify / grill |

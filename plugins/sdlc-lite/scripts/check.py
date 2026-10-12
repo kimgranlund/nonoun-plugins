@@ -210,6 +210,10 @@
    (a `rule N` cite names a numbered line of the role body, a script subcommand or `--flag` exists, a plugin path resolves), and scripts/check.sh
    runs `prompt_lint.py" selftest`. P-4 to P-6 are advisory and never fail here. Negative controls: an unresolved `rule 99` cite in an overlay,
    an unknown `--flag` on a real script, and a bare `scripts/coverage_check.py` in an agent file must each be flagged.
+54. Report (T-0460): skills/report/SKILL.md names `report.py render`, `Render, never compose`, `Codex host`, `Exit 2 is a refusal`,
+   `references/views.md`, and `references/record-schema.md`, and holds no `harness:` reference; scripts/report.py names `VERBS`, `CollectorError`,
+   `session-status/1`, and `def selftest`; scripts/check.sh runs `report.py" selftest`; skills/sdlc-lite/SKILL.md routes to `report`.
+   Negative controls: each phrase removed from each file, a harness reference added, and the routing row removed must each be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1299,6 +1303,21 @@ for _why, _rel, _bad in (('an unresolved rule 99 cite in an overlay', 'overlays/
                          ('an unknown --flag on a real script', 'skills/chain/SKILL.md', 'Run `steps.py next --no-such-flag`.'),
                          ('a bare scripts/coverage_check.py in an agent file', 'agents/architect.md', 'Run `scripts/coverage_check.py`.')):
     if not prompt_ref_bad(prompt_lint.lint_text(_pl_ctx, _rel, 'clean line\n' + _bad + '\n')): errors.append(f'check.py: prompt references negative control not flagged for {_why}')
+# Report (docstring item 54, T-0460): the skill prints the renderer's output; the script owns the verbs and the record schema.
+REPORT_NEEDS = (('skill', ('report.py render', 'Render, never compose', 'Codex host', 'Exit 2 is a refusal', 'references/views.md', 'references/record-schema.md')),
+                ('script', ('VERBS', 'CollectorError', 'session-status/1', 'def selftest')), ('check.sh', ('report.py" selftest',)))
+def report_bad(texts, entry):
+    out = [f'{name} missing "{ph}"' for name, phrases in REPORT_NEEDS for ph in phrases if ph not in texts[name]]
+    if re.search(r'harness:', texts['skill']): out.append('report SKILL.md references harness:')
+    if '| report |' not in entry: out.append('skills/sdlc-lite/SKILL.md does not route to report')
+    return out
+_rp_texts = {'skill': _rd(root/'skills/report/SKILL.md'), 'script': _rd(root/'scripts/report.py'), 'check.sh': _rd(root/'scripts/check.sh')}
+errors.extend(f'check.py: report: {m}' for m in report_bad(_rp_texts, _entry))
+for _name, _phrases in REPORT_NEEDS:
+    for _ph in _phrases:
+        if not report_bad(dict(_rp_texts, **{_name: _rp_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: report negative control not flagged for {_name} without "{_ph}"')
+if not report_bad(dict(_rp_texts, skill=_rp_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: report negative control not flagged for a harness reference')
+if not report_bad(_rp_texts, _entry.replace('| report |', '|')): errors.append('check.py: report negative control not flagged for a missing entry route')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

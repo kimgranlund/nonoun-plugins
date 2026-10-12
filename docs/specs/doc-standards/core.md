@@ -71,6 +71,14 @@ Use only the status words of the record's own schema:
 - Planning documents: proposed, accepted, rejected, superseded. Decisions: proposed, accepted, superseded.
 - Role results: the key values that `results.py` defines ([prompts.md](prompts.md)).
 
+## Status verbs
+
+A status line about work uses one verb from this closed list, and `report.py` refuses any other verb:
+
+built, verified, merged, closed, filed, released, blocked, deferred, stopped, queued, waiting
+
+The tense is the status. Past tense says the work finished (`recent`), present progressive says it runs now (`now`), and future tense with a trigger says it comes next (`next`), for example "will verify step 2 after the build".
+
 ## Document type key
 
 A file opts into the type rules with one front matter key, `doc-type:`. The key takes one of four values:
