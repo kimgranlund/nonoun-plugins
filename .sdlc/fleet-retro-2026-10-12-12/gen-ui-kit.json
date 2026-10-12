@@ -1,0 +1,321 @@
+{
+  "repo": "/Users/kimgranlund/Projects/adia/ui-kit/main",
+  "summary": "runs: 7 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-12",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.4",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.4",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.4",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.296 (Claude Code)",
+    "time": "2026-10-12T19:38:44Z",
+    "uptime_load": {
+      "uptime_s": 2172089,
+      "load1": 58.71,
+      "load5": 43.35,
+      "load15": 30.88,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 7,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 7,
+    "by_role": {
+      "solo": {
+        "count": 6,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "verifier": {
+        "count": 1,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 6,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 1,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      "a2uitp": {
+        "solo": 1
+      },
+      "flow-d": {
+        "solo": 1
+      },
+      "lint1": {
+        "solo": 1
+      },
+      "t11258": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tsa": {
+        "solo": 1
+      },
+      "tsb": {
+        "solo": 1
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": [],
+      "lost_min_median": null,
+      "lost_min_total": 0
+    },
+    "orphaned": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 19,
+      "runs_files": 6
+    }
+  },
+  "plan_review_share": null,
+  "results": {
+    "builder": {
+      "total": 0,
+      "blocked": 0
+    }
+  },
+  "plan_defects": {
+    "late": 0,
+    "early": 0
+  },
+  "attempts": {
+    "by_role": {
+      "verifier": {
+        "count": 1,
+        "median_min": 26.3,
+        "max_min": 26.3
+      }
+    }
+  },
+  "tickets": {
+    "count": 6,
+    "items": [
+      {
+        "ticket": "a2uitp",
+        "id": null,
+        "size": null,
+        "criteria": 5
+      },
+      {
+        "ticket": "lint1",
+        "id": null,
+        "size": null,
+        "criteria": 9
+      },
+      {
+        "ticket": "tsa",
+        "id": null,
+        "size": null,
+        "criteria": 6
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 96,
+      "cpu_pct": 744.6,
+      "rss_mb": 13421.2
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 6,
+      "cpu_pct": 25.8,
+      "rss_mb": 3526.7
+    }
+  },
+  "worktrees": {
+    "count": 18,
+    "size": "5896.2 MB",
+    "size_kb_known": 6037696,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/a2uitp",
+        "size": "713.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/a2uitp/.worktrees/tmp/a2uitp-verifier-L3/base",
+        "size": "153.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/a2uitp/.worktrees/tmp/a2uitp-verifier-L3/head",
+        "size": "153.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/devserver",
+        "size": "179.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/flow-d",
+        "size": "176.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/lint1",
+        "size": "722.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/lint1/.worktrees/tmp/lint1-verifier-L3/base",
+        "size": "159.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/lint1/.worktrees/tmp/lint1-verifier-L3/head",
+        "size": "159.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/scoutsrc",
+        "size": "175.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/scouttree",
+        "size": "257.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/t11258",
+        "size": "176.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/tsa",
+        "size": "917.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/tsa/.worktrees/tmp/tsa-verifier-L3/base",
+        "size": "256.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/tsa/.worktrees/tmp/tsa-verifier-L3/head",
+        "size": "257.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/tsb",
+        "size": "921.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/tsb/.worktrees/tmp/tsb-verifier-L3/base",
+        "size": "258.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/tsb/.worktrees/tmp/tsb-verifier-L3/head",
+        "size": "258.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/.git-worktrees",
+        "size": "0.0 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-12",
+    "window_days": 0,
+    "runs": 117,
+    "wall_minutes": 349.3,
+    "failed": 11,
+    "by_workflow": {
+      "Big-PR smoke (gh#3751 slice 4 follow-up)": {
+        "runs": 1,
+        "wall_minutes": 0.4,
+        "failed": 0,
+        "by_event": {
+          "schedule": 1
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "CI": {
+        "runs": 46,
+        "wall_minutes": 293.9,
+        "failed": 9,
+        "by_event": {
+          "pull_request": 32,
+          "push": 14
+        },
+        "push_runs_7d": 14,
+        "pull_request_runs_7d": 32,
+        "push_dup_7d": 0
+      },
+      "CI watchdog": {
+        "runs": 2,
+        "wall_minutes": 0.5,
+        "failed": 0,
+        "by_event": {
+          "schedule": 2
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Corpus freshness": {
+        "runs": 11,
+        "wall_minutes": 32.6,
+        "failed": 1,
+        "by_event": {
+          "push": 11
+        },
+        "push_runs_7d": 11,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Doc status gate (full history)": {
+        "runs": 3,
+        "wall_minutes": 2.8,
+        "failed": 0,
+        "by_event": {
+          "push": 2,
+          "schedule": 1
+        },
+        "push_runs_7d": 2,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "PR gates": {
+        "runs": 54,
+        "wall_minutes": 19.1,
+        "failed": 1,
+        "by_event": {
+          "pull_request": 41,
+          "push": 13
+        },
+        "push_runs_7d": 13,
+        "pull_request_runs_7d": 41,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
