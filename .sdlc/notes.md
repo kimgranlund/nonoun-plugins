@@ -378,3 +378,4 @@
 - note: `fanout.py selftest` takes about 240 to 250 s here against an 800 s guard timeout. A heavily loaded host could approach it.
 
 - 2026-10-12: maintainer asked to review T-0503 to T-0509 (filed 25fc8d35 from the Codex Astra review) after waves 49 to 51 and the T-0501 design finish, accounting for the tickets and merges since they were written (0.22.5 shipped, T-0472 to T-0502). Verdict per ticket: still valid, already fixed, reshape, or drop.
+- 2026-10-12: maintainer: cut the next patch (0.22.6) after T-0503 to T-0509 are resolved (built, dropped or reshaped). Release steps as 0.22.5: release worktree, version bump, regenerate Codex agents, record, full check.sh on a git archive copy, tag, ff main, push, tell the fleet. Includes T-0492, T-0494, T-0496 (if kept), T-0497 to T-0502 and the plan merge chain if landed.
