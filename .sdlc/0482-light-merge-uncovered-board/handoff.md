@@ -23,3 +23,8 @@ Design: `docs/planning/light-merge-lane.md` (Approach, last paragraph). Follow-u
 
 ## Constraints
 Read-only view; no change to gate behavior.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/board.py selftest` exits 0, and its case 8c (two `Merge lane<n>: T-01xx` commits after a ledger entry both listed as `Uncovered light merge`; a new ledger entry at the tip clears them) is absent from the pre-change script (red first: it failed with `got []`).
+- `board.py --lanes` output is unchanged when no merge is uncovered or no ledger exists (the existing case 8 and 8b assertions still pass).
+- `git diff --check` exits 0; only `board.py` and `docs/references/sdlc-internals.md` changed outside this ticket folder.

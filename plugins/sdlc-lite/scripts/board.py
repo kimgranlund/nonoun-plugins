@@ -23,7 +23,10 @@ with the hash-bound globs from the main worktree's config and the lane's committ
 untracked paths since its fork point; T-0374) and Owner (the backend of the lane's newest run record,
 claude or codex). A lane's own task is a task dir whose run record the main
 worktree lacks; a lane with none shows `-`, and the main row shows `-` throughout. It never renders the task board or touches the state file; --waiting still prints
-above it and --summary, --task and --sort are ignored. Outside a git work tree (any git
+above it and --summary, --task and --sort are ignored. After the table, one
+`Uncovered light merge <id> <sha> on <branch>` line per merge lists the first-parent `Merge <branch>: <id>` commits after
+the `to` of the newest <root>/gate-ledger.jsonl entry there (T-0482; `fanout.py cover` clears them); nothing is
+added when none are uncovered or the worktree has no ledger. Outside a git work tree (any git
 failure) it prints "<root>: not inside a git work tree" on stderr and exits 1. The default board
 is unchanged.
 
@@ -552,6 +555,42 @@ def lane_ledger(root: pathlib.Path, main_root, main_head: str, git) -> list:
     return [base, stale, verdict, merge, owner]
 
 
+MERGE_SUBJECT = re.compile(r'Merge (\S+): (T-\d+)')  # the subject fanout.py merge_gate_close writes
+
+
+def uncovered_merges(tree: pathlib.Path, rel: pathlib.Path, git) -> list:
+    """[(sha, ticket)] oldest first: the first-parent `Merge <branch>: <id>` commits in worktree `tree` after
+    the `to` of the newest <rel>/gate-ledger.jsonl entry there (T-0481 `cover` writes it). No ledger file,
+    no entry, or an unknown `to` gives []: without a covered point there is no range to name. Read-only."""
+    f = tree / rel / 'gate-ledger.jsonl'
+    try:
+        lines = [x for x in f.read_text(encoding='utf-8', errors='replace').splitlines() if x.strip()]
+    except OSError:
+        return []
+    to = ''
+    for line in reversed(lines):
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict) and rec.get('to'):
+            to = str(rec['to'])
+            break
+    if not to:
+        return []
+    try:
+        log = git('-C', str(tree), 'log', '--first-parent', '--format=%H%x09%s', f'{to}..HEAD')
+    except ValueError:
+        return []
+    out = []
+    for row in log.splitlines():
+        sha, _, subj = row.partition('\t')
+        m = MERGE_SUBJECT.fullmatch(subj.strip())
+        if m:
+            out.append((sha, m.group(2)))
+    return out[::-1]
+
+
 def lanes(root: pathlib.Path) -> str:
     """One row per `git worktree list` entry of root's repo: Lane (worktree basename), Branch,
     and Board, that worktree's summary() of the same-relative root. Raises ValueError outside
@@ -604,7 +643,15 @@ def lanes(root: pathlib.Path) -> str:
             cells += ['-'] * len(LEDGER_COLS) if i == 0 else lane_ledger(
                 (path / rel).resolve(), main_root, main_head, git)
         out.append('| ' + ' | '.join(cells) + ' |')
-    return '\n'.join(out)
+    notes = []
+    for e in entries:
+        miss = uncovered_merges(pathlib.Path(e['path']).resolve(), rel, git)
+        if miss:
+            ref = e.get('branch', '')
+            name = ref[len('refs/heads/'):] if ref.startswith('refs/heads/') else pathlib.Path(e['path']).name
+            notes += [f'Uncovered light merge {t} {sha[:7]} on {name} (after its newest gate-ledger entry; run fanout.py cover)'
+                      for sha, t in miss]
+    return '\n'.join(out + ([''] + notes if notes else []))
 
 
 def selftest() -> int:
@@ -1224,6 +1271,55 @@ def selftest() -> int:
         got = rows.get('repo', {})
         expect(f"the main row carries no ledger values, got {got}",
                all(got.get(k) == '-' for k in ('Base', 'Stale', 'Verifier', 'Merge', 'Owner')))
+
+    # 8c. --lanes lists light merges that no gate-ledger.jsonl entry covers yet (T-0482); `cover` clears them.
+    with tempfile.TemporaryDirectory() as ctmp:
+        ctmp = pathlib.Path(ctmp).resolve()
+        env = {k: v for k, v in os.environ.items() if k not in tickets.GIT_ENV_DROP}
+        repo = ctmp / 'repo'
+        (repo / '.sdlc').mkdir(parents=True)
+
+        def git(*args):
+            p = subprocess.run(['git', '-C', str(repo), *args], env=env, capture_output=True, text=True)
+            expect(f'git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+            return p.stdout.strip()
+
+        def ledger_entry(to, rc=0):
+            with open(repo / '.sdlc' / 'gate-ledger.jsonl', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'at': 'x', 'run_id': 'r', 'integration': 'integ', 'from': '', 'to': to,
+                                    'gates': ['true'], 'rc': rc, 'log': '', 'merges': []}) + '\n')
+            git('add', '-f', '.sdlc/gate-ledger.jsonl')
+            git('commit', '-q', '-m', f'cover {to[:7]}: rc={rc}')
+
+        def uncovered_lines():
+            p = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), '--lanes', '--root',
+                                str(repo / '.sdlc')], env=env, capture_output=True, text=True)
+            expect(f'--lanes with a ledger exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+            return [ln for ln in p.stdout.splitlines() if 'uncovered' in ln.lower()]
+
+        git('init', '-q')
+        git('config', 'user.name', 'board selftest')
+        git('config', 'user.email', 'selftest@example.invalid')
+        git('config', 'commit.gpgsign', 'false')
+        (repo / 'a.txt').write_text('a')
+        git('add', 'a.txt')
+        git('commit', '-q', '-m', 'fixture')
+        trunk = git('rev-parse', '--abbrev-ref', 'HEAD')
+        ledger_entry(git('rev-parse', 'HEAD'))
+        expect(f'a covered tip lists no uncovered merge, got {uncovered_lines()}', uncovered_lines() == [])
+        for n, tid in ((1, 'T-0101'), (2, 'T-0102')):
+            git('checkout', '-q', '-b', f'lane{n}')
+            (repo / f'f{n}.txt').write_text('x')
+            git('add', f'f{n}.txt')
+            git('commit', '-q', '-m', f'work {tid}')
+            git('checkout', '-q', trunk)
+            git('merge', '--no-ff', '-q', '-m', f'Merge lane{n}: {tid}', f'lane{n}')
+        got = uncovered_lines()
+        expect(f'two light merges after the ledger entry are both uncovered, got {got}',
+               len(got) == 2 and 'T-0101' in ' '.join(got) and 'T-0102' in ' '.join(got))
+        ledger_entry(git('rev-parse', 'HEAD'))
+        expect(f'a cover entry at the tip clears the uncovered merges, got {uncovered_lines()}',
+               uncovered_lines() == [])
 
     # 9. ticket_root: tickets: tasks under <root>/tickets/ join the root's tasks.
     with tempfile.TemporaryDirectory() as ttmp:
