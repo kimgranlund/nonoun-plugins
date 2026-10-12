@@ -2,7 +2,7 @@
 id: T-0453
 title: "tickets.py close and dispatch.py prune report open lanes (lane lifecycle C)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0451]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,7 @@ No model or effort change. Never delete unmerged work; archive ref `refs/archive
 - `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 (cases k2: one line for a listing lane, none for an unrelated ticket, none outside a git repo).
 - `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 (cases T-0453: listing names the lane, `--done` closes a landed host lane, keeps an unlanded one with `lane still open`, silent without a lane).
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+
+## Closed
+
+2026-10-11: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
