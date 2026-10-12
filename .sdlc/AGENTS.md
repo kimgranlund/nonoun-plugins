@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f1c12db76ce5 -->
+<!-- sdlc-lite:managed:start v1 sha256:04e9dcf09419 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,12 +9,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 11
+- proposed: 10
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0468 Merge plan skills B: redirect stubs for the four retired names and retargeted checks (0468-plan-merge-b-stubs)
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
-  - T-0500 agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8) (0500-solo-brief-regenerate-scan)
   - T-0510 profile: inner-loop, local_gate and full_gate in .sdlc/config: solo_run refuses a full-suite criterion (T-0501 B1) (0510-inner-loop-b1-config)
   - T-0511 verifier: a Notes section for nits, carried into the close reason (T-0501 B2) (0511-inner-loop-b2-notes)
   - T-0512 steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) (0512-inner-loop-b3-l3-solo)
@@ -32,7 +31,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 461
+- done: 462
 - dropped: 29
 
 ## Procedures
