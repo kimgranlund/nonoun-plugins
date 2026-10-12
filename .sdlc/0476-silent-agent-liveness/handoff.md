@@ -27,3 +27,9 @@ Origin: T-0470 investigation, `docs/reports/2026-10-12-maison-wave-7b-mechanics.
 
 ## Constraints
 The failing test lands before or with the fix, with an observed-red control. No prompt wording change.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, including the T-0476 cases: `started` stores the agent id in a running attempt; `status` of a running attempt with a transcript 2 h old prints `last activity 2h` and `silent`; negative controls (2 min old, 29 min old, no transcript) print no `silent` (and no `last activity` when no transcript).
+- Observed red: with the `started` and `status` changes removed, those cases fail (recorded: 5 FAIL before the change).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- No agent or skill prompt wording changed (`git diff --stat` touches only `dispatch.py`, `docs/references/sdlc-internals.md`, and this ticket folder).
