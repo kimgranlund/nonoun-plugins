@@ -5,7 +5,8 @@
   report.py render [view...] [options]   print the views (none: the executive summary, at most 8 lines)
   report.py selftest                     run every control: red without its rule, green with it
 
-Views: summary full tasks signals needs context cost children identity evidence.
+Views: summary full tasks signals needs context cost children identity evidence lanes waves (lanes and waves read lanes.py, git and
+the fanout land journals, not the thread).
 Options: --since T, --last N, --next N, --only G,..., --severity problem|likely|all, --format text|md|json,
 --evidence, --compare last, --explain, --no-snapshot. --session is reserved and refused.
 Exit 2: an unknown view or option, --session, or an unreadable record (.sdlc/config, the --compare snapshot).
@@ -36,7 +37,7 @@ _NEXT_FORM = {'built': 'will build', 'verified': 'will verify', 'merged': 'will 
               'filed': 'will file', 'released': 'will release', 'blocked': 'will be blocked', 'deferred': 'will be deferred',
               'stopped': 'will stop', 'queued': 'will be queued', 'waiting': 'will wait'}
 TENSES = ('recent', 'now', 'next')
-VIEWS = ('summary', 'full', 'tasks', 'signals', 'needs', 'context', 'cost', 'children', 'identity', 'evidence')
+VIEWS = ('summary', 'full', 'tasks', 'signals', 'needs', 'context', 'cost', 'children', 'identity', 'evidence', 'lanes', 'waves')
 FULL_ORDER = ('summary', 'tasks', 'signals', 'context', 'cost', 'children', 'identity', 'evidence')
 OPTIONS = ('--since', '--last', '--next', '--only', '--severity', '--format', '--evidence', '--compare', '--explain', '--no-snapshot')
 VALUED = ('--since', '--last', '--next', '--only', '--severity', '--format', '--compare')
@@ -377,7 +378,7 @@ def _m_dead(f, th):
 
 RULES = {
     'verb_check': _verb_check, 'pid_alive': _pid_alive, 'check_view': _check_view, 'refuse_session': _refuse_session,
-    'read_runs': _read_runs, 'next_mark': _next_mark, 'write_snapshot': _write_snapshot,
+    'collect_fleet': lambda root, env=None: collect_fleet(root, env), 'read_runs': _read_runs, 'next_mark': _next_mark, 'write_snapshot': _write_snapshot,
     'newest_snapshot': _newest_snapshot, 'explain': _explain,
     'late failure': _m_late_failure, 'trivial last failure': _m_trivial_last_failure,
     'check first run late': _m_check_first_run_late, 'rework': _m_rework, 'peak context fill': _m_peak_context,
@@ -1103,6 +1104,184 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
             'needs': needs, 'outcome': outcome, 'unknown': sorted(set(unknown)), 'evidence': ev}
 
 
+# ---------------------------------------------------------------- lanes and waves (T-0483)
+
+FLEET_KINDS = ('fanout', 'solo', 'integration')
+
+
+def _main_branch(root):
+    out = git(root, 'worktree', 'list', '--porcelain')
+    for line in (out or '').splitlines():
+        if not line.strip():
+            break
+        if line.startswith('branch '):
+            return line[len('branch '):].replace('refs/heads/', '', 1)
+    return None
+
+
+def _count(root, spec):
+    out = git(root, 'rev-list', '--count', spec)
+    return int(out.strip()) if out and out.strip().isdigit() else None
+
+
+def _ps_lines():
+    r = RUNNER(['ps', '-axo', 'pid=,command='], '/', 15)
+    return r[1].splitlines() if r and r[0] == 0 else None
+
+
+def _driver(lines, path):
+    """`yes (pid N)` when a process other than this report names the lane path, `no` when none does, `unknown` with no ps."""
+    if lines is None:
+        return 'unknown'
+    variants = {str(path), os.path.realpath(str(path))}
+    variants |= {v[len('/private'):] for v in list(variants) if v.startswith('/private/')}
+    pat = re.compile('|'.join(re.escape(v) + r'(?=$|[/\s\'"])' for v in variants))
+    for line in lines:
+        parts = line.strip().split(None, 1)
+        if len(parts) == 2 and parts[0].isdigit() and int(parts[0]) != os.getpid() and 'report.py' not in parts[1] and pat.search(parts[1]):
+            return 'yes (pid %s)' % parts[0]
+    return 'no'
+
+
+def _journal(lanes_dir):
+    """{ticket: (outcome, lane)} for one lanes dir: logs/land.jsonl (newest line per ticket), else the merged lines of logs/fanout.log."""
+    out = {}
+    text = read_text(Path(lanes_dir) / 'logs' / 'land.jsonl')
+    if text is not None:
+        for line in text.splitlines():
+            try:
+                j = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(j, dict) and j.get('ticket'):
+                out[str(j['ticket'])] = (str(j.get('outcome') or ''), str(j.get('lane') or ''))
+        return out
+    text = read_text(Path(lanes_dir) / 'logs' / 'fanout.log')
+    for m in re.finditer(r'^\[[^\]]*\] \[([^\]]+)\] (T-\d+) merged\b', text or '', re.M):
+        out[m.group(2)] = ('merged', m.group(1))
+    return out
+
+
+def _find_ticket(sdlc, tid):
+    try:
+        ds = sorted(sdlc.iterdir())
+    except OSError:
+        return None, {}
+    for d in ds:
+        if d.is_dir() and (d / 'handoff.md').is_file():
+            fm = front_matter(read_text(d / 'handoff.md'))
+            if fm.get('id') == tid:
+                return d, fm
+    return None, {}
+
+
+def _ticket_state(trees, tid, outcome, driver, since):
+    """(stage, percent or None) for one ticket. trees: the repo roots to read it from, the lane tree first.
+    closed 100 (ticket status done); merged 90 (the land journal says merged); a plan: the mean of the board step
+    percents (board.py LADDER, the one derivation) with the weakest step's word; no plan: building 10 (a live driver),
+    built 50 (commits since base), queued 0 (none); an unreadable ticket: unknown."""
+    task, fm = None, {}
+    for t in trees:
+        task, fm = _find_ticket(Path(t) / '.sdlc', tid)
+        if task:
+            break
+    if fm.get('status') == 'done':
+        return 'closed', 100
+    if outcome == 'merged':
+        return 'merged', 90
+    if task is not None:
+        try:
+            if str(HERE) not in sys.path:
+                sys.path.insert(0, str(HERE))
+            import board
+            rows, _ = board.task_rows(task)
+        except Exception:
+            rows = None
+        steps = [r for r in (rows or []) if r[1] not in ('task', 'hidden check')]
+        if steps:
+            low = min(steps, key=lambda r: r[4])
+            word = 'verified' if low[4] == 100 else low[3].split(' ·')[0]
+            return word, sum(r[4] for r in steps) // len(steps)
+    if driver.startswith('yes'):
+        return 'building', 10
+    if since is None:
+        return 'unknown', None
+    return ('built', 50) if since > 0 else ('queued', 0)
+
+
+def collect_fleet(root, env=None):
+    """{lanes, waves, unknown} from lanes.py list, git, the land journals and the ticket folders; no model call."""
+    root = Path(root)
+    r = sibling('lanes.py', ['list', '--all', '--json'], root, 120)
+    try:
+        rows = json.loads(r[1]) if r and r[0] == 0 else None
+    except ValueError:
+        rows = None
+    if not isinstance(rows, list):
+        return {'lanes': [], 'waves': [], 'unknown': ['lanes.list']}
+    main = _main_branch(root)
+    ps = _ps_lines()
+    lanes, journals = [], {}
+    for d in rows:
+        if not isinstance(d, dict) or d.get('kind') not in FLEET_KINDS or d.get('owner') == 'manual':
+            continue
+        path, branch = d.get('path') or '', d.get('branch') or ''
+        ldir = str(Path(path).parent) if path else ''
+        if ldir and ldir not in journals:
+            journals[ldir] = _journal(ldir)
+        jr = {t: v[0] for t, v in journals.get(ldir, {}).items()}
+        into = d.get('into') or ''
+        wave = branch if d['kind'] == 'integration' else (into if into and into != main else None)
+        rec = read_json(Path(path) / '.lane.json') if path else None
+        base_sha = (rec or {}).get('base_sha')
+        since = _count(root, '%s..refs/heads/%s' % (base_sha, branch)) if base_sha and branch else None
+        ahead = _count(root, '%s..refs/heads/%s' % (main, branch)) if main and branch else None
+        states = d.get('states') or []
+        if 'closable' not in states:
+            landed = 'no'
+        elif d['kind'] == 'integration':
+            landed = 'yes' if 'merged' in jr.values() else 'no'
+        else:
+            landed = 'unknown' if since is None else ('yes' if since > 0 else 'no')
+        driver = _driver(ps, path) if d.get('exists') and path else 'unknown'
+        trees = ([path] if d.get('exists') and path else []) + [str(root)]
+        tickets = [str(t) for t in (d.get('tickets') or [])]
+        states_t = [dict(zip(('stage', 'pct'), _ticket_state(trees, t, jr.get(t), driver, since)), ticket=t) for t in tickets]
+        stages = []
+        for s in states_t:
+            if s['stage'] not in stages:
+                stages.append(s['stage'])
+        lanes.append({'lane': d.get('lane') or Path(path).name, 'branch': branch or 'unknown', 'kind': d['kind'], 'wave': wave,
+                      'tickets': tickets, 'ticket_states': states_t, 'stage': ','.join(stages) if stages else d['kind'],
+                      'driver': driver, 'ahead': ahead if ahead is not None else 'unknown', 'landed': landed,
+                      'dir': path or 'unknown', 'lanes_dir': ldir})
+    waves = []
+    for key in sorted({l['wave'] for l in lanes if l['wave']}):
+        members = [l for l in lanes if l['wave'] == key]
+        jr = journals.get(next((l['lanes_dir'] for l in members if l['kind'] == 'integration'), members[0]['lanes_dir']), {})
+        outs = [v[0] for v in jr.values()]
+        tks, seen = [], set()
+        for l in members:
+            for s in l['ticket_states']:
+                if s['ticket'] not in seen:
+                    seen.add(s['ticket'])
+                    tks.append(dict(s, lane=l['lane']))
+        for tid, (outcome, jlane) in jr.items():
+            if tid not in seen:
+                seen.add(tid)
+                st, pct = _ticket_state([str(root)], tid, outcome, 'no', None)
+                tks.append({'ticket': tid, 'lane': jlane or 'unknown', 'stage': st, 'pct': pct})
+        ahead = _count(root, '%s..refs/heads/%s' % (main, key)) if main else None
+        if ahead is None:
+            merged = 'unknown'
+        else:
+            merged = 'no' if ahead > 0 else ('yes' if 'merged' in outs else 'no')
+        pcts = [t['pct'] for t in tks if t['pct'] is not None]
+        waves.append({'wave': key, 'tickets': tks, 'ahead': ahead if ahead is not None else 'unknown', 'merged': merged,
+                      'percent': sum(pcts) // len(pcts) if pcts else None})
+    return {'lanes': lanes, 'waves': waves, 'unknown': []}
+
+
 # ---------------------------------------------------------------- render
 
 def entry_line(e, evidence):
@@ -1251,8 +1430,39 @@ def view_evidence(rec, o):
     return out
 
 
+def view_lanes(rec, o):
+    if 'lanes' not in rec or rec.get('fleet_unknown'):
+        return [('unknown', 'lanes: unknown (lanes.py list gave no rows)')]
+    if not rec['lanes']:
+        return [('work', 'lanes: none')]
+    ev = o['evidence']
+    out = [('work', 'lane | ticket | stage | driver alive | ahead of main | landed | dir')]
+    for l in rec['lanes']:
+        out.append(('work', with_ev(' | '.join([l['lane'], ','.join(l['tickets']) or '-', l['stage'], l['driver'], str(l['ahead']),
+                                                l['landed'], l['dir']]), 'lanes.py list --all --json; git rev-list; ps', ev)))
+    return out
+
+
+def view_waves(rec, o):
+    if 'waves' not in rec or rec.get('fleet_unknown'):
+        return [('unknown', 'waves: unknown (lanes.py list gave no rows)')]
+    if not rec['waves']:
+        return [('work', 'waves: none')]
+    ev = o['evidence']
+    out = []
+    for w in rec['waves']:
+        pct = '%d%%' % w['percent'] if w['percent'] is not None else 'unknown'
+        out.append(('work', with_ev('%s | %d tickets | %s | ahead of main %s | merged %s' % (w['wave'], len(w['tickets']), pct, w['ahead'], w['merged']),
+                                    'git rev-list; logs/land.jsonl', ev)))
+        for t in w['tickets']:
+            tp = '%d%%' % t['pct'] if t['pct'] is not None else t['stage']
+            out.append(('work', '  %s | lane %s | %s | %s' % (t['ticket'], t['lane'], t['stage'], tp)))
+    return out
+
+
 RENDERERS = {'summary': view_summary, 'tasks': view_tasks, 'signals': view_signals, 'needs': view_needs, 'context': view_context,
-             'cost': view_cost, 'children': view_children, 'identity': view_identity, 'evidence': view_evidence}
+             'cost': view_cost, 'children': view_children, 'identity': view_identity, 'evidence': view_evidence,
+             'lanes': view_lanes, 'waves': view_waves}
 
 
 def compare(prev, cur, name):
@@ -1401,6 +1611,9 @@ def cmd_render(argv, root, env, now, out):
     rec = collect(root, env, now, th, o['since'], o['last'], o['next'])
     if o['snapshot'] and (Path(root) / '.sdlc').is_dir():
         RULES['write_snapshot'](root, rec, now or utcnow())
+    if any(v in ('lanes', 'waves') for v in o['views']):
+        fleet = RULES['collect_fleet'](root, env)
+        rec = dict(rec, lanes=fleet['lanes'], waves=fleet['waves'], fleet_unknown=bool(fleet['unknown']))
     if o['format'] == 'json':
         d = rec
         if o['only']:
@@ -1509,6 +1722,51 @@ def _fixture(base, now, pid, runs_text=None, running=True, next_section=True):
     _w(sdlc / '0002-after' / 'handoff.md', '---\nid: T-0002\ntitle: "after"\ntype: feature\nstatus: proposed\nsize: L2\ndepends: [T-0001]\n---\n\n## Goal\nLater.\n')
     old = _w(sdlc / '.0000-old' / 'handoff.md', '---\nid: T-0000\ntitle: "old"\ntype: chore\nstatus: done\nsize: L1\ndepends: []\n---\n\n## Goal\nOld.\n').parent
     _w(old / 'verifier-L1.attempt.json', json.dumps({'name': 'verifier-L1', 'role': 'verifier', 'status': 'completed', 'started_at': ago(70), 'finished_at': ago(65)}))
+    return root
+
+
+def _fleet_fixture(base):
+    """A throwaway repo with two waves: fanout/wave01 running (lane a: no plan, lane b: two steps, one passed) and
+    fanout/wave02 merged into main and closed (its lane is gone, its land journal says merged)."""
+    root = Path(base)
+    root.mkdir(parents=True, exist_ok=True)
+
+    def gc(cwd, *a):
+        r = subprocess.run(['git', '-C', str(cwd), '-c', 'user.name=t', '-c', 'user.email=t@example.invalid', '-c', 'commit.gpgsign=false'] + list(a),
+                           check=True, capture_output=True, text=True)
+        return r.stdout.strip()
+
+    subprocess.run(['git', 'init', '-q', str(root)], check=True)
+    gc(root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
+    _w(root / '.sdlc' / 'config', 'ticket_folders: numbered\n')
+    for folder, tid, status in (('0101-a', 'T-0101', 'claimed'), ('0102-b', 'T-0102', 'claimed'), ('.0201-c', 'T-0201', 'done')):
+        _w(root / '.sdlc' / folder / 'handoff.md', '---\nid: %s\ntitle: "t"\ntype: chore\nstatus: %s\nsize: L2\ndepends: []\n---\n\n## Goal\nx\n' % (tid, status))
+    _w(root / 'f.txt', 'x\n')
+    gc(root, 'add', '-A')
+    gc(root, 'commit', '-q', '-m', 'init')
+    one, two = root / '.worktrees' / 'fanout01', root / '.worktrees' / 'fanout02'
+    for d in (one, two):
+        (d / 'logs').mkdir(parents=True)
+        _w(d / 'merge.lock', '')
+    gc(root, 'worktree', 'add', '-q', '-b', 'fanout/wave01', str(one / 'integration'), 'main')
+    gc(one / 'integration', 'commit', '-q', '--allow-empty', '-m', 'wave01 work')
+    for lane, tid in (('a', 'T-0101'), ('b', 'T-0102')):
+        gc(root, 'worktree', 'add', '-q', '-b', 'fanout/wave01-' + lane, str(one / lane), 'fanout/wave01')
+        _w(one / lane / '.lane.json', json.dumps({'lane': lane, 'kind': 'fanout', 'branch': 'fanout/wave01-' + lane, 'base': 'fanout/wave01',
+                                                  'base_sha': gc(root, 'rev-parse', 'fanout/wave01'), 'into': 'fanout/wave01', 'tickets': [tid]}))
+    _w(one / 'b' / 'b.txt', 'b\n')
+    gc(one / 'b', 'add', 'b.txt')
+    gc(one / 'b', 'commit', '-q', '-m', 'b work')
+    b = one / 'b' / '.sdlc' / '0102-b'
+    _w(b / 'step-1' / 'handoff.md', '## Step 1: one\nlevel: L2\n')
+    _w(b / 'step-1' / 'builder-L2.md', '## Status\ndone\n')
+    _w(b / 'step-1' / 'verifier-L2.md', '## Verdict\npass\n')
+    _w(b / 'step-2' / 'handoff.md', '## Step 2: two\nlevel: L2\n')
+    gc(root, 'worktree', 'add', '-q', '-b', 'fanout/wave02', str(two / 'integration'), 'main')
+    gc(two / 'integration', 'commit', '-q', '--allow-empty', '-m', 'wave02 work')
+    gc(root, 'merge', '-q', '--no-ff', '-m', 'merge wave02', 'fanout/wave02')
+    _w(two / 'logs' / 'land.jsonl', json.dumps({'run_id': 'r', 'lane': 'c', 'branch': 'fanout/wave02-c', 'ticket': 'T-0201', 'outcome': 'merged',
+                                                 'commit': 'abc1234', 'kind': 'solo', 'tier': 'L2', 'files': []}) + '\n')
     return root
 
 
@@ -1778,6 +2036,51 @@ def selftest():
         _w(root / '.sdlc' / 'config', 'report.stall_minutes: soon\n')
         rc, o, e = call(['render', '--no-snapshot'], root, env_for(root))
         case('an unreadable threshold in .sdlc/config exits 2', rc == 2 and 'report.stall_minutes' in e)
+        # lanes and waves (T-0483): two waves, one running and one merged and closed
+        fl = _fleet_fixture(base / 'fleet')
+        a_path = str(fl / '.worktrees' / 'fanout01' / 'a')
+
+        def fleet_runner(cmd, cwd, timeout=15):
+            if cmd and cmd[0] == 'ps':
+                return 0, '    1 /sbin/launchd\n 4242 claude -p --plugin-dir %s/plugins/x\n' % a_path, ''
+            return _fake_runner(cmd, cwd, timeout)
+        RUNNER = fleet_runner
+        try:
+            saved_views = globals()['VIEWS']
+            globals()['VIEWS'] = tuple(v for v in saved_views if v not in ('lanes', 'waves'))
+            try:
+                rc_old, _, e_old = call(['render', 'lanes', 'waves', '--no-snapshot'], fl, env_for(fl))
+            finally:
+                globals()['VIEWS'] = saved_views
+            case('before the views exist, lanes and waves are refused as unknown (observed red)', rc_old == 2 and "unknown view 'lanes'" in e_old)
+            def lanes_ok():
+                rc, o, _ = call(['render', 'lanes', '--no-snapshot'], fl, env_for(fl))
+                ls = o.splitlines()
+                rows = {l.split(' | ')[0]: l.split(' | ') for l in ls[1:]}
+                return (rc == 0 and ls[0].startswith('lane | ticket | stage | driver alive')
+                        and rows['a'][1:6] == ['T-0101', 'building', 'yes (pid 4242)', '1', 'no']
+                        and rows['b'][1:6] == ['T-0102', 'queued', 'no', '2', 'no']
+                        and rows['b'][6].endswith('/fanout01/b'))
+            case('lanes: a live driver, a plan at 50 percent and the dir per lane', lanes_ok())
+            control('lanes view', 'collect_fleet', lambda root, env=None: {'lanes': [], 'waves': [], 'unknown': []}, lanes_ok)
+
+            def waves_ok():
+                rc, o, _ = call(['render', 'waves', '--no-snapshot'], fl, env_for(fl))
+                wl = o.splitlines()
+                return (rc == 0 and wl[0] == 'fanout/wave01 | 2 tickets | 30% | ahead of main 1 | merged no'
+                        and '  T-0101 | lane a | building | 10%' in wl and '  T-0102 | lane b | queued | 50%' in wl
+                        and 'fanout/wave02 | 1 tickets | 100% | ahead of main 0 | merged yes' in wl and '  T-0201 | lane c | closed | 100%' in wl)
+            case('waves: one running wave and one merged and closed wave with tickets and percent', waves_ok())
+            control('waves view', 'collect_fleet', lambda root, env=None: {'lanes': [], 'waves': [], 'unknown': []}, waves_ok)
+            rc, o_j, _ = call(['render', 'lanes', '--format', 'json', '--no-snapshot'], fl, env_for(fl))
+            got = {l['branch'] for l in json.loads(o_j)['lanes']}
+            listed = {b.strip().lstrip('*+ ') for b in subprocess.run(['git', '-C', str(fl), 'branch', '--list', 'fanout/*'], capture_output=True, text=True).stdout.splitlines()}
+            case('the lanes agree with git branch --list fanout/*', rc == 0 and got == listed and len(listed) == 4)
+            RUNNER = lambda cmd, cwd, timeout=15: None if cmd[1].endswith('lanes.py') else fleet_runner(cmd, cwd, timeout)
+            rc, o_u, _ = call(['render', 'lanes', 'waves', '--no-snapshot'], fl, env_for(fl))
+            case('an unreadable lanes.py marks both views unknown', rc == 0 and o_u.count('unknown (lanes.py list gave no rows)') == 2)
+        finally:
+            RUNNER = _fake_runner
     finally:
         RUNNER = saved_runner
         tmp.cleanup()

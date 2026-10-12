@@ -23,3 +23,9 @@ Origin: maintainer request 2026-10-12 after the wave 40 and 41 status check. Tha
 
 ## Constraints
 No model call. Views stay within the report skill's line budget rules. State only what a command shows. Prompt wording follows the controlled language set; no new prohibitions.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/report.py selftest` exits 0 and prints the cases `lanes`, `waves`, the two `control ... view: red without the rule, green with it` lines, and the `refused as unknown (observed red)` line.
+- `python3 plugins/sdlc-lite/scripts/report.py render lanes --no-snapshot` and `render waves --no-snapshot` exit 0 on this repo; the branches in the lanes view equal `git worktree list` branches under `fanout/`.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+- `skills/report/references/views.md` lists the `lanes` and `waves` views.
