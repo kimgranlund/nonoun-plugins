@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:90a2fb0d4bad -->
+<!-- sdlc-lite:managed:start v1 sha256:0f6f30d87ed4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -25,7 +25,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0462 Design: merge the plan-* skills into /plan with kinds, shared rules and one lint (0462-plan-skills-merge-design)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0464 Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture (0464-ceremony-audit)
-  - T-0465 Compaction prompt as a report view: /sdlc-lite:report compaction (from the ultimate-tokens handoff) (0465-compaction-prompt)
+  - T-0465 plan-compaction: a skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
 - ready: 0
 - claimed: 0
 - paused: 0

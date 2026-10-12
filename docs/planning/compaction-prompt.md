@@ -2,20 +2,20 @@
 status: proposed
 owner: maintainer
 ---
-# Compaction prompt: `/sdlc-lite:report compaction`
+# Compaction prompt: `/sdlc-lite:plan-compaction`
 
-Status: proposal. Raised in ultimate-tokens as `/plan compaction` (handoff of 2026-10-12, kept in `.sdlc/0465-compaction-prompt/source-handoff.md`). This version is the original spec reviewed and aligned with the report skill (T-0460), the controlled language (T-0461), the document standards (T-0447), the lane lifecycle and the resolve-and-ship posture (T-0464).
+Status: proposal. Raised in ultimate-tokens as `/plan compaction` (handoff of 2026-10-12, kept in `.sdlc/0465-compaction-prompt/source-handoff.md`). This version is the original spec reviewed and aligned with the plan skill family (`plan-goal`, `plan-loop`, T-0462), the controlled language (T-0461), the document standards (T-0447), the lane lifecycle and the resolve-and-ship posture (T-0464). The report skill (T-0460) is an optional data source, not the home.
 
 ## 1. Answer
 
-One command returns one prompt that the person pastes into a manual `/compact <prompt>`: fixed shape, controlled language, pointers instead of copied content. It never runs the compaction. Most of its content is derived by script from the same record as `/sdlc-lite:report`; only goal, rules and decisions come from the conversation. The original optional handoff file write is cut to a Claude-only, off-by-default step, and the `AGENTS.md` write is dropped.
+One command returns one prompt that the person pastes into a manual `/compact <prompt>`: fixed shape, controlled language, pointers instead of copied content. It never runs the compaction. State facts come from commands the skill runs; only goal, rules and decisions come from the conversation. It authors a block and a lint checks it, the same pattern as `plan-goal` and `plan-loop`. The original optional handoff file write is cut to a Claude-only, off-by-default step, and the `AGENTS.md` write is dropped.
 
 ## 2. What changed from the original, and why
 
 | # | Original | Now | Reason |
 |---|---|---|---|
-| 1 | A mode of `/plan` | A view of `report`: `/sdlc-lite:report compaction [<focus>]` | The sweep fields (state, open, next, running agents, dirty files) are the `session-status/1` record. `/plan` kinds produce plans (steps, doc, goal, campaign, fanout); a compaction prompt is a state report written for a summarizer. T-0462 (plan merge) does not need to host it. If it later chooses to, `/plan compaction` is an alias with the same contract |
-| 2 | The model sweeps state from the session | The script derives STATE, OPEN and NEXT from the report record, `git` and `gh`; the model supplies GOAL, RULES and DECISIONS | A script cannot drift "I assumed" into "user said", and the state is the same as `report` shows. `next` carries `planned` or `intended` |
+| 1 | A mode of `/plan` | A plan-family skill, `plan-compaction`, that returns one copy/paste `/compact` prompt, linted by a new `plan_check.py compaction` kind; it becomes the kind `compaction` of the merged `/plan` when T-0462 lands | The original placement was right for the family: `plan-goal` returns a `/goal` block, `plan-loop` a `/loop` line, and this returns a `/compact` prompt. A `report` view was wrong: a report states status, this authors text for a summarizer. `report` can feed STATE later |
+| 2 | The model sweeps state from the session | The skill runs a fixed command list for STATE, OPEN, NEXT and POINT (`git status`, `gh pr list`, `dispatch.py status`, `steps.py next`, the ticket and plan-doc paths); the model supplies GOAL, RULES and DECISIONS | Commands cannot drift "I assumed" into "user said". `next` carries `planned` or `intended`. When the `report` record exists (T-0460), the skill reads it instead of re-running the commands |
 | 3 | Writes `AGENTS.md` for Codex | Dropped. The Codex prompt ends `NEXT run /sdlc-lite:report summary` | Root `AGENTS.md` is a tracked entry file with a managed block; transient state in it is a stale-context defect, dirties the tree and can be committed. The snapshot under `.sdlc/runtime/report/` is already the replaceable, ignored state |
 | 4 | Handoff file on by default | Claude only, off by default (`--write-handoff`) until the reload is verified (section 8) | Four assumptions were untested; two are removed by item 3 |
 | 5 | Verbs KEEP, POINT, DROP, NEXT; present tense | Kept for the instruction lines; fact lines use the status grammar of `core.md` | Two jobs, two forms (section 4) |
@@ -24,7 +24,7 @@ One command returns one prompt that the person pastes into a manual `/compact <p
 
 ## 3. Command and arguments
 
-`/sdlc-lite:report compaction [<focus>] [--clear] [--write-handoff]`. Hint form per the skill hint standard (T-0463): `compaction [<focus phrase>] [--write-handoff] | compaction --clear`. `<focus>` is one phrase naming the next task. `--clear` deletes the handoff section and nothing else. Output: one fenced prompt, a size note (`lines: N of 60`), and `Run: /compact <paste>`.
+`/sdlc-lite:plan-compaction [<focus>] [--clear] [--write-handoff]`; as a kind of the merged skill, `/plan compaction ...`. Hint form per the skill hint standard (T-0463): `[<focus phrase>] [--write-handoff] | --clear`. `<focus>` is one phrase naming the next task. `--clear` deletes the handoff section and nothing else. Output: one fenced prompt, a size note (`lines: N of 60`), and `Run: /compact <paste>`.
 
 ## 4. Derivation
 
@@ -33,10 +33,10 @@ One command returns one prompt that the person pastes into a manual `/compact <p
 | GOAL | the current ask, verbatim if under 20 words, else one sentence | model, with a transcript pointer |
 | RULES | standing user instructions of this session that are not in `CLAUDE.md` or `AGENTS.md` | model, each `[U]` unless quoted |
 | DECISIONS | who (user or agent), date, reason in 5 words or fewer | model, each with a pointer to the turn |
-| STATE | branch, dirty files, open PRs, running agents and lanes, failing checks, the open ticket and its status | script: report record, `git status`, `gh pr list`, `dispatch.py status` |
-| OPEN | unanswered questions, held items, user-only actions | script: report `needs` plus the transcript's last open question |
-| NEXT | the single next action, `planned` or `intended` | script: `next` of the report record |
-| POINT | `locator -> what it answers`: the ticket handoff, the plan doc, `plan-state.json`, the report snapshot | script |
+| STATE | branch, dirty files, open PRs, running agents and lanes, failing checks, the open ticket and its status | commands: `git status`, `gh pr list`, `dispatch.py status`, `tickets.py`, or the report record when present |
+| OPEN | unanswered questions, held items, user-only actions | commands and the last open question in the transcript; the report `needs` list when present |
+| NEXT | the single next action, `planned` or `intended` | `steps.py next` and the ticket `depends:` order; the report `next` when present |
+| POINT | `locator -> what it answers`: the ticket handoff, the plan doc, `plan-state.json`, the report snapshot when present | commands |
 
 Drop what one command recovers: keep the command, not its output. Plan docs and ticket folders already survive compaction, so the prompt points to them and never copies them.
 
@@ -61,7 +61,7 @@ Two jobs, one form each.
 - Loss test on every PIN line: if it is gone, would the next turn err or re-ask? If not, demote it to POINT.
 - No line duplicates `CLAUDE.md` or `AGENTS.md` (script compares lines).
 - Prompt at most 60 lines, PIN items at most 40 lines, with the count stated.
-- A lint script checks line length, the verb list, section order, the 60 and 40 caps, em dashes, duplicated entry-file lines, and a DECISION without who, date and pointer.
+- `plan_check.py compaction` lints the block: line length, the verb list, section order, the 60 and 40 caps, em dashes, duplicated entry-file lines, and a DECISION without who, date and pointer. `check.py` item 31 pins the phrase set of a block-returning plan skill; the new skill meets it.
 
 ## 7. Handoff file (optional, Claude only, off by default)
 
@@ -83,8 +83,8 @@ Two jobs, one form each.
 
 ## 9. Measurement
 
-No data yet shows that a controlled compaction prompt helps. The build records a replay: fixture transcripts (a plan-doc run, a lane wave, a design thread) compacted with the prompt and with a free `/compact`, then the next 5 turns scored for re-asked questions, a violated standing rule, a lost decision and tokens carried. The report names the result and marks it unverified if it was not an independent run. `report signals` gains an advisory line, `consider compaction: peak context 78 percent`, driven by the same context-fill signal as the context hygiene grade.
+No data yet shows that a controlled compaction prompt helps. The build records a replay: fixture transcripts (a plan-doc run, a lane wave, a design thread) compacted with the prompt and with a free `/compact`, then the next 5 turns scored for re-asked questions, a violated standing rule, a lost decision and tokens carried. The report names the result and marks it unverified if it was not an independent run. When the report skill exists, `report signals` may add an advisory line, `consider compaction: peak context 78 percent`, driven by the context-fill signal; that line belongs to T-0460, not to this skill.
 
 ## 10. Build split and dependencies
 
-One ticket, after T-0460 (the report record and views) and T-0461 (the grammar and closed verb lists in `core.md`). It extends `scripts/report.py` with the `compaction` view and a `compaction_lint` selftest, adds the `report` skill argument and its row in `views.md`, and records the replay. It is not blocked on T-0462.
+One ticket. It adds `plugins/sdlc-lite/skills/plan-compaction/` (SKILL.md, a reference with the grammar and an example), the `compaction` kind in `plan_check.py` with a selftest, its `check.py` phrase set, and the replay record. It follows T-0461 (the grammar and closed verb lists in `core.md`). It does not need T-0460 (the report record is an optional input) and is not blocked on T-0462: it ships as a sibling of `plan-goal` and `plan-loop`, and the plan merge folds it in as the kind `compaction`.

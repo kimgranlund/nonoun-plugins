@@ -329,3 +329,5 @@
 - note: `sweep_lanes` catches only `lanes.LaneError`, so an `OSError` from `lanes.py` would still stop a run.
 - note: two `roll` runs sharing one lanes dir at once could remove each other's scratch tree.
 - note: the Loose ends step has no artifact, so no loose-end verdict exists for this task.
+
+2026-10-12: T-0465 placement corrected by the maintainer: the compaction skill authors a /compact prompt, so it is a plan-family skill (`plan-compaction`, like `plan-goal` and `plan-loop`) with a `plan_check.py compaction` kind, not a `report` view. T-0462 (plan merge design, running) should list `compaction` as a block-returning kind; reconcile when its result lands.
