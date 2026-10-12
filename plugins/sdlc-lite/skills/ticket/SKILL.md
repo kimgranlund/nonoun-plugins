@@ -5,6 +5,8 @@ argument-hint: "new <type> <slug> \"title\" [--numbered] | close <slug> [--force
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/budget.py:*)
 ---
 
+Read first: `docs/specs/doc-standards/work-items.md`, when that file exists in this repository, for the document this skill writes.
+
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`

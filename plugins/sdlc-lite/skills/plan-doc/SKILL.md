@@ -5,6 +5,8 @@ argument-hint: "[what the plan should achieve]"
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_done.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check:*), Bash(git grep:*), Bash(git log:*), AskUserQuestion
 ---
 
+Read first: `docs/specs/doc-standards/intent.md`, when that file exists in this repository, for the document this skill writes.
+
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host question mechanism. `/goal` behavior on Codex is unverified here: emit the same goal line and say so. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (the outcome the plan serves; empty means infer it from the thread).

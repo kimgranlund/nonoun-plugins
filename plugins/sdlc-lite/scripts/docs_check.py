@@ -7,7 +7,13 @@ Usage:
 
 Read-only: reads the target, writes nothing, calls no model. Prints one line per finding,
 `<error|warning> <rule> <path>: <message>`, then a summary; exits 1 when any error was found.
-`--only` takes rule ids (D-3) or the groups `docs` (D-*), `goals` (G-*) and `boundary` (B-*).
+`--only` takes rule ids (D-3) or the groups `docs` (D-*), `goals` (G-*), `boundary` (B-*) and
+`standards` (S-*).
+
+The document standards rules S-1 to S-7 have their home in docs/specs/doc-standards/README.md, the
+registry. S-2, S-4, S-5 and S-6 apply only to a file that opts in with a `doc-type:` front matter key
+(requirements, runbook, policy, report); S-1 is silent without docs/assets/schemas/kpi.json and S-7
+is silent without the registry.
 
 The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without that file the
 eleven default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
@@ -195,7 +201,7 @@ def run(root, only=None, today=None, disable=()):
         if only is None:
             return True
         return (rule in only or ('docs' in only and rule.startswith('D-')) or ('boundary' in only and rule.startswith('B-'))
-                or ('goals' in only and rule.startswith('G-')))
+                or ('goals' in only and rule.startswith('G-')) or ('standards' in only and rule.startswith('S-')))
 
     def add(level, rule, rel, message):
         if rule in LEGACY_EXEMPT and legacy_match(layout, rel):
@@ -376,6 +382,7 @@ def run(root, only=None, today=None, disable=()):
             out.append(Finding('warning', 'B-2a', '.sdlc/' + top + '/',
                                'folder is not a ticket folder, a task folder (handoff.md or step-N/), or a known record folder'))
     concept_rules(repo, kinds, today, add, on, root)
+    standards_rules(repo, kinds, add, on, root)
     out.sort(key=lambda f: (f.rule, f.path, f.message))
     return out
 
@@ -456,6 +463,158 @@ def concept_rules(repo, kinds, today, add, on, root):
         for g in _ids(_plain(meta[rel], 'goals'), 'G'):
             if g not in by_id['goals']:
                 add('error', 'G-3', rel, 'goals: %s has no file in goals/' % g)
+
+
+STANDARDS_HOME = 'docs/specs/doc-standards'
+REGISTRY = STANDARDS_HOME + '/README.md'
+KPI_SCHEMA = 'docs/assets/schemas/kpi.json'
+REGISTRY_HEADER = ('Type', 'Home', 'Standard', 'Card', 'Template or schema', 'Check', 'Enforcement')
+REQ_ID = re.compile(r'^(?:- )?[A-Z][A-Z0-9]*-\d+:')
+HEADING = re.compile(r'^#{1,6}(\s|$)')
+SHALL = re.compile(r'\bshall\b', re.I)
+MODAL = re.compile(r'\b(must|shall|should|may)\b', re.I)
+CODE_SPAN = re.compile(r'(`+)(.+?)\1')
+NUMBERED = re.compile(r'^\d+\. ')
+PATH_SPAN = re.compile(r'^[^\s<*$:]*/[^\s<*$:]*\.[A-Za-z0-9]+$')
+
+
+def _body(text):
+    """(line number, line) for each line outside the front matter and outside fences."""
+    rows = list(onboard.scan_lines(text))
+    start = 0
+    if rows and rows[0][0].strip() == '---':
+        for i in range(1, len(rows)):
+            if rows[i][0].strip() == '---':
+                start = i + 1
+                break
+    return [(i + 1, line) for i, (line, fenced) in enumerate(rows) if i >= start and not fenced]
+
+
+def _links(line):
+    """Relative link paths in a line: no scheme, no anchor-only, no absolute path."""
+    out = []
+    for m in LINK.finditer(line):
+        target = m.group(1)
+        if re.match(r'^[A-Za-z][A-Za-z0-9+.\-]*:', target) or target.startswith('#') or target.startswith('/'):
+            continue
+        path = re.split(r'[#?]', target, 1)[0]
+        if path:
+            out.append((target, path))
+    return out
+
+
+def _resolve(folder, path):
+    return os.path.normpath(os.path.join(folder, path)).replace(os.sep, '/')
+
+
+def _cells(line):
+    return [c.strip() for c in line.strip().strip('|').split('|')]
+
+
+def standards_rules(repo, kinds, add, on, root):
+    """S-1 to S-7, the document standards checks (docs/specs/doc-standards/README.md)."""
+    exists = lambda rel: os.path.exists(os.path.join(root, rel))  # noqa: E731
+    schema_keys = None
+    if on('S-1') and KPI_SCHEMA in repo.files:
+        try:
+            import json
+            schema_keys = [str(k) for k in json.loads(repo.text(KPI_SCHEMA)).get('required', [])]
+        except (ValueError, AttributeError):
+            add('error', 'S-1', KPI_SCHEMA[len('docs/'):], 'schema is not a JSON object with a required list')
+    for rel in repo.docs():
+        if not rel.lower().endswith('.md') or '/' not in rel:
+            continue
+        base = rel.rsplit('/', 1)[-1]
+        kind = kinds.get(rel.split('/', 1)[0])
+        text = repo.text('docs/' + rel)
+        fm = front_matter(text)
+        dtype = _plain(fm, 'doc-type')
+        if schema_keys and kind == 'kpi' and CONCEPT_NAME.match(base):
+            missing = [k for k in schema_keys if k not in fm]
+            if missing:
+                add('error', 'S-1', rel, 'front matter lacks %s, required by %s' % (', '.join(missing), KPI_SCHEMA))
+        if on('S-2') and dtype == 'requirements':
+            body = _body(text)
+            for i, (n, line) in enumerate(body):
+                s = line.lstrip()
+                if SHALL.search(line) and not REQ_ID.match(s):
+                    add('error', 'S-2', rel, 'line %d has shall but does not start with a stable ID and a colon' % n)
+                if not REQ_ID.match(s):
+                    continue
+                found = False
+                for _, nxt in body[i + 1:]:
+                    t = nxt.strip()
+                    if REQ_ID.match(nxt.lstrip()) or HEADING.match(t):
+                        break
+                    if t.startswith('Acceptance:'):
+                        found = True
+                        break
+                if not found:
+                    add('error', 'S-2', rel, 'requirement on line %d has no Acceptance: line' % n)
+        if on('S-3') and kind == 'decisions' and base not in ENTRY_FILES:
+            count = sum(1 for _, line in _body(text) if line.rstrip() == '## Decision')
+            if count > 1:
+                add('error', 'S-3', rel, '%d lines equal to ## Decision; a decision record has one' % count)
+        if on('S-4') and dtype == 'runbook':
+            if not any(NUMBERED.match(line) for _, line in _body(text)):
+                add('error', 'S-4', rel, 'runbook has no numbered step line')
+        if on('S-5') and dtype == 'policy':
+            for n, line in _body(text):
+                words = [w for w in MODAL.findall(CODE_SPAN.sub('', line)) if w != w.upper()]
+                if words:
+                    add('error', 'S-5', rel, 'line %d uses %s; write normative words in upper case' % (n, ', '.join(words)))
+        if on('S-6') and kind == 'reports' and dtype == 'report':
+            folder = os.path.dirname('docs/' + rel)
+            for n, line in _body(text):
+                for target, path in _links(line):
+                    if not exists(_resolve(folder, path)):
+                        add('error', 'S-6', rel, 'line %d link does not resolve: %s' % (n, target))
+                for m in CODE_SPAN.finditer(line):
+                    span = m.group(2).strip()
+                    if not PATH_SPAN.match(span) or span.startswith(('/', '~')):
+                        continue
+                    if not exists(_resolve('.', span)) and not exists(_resolve(folder, span)):
+                        add('error', 'S-6', rel, 'line %d path does not resolve from the repository root or the report folder: %s'
+                            % (n, span))
+    if on('S-7') and REGISTRY in repo.files:
+        _registry(repo, add, root)
+
+
+def _registry(repo, add, root):
+    """S-7: every card is linked from the registry, its card and assets links resolve, and its rows are well formed."""
+    reg = REGISTRY[len('docs/'):]
+    body = _body(repo.text(REGISTRY))
+    targets = set()
+    for n, line in body:
+        for target, path in _links(line):
+            res = _resolve(STANDARDS_HOME, path)
+            targets.add(res)
+            card = os.path.dirname(res) == STANDARDS_HOME and res.lower().endswith('.md')
+            if (card or res.startswith('docs/assets/')) and not os.path.exists(os.path.join(root, res)):
+                add('error', 'S-7', reg, 'line %d link does not resolve: %s' % (n, target))
+    for p in repo.files:
+        if os.path.dirname(p) == STANDARDS_HOME and p.lower().endswith('.md') and os.path.basename(p) not in ENTRY_FILES:
+            if p not in targets:
+                add('error', 'S-7', p[len('docs/'):], 'card is not linked from the registry %s' % REGISTRY)
+    header = None
+    for n, line in body:
+        if not line.lstrip().startswith('|'):
+            header = None
+            continue
+        cells = _cells(line)
+        if header is None:
+            header = cells
+            if cells[0] == 'Type' and tuple(cells) != REGISTRY_HEADER:
+                add('error', 'S-7', reg, 'line %d registry header must be | %s |' % (n, ' | '.join(REGISTRY_HEADER)))
+            continue
+        if header[0] != 'Type' or tuple(header) != REGISTRY_HEADER or all(set(c) <= set('-: ') for c in cells):
+            continue
+        cells = [c.strip('`') for c in cells] + [''] * len(REGISTRY_HEADER)
+        check, enforcement = cells[5], cells[6]
+        if enforcement not in ('enforced', 'advisory'):
+            add('error', 'S-7', reg, 'line %d Enforcement must be enforced or advisory (found %r)' % (n, enforcement))
+        elif check == '-' and enforcement != 'advisory':
+            add('error', 'S-7', reg, 'line %d has Check - so its Enforcement must be advisory' % n)
 
 
 def _mtime(root, rel):
@@ -577,6 +736,22 @@ def _cases():
         ('G-5', w('docs/goals/002-odd.md', _goal(2, kpis='none: later', status='wishful')), 'docs/goals/002-odd.md'),
         ('G-5', w('docs/goals/002-old.md', _goal(2, kpis='none: later', status='dropped', extra='date: 2026-01-01\n')),
          'docs/goals/002-old.md'),
+        ('S-1', w(KPI_SCHEMA, '{"required": ["id", "baseline"]}\n'), 'docs/kpi/001-first-kpi.md'),
+        ('S-2', w('docs/specs/reqs.md', '---\ndoc-type: requirements\n---\n# R\n\nREQ-1: The tool shall log.\n'),
+         'docs/specs/reqs.md'),
+        ('S-2', w('docs/specs/reqs.md', '---\ndoc-type: requirements\n---\n# R\n\nThe tool shall log.\n'), 'docs/specs/reqs.md'),
+        ('S-3', w('docs/decisions/0002-twice.md', '---\nstatus: accepted\n---\n# D\n\n## Decision\n\nA\n\n## Decision\n\nB\n'),
+         'docs/decisions/0002-twice.md'),
+        ('S-4', w('docs/guides/deploy.md', '---\ndoc-type: runbook\n---\n# Deploy\n\nRun it.\n'), 'docs/guides/deploy.md'),
+        ('S-5', w('docs/guides/access.md', '---\ndoc-type: policy\n---\n# Access\n\nYou must log in.\n'), 'docs/guides/access.md'),
+        ('S-6', w('docs/reports/2026-10-06-gone.md', '---\ndoc-type: report\n---\n# G\n\n[x](missing.md)\n'),
+         'docs/reports/2026-10-06-gone.md'),
+        ('S-6', w('docs/reports/2026-10-06-span.md', '---\ndoc-type: report\n---\n# G\n\nSee `scripts/missing.py`.\n'),
+         'docs/reports/2026-10-06-span.md'),
+        ('S-7', many((REGISTRY, '# Standards\n\n| Type | Home | Standard | Card | Template or schema | Check | Enforcement |\n'
+                                '|---|---|---|---|---|---|---|\n| policy | guides/ | x | - | - | - | enforced |\n')),
+         REGISTRY),
+        ('S-7', many((REGISTRY, '# Standards\n'), (STANDARDS_HOME + '/policy.md', '# P\n')), STANDARDS_HOME + '/policy.md'),
     ]
 
 
@@ -729,7 +904,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog='docs_check.py', description=__doc__.split('\n', 1)[0])
     ap.add_argument('cmd', nargs='?', choices=['selftest'])
     ap.add_argument('--root', default=None)
-    ap.add_argument('--only', default=None, help='comma list of rule ids or the groups docs and boundary')
+    ap.add_argument('--only', default=None, help='comma list of rule ids or the groups docs, goals, boundary and standards')
     ap.add_argument('--today', default=None)
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':

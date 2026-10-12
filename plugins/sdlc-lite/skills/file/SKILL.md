@@ -5,6 +5,8 @@ argument-hint: "<.sdlc/task dir>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Agent, Read, Grep, Glob
 ---
 
+Read first: `docs/specs/doc-standards/delivery.md`, when that file exists in this repository, for the document this skill writes.
+
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`

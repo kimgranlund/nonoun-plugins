@@ -440,6 +440,7 @@ The first line that matches wins.
 2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`.
 3. Run the onboard setup again to refresh the links below.
 4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
+5. Find the document's type in `specs/doc-standards/README.md`, when this repository has it, and follow the card its row names.
 
 ## Contents
 
