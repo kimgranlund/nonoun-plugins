@@ -1873,6 +1873,17 @@ def append_notes(root, pid, title, entries):
     p.write_text(old + block, encoding='utf-8')
 
 
+def lane_report(root, pid):
+    """The `lane still open: <path> (branch <b>, <reason>)` lines (lanes.still_open) for a ticket just closed, each
+    behind a newline, one per plugin lane that lists it (T-0453). Report only: a failure adds nothing and never changes the exit code."""
+    try:
+        import lanes  # local like steps: only close reads lanes
+        lines = lanes.still_open(pathlib.Path(root), pid)
+    except Exception:  # noqa: BLE001 - lanes is advisory here
+        return ''
+    return ''.join('\n' + ln for ln in lines)
+
+
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
               ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False):
     """Read the newest filer-L*.md: refuse on open warnings, file at most one follow-up (the --ticket item) as
@@ -1902,7 +1913,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     them). keep_refs leaves them too without force, and records the stale citations in a ## Closed section.
     Plain slug folders never move, so never scan.
     A criterion still held (steps.open_items: a verifier reported it unmet-dependency or deferred and no later result
-    passed it) refuses every close, --reason and --force included; nothing is written (T-0408)."""
+    passed it) refuses every close, --reason and --force included; nothing is written (T-0408).
+    After a successful close, one `lane still open: <path> (branch <b>, <reason>)` line per plugin lane that lists the
+    ticket (lanes.still_open) follows the result line; the exit code is unchanged (T-0453)."""
     if keep_refs and rewrite_refs:
         raise Fail(f'{slug}: --keep-refs leaves citations as they are and --rewrite-refs rewrites them, so they '
                    f'do not combine; use one; nothing written')
@@ -2006,7 +2019,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if flag:
             ensure_numbered_config(root)
         moved = f'; moved to {dot.name}' if archive else ''
-        return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}'
+        return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}' + lane_report(root, pid)
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
         held = []
@@ -2165,7 +2178,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         out += f'; moved to {dot.name}'
     if ack_warnings is not None:
         out += f'; warnings acknowledged: {ack_warnings.strip()}'
-    return out + rewrote
+    return out + rewrote + lane_report(root, pid)
 
 
 def cmd_roadmap(root, numbered=False):
@@ -3029,6 +3042,56 @@ def selftest():
                rc == 0 and status(root) == 'done' and 'reason' in out
                and text.rstrip().endswith(f'## Closed\n\n{datetime.date.today().isoformat()}: done by T-0002')
                and run(root, 'check')[0] == 0)
+        # (k2) T-0453: a close prints one `lane still open` line per plugin lane that lists the ticket; the exit code is unchanged
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the (k2) lane-report cases')
+        else:
+            import lanes
+            lenv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+            lenv.update(GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+
+            def lgit(cwd, *args):
+                p = subprocess.run(['git', '-C', str(cwd), *args], env=lenv, capture_output=True, text=True)
+                if p.returncode:
+                    raise AssertionError(f'selftest git fixture failed: git {" ".join(args)}: {p.stderr.strip()}')
+
+            def lane_repo(claim=True):
+                root = case(lambda r: None)
+                if claim:
+                    edit(root, 'alpha', r'^status:.*$', 'status: claimed\nclaimed_by: codex 2026-10-11')
+                (root.parent / '.gitignore').write_text('.sdlc/\n.worktrees/\n', encoding='utf-8')
+                lgit(root.parent, 'init', '-q', '-b', 'main')
+                lgit(root.parent, 'add', '-A')
+                lgit(root.parent, 'commit', '-q', '-m', 'init')
+                return root
+
+            saved_env = {k: os.environ.get(k) for k in lenv if k.startswith('GIT_')}
+            os.environ.update({k: v for k, v in lenv.items() if k.startswith('GIT_AUTHOR') or k.startswith('GIT_COMMITTER')})
+            try:
+                root = lane_repo()
+                opened = lanes.open_lane('alpha', tickets=['T-0001'], cwd=root.parent)
+                rc, out, err = run(root, 'close', ('alpha',), reason='done by lane')
+                rows = [ln for ln in out.splitlines() if ln.startswith('lane still open: ')]
+                expect(f'(k2) a close prints one lane still open line for the lane that lists the ticket: rc={rc} {err!r} {out!r} {opened["message"]!r}',
+                       opened['rc'] == 0 and rc == 0 and status(root) == 'done' and len(rows) == 1
+                       and str(opened['path']) in rows[0] and '(branch lane/T-0001-alpha, ' in rows[0])
+                # negative control: a ticket no lane lists reports nothing
+                root = lane_repo()
+                lanes.open_lane('alpha', tickets=['T-0001'], cwd=root.parent)
+                rc, out, err = run(root, 'close', ('beta',), reason='unrelated')
+                expect(f'(k2) closing a ticket no lane lists prints no lane line: rc={rc} {err!r} {out!r}',
+                       rc == 0 and 'lane still open' not in out)
+                # not a git repo: the close still succeeds and prints no lane line
+                root = case(lambda r: None)
+                rc, out, err = run(root, 'close', ('alpha',), reason='no repo')
+                expect(f'(k2) a root outside any repo closes with no lane line: rc={rc} {err!r} {out!r}',
+                       rc == 0 and 'lane still open' not in out)
+            finally:
+                for k in ('GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'):
+                    if saved_env.get(k) is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = saved_env[k]
         # (l) --reason ignores a filer with open warnings and follow-ups
         root = case(filer('filer-L1.md', 'step-1 verifier fail', '- Add retry to fetch'))
         rc, out, err = run(root, 'close', ('alpha',), reason='superseded')

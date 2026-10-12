@@ -28,6 +28,7 @@ prep
   listed id, an uncommitted handoff, more lanes than --max-lanes, a planned-scope overlap unless --allow-overlap, a
   lanes dir inside the tree that is not gitignored) plus one more: `.claude/worktrees/` must be gitignored, because the
   host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers, as for `.worktrees/`).
+  After the refusals it sweeps landed lanes as `run` does (lanes.sweep --apply, unless `lane_sweep: off`).
   Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
   for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
@@ -36,9 +37,13 @@ prep
   never commit). For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
   solo reports (`dispatch.py prepare verifier L2`, or L3 for the tickets steps.py verifier-level names; SOLO_VERIFIER, T-0356); its result is committed on the
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
-  gates. A ticket at its budget gate prints `blocked: budget gate: budget.py ack` instead of a dispatch and prep exits 4.
+  gates. Per solo ticket prep also writes the host lane record through lanes.host_record (<lanes root>/host/<id>-solo.lane.json,
+  kind host, into the integration branch, base the start sha) and prints `    host record: <path>`.
+  A ticket at its budget gate prints `blocked: budget gate: budget.py ack` instead of a dispatch and prep exits 4.
   A `full` ticket gets no dispatch: the parent conductor drives the chain, each role a sub-agent against the lane tree
-  (`<lanes-dir>/<lane>` on branch <integration>-<lane>, the command to make it printed, each brief carrying a
+  (`<lanes-dir>/<lane>` on branch <integration>-<lane>, made with the printed `tree: python3 <scripts>/lanes.py open
+  <lane> --kind fanout --ticket <id>... --base <start> --into <integration> --path <tree> --branch <integration>-<lane>
+  --no-claim` line, which writes the lane's .lane.json, each brief carrying a
   `Tree: <path>` line), commits `<id>: <title>` there, and lands that branch. Lane tickets run one after another: the
   next is spawned after the previous one landed. The first land creates the integration branch and worktree (under
   --lanes-dir) and each later land reuses them.
@@ -58,6 +63,12 @@ land
   the branch that the integration branch does not hold (git objects, newest by order.py). Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
   (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
+  Lanes (T-0452), after the merge lock is released: a `merged` branch checked out under .claude/worktrees/<leaf> whose
+  leaf is not <id>-solo (the host names it agent-<agent_id>) gets its host record rebound, host_record(<leaf>) written
+  and the provisional <id>-solo record removed; that host lane stays open (dispatch.py prune --done closes it). A
+  branch whose tree holds a .lane.json of kind fanout is closed with lanes.close_lane(<tree>, into=<integration>) when
+  this ticket is the record's last: it prints the close message (the archive ref is written first), or
+  `lane still open: <path> (<outcome>)` when the land did not merge or the close refuses.
 
 roll (T-0374)
   Every lane has a merge class (steps.merge_class, defined in docs/references/sdlc-internals.md under
@@ -67,7 +78,18 @@ roll (T-0374)
   lock: `no changes`, the class from git objects on the branch (a lane that is not rolling is that
   outcome and nothing merges), then merge_gate_close in the scratch worktree <lanes-dir>/rolling,
   detached at main's tip, and only after `merged` main fast-forwards to it (`merge --ff-only` where main
-  is checked out, else update-ref); a refused fast-forward is `main not advanced: <reason>`.
+  is checked out, else update-ref); a refused fast-forward is `main not advanced: <reason>`. At the end of every
+  roll, whatever the outcome, the scratch tree is removed (`git worktree remove --force <lanes-dir>/rolling`, then
+  `git worktree prune`; it is detached and holds no branch), and the next roll makes it again.
+
+settle (T-0438, T-0452)
+  `settle <integration>` fast-forwards the current branch to the integration branch (nothing to do when it is already
+  merged, as after a hand merge; a diverged branch exits 2 and is left whole), then closes the integration branch's
+  worktree with lanes.close_lane(<worktree path>, into=<current branch>): the archive ref
+  refs/archive/<UTC date>/<integration> is written before the tree is removed (`--force`, so an untracked copied
+  .sdlc/config does not stop it) and the branch deleted, and the close message prints. A close that refuses (not a
+  plugin lane, lanes still open into the branch, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
+  keeps the branch and exits 1.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
   the lane and appends its record to the task's skips.md (committed with the lane): `solo` (ticket level L1 and
@@ -131,8 +153,10 @@ run
   `overlap (planned scope): not planned, checked at merge time: <ids>` line for tickets with no
   such scope (unplanned, or in an external lane).
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
-  (then reuse it; --base is ignored); `git worktree add <lanes-dir>/integration <integration>`;
-  per regular lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>` (an
+  (then reuse it; --base is ignored); touch <lanes-dir>/merge.lock; `git worktree add
+  <lanes-dir>/integration <integration>`; per regular lane lanes.open_lane (kind fanout, the
+  lane's ticket ids with the claim check off, base and into <integration>, path <lanes-dir>/<lane>,
+  branch <lane branch>), which writes the lane's .lane.json and picks its port (an
   external lane gets no worktree and no branch); make <lanes-dir>/logs/. A ticket handoff missing
   in a regular lane worktree removes what this run created and exits 2 (the .sdlc/ trail must be
   committed).
@@ -232,8 +256,22 @@ run
   `- Overlap: none`) and prints it.
   An external lane's Commit cell is the merge commit when the merge made one, the integration HEAD (the previous `close` commit) when it merged nothing new, else the branch tip's sha7.
   Exit 0 only when every ticket is `merged`, else 1; 2 for a refusal. checkout, switch, reset and
-  commit run only inside the lanes dir;
-  nothing is pushed; the worktrees stay for inspection.
+  commit run only inside the lanes dir; nothing is pushed.
+  Lane lifecycle (T-0452, through lanes.py; docs/specs/sdlc-lite/lane-lifecycle.md). Sweep at start: after preflight
+  and the overlap refusal, before setup, `lanes.sweep(apply=True)` from the toplevel closes every landed plugin lane
+  and prints each result line as `lanes sweep: <line>`; `lane_sweep: off` in .sdlc/config skips it, and a sweep error
+  prints and never blocks the run (a refusal, exit 2, still creates and removes nothing). Open: each regular lane is
+  opened through lanes.open_lane as in setup above; the integration tree is a plain worktree beside merge.lock and
+  logs/, which lanes.py reads as a fanout integration lane. Port: when `lane_ports:` gives the lane a port, the driver
+  and each gate of that lane's tickets get SDLC_LANE_PORT=<port>; otherwise an inherited SDLC_LANE_PORT is removed.
+  Close: after every lane thread has joined (never inside a lane thread), a lane whose every ticket is `merged` is
+  closed with lanes.close_lane, which writes refs/archive/<UTC date>/<lane branch> before it removes the tree and the
+  branch; report.md gets `- <close message first line>` (as `- closed alpha (ancestor)`). A stopped lane, or a close
+  that refuses, stays (tree and WIP commit kept) with `- lane still open: <path> (<outcome>)`, the lane's first
+  non-`merged` outcome or the close outcome. The integration tree stays: `- lane still open: <integ dir>
+  (integration: stays until main contains <integration>)`. These lines follow the Overlap lines and print with the
+  report. lanes.open_lane takes its flock at <lanes root>/lanes.lock (default <toplevel>/.worktrees), so that dir
+  must be gitignored even with an outside --lanes-dir.
 
 selftest
   A throwaway repo in a temp dir, a stub driver, two lanes: proves three merges, a red gate's
@@ -322,12 +360,30 @@ selftest
   merges it; a branch with no commits is `no changes`; a size L2 ticket with no verifier result, then a failing one, is
   refused and with a passing one merges; a missing branch, a branch naming no ticket and the integration branch refuse
   with exit 2. Case 24 (T-0285): a `--driver true` stub that commits nothing gives `no changes`.
+  A lane lifecycle case (case 29, T-0452): a fixture whose .sdlc/config has `lane_ports: 47400-47499` and
+  `lane_min_age_hours: 0`, holding a plugin lane T-0003-pre made with `lanes.py open` and merged into main, runs
+  `alpha=T-0001 beta=T-0002` with a driver that writes $SDLC_LANE_PORT to a file and exits 3 for T-0002, and a gate
+  that logs it. It proves alpha's tree and branch are gone with a refs/archive/<UTC date>/<integration>-alpha ref at
+  its tip and `- closed alpha (ancestor)` in the report; beta's tree and branch remain with `lane still open: <beta
+  path> (driver failed rc=3)`; the driver and gate saw the lane record's port, inside the range; the run start closed
+  the pre lane, logged as `lanes sweep: closed`. Control: the same fixture with `lane_sweep: off` leaves the pre lane
+  open and prints no `lanes sweep:` line. Cases that read a merged lane's tree or branch after a run (1, 6, 8, 12,
+  15) read it on the integration branch or at its archive ref, since the run closed the lane.
+  Case 28 (settle archive): integration trees at <lanes dir>/<n>/integration beside merge.lock and logs/, as fanout
+  makes them; after settle the trees and branches are gone and refs/archive/<UTC date>/fanout/ff and .../fanout/hand
+  exist; a diverged branch exits 2 and is kept; a tree outside a lanes dir is kept with `lane still open` and exit 1.
+  Case 30 (host record): prep writes <lanes root>/host/T-0001-solo.lane.json (kind host, ticket T-0001); a land from
+  a worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 31 (roll scratch): after a merged
+  roll and after a refused one, <lanes-dir>/rolling is absent and `git worktree list` names no rolling tree. Case 32
+  (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
+  and, after the land of its last ticket, is gone with an archive ref and its branch deleted.
 """
 import argparse, contextlib, datetime, fcntl, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
 import order  # same scripts/ dir: newest result file of a role
+import lanes  # same scripts/ dir: the lane lifecycle (open, close, sweep)
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
@@ -516,7 +572,7 @@ class Lane:
         # external: the registered branch an outside agent owns (<lane>@<branch>=...), else None;
         # an external lane's branch is that branch and its dir stays None (no worktree, no driver)
         self.external, self.tip = external, None  # tip: the external branch's commit at preflight
-        self.branch = self.dir = None
+        self.branch = self.dir = self.port = None  # port: the lane record's port (lane_ports:), else None
         self.results = []  # (ticket id, outcome, commit)
         self.files = set()  # every path this lane brought to a merge (report.md's Overlap lines)
         self.done = False  # set when run_lane returns, under ctx['cond']; a later lane stops waiting on it
@@ -959,15 +1015,24 @@ def setup(ctx):
             git_out(cwd, 'branch', integration, ctx['start'])
             branches.append(integration)
             print(f"created integration branch {integration} at {ctx['start'][:12]} ({ctx['base']})", flush=True)
+        # merge.lock beside logs/ marks the lanes dir, so lanes.py reads the integration tree as a fanout integration lane
+        (lanes_dir / 'merge.lock').touch()
+        # the integration tree stays a plain worktree add: its branch may be reused, and open_lane makes a new one
         git_out(cwd, 'worktree', 'add', '-q', str(ctx['integ_dir']), integration)
         worktrees.append(ctx['integ_dir'])
         print(f"worktree integration: {ctx['integ_dir']}", flush=True)
         regular = [lane for lane in ctx['lanes'] if not lane.external]
         for lane in regular:
-            git_out(cwd, 'worktree', 'add', '-q', '-b', lane.branch, str(lane.dir), integration)
+            r = lanes.open_lane(lane.name, kind='fanout', tickets=[t.id for t in lane.tickets], base=integration,
+                                into=integration, root=str(ctx['root']), path=lane.dir, branch=lane.branch,
+                                check_claim=False, cwd=ctx['cwd'])
+            if r['rc']:
+                raise Refuse(f"lanes.py open {lane.name}: {r['message']}; removed what this run created")
             worktrees.append(lane.dir)
             branches.append(lane.branch)
-            print(f'worktree {lane.name}: {lane.dir} (branch {lane.branch})', flush=True)
+            lane.port = r.get('port')
+            port = f', port {lane.port}' if lane.port else ''
+            print(f'worktree {lane.name}: {lane.dir} (branch {lane.branch}{port})', flush=True)
         for lane in ctx['lanes']:
             if lane.external:
                 print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
@@ -1122,6 +1187,15 @@ def inherited_red(ticket_dir):
     return None
 
 
+def lane_port_env(env, lane):
+    """Set SDLC_LANE_PORT in env to the lane record's port, or drop an inherited value when the lane has none."""
+    if lane.port:
+        env['SDLC_LANE_PORT'] = str(lane.port)
+    else:
+        env.pop('SDLC_LANE_PORT', None)
+    return env
+
+
 def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit).
     An external lane (no dir) goes straight to the locked merge of its branch: no pre-sync wip, sync,
@@ -1148,6 +1222,7 @@ def run_ticket(ctx, lane, t, lock):
                FANOUT_HANDOFF=str(wt / ctx['trel'] / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
                FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN), SDLC_HEADLESS='1', SDLC_ROLE='conductor',
                BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS, FANOUT_RUN_ID=ctx['run_id'])
+    lane_port_env(env, lane)
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
     kind, why = lane_run(ctx, wt, t)
     tier = solo_tier(t.size) if kind == 'solo' else None
@@ -1296,8 +1371,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             stem = f'gate-{lane.name}-{t.id}-{k}-a'
             pat = re.compile(re.escape(stem) + r'(\d+)\.log$')
             n = 1 + max((int(m.group(1)) for f in ctx['logs'].iterdir() if (m := pat.match(f.name))), default=0)
-            rc = run_logged(gate_argv(ctx, lane, t, gate), str(integ), dict(ENV, FANOUT_RUN_ID=ctx['run_id']),
-                            ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
+            genv = lane_port_env(dict(ENV, FANOUT_RUN_ID=ctx['run_id']), lane)
+            rc = run_logged(gate_argv(ctx, lane, t, gate), str(integ), genv, ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
             logtext = ''
             if rc in (0, 5):
                 try:
@@ -1396,6 +1471,9 @@ def report(ctx):
     overlap = [f'- Overlap: `{x.name}` and `{y.name}`: ' + ', '.join(f'`{f}`' for f in sorted(x.files & y.files))
                for k, x in enumerate(lanes) for y in lanes[k + 1:] if x.files & y.files]
     out += overlap or ['- Overlap: none']
+    if 'closes' in ctx:  # run only: each closed lane, each lane kept open, and the integration tree
+        out += [f'- {line}' for line in ctx['closes']]
+        out.append(f"- lane still open: {integ} (integration: stays until main contains {ctx['integration']})")
     for lane in ctx['lanes']:
         for tid, _outcome, _commit in lane.results:
             if tid in ctx['kinds']:
@@ -1422,6 +1500,43 @@ def refuse_overlap(ctx):
                      f"the merge-time wait serialize them")
 
 
+def sweep_lanes(top):
+    """Close every landed plugin lane before a run starts (lanes.py sweep --apply), unless `lane_sweep: off` in
+    .sdlc/config. Prints each result line as `lanes sweep: <line>`; an error is printed too and never blocks the run."""
+    try:
+        if lanes.config(top)['lane_sweep'] == 'off':
+            return
+        res, _ = lanes.sweep(apply=True, cwd=str(top))
+    except lanes.LaneError as e:
+        print(f'lanes sweep: {e}', flush=True)
+        return
+    for r in res:
+        for line in (r.get('message') or '').splitlines():
+            print(f'lanes sweep: {line}', flush=True)
+
+
+def close_lanes(ctx):
+    """After the run, close each regular lane whose every ticket merged (lanes.py writes the archive ref first); a
+    stopped lane, or one whose close refuses, keeps its tree and WIP commit. Sets ctx['closes'] to the report lines."""
+    lines = []
+    for lane in ctx['lanes']:
+        if lane.external:
+            continue
+        bad = next((o for _, o, _ in lane.results if o != 'merged'), None)
+        if bad is None and lane.results:
+            try:
+                r = lanes.close_lane(str(lane.dir), cwd=str(ctx['top']))  # LANE-CLOSE
+            except lanes.LaneError as e:
+                r = dict(rc=1, message=str(e))
+            msg = first_line(r['message'], f"rc={r['rc']}")
+            if not r['rc']:
+                lines.append(msg)
+                continue
+            bad = msg
+        lines.append(f'lane still open: {lane.dir} ({bad or "no tickets ran"})')
+    ctx['closes'] = lines
+
+
 def cmd_run(a):
     try:
         ctx = preflight(a)
@@ -1431,6 +1546,7 @@ def cmd_run(a):
         # fanout mints its own id on every run; an inherited SDLC_ATTEMPT_ID belongs to a role attempt
         ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
         refuse_overlap(ctx)
+        sweep_lanes(ctx['top'])
         setup(ctx)
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
@@ -1445,6 +1561,7 @@ def cmd_run(a):
         th.start()
     for th in threads:
         th.join()
+    close_lanes(ctx)  # after every join, never inside run_lane: no lane thread races a close
     text = report(ctx)
     print()
     print(text, end='')
@@ -1539,10 +1656,26 @@ def land_command(ctx, branch, tid):
     return ' '.join(shlex.quote(x) for x in argv)
 
 
+def host_record_path(top, name):
+    """<lanes root>/host/<name>.lane.json, the host lane record lanes.host_record writes (lanes root from .sdlc/config)."""
+    return lanes.Ctx(str(top)).root / 'host' / f'{name}.lane.json'
+
+
+def write_host_record(ctx, name, branch, tid, base=None):
+    """Write the host lane record of a sub-agent lane (kind host, into the integration branch); its path, or why not."""
+    try:
+        lanes.host_record(name, branch=branch, into=ctx['integration'], tickets=[tid], base=base or ctx['start'],
+                          cwd=str(ctx['top']))
+        return str(host_record_path(ctx['top'], name))
+    except (lanes.LaneError, OSError) as e:
+        return f'not written ({e})'
+
+
 def print_prep(ctx):
     """The prep plan: per ticket the lane, then the dispatch JSON of a solo ticket or the tree commands of a full one.
     Returns 4 when a ticket stops at the budget gate, else 0."""
-    out = ['fanout prep (sub-agent lanes: creates only each solo ticket\'s <name>.dispatch.json, the record the spawn gate checks)']
+    out = ['fanout prep (sub-agent lanes: creates only each solo ticket\'s <name>.dispatch.json, the record the spawn gate checks, '
+           'and its host lane record <lanes root>/host/<name>.lane.json)']
     if ctx['reuse']:
         out.append(f"integration branch {ctx['integration']} exists at {ctx['start']}: land reuses it")
     else:
@@ -1578,6 +1711,7 @@ def print_prep(ctx):
                 (taskdir / f"{d['name']}.dispatch.json").write_text(
                     json.dumps({**d, 'role': 'solo', 'level': solo_run.TIERS[tier][2]}, indent=2) + '\n', encoding='utf-8')
                 out.append(f"    branch: {d['branch']}; worktree: {d['worktree']} (host-made at the spawn)")
+                out.append(f"    host record: {write_host_record(ctx, d['name'], d['branch'], t.id)}")
                 out.append(f"    dispatch {t.id}:")
                 out.append('\n'.join('    ' + ln for ln in json.dumps(d, indent=2).splitlines()))
                 if d['verifier']:
@@ -1588,7 +1722,10 @@ def print_prep(ctx):
                 out.append(f'    full: driven by the parent conductor, not a lane process (skills/fanout/SKILL.md): '
                            f'roles run as sub-agents against {tree}, each brief carrying `Tree: {tree}`')
                 if k == 0:
-                    out.append(f"    tree: git worktree add -b {lane.branch} {tree} {ctx['start']}")
+                    out.append('    tree: ' + ' '.join(['python3', shlex.quote(str(SCRIPTS / 'lanes.py')), 'open', lane.name, '--kind', 'fanout']
+                                                   + [x for tt in lane.tickets for x in ('--ticket', tt.id)]
+                                                   + ['--base', ctx['start'], '--into', shlex.quote(ctx['integration']),
+                                                      '--path', shlex.quote(str(tree)), '--branch', shlex.quote(lane.branch), '--no-claim']))
                 else:
                     out.append(f"    sync: git -C {tree} merge --ff --no-edit {ctx['integration']}")
                 out.append(f"    commit: git -C {tree} {LANE_ADD_SH[4:]} && git -C {tree} commit -m {shlex.quote(f'{t.id}: {t.title}')}")
@@ -1618,6 +1755,7 @@ def cmd_prep(a):
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
         return 2
+    sweep_lanes(ctx['top'])  # after every refusal, so a refused prep changes nothing
     return print_prep(ctx)
 
 
@@ -1881,6 +2019,43 @@ def queue_prune(ctx, lane, t, tier):
         say(ctx, lane, t.id, f'prune queue not written: {e}')
 
 
+def land_lanes(ctx, t, outcome):
+    """After a land, outside the merge lock (T-0452). A merged branch checked out under .claude/worktrees/<leaf> whose leaf
+    is not <id>-solo (the host names it agent-<agent_id>) gets its host record rebound to <leaf>, and the provisional
+    <id>-solo record goes; that host lane stays open (dispatch.py prune --done closes it). A tree whose .lane.json is
+    kind fanout is closed through lanes.close_lane after the record's last ticket merged. Returns the lines to print."""
+    wt = ctx.get('lane_wt')
+    if not wt or not pathlib.Path(wt).is_dir():
+        return []
+    top, wt = ctx['top'], pathlib.Path(wt)
+    hosts = top / HOST_WORKTREES
+    rec = lanes.read_json(wt / lanes.RECORD) or {}
+    if lanes.under(wt, hosts) and not lanes.samepath(wt, hosts):
+        name = subagent_name(t.id)
+        if outcome != 'merged' or wt.name == name:
+            return []
+        prov = host_record_path(top, name)
+        old = lanes.read_json(prov) or {}
+        got = write_host_record(ctx, wt.name, ctx['lane'].branch, t.id, base=old.get('base_sha') or old.get('base'))
+        if got.startswith('not written'):
+            return [f'host record: {got}']
+        with contextlib.suppress(OSError):
+            prov.unlink()
+        return [f'host record: {got} (rebound from {prov.name})']
+    tids = rec.get('tickets') or []
+    if rec.get('kind') != 'fanout' or not tids or tids[-1] != t.id:
+        return []
+    if outcome != 'merged':
+        return [f'lane still open: {wt} ({outcome})']
+    try:
+        r = lanes.close_lane(str(wt), into=ctx['integration'], cwd=str(top))
+    except lanes.LaneError as e:
+        r = dict(rc=1, message=str(e))
+    if r['rc']:
+        return [f"lane still open: {wt} ({first_line(r['message'], 'rc=%s' % r['rc'])})"]
+    return r['message'].splitlines()
+
+
 def cmd_land(a):
     try:
         ctx = land_preflight(a)
@@ -1904,6 +2079,10 @@ def cmd_land(a):
     say(ctx, lane, t.id, outcome)
     if kind == 'solo' and outcome == 'merged':
         queue_prune(ctx, lane, t, tier)
+    try:
+        closes = land_lanes(ctx, t, outcome)  # the merge lock is released here
+    except Exception as e:  # a lane record or close failure never changes the land outcome
+        closes = [f'lane still open: {ctx.get("lane_wt")} (error: {first_line(str(e), type(e).__name__)})']
     journal = ctx['logs'] / 'land.jsonl'
     with open(journal, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'run_id': ctx['run_id'], 'lane': lane.name, 'branch': lane.branch, 'ticket': t.id,
@@ -1920,6 +2099,8 @@ def cmd_land(a):
     text = report(ctx)
     print()
     print(text, end='')
+    for ln in closes:
+        print(ln)
     return 0 if outcome == 'merged' else 1
 
 
@@ -2046,9 +2227,12 @@ def roll_ticket(ctx, lock):
 
 
 def cmd_settle(a):
-    """Bring a landed integration branch back into the checkout it was cut from and retire it (T-0438): fast-forward the
-    current branch to it (nothing to do when it is already merged, as after a hand merge), remove its worktree, delete the
-    branch. A branch that is neither merged nor a fast-forward is refused and left whole. Local only, never a push."""
+    """Bring a landed integration branch back into the checkout it was cut from and retire it (T-0438, T-0452): fast-forward
+    the current branch to it (nothing to do when it is already merged, as after a hand merge), then close its worktree
+    through lanes.close_lane, which writes refs/archive/<UTC date>/<branch> before it removes the tree and deletes the
+    branch. A branch that is neither merged nor a fast-forward is refused (exit 2) and left whole; a close that refuses
+    (not a plugin lane, lanes still open into it, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
+    keeps the branch and exits 1. Local only, never a push."""
     cwd = pathlib.Path.cwd()
     try:
         if git(cwd, 'rev-parse', '--verify', '-q', f'refs/heads/{a.integration}').returncode:
@@ -2060,17 +2244,27 @@ def cmd_settle(a):
             if p.returncode:
                 raise Refuse(f'{a.integration} is not a fast-forward of {head}: {(p.stderr or p.stdout).strip().splitlines()[0] if (p.stderr or p.stdout).strip() else p.returncode}; '
                              f'stop with state written, the branch is kept')
-        wt = None
-        for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
-            if line.startswith('worktree '):
-                wt = line[len('worktree '):]
-            elif line == f'branch refs/heads/{a.integration}':
-                git_out(cwd, 'worktree', 'remove', wt)
-        git_out(cwd, 'branch', '-d', a.integration)
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
         return 2
-    print(f'settled: {a.integration} is in {head}; its worktree and branch are removed')
+    wt, cur = None, None
+    for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+        if line.startswith('worktree '):
+            cur = line[len('worktree '):]
+        elif line == f'branch refs/heads/{a.integration}':
+            wt = cur
+    if wt is None:
+        print(f'lane still open: {a.integration} (no worktree)')
+        return 1
+    try:
+        r = lanes.close_lane(wt, into=head or 'HEAD', cwd=str(cwd))
+    except lanes.LaneError as e:
+        r = dict(rc=1, message=str(e))
+    if r['rc']:
+        print(f"lane still open: {wt} ({first_line(r['message'], 'rc=%s' % r['rc'])})")
+        return 1
+    print(r['message'])
+    print(f'settled: {a.integration} is in {head or "HEAD"}; its worktree and branch are removed (archive {r.get("archive")})')
     return 0
 
 
@@ -2081,22 +2275,26 @@ def cmd_roll(a):
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
         return 2
-    ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
-    ctx['cond'] = threading.Condition()
-    lane, t = ctx['lane'], ctx['ticket']
-    kind, tier = ctx['kinds'][t.id]
-    say(ctx, lane, t.id, f"roll {lane.branch} onto {ctx['main']} (lane {kind}" + (f' level {tier}' if tier else '') + ')')
     try:
-        outcome, commit = roll_ticket(ctx, MergeLock(ctx['lanes_dir'] / 'merge.lock'))
-    except Exception as e:  # a git or IO failure mid-roll: report it
-        outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
-    say(ctx, lane, t.id, outcome)
-    if outcome == 'merged':
-        say(ctx, lane, t.id, f"{ctx['main']} at {git(ctx['cwd'], 'rev-parse', '--short', 'refs/heads/' + ctx['main']).stdout.strip()} "
-                             f'(merge {commit})')
-        if kind == 'solo':
-            queue_prune(ctx, lane, t, tier)
-    return 0 if outcome == 'merged' else 1
+        ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
+        ctx['cond'] = threading.Condition()
+        lane, t = ctx['lane'], ctx['ticket']
+        kind, tier = ctx['kinds'][t.id]
+        say(ctx, lane, t.id, f"roll {lane.branch} onto {ctx['main']} (lane {kind}" + (f' level {tier}' if tier else '') + ')')
+        try:
+            outcome, commit = roll_ticket(ctx, MergeLock(ctx['lanes_dir'] / 'merge.lock'))
+        except Exception as e:  # a git or IO failure mid-roll: report it
+            outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
+        say(ctx, lane, t.id, outcome)
+        if outcome == 'merged':
+            say(ctx, lane, t.id, f"{ctx['main']} at {git(ctx['cwd'], 'rev-parse', '--short', 'refs/heads/' + ctx['main']).stdout.strip()} "
+                                 f'(merge {commit})')
+            if kind == 'solo':
+                queue_prune(ctx, lane, t, tier)
+        return 0 if outcome == 'merged' else 1
+    finally:  # T-0452: the detached scratch holds no branch; roll_setup makes it again on the next roll
+        git(ctx['cwd'], 'worktree', 'remove', '--force', str(ctx['integ_dir']))
+        git(ctx['cwd'], 'worktree', 'prune')
 
 
 # ---------- selftest ----------
@@ -2170,6 +2368,11 @@ def selftest():
     def sh(cwd, *args):
         return subprocess.run(['git', '-C', str(cwd), *args], env=ENV, capture_output=True, text=True)
 
+    def archived(repo, branch):
+        """The refs/archive/<date>/<branch> ref lanes.py wrote when the run closed that lane, else ''."""
+        refs = sh(repo, 'for-each-ref', '--format=%(refname)', 'refs/archive/').stdout.split()
+        return next((r for r in refs if r.split('/', 3)[-1] == branch), '')
+
     # T-0331: prep writes an unpriced solo row; land --transcript prices it (negative control: no usage prices nothing)
     with tempfile.TemporaryDirectory() as t331:
         td = pathlib.Path(t331)
@@ -2223,7 +2426,8 @@ def selftest():
 
         # 1. Two lanes, a stub driver, a gate that goes red on T-0003.
         repo, lanes = tmp / 'repo', tmp / 'lanes'
-        make_repo(repo, [(s, f'T-000{i}', 'ready') for i, s in enumerate('abcde', 1)])
+        # .worktrees/ is ignored: lanes.py open takes its flock at <toplevel>/.worktrees/lanes.lock
+        make_repo(repo, [(s, f'T-000{i}', 'ready') for i, s in enumerate('abcde', 1)], {'.gitignore': '.worktrees/\n'})
         stub = tmp / 'stub.sh'
         stub.write_text(STUB)
         stub.chmod(0o755)
@@ -2267,9 +2471,12 @@ def selftest():
         expect('alpha worktree kept, holding its red T-0003.txt', (lanes / 'alpha' / 'T-0003.txt').is_file())
         expect('alpha stopped after T-0003: no T-0005.txt in the alpha worktree',
                (lanes / 'alpha').is_dir() and not (lanes / 'alpha' / 'T-0005.txt').exists())
-        saw = lanes / 'beta' / 'T-0004.saw'
-        seen = saw.read_text().split() if saw.is_file() else []
-        expect(f'T-0004.saw in beta lists T-0001.txt (synced before the ticket), got {seen}', 'T-0001.txt' in seen)
+        seen = sh(repo, 'show', 'fanout/test:T-0004.saw').stdout.split()  # beta merged both tickets, so the run closed it
+        expect(f'T-0004.saw from beta (lane closed, read on fanout/test) lists T-0001.txt (synced before the ticket), '
+               f'got {seen}', 'T-0001.txt' in seen)
+        expect('beta merged every ticket: the run closed it (tree gone, branch archived)',
+               not (lanes / 'beta').exists() and archived(repo, 'fanout/test-beta')
+               and sh(repo, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/test-beta').returncode != 0)
         board = subprocess.run([sys.executable, str(SCRIPTS / 'board.py'), '--lanes', '--root', str(repo / '.sdlc')],
                                env=ENV, capture_output=True, text=True)
         cells = {}
@@ -2279,7 +2486,7 @@ def selftest():
                 cells[c[0]] = c[1]
         expect(f'board.py --lanes exits 0, got {board.returncode} stderr={board.stderr!r}', board.returncode == 0)
         expect(f'board.py --lanes lists alpha on fanout/test-alpha, got {cells}', cells.get('alpha') == 'fanout/test-alpha')
-        expect(f'board.py --lanes lists beta on fanout/test-beta, got {cells}', cells.get('beta') == 'fanout/test-beta')
+        expect(f'board.py --lanes no longer lists beta (lane closed), got {cells}', 'beta' not in cells)
 
         # 2. --dry-run and refusals create nothing.
         rr, rl = tmp / 'refuse', tmp / 'rlanes'
@@ -2527,9 +2734,9 @@ def selftest():
         for tid in ('T-0001', 'T-0002'):
             expect(f'default lanes dir: {tid} merged, got {got.get(tid)!r}', got.get(tid) == 'merged')
         for lane, tid, slug in (('alpha', 'T-0001', 'a'), ('beta', 'T-0002', 'b')):
-            subjects = sh(fr, 'log', '--format=%s', f'fanout/dd-{lane}').stdout.splitlines()
-            expect(f'default lanes dir: fanout/dd-{lane} has a commit "{tid}: Ticket {slug}", got {subjects!r}',
-                   f'{tid}: Ticket {slug}' in subjects)
+            subjects = sh(fr, 'log', '--format=%s', archived(fr, f'fanout/dd-{lane}') or 'missing-archive-ref').stdout.splitlines()
+            expect(f'default lanes dir: fanout/dd-{lane} (lane closed, read at its archive ref) has a commit '
+                   f'"{tid}: Ticket {slug}", got {subjects!r}', f'{tid}: Ticket {slug}' in subjects)
             expect(f'default lanes dir: fanout/dd holds {tid}.txt',
                    sh(fr, 'cat-file', '-e', f'fanout/dd:{tid}.txt').returncode == 0)
             shown = sh(fr, 'show', f'fanout/dd:.sdlc/{slug}/handoff.md').stdout
@@ -2548,9 +2755,9 @@ def selftest():
         expect(f'default lanes dir: git status --ignored lists .worktrees/ (non-vacuity), got {ignored!r}',
                '!! .worktrees/' in ignored.splitlines())
         wts = sh(fr, 'worktree', 'list').stdout
-        for name in ('alpha', 'beta', 'integration'):
-            expect(f'default lanes dir: git worktree list shows {flanes / name}, got {wts!r}',
-                   any(ln.split()[0] == str(flanes / name) for ln in wts.splitlines() if ln.strip()))
+        for name, want in (('alpha', False), ('beta', False), ('integration', True)):
+            expect(f'default lanes dir: git worktree list shows {flanes / name} is {want} (merged lanes closed), got {wts!r}',
+                   any(ln.split()[0] == str(flanes / name) for ln in wts.splitlines() if ln.strip()) is want)
 
         # 7. A driver that edits the lane and fails: the lane is WIP-committed, never merged.
         rw, wl = tmp / 'wip', tmp / 'wlanes'
@@ -2617,8 +2824,8 @@ def selftest():
                proc.returncode == 0)
         for tid in ('T-0001', 'T-0002'):
             expect(f'dirty-sync control: {tid} merged, got {got.get(tid)!r}', got.get(tid) == 'merged')
-        subj = sh(cr, 'log', '-1', '--format=%s', 'fanout/dc-alpha').stdout.strip()
-        expect(f'dirty-sync control: lane tip subject does not start with wip(, got {subj!r}',
+        subj = sh(cr, 'log', '-1', '--format=%s', archived(cr, 'fanout/dc-alpha') or 'missing-archive-ref').stdout.strip()
+        expect(f'dirty-sync control: lane tip subject (lane closed, read at its archive ref) does not start with wip(, got {subj!r}',
                subj and not subj.startswith('wip('))
         expect('dirty-sync control: the integration branch holds T-0002.txt',
                sh(cr, 'cat-file', '-e', 'fanout/dc:T-0002.txt').returncode == 0)
@@ -2741,6 +2948,8 @@ def selftest():
 
         er, el = tmp / 'external', tmp / 'elanes'
         make_ext(er, 'external_branch: ext\nexternal_branch: gone\n')
+        with open(er / '.git' / 'info' / 'exclude', 'a') as f_:  # lanes.py open takes its flock at <toplevel>/.worktrees/lanes.lock
+            f_.write('.worktrees/\n')
         e0, em0 = sh(er, 'rev-parse', 'ext').stdout.strip(), sh(er, 'rev-parse', 'main').stdout.strip()
         eargs = ('--integration', 'fanout/ext', '--lanes-dir', str(el))
         proc = fanout(er, '--dry-run', *eargs, 'alpha@ext=T-0002,T-0003', 'beta=T-0001')
@@ -2774,11 +2983,11 @@ def selftest():
                proc.returncode == 0)
         expect('external: the ext tip is unchanged', e0 and sh(er, 'rev-parse', 'ext').stdout.strip() == e0)
         expect('external: main is unchanged', em0 and sh(er, 'rev-parse', 'main').stdout.strip() == em0)
-        expect('external: no fanout/ext-alpha ref, while the regular fanout/ext-beta exists',
-               sh(er, 'branch', '--list', 'fanout/ext-alpha').stdout.strip() == ''
-               and sh(er, 'branch', '--list', 'fanout/ext-beta').stdout.strip() != '')
-        expect('external: no <lanes-dir>/alpha dir, while <lanes-dir>/beta exists',
-               not (el / 'alpha').exists() and (el / 'beta').is_dir())
+        expect('external: no fanout/ext-alpha ref or archive, while the regular fanout/ext-beta was made (lane closed: archived)',
+               sh(er, 'branch', '--list', 'fanout/ext-alpha').stdout.strip() == '' and not archived(er, 'fanout/ext-alpha')
+               and archived(er, 'fanout/ext-beta'))
+        expect('external: no <lanes-dir>/alpha dir, while <lanes-dir>/beta was made (lane closed: its driver log exists)',
+               not (el / 'alpha').exists() and not (el / 'beta').exists() and (el / 'logs' / 'beta-T-0001.log').is_file())
         expect('external: no alpha driver log, while beta-T-0001.log exists',
                not (el / 'logs' / 'alpha-T-0002.log').exists() and not (el / 'logs' / 'alpha-T-0003.log').exists()
                and (el / 'logs' / 'beta-T-0001.log').is_file())
@@ -3138,9 +3347,9 @@ def selftest():
             proc = fanout(gr, 'x=T-0001', 'y=T-0002', 'z=T-0003', '--base', 'main', '--integration', 'fanout/g',
                           '--lanes-dir', str(gl), '--driver', shlex.quote(str(starter)), '--stagger', gap)
             ts = []
-            for tid, lane in (('T-0001', 'x'), ('T-0002', 'y'), ('T-0003', 'z')):
-                f = gl / lane / f'{tid}.start'
-                ts.append(float(f.read_text()) if f.is_file() else 0.0)
+            for tid in ('T-0001', 'T-0002', 'T-0003'):  # each lane merged and was closed: read the start on fanout/g
+                f = sh(gr, 'show', f'fanout/g:{tid}.start')
+                ts.append(float(f.stdout) if f.returncode == 0 and f.stdout.strip() else 0.0)
             spread[gap] = max(ts) - min(ts) if all(ts) else -1
             expect(f'case 15 stagger {gap}: all three lanes ran and merged, got rc={proc.returncode} {proc.stderr!r}',
                    proc.returncode == 0 and all(ts))
@@ -3442,11 +3651,14 @@ def selftest():
         expect('case 22 prep: each ticket gets its land command naming the branch, the ticket, the base and the gate',
                all(f'land worktree-{x}-solo --ticket {x}' in pp.stdout for x in ('T-0001', 'T-0002', 'T-0003'))
                and f'--base {main_p1}' in pp.stdout and '--gate true' in pp.stdout)
-        expect('case 22 prep: creates no branch, worktree, lanes dir or file in the repo',
+        p1_files = [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all', '--ignored').stdout.splitlines()
+                    if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl', '.worktrees/lanes.lock'))
+                    and not re.fullmatch(r'!! \.worktrees/host/T-000[123]-solo\.lane\.json', ln)]
+        expect(f'case 22 prep: creates no branch, worktree, lanes dir or file in the repo but the dispatch records and the host '
+               f'lane records (T-0452), got {p1_files}',
                sh(p1, 'branch', '--list', 'fanout/*', 'worktree-*').stdout.strip() == ''
-               and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists()
-               and [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all').stdout.splitlines()
-                    if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl'))] == [])
+               and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists() and p1_files == []
+               and all((p1 / '.worktrees' / 'host' / f'{x}-solo.lane.json').is_file() for x in ('T-0001', 'T-0002', 'T-0003')))
         # T-0363: the list title is line 1 (ticket id first, at most 50 characters), Handoff is line 2, the description 3 to 5 words.
         for dd_ in (d1, d2):
             pl_ = dd_.get('prompt', '').splitlines()
@@ -3473,7 +3685,9 @@ def selftest():
         expect(f'case 22 prep --lane full: no dispatch JSON, the parent drives the chain against the lane tree with a '
                f'Tree: line, got rc={pf.returncode} out={pf.stdout!r}',
                pf.returncode == 0 and 'dispatch T-0001' not in pf.stdout and 'full: driven by the parent conductor' in pf.stdout
-               and f'`Tree: {pl1 / "alpha"}`' in pf.stdout and f'worktree add -b fanout/p-alpha {pl1 / "alpha"}' in pf.stdout
+               and f'`Tree: {pl1 / "alpha"}`' in pf.stdout
+               and (f'lanes.py open alpha --kind fanout --ticket T-0001 --ticket T-0002 --base {main_p1} --into fanout/p '
+                    f'--path {pl1 / "alpha"} --branch fanout/p-alpha --no-claim') in pf.stdout
                and f'merge --ff --no-edit fanout/p' in pf.stdout and 'commit -m \'T-0001: Ticket t1\'' in pf.stdout)
         # budget gate: an 80 percent ticket gets no dispatch and prep exits 4 (control: the others still print)
         pb1 = tmp / 'prep-budget'
@@ -3734,6 +3948,11 @@ def selftest():
         rpin = ('--lanes-dir', str(tmp / 'roll-lanes'))
         r1 = verb(rl, 'roll', 'worktree-T-0001-solo', *rpin, '--gate', 'test -e r1.txt')
         main1 = sh(rl, 'rev-parse', 'main').stdout.strip()
+
+        def rolling_gone():
+            listed = sh(rl, 'worktree', 'list', '--porcelain').stdout
+            return not (tmp / 'roll-lanes' / 'rolling').exists() and '/rolling\n' not in listed and not listed.rstrip().endswith('/rolling')
+        gone_after_merge = rolling_gone()
         expect(f'case 27 roll: a verified lane on an ancestor of main touching no declared path is rolling and merged, '
                f'got rc={r1.returncode} out={r1.stdout[-500:]!r} err={r1.stderr[-300:]!r}',
                r1.returncode == 0 and 'T-0001 merged' in r1.stdout)
@@ -3750,6 +3969,11 @@ def selftest():
                    f'err={ro.stderr[-300:]!r}', ro.returncode == 1 and want in ro.stdout
                    and sh(rl, 'rev-parse', 'main').stdout.strip() == main1
                    and re.search(r'^status: ready\b', sh(rl, 'show', f'main:.sdlc/t{tid[-1]}/handoff.md').stdout, re.M))
+            if tid == 'T-0002':
+                expect(f'case 31 roll scratch: after a merged roll and after a refused roll ({tid}, exit 1) <lanes-dir>/rolling '
+                       f'is absent and git worktree list names no rolling tree, got after merge {gone_after_merge}, after the '
+                       f'refusal {rolling_gone()}: {sh(rl, "worktree", "list", "--porcelain").stdout!r}',
+                       gone_after_merge and rolling_gone())
         (rl / 'r5.txt').write_text('a local file the fast-forward would overwrite\n', encoding='utf-8')
         r5 = verb(rl, 'roll', 'worktree-T-0005-solo', *rpin, '--gate', 'true')
         expect(f'case 27 roll: a fast-forward git refuses leaves main and the local file alone, got rc={r5.returncode} '
@@ -3772,35 +3996,50 @@ def selftest():
             expect(f'case 27 roll refusal ({label}): exit 2 naming {want!r}, got rc={ro.returncode} err={ro.stderr!r}',
                    ro.returncode == 2 and want in ro.stderr and 'Traceback' not in ro.stderr)
 
-        # case 28 (T-0438): settle brings the integration branch back and retires it, so the next prep starts at the current tip
+        # case 28 (T-0438, T-0452): settle brings the integration branch back and closes its tree through lanes.py (the
+        # archive ref first), so the next prep starts at the current tip
         sv = tmp / 'settle'
         sized_repo(sv, ['L1', 'L1', 'L1'], {'.gitignore': gi})
         sv_lanes = tmp / 'settle-lanes'
 
-        def integration_with(name, fname):
+        def integration_with(name, fname, lanes_dir=True):
+            """An integration branch with one commit, its tree at <lanes dir>/<n>/integration beside merge.lock and logs/
+            as fanout makes it, or (lanes_dir False) a plain worktree outside any lanes dir."""
             sh(sv, 'branch', name, 'main')
-            sh(sv, 'worktree', 'add', '-q', str(sv_lanes / name.replace('/', '-')), name)
-            wt_ = sv_lanes / name.replace('/', '-')
+            wt_ = sv_lanes / name.replace('/', '-') / 'integration' if lanes_dir else tmp / 'settle-plain' / name.replace('/', '-')
+            sh(sv, 'worktree', 'add', '-q', str(wt_), name)
+            if lanes_dir:
+                (wt_.parent / 'logs').mkdir(exist_ok=True)
+                (wt_.parent / 'merge.lock').touch()
             (wt_ / fname).write_text('x\n', encoding='utf-8')
             sh(wt_, 'add', '-A')
             sh(wt_, 'commit', '-q', '-m', f'lane work {fname}')
             return wt_, sh(sv, 'rev-parse', name).stdout.strip()
+
+        def archive_at(name, tip):
+            ref = archived(sv, name)
+            return bool(re.fullmatch(r'refs/archive/\d{4}-\d{2}-\d{2}/' + re.escape(name), ref)) and \
+                sh(sv, 'rev-parse', f'{ref}^{{commit}}').stdout.strip() == tip
         wt_a, tip_a = integration_with('fanout/ff', 'a.txt')
+        (wt_a / '.sdlc' / 'config').write_text('# copied, untracked\n', encoding='utf-8')  # land copies it; --force removes it
         st = verb(sv, 'settle', 'fanout/ff')
-        expect(f'case 28 settle: a fast-forward integration branch is merged into main, its worktree removed and its branch deleted, '
+        expect(f'case 28 settle archive: a fast-forward integration branch is merged into main, refs/archive/<UTC date>/fanout/ff '
+               f'is written at its tip, its tree (with an untracked .sdlc/config) is removed and its branch deleted, '
                f'got rc={st.returncode} out={st.stdout!r} err={st.stderr!r}',
                st.returncode == 0 and sh(sv, 'rev-parse', 'main').stdout.strip() == tip_a and not wt_a.exists()
-               and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/ff').returncode != 0)
+               and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/ff').returncode != 0
+               and archive_at('fanout/ff', tip_a) and 'closed integration (ancestor)' in st.stdout)
         wt_b, tip_b = integration_with('fanout/hand', 'b.txt')
         (sv / 'c.txt').write_text('c\n', encoding='utf-8')
         sh(sv, 'add', '-A')
         sh(sv, 'commit', '-q', '-m', 'main moved')
         sh(sv, 'merge', '-q', '--no-ff', '-m', 'merge by hand', 'fanout/hand')
         st = verb(sv, 'settle', 'fanout/hand')
-        expect(f'case 28 settle: a branch the maintainer already merged with a non-ff merge is only retired (main untouched), '
-               f'got rc={st.returncode} err={st.stderr!r}',
+        expect(f'case 28 settle archive: a branch the maintainer already merged with a non-ff merge is only retired (main '
+               f'untouched) and archived at refs/archive/<UTC date>/fanout/hand, got rc={st.returncode} out={st.stdout!r} '
+               f'err={st.stderr!r}',
                st.returncode == 0 and not wt_b.exists() and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/hand').returncode != 0
-               and sh(sv, 'merge-base', '--is-ancestor', tip_b, 'main').returncode == 0)
+               and sh(sv, 'merge-base', '--is-ancestor', tip_b, 'main').returncode == 0 and archive_at('fanout/hand', tip_b))
         wt_c, tip_c = integration_with('fanout/div', 'd.txt')
         (sv / 'e.txt').write_text('e\n', encoding='utf-8')
         sh(sv, 'add', '-A')
@@ -3810,9 +4049,179 @@ def selftest():
         expect(f'case 28 settle negative control: a diverged integration branch is refused (exit 2) and left whole, '
                f'got rc={st.returncode} err={st.stderr!r}',
                st.returncode == 2 and 'not a fast-forward' in st.stderr and wt_c.exists()
-               and sh(sv, 'rev-parse', 'fanout/div').stdout.strip() == tip_c and sh(sv, 'rev-parse', 'main').stdout.strip() == main_c)
+               and sh(sv, 'rev-parse', 'fanout/div').stdout.strip() == tip_c and sh(sv, 'rev-parse', 'main').stdout.strip() == main_c
+               and not archived(sv, 'fanout/div'))
+        wt_o, tip_o = integration_with('fanout/plain', 'o.txt', lanes_dir=False)
+        st = verb(sv, 'settle', 'fanout/plain')
+        expect(f'case 28 settle archive negative control: a tree outside a lanes dir is not a plugin lane: it is kept with '
+               f'`lane still open` and exit 1, its branch kept and nothing archived, got rc={st.returncode} out={st.stdout!r} '
+               f'err={st.stderr!r}',
+               st.returncode == 1 and f'lane still open: {wt_o}' in st.stdout and wt_o.exists()
+               and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/plain').returncode == 0
+               and not archived(sv, 'fanout/plain'))
         st = verb(sv, 'settle', 'fanout/none')
         expect(f'case 28 settle: an absent branch is nothing to settle (exit 0), got rc={st.returncode}', st.returncode == 0 and 'nothing to settle' in st.stdout)
+
+        # 29. Lane lifecycle (T-0452): the run sweeps landed plugin lanes at its start (unless lane_sweep: off), opens
+        # each lane through lanes.py with a port from lane_ports:, closes a lane whose every ticket merged (its archive
+        # ref first), and keeps a stopped lane with its report line.
+        lstub = tmp / 'lifecycle-stub.sh'
+        lstub.write_text('#!/usr/bin/env bash\nset -eu\n'
+                         'echo "${SDLC_LANE_PORT:-none}" >"$PORT_LOG/driver-$FANOUT_TICKET"\n'
+                         '[ "$FANOUT_TICKET" != T-0002 ] || exit 3\n'
+                         'echo "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"\n'
+                         'printf \'## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n\' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"\n')
+        lstub.chmod(0o755)
+
+        def lifecycle_repo(name, extra_cfg=''):
+            """A repo whose config sets lane_ports and lane_min_age_hours 0, holding a landed plugin lane T-0003-pre:
+            opened with lanes.py open before the run, one commit, merged into main."""
+            r_ = tmp / name
+            make_repo(r_, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready'), ('c', 'T-0003', 'ready')],
+                      {'.gitignore': '.worktrees/\n',
+                       '.sdlc/config': 'lane_ports: 47400-47499\nlane_min_age_hours: 0\n' + extra_cfg})
+            op = subprocess.run([sys.executable, str(SCRIPTS / 'lanes.py'), 'open', 'pre', '--ticket', 'T-0003', '--no-claim'],
+                                cwd=str(r_), env=ENV, capture_output=True, text=True)
+            pre_ = r_ / '.worktrees' / 'T-0003-pre'
+            if pre_.is_dir():
+                (pre_ / 'pre.txt').write_text('pre\n', encoding='utf-8')
+                sh(pre_, 'add', 'pre.txt')
+                sh(pre_, 'commit', '-q', '-m', 'pre work')
+            mg = sh(r_, 'merge', '-q', '--no-ff', '-m', 'merge pre', 'lane/T-0003-pre')
+            expect(f'case 29 lifecycle: fixture {name}: lanes.py open and the merge of the pre lane into main succeed, got '
+                   f'open rc={op.returncode} {op.stdout!r} {op.stderr!r}, merge rc={mg.returncode} {mg.stderr!r}',
+                   op.returncode == 0 and mg.returncode == 0 and pre_.is_dir())
+            return r_, pre_
+
+        lr, pre = lifecycle_repo('lifecycle')
+        plog = tmp / 'lifecycle-ports'
+        plog.mkdir()
+        proc = fanout(lr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/lc', '--driver', shlex.quote(str(lstub)),
+                      '--gate', 'echo "${SDLC_LANE_PORT:-none}" >"$PORT_LOG/gate"', PORT_LOG=str(plog))
+        ran = f'rc={proc.returncode} stdout={proc.stdout[-1500:]!r} stderr={proc.stderr[-500:]!r}'
+        llanes = lr / '.worktrees' / 'fanout'
+        rep = llanes / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        got = report_rows(llanes)
+        merge_parents = sh(lr, 'log', '-1', '--format=%P', '--fixed-strings', '--grep', 'Merge fanout/lc-alpha: T-0001',
+                           'fanout/lc').stdout.split()
+        alpha_tip = merge_parents[1] if len(merge_parents) == 2 else ''
+        aref = archived(lr, 'fanout/lc-alpha')
+        expect(f'case 29 lifecycle: merged lane gone: alpha merged, its tree and refs/heads/fanout/lc-alpha are gone, '
+               f'refs/archive/<UTC date>/fanout/lc-alpha ({aref!r}) resolves to its tip {alpha_tip!r}, and report.md says '
+               f'- closed alpha (ancestor); got rows {got} report={text!r} {ran}',
+               proc.returncode == 1 and got.get('T-0001') == 'merged' and not (llanes / 'alpha').exists()
+               and sh(lr, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/lc-alpha').returncode != 0
+               and re.fullmatch(r'refs/archive/\d{4}-\d{2}-\d{2}/fanout/lc-alpha', aref) and alpha_tip
+               and sh(lr, 'rev-parse', f'{aref}^{{commit}}').stdout.strip() == alpha_tip
+               and '- closed alpha (ancestor)' in text.splitlines() and '- closed alpha (ancestor)' in proc.stdout)
+        beta = llanes / 'beta'
+        expect(f'case 29 lifecycle: stopped lane kept: beta stopped (driver failed rc=3), its tree and branch remain, and '
+               f'report.md has lane still open: {beta} (driver failed rc=3) and the integration line; got rows {got} '
+               f'report={text!r} {ran}',
+               got.get('T-0002') == 'driver failed rc=3' and beta.is_dir()
+               and sh(lr, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/lc-beta').returncode == 0
+               and f'- lane still open: {beta} (driver failed rc=3)' in text.splitlines()
+               and f'- lane still open: {llanes / "integration"} (integration: stays until main contains fanout/lc)'
+               in text.splitlines())
+
+        def seen(name):
+            f = plog / name
+            return f.read_text().strip() if f.is_file() else ''
+        brec = json.loads((beta / '.lane.json').read_text()) if (beta / '.lane.json').is_file() else {}
+        bport = brec.get('port')
+        ports = (seen('driver-T-0001'), seen('gate'), seen('driver-T-0002'))
+        expect(f'case 29 lifecycle: SDLC_LANE_PORT: alpha driver and gate saw one port in 47400-47499 (printed with the '
+               f'alpha worktree line), the beta driver saw the port in beta\'s lane record ({bport!r}), and the two differ; '
+               f'got driver T-0001, gate, driver T-0002 = {ports}',
+               isinstance(bport, int) and 47400 <= bport <= 47499 and ports[2] == str(bport)
+               and ports[0].isdigit() and ports[0] == ports[1] and 47400 <= int(ports[0]) <= 47499 and ports[0] != ports[2]
+               and f'(branch fanout/lc-alpha, port {ports[0]})' in proc.stdout)
+        expect(f'case 29 lifecycle: sweep at start: the landed pre lane T-0003-pre is closed by the run start and logged as '
+               f'lanes sweep: closed; got {ran}',
+               'lanes sweep: closed T-0003-pre (ancestor)' in proc.stdout.splitlines() and not pre.exists()
+               and sh(lr, 'rev-parse', '--verify', '-q', 'refs/heads/lane/T-0003-pre').returncode != 0
+               and archived(lr, 'lane/T-0003-pre'))
+
+        lo, pre_off = lifecycle_repo('lifecycle-off', 'lane_sweep: off\n')
+        plog_off = tmp / 'lifecycle-ports-off'
+        plog_off.mkdir()
+        proc = fanout(lo, 'alpha=T-0001', '--integration', 'fanout/lo', '--driver', shlex.quote(str(lstub)), '--gate', 'true',
+                      PORT_LOG=str(plog_off))
+        expect(f'case 29 lifecycle: sweep off keeps: with lane_sweep: off the landed pre lane stays open and no lanes sweep '
+               f'line prints, while the run itself merges; got rc={proc.returncode} stdout={proc.stdout[-1500:]!r} '
+               f'stderr={proc.stderr[-500:]!r}',
+               proc.returncode == 0 and pre_off.is_dir() and 'lanes sweep:' not in proc.stdout
+               and sh(lo, 'rev-parse', '--verify', '-q', 'refs/heads/lane/T-0003-pre').returncode == 0)
+
+        # case 30 (T-0452): prep writes the host lane record of a solo ticket; a land from a worktree the host named
+        # .claude/worktrees/agent-<id> rebinds it to that leaf
+        hr = tmp / 'host-record'
+        sized_repo(hr, ['L1'], {'.gitignore': gi})
+        hr_pin = ('--integration', 'fanout/h', '--lanes-dir', str(tmp / 'host-record-lanes'))
+        hpp = verb(hr, 'prep', 'alpha=T-0001', *hr_pin, '--stagger', '0')
+        prov = hr / '.worktrees' / 'host' / 'T-0001-solo.lane.json'
+        prec = json.loads(prov.read_text()) if prov.is_file() else {}
+        expect(f'case 30 host record: prep writes {prov} with kind host, ticket T-0001, branch worktree-T-0001-solo and into '
+               f'fanout/h, and prints its path, got rc={hpp.returncode} rec={prec} out={hpp.stdout[-600:]!r} err={hpp.stderr!r}',
+               hpp.returncode == 0 and prec.get('kind') == 'host' and prec.get('tickets') == ['T-0001']
+               and prec.get('branch') == 'worktree-T-0001-solo' and prec.get('into') == 'fanout/h'
+               and f'    host record: {prov}' in hpp.stdout.splitlines())
+        agent = hr / '.claude' / 'worktrees' / 'agent-x'
+        sh(hr, 'worktree', 'add', '-q', '-b', 'worktree-agent-x', str(agent), 'main')
+        (agent / 'x.txt').write_text('x\n', encoding='utf-8')
+        sh(agent, 'add', '-A')
+        sh(agent, 'commit', '-q', '-m', 'T-0001: Ticket t1')
+        hl = verb(hr, 'land', 'worktree-agent-x', '--ticket', 'T-0001', *hr_pin, '--base', 'main', '--gate', 'test -e x.txt')
+        rebound = hr / '.worktrees' / 'host' / 'agent-x.lane.json'
+        rrec = json.loads(rebound.read_text()) if rebound.is_file() else {}
+        expect(f'case 30 host record: a land from .claude/worktrees/agent-x rebinds the record to agent-x.lane.json (kind '
+               f'host, branch worktree-agent-x, ticket T-0001, the prep base) and removes T-0001-solo.lane.json; the host '
+               f'tree stays, got rc={hl.returncode} rec={rrec} out={hl.stdout[-600:]!r} err={hl.stderr[-300:]!r}',
+               hl.returncode == 0 and rrec.get('kind') == 'host' and rrec.get('lane') == 'agent-x'
+               and rrec.get('branch') == 'worktree-agent-x' and rrec.get('tickets') == ['T-0001']
+               and rrec.get('base_sha') == prec.get('base_sha') and not prov.exists() and agent.is_dir())
+
+        # case 32 (T-0452): a full lane tree made with prep's printed lanes.py open line closes after its last ticket lands
+        fl = tmp / 'full-lane'
+        sized_repo(fl, ['L3', 'L3'], {'.gitignore': gi})
+        fl_lanes = tmp / 'full-lane-lanes'
+        fl_pin = ('--integration', 'fanout/f', '--lanes-dir', str(fl_lanes))
+        fpp = verb(fl, 'prep', 'alpha=T-0001,T-0002', '--lane', 'full', *fl_pin, '--stagger', '0')
+        tree_cmd = next((ln.strip()[len('tree: '):] for ln in fpp.stdout.splitlines() if ln.strip().startswith('tree: ')), '')
+        fop = subprocess.run(['bash', '-c', tree_cmd], cwd=str(fl), env=ENV, capture_output=True, text=True) if tree_cmd else None
+        ftree = fl_lanes / 'alpha'
+        frec = json.loads((ftree / '.lane.json').read_text()) if (ftree / '.lane.json').is_file() else {}
+        expect(f'case 32 full lane close: the printed tree line opens the lane through lanes.py (kind fanout, both tickets, '
+               f'branch fanout/f-alpha), got {tree_cmd!r} rc={fop and fop.returncode} {fop and fop.stdout!r} '
+               f'{fop and fop.stderr!r} rec={frec}',
+               fop is not None and fop.returncode == 0 and frec.get('kind') == 'fanout'
+               and frec.get('tickets') == ['T-0001', 'T-0002'] and frec.get('branch') == 'fanout/f-alpha')
+
+        def full_commit(tid, slug_, fname):
+            if not ftree.is_dir():
+                return
+            (ftree / fname).write_text(f'{tid}\n', encoding='utf-8')
+            (ftree / '.sdlc' / slug_ / 'filer-L1.md').write_text('## Warnings\nNone\n\n## Follow-ups\nNone\n', encoding='utf-8')
+            sh(ftree, 'add', '-A')
+            sh(ftree, 'commit', '-q', '-m', f'{tid}: Ticket {slug_}')
+        full_commit('T-0001', 't1', 'f1.txt')
+        fl1 = verb(fl, 'land', 'fanout/f-alpha', '--ticket', 'T-0001', *fl_pin, '--base', 'main', '--gate', 'true')
+        expect(f'case 32 full lane close control: after the first of its two tickets lands the tree and branch stay, got '
+               f'rc={fl1.returncode} out={fl1.stdout[-600:]!r} err={fl1.stderr[-300:]!r}',
+               fl1.returncode == 0 and ftree.is_dir()
+               and sh(fl, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/f-alpha').returncode == 0
+               and not archived(fl, 'fanout/f-alpha'))
+        full_commit('T-0002', 't2', 'f2.txt')
+        ftip = sh(fl, 'rev-parse', 'fanout/f-alpha').stdout.strip()
+        fl2 = verb(fl, 'land', 'fanout/f-alpha', '--ticket', 'T-0002', *fl_pin, '--base', 'main', '--gate', 'true')
+        faref = archived(fl, 'fanout/f-alpha')
+        expect(f'case 32 full lane close: after its last ticket lands the tree is gone, refs/archive/<UTC date>/fanout/f-alpha '
+               f'({faref!r}) is at its tip and the branch is deleted, got rc={fl2.returncode} out={fl2.stdout[-600:]!r} '
+               f'err={fl2.stderr[-300:]!r}',
+               fl2.returncode == 0 and not ftree.exists() and 'closed alpha (ancestor)' in fl2.stdout.splitlines()
+               and sh(fl, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/f-alpha').returncode != 0
+               and faref and sh(fl, 'rev-parse', f'{faref}^{{commit}}').stdout.strip() == ftip)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
@@ -3847,7 +4256,8 @@ def main(argv):
         return 2
     if argv[0] == 'settle':
         sp = argparse.ArgumentParser(prog='fanout.py settle', description='Fast-forward the current branch to a landed '
-                                     'integration branch, then remove its worktree and delete it (local only).')
+                                     'integration branch, then close its worktree through lanes.py: the archive ref '
+                                     'first, then the tree and the branch (local only).')
         sp.add_argument('integration', help='the integration branch `prep` printed, for example fanout/2026-10-11')
         return cmd_settle(sp.parse_args(argv[1:]))
     if argv[0] == 'roll':
