@@ -1322,6 +1322,14 @@ for _name, _phrases in REPORT_NEEDS:
         if not report_bad(dict(_rp_texts, **{_name: _rp_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: report negative control not flagged for {_name} without "{_ph}"')
 if not report_bad(dict(_rp_texts, skill=_rp_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: report negative control not flagged for a harness reference')
 if not report_bad(_rp_texts, _entry.replace('| report |', '|')): errors.append('check.py: report negative control not flagged for a missing entry route')
+# Planner probe-criteria handle (T-0498): agents/planner.md and its generated levels carry the handle and the rule line.
+PLANNER_PROBE = ('Probe-criteria', 'can exit 0 on a correct tree')
+for _rel in ('agents/planner.md', 'agents/planner-L1.md', 'agents/planner-L2.md', 'agents/planner-L3.md'):
+    _f = root/_rel
+    _text = _f.read_text() if _f.is_file() else ''
+    errors.extend(f'check.py: planner probe: {_rel} missing "{ph}"' for ph in PLANNER_PROBE if ph not in _text)
+    if all(ph in _text for ph in PLANNER_PROBE) and not [ph for ph in PLANNER_PROBE if ph not in _text.replace(PLANNER_PROBE[0], '')]:
+        errors.append(f'check.py: planner probe negative control not flagged for {_rel}')
 # Solo dependents and verbatim criteria (docstring item 55, T-0471): the two Loop rules and the report detect rule.
 SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report')),
               ('scripts/results.py', ('def solo_report_error', 'def criterion_spans')),
