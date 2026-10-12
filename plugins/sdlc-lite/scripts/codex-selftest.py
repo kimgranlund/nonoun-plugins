@@ -605,7 +605,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                 finally:
                     if proc.poll() is None:proc.kill();proc.communicate()
                 self.assertEqual(json.loads(request.read_text())['status'],'received')
-                self.assertEqual([p.name for p in ticket.iterdir() if p.name.startswith('solo-') and not p.name.endswith('.request.json') and not p.name.endswith('.report.txt')],[])
+                self.assertEqual([p.name for p in ticket.iterdir() if p.name.startswith('solo-') and not p.name.endswith('.request.json') and not p.name.endswith('.report.txt') and not (p.name.startswith('solo-L') and p.name.endswith('.md'))],[])
+                self.assertEqual(len([p for p in ticket.iterdir() if p.name.startswith(f'solo-{tier}-') and p.name.endswith('.md')]),1,'T-0485: one solo result file')
                 rec=self.solo_records(ticket)[-1]
                 self.assertEqual((rec['backend'],rec['transport'],rec['role'],rec['level'],rec['model'],rec['exit_code']),('codex','subagent','solo',tier,'gpt-6.1-sol',0))
                 self.assertIsNone(rec['cost_usd']);self.assertTrue(rec['cost_reason'])
