@@ -222,6 +222,12 @@
    `lanes.py sweep --apply`, `lanes.py list --stale`, `board.py --lanes`, and `--priority 1`, and carry the same settle command, the conductor's
    `fanout.py settle <integration> --forward`; the conductor and run-operations.md carry `Merge ops` and the conductor also `## Merge ops`. Negative
    controls: each phrase removed from each file, and the settle command changed in one file (the other two then disagree), must be flagged.
+57. Plan kinds (T-0467): skills/plan/SKILL.md names each phrase of item 31 (`## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
+   `You must authorize`, `Unattended`, `Codex host`), the kind list `steps|doc|goal|campaign|fanout`, `Dry run (<kind>)`, `references/plan-rules.md`, and
+   the reference file of each of the five kinds, and holds no `harness:` reference; references/plan-rules.md, references/steps.md, references/doc.md,
+   references/goal.md, references/campaign.md, references/fanout.md, and evals/README.md exist in that folder; skills/sdlc-lite/SKILL.md routes to
+   `plan <kind>`. Negative controls: each phrase removed, each kind reference removed, a harness reference added, the entry row removed, and each
+   file reported missing must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1359,6 +1365,26 @@ for _rel in MERGE_OPS_FILES:
     for _ph in MERGE_OPS_PHRASES:
         if _ph in _mo_texts[_rel] and not (_ph == 'Merge ops' and _rel == 'skills/fanout/SKILL.md') and not merge_ops_bad(dict(_mo_texts, **{_rel: _mo_texts[_rel].replace(_ph, '')})): errors.append(f'check.py: merge ops negative control not flagged for {_rel} without {_ph}')
     if not merge_ops_bad(dict(_mo_texts, **{_rel: _mo_texts[_rel].replace('settle <integration> --forward', 'settle <integration>')})): errors.append(f'check.py: merge ops negative control not flagged for a settle command changed in {_rel}')
+# Plan kinds (docstring item 57, T-0467): one plan skill routes five kinds to their references and prints a dry run before every block.
+PLAN_KINDS = ('steps', 'doc', 'goal', 'campaign', 'fanout')
+PLAN_KIND_REFS = tuple(f'references/{k}.md' for k in PLAN_KINDS)
+PLAN_KIND_NEEDS = PLAN_NEEDS + ('|'.join(PLAN_KINDS), 'Dry run (<kind>)', 'references/plan-rules.md') + PLAN_KIND_REFS
+PLAN_KIND_FILES = ('references/plan-rules.md',) + PLAN_KIND_REFS + ('evals/README.md',)
+def plan_kinds_bad(texts):
+    """Findings for {'skill': SKILL.md, 'entry': the entry skill, <file>: its text or '' when the file is missing}."""
+    out = [f'skills/plan/SKILL.md missing "{ph}"' for ph in PLAN_KIND_NEEDS if ph not in texts['skill']]
+    if re.search(r'harness:', texts['skill']): out.append('skills/plan/SKILL.md references harness:')
+    out += [f'skills/plan/{f} is missing or empty' for f in PLAN_KIND_FILES if not texts.get(f)]
+    if 'plan <kind>' not in texts['entry']: out.append('skills/sdlc-lite/SKILL.md does not route to plan <kind>')
+    return out
+_pk = dict({f: _rd(root/'skills/plan'/f) for f in PLAN_KIND_FILES}, skill=_rd(root/'skills/plan/SKILL.md'), entry=_entry)
+errors.extend(f'check.py: plan kinds: {m}' for m in plan_kinds_bad(_pk))
+for _ph in PLAN_KIND_NEEDS:
+    if not plan_kinds_bad(dict(_pk, skill=_pk['skill'].replace(_ph, ''))): errors.append(f'check.py: plan kinds negative control not flagged for SKILL.md without "{_ph}"')
+if not plan_kinds_bad(dict(_pk, skill=_pk['skill'] + ' harness:x')): errors.append('check.py: plan kinds negative control not flagged for a harness reference')
+if not plan_kinds_bad(dict(_pk, entry=_pk['entry'].replace('plan <kind>', ''))): errors.append('check.py: plan kinds negative control not flagged for a missing entry route')
+for _f in PLAN_KIND_FILES:
+    if not plan_kinds_bad(dict(_pk, **{_f: ''})): errors.append(f'check.py: plan kinds negative control not flagged for a missing {_f}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

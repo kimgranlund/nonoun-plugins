@@ -1,20 +1,68 @@
 ---
 name: plan
-description: "Plan a task: dispatch the planner to produce ordered steps with acceptance criteria and a builder level per step. Use when a goal is ready to be broken into buildable steps."
-argument-hint: "[L1..L3] <handoff.md | goal>"
-allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Agent, Read, Write, Grep, Glob
+description: "Plan work by kind and return a linted, paste-ready result with a dry run printed first. Kinds: steps (default: dispatch the planner to turn a goal into ordered steps with acceptance criteria and a builder level per step), doc (a plan doc a smaller session runs with run-plan), goal (one /goal block for unattended work), campaign (a wave plan with a gate and parallel lanes), fanout (one fanout command for ready tickets). Use for \"buildable steps\", \"write me a goal\", \"overnight goal\", \"plan doc\", \"plan this so a smaller model can run it\", \"plan a campaign\", \"migrate every page\", \"plan a fanout\", \"run these tickets in parallel\". NOT for running a goal, a plan doc or a fanout (run-plan, fanout), a /loop line (plan-loop), or the outcome block alone (plan-verification)."
+argument-hint: "[steps|doc|goal|campaign|fanout] [L1|L2|L3] <handoff.md | goal | tickets...>"
+allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_done.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/budget.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py run --dry-run:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check:*), Bash(uptime:*), Bash(git log:*), Bash(git grep:*)
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
-Arguments: `$ARGUMENTS`
+Arguments: `$ARGUMENTS` (a kind, then a level, a handoff file, the goal, or ticket ids; empty means infer the goal from the thread).
 
-When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
+Read the plan rules at `references/plan-rules.md` for every kind: the lint of each kind, the rules for numbers, stop rules and authorization, and what to return.
 
-1. Get a handoff file. If the arguments name an existing file, use it. Otherwise create one from the text per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`.
-2. Resolve the level. Follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`, section planner.
-3. Dispatch the planner at `<level>` on `<handoff.md>` from the project root, the three steps of `${CLAUDE_PLUGIN_ROOT}/agents/conductor.md` ("How you run roles"): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prepare planner <level> <handoff.md>` runs the gates and prints the dispatch JSON; an `Agent` call passes its `subagent_type`, `name`, `description`, `model`, `prompt`, and `run_in_background` unchanged; `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n> --transcript <sub-agent transcript jsonl> --tool-uses <n> --duration-ms <ms>`, with the sub-agent's final message on stdin, validates and records the result. On Codex run `SDLC_BACKEND=codex ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh planner <level> <handoff.md>` instead. Claude: after `record`, run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prune`, make each `TaskStop task_id=<name>` call it lists, then `prune --done <name>`; a finished sub-agent stays an idle teammate until stopped.
-4. On success `record` exits 0 and prints the result path. Read it, then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py lint <result path>` and report its outcome with the key lines in a few bullets plus the path. A lint refusal (exit 1) is a plan defect: report it to the user as one, with the spans it names. On a failed run (`record` exit 1 or 3), report the error and the result or `.limit` file path (Codex: the log path).
-5. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py review <task dir>` (the handoff's folder) and follow its first line. `review L1` → dispatch the plan-reviewer at L1 on `<handoff.md>` (`dispatch.py prepare plan-reviewer L1 <handoff.md>`, the `Agent` spawn, `dispatch.py record`; Codex: `SDLC_BACKEND=codex ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh plan-reviewer L1 <handoff.md>`) and report its Verdict, Findings, and Missing decisions with the result path. `split` → say no plan review is required. `replan` or `stop` → report its reason line and the /chain 3 route (a replan at planner L3 with the findings under `## Plan review`, or a question for the user).
+## 0. Kind and handoff
 
-Do not redo or extend the agent's work yourself. If the result is wrong, rerun at a higher level or tell the user.
+The kind is the first argument token when it is one of `steps|doc|goal|campaign|fanout`. Otherwise it is `steps` when the rest names a `handoff.md`. Otherwise ask one `AskUserQuestion` with the five kinds, `steps` recommended. Unattended, the kind is `steps`.
+
+Reserved first word: a goal whose text starts with a kind name is written with the kind first (`goal steps toward the release`) or in quotes.
+
+| Kind | Returns | Read |
+|---|---|---|
+| steps | ordered steps from the planner | `references/steps.md` |
+| doc | a plan doc that `run-plan` runs | `references/doc.md` |
+| goal | one `/goal` block | `references/goal.md` |
+| campaign | a wave plan and one `/goal` block | `references/campaign.md`, then the goal reference |
+| fanout | one fanout command | `references/fanout.md` |
+
+Read the handoff first. When the argument is a `.sdlc/<slug>/handoff.md` written by `/clarify`, fill the slots from it and do not ask for them again: `Level:` gives the lane, the level and the cap; `Do:` gives Scope or the steps; `Non-goals:` gives the scope-held rubric line; `Done when:` and `Verify:` give Done when and the fanout gate; `## Outcome` gives the outcome block; `## Constraints` gives the Authorization lines.
+
+## 1. Gather
+
+Take every other input from the thread and repo before asking: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check`, then the ready tickets, each ticket's size and lane (`steps.py lane <task dir>`, which records the lane in that task's `skips.md`), and the extras the kind reference names.
+
+Ask only for the slots still empty, in one round, with 2 to 4 reasoned options each. Goal needs the cap and the authorization; campaign the census command, the lane cap and the GitHub rights; fanout the tickets and the cap; doc the driver, the cap and the authorization; steps the level only. If `AskUserQuestion` is unavailable, ask in plain lines.
+
+## 2. Capture the outcome
+
+Goal, doc and campaign only. Read `${CLAUDE_PLUGIN_ROOT}/skills/plan-verification/SKILL.md` and follow it: it returns the Outcome, Measured by, Rubric and Negative control lines, with the measure run once for its `before` value. A handoff `## Outcome` that passes the lint replaces the call.
+
+## 3. Write
+
+Write per the kind reference and the plan rules. The `steps` kind writes no plan: it dispatches the planner as its reference says.
+
+## 4. Check
+
+Run the lint of the kind, fix every `FAIL` line and rerun; never return a result that fails.
+
+- goal, campaign, fanout: pipe to `plan_check.py goal`, `plan_check.py campaign` or `plan_check.py fanout`. Fanout and campaign then run the lanes as `fanout.py run --dry-run`.
+- doc: `plan_check.py plan --file <plan-doc.md>`, then `plan_done.py <plan-doc.md>`, which must exit 1 on the unstarted plan.
+- steps: `steps.py lint <result path>`, then `steps.py review <task dir>`; a `review L1` first line routes to the plan-reviewer.
+
+## 5. Return
+
+Print the dry run first, in this fixed shape, each line taken from a command and none written from memory:
+
+```
+Dry run (<kind>)
+lint: <the plan_check.py or steps.py lint line(s), verbatim>
+cost: $<sum of caps> of $<cap> (<n> tickets: T-0001 L2 $30, ...)
+lanes: <fanout.py run --dry-run output, verbatim>        # fanout and campaign only
+control: plan_done.py exits 1, <n> steps open            # doc only
+```
+
+Compute `cost:` from `TIERS` in `${CLAUDE_PLUGIN_ROOT}/scripts/budget.py` and the `size:` of each ticket in scope, after `tickets.py check` passes; the plan rules give the form.
+
+Then return the block of the kind, five lines of `Why this plan`, the list `You must authorize`, and the line that a goal pasted as plain text is not registered until it is run as `/goal`. This skill runs nothing it plans.
+
+Unattended (`SDLC_HEADLESS=1`): never call AskUserQuestion; return the result with each missing input marked as a `warn` line.

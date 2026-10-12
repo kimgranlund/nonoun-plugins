@@ -28,6 +28,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Launch one SDLC Lite agent by name on instructions | agent |
 | Resolve outstanding questions / sweep questions and blockers | open-questions / ask |
 | Plan a goal, loop, or fanout run and get a paste-ready command | plan-goal / plan-loop / plan-fanout |
+| Plan by kind: steps (default), doc, goal, campaign, fanout | plan <kind> |
 | Plan a wave-based campaign (tool and gate, parallel lanes, bulk review, bulk PRs) | plan-campaign |
 | Capture an outcome, measure, rubric and negative control before a plan | plan-verification |
 | Write a plan doc (goal, measures, authorization, ticket steps) for a smaller session to run / run an approved plan doc to completion | plan-doc / run-plan |
