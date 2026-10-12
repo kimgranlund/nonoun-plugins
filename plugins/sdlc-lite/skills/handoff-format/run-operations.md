@@ -56,3 +56,17 @@ A builder's edits exist only in `$wt`. They must be committed on a named branch 
 Removal uses no `--force`, so a dirty worktree is refused instead of silently discarded. Only the recipe's own worktree is removed. Never prune or remove other worktrees, branches, or stashes.
 
 The recipe does not reuse `SDLC_TMP_WORKTREES`. `run.sh` sets that prefix only inside one role run, under `<toplevel>/.worktrees/tmp/<role>-<pid>` of the checkout it runs in, and deletes it when that run exits. It cannot hold a worktree that must outlive a builder run for the verifier, and it would sit inside the checkout that must not be touched. The run's own stray report does not flag `$wt`, because `$wt` exists before the run's snapshot.
+
+## Long gates
+
+A gate that can outlast the foreground tool timeout (a full test suite, a browser shard run) runs in the background and leaves a receipt:
+
+```sh
+python3 <plugin-root>/scripts/gate_lock.py run --receipt /abs/path/gate.receipt.json --timeout <wait-seconds> -- <cmd> > /abs/path/gate.log 2>&1
+```
+
+Start it with `run_in_background: true`. Interactive roles may (`hooks/block-background.sh` allows it for them). Then wait for the completion notice. Never poll with `sleep`. When it arrives, read the receipt (`outcome`, `rc`, `wait_ms`, `run_ms`) and the log; the receipt is written last, so a missing receipt means the gate has not finished or died.
+
+`--timeout` bounds only the wait in the admission queue (exit 3, `gate_lock: timeout`), not the command's run time.
+
+To run the gate in the foreground instead, a consumer sets `env.BASH_MAX_TIMEOUT_MS` in its `.claude/settings.json` (for a 90 minute gate, `5400000`). `dispatch.py` sets no environment, so without it a sub-agent keeps the 600000 ms default.
