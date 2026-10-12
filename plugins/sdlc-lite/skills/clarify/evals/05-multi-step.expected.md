@@ -3,12 +3,18 @@ The maintainer plans a goal once in a plan doc, then a smaller model runs `/goal
 
 ## Intent
 Literal ask: plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal, so I can plan in one session and have a smaller, faster model finish unattended, with the verifier still independent.
-Deltas:
-- hidden scope: defaulted: three parts in order, the plan-doc lint, the done condition script, then the run-plan skill; each is its own ticket
-- unstated assumption: defaulted: the executor never grades itself; push, tag and publish happen only when the plan names them
-Do: write a plan doc with three steps: `plan_check.py plan` and its parser, `plan_done.py <plan-doc>` exiting 0 only when every step ticket is closed with a verifier pass, and the run-plan skill that loops on it.
 Level: L4 (lane: full; cost: high, three tickets across scripts and skills; reversible: no, a plan may name a push)
-Non-goals: model or effort changes; a long-lived orchestrator agent.
+Deltas:
+- hidden-scope: the ask bundles three parts -> defaulted: three parts in order, the plan-doc lint, the done condition script, then the run-plan skill, each its own ticket [U] (source: T-0410)
+- assumption: the ask leaves self-grading and publishing open -> defaulted: the executor never grades itself, and push, tag and publish happen only when the plan names them [U] (source: root AGENTS.md)
+Do:
+1. Write a plan doc with three steps, one ticket each.
+2. Build `plan_check.py plan` and its parser.
+3. Build `plan_done.py <plan-doc>`, which exits 0 only when every step ticket is closed with a verifier pass.
+4. Write the run-plan skill that loops on `plan_done.py`.
+Non-goals:
+- model or effort changes
+- a long-lived orchestrator agent
 Done when:
 - `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py selftest` exits 0
 - `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_done.py selftest` exits 0
@@ -22,3 +28,6 @@ Rubric:
 2. Lint | pass: plan_check.py plan flags each rule's mutant and passes the good plan.
 3. No self-grading | pass: no step is verified by the driver that built it.
 Negative control: a plan with one step left open makes plan_done.py exit 1.
+
+## Constraints
+The driver MUST NOT verify a step it built.
