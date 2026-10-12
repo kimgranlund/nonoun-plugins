@@ -1,0 +1,226 @@
+{
+  "repo": "/Users/kimgranlund/Projects/adia/ui-kit/main",
+  "summary": "runs: 4 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-11",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.4",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.4",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.4",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.296 (Claude Code)",
+    "time": "2026-10-12T07:37:40Z",
+    "uptime_load": {
+      "uptime_s": 2128825,
+      "load1": 7.39,
+      "load5": 7.53,
+      "load15": 8.3,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 4,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 4,
+    "by_role": {
+      "solo": {
+        "count": 2,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "verifier": {
+        "count": 2,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 2,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 2,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      "chart5": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "flow-m": {
+        "solo": 1,
+        "verifier": 1
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": [],
+      "lost_min_median": null,
+      "lost_min_total": 0
+    },
+    "orphaned": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 4,
+      "runs_files": 2
+    }
+  },
+  "plan_review_share": null,
+  "results": {
+    "builder": {
+      "total": 0,
+      "blocked": 0
+    }
+  },
+  "plan_defects": {
+    "late": 0,
+    "early": 0
+  },
+  "attempts": {
+    "by_role": {
+      "verifier": {
+        "count": 2,
+        "median_min": 40.0,
+        "max_min": 54.9
+      }
+    }
+  },
+  "tickets": {
+    "count": 2,
+    "items": [
+      {
+        "ticket": "chart5",
+        "id": null,
+        "size": null,
+        "criteria": 9
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 48,
+      "cpu_pct": 3.2,
+      "rss_mb": 9283.2
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 6,
+      "cpu_pct": 3.1,
+      "rss_mb": 3220.4
+    }
+  },
+  "worktrees": {
+    "count": 3,
+    "size": "622.8 MB",
+    "size_kb_known": 637728,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/chart5",
+        "size": "447.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/lanes/flow-m",
+        "size": "175.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/.git-worktrees",
+        "size": "0.0 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-11",
+    "window_days": 1,
+    "runs": 163,
+    "wall_minutes": 524.3,
+    "failed": 10,
+    "by_workflow": {
+      "CI": {
+        "runs": 63,
+        "wall_minutes": 419.9,
+        "failed": 8,
+        "by_event": {
+          "pull_request": 43,
+          "push": 20
+        },
+        "push_runs_7d": 20,
+        "pull_request_runs_7d": 43,
+        "push_dup_7d": 0
+      },
+      "CI watchdog": {
+        "runs": 4,
+        "wall_minutes": 1.0,
+        "failed": 0,
+        "by_event": {
+          "schedule": 4
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Corpus freshness": {
+        "runs": 16,
+        "wall_minutes": 51.5,
+        "failed": 0,
+        "by_event": {
+          "push": 16
+        },
+        "push_runs_7d": 16,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Deploy site (ui-kit.exe.xyz)": {
+        "runs": 3,
+        "wall_minutes": 30.3,
+        "failed": 0,
+        "by_event": {
+          "workflow_dispatch": 3
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "PR gates": {
+        "runs": 77,
+        "wall_minutes": 21.5,
+        "failed": 2,
+        "by_event": {
+          "pull_request": 58,
+          "push": 19
+        },
+        "push_runs_7d": 19,
+        "pull_request_runs_7d": 58,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
