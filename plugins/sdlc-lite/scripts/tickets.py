@@ -1207,15 +1207,17 @@ def skip_missing(d, covered=()):
                 kv[k.strip()] = v.strip()
         if kv.get('reason') and kv.get('decided'):
             cover.setdefault(parts[0].strip(), set()).add(kv.get('step', ''))
+    def ran(dd, role):  # a result file or a runs.jsonl record for the role: it ran, so nothing was skipped (T-0499)
+        return bool(run_order.ordered(dd, role)) or any(r.get('role') == role for _, r in run_order.records(dd))
     missing = []
-    if not run_order.ordered(d, 'planner') and 'planner' not in cover:
+    if not ran(d, 'planner') and 'planner' not in cover:
         missing.append('planner')
     steps = sorted(int(p.name[5:]) for p in d.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
     for n in steps:
-        if 'verifier' not in covered and not run_order.ordered(d / f'step-{n}', 'verifier') and not (
+        if 'verifier' not in covered and not ran(d / f'step-{n}', 'verifier') and not (
                 cover.get('verifier', set()) & {str(n), 'all'}):
             missing.append(f'verifier step {n}')
-    if not run_order.ordered(d, 'filer') and 'filer' not in cover:
+    if not ran(d, 'filer') and 'filer' not in cover:
         missing.append('filer')
     return (lanes[-1], missing) if missing else None
 
@@ -4872,6 +4874,11 @@ def selftest():
         fullres = ('planner-L2.md', 'filer-L1.md', 'step-1/builder-L1.md', 'step-1/verifier-L1.md')
         rc, _, err = run(sk_root('tofull', ['lean', 'full'], files=fullres), 'check')
         expect(f'(skips) check: lane lean then full with every result passes: rc={rc} {err!r}', rc == 0)
+        ranrec = sk_root('ran-rec', ['full'], files=built)  # T-0499: planner and filer have run records but no result file
+        (ranrec / 'lean-a' / 'runs.jsonl').write_text(
+            '{"role": "planner", "level": "L2"}\n{"role": "filer", "level": "L1"}\n', encoding='utf-8')
+        rc, _, err = run(ranrec, 'check')
+        expect(f'(skips) check: lane full with run records for planner and filer, no skip line, passes: rc={rc} {err!r}', rc == 0)
         rc, _, err = run(sk_root('tofull-miss', ['lean', 'full'], files=built), 'check')
         expect(f'(skips) check: lane full missing planner and filer fails: rc={rc} {err!r}',
                rc == 1 and 'lean-a: skips.md records lane full but has no ## Skipped entry for planner, filer' in err)
