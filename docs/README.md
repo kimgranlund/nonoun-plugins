@@ -7,6 +7,7 @@
 
 - [Native Codex role execution](references/codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](specs/repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
+- [Document standards](specs/doc-standards/README.md): the registry of document types, with the card, template or schema, and checked rules for each.
 - [Docs check and setup entries](reports/2026-10-05-docs-check-run.md): dated record of `docs_check.py` (D-1 to D-12), the new entry files for homes, the default layout, the change to every adopter's `docs/AGENTS.md`, and read-only runs on this repository and maison.
 - [Rename to reports](reports/rename-validation-to-reports.md): dated record of renaming the evidence folder to `docs/reports/` (T-0246), with before and after counts, the rewrite rules, the allowlist, and the limits.
 - [Parked tickets review](reports/parked-tickets-review-2026-10-06.md): dated review of nine tickets parked since 2026-10-04 against the pillars, with the verdict and code evidence for each.

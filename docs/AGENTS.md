@@ -11,7 +11,7 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 | `planning/` | Unbuilt proposals: sub-agent mode, the idle-host watcher, reorganization, the docs schema | Before building one; a built one moves into `specs/` |
 | `reports/` | Dated evidence, including the [readiness and recovery trials](reports/readiness-recovery-validation.md) | What was verified; history, not instructions |
 
-<!-- sdlc-lite:managed:start v1 sha256:2bacc7580de5 -->
+<!-- sdlc-lite:managed:start v1 sha256:7cca567ec692 -->
 # Documents
 
 Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
@@ -52,15 +52,17 @@ The first line that matches wins.
 2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`.
 3. Run the onboard setup again to refresh the links below.
 4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
+5. Find the document's type in `specs/doc-standards/README.md`, when this repository has it, and follow the card its row names.
 
 ## Contents
 
 - [README.md](README.md)
 - [specs/](specs/AGENTS.md)
 - [planning/](planning/AGENTS.md)
-- `goals/`
-- `kpi/`
+- [goals/](goals/AGENTS.md)
+- [kpi/](kpi/AGENTS.md)
 - [references/](references/AGENTS.md)
 - [reports/](reports/AGENTS.md)
+- `assets/`
 - [other/](other/AGENTS.md)
 <!-- sdlc-lite:managed:end -->

@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "kpi.json",
+  "title": "KPI definition",
+  "description": "Front matter of one docs/kpi/NNN-slug.md file. docs_check S-1 reads required; G-1 to G-5 check the rest.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "owner",
+    "created",
+    "unit",
+    "direction",
+    "target",
+    "measure",
+    "goals"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^K-[0-9]{3}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "active",
+        "retired"
+      ]
+    },
+    "owner": {
+      "type": "string"
+    },
+    "created": {
+      "type": "string",
+      "format": "date"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "direction": {
+      "enum": [
+        "up",
+        "down"
+      ]
+    },
+    "target": {
+      "type": [
+        "string",
+        "number"
+      ]
+    },
+    "measure": {
+      "type": "string",
+      "description": "The command that produces the value."
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^G-[0-9]{3}$"
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "description": "value, date, source, verified"
+    },
+    "read": {
+      "type": "string",
+      "description": "How to read the value from the measure output."
+    },
+    "cadence": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "string",
+      "description": "What is counted or measured."
+    },
+    "numerator": {
+      "type": "string"
+    },
+    "denominator": {
+      "type": "string"
+    },
+    "filters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "window": {
+      "type": "string",
+      "description": "The time window the value covers."
+    },
+    "source": {
+      "type": "string",
+      "description": "Where the raw data comes from."
+    }
+  }
+}
