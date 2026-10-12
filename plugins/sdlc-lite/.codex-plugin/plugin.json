@@ -1,6 +1,6 @@
 {
   "name": "sdlc-lite",
-  "version": "0.22.4",
+  "version": "0.22.5",
   "description": "SDLC Lite agent team with native Codex and Claude role execution, explicit model levels, and shared delivery artifacts.",
   "author": {
     "name": "Kim Granlund"
