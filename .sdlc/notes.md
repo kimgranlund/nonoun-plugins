@@ -376,3 +376,10 @@
 - note: Cross-wave settle ordering (design section 2) is not built. Concurrent settles into different integration branches serialize only through `merge.lock`.
 - note: The T-0489 selftest fixture has no `notes.md`, so the notes-union path is not exercised. The verifier accepted this because the regeneration alone bites.
 - note: `fanout.py selftest` takes about 240 to 250 s here against an 800 s guard timeout. A heavily loaded host could approach it.
+
+## T-0496: Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception (2026-10-12)
+
+- decide: `tickets.py close` writes the tests-gate skip line only for a solo ticket with a `step-<n>/` dir, so a real solo ticket with no step dir never gets the line, `gate_tests_only` never counts it, and the pilot barely reaches the tickets it targets; decide whether close should consult the gate on that path.
+- decide: the handoff asks `lanes.py` to print `gate: tests-only` or `gate: verifier`, but `lanes.py list` has no per-ticket surface; the unattended run left `lanes.py` untouched and put the field in `solo_stats.py` only (skips.md decision); name a surface (a lane column, the `/report` lanes view) or drop it.
+- decide: the 20-ticket readout needs K-005 for tests-gate tickets and rework after close (a reopen, or a follow-up citing a closed ticket within 7 days), and neither is built; `first_pass / verified` excludes tickets with no verifier round, so the revert rule cannot be evaluated yet.
+- note: the `shared-name` check counts a removed token on a `+` line only as a whole token, so a rename `helper` to `helper2` still searches `helper`. `protected-path` matches its sensitive words as substrings of any path component (`auth` also matches `author`). Both lean toward keeping the verifier, which lowers the qualifying rate.

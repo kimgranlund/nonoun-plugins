@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:543fb805c2bc -->
+<!-- sdlc-lite:managed:start v1 sha256:404d2f5c6aff -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 12
+- proposed: 11
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0467 Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (0467-plan-merge-a-skill)
@@ -17,7 +17,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
   - T-0487 loaded_context shows rollout absent on codex exec runs (0487-codex-exec-rollout-absent)
   - T-0494 A role that spawns background sub-agents then ends its turn never wakes: completion notices go to the parent session (T-0493) (0494-subagent-notice-routing)
-  - T-0496 Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception (0496-tests-gate-pilot)
   - T-0497 gate_lock.py: cap admission by load average, with per-repo fairness (retro 12h rows 1 and 2) (0497-gate-lock-load-cap)
   - T-0498 agents/planner.md: run each criterion against a reference sibling before shipping (retro 12h row 5) (0498-planner-run-each-criterion)
   - T-0499 tickets.py close: no skip entry required for a role with a run record (retro 12h row 6) (0499-close-skips-for-ran-roles)
@@ -26,7 +25,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 452
+- done: 453
 - dropped: 29
 
 ## Procedures
