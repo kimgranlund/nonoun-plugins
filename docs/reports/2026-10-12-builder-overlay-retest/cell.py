@@ -22,7 +22,7 @@ from pathlib import Path
 TREE = Path('/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout40/v')
 TMP = TREE / '.worktrees/tmp/0458-s1-builder-L3'
 EVID = TREE / 'docs/reports/2026-10-12-builder-overlay-retest'
-RUNLOG = TREE / '.sdlc/0458-builder-overlay-retest/run-log.md'
+RUNLOG = TREE / '.sdlc/.0458-builder-overlay-retest/run-log.md'
 NONOUN = Path('/Users/kimgranlund/Projects/nonoun')
 LANE = 'T-0458 overlay retest: replay a solo ticket as one builder step'
 

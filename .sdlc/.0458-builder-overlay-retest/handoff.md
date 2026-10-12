@@ -2,7 +2,7 @@
 id: T-0458
 title: "Retest the builder overlays on tasks where builders actually block, plus one L5 pair"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0450]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No model or effort change. Budget cap $20; stop at it and report what was run. T
 ## Plan review
 plan review: replan: dispatch.py prepare builder L3 refused step-1 (steps.py lint links gate): cited paths do not exist in this repo: .sdlc/native-dom-charts/step-2/handoff.md, .sdlc/0368-prune-flag/handoff.md, .sdlc/0373-codex-role-preflight/handoff.md, .sdlc/0378-red-checkpoint-builder/handoff.md, .sdlc/geometry-compound-insets/step-4.superseded-1/handoff.md, .sdlc/geometry-compound-insets/step-4/handoff.md. plan defect: cite paths in other repos or at a base sha in a form the links gate does not resolve against this tree (absolute path with repo root, or `<sha>:<path>` git object form), or as plain words rather than a backticked repo-relative path. Keep the rest of planner-L2.md unchanged.
 plan review: replan: builder L3 blocked at step 1 (.sdlc/0458-builder-overlay-retest/step-1.superseded-2/builder-L3.md): plan defect: criterion 3 (four L1 rep-1 tasks both arms plus a balanced L5 pair) cannot hold with the $20 cap. Ticket spend so far: planners $3.85 + builder L3 $2.14 + replay cells $10.04 (rts-step10 L1 A/B done+pass, ndc-step2 L5 A blocked same defect, $8.54) = about $16.03. Remaining about $3.97 must cover this replan, one builder, its verifier and the filer. Conductor direction (unattended, ticket Constraint "stop at the cap and report what was run"): run no further cells; the builder writes the report from the evidence already in docs/reports/2026-10-12-builder-overlay-retest/ and run-log.md, marks L5 and the missing L1 pairs unverified under Not run, and states the stop at the cap; criteria must match what exists (3 rows: rts-step10 L1 A/B rep 1, ndc-step2 L5 A rep 1). Builder findings to carry: rts-step10 handoff on disk is the fixed version (hash 8974d49f, not the blocked fceea3cc), so it cannot test blocking; t0378 check is red at base b599114e, green at a8b39893 and e1fa6e04.
+
+## Closed
+
+2026-10-12: inconclusive: L5 pair complete (both arms blocked on the same plan defect, arm B cost +21 percent, n=1); see docs/reports/2026-10-12-builder-overlay-retest-l5-arm-b.md; overlays kept per the 2026-10-11 decision
