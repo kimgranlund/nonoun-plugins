@@ -6,3 +6,7 @@
 Lane: full because size L3 ticket decides full before planning; spike whose deliverable is the architect design (Non-goals: building anything)
 - skip: planner, builder, verifier: read-only design spike, the architect result is the deliverable (precedent T-0440); conductor, unattended fanout lane
 - stop: filer L1 not run: dispatch.py prepare exit 4, budget 87% of $6 (spend $5.22) after architect L1; unattended, budget.py ack needs the maintainer (fanout's solo budget gate stops the same way)
+
+## Skipped
+- skip: planner; step: all; reason: read-only design spike, the architect result is the deliverable; decided: maintainer session 2026-10-12
+- skip: filer; step: all; reason: close-first, no code changed; decided: maintainer session 2026-10-12

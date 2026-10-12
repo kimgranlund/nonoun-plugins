@@ -2,7 +2,7 @@
 id: T-0462
 title: "Design: merge the plan-* skills into /plan with kinds, shared rules and one lint"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Maintainer decision 2026-10-11: file this spike after the discussion of merging 
 
 ## Constraints
 Read-only. No model or effort change. Mark any claim about misrouting or confusion `[U]` unless a record shows it. Budget cap $6; stop and report at it.
+
+## Closed
+
+2026-10-12: design delivered: recommends one /plan skill with kinds steps, doc, goal, campaign, fanout, redirect stubs for one release, build split A to C; read-only spike, no code changed
