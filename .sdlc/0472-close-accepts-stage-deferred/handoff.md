@@ -28,3 +28,8 @@ Origin: T-0470 investigation, `docs/reports/2026-10-12-maison-wave-7b-mechanics.
 
 ## Constraints
 The failing test lands before or with the fix, with an observed-red control. No prompt wording change.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/tickets.py selftest` passes, and its `(held)` cases show a `deferred integration` hold closing via `--reason`, `--force --reason` and the filer path with `deferred: ticket#1 -> integration` in the close note.
+- [ ] `unmet-dependency` and a `deferred T-NNNN` hold still refuse every close path and write nothing (the `(held)` refusal cases in `tickets.py selftest`).
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` and `python3 plugins/sdlc-lite/scripts/check.py` pass; `steps.py open` is unchanged (diff touches no `steps.py` code).
