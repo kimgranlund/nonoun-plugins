@@ -448,7 +448,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0449 | [.0449-solo-campaign-stats](.0449-solo-campaign-stats/handoff.md) | Committed solo lane stats script and a KPI with a baseline | feature | L2 | P2 | none | 🟢 done |
 | T-0450 | [.0450-review-traces-solo-fails-and-blocks](.0450-review-traces-solo-fails-and-blocks/handoff.md) | Run review-traces on solo first-round verifier non-passes and builder blocked notes; turn findings into agent file changes | spike | L3 | P2 | none | 🟢 done |
 | T-0451 | [.0451-lanes-core](.0451-lanes-core/handoff.md) | lanes.py core: open, close, sweep, list, check, port (lane lifecycle A) | feature | L3 | P2 | none | 🟢 done |
-| T-0452 | [0452-fanout-solo-use-lanes](0452-fanout-solo-use-lanes/handoff.md) | fanout.py and solo_run.py use lanes.py (lane lifecycle B) | feature | L3 | P2 | T-0451 | ⏳ proposed |
+| T-0452 | [.0452-fanout-solo-use-lanes](.0452-fanout-solo-use-lanes/handoff.md) | fanout.py and solo_run.py use lanes.py (lane lifecycle B) | feature | L3 | P2 | T-0451 | 🟢 done |
 | T-0453 | [.0453-close-prune-report-lanes](.0453-close-prune-report-lanes/handoff.md) | tickets.py close and dispatch.py prune report open lanes (lane lifecycle C) | feature | L2 | P2 | T-0451 | 🟢 done |
 | T-0454 | [.0454-hook-message-lanes](.0454-hook-message-lanes/handoff.md) | Stray-worktree hook message points to lanes.py (lane lifecycle D) | chore | L1 | P2 | T-0451 | 🟢 done |
 | T-0455 | [0455-fanout-claimed-status](0455-fanout-claimed-status/handoff.md) | fanout prep and run-plan rules set status: claimed with claimed_by | chore | L1 | P2 | T-0452 | ⏳ proposed |
@@ -456,3 +456,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0457 | [.0457-lint-cited-paths-future-and-foreign](.0457-lint-cited-paths-future-and-foreign/handoff.md) | steps.py lint refuses cited paths a step will create and paths from another repo | bug | L2 | P2 | none | 🟢 done |
 | T-0458 | [0458-builder-overlay-retest](0458-builder-overlay-retest/handoff.md) | Retest the builder overlays on tasks where builders actually block, plus one L5 pair | spike | L3 | P2 | T-0450 | ⏳ proposed |
 | T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⏳ proposed |
+| T-0459 | [0459-gate-lock-selftest-real-root-flake](0459-gate-lock-selftest-real-root-flake/handoff.md) | gate_lock selftest isolation case fails when other sessions use the real gate-lock state | bug | L2 | P2 | none | ⏳ proposed |

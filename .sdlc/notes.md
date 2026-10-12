@@ -321,3 +321,11 @@
 - note: `lanes.py` is not wired into fanout, solo_run, tickets or dispatch (tickets B and C), and the hook message (D), `wait` and board columns are later tickets.
 - note: `lanes.py list --all --json` on this checkout makes one read-only `gh pr list` call per lane, with a 30 s timeout.
 - note: the step 2 `check.sh` guard failed once with no captured output, then passed with no edits in between. The cause is unknown, and the exit code was not captured on the verifier's run.
+
+## T-0452: fanout.py and solo_run.py use lanes.py (lane lifecycle B) (2026-10-12)
+
+- decide: `fanout.py settle` refuses in the prep and land flow because host records into the integration branch stay open until T-0453's `dispatch.py prune --done`; confirm T-0453 covers this, or relax row 4 for that case.
+- fix-now: a run with an outside `--lanes-dir` now creates `.worktrees/lanes.lock` in the main tree, and preflight does not check that `.worktrees/` is gitignored. Add a preflight check or a docstring-pinned refusal.
+- note: `sweep_lanes` catches only `lanes.LaneError`, so an `OSError` from `lanes.py` would still stop a run.
+- note: two `roll` runs sharing one lanes dir at once could remove each other's scratch tree.
+- note: the Loose ends step has no artifact, so no loose-end verdict exists for this task.
