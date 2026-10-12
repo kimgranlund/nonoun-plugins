@@ -24,3 +24,9 @@ Evidence: `.worktrees/fanout/logs/gate-d-T-0446-1-a1.log` (waited 371 s for a sl
 
 ## Constraints
 No model or effort change. Heavy gates keep going through the lock. No capacity change.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0; its case 21b shows a cheap gate (`check.py`) granted 1 compute unit and a default gate 3, `--gate-need` overriding both, and a bad spec refused with exit 2.
+- With a peer holding 5 of 6 compute units and `SDLC_GATE_TIMEOUT=1`, a cheap gate merges while a default gate ends as `gate waited 1 s for a slot, not run: ...` (no `red:`, merge reset, logs a1 and a2); a gate command that exits 3 itself stays `red: ... rc=3` (negative control).
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0; `bash plugins/sdlc-lite/scripts/check.sh` exits 0; `python3 scripts/check-packaging.py` exits 0.
+- `docs/specs/sdlc-lite/gate-lock-admission.md` (section 13), `docs/references/sdlc-internals.md` and the `fanout.py` docstring describe `--gate-need`, `SDLC_GATE_TIMEOUT`, the cheap-gate default and the not-run report; the lock's capacity and default need are unchanged.
