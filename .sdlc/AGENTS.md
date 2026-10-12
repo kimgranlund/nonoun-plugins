@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:832856b372eb -->
+<!-- sdlc-lite:managed:start v1 sha256:6895c45b4b0a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 13
+- proposed: 12
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0461 Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals (0461-clarify-controlled-language)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
@@ -19,7 +19,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
   - T-0481 fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) (0481-light-merge-gate-class)
   - T-0482 board.py --lanes shows light merges not yet covered by the full gate (T-0480) (0482-light-merge-uncovered-board)
-  - T-0484 gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it (0484-gate-lock-policy-reload)
   - T-0485 solo has no validatable result file (0485-solo-result-file)
   - T-0486 red-checkpoint marked retrospective though controls were recorded first (0486-redck-retrospective-checkpoint)
   - T-0487 loaded_context shows rollout absent on codex exec runs (0487-codex-exec-rollout-absent)
@@ -27,7 +26,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 439
+- done: 440
 - dropped: 28
 
 ## Procedures
