@@ -8,7 +8,7 @@ Result in one line: of 34 first-round non-passes, 22 are builder gaps, 9 are cri
 
 Sample size: 34 first-round verifier non-passes (all of them) and 20 of the 39 builder blocked notes in the window (a stratified read, k = 2).
 
-How it was drawn: `.sdlc/0450-review-traces-solo-fails-and-blocks/sample.py` (rerun it from the repo root; its output is kept beside it as `sample.txt`). It reuses `solo_stats.py` and `fleet_collect.py`, so it follows the baseline method:
+How it was drawn: `.sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py` (rerun it from the repo root; its output is kept beside it as `sample.txt`). It reuses `solo_stats.py` and `fleet_collect.py`, so it follows the baseline method:
 - A solo ticket has a `solo` row in a `runs.jsonl` inside the window, at or after 2026-10-08 and up to 2026-10-11T20:00:00Z. That `--until` instant is the one that reproduces the baseline counts.
 - Only each repo's main checkout `.sdlc` is read, worktree copies are left out, hidden closed `.NNNN-*` folders are read, and ui-kit-maison's `ticket_root: tickets` layout is honoured.
 - Verifier rounds are ordered by round number, then level (`verifier-L2.md`, `-2`, `-3`), never by name.
@@ -21,9 +21,9 @@ Count differences:
 - Non-passes. With no `--until`, the script prints 175 solo tickets and 128 verified, and still 34 first-round non-passes.
 
 Commands run, all from this tree:
-- `python3 plugins/sdlc-lite/scripts/traces.py ingest <repo>`, then `traces.py detect --repo <repo>`, then `traces.py clusters --max 5 --repo <repo>`, for each of the four repos. All exited 0. Output went to the gitignored `.sdlc/runtime/traces/<repo-key>`, and the stdout copies are in `.sdlc/0450-review-traces-solo-fails-and-blocks/scratch/`. No `--rerun-criteria` was passed.
+- `python3 plugins/sdlc-lite/scripts/traces.py ingest <repo>`, then `traces.py detect --repo <repo>`, then `traces.py clusters --max 5 --repo <repo>`, for each of the four repos. All exited 0. Output went to the gitignored `.sdlc/runtime/traces/<repo-key>`, and the stdout copies are in `.sdlc/.0450-review-traces-solo-fails-and-blocks/scratch/`. No `--rerun-criteria` was passed.
 - `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since 2026-10-08` for each repo, with stdout kept in the same scratch folder.
-- `python3 .sdlc/0450-review-traces-solo-fails-and-blocks/sample.py`, and the same with `--since 2000-01-01 --until none` for the all-time count.
+- `python3 .sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py`, and the same with `--since 2000-01-01 --until none` for the all-time count.
 
 Each non-pass was read through its `## Verdict`, the failing lines of `## Criteria`, and `## For the next attempt`. Each sampled blocked note was read through its `## Notes`. Ticket minutes and priced dollars are summed over every role's rows in the ticket's `runs.jsonl` inside the window. The collector records durations for sdlc-lite and ui-kit-maison only, and prices sdlc-lite solo runs only (K-001), so minutes and dollars are a floor, and outside sdlc-lite they are mostly 0.
 
