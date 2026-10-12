@@ -2,7 +2,7 @@
 id: T-0385
 title: "Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk"
 type: chore           # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,7 @@ No em or en dashes. No push or publish. Codex host behavior cannot be run live h
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (item 46 pins the text; it fails on the pre-change tree).
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/steps.py selftest`, `python3 plugins/sdlc-lite/scripts/fanout.py selftest`, `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
 - No em or en dash in the changed files; `git diff --check` is clean.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
