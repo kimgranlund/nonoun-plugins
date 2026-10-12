@@ -270,6 +270,12 @@ for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add --detach \
   run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-stray-worktree allows '$c': exit $rc, want 0"
 done
+# C7 (lane lifecycle): the denial names the lane commands, and a lanes.py call is not a worktree add.
+out=$(run "$sw" "$(pj "git worktree add -b lane-x /tmp/x HEAD")" "${swenv[@]}"); rc=$?
+[[ $rc -eq 2 ]] || fail "C7 raw git worktree add -b: exit $rc, want 2"
+grep -q 'lanes.py open' <<<"$out" && grep -q 'lanes.py close' <<<"$out" || fail "C7 stray-worktree message lacks lanes.py open and close"
+run "$sw" "$(pj "python3 scripts/lanes.py open lane-x --kind solo")" SDLC_ROLE=conductor >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "C7 lanes.py open passes the stray-worktree hook: exit $rc, want 0"
 run "$sw" "$(pj "git worktree add /tmp/x HEAD")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-stray-worktree without role: exit $rc, want 0"
 

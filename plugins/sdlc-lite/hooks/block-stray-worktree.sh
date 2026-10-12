@@ -48,7 +48,7 @@ fi
 
 block() {
   # shellcheck disable=SC2016
-  echo "Blocked for sdlc role '$role': $1. The run removes only detached worktrees under its throwaway prefix \$SDLC_TMP_WORKTREES (${prefix:-unset}) when it ends and never deletes a branch. Use the allowed form: git worktree add --detach \"\$SDLC_TMP_WORKTREES/<name>\" <commit>. Never create a branch (-b, -B, --orphan) or a worktree anywhere else." >&2
+  echo "Blocked for sdlc role '$role': $1. The run removes only detached worktrees under its throwaway prefix \$SDLC_TMP_WORKTREES (${prefix:-unset}) when it ends and never deletes a branch. Use the allowed form: git worktree add --detach \"\$SDLC_TMP_WORKTREES/<name>\" <commit>. Never create a branch (-b, -B, --orphan) or a worktree anywhere else. To open or close a lane (a worktree with its branch), run python3 scripts/lanes.py open <name> or python3 scripts/lanes.py close <name>; the conductor, not a role, owns that." >&2
   exit 2
 }
 
