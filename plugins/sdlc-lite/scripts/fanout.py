@@ -125,8 +125,9 @@ run
   `ticket_root: tickets`, else <root>); lane names
   match ^[a-z0-9]+(-[a-z0-9]+)*$ (not `integration`, `logs` or `rolling`, which name the lanes dir's
   own entries); each id is T-NNNN, resolves through tickets.load(tickets.ticket_dir(root)) to exactly one folder whose
-  status is not done or dropped, has its handoff committed at the start commit, and appears once
-  across all lanes. An external lane's branch must be registered in <root>/config (else the
+  status is not done or dropped, has its handoff committed at the start commit (T-0477: `run`, not
+  `prep`, also accepts one that is uncommitted and gitignored, and copies the whole ticket folder into the integration
+  and each lane worktree beside .sdlc/config), and appears once across all lanes. An external lane's branch must be registered in <root>/config (else the
   refusal names the `external_branch: <branch>` line and that file), refs/heads/<branch> must
   resolve to a commit, the branch must not be the integration branch or any <integration>-<lane>
   of this run, and no two lanes may name one branch; its ids resolve through
@@ -680,8 +681,9 @@ def resolve_lanes_dir(a, cwd, top):
     return lanes_dir
 
 
-def preflight(a):
-    """Every check before any write. Returns the run context; raises Refuse."""
+def preflight(a, copy_ignored=False):
+    """Every check before any write. Returns the run context; raises Refuse. copy_ignored (run only, T-0477):
+    an uncommitted ticket folder that git ignores is not refused; ctx['copy_dirs'] names the ones to copy."""
     cwd = pathlib.Path.cwd()
     p = git(cwd, 'rev-parse', '--is-inside-work-tree')
     if p.returncode or p.stdout.strip() != 'true':
@@ -816,17 +818,22 @@ def preflight(a):
             raise Refuse(f'{lane.dir} already exists')
 
     relp = trel.as_posix()
-    missing = []
+    missing, copy_dirs = [], []
     for lane in lanes:
         if lane.external:  # its handoffs were read from the branch itself
             continue
         for t in lane.tickets:
             path = f'{t.slug}/handoff.md' if relp == '.' else f'{relp}/{t.slug}/handoff.md'
             if git(cwd, 'cat-file', '-e', f'{start}:{path}').returncode:
-                missing.append(path)
+                # T-0477: a gitignored handoff is copied into the fanout-owned worktrees (run only; prep's host
+                # lanes branch from a commit and cannot be given the folder)
+                if copy_ignored and (top / path).is_file() and git(top, 'check-ignore', '-q', path).returncode == 0:
+                    copy_dirs.append(t.slug)
+                else:
+                    missing.append(path)
     if missing:
         raise Refuse(f'not committed at {start[:12]}: {", ".join(missing)}; lanes see only committed '
-                     f'files, so commit the .sdlc/ trail first (it is usually gitignored: `git add -f <path>` then commit)')
+                     f'files, so commit the .sdlc/ trail first (`git add -f <path>` then commit; run copies a gitignored trail itself, prep does not)')
 
     max_lanes = getattr(a, 'max_lanes', MAX_LANES_DEFAULT)
     if max_lanes < 1:
@@ -841,7 +848,7 @@ def preflight(a):
     if getattr(a, 'stagger', STAGGER_DEFAULT) < 0:
         raise Refuse('--stagger must be 0 or more seconds')
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
-            'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
+            'copy_dirs': copy_dirs, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
             'gate_needs': gate_needs_of(a),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
@@ -1105,6 +1112,15 @@ def setup(ctx):
         for lane in ctx['lanes']:
             if lane.external:
                 print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
+        # T-0477: an uncommitted, gitignored ticket folder (handoff, plan, steps) is copied first, so the config copy below finds its folder
+        for slug in ctx['copy_dirs']:
+            src_dir = ctx['top'] / ctx['trel'] / slug
+            for wt in [ctx['integ_dir']] + [lane.dir for lane in regular]:
+                dst_dir = wt / ctx['trel'] / slug
+                if not dst_dir.exists():
+                    dst_dir.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(str(src_dir), str(dst_dir),
+                                    ignore=shutil.ignore_patterns('*.log', '.run.lock', '*.running'))
         # .sdlc/config is often untracked (the trail is gitignored): without it a fresh worktree reads the
         # default ticket root and numbering, so tickets.py close would look for <root>/<slug>, not <root>/tickets/<slug>
         src_cfg = ctx['root'] / 'config'
@@ -1493,7 +1509,11 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         changed = {path for _, path in porcelain(integ) - pre}
         extra = sorted(path for path in changed
                        if relp != '.' and path != relp and not path.startswith(relp + '/'))
-        git_out(integ, 'add', '-A', '--', relp, *extra)
+        ad = git(integ, 'add', '-A', '--', relp, *extra)
+        # T-0477: a gitignored trail (copied into the worktrees, never committed) leaves nothing to stage, and git
+        # exits 1 for it after staging the rest
+        if ad.returncode and 'ignored by one of your .gitignore' not in ad.stderr:
+            raise RuntimeError(f'git add -A -- {relp} failed: {ad.stderr.strip()}')
         if git(integ, 'diff', '--cached', '--quiet').returncode:
             git_out(integ, 'commit', '-q', '-m', f'close {t.id}')
         return 'merged', merge_sha[:7]
@@ -1618,7 +1638,7 @@ def close_lanes(ctx):
 
 def cmd_run(a):
     try:
-        ctx = preflight(a)
+        ctx = preflight(a, copy_ignored=True)
         if a.dry_run:
             print_plan(ctx)
             return 0
@@ -3623,6 +3643,23 @@ def selftest():
         expect(f'case 20 uncommitted handoff: refused naming git add -f, got rc={up.returncode} err={up.stderr!r}',
                up.returncode == 2 and 'not committed' in up.stderr and 'git add -f' in up.stderr)
 
+        # case 20b (T-0477): a gitignored, uncommitted ticket folder is copied into each fanout-owned lane worktree;
+        # the same ticket in a repo that does not ignore .sdlc/ is still refused (case 20 above); case 22 checks prep still refuses
+        gx, gxl = tmp / 'gitignored-sdlc', tmp / 'gxlanes'
+        make_repo(gx, [], {'.gitignore': '.sdlc/\n.worktrees/\n'})
+        (gx / '.sdlc' / 'a').mkdir()
+        (gx / '.sdlc' / 'a' / 'handoff.md').write_text(
+            '---\nid: T-0001\ntitle: "Ticket a"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\n'
+            'created: 2026-01-01\n---\n\n## Goal\na\n', encoding='utf-8')
+        (gx / '.sdlc' / 'a' / 'plan.md').write_text('plan a\n', encoding='utf-8')
+        gxd = ('test -f "$(dirname "$FANOUT_HANDOFF")/plan.md" && '
+               'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" > "$(dirname "$FANOUT_HANDOFF")/filer-L1.md"; '
+               'echo x > x.txt')
+        gxo = fanout(gx, '--integration', 'fanout/gx', '--lanes-dir', str(gxl), '--driver', gxd, 'alpha=T-0001')
+        expect(f'case 20b gitignored uncommitted handoff: run exits 0 and copies the folder (handoff and plan) into the '
+               f'lane, got rc={gxo.returncode} out={gxo.stdout[-400:]!r} err={gxo.stderr!r}',
+               gxo.returncode == 0 and '| alpha | T-0001 | merged |' in gxo.stdout)  # the driver needs plan.md in the lane
+
         # case 21 (T-0303): each --gate runs through gate_lock.py; --no-gate-lock and SDLC_GATE_SLOTS=0 skip it
         gprobe = ('echo "W=[$SDLC_GATE_WORKERS] H=[$SDLC_GATE_LOCK_HELD]"; ' + shlex.quote(sys.executable) + ' '
                   + shlex.quote(str(SCRIPTS / 'gate_lock.py')) + ' context --json 2>/dev/null; echo; echo "Ran 1 tests"')
@@ -3917,6 +3954,10 @@ def selftest():
         po = verb(pr_ov, 'prep', 'alpha=T-0001', 'beta=T-0002', '--allow-overlap', '--lanes-dir', str(tmp / 'pol'), '--stagger', '0')
         expect(f'case 22 parity control: --allow-overlap lets prep print the plan, got rc={po.returncode} err={po.stderr!r}',
                po.returncode == 0 and 'overlap (planned scope): alpha T-0001 and beta T-0002: shared.txt' in po.stdout)
+
+        gxp = verb(gx, 'prep', 'alpha=T-0001', '--integration', 'fanout/gxp', '--lanes-dir', str(tmp / 'gxpl'), '--stagger', '0')
+        expect(f'case 22 prep (T-0477) still refuses an uncommitted handoff (host-lane half, out of T-0477), got rc={gxp.returncode} '
+               f'err={gxp.stderr!r}', gxp.returncode == 2 and 'not committed at' in gxp.stderr)
 
         # case 23 (T-0285): land merges one sub-agent branch behind the locked merge, gates and close
         ld = tmp / 'land'
