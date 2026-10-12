@@ -79,6 +79,10 @@ built, verified, merged, closed, filed, released, blocked, deferred, stopped, qu
 
 The tense is the status. Past tense says the work finished (`recent`), present progressive says it runs now (`now`), and future tense with a trigger says it comes next (`next`), for example "will verify step 2 after the build".
 
+## Controlled handoff words
+
+A clarify handoff takes its Do verbs and its banned hedge words from two closed lists, `CLARIFY_VERBS` and `CLARIFY_HEDGE`. Their one home is `plugins/sdlc-lite/scripts/plan_check.py`, whose `clarify` lint enforces them. This file copies neither list.
+
 ## Document type key
 
 A file opts into the type rules with one front matter key, `doc-type:`. The key takes one of four values:

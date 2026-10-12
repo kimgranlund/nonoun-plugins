@@ -18,11 +18,17 @@ cap-sum, executor-unknown, verifier-seat, review-missing, upsert-shape, upsert-s
 three warnings (l1-unverified, kpi-drift, kpi-unresolved). `--run` adds no-approval, the check that applies only before execution starts. The
 text is never unwrapped, since a plan doc holds a fenced Goal line. The selftest prints one `ok: plan: <rule> ...` line per case.
 A clarify block (kind `clarify`, the output of the clarify skill) is a task handoff with `## Goal` and `## Intent`; it is never unwrapped,
-since it holds backticks. One non-empty line starting `already scoped: ` or `follow-up: ` is a pass-through and passes. Six rules:
-clarify-goal, clarify-non-goals, clarify-level (`Level: L1` to `L4`), clarify-done (every `Done when:` item holds a backticked command or
-`unverifiable: <why>`), clarify-done-defect (an item reads its own verifier result, names a fixed sha, or needs a live run), and
-clarify-pass-through (a pass-through line followed by more text). An item starting `[owner: maintainer]` is exempt from the two Done when
-rules. The selftest prints one `ok: clarify: <rule> ...` line per case.
+since it holds backticks. One non-empty line starting `already scoped: `, `follow-up: ` or `stopped: ` is a pass-through and passes. Eleven
+rules: clarify-goal, clarify-non-goals (inline text or `- ` lines), clarify-level (`Level: L1` to `L4`), clarify-done (every `Done when:`
+item holds a backticked command, an EARS line `When <trigger>, the <system> MUST <response>`, or `unverifiable: <why>`), clarify-done-defect
+(an item reads its own verifier result, names a fixed sha, or needs a live run), clarify-pass-through (a pass-through line followed by more
+text), clarify-hedge (a CLARIFY_HEDGE word in the Goal or a Do step), clarify-delta (a `Deltas:` item is not one of the three forms
+`-> defaulted:`, `-> answered:`, `-> gap (gap: ...; default: ...)` with a CLARIFY_TYPES type), clarify-do-verb (no numbered Do step, or one
+whose first word is not in CLARIFY_VERBS), clarify-rfc2119 (an upper-case RFC 2119 keyword in Goal or Intent outside `Literal ask:` and EARS
+items, or a lower-case must, shall or should in `## Constraints`), and clarify-default-source (a defaulted delta without `[U]` and
+`(source: ...)`). Two warnings: clarify-goal-length (over 2 sentences or 50 words) and clarify-glossary (an unapproved alias from
+docs/references/glossary.md in the Goal or a Do step; skipped when the file is absent). An item starting `[owner: maintainer]` is exempt
+from the two Done when rules. The selftest prints one `ok: clarify: <rule> ...` line per case.
 """
 import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
@@ -839,11 +845,30 @@ Goal line:
 GOOD_PLAN_PATH = '.sdlc/demo/plan-doc.md'
 
 # ---- clarify -------------------------------------------------------------------------------------------------
-CLARIFY_PASS = ('already scoped: ', 'follow-up: ')
+CLARIFY_PASS = ('already scoped: ', 'follow-up: ', 'stopped: ')
 CLARIFY_OWNER = '[owner: maintainer]'
 CLARIFY_VERIFIER = re.compile(r'verifier-L[0-9]|verifier-\*|(?i:verifier result)')
 CLARIFY_SHA = re.compile(r'(?<![\w$])[0-9a-f]{7,40}(?!\w)')
 CLARIFY_LIVE = re.compile(r'(?i)live run|rehearsal|throwaway project')
+# The controlled vocabularies of a clarify handoff. The clarify skill copies both lists on its `Do verbs:` and `Hedge words:`
+# lines, and the selftest compares them, so this file stays the one authority.
+CLARIFY_VERBS = ('add', 'amend', 'build', 'change', 'close', 'create', 'define', 'delete', 'document', 'extend', 'fix', 'generate',
+                 'keep', 'lint', 'link', 'mark', 'merge', 'move', 'record', 'remove', 'rename', 'replace', 'replay', 'report', 'run',
+                 'set', 'split', 'test', 'update', 'write')
+CLARIFY_HEDGE = ('maybe', 'perhaps', 'possibly', 'probably', 'likely', 'might', 'could', 'ideally', 'hopefully', 'try to',
+                 'attempt to', 'somewhat', 'fairly', 'quite', 'rather', 'arguably', 'as needed', 'as appropriate', 'if possible',
+                 'where possible', 'if needed', 'etc.')
+CLARIFY_HEDGE_RE = re.compile(r'(?i)(?<!\w)(?:' + '|'.join(re.escape(w.rstrip('.')) for w in CLARIFY_HEDGE) + r')(?!\w)')
+CLARIFY_TYPES = ('category-mismatch', 'ambiguity', 'conflict', 'assumption', 'missing-acceptance', 'hidden-scope')
+_CT = '|'.join(CLARIFY_TYPES)
+CLARIFY_DELTA = (re.compile(rf'^- (?:{_CT}): \S.*? -> defaulted: \S.*$'),
+                 re.compile(rf'^- (?:{_CT}): \S.*? -> answered: \S.*$'),
+                 re.compile(rf'^- (?:{_CT}): \S.*? -> gap \(gap: [^;)]*\S[^;)]*; default: [^)]*\S[^)]*\)$'))
+CLARIFY_SOURCE = re.compile(r'\(source: [^)]*\S[^)]*\)')
+CLARIFY_EARS = re.compile(r'^When\b[^,]*\S,\s+the\s+\S.*?\sMUST\s+\S')
+CLARIFY_RFC_UPPER = re.compile(r'\b(?:MUST|SHALL|SHOULD|MAY|REQUIRED|RECOMMENDED|OPTIONAL)\b')
+CLARIFY_RFC_LOWER = re.compile(r'\b(?:must|shall|should)\b')
+CLARIFY_GLOSSARY = 'docs/references/glossary.md'
 
 
 def clarify_section(text, name):
@@ -873,6 +898,37 @@ def clarify_done_items(intent):
     return None
 
 
+def clarify_block(intent, label, item):
+    """(inline text, following item lines) for the first `<label>:` line of an Intent body, or None when the line is missing."""
+    lines = intent.splitlines()
+    for i, line in enumerate(lines):
+        m = re.match(rf'^[ \t]*(?:-[ \t]+)?{label}:[ \t]*(.*)$', line)
+        if not m:
+            continue
+        items = []
+        for nxt in lines[i + 1:]:
+            if not re.match(item, nxt):
+                break
+            items.append(nxt.strip())
+        return m.group(1).strip(), items
+    return None
+
+
+def clarify_glossary_aliases(glossary):
+    """The unapproved aliases in the last column of a glossary table. None reads docs/references/glossary.md from the working
+    directory and yields none when it is absent (a consumer install has no such file)."""
+    if glossary is None:
+        p = pathlib.Path(CLARIFY_GLOSSARY)
+        glossary = p.read_text(encoding='utf-8') if p.is_file() else ''
+    aliases = []
+    for line in glossary.splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')] if line.lstrip().startswith('|') else []
+        if len(cells) < 2 or cells[0] == 'Term' or set(cells[0]) <= set('-: '):
+            continue
+        aliases += [a.strip() for a in cells[-1].split(',') if a.strip()]
+    return aliases
+
+
 def clarify_defect(item):
     if CLARIFY_VERIFIER.search(item):
         return 'reads its own step\'s verifier result'
@@ -884,33 +940,87 @@ def clarify_defect(item):
     return None
 
 
-def check_clarify(text):
+def no_code(s):
+    return re.sub(r'`[^`\n]*`', '', s)
+
+
+def check_clarify(text, glossary=None):
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     if lines and lines[0].startswith(CLARIFY_PASS):
         if len(lines) == 1:
             return [], []
-        return [('clarify-pass-through', 'a pass-through (`already scoped: ` or `follow-up: `) must be the only line')], []
-    fails = []
+        return [('clarify-pass-through', 'a pass-through (`already scoped: `, `follow-up: ` or `stopped: `) must be the only line')], []
+    fails, warns = [], []
     goal = clarify_section(text, 'Goal')
     if goal is None or not goal.strip():
         fails.append(('clarify-goal', '`## Goal` is missing or empty'))
+    goal = (goal or '').strip()
     intent = clarify_section(text, 'Intent') or ''
-    if not re.search(r'(?m)^[ \t]*(?:-[ \t]+)?Non-goals:[ \t]*\S', intent):
-        fails.append(('clarify-non-goals', '`## Intent` has no `Non-goals:` line with text'))
+    nong = clarify_block(intent, 'Non-goals', r'^[ \t]*-[ \t]+\S')
+    if not nong or not (nong[0] or nong[1]):
+        fails.append(('clarify-non-goals', '`## Intent` has no `Non-goals:` line with text or `- ` lines under it'))
     if not re.search(r'(?m)^[ \t]*(?:-[ \t]+)?Level:[ \t]*L[1-4]\b', intent):
         fails.append(('clarify-level', '`## Intent` has no `Level: L1` to `L4` line'))
     items = clarify_done_items(intent)
     if not items:
         fails.append(('clarify-done', '`## Intent` has no `Done when:` line with an item'))
+    ears = set()
     for it in items or []:
         if it.startswith(CLARIFY_OWNER):
             continue
-        if not (re.search(r'`[^`\n]+`', it) or re.search(r'unverifiable: \S', it)):
-            fails.append(('clarify-done', f'Done when item has no backticked command and no `unverifiable: <why>`: {it[:80]}'))
+        if CLARIFY_EARS.match(it):
+            ears.add(it)
+        elif not (re.search(r'`[^`\n]+`', it) or re.search(r'unverifiable: \S', it)):
+            fails.append(('clarify-done', 'Done when item is no backticked command, no `When <trigger>, the <system> MUST <response>` '
+                                          f'line and no `unverifiable: <why>`: {it[:80]}'))
         why = clarify_defect(it)
         if why:
             fails.append(('clarify-done-defect', f'Done when item {why}: {it[:80]}'))
-    return fails, []
+    deltas = clarify_block(intent, 'Deltas', r'^[ \t]*-[ \t]')
+    if deltas:
+        if deltas[0] and deltas[0].lower() != 'none':
+            fails.append(('clarify-delta', f'`Deltas:` takes `- ` lines, not inline text: {deltas[0][:80]}'))
+        for d in deltas[1]:
+            if not any(p.match(d) for p in CLARIFY_DELTA):
+                fails.append(('clarify-delta', 'a delta is not `- <type>: <statement> -> defaulted: | answered: | gap (gap: ...; '
+                                               f'default: ...)` with a type from {", ".join(CLARIFY_TYPES)}: {d[:80]}'))
+            elif ' -> defaulted: ' in d and not ('[U]' in d and CLARIFY_SOURCE.search(d)):
+                fails.append(('clarify-default-source', f'a defaulted delta needs `[U]` and `(source: <text>)`, else use the gap form: {d[:80]}'))
+    do = clarify_block(intent, 'Do', r'^[ \t]*\d+\.[ \t]+\S')
+    steps = [re.sub(r'^\d+\.[ \t]+', '', s) for s in do[1]] if do else []
+    if not do or do[0] or not steps:
+        fails.append(('clarify-do-verb', '`Do:` needs no inline text and numbered `1. <Verb> ...` lines under it'))
+    for s in steps:
+        first = re.sub(r'[^a-z]', '', s.split()[0].lower()) if s.split() else ''
+        if first not in CLARIFY_VERBS:
+            fails.append(('clarify-do-verb', f'Do step does not start with a verb from CLARIFY_VERBS: {s[:80]}'))
+    for where, s in [('Goal', goal)] + [('Do step', s) for s in steps]:
+        hit = CLARIFY_HEDGE_RE.search(no_code(s))
+        if hit:
+            fails.append(('clarify-hedge', f'{where} holds the hedge word "{hit.group(0)}": {s[:80]}'))
+    rfc = [('Goal', ln) for ln in goal.splitlines()]
+    for ln in intent.splitlines():
+        body = re.sub(r'^[ \t]*-[ \t]+', '', ln).strip()
+        if not re.match(r'(?:-[ \t]+)?Literal ask:', ln.strip()) and body not in ears:
+            rfc.append(('Intent', ln))
+    for where, ln in rfc:
+        hit = CLARIFY_RFC_UPPER.search(no_code(ln))
+        if hit:
+            fails.append(('clarify-rfc2119', f'{where} holds the RFC 2119 keyword {hit.group(0)} outside Literal ask and EARS: {ln.strip()[:80]}'))
+    for ln in (clarify_section(text, 'Constraints') or '').splitlines():
+        hit = CLARIFY_RFC_LOWER.search(no_code(ln))
+        if hit:
+            fails.append(('clarify-rfc2119', f'a Constraints line writes "{hit.group(0)}" in lower case; write MUST or MUST NOT: {ln.strip()[:80]}'))
+    prose = no_code(goal)
+    n_sent = len([s for s in re.split(r'[.!?](?:\s+|$)', prose) if s.strip()])
+    if n_sent > 2 or len(prose.split()) > 50:
+        warns.append(('clarify-goal-length', f'the Goal has {n_sent} sentences and {len(prose.split())} words; keep it to 2 and 50'))
+    for a in clarify_glossary_aliases(glossary):
+        pat = re.compile(rf'(?i)(?<!\w){re.escape(a)}(?!\w)')
+        for where, s in [('Goal', goal)] + [('Do step', s) for s in steps]:
+            if pat.search(no_code(s)):
+                warns.append(('clarify-glossary', f'{where} uses the unapproved alias "{a}" (docs/references/glossary.md)'))
+    return fails, warns
 
 
 # ---- driver --------------------------------------------------------------------------------------------------
@@ -1188,26 +1298,45 @@ GOOD_CLARIFY = """## Goal
 A ticket whose diff touches only docs or records closes on its own checks, with no verifier run.
 
 ## Intent
-Literal ask: skip the verifier when a ticket only changes docs.
+Literal ask: skip the verifier when a ticket only changes docs, maybe records too; it MUST stay safe.
+Level: L2 (lane: solo; cost: low, one script and one close rule; reversible: yes)
 Deltas:
-- missing done-condition: defaulted: a selftest case per path class, observed failing first
-Do: add `scripts/verify_scope.py <base>` that prints `docs-only` for a docs-only diff, and let `tickets.py close` accept that diff.
-Level: L2, one script and one close rule; lane solo; reversible.
-Non-goals: skipping the verifier for any code, skill, agent or hook change.
+- missing-acceptance: the ask names no done-condition -> defaulted: a selftest case per path class, observed failing first [U] (source: root AGENTS.md)
+- ambiguity: which paths count as docs -> gap (gap: whether `.sdlc/` records count as docs; default: they count)
+- conflict: the repo runs one independent verifier per ticket -> answered: a narrow exception that a script decides
+Do:
+1. Add `scripts/verify_scope.py <base>` that prints `docs-only` for a docs-only diff.
+2. Change `tickets.py close` to accept a docs-only diff with no verifier run.
+Non-goals:
+- skipping the verifier for any code, skill, agent or hook change
+- model or effort changes
 Done when:
 - `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` exits 0
 - `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 against `$SDLC_BASE_SHA`
+- When a diff holds only docs paths, the close rule MUST accept the ticket with no verifier run
 - unverifiable: the close message reads well to a maintainer
+
+## Constraints
+A code, skill, agent or hook change MUST NOT skip the verifier.
+"""
+CLARIFY_FIXTURE_GLOSSARY = """| Term | Part of speech | Definition | Unapproved aliases |
+|---|---|---|---|
+| lane | noun | The route a ticket runs through. | track, mode |
+| step | noun | One ordered unit of a plan. | phase |
 """
 
 
 def clarify_selftest(expect):
     """One observed-failing mutant per clarify rule, each flagged as exactly its rule; no rule flags GOOD_CLARIFY."""
     C = GOOD_CLARIFY
-    RULES = ('clarify-goal', 'clarify-non-goals', 'clarify-level', 'clarify-done', 'clarify-done-defect', 'clarify-pass-through')
+    RULES = ('clarify-goal', 'clarify-non-goals', 'clarify-level', 'clarify-done', 'clarify-done-defect', 'clarify-pass-through',
+             'clarify-hedge', 'clarify-delta', 'clarify-do-verb', 'clarify-rfc2119', 'clarify-default-source')
 
     def rules(text):
-        return sorted({r for r, _ in check_clarify(text)[0]})
+        return sorted({r for r, _ in check_clarify(text, CLARIFY_FIXTURE_GLOSSARY)[0]})
+
+    def warned(text):
+        return sorted({r for r, _ in check_clarify(text, CLARIFY_FIXTURE_GLOSSARY)[1]})
 
     def swap(old, new):
         assert old in C, old
@@ -1218,19 +1347,31 @@ def clarify_selftest(expect):
         expect(f'clarify: {rule} mutant "{why}" is flagged as exactly {rule}', got == [rule])
         if got != [rule]:
             print('  got', got)
+
+    def warn_mutant(rule, why, text):
+        got, bad = warned(text), rules(text)
+        expect(f'clarify: {rule} mutant "{why}" warns exactly {rule} and fails nothing', got == [rule] and bad == [])
+        if got != [rule] or bad:
+            print('  got', got, bad)
     good = rules(C)
     for rule in RULES:
         expect(f'clarify: {rule} does not flag GOOD_CLARIFY', rule not in good)
+    expect('clarify: clarify-goal-length GOOD_CLARIFY yields no warning', warned(C) == [])
     expect('clarify: clarify-pass-through a one-line already scoped: passes', rules('already scoped: add one link, done = `docs_check.py` exits 0\n') == [])
     expect('clarify: clarify-pass-through a one-line follow-up: passes', rules('\nfollow-up: "any updates" points at session state\n\n') == [])
+    expect('clarify: clarify-pass-through a one-line stopped: passes', rules('stopped: merging a lane to main needs a ticket, and none exists\n') == [])
+    mutant('clarify-pass-through', 'a stopped: line followed by a handoff', 'stopped: no ticket\n' + C)
     mutant('clarify-goal', 'Goal body emptied', re.sub(r'(?s)(## Goal\n).*?(\n## Intent)', r'\1\2', C))
     mutant('clarify-goal', 'Goal heading deleted', swap('## Goal\n', ''))
-    mutant('clarify-non-goals', 'Non-goals line deleted', re.sub(r'(?m)^Non-goals:.*\n', '', C))
-    mutant('clarify-non-goals', 'Non-goals emptied', re.sub(r'(?m)^Non-goals:.*$', 'Non-goals:', C))
+    mutant('clarify-non-goals', 'Non-goals line deleted', re.sub(r'(?m)^Non-goals:.*\n(?:- .*\n)*', '', C))
+    mutant('clarify-non-goals', 'Non-goals emptied', re.sub(r'(?m)^Non-goals:.*\n(?:- .*\n)*', 'Non-goals:\n', C))
+    expect('clarify: clarify-non-goals inline Non-goals text passes',
+           rules(re.sub(r'(?m)^Non-goals:.*\n(?:- .*\n)*', 'Non-goals: model or effort changes.\n', C)) == [])
     mutant('clarify-level', 'Level line deleted', re.sub(r'(?m)^Level:.*\n', '', C))
     mutant('clarify-level', 'Level L5', swap('Level: L2', 'Level: L5'))
     mutant('clarify-done', 'Done when deleted', re.sub(r'(?ms)^Done when:.*', '', C))
     mutant('clarify-done', 'an item with no command', swap('- unverifiable: the close message reads well to a maintainer', '- the close message reads well'))
+    mutant('clarify-done', 'an EARS item with a lower-case must', swap('the close rule MUST accept', 'the close rule must accept'))
     mutant('clarify-done-defect', 'an item reads its own verifier result',
            swap('- unverifiable:', '- `cat .sdlc/x/step-1/verifier-L2.md` says pass\n- unverifiable:'))
     mutant('clarify-done-defect', 'an item names a fixed sha', swap('against `$SDLC_BASE_SHA`', 'against `a9d42334`'))
@@ -1247,9 +1388,47 @@ def clarify_selftest(expect):
            rules(re.sub(r'(?ms)^Done when:.*', '- Done when:\n  - `python3 x.py selftest` exits 0\n', C)) == [])
     expect('clarify: clarify-done-defect ordinary words and $SDLC_BASE_SHA are not a sha',
            rules(swap('- unverifiable:', '- `git diff --name-only $SDLC_BASE_SHA` lists a decade of facade changes\n- unverifiable:')) == [])
-    expect('clarify: clarify-goal a passing block exits 0 through report()', report('clarify', *check_clarify(C), out=lambda s: None) == 0)
+    mutant('clarify-hedge', 'a hedge word in the Goal', swap('closes on its own checks', 'probably closes on its own checks'))
+    mutant('clarify-hedge', 'a hedge phrase in a Do step', swap('1. Add `scripts/verify_scope.py', '1. Add, if possible, `scripts/verify_scope.py'))
+    expect('clarify: clarify-hedge a hedge word in Literal ask or a code span is not flagged',
+           rules(swap('prints `docs-only`', 'prints `maybe-docs`')) == [] and 'maybe' in C.split('Literal ask:')[1].split('\n')[0])
+    mutant('clarify-delta', 'a delta type outside the list', swap('- ambiguity: which paths', '- vagueness: which paths'))
+    mutant('clarify-delta', 'a delta with no resolution', swap(' -> answered: a narrow exception that a script decides', ''))
+    mutant('clarify-delta', 'the old free-form delta',
+           swap('- conflict: the repo runs one independent verifier per ticket -> answered: a narrow exception that a script decides',
+                '- conflict with a repo rule: defaulted: a narrow exception'))
+    mutant('clarify-delta', 'a gap with no default', swap('; default: they count)', ')'))
+    mutant('clarify-do-verb', 'a Do step whose first word is no listed verb', swap('2. Change `tickets.py close`', '2. Ensure `tickets.py close`'))
+    mutant('clarify-do-verb', 'an inline Do with no numbered step',
+           re.sub(r'(?m)^Do:\n(?:\d+\. .*\n)*', 'Do: add `scripts/verify_scope.py` and change the close rule.\n', C))
+    mutant('clarify-do-verb', 'the Do line deleted', re.sub(r'(?m)^Do:\n(?:\d+\. .*\n)*', '', C))
+    mutant('clarify-rfc2119', 'an upper-case MUST in the Goal', swap('closes on its own checks', 'MUST close on its own checks'))
+    mutant('clarify-rfc2119', 'an upper-case SHOULD in a delta', swap('-> answered: a narrow exception', '-> answered: a narrow exception that SHOULD be'))
+    mutant('clarify-rfc2119', 'a lower-case must not in Constraints', swap('change MUST NOT skip', 'change must not skip'))
+    mutant('clarify-default-source', 'a defaulted delta without [U]', swap(' [U] (source:', ' (source:'))
+    mutant('clarify-default-source', 'a defaulted delta without a source', swap(' (source: root AGENTS.md)', ''))
+    warn_mutant('clarify-goal-length', 'a three-sentence Goal', swap('with no verifier run.', 'with no verifier run. It is fast. It is cheap.'))
+    warn_mutant('clarify-goal-length', 'a Goal over 50 words', swap('with no verifier run.', 'with no verifier run' + ', and one more clause' * 10 + '.'))
+    warn_mutant('clarify-glossary', 'an unapproved alias in the Goal', swap('closes on its own checks', 'closes on its own track'))
+    warn_mutant('clarify-glossary', 'an unapproved alias in a Do step', swap('for a docs-only diff.', 'for a docs-only diff in any mode.'))
+    expect('clarify: clarify-glossary an empty glossary yields no alias', clarify_glossary_aliases('') == [])
+    expect('clarify: clarify-goal a passing block exits 0 through report()', report('clarify', *check_clarify(C, ''), out=lambda s: None) == 0)
     r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'clarify', '--text', 'x'], capture_output=True, text=True)
     expect('clarify: clarify-goal clarify --text x exits 1 with FAIL clarify-goal', r.returncode == 1 and 'FAIL clarify-goal' in r.stdout)
+    skill = (HERE.parent / 'skills/clarify/SKILL.md').read_text(encoding='utf-8')
+    for label, const, name in (('Do verbs', CLARIFY_VERBS, 'CLARIFY_VERBS'), ('Hedge words', CLARIFY_HEDGE, 'CLARIFY_HEDGE')):
+        m = re.search(rf'(?m)^{label}: (.+)$', skill)
+        got = {w.strip() for w in m.group(1).split(',')} if m else set()
+        expect(f'clarify: skill {label} match {name}', got == set(const))
+        if got != set(const):
+            print('  diff', sorted(got ^ set(const)))
+    evals = sorted((HERE.parent / 'skills/clarify/evals').glob('*.expected.md'))
+    expect('clarify: eval the glob finds at least one expected file', len(evals) > 0)
+    for f in evals:
+        got = sorted({r for r, _ in check_clarify(f.read_text(encoding='utf-8'), '')[0]})
+        expect(f'clarify: eval {f.name} passes', got == [])
+        if got:
+            print('  got', got)
 
 
 def selftest():
