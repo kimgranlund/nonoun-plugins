@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1301388959d3 -->
+<!-- sdlc-lite:managed:start v1 sha256:e66c8db3eb52 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 19
+- proposed: 20
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0461 Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals (0461-clarify-controlled-language)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
@@ -29,6 +29,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0481 fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) (0481-light-merge-gate-class)
   - T-0482 board.py --lanes shows light merges not yet covered by the full gate (T-0480) (0482-light-merge-uncovered-board)
   - T-0483 /report lanes and /report waves views: lane and wave status with tickets and percent (0483-report-lanes-waves-views)
+  - T-0484 gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it (0484-gate-lock-policy-reload)
 - ready: 2
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)

@@ -481,3 +481,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0481 | [0481-light-merge-gate-class](0481-light-merge-gate-class/handoff.md) | fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) | feature | L3 | P2 | none | ⏳ proposed |
 | T-0482 | [0482-light-merge-uncovered-board](0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | ⏳ proposed |
 | T-0483 | [0483-report-lanes-waves-views](0483-report-lanes-waves-views/handoff.md) | /report lanes and /report waves views: lane and wave status with tickets and percent | feature | L2 | P2 | none | ⏳ proposed |
+| T-0484 | [0484-gate-lock-policy-reload](0484-gate-lock-policy-reload/handoff.md) | gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it | bug | L1 | P2 | none | ⏳ proposed |
