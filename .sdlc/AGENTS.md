@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c9b5f299606e -->
+<!-- sdlc-lite:managed:start v1 sha256:832856b372eb -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -23,12 +23,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0485 solo has no validatable result file (0485-solo-result-file)
   - T-0486 red-checkpoint marked retrospective though controls were recorded first (0486-redck-retrospective-checkpoint)
   - T-0487 loaded_context shows rollout absent on codex exec runs (0487-codex-exec-rollout-absent)
-- ready: 1
-  - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
+- ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 438
+- done: 439
 - dropped: 28
 
 ## Procedures

@@ -313,7 +313,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0313 | [.0313-solo-worktree-hook](.0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | L1 | P2 | none | 🟢 done |
 | T-0314 | [.0314-red-first-control](.0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | L2 | P2 | none | 🟢 done |
 | T-0315 | [.0315-replan-cost-remeasure](.0315-replan-cost-remeasure/handoff.md) | Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule | spike | L1 | P2 | none | 🟢 done |
-| T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | L2 | P2 | none | 🔵 ready |
+| T-0316 | [.0316-codex-live-evidence](.0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | L2 | P2 | none | 🟢 done |
 | T-0317 | [.0317-red-under-load-rerun](.0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | L2 | P2 | none | ⚪ dropped |
 | T-0318 | [.0318-fleet-status-noise](.0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | L1 | P2 | none | 🟢 done |
 | T-0319 | [.0319-fleet-verify-0307-0310](.0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | L1 | P2 | none | 🟢 done |
