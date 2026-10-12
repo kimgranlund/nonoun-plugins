@@ -2,7 +2,7 @@
 id: T-0494
 title: "A role that spawns background sub-agents then ends its turn never wakes: completion notices go to the parent session (T-0493)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Smallest fix: one affirmative line in the shared role bodies that may delegate (
 
 ## Constraints
 Red check: a `check.py` item (or `prompt_lint.py` case) that fails when `agents/architect.md` lacks the foreground rule, observed red before the edit. Regenerate with `claude_roles.py generate` and `codex_roles.py generate`. Add no prohibition (prompt_lint budget).
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
