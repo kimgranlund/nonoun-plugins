@@ -23,3 +23,6 @@ Design: `docs/planning/merge-ops-and-queue.md` (Approach 2, 4, 6; smallest first
 
 ## Constraints
 Main moves only by `--ff-only`. One writer on `fanout.py` at a time. No model or effort change.
+
+## Plan review
+- dispatch.py prepare builder L3 refused step-1: `steps: step-1/handoff.md: cited path does not exist: .sdlc/gate-ledger.jsonl` / `plan defect: replan this step (/chain 3)`. The ledger path names a file inside the selftest fixture repo, not this tree; write it so it is not read as a cited repo path (for example `gate-ledger.jsonl` in the fixture repo, without the `.sdlc/` prefix in backticks), and keep the rest of planner-L2.md unchanged.
