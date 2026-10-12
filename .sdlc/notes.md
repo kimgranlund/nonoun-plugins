@@ -333,3 +333,10 @@
 2026-10-12: T-0465 placement corrected by the maintainer: the compaction skill authors a /compact prompt, so it is a plan-family skill (`plan-compaction`, like `plan-goal` and `plan-loop`) with a `plan_check.py compaction` kind, not a `report` view. T-0462 (plan merge design, running) should list `compaction` as a block-returning kind; reconcile when its result lands.
 
 2026-10-12: T-0465 invocation fixed by the maintainer: /sdlc-lite:plan compaction <prose>, a kind of /plan (the router rule and first kind are built in T-0465; T-0462 and its build add the other kinds).
+
+## T-0464: Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture (2026-10-12)
+
+- decide: Open the follow-up ticket for the retrospective red-checkpoint close block (change 1 in `docs/reports/2026-10-12-ceremony-audit.md`). It cost 6 manual acks, and its measure is acks per wave dropping from 6 to at most 1.
+- note: Changes 2 and 3 (fixture-path lint refusals and the solo L3 trial) are proposed in the report but not ticketed, since only one follow-up ticket per task is allowed.
+- note: The `skips.md` close refusal (T-0450, T-0462) is watched in the report with no ticket proposed until a second wave shows it.
+- note: Minutes lost per refusal, questions that did not change the output, and cost for the other three repos are not measured. They are listed under `## Unverified` in `docs/reports/2026-10-12-ceremony-audit.md`.
