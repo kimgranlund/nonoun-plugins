@@ -28,3 +28,6 @@ Maintainer direction 2026-10-12: tune the system toward resolve-and-ship and awa
 
 ## Constraints
 Read-only against every repo it inspects. No model or effort change. Cap $8; stop and report at it. A check that caught a real defect stays. State only what a file or command shows; mark inference `[U]`.
+
+## Plan review
+- plan defect: dispatch.py prepare builder refused step-1: steps.py lint: cited path does not exist: .sdlc/.0999-nope/ (the plan's settled-evidence line cites a probe fixture path as a code span; cite no nonexistent path in the step text)
