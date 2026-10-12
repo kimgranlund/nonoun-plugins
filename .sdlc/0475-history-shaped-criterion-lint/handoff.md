@@ -27,3 +27,8 @@ Origin: T-0470 investigation, `docs/reports/2026-10-12-maison-wave-7b-mechanics.
 
 ## Constraints
 The failing test lands before or with the fix, with an observed-red control. No prompt wording change.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and its output holds the three `(t0475)` cases as `ok:` lines.
+- `git diff d733ed7 -- plugins/sdlc-lite/scripts/steps.py | grep -c '^+.*history_warnings'` prints 2 or more (the function and its call), and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- Observed red: with ` + history_warnings(plan, steps)` removed from `cmd_lint`, `steps.py selftest` fails the two warning `(t0475)` cases.
