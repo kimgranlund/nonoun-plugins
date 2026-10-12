@@ -56,7 +56,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 - Prompt references in agents, skills, and overlays: `python3 plugins/sdlc-lite/scripts/prompt_lint.py` (and `selftest`).
 - Thread report: `python3 plugins/sdlc-lite/scripts/report.py selftest`.
 - Author reply rules scored over a session transcript: `python3 plugins/sdlc-lite/scripts/reply_lint.py score <transcript.jsonl>` (and `selftest`).
-- Docs-only verifier skip: `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` (and the `(docs-only)` cases of `tickets.py selftest`).
+- Docs-only verifier skip and the tests-gate pilot: `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` (its `tests-gate ok:` and `tests-gate red:` cases, and the `(docs-only)` and `(tests-gate)` cases of `tickets.py selftest`).
 - Runner: `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 - Hooks: commands in the hook maintenance reference.
 - Full regression suite: `bash plugins/sdlc-lite/scripts/check.sh`.
