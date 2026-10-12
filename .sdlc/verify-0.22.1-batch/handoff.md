@@ -9,7 +9,7 @@ Independently verify sixteen tickets merged to main since tag v0.22.0 (builders 
 - Done when: a pass or fail per ticket (T-0374, T-0381 to T-0395) with the command and output per criterion, and one pass or fail for the shared gates (check.py, tickets.py check, both generate --check) at HEAD.
 
 ## Context
-Folders: T-0374 .sdlc/.0374-rolling-merge-class; T-0381 .sdlc/0381-runner-wrong-lane-base; T-0382 .0382-widen-in-lane-tree; T-0383 .0383-verdict-delivery-gap; T-0384 .0384-lint-rejects-grep-p; T-0385 .sdlc/0385-template-hunks-0301; T-0386 .0386-gate-lock-admission-design; T-0387 .0387-architect-markdown-design; T-0388 .0388-record-result-sha; T-0389 .0389-codex-profile-fingerprint; T-0390 .0390-send-sender-registered; T-0391 .0391-runsh-stray-scope; T-0392 .0392-goals-and-kpi-homes; T-0393 .0393-lint-absolute-citation-identity; T-0394 .0394-prepare-solo-refusal-pointer; T-0395 .0395-redck-test-prelude. Paths below are under plugins/sdlc-lite/scripts/ unless full.
+Folders: T-0374 .sdlc/.0374-rolling-merge-class; T-0381 .sdlc/0381-runner-wrong-lane-base; T-0382 .0382-widen-in-lane-tree; T-0383 .0383-verdict-delivery-gap; T-0384 .0384-lint-rejects-grep-p; T-0385 .sdlc/.0385-template-hunks-0301; T-0386 .0386-gate-lock-admission-design; T-0387 .0387-architect-markdown-design; T-0388 .0388-record-result-sha; T-0389 .0389-codex-profile-fingerprint; T-0390 .0390-send-sender-registered; T-0391 .0391-runsh-stray-scope; T-0392 .0392-goals-and-kpi-homes; T-0393 .0393-lint-absolute-citation-identity; T-0394 .0394-prepare-solo-refusal-pointer; T-0395 .0395-redck-test-prelude. Paths below are under plugins/sdlc-lite/scripts/ unless full.
 
 ## Constraints
 Read-only. No em or en dashes. Selftests run in the archive copy, not the main checkout.
