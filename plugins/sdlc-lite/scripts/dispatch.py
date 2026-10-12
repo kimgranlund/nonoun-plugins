@@ -3,7 +3,7 @@
 
   dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
-  dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368)
+  dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
   dispatch.py recover --root DIR [--open] the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414);
@@ -105,7 +105,9 @@ verifier, filer) and false for builder, whose failed run may be resumed (solo an
 level, recorded_at} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
 result's ## Follow-ups section is not None. `dispatch.py prune` lists the queue with the stop call per entry
 (`TaskStop task_id=<name>`); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
-(`fanout.py land` does it for a merged solo).
+(`fanout.py land` does it for a merged solo). The listing adds `; lane open <path>` to an entry whose host lane (lanes.py) still
+exists, and `--done NAME` then closes that lane through lanes.close_lane and prints `closed lane <path> (<reason>)` or
+`lane still open: <path> (<reason>)` (T-0453); without a lane it prints nothing more.
 Exit codes: 0 ok, 1 failed sub-agent, 2 unreadable dispatch or attempt, an attempt that is not running, or a result
 path outside the artifacts dir, 3 invalid result.
 Not carried over: the .nvmrc PATH change (a sub-agent inherits the parent's environment) and the skill
@@ -923,12 +925,50 @@ def prune_done(root, name):
     return bool(found)
 
 
+def host_lanes(root, names):
+    """{name: lane dict} for each queued agent name that has a plugin host lane whose tree or branch still exists
+    (lane lifecycle, T-0453). Advisory: a root outside a git work tree, or any lane error, finds none."""
+    try:
+        import lanes
+        ctx = lanes.Ctx(root)
+        found = {}
+        for d in lanes.discover(ctx):
+            if d['owner'] != 'host' or not (d['exists'] or (d['branch'] and lanes.has_ref(ctx.top, 'refs/heads/' + d['branch']))):
+                continue
+            for n in names:
+                if n in (d['lane'], os.path.basename(d['path'])):
+                    found.setdefault(n, d)
+        return found
+    except Exception:  # noqa: BLE001 - lane reporting never blocks the prune queue
+        return {}
+
+
+def prune_lane(root, name):
+    """After the agent is stopped: close its host lane through lanes.close_lane and return `closed lane <path> (<reason>)`
+    or `lane still open: <path> (<reason>)`; None when the agent has no open host lane."""
+    d = host_lanes(root, [name]).get(name)
+    if d is None:
+        return None
+    import lanes
+    try:
+        r = lanes.close_lane(d['lane'], cwd=root)
+    except lanes.LaneError as e:
+        return 'lane still open: %s (%s)' % (d['path'], e)
+    first = (r['message'].splitlines() or [''])[0]
+    if r['rc'] == 0:
+        m = re.match(r'closed .*\((.*)\)$', first)
+        return 'closed lane %s (%s)' % (d['path'], m.group(1) if m else first)
+    return 'lane still open: %s (%s)' % (d['path'], first)
+
+
 def prune_lines(root='.'):
     entries = prune_read(root)
     if not entries:
         return ['prune: nothing queued']
-    return ['TaskStop task_id=%s    # %s %s, recorded %s; then: dispatch.py prune --done %s'
-            % (e['name'], e.get('role') or 'agent', e.get('level') or '', e.get('recorded_at') or '?', e['name']) for e in entries]
+    open_ = host_lanes(root, [e['name'] for e in entries])
+    return ['TaskStop task_id=%s    # %s %s, recorded %s; then: dispatch.py prune --done %s%s'
+            % (e['name'], e.get('role') or 'agent', e.get('level') or '', e.get('recorded_at') or '?', e['name'],
+               '; lane open %s' % open_[e['name']]['path'] if e['name'] in open_ else '') for e in entries]
 
 
 def follow_up_pending(text):
@@ -1275,6 +1315,9 @@ def main(argv):
         try:
             if args.done:
                 print('pruned: ' + args.done if prune_done(args.root, args.done) else 'not queued: ' + args.done)
+                lane_line = prune_lane(args.root, args.done)
+                if lane_line:
+                    print(lane_line)
             elif args.add:
                 busy = running_attempt(args.root, args.add)
                 if busy:
@@ -2485,6 +2528,46 @@ def selftest():
         with contextlib.redirect_stdout(empty):
             main(['prune', '--root', str(rp)])
         case('prune on an empty queue says so', empty.getvalue().strip() == 'prune: nothing queued')
+        # T-0453: the listing names an open host lane; --done closes it through lanes.close_lane and says so.
+        lr = tmp / 'lane-prune'
+        init_repo(lr)
+        branch = subprocess.run(['git', '-C', str(lr), 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip()
+
+        def host_lane(name, work=False):
+            tree = lr / '.claude' / 'worktrees' / name
+            subprocess.run(['git', '-C', str(lr), 'worktree', 'add', '-q', '-b', 'worktree-' + name, str(tree)], check=True)
+            put(lr / '.worktrees' / 'host' / (name + '.lane.json'), json.dumps(dict(lane=name, kind='host', branch='worktree-' + name, into=branch)))
+            if work:
+                (tree / 'new.txt').write_text('w\n')
+                subprocess.run(['git', '-C', str(tree), 'add', '-A'], check=True)
+                subprocess.run(['git', '-C', str(tree), '-c', 'user.name=t', '-c', 'user.email=t@example.invalid',
+                                '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'work'], check=True)
+            return os.path.realpath(str(tree))
+
+        def run_prune(*a):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc_p = main(['prune', '--root', str(lr)] + list(a))
+            return rc_p, buf.getvalue().splitlines()
+
+        landed_tree, kept_tree = host_lane('T-0901-solo'), host_lane('T-0902-solo', work=True)
+        for n in ('T-0901-solo', 'T-0902-solo', 'T-0903-solo'):
+            run_prune('--add', n)
+        rc_l, listing = run_prune()
+        case('T-0453 prune listing adds "; lane open <path>" to an entry with a host lane and not to one without',
+             rc_l == 0 and listing[0].endswith('; lane open ' + landed_tree) and listing[1].endswith('; lane open ' + kept_tree)
+             and 'lane open' not in listing[2])
+        rc_d, done = run_prune('--done', 'T-0901-solo')
+        case('T-0453 prune --done closes a landed host lane: "closed lane <path> (ancestor)", tree and branch gone',
+             rc_d == 0 and done == ['pruned: T-0901-solo', 'closed lane %s (ancestor)' % landed_tree] and not Path(landed_tree).exists()
+             and subprocess.run(['git', '-C', str(lr), 'rev-parse', '-q', '--verify', 'refs/heads/worktree-T-0901-solo'], capture_output=True).returncode != 0)
+        rc_d, kept = run_prune('--done', 'T-0902-solo')
+        case('T-0453 prune --done keeps an unlanded host lane and prints "lane still open: <path> (<reason>)" (exit unchanged)',
+             rc_d == 0 and len(kept) == 2 and kept[1].startswith('lane still open: %s (not landed in %s: first new.txt' % (kept_tree, branch))
+             and Path(kept_tree).is_dir())
+        rc_d, none_ = run_prune('--done', 'T-0903-solo')
+        case('T-0453 prune --done for an agent with no host lane prints nothing more (negative control)',
+             rc_d == 0 and none_ == ['pruned: T-0903-solo'])
 
         # 10b. T-0414: the restart sweep, reused parent pids, and a safe prune --add.
         sw = tmp / 'sw'
