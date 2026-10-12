@@ -33,6 +33,8 @@ a ticket and has no budget.
 T-0345: when another solo is live in the checkout (a sub-agent dispatch marker under the git dir, fresh and not yet
 priced by `complete`, or a live --exec lock), run defaults to --worktree solo-<task>, prints the choice, and the dispatch
 JSON carries `worktree`. --worktree and --no-worktree win.
+T-0490: the same default applies when `lanes.py list` shows an open integration lane in the repo (a wave merge needs a
+clean primary checkout); a solo already inside a lane tree stays there.
 
 Cost is never guessed. A result with no total_cost_usd (a crash, a missing result event, Codex, which
 reports none) records cost_usd null with a cost_reason, and the budget reports that run as unmetered.
@@ -444,9 +446,27 @@ def live_solos(where):
     return n
 
 
+def open_integration_lane(where):
+    """The name of an open integration lane in the repo holding where, else None (T-0490). Only the primary checkout
+    asks: a solo already inside a lane tree stays there. Reuses lanes.py's discovery and open/closable rule, so a
+    lane whose branch has landed (closable) or a repo with no lanes returns None."""
+    try:
+        import lanes  # same scripts/ dir
+        ctx = lanes.Ctx(where)
+        if not ctx.current or not lanes.samepath(ctx.current, ctx.top):
+            return None
+        for d in lanes.discover(ctx):
+            if d['owner'] and d['kind'] == 'integration' and 'open' in lanes.lane_states(ctx, d):
+                return d['lane']
+    except Exception:  # not a git repository, or lanes unreadable: the checkout stays as today
+        return None
+    return None
+
+
 def auto_worktree(task_dir, cwd):
-    """The worktree name to default to when another solo is live in this checkout, else None."""
-    if not live_solos(cwd or task_dir):
+    """The worktree name to default to when another solo is live in this checkout, or an integration lane is open
+    in the repo (T-0490), else None."""
+    if not live_solos(cwd or task_dir) and not open_integration_lane(cwd or task_dir):
         return None
     slug = re.sub(r'[^a-z0-9]+', '-', pathlib.Path(task_dir).resolve().name.lower()).strip('-')[:40] or 'task'
     return 'solo-' + slug
@@ -1059,6 +1079,34 @@ def selftest():
             c6, j6 = disp('par6')
             expect('recorded solo: record exits 0 and clears the marker, the next solo keeps the checkout',
                    rp.returncode == 0 and c6.returncode == 0 and 'worktree' not in j6)
+            # T-0490: an open integration lane in the repo defaults the next solo to a worktree; --no-worktree wins.
+            for f in (wr2 / '.git' / 'solo_live').glob('*'):
+                f.unlink()
+            lanes_py = str(SCRIPTS / 'lanes.py')
+            subprocess.run(['git', 'config', 'user.name', 't'], cwd=str(wr2), check=True)
+            subprocess.run(['git', 'config', 'user.email', 't@t'], cwd=str(wr2), check=True)
+            (wr2 / '.gitignore').write_text('.worktrees/\n.sdlc/\n', encoding='utf-8')
+            subprocess.run(['git', 'add', '.gitignore'], cwd=str(wr2), check=True)
+            subprocess.run(['git', 'commit', '-q', '-m', 'ignore'], cwd=str(wr2), check=True)
+            op = subprocess.run([sys.executable, lanes_py, 'open', 'wave/1', '--kind', 'integration'], cwd=str(wr2),
+                                capture_output=True, text=True, timeout=60)
+            itree = wr2 / '.worktrees' / 'wave-1'
+            expect('integration lane: lanes.py opens the integration lane', op.returncode == 0 and (itree / '.lane.json').is_file())
+            c7, j7 = disp('par7')
+            expect('integration lane: a closable lane (no unlanded work) keeps the checkout', c7.returncode == 0 and 'worktree' not in j7)
+            for f in (wr2 / '.git' / 'solo_live').glob('*'):
+                f.unlink()
+            (itree / 'wave.txt').write_text('wave work\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'wave.txt'], cwd=str(itree), check=True)
+            subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'wave work'],
+                           cwd=str(itree), check=True)
+            c8, j8 = disp('par8')
+            expect('integration lane: an open lane defaults the solo to a worktree',
+                   c8.returncode == 0 and j8.get('worktree') and pathlib.Path(j8['worktree']).is_dir() and 'solo-par8' in c8.stderr)
+            c9, j9 = disp('par9', '--no-worktree')
+            expect('integration lane: --no-worktree wins', c9.returncode == 0 and 'worktree' not in j9)
+            expect('integration lane: a solo already inside a lane tree stays there (no nested worktree)',
+                   open_integration_lane(itree) is None and open_integration_lane(wr2) == 'wave-1')
         finally:
             os.environ['PATH'] = old_path
             for k, v in old_env.items():
@@ -1168,7 +1216,7 @@ def main():
         if not wt and not a.no_worktree:
             wt = auto_worktree(task_dir, a.cwd)
             if wt:
-                print(f'solo_run.py: another solo is live in this checkout; using worktree {wt} (--no-worktree to stay)', file=sys.stderr)
+                print(f'solo_run.py: another solo is live or an integration lane is open; using worktree {wt} (--no-worktree to stay)', file=sys.stderr)
         if a.backend == 'claude' and not a.exec:
             path = ensure_worktree(wt, a.cwd, task_dir) if wt else None
             rc, d = dispatch_json(task_dir, a.tier, brief, path)
