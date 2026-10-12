@@ -2,7 +2,7 @@
 id: T-0446
 title: "dispatch.py record finds the sub-agent transcript without a flag"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Never read a transcript outside the agent's own file; do not guess between sever
 - Before the change the new find case fails (observed red).
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
 - `agents/conductor.md` no longer says `--transcript` is required for a priced record, and `codex_roles.py generate --check` passes.
+
+## Closed
+
+2026-10-11: built by a solo and verified pass (verifier L2) in wave 33; gates passed on landing

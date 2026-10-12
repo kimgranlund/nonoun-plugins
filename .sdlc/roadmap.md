@@ -443,7 +443,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0442 | ⏳ proposed |
 | T-0444 | [.0444-ticket-area-claimed-paused](.0444-ticket-area-claimed-paused/handoff.md) | Ticket vocabulary: add area, status claimed and status paused | feature | L3 | P2 | none | 🟢 done |
 | T-0445 | [.0445-collector-ignores-completed-attempts](.0445-collector-ignores-completed-attempts/handoff.md) | Collector and recover: a completed attempt is never counted or marked interrupted | bug | L2 | P2 | none | 🟢 done |
-| T-0446 | [0446-record-finds-transcript](0446-record-finds-transcript/handoff.md) | dispatch.py record finds the sub-agent transcript without a flag | feature | L2 | P2 | none | ⏳ proposed |
+| T-0446 | [.0446-record-finds-transcript](.0446-record-finds-transcript/handoff.md) | dispatch.py record finds the sub-agent transcript without a flag | feature | L2 | P2 | none | 🟢 done |
 | T-0447 | [0447-doc-standards-suite](0447-doc-standards-suite/handoff.md) | Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers | feature | L4 | P2 | none | ⏳ proposed |
 | T-0448 | [0448-clarify-v2-intent-to-plan](0448-clarify-v2-intent-to-plan/handoff.md) | Modernize clarify (our port of find-intent): plan-ready intent, runnable done-when, cost-aware asks | feature | L3 | P2 | none | ⏳ proposed |
 | T-0449 | [0449-solo-campaign-stats](0449-solo-campaign-stats/handoff.md) | Committed solo lane stats script and a KPI with a baseline | feature | L2 | P2 | none | ⏳ proposed |
