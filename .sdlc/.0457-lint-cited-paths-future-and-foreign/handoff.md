@@ -2,7 +2,7 @@
 id: T-0457
 title: "steps.py lint refuses cited paths a step will create and paths from another repo"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,7 @@ No model or effort change. The rule must stay able to fail: a cited existing-pat
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and prints the `T-0457` cases: created path (Do verb, Outputs line, `[creates:]` marker, `(red)` span) passes, foreign path (Other repo prefix, absolute outside the repo) passes, and the three controls (missing cited file, plain-criterion span, create target not exempting another path, in-repo absolute) still refuse.
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
 - `plugins/sdlc-lite/agents/planner.md` and `plugins/sdlc-lite/skills/handoff-format/SKILL.md` describe the `[creates: <path>]` marker, `Outputs:` line and `Other repo: <name>` line; the generated planner-L1/L2/L3 files and Codex planner TOMLs match (`claude_roles.py generate --check`, `codex_roles.py generate --check`).
+
+## Closed
+
+2026-10-11: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

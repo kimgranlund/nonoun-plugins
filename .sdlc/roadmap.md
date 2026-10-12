@@ -454,4 +454,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0454 | [0454-hook-message-lanes](0454-hook-message-lanes/handoff.md) | Stray-worktree hook message points to lanes.py (lane lifecycle D) | chore | L1 | P2 | T-0453 | ⏳ proposed |
 | T-0455 | [0455-fanout-claimed-status](0455-fanout-claimed-status/handoff.md) | fanout prep and run-plan rules set status: claimed with claimed_by | chore | L1 | P2 | T-0452 | ⏳ proposed |
 | T-0456 | [0456-cheap-gates-queue-behind-heavy](0456-cheap-gates-queue-behind-heavy/handoff.md) | Cheap fanout gates time out in the machine-wide gate lock behind heavy browser jobs | bug | L2 | P2 | none | ⏳ proposed |
-| T-0457 | [0457-lint-cited-paths-future-and-foreign](0457-lint-cited-paths-future-and-foreign/handoff.md) | steps.py lint refuses cited paths a step will create and paths from another repo | bug | L2 | P2 | none | ⏳ proposed |
+| T-0457 | [.0457-lint-cited-paths-future-and-foreign](.0457-lint-cited-paths-future-and-foreign/handoff.md) | steps.py lint refuses cited paths a step will create and paths from another repo | bug | L2 | P2 | none | 🟢 done |
