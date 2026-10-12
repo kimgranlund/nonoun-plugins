@@ -350,3 +350,8 @@
 - note: `waiting-on-user` is partly guessed from transcript text: an `AskUserQuestion` with no result, or a last assistant line that ends in `?`.
 
 - 2026-10-12: maintainer raised the T-0458 cap from $20 to $30 to run the missing L5 arm B (ndc-step2, rep 1, about $8.50). Closes inconclusive afterward either way.
+
+## T-0473: redck: phase against the working tree, bind to an ancestor base (T-0470 finding 6) (2026-10-12)
+
+- note: `plugins/sdlc-lite/agents/builder.md:28`, its generated `builder-L*.md` files and the Codex TOMLs still say a second `record` "is only a base control and is stored as retrospective". That is now partly stale. The handoff forbade prompt wording changes, so it was left alone; revise it in a prompt-wording ticket.
+- note: `cmd_record` still exits 1 on a green span. That was outside the three rules and left unchanged.

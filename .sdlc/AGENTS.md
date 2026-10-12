@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:2cb9bbedfd92 -->
+<!-- sdlc-lite:managed:start v1 sha256:d096e93b0a72 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 14
+- proposed: 13
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0458 Retest the builder overlays on tasks where builders actually block, plus one L5 pair (0458-builder-overlay-retest)
   - T-0461 Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals (0461-clarify-controlled-language)
@@ -19,7 +19,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0468 Merge plan skills B: redirect stubs for the four retired names and retargeted checks (0468-plan-merge-b-stubs)
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
   - T-0471 solo.md: search dependents before changing a shared name; run each criterion verbatim before verify: needed (0471-solo-md-dependents-and-verbatim-criteria)
-  - T-0473 redck: phase against the working tree, bind to an ancestor base (T-0470 finding 6) (0473-redck-resume-semantics)
   - T-0476 dispatch.py started and status last-activity age for silent agents (T-0470 finding 5) (0476-silent-agent-liveness)
   - T-0477 fanout copies an uncommitted ticket folder into fanout-owned lane worktrees (T-0470 finding 8) (0477-fanout-gitignored-sdlc)
   - T-0481 fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) (0481-light-merge-gate-class)
@@ -30,7 +29,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 432
+- done: 433
 - dropped: 28
 
 ## Procedures
