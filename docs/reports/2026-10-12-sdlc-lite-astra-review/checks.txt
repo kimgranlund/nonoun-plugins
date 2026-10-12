@@ -1,0 +1,37 @@
+Review date: 2026-10-12
+HEAD: a3e2cd9b273ade52a66978f8e1938ad8e7fae948
+Source hashes: all 472 tracked plugin files unchanged at final comparison.
+Packaging check: PASS (independent run).
+Claude plugin validate: exit 0; root CLAUDE.md context warning.
+Broad check.sh: interrupted by reviewer at fanout.py selftest; owned shell exit 143.
+Not a full-suite pass or a diagnosed fanout failure.
+Completed output markers:
+ok: negative control: a hand-edited generated file fails check
+claude_roles selftest: PASS
+ok: a row with no generated definition exits 2
+dispatch selftest: PASS
+Ran 37 tests in 32.230s
+OK
+Ran 6 tests in 14.181s
+OK
+FAIL check.py: broken links: unlisted broken link plugins/progressive-context/skills/progressive-context/SKILL.md -> references/performance-contract.json
+FAIL: 19 role levels, 9 agents, 22 generated definitions checked
+selftest: PASS
+tickets selftest: PASS
+board selftest: PASS
+results selftest: PASS
+evals selftest: PASS
+proposals selftest: PASS
+steps selftest: PASS
+order selftest: PASS
+Focused probes: exit 0; see probes.txt.
+Final workspace status:
+ M plugins/progressive-context/skills/progressive-context/SKILL.md
+?? docs/reports/2026-10-12-sdlc-lite-astra-review.md
+?? docs/reports/2026-10-12-sdlc-lite-astra-review/
+?? plugins/progressive-context/skills/progressive-context/references/performance-contract.json
+Report local links: 76 resolved, zero broken.
+All 472 source hashes unchanged at final comparison.
+Report trailing whitespace: none.
+Git diff --no-index --check /dev/null <report>: exit 1 (new file diff), no whitespace diagnostics.
+Git diff --check: exit 0.
