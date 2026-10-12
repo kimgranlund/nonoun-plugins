@@ -767,6 +767,12 @@ for _rel in ('agents/architect.md', 'skills/architect/SKILL.md'):
     _t = (root/_rel).read_text() if (root/_rel).is_file() else ''
     if md_design_missing(_t): errors.append(f'{_rel}: missing the Markdown-only design rule')
     elif not md_design_missing(_t.replace(MD_DESIGN, '')): errors.append(f'check.py: Markdown-only design negative control not flagged for {_rel}')
+# Sub-agent wait rule (T-0494): the architect reads sub-agent results in-turn; a background notice goes to the session that started it.
+FG_RULE = 'Run each sub-agent in the foreground'
+def fg_rule_missing(text): return FG_RULE not in text
+_t = (root/'agents/architect.md').read_text() if (root/'agents/architect.md').is_file() else ''
+if fg_rule_missing(_t): errors.append('agents/architect.md: missing the foreground sub-agent rule')
+elif not fg_rule_missing(_t.replace(FG_RULE, '')): errors.append('check.py: foreground sub-agent rule negative control not flagged')
 # Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
 def schema_section_errors(text, sections):
     lines = [l.rstrip() for l in text.splitlines()]
