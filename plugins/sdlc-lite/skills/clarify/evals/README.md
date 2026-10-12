@@ -1,0 +1,26 @@
+# Clarify eval cases
+
+Eight asks from this repo's history, each with the clarify output it should produce.
+
+- `<case>.ask.md`: the ask near-verbatim, then one `Source:` line naming where it came from.
+- `<case>.expected.md`: the reference clarify output, a task handoff block (`## Goal`, `## Intent` with `Level:`, `Non-goals:` and `Done when:`), or one pass-through line.
+
+| Case | What it tests |
+|---|---|
+| 01-bare-goal | a goal with no Do and no done-condition |
+| 02-wrong-unit | "build an agent" for what is a deterministic check |
+| 03-conflicting-ask | an ask that conflicts with a standing repo rule |
+| 04-unattended-gap | an unattended run records a `(gap: ...; default: ...)` delta and proceeds |
+| 05-multi-step | multi-step work also carries the plan-doc Outcome block |
+| 06-bad-done-when | a live rehearsal done-condition moves to `[owner: maintainer]` |
+| 07-already-scoped | an ask with scope and done-condition passes through in one line |
+| 08-follow-up | a follow-up about session state passes through in one line |
+
+## Replay
+
+1. Run clarify on each `.ask.md` unattended, and save its output block to a file.
+2. Lint each output with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py clarify --file <output>`. It exits 0 and prints `ok: clarify plan passes` for an accepted block.
+3. For 07 and 08 the output must be one non-empty line starting `already scoped: ` or `follow-up: `.
+4. Compare each output with its `.expected.md` by eye: the lint checks shape, not whether the Goal and Do are right.
+
+The `.expected.md` files themselves pass the lint, so a lint change that rejects one is a regression.
