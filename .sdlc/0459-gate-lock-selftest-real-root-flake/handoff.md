@@ -24,3 +24,10 @@ Evidence: `.sdlc/.0447-doc-standards-suite/step-4/builder-L3.md` (`inherited red
 
 ## Constraints
 No model or effort change. The selftest must still prove the real root is not touched by the selftest.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0 while another process runs `gate_lock.py run -- true` against the real state root in a loop (the real ledger mtime changes during the run).
+- The selftest no longer compares the real ledger mtime; its isolation check covers only roots it handed out (all under its own temp dir) and in-process writes under the real root.
+- Observed-red controls print `negative control observed (isolation, ...)` for a real-root env, a missing root, an outside root, and an in-process write under a watched root.
+- A copy of `gate_lock.py` whose `env_for` hands out a root outside the temp dir makes `selftest` exit 1 with `isolation:` lines.
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
