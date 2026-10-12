@@ -771,6 +771,12 @@ for _rel in ('agents/architect.md', 'skills/architect/SKILL.md'):
     _t = (root/_rel).read_text() if (root/_rel).is_file() else ''
     if md_design_missing(_t): errors.append(f'{_rel}: missing the Markdown-only design rule')
     elif not md_design_missing(_t.replace(MD_DESIGN, '')): errors.append(f'check.py: Markdown-only design negative control not flagged for {_rel}')
+# Sub-agent wait rule (T-0494): the architect reads sub-agent results in-turn; a background notice goes to the session that started it.
+FG_RULE = 'Run each sub-agent in the foreground'
+def fg_rule_missing(text): return FG_RULE not in text
+_t = (root/'agents/architect.md').read_text() if (root/'agents/architect.md').is_file() else ''
+if fg_rule_missing(_t): errors.append('agents/architect.md: missing the foreground sub-agent rule')
+elif not fg_rule_missing(_t.replace(FG_RULE, '')): errors.append('check.py: foreground sub-agent rule negative control not flagged')
 # Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
 def schema_section_errors(text, sections):
     lines = [l.rstrip() for l in text.splitlines()]
@@ -1326,6 +1332,14 @@ for _name, _phrases in REPORT_NEEDS:
         if not report_bad(dict(_rp_texts, **{_name: _rp_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: report negative control not flagged for {_name} without "{_ph}"')
 if not report_bad(dict(_rp_texts, skill=_rp_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: report negative control not flagged for a harness reference')
 if not report_bad(_rp_texts, _entry.replace('| report |', '|')): errors.append('check.py: report negative control not flagged for a missing entry route')
+# Planner probe-criteria handle (T-0498): agents/planner.md and its generated levels carry the handle and the rule line.
+PLANNER_PROBE = ('Probe-criteria', 'can exit 0 on a correct tree')
+for _rel in ('agents/planner.md', 'agents/planner-L1.md', 'agents/planner-L2.md', 'agents/planner-L3.md'):
+    _f = root/_rel
+    _text = _f.read_text() if _f.is_file() else ''
+    errors.extend(f'check.py: planner probe: {_rel} missing "{ph}"' for ph in PLANNER_PROBE if ph not in _text)
+    if all(ph in _text for ph in PLANNER_PROBE) and not [ph for ph in PLANNER_PROBE if ph not in _text.replace(PLANNER_PROBE[0], '')]:
+        errors.append(f'check.py: planner probe negative control not flagged for {_rel}')
 # Solo dependents and verbatim criteria (docstring item 55, T-0471): the two Loop rules and the report detect rule.
 SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report')),
               ('scripts/results.py', ('def solo_report_error', 'def criterion_spans')),

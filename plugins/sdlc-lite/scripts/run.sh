@@ -100,7 +100,7 @@
 # <log> --backend <backend>` (traces/sources/context.py owns the rules): {"source":"stream-json","paths":[...]}
 # with the file_path of every Read tool_use in the Claude log, {"source":"rollout","paths":[...]} with the files
 # the Codex rollout's shell reads (cat, head, tail, sed, nl, less, more, bat) opened, or {"status": ...}
-# ("log absent", "log unreadable", "rollout absent", "rollout unreadable", "collector failed") when the list
+# ("log absent", "log unreadable", "rollout absent", "exec ephemeral: no rollout written", "rollout unreadable", "collector failed") when the list
 # cannot be built; a status also prints one stderr line "run.sh: loaded context not recorded: <status>; see <log>".
 # An empty paths list means the run read nothing through those channels. Entry files the host injects into the
 # session are not in the log, so they are not listed. It never changes the exit code.

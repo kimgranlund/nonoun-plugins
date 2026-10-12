@@ -377,5 +377,14 @@
 - note: The T-0489 selftest fixture has no `notes.md`, so the notes-union path is not exercised. The verifier accepted this because the regeneration alone bites.
 - note: `fanout.py selftest` takes about 240 to 250 s here against an 800 s guard timeout. A heavily loaded host could approach it.
 
+<<<<<<< HEAD
 - 2026-10-12: maintainer asked to review T-0503 to T-0509 (filed 25fc8d35 from the Codex Astra review) after waves 49 to 51 and the T-0501 design finish, accounting for the tickets and merges since they were written (0.22.5 shipped, T-0472 to T-0502). Verdict per ticket: still valid, already fixed, reshape, or drop.
 - 2026-10-12: maintainer: cut the next patch (0.22.6) after T-0503 to T-0509 are resolved (built, dropped or reshaped). Release steps as 0.22.5: release worktree, version bump, regenerate Codex agents, record, full check.sh on a git archive copy, tag, ff main, push, tell the fleet. Includes T-0492, T-0494, T-0496 (if kept), T-0497 to T-0502 and the plan merge chain if landed.
+=======
+## T-0497: gate_lock.py: cap admission by load average, with per-repo fairness (retro 12h rows 1 and 2) (2026-10-12)
+
+- decide: `case_cap` and `case_livegroup` in the `gate_lock.py` selftest guard their status checks with `label == 'real'`, but the controls loop passes `real0`, `real1` and so on, so those checks never run. This predates T-0497. Decide whether to fix them in a ticket.
+- note: T-0497 proves the rule only with a fake load. Whether a real `max_load` shortens a real gate on a loaded host is untested until a repo opts in.
+- note: The 1-minute load average lags, so several queued heads can be admitted in the seconds after the load drops under the cap. Per-job priority was a handoff non-goal, to be revisited if the cap is not enough.
+- note: The `check.sh` guard took 1202 s in this tree against the 897 s recorded earlier, so it needs a Bash timeout well above 20 minutes. The `(guard)` scope check passes vacuously if `SDLC_BASE_SHA` is unset.
+>>>>>>> fanout/wave49
