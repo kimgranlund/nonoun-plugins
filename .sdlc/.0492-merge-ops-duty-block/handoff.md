@@ -2,7 +2,7 @@
 id: T-0492
 title: "Merge ops duty block in conductor.md, fanout skill steps 4 and 5, and a recipe in run-operations.md (T-0488)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0489]
@@ -30,3 +30,7 @@ Affirmative wording, one rule per line; no new prohibition beyond the Never line
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and its merge ops case fails when `run-operations.md` carries a different settle command than the conductor (observed red with `settle <integration> --forward` replaced by `settle <integration>` there).
 - `python3 plugins/sdlc-lite/scripts/prompt_lint.py` exits 0 and reports `agents/conductor.md: prohibitions 30` (not above its count before the change).
 - `git diff --check` exits 0.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full
