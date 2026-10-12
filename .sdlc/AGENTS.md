@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:99003ca9468a -->
+<!-- sdlc-lite:managed:start v1 sha256:58efb3c6cc69 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 17
+- proposed: 16
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -18,7 +18,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0442 Replay A/B of builder overlays on the five bench tasks (0442-builder-overlay-ab)
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0447 Document standards: registry, core rules, six family cards, schemas, templates, glossary, checks, and pointers (0447-doc-standards-suite)
-  - T-0448 Modernize clarify (our port of find-intent): plan-ready intent, runnable done-when, cost-aware asks (0448-clarify-v2-intent-to-plan)
   - T-0449 Committed solo lane stats script and a KPI with a baseline (0449-solo-campaign-stats)
   - T-0450 Run review-traces on solo first-round verifier non-passes and builder blocked notes; turn findings into agent file changes (0450-review-traces-solo-fails-and-blocks)
   - T-0451 lanes.py core: open, close, sweep, list, check, port (lane lifecycle A) (0451-lanes-core)
@@ -31,7 +30,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 407
+- done: 408
 - dropped: 25
 
 ## Procedures

@@ -292,3 +292,9 @@
 - fix-now: `conductor.md` line 9 still says the cap is "6 until T-0427 sets it". Once the design is approved, T-0428 updates it to point at the design.
 - note: `check.py` counts only git-tracked files in its broken-link check, so a new doc linked from an index needs `git add -N` first. The handoff expected this only for `onboard.py check`.
 - note: The first step handoff was refused by the `steps.py lint` check because it cited relative `.sdlc/tickets/...` paths that resolve against this repo. The replan cites every maison file by absolute path under `/Users/kimgranlund/Projects/maison/ui-kit-maison`.
+
+## T-0448: Modernize clarify (our port of find-intent): plan-ready intent, runnable done-when, cost-aware asks (2026-10-11)
+
+- note: The 6 of 6 replay result was not independently confirmed. The builder's replay outputs were not preserved, and a rerun by an independent model would settle it.
+- note: The replay is a builder run with Sonnet sub-agents that skipped the Tracker section and `steps.py lane`, so those two parts of the new skill have no replay evidence.
+- note: In the replay, case 05 came out at L2 against the expected L4 and case 06 at L3 against the expected L2. The lint checks shape only, so level calibration of the skill is unmeasured.

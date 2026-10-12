@@ -2,7 +2,7 @@
 id: T-0448
 title: "Modernize clarify (our port of find-intent): plan-ready intent, runnable done-when, cost-aware asks"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,12 @@ Current skill: `plugins/sdlc-lite/skills/clarify/SKILL.md`. Related: `skills/pla
 
 ## Constraints
 No model or effort change. Hard invariants stay: one question round at most, recommendation first, never drip questions. Skill folder self-contained (`check.py` item 42).
+
+## Closed
+
+2026-10-11: warnings acknowledged: red controls for steps 2 and 3 were recorded after the edit (shared base); all three step verifiers passed; the 6 of 6 replay count is the builder's claim, not an independent model run, so the replay stays unverified and the lint and eval files are what is checked
+
+> - process deviation: red-checkpoint: retrospective, step 2: attempt 7b55bee9c52948dba42febcf9d5262ea, handoff sha256 cd653eec9c1c, 3 of 3 (red) criteria without a pre-edit red control. They are the 14-token grep loop on `clarify/SKILL.md`, the `sed -n "/^## Intent/,/^## Context/p"` check on `handoff-format/SKILL.md`, and the `^Result:` regex loop over `docs/reports/*-clarify-v2-replay.md`. `redck.py record` ran before the first edit, but step 1's uncommitted work already differed from the base sha, so it stored the record as retrospective. The verifier then ran the controls against base `ad35eaaa` and all three were red there. A passing verdict does not clear the deviation.
+> - process deviation: red-checkpoint: retrospective, step 3: attempt 5c1aab833596477f9087771a157e32ce, handoff sha256 efed94dad57d, 1 of 1 (red) criteria without a pre-edit red control. It is the loop over `clarify/evals/0[1-6]-*.expected.md`. `redck.py` found 21 source paths already differing from base, so no pre-edit record was taken. The eval files are untracked, so the old line 10 cannot be recovered from git. The verifier built its own negative controls instead: copies of the six files with line 10 rewritten to the old shapes made the criterion grep return 1 on all six, and deleting the `Level:` line from a copy of 01 made `plan_check.py clarify --file` exit 1 with `FAIL clarify-level`. The claims "change nothing else" and "keep each file's level number" rest only on the builder's note, because there was nothing to diff against.
+> - The "6 of 6" replay count is the builder's claim and is not independently confirmed. The builder spawned one Sonnet sub-agent per case, so the replay was not an independent model run. The replay outputs under `.worktrees/tmp/0448-s2-builder-L3/replay/` no longer exist. The verifier only checked the report line's format and re-linted the 8 `.expected.md` files, not the replay outputs.
+> - All three steps passed verification: step-1 verifier-L2, step-2 verifier-L2 and step-3 verifier-L1 each returned pass.
