@@ -903,6 +903,13 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
             return result(1, '\n'.join(lines + [f'git worktree add failed: {err(r)}']), lane=leaf, path=tree, branch=branch)
         write_record(tree, rec)
     add_exclude(ctx.common)
+    local = Path(top, '.claude', 'settings.local.json')  # gitignored, so a new worktree lacks it; copy only this file, never log it
+    if local.is_file() and not Path(tree, '.claude', 'settings.local.json').exists():
+        try:
+            Path(tree, '.claude').mkdir(exist_ok=True)
+            shutil.copy2(str(local), str(Path(tree, '.claude', 'settings.local.json')))
+        except OSError as e:
+            lines.append(f'settings.local.json not copied: {e.strerror or "error"}')
     if desc:
         git(top, 'config', f'branch.{branch}.description', desc)
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
@@ -1795,6 +1802,20 @@ def case_open_path(script, base):
     return fails
 
 
+def case_local_settings(script, base):
+    t = Fixture(base, script, 'lset')
+    t.ticket(6, 'Six', claimed=True)
+    t.write({'.claude/settings.local.json': '{"permissions": {"allow": ["Bash(ls:*)"]}}\n', '.claude/other.json': 'x\n'})
+    fails = []
+    leaf, wt, _ = t.open('a', 'T-6')
+    f, o = wt.joinpath('.claude', 'settings.local.json'), wt.joinpath('.claude', 'other.json')
+    if not f.is_file() or f.read_bytes() != t.top.joinpath('.claude', 'settings.local.json').read_bytes():
+        fails.append('local settings: want the ignored settings file in the lane, byte for byte')
+    if o.exists():
+        fails.append('local settings: another ignored file was copied')
+    return fails
+
+
 def case_host_record(script, base):
     t = Fixture(base, script, 'hostrec')
     t.write({'.sdlc/config': 'lane_ports: 47110-47130\n'})
@@ -1979,6 +2000,8 @@ def run_selftest(script, src, base):
         need('case pr ref', case_pr_ref(script, base), 'a local pr/1 beside refs/remotes/pr/1: only the local branch goes')
         need('open path', case_open_path(script, base),
              '--path, --branch and --no-claim open an unclaimed ticket there with a record; without --no-claim it refuses')
+        need('local settings', case_local_settings(script, base),
+             'an ignored .claude/settings.local.json is copied into the lane and no other ignored file'),
         need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
