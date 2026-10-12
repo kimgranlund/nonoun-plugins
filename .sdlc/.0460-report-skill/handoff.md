@@ -2,7 +2,7 @@
 id: T-0460
 title: "Build /sdlc-lite:report: scripts/report.py and the skill (executive summary, views, health signals, hygiene grade)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L4             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,11 @@ Design thread: the maintainer's `session-status` request, renamed `report`, with
 
 ## Constraints
 No model call in the collector or renderer. Read-only against the repo except the snapshot under `.sdlc/runtime/`. No model or effort change. State only what a record shows. Hot files (`check.sh`, `check.py`) one writer at a time.
+
+## Closed
+
+2026-10-12: warnings acknowledged: all three steps verifier pass; process deviations are retrospective red controls (T-0473 covers resumed work); maintainer reviewed
+
+> - process deviation: red-checkpoint: retrospective: step 2, attempt 8f6804e851134c36b5939d404b24e58d, handoff sha256 561d5d11bef9. 5 of 5 `(red)` criteria have no pre-edit red control. They are the skill-phrase and `docs/` check, the `| report |` route check, the check.py item 54 pin, the check.py negative control, and the `notes.md` check. The step 2 builder also reports that the first `(red)` criterion, the skill-phrase `for ... done` loop, got no control line at all. Step 1's uncommitted files already differed from base, so `redck.py` stored the checkpoint as retrospective. The verifier ran each check on the built tree and they pass. A passing verdict does not clear the deviation.
+> - process deviation: red-checkpoint: retrospective: step 3, attempt 72b3b14fc2e649a0a8745e569611f21d, handoff sha256 067a9a9e30fd. The 1 `(red)` criterion has no pre-edit red control: the grep for "at most 8 lines" plus "recent" and "unknown" in `SKILL.md` and `views.md`. The tree already held uncommitted edits from steps 1 and 2. The step 3 verifier built its own negative control on stripped copies, and the criterion exited 1 there. The deviation stands. The recorded run also shows exit 2, which the verifier traced to a span cut short at an embedded backtick, so it is not a real red.
+> - All three steps have verifier verdict pass: step 1 passes 10 of 10 criteria, step 2 passes 12 of 12, step 3 passes 3 of 3. Step 1 has no process deviation file.

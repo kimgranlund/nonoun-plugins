@@ -341,3 +341,10 @@
 - note: Changes 2 and 3 (fixture-path lint refusals and the solo L3 trial) are proposed in the report but not ticketed, since only one follow-up ticket per task is allowed.
 - note: The `skips.md` close refusal (T-0450, T-0462) is watched in the report with no ticket proposed until a second wave shows it.
 - note: Minutes lost per refusal, questions that did not change the output, and cost for the other three repos are not measured. They are listed under `## Unverified` in `docs/reports/2026-10-12-ceremony-audit.md`.
+
+## T-0460: Build /sdlc-lite:report: scripts/report.py and the skill (executive summary, views, health signals, hygiene grade) (2026-10-12)
+
+- note: The 5 fields that read `unknown` on the live run were `health.unpushed_commits`, `identity.level`, `identity.name`, `identity.parent` and `outcome.last_result`. They may be gaps in the record sources rather than missing data.
+- note: A sub-agent inherits `CLAUDE_PID` and `CLAUDE_CODE_SESSION_ID`, so a report run inside a role describes the conductor's thread, not the role's own.
+- note: Thresholds are the draft's starting values, and `check first run late`, `dead-end work` and `dead` are fixed in code without a `report.*` key. A later retro calibrates them.
+- note: `waiting-on-user` is partly guessed from transcript text: an `AskUserQuestion` with no result, or a last assistant line that ends in `?`.
