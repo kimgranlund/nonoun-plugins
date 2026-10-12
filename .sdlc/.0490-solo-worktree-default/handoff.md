@@ -2,7 +2,7 @@
 id: T-0490
 title: "solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Never delete unmerged work; reuse the lane open/close rules in `lanes.py`.
 - `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0, and its `integration lane:` cases show an open integration lane (unlanded work) defaults the solo to a worktree, a closable lane and a repo with no lane keep the checkout, `--no-worktree` wins, and a solo already inside a lane tree does not nest a worktree.
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - (red) with the new `open_integration_lane` condition removed from `auto_worktree`, the `integration lane: an open lane defaults the solo to a worktree` case fails.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
