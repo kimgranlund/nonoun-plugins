@@ -175,6 +175,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 (more than two steps)
               steps lint: warning: <plan> step <n>: one acceptance criterion; the coarse-step
                 rule merges it into a neighboring step ... (exactly one top-level - or * item)
+              steps lint: warning: <plan> step <n>: history-shaped criterion: <span> (T-0475; a
+                criterion command span that reads git log, git rev-list, or --oneline output)
   review    review <task dir>: decide whether the task dir's newest planner-*.md (by order.py) needs
             a plan review before split (/chain 3). Reads only; never file times. Stdout: "<action>"
             or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted;
@@ -1397,6 +1399,24 @@ def count_warnings(plan, steps):
     return out
 
 
+HISTORY_RE = re.compile(r'\bgit\s+(?:-\S+\s+)*(?:log|rev-list)\b|--oneline\b')
+
+
+def history_warnings(plan, steps):
+    """One warning per command span in an acceptance criterion that reads commit history (git log,
+    git rev-list, --oneline output): the commit count or subject changes with every replan, rebase,
+    or squash, so the criterion goes stale before the builder runs it (T-0475). Advisory only."""
+    out = []
+    for n, block in steps.items():
+        for line in criteria_lines(block):
+            for span in line_spans(line):
+                if HISTORY_RE.search(span):
+                    out.append(f'steps lint: warning: {plan} step {n}: history-shaped criterion: '
+                               f'{span[:100]}\n  name the state the commit leaves (a file, a test, a diff), '
+                               'not its commit count or subject')
+    return out
+
+
 # --- step handoff links (T-0379) ----------------------------------------------
 # A replanned step's handoff is split from a plan written while step-<n>/ still held the previous attempt's
 # reports; /chain 4.2 then renames that folder to step-<n>.superseded-<k>/, so a path in the plan that names
@@ -1949,7 +1969,7 @@ def cmd_lint(target, tree=None):
         print(e, file=sys.stderr)
         return 1
     print('steps lint: ok')
-    for w in count_warnings(plan, steps) + lean_warnings(plan, task_dir, steps):
+    for w in count_warnings(plan, steps) + history_warnings(plan, steps) + lean_warnings(plan, task_dir, steps):
         print(w, file=sys.stderr)
     return 0
 
@@ -3873,6 +3893,18 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '- `python3 scripts/steps.py selftest` runs 12 cases'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(t0347) a count with a named command does not warn', rc == 0 and 'cites a count' not in err)
+
+        # (t0475) a criterion span that counts or greps commit subjects warns and exits 0
+        d = task(plan=PLAN.replace('- one works', "- `git log --oneline $SDLC_BASE_SHA..HEAD | grep -c 'feat: x' | grep -qx 3`"))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0475) a git log commit-subject criterion warns history-shaped criterion and exits 0',
+              rc == 0 and out == 'steps lint: ok\n' and 'history-shaped criterion' in err and 'step 1' in err)
+        d = task(plan=PLAN.replace('- one works', '- `git rev-list --count $SDLC_BASE_SHA..HEAD | grep -qx 3`'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0475) a git rev-list --count criterion warns', rc == 0 and 'history-shaped criterion' in err)
+        d = task(plan=PLAN.replace('- one works', '- `git diff --quiet HEAD -- scripts/steps.py` and `grep -c "x" scripts/steps.py`'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0475) a state-form criterion does not warn', rc == 0 and 'history-shaped' not in err)
 
         # (k) command spans that parse, and non-command spans, pass
         k_spans = ['grep -c "x" scripts/steps.py', 'scripts/steps.py',
