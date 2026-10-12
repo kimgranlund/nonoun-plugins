@@ -24,3 +24,8 @@ Evidence: `.sdlc/0450-review-traces-solo-fails-and-blocks/refusals.jsonl` (the T
 
 ## Constraints
 No model or effort change. The rule must stay able to fail: a cited existing-path typo is still refused.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and prints the `T-0457` cases: created path (Do verb, Outputs line, `[creates:]` marker, `(red)` span) passes, foreign path (Other repo prefix, absolute outside the repo) passes, and the three controls (missing cited file, plain-criterion span, create target not exempting another path, in-repo absolute) still refuse.
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+- `plugins/sdlc-lite/agents/planner.md` and `plugins/sdlc-lite/skills/handoff-format/SKILL.md` describe the `[creates: <path>]` marker, `Outputs:` line and `Other repo: <name>` line; the generated planner-L1/L2/L3 files and Codex planner TOMLs match (`claude_roles.py generate --check`, `codex_roles.py generate --check`).
