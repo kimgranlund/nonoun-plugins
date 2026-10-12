@@ -6,3 +6,4 @@ One intended outcome per file (`G-NNN`): what, why, scope, owner, status, and th
 
 - [001-fleet-load-without-gate-reds.md](001-fleet-load-without-gate-reds.md)
 - [002-restart-and-blocked-run-cost.md](002-restart-and-blocked-run-cost.md)
+- [003-solo-lane-first-pass.md](003-solo-lane-first-pass.md)
