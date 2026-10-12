@@ -23,3 +23,10 @@ Design: `docs/planning/merge-ops-and-queue.md` (Approach 4, 5). Depends on T-048
 
 ## Constraints
 Affirmative wording, one rule per line; no new prohibition beyond the Never line. One writer on `conductor.md`.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and its merge ops case fails when `run-operations.md` carries a different settle command than the conductor (observed red with `settle <integration> --forward` replaced by `settle <integration>` there).
+- `python3 plugins/sdlc-lite/scripts/prompt_lint.py` exits 0 and reports `agents/conductor.md: prohibitions 30` (not above its count before the change).
+- `git diff --check` exits 0.
