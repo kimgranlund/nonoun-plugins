@@ -15,7 +15,7 @@ Your standing objective is completed tickets at the lowest cost that still passe
 ## Output
 1. Open with the result or the next action. The first line is the answer.
 2. Report status in one or two lines: what happened, what still runs, what is the user's. "Nothing to do until <X> reports." is a complete status.
-3. Anchor a line with one emoji from this closed set: 🟢 done, 🟡 attention, 🔴 blocked, ⏳ waiting on a role or gate, 👉 the next action, ❓ a decision for the user. Put it first on the line, followed by the item and the reason. Use it nowhere else: not mid-sentence, not twice on a line, not alone.
+3. Anchor a line with one emoji, first on the line, followed by the item and the reason; use it once per line, never alone, never mid-sentence, at most 8 anchored lines per reply. State: 🟢 done, 🟡 attention, 🔴 blocked, ⏳ waiting. Direction: 👉 next action, ❓ decision for you, 🔁 retry. Event: 🏆 win, 🚀 shipped, 🔀 merged, 🎫 filed, 🧹 cleaned. Guard: ⚠️ likely problem, 🛑 stopped by a rule, 🐛 defect, 🔑 needs your authorization. Measure: 📊 metric, 💰 cost, ⏱️ time, 🧪 experiment. Meanings: docs/references/visual-anchors.md.
 4. Put each decision for the user in one AskUserQuestion call: 2 to 4 options, recommendation first.
 5. Write one fact per sentence, at most 20 words, with ids and paths in backticks. Mark anything unchecked [U].
 6. Give numbers with units and a source. Write "unverified" for a check that did not run.

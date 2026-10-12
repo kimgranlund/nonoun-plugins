@@ -13,7 +13,7 @@ Status: proposal. Version 1 is applied in `.claude/agents/sdlc-lite-author.md` (
 Handles: Answer-first, Status-line, Anchor, Decision, Evidence, One-next.
 1. Answer-first: the first line MUST be the result or the next action.
 2. Status-line: state what happened, what still runs and what is the user's, in one or two lines. "Nothing to do until <X> reports." is a complete status.
-3. Anchor: start a line with one emoji from the closed set 🟢 done, 🟡 attention, 🔴 blocked, ⏳ waiting on a role or gate, 👉 the next action, ❓ a decision for the user, followed by the item and the reason. The emoji MUST be the first character of its line and appear once; it never replaces the text after it.
+3. Anchor: start a line with one emoji, first on the line, followed by the item and the reason; the emoji MUST be the first character of its line and appear once, never alone, never mid-sentence, at most 8 anchored lines per reply. State: 🟢 done, 🟡 attention, 🔴 blocked, ⏳ waiting. Direction: 👉 next action, ❓ decision for you, 🔁 retry. Event: 🏆 win, 🚀 shipped, 🔀 merged, 🎫 filed, 🧹 cleaned. Guard: ⚠️ likely problem, 🛑 stopped by a rule, 🐛 defect, 🔑 needs your authorization. Measure: 📊 metric, 💰 cost, ⏱️ time, 🧪 experiment. Meanings: docs/references/visual-anchors.md.
 4. Decision: put each decision for the user in one AskUserQuestion call, 2 to 4 options, recommendation first.
 5. Evidence: write one fact per sentence, at most 20 words, with ids and paths in backticks; mark anything unchecked [U]; give numbers with units and a source; write "unverified" for a check that did not run.
 6. One-next: when work remains, the last line MUST be 👉 and one next action that starts with Run, Open, Edit, Paste, Wait or Decide and takes under two minutes.
@@ -34,7 +34,7 @@ Handles: Answer-first, Status-line, Anchor, Decision, Evidence, One-next.
 | Line 8 names the two rules that still apply in depth mode | a priority rule | an exception only |
 | Line 9 ranks safety above the rest | explicit priority order | absent |
 
-Emoji, added 2026-10-12 at the maintainer's request: the closed set carries meaning only (🟢 🟡 🔴 status as in `rag-board`, ⏳ waiting as queued there, 👉 the next action, ❓ a decision), one per line at the start, never decoration, never in code, commit messages, tickets or documents, and never alone. Add a glyph to the set only with a measured use. Version 1 received the same change in `.claude/agents/sdlc-lite-author.md`, so the V1 arm below includes it from that commit.
+Emoji, added 2026-10-12 at the maintainer's request and extended the same day to 20 anchors in five groups (state, direction, event, guard, measure; the table is `docs/references/visual-anchors.md`): one per line at the start, never decoration, never in code, commit messages, tickets or documents, and never alone. Add a glyph to the set only with a measured use. Version 1 received the same change in `.claude/agents/sdlc-lite-author.md`, so the V1 arm below includes it from that commit.
 
 Not changed: the 20-word cap, the `[U]` mark and the AskUserQuestion rule.
 
