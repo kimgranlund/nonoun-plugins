@@ -2,7 +2,7 @@
 id: T-0467
 title: "Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0461]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,14 @@ Approved design: `.sdlc/.0462-plan-skills-merge-design/architect-L1.md` (read al
 
 ## Constraints
 No model or effort change. Old skills stay working until B. The skill stays self-contained (`check.py` item 42). Controlled language per T-0461 for plan artifacts. State only what a file or command shows; the replay is unverified if it was not an independent run.
+
+## Closed
+
+2026-10-12: warnings acknowledged: all three steps verifier pass, no process deviations; the replay covers goal and fanout only and is not an independent run (the report says so); the external mutant of check.py item 57 was blocked by the stray-worktree hook, inline controls ran; the untracked-files note is superseded by the lane commit b33310a
+
+> - All three steps passed their verifiers: step 1 at verifier L2, steps 2 and 3 at verifier L1. No `process-deviations.md` exists in the artifacts dir or the step folders, so there is no process deviation.
+> - The handoff's done-when asks for a five-ask replay, with goal and fanout at a minimum. Only goal and fanout were replayed (steps 2 and 3). Steps, doc and campaign were not run, so their dry-run output and first-return lint results are unobserved.
+> - The replay is unverified as an independent comparison of the two skills. In step 2 one builder wrote both the old and the new blocks. In step 3 one reader did both runs, and the builder says the new blocks match the old by construction. The step 3 builder also says the equal fanout refusal is not a second discovery. The report says "unverified: not an independent run".
+> - The step 3 verifier checked the report's structure and did not re-run the four replays.
+> - The step 1 verifier could not run an external mutant of the `check.py` item 57 gate. The stray-worktree hook blocked `git worktree add` because `SDLC_TMP_WORKTREES` was unset. Only the inline controls that run on every `check.py` run observed the gate rejecting a defect.
+> - Nothing is committed. The new skill's `references/`, `evals/` and the replay report are untracked. `SKILL.md` names its six reference files as code-span paths instead of Markdown links, because `check.py` item 32 counts a link from a tracked file to an untracked one as broken.

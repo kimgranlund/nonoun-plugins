@@ -383,3 +383,11 @@
 - decide: the handoff asks `lanes.py` to print `gate: tests-only` or `gate: verifier`, but `lanes.py list` has no per-ticket surface; the unattended run left `lanes.py` untouched and put the field in `solo_stats.py` only (skips.md decision); name a surface (a lane column, the `/report` lanes view) or drop it.
 - decide: the 20-ticket readout needs K-005 for tests-gate tickets and rework after close (a reopen, or a follow-up citing a closed ticket within 7 days), and neither is built; `first_pass / verified` excludes tickets with no verifier round, so the revert rule cannot be evaluated yet.
 - note: the `shared-name` check counts a removed token on a `+` line only as a whole token, so a rename `helper` to `helper2` still searches `helper`. `protected-path` matches its sensitive words as substrings of any path component (`auth` also matches `author`). Both lean toward keeping the verifier, which lowers the qualifying rate.
+
+## T-0467: Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (2026-10-12)
+
+- decide: `plan_check.py fanout` refused with `FAIL overlap` for T-0498 and T-0499 because both cite the same evidence report, while `fanout.py run --dry-run` printed `overlap (planned scope): none` for the same pair; say which definition should win.
+- note: the replay did not exercise the `steps`, `doc` and `campaign` kinds, so their dry-run output and first-return lint results are unobserved.
+- note: the replay's old-versus-new comparison came from one reader doing both skills, so it cannot show a difference between them; a second reader per skill would.
+- note: the `cost:` line for a missing spend cap reads `$10 of $unknown ...; warn: no cap given`. The plan rules define `unknown` only for a missing ticket size, so this form was the builder's choice and no rule covers it.
+- note: the new reference files are untracked. Track them in the commit; after that the code-span paths in `SKILL.md` could become Markdown links.
