@@ -305,3 +305,5 @@
 - decide: The L5 overlay is unverified (six pairs skipped at the 10 USD run stop of the 15 USD ticket budget, estimated at about 8 USD). Choose whether to fund an L5-only run or leave it as drop-by-default.
 - note: `figma-stale-skip-report` failed the hidden `staleskipnotice` gate in all four runs in both arms, and the 2026-09-27 archived run also failed it. The task is probably uninformative for this comparison.
 - note: `button-geometry-model.md` and `svelte-icon-component.md` still carry `/Users/kimba/...` repo paths. Their repos are not on this machine, so those two tasks cannot run here.
+
+2026-10-11: maintainer chose to keep the builder overlays and retest harder: T-0458 (replay on tasks where builders block, plus an L5 pair, cap $20, depends on T-0450); T-0443 now depends on T-0458.

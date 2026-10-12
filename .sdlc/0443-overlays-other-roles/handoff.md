@@ -5,7 +5,7 @@ type: feature        # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
-depends: [T-0442]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+depends: [T-0458]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-11
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
@@ -19,7 +19,7 @@ Overlays exist for the other roles and levels where the A/B result supports them
 - Done when: each added overlay passes the generator refusals and `check.sh`; generated files for rows without an overlay stay byte-identical.
 
 ## Context
-Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (build split). Gated on T-0442's report. If it says drop, close this ticket as dropped.
+Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (build split). Gated on T-0458's retest verdict (T-0442's first A/B said drop on a rule that could not bite; the maintainer chose to keep the overlays and retest). If T-0458 says drop, close this ticket as dropped.
 
 ## Constraints
 Hard invariants never vary by tier. No hand edits to generated files.

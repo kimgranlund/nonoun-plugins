@@ -440,7 +440,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0440 | [.0440-per-tier-agent-prompts](.0440-per-tier-agent-prompts/handoff.md) | Design: tune each agent prompt to its model and effort tier | spike | L1 | P2 | none | 🟢 done |
 | T-0441 | [.0441-overlay-mechanism-builder-ends](.0441-overlay-mechanism-builder-ends/handoff.md) | Per-level prompt overlays: generator mechanism plus builder L1 and L5 overlays | feature | L3 | P2 | none | 🟢 done |
 | T-0442 | [.0442-builder-overlay-ab](.0442-builder-overlay-ab/handoff.md) | Replay A/B of builder overlays on the five bench tasks | spike | L3 | P2 | T-0441 | 🟢 done |
-| T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0442 | ⏳ proposed |
 | T-0444 | [.0444-ticket-area-claimed-paused](.0444-ticket-area-claimed-paused/handoff.md) | Ticket vocabulary: add area, status claimed and status paused | feature | L3 | P2 | none | 🟢 done |
 | T-0445 | [.0445-collector-ignores-completed-attempts](.0445-collector-ignores-completed-attempts/handoff.md) | Collector and recover: a completed attempt is never counted or marked interrupted | bug | L2 | P2 | none | 🟢 done |
 | T-0446 | [.0446-record-finds-transcript](.0446-record-finds-transcript/handoff.md) | dispatch.py record finds the sub-agent transcript without a flag | feature | L2 | P2 | none | 🟢 done |
@@ -455,3 +454,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0455 | [0455-fanout-claimed-status](0455-fanout-claimed-status/handoff.md) | fanout prep and run-plan rules set status: claimed with claimed_by | chore | L1 | P2 | T-0452 | ⏳ proposed |
 | T-0456 | [0456-cheap-gates-queue-behind-heavy](0456-cheap-gates-queue-behind-heavy/handoff.md) | Cheap fanout gates time out in the machine-wide gate lock behind heavy browser jobs | bug | L2 | P2 | none | ⏳ proposed |
 | T-0457 | [.0457-lint-cited-paths-future-and-foreign](.0457-lint-cited-paths-future-and-foreign/handoff.md) | steps.py lint refuses cited paths a step will create and paths from another repo | bug | L2 | P2 | none | 🟢 done |
+| T-0458 | [0458-builder-overlay-retest](0458-builder-overlay-retest/handoff.md) | Retest the builder overlays on tasks where builders actually block, plus one L5 pair | spike | L3 | P2 | T-0450 | ⏳ proposed |
+| T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⏳ proposed |
