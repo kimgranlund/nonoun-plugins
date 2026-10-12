@@ -2,7 +2,7 @@
 id: T-0475
 title: "steps.py lint warns on a history-shaped criterion (T-0470 finding 1)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ The failing test lands before or with the fix, with an observed-red control. No 
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and its output holds the three `(t0475)` cases as `ok:` lines.
 - `git diff d733ed7 -- plugins/sdlc-lite/scripts/steps.py | grep -c '^+.*history_warnings'` prints 2 or more (the function and its call), and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - Observed red: with ` + history_warnings(plan, steps)` removed from `cmd_lint`, `steps.py selftest` fails the two warning `(t0475)` cases.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
