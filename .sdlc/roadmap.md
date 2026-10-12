@@ -476,7 +476,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0476 | [0476-silent-agent-liveness](0476-silent-agent-liveness/handoff.md) | dispatch.py started and status last-activity age for silent agents (T-0470 finding 5) | bug | L2 | P2 | none | ⏳ proposed |
 | T-0477 | [0477-fanout-gitignored-sdlc](0477-fanout-gitignored-sdlc/handoff.md) | fanout copies an uncommitted ticket folder into fanout-owned lane worktrees (T-0470 finding 8) | bug | L2 | P2 | none | ⏳ proposed |
 | T-0478 | [0478-widen-reason-fallthrough](0478-widen-reason-fallthrough/handoff.md) | steps.py widen --reason records an unrecognized scope form (T-0470 finding 10) | bug | L1 | P2 | none | ⏳ proposed |
-| T-0479 | [0479-long-gate-recipe](0479-long-gate-recipe/handoff.md) | Long gates recipe in run-operations.md (T-0470 finding 12) | chore | L1 | P2 | none | ⏳ proposed |
+| T-0479 | [.0479-long-gate-recipe](.0479-long-gate-recipe/handoff.md) | Long gates recipe in run-operations.md (T-0470 finding 12) | chore | L1 | P2 | none | 🟢 done |
 | T-0480 | [.0480-light-merge-lane](.0480-light-merge-lane/handoff.md) | Design: a light merge lane with a cadence full gate (from maison, after T-0470) | spike | L3 | P2 | none | 🟢 done |
 | T-0481 | [0481-light-merge-gate-class](0481-light-merge-gate-class/handoff.md) | fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) | feature | L3 | P2 | none | ⏳ proposed |
 | T-0482 | [0482-light-merge-uncovered-board](0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | ⏳ proposed |
