@@ -467,3 +467,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0468 | [0468-plan-merge-b-stubs](0468-plan-merge-b-stubs/handoff.md) | Merge plan skills B: redirect stubs for the four retired names and retargeted checks | chore | L2 | P2 | T-0467 | ⏳ proposed |
 | T-0463 | [0463-skill-ui-hints](0463-skill-ui-hints/handoff.md) | Standardize skill argument hints and question UI across all skills, with a parity lint | chore | L3 | P2 | T-0461, T-0468 | ⏳ proposed |
 | T-0469 | [0469-plan-merge-c-summary](0469-plan-merge-c-summary/handoff.md) | Merge plan skills C: plan_check --summary cost line and controlled-language rules | feature | L2 | P2 | T-0468 | ⏳ proposed |
+| T-0470 | [0470-wave-7b-mechanics-investigation](0470-wave-7b-mechanics-investigation/handoff.md) | P0 from ui-kit-maison: investigate the plugin mechanics behind wave 7b taking 36 hours (12 findings) | spike | L4 | P1 | none | 🟡 claimed |
