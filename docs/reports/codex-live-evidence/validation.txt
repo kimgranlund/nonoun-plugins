@@ -1,0 +1,24 @@
+$ results.py validate planner-L1.md --role planner
+exit 0
+$ results.py validate builder-L1.md --role builder
+exit 0
+$ results.py validate verifier-L1.md --role verifier
+exit 0
+$ results.py validate verifier-L1-2.md --role verifier
+exit 0
+$ python3 -m unittest discover -s tests (final tree, throwaway project)
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+
+$ codex_roles.py generate --check
+Codex agent definitions verified
+exit 0
+
+$ negative control: builder-L1.md with its Status value line removed
+results.py: /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/tmp.vu02AwHuhd/bad-builder.md: ## Status first line "" is not one of done|blocked|inherited red: <tests>
+exit 1
+$ negative control: verifier result checked as a builder
+results.py: docs/reports/codex-live-evidence/verifier-L1.md: header role=verifier does not match --role builder
+exit 1
