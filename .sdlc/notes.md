@@ -307,3 +307,9 @@
 - note: `button-geometry-model.md` and `svelte-icon-component.md` still carry `/Users/kimba/...` repo paths. Their repos are not on this machine, so those two tasks cannot run here.
 
 2026-10-11: maintainer chose to keep the builder overlays and retest harder: T-0458 (replay on tasks where builders block, plus an L5 pair, cap $20, depends on T-0450); T-0443 now depends on T-0458.
+## T-0450: Run review-traces on solo first-round verifier non-passes and builder blocked notes; turn findings into agent file changes (2026-10-11)
+
+- decide: Whether to file a ticket for the top-ranked change, `solo.md` search contract dependents and sibling sites before the change (7 tickets, K-005 up to 96 of 123 [U]). The other two "propose a ticket" changes (verbatim criterion run before `verify: needed`, and an owner for lane-unsatisfiable criteria) are in the same report. Only one becomes a ticket per task.
+- note: The handoff said K-005 had no file and counted 173 blocked notes (55 plan defect). `docs/kpi/005-solo-first-pass-rate.md` exists now, and the on-disk count is 174 (56), so the report cites both counts.
+- note: The three planning refusals in the handoff's `## Plan review` came from `steps.py lint` and `dispatch.py prepare`. Lint rejects a `.sdlc/` path a step is told to create, and it rejects a foreign-repo `.sdlc/tickets/` path. Both are logged there with the unblock.
+- note: Ranked change 3 would not move K-005, because a held criterion still gives verdict `fail`. The report says to measure `plan defect:` against `deferred:` in `## For the next attempt` instead.

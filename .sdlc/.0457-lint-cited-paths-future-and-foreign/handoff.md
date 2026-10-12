@@ -20,7 +20,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - outcome metric: `refusals.jsonl` lines with `cited path` text in a fleet retro window, before: 2 in this repo for T-0450 (2026-10-11) and 1 reported by ui-kit-maison (retro 12h row 7)
 
 ## Context
-Evidence: `.sdlc/0450-review-traces-solo-fails-and-blocks/refusals.jsonl` (the T-0450 builder dispatch was refused because the step cites `.sdlc/0450-review-traces-solo-fails-and-blocks/sample.py`, a script it was to create, and `.sdlc/tickets/`, a ui-kit-maison path); `docs/reports/2026-10-11-fleet-retro-12.md` row 7 ("`steps.py lint` refuses cited paths a step will create", about 10 minutes, maison). Two repos, same mechanism.
+Evidence: `.sdlc/.0450-review-traces-solo-fails-and-blocks/refusals.jsonl` (the T-0450 builder dispatch was refused because the step cites `.sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py`, a script it was to create, and `.sdlc/tickets/`, a ui-kit-maison path); `docs/reports/2026-10-11-fleet-retro-12.md` row 7 ("`steps.py lint` refuses cited paths a step will create", about 10 minutes, maison). Two repos, same mechanism.
 
 ## Constraints
 No model or effort change. The rule must stay able to fail: a cited existing-path typo is still refused.
