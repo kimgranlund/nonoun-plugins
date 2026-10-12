@@ -362,3 +362,9 @@
 - note: `block-stray-worktree.sh` denies `git worktree add --detach` under the brief's tmp prefix when `SDLC_TMP_WORKTREES` is unset. The plan's negative control therefore falls back to a `cp -R` copy.
 - note: A red `cover` still appends and commits its ledger entry, and `settle --require-covered` also checks a branch already merged by hand. These choices are the builder's, where the handoff left room.
 - note: The design doc `docs/planning/light-merge-lane.md` still names `steps.gate_class` in its Interfaces text, but the classifier lives in `fanout.py`, and its line numbers are about 20 low.
+
+## T-0461: Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals (2026-10-12)
+
+- fix-now: Rerun the 10-case replay with an independent model run (the spawning builder judged the first one); the current result is unverified.
+- note: Replay level estimates differ from the expected outputs in cases 02, 04, 05 and 06; the skill was left unchanged.
+- note: The measured A/B of clarified versus unclarified tickets (K-005 first-pass rate, before 89 of 123) and the first `plan_check.py clarify` refusals-per-handoff baseline are left for a later retro or spike.

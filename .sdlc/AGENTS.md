@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:fa0360b4f448 -->
+<!-- sdlc-lite:managed:start v1 sha256:c7e11c62aba2 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,9 +9,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 11
+- proposed: 10
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
-  - T-0461 Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals (0461-clarify-controlled-language)
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0467 Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (0467-plan-merge-a-skill)
@@ -25,7 +24,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 441
+- done: 442
 - dropped: 28
 
 ## Procedures
