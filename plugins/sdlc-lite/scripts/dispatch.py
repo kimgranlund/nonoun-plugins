@@ -3,8 +3,10 @@
 
   dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
+  dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
-  dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
+  dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
+                                          transcript also shows `last activity <age>`, and `silent` after 30 minutes without a write (T-0476)
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
   dispatch.py recover --root DIR [--open] the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414);
                                           --open skips closed (done or dropped) ticket folders, so history is not rewritten (T-0438)
@@ -551,8 +553,21 @@ def settle(directory, dry_run):
     return recovered
 
 
+SILENT_SECONDS = 30 * 60
+
+
+def age_text(seconds):
+    """Whole seconds as 45s, 12m, 2h, or 3d (the largest unit that fits)."""
+    seconds = max(0, int(seconds))
+    for unit, size in (('d', 86400), ('h', 3600), ('m', 60)):
+        if seconds >= size:
+            return '%d%s' % (seconds // size, unit)
+    return '%ds' % seconds
+
+
 def status(directory, orphans_only=False):
-    """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones."""
+    """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones.
+    A running attempt with a stored agent id and one sub-agent transcript adds `last activity <age>` (the transcript's mtime) and `silent` at 30 minutes or more (T-0476)."""
     lines = []
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
@@ -561,6 +576,14 @@ def status(directory, orphans_only=False):
             continue
         stem = path.name[:-len('.attempt.json')]
         line = '%s %s %s-%s parent_pid=%s' % (stem, state, data.get('role'), data.get('level'), data.get('parent_pid') or data.get('owner_pid'))
+        if state == 'running':
+            transcript = find_subagent_transcript(data.get('agent_id'))
+            try:
+                idle = time.time() - Path(transcript).stat().st_mtime if transcript else None
+            except OSError:
+                idle = None
+            if idle is not None:
+                line += ' last activity %s' % age_text(idle) + (' silent' if idle >= SILENT_SECONDS else '')
         report = Path(directory) / (stem + '.md')
         if state in ('running', 'orphaned') and report.is_file() and report.stat().st_size:
             line += ' report-written-unrecorded'  # T-0383: the role reported but nobody recorded it, so no verdict was delivered
@@ -1020,6 +1043,26 @@ def find_subagent_transcript(agent_id):
     return str(hits[0]) if len(hits) == 1 else None
 
 
+def started(dispatch_file, agent_id):
+    """T-0476: store the spawned sub-agent's id in its running attempt record (today the id lands only at record); returns the exit code."""
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', agent_id or ''):
+        raise Refuse(2, 'dispatch.py: --agent-id must be a plain id (letters, digits, - and _), got %r' % agent_id)
+    try:
+        d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
+        attempt_path = Path(d['attempt_file'])
+        attempt = json.loads(attempt_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise Refuse(2, 'dispatch.py: cannot read the dispatch file or its attempt record %s: %s' % (dispatch_file, e))
+    if not isinstance(attempt, dict) or attempt.get('attempt_id') != d.get('attempt_id'):
+        raise Refuse(2, 'dispatch.py: %s belongs to another attempt than %s' % (attempt_path, dispatch_file))
+    if attempt.get('status') != 'running':
+        raise Refuse(2, 'dispatch.py: attempt %s is %s, not running; nothing to mark started' % (attempt_path.name, attempt.get('status')))
+    attempt['agent_id'] = agent_id
+    run_lifecycle.write(attempt_path, attempt)
+    say('started: %s agent_id %s' % (attempt_path.name, agent_id))
+    return 0
+
+
 def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None, transcript=None, no_result=False):
     """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused or no result yet, 3 invalid result).
 
@@ -1290,6 +1333,9 @@ def main(argv):
     r.add_argument('--no-result', action='store_true', help='close the attempt failed when no result file, stdin, or transcript result exists (default: exit 2 and leave it running)')
     dl = sub.add_parser('deliver', help='send (or confirm sent) the verdict message a dispatch asked for with --notify; idempotent')
     dl.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
+    sd = sub.add_parser('started', help='store the spawned sub-agent id in the running attempt, so status can show its last activity')
+    sd.add_argument('--agent-id', required=True, help='the sub-agent id the Agent tool returned')
+    sd.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
     st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
     st.add_argument('directory')
     st.add_argument('--orphans', action='store_true', help='print only orphaned attempts')
@@ -1335,6 +1381,13 @@ def main(argv):
             print('dispatch.py: ' + str(e), file=sys.stderr)
             return 2
         return 0
+    if args.cmd == 'started':
+        try:
+            return started(args.dispatch, args.agent_id)
+        except Refuse as r:
+            for line in r.lines:
+                print(line, file=sys.stderr)
+            return r.rc
     if args.cmd == 'deliver':
         try:
             return deliver(args.dispatch)
@@ -2308,6 +2361,47 @@ def selftest():
              found['f3'][0] == 0 and 'unpriced:' in found['f3'][1] and found['f3'][3].get('unpriced') is True)
         case('record with a path-shaped --agent-id reads no transcript: unpriced',
              found['f4'][0] == 0 and 'unpriced:' in found['f4'][1] and found['f4'][3].get('unpriced') is True)
+        # T-0476: `started` stores the agent id in the running attempt at spawn; status shows the transcript's last-activity age and `silent` after 30 minutes.
+        def started(dfile, aid, projects=None):
+            return subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'started', '--agent-id', aid, dfile],
+                                  capture_output=True, text=True, env={**env_cli, 'SDLC_CLAUDE_PROJECTS': str(projects or proj)}, stdin=subprocess.DEVNULL)
+
+        def aged_status(seconds, aid, art):
+            tp = proj / '-p1/s1/subagents' / ('agent-%s.jsonl' % aid)
+            tp.write_text('{}\n')
+            os.utime(tp, (time.time() - seconds, time.time() - seconds))
+            was = os.environ.get('SDLC_CLAUDE_PROJECTS')
+            os.environ['SDLC_CLAUDE_PROJECTS'] = str(proj)
+            try:
+                return status(art)[0]
+            finally:
+                if was is None:
+                    os.environ.pop('SDLC_CLAUDE_PROJECTS', None)
+                else:
+                    os.environ['SDLC_CLAUDE_PROJECTS'] = was
+        put(rb / '.sdlc' / 'lv' / 'handoff.md')
+        rc, lv, _ = prep(rb, 'builder', 'L1', '.sdlc/lv/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        sp = started(lv['dispatch_file'], 'ag-quiet')
+        lv_att = json.loads(Path(lv['attempt_file']).read_text())
+        case('started writes the agent id into the running attempt and leaves it running',
+             sp.returncode == 0 and lv_att.get('agent_id') == 'ag-quiet' and lv_att['status'] == 'running')
+        silent_line = aged_status(7200, 'ag-quiet', lv['artifacts_dir'])
+        case('status of a running attempt whose transcript is 2 h old: running, last activity 2h, silent',
+             ' running ' in silent_line and 'last activity 2h' in silent_line and silent_line.endswith(' silent'))
+        live_line = aged_status(120, 'ag-quiet', lv['artifacts_dir'])
+        case('negative control: a transcript written 2 minutes ago shows its age and no silent', 'last activity 2m' in live_line and 'silent' not in live_line)
+        edge_line = aged_status(1750, 'ag-quiet', lv['artifacts_dir'])
+        case('negative control: a transcript just under 30 minutes old is not silent', 'last activity 29m' in edge_line and 'silent' not in edge_line)
+        (proj / '-p1/s1/subagents/agent-ag-quiet.jsonl').unlink()
+        gone_line = status(lv['artifacts_dir'])[0]
+        case('negative control: no transcript found prints neither last activity nor silent', 'last activity' not in gone_line and 'silent' not in gone_line)
+        case('started refuses a path-shaped agent id and an unreadable dispatch file',
+             started(lv['dispatch_file'], '../x').returncode == 2 and started(str(rb / 'no-such.dispatch.json'), 'ag-1').returncode == 2
+             and json.loads(Path(lv['attempt_file']).read_text()).get('agent_id') == 'ag-quiet')
+        Path(lv['result']).write_text(BODY['builder'])
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            record(lv['dispatch_file'])
+        case('started refuses an attempt that is already recorded', started(lv['dispatch_file'], 'ag-quiet').returncode == 2)
         # T-0343: the artifact comes from the transcript when the file and stdin are empty.
         good = {'message': {'id': 'm2', 'role': 'assistant', 'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': BODY['builder']}]}}
         for nm, rec_ in (('c5', good), ('c6', {'message': {**good['message'], 'stop_reason': 'max_tokens'}})):

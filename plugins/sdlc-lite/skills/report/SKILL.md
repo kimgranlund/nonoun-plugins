@@ -1,6 +1,6 @@
 ---
 name: report
-description: "Report the state of this agent thread: an executive summary by default, or the views you name (tasks, signals, needs, context, cost, children, identity, evidence, full). It shows what finished, what is in progress, what comes next, what needs the person, and where the thread has problems or likely problems (late failure, context sprawl, stalls), then a hygiene grade. Printed by scripts/report.py from records and the transcript, never composed by hand. Use for \"/report\", \"status\", \"what are you doing\", \"what did you finish\", \"what is wrong\", \"how is this session going\". NOT for a repo task table (/board); NOT for the state of every repo (fleet-status); NOT for a retro across runs (fleet-retro)."
+description: "Report the state of this agent thread: an executive summary by default, or the views you name (tasks, signals, needs, context, cost, children, identity, evidence, lanes, waves, full). It shows what finished, what is in progress, what comes next, what needs the person, and where the thread has problems or likely problems (late failure, context sprawl, stalls), then a hygiene grade. The lanes and waves views show the fanout and solo lane state of the repo. Printed by scripts/report.py from records and the transcript, never composed by hand. Use for \"/report\", \"status\", \"what are you doing\", \"what did you finish\", \"what is wrong\", \"how is this session going\". NOT for a repo task table (/board); NOT for the state of every repo (fleet-status); NOT for a retro across runs (fleet-retro)."
 argument-hint: "[view...] [--since T] [--last N] [--next N] [--only G,...] [--severity problem|likely|all] [--format text|md|json] [--evidence] [--compare last] [--explain] [--no-snapshot]"
 allowed-tools: Read, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/report.py:*), AskUserQuestion
 ---
@@ -19,7 +19,7 @@ Exit 2 is a refusal: an unknown view or option, or an unreadable record. Print s
 
 Print stdout verbatim as the reply, in one plain `text` block when the format is `text`. Render, never compose: do not summarize, reorder, shorten, translate or add a line. A line the script marks `[U]` stays marked. The one thing you add is nothing.
 
-The default, with no arguments, is the executive summary: at most 8 lines (state, needs, now, next, grade, plus recent and unknown lines when they are not empty). A view prints only its own section. `full` prints every section in a fixed order. [The view and option reference](references/views.md) lists them; [the record schema](references/record-schema.md) defines every field and where it comes from.
+The default, with no arguments, is the executive summary: at most 8 lines (state, needs, now, next, grade, plus recent and unknown lines when they are not empty). A view prints only its own section; `lanes` and `waves` read the repo's lanes, not the thread. `full` prints every section in a fixed order. [The view and option reference](references/views.md) lists them; [the record schema](references/record-schema.md) defines every field and where it comes from.
 
 ## 3. If the report shows `needs`
 

@@ -41,7 +41,7 @@ Smallest first build, one ticket, size L3: "fanout.py land: a light gate class f
 - `land.jsonl` lives under `<lanes-dir>/logs` and is gitignored scratch; `lanes.py close_lane` removes worktrees and branches, never the logs dir: verified by grep `rmtree|logs` in `lanes.py` (hits at `:24`, `:338`, `:1824` only).
 - `tickets.py close` writes a `## Closed` section with the reason text: verified at `tickets.py:2010`.
 - `runs.jsonl` is read as role-run cost records: verified at `budget.py:81`, `board.py:108`.
-- The `[owner: <stage>]` clause and `deferred <owner>` exist (T-0408) and close acceptance is T-0472: verified at `steps.py:1961`, `.sdlc/0472-close-accepts-stage-deferred/handoff.md`.
+- The `[owner: <stage>]` clause and `deferred <owner>` exist (T-0408) and close acceptance is T-0472: verified at `steps.py:1961`, `.sdlc/.0472-close-accepts-stage-deferred/handoff.md`.
 - Maison's full gate is 75 to 90 minutes per merge: from the handoff Context and `docs/reports/2026-10-12-maison-wave-7b-mechanics.md`; unverified against maison's logs.
 - `git bisect --first-parent` over the ledger range is linear in tickets because each ticket is one `--no-ff` merge: verified at `fanout.py:1426`; the bisect itself was not run.
 
@@ -81,5 +81,5 @@ Smallest first build, one ticket, size L3: "fanout.py land: a light gate class f
 - Ticket records enter the lane branch with `git add -f` at `fanout.py:2052`; `.sdlc/config` is copied untracked into worktrees at `:2028-2031`.
 - `tickets.py close` appends `## Closed` at `tickets.py:2010` and refuses held criteria at `:1962-1966` (T-0472 changes the latter).
 - `runs.jsonl` is a cost record: `plugins/sdlc-lite/scripts/budget.py:81`, `plugins/sdlc-lite/scripts/board.py:108`.
-- The `[owner: <stage>]` clause: `steps.py:1961`; T-0472 handoff at `.sdlc/0472-close-accepts-stage-deferred/handoff.md`.
+- The `[owner: <stage>]` clause: `steps.py:1961`; T-0472 handoff at `.sdlc/.0472-close-accepts-stage-deferred/handoff.md`.
 - The design text for `docs/planning/light-merge-lane.md` is this result; the first build ticket is one L3 fanout.py ticket named under Approach.

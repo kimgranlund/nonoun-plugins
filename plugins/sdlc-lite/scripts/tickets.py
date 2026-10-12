@@ -1913,7 +1913,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     them). keep_refs leaves them too without force, and records the stale citations in a ## Closed section.
     Plain slug folders never move, so never scan.
     A criterion still held (steps.open_items: a verifier reported it unmet-dependency or deferred and no later result
-    passed it) refuses every close, --reason and --force included; nothing is written (T-0408).
+    passed it) refuses every close, --reason and --force included; nothing is written (T-0408). The one exception
+    is a declared `deferred` criterion owned by a stage word (not a T-NNNN ticket): its owner stage runs after the
+    close, so the close goes ahead and writes `deferred: <ref> -> <owner>` into the ## Closed note (T-0472).
     After a successful close, one `lane still open: <path> (branch <b>, <reason>)` line per plugin lane that lists the
     ticket (lanes.still_open) follows the result line; the exit code is unchanged (T-0453)."""
     if keep_refs and rewrite_refs:
@@ -1961,6 +1963,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                    f'follow-ups; nothing written')
     import steps  # local like messages: only close needs the verifier's held criteria (T-0408)
     held = steps.open_items(d, root)
+    to_stage = [i for i in held if i['state'] == 'deferred' and i['status'] == 'held' and not ID_RE.fullmatch(i['who'])]
+    deferred = [f"deferred: {i['ref']} -> {i['who']}" for i in to_stage]
+    held = [i for i in held if i not in to_stage]
     if held:
         raise Fail(f'{slug}: criteria still held: '
                    + ', '.join(f"{i['ref']} {i['state']} {i['who']}" for i in held)
@@ -2008,6 +2013,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if body and not body.endswith('\n'):
             body += '\n'
         body += f'\n## Closed\n\n{datetime.date.today().isoformat()}: {why}\n'
+        if deferred:
+            body += '\n' + '\n'.join(deferred) + '\n'
         if kept:
             body += f'\n{kept}\n'
         note_docs_waiver()
@@ -2019,7 +2026,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if flag:
             ensure_numbered_config(root)
         moved = f'; moved to {dot.name}' if archive else ''
-        return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}' + lane_report(root, pid)
+        return (f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}'
+                + ''.join('; ' + x for x in deferred) + lane_report(root, pid))
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
         held = []
@@ -2161,6 +2169,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if body and not body.endswith('\n'):
             body += '\n'
         body += (f'\n{kept}\n' if '\n## Closed\n' in body else f'\n## Closed\n\n{kept}\n')
+    if deferred:
+        if body and not body.endswith('\n'):
+            body += '\n'
+        body += ('\n' if '\n## Closed\n' in body else '\n## Closed\n\n') + '\n'.join(deferred) + '\n'
     h.write_bytes((head + body).encode('utf-8'))
     if archive:
         d.rename(dot)
@@ -2178,6 +2190,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         out += f'; moved to {dot.name}'
     if ack_warnings is not None:
         out += f'; warnings acknowledged: {ack_warnings.strip()}'
+    out += ''.join('; ' + x for x in deferred)
     return out + rewrote + lane_report(root, pid)
 
 
@@ -3121,31 +3134,48 @@ def selftest():
 
         # (held) T-0408: a criterion the verifier holds (deferred or unmet-dependency) keeps the ticket open
         V_HEAD = '<!-- role=verifier level=L2 model=opus effort=high -->\n'
-        V_HELD = (V_HEAD + '## Verdict\nfail\n\n## Criteria\n- #1 ships it: deferred integration. Evidence: not yet\n\n'
-                  '## For the next attempt\ndeferred: integration\n')
+
+        def v_held(state, who):
+            return (V_HEAD + f'## Verdict\nfail\n\n## Criteria\n- #1 ships it: {state} {who}. Evidence: not yet\n\n'
+                    f'## For the next attempt\n{state}: {who}\n')
         V_SETTLE = (V_HEAD + '## Verdict\npass\n\n## Criteria\n- #1 ships it: pass. Evidence: green\n\n'
                     '## For the next attempt\nNone\n\n## Settles\n- ticket#1\n')
 
-        def held_case(clause='[owner: integration]', settled=False):
+        def held_case(clause='[owner: integration]', settled=False, state='deferred', who='integration', filed=False):
             def mutate(r):
                 with (r / 'alpha' / 'handoff.md').open('a', encoding='utf-8') as f:
                     f.write(f'\n## Acceptance criteria\n- [ ] ships it {clause}\n')
-                (r / 'alpha' / 'verifier-L2.md').write_text(V_HELD, encoding='utf-8')
+                (r / 'alpha' / 'verifier-L2.md').write_text(v_held(state, who), encoding='utf-8')
                 names = ['verifier-L2.md']
                 if settled:
                     (r / 'alpha' / 'verifier-L2-2.md').write_text(V_SETTLE, encoding='utf-8')
                     names.append('verifier-L2-2.md')
                 (r / 'alpha' / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n in names), encoding='utf-8')
+                if filed:
+                    filer('filer-L1.md', 'None', 'None')(r)
             return mutate
+        # a hold that is not a stage-owned deferral still refuses every close path (T-0408, T-0472)
+        for what, kw0 in (('unmet-dependency', dict(clause='[needs: file:nope/x.json]', state='unmet-dependency', who='file:nope/x.json')),
+                          ('deferred to a ticket owner', dict(clause='[owner: T-0099]', who='T-0099'))):
+            for label, kw, args in (('--reason', {'reason': 'done elsewhere'}, ('alpha',)),
+                                    ('--force --reason', {'reason': 'done elsewhere'}, ('alpha', True)),
+                                    ('the filer path', {}, ('alpha',))):
+                root = case(held_case(filed=label == 'the filer path', **kw0))
+                before = snap(root)
+                rc, _, err = run(root, 'close', args, **kw)
+                expect(f'(held) close via {label} refuses {what} and writes nothing: rc={rc} {err!r}',
+                       rc == 1 and f"criteria still held: ticket#1 {kw0['state'] if 'state' in kw0 else 'deferred'} {kw0['who']}" in err
+                       and 'nothing written' in err and snap(root) == before and status(root) != 'done')
+        # T-0472: a deferred criterion owned by a stage word closes, and the close note names the deferral
         for label, kw, args in (('--reason', {'reason': 'done elsewhere'}, ('alpha',)),
                                 ('--force --reason', {'reason': 'done elsewhere'}, ('alpha', True)),
                                 ('the filer path', {}, ('alpha',))):
-            root = case(held_case())
-            before = snap(root)
-            rc, _, err = run(root, 'close', args, **kw)
-            expect(f'(held) close via {label} refuses a held criterion and writes nothing: rc={rc} {err!r}',
-                   rc == 1 and 'criteria still held: ticket#1 deferred integration' in err
-                   and 'nothing written' in err and snap(root) == before and status(root) != 'done')
+            root = case(held_case(filed=label == 'the filer path'))
+            rc, out, err = run(root, 'close', args, **kw)
+            note = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
+            expect(f'(held) close via {label} accepts a stage-owned deferral and records it: rc={rc} {err!r} {out!r}',
+                   rc == 0 and status(root) == 'done' and 'deferred: ticket#1 -> integration' in note
+                   and 'deferred: ticket#1 -> integration' in out)
         root = case(held_case(settled=True))
         rc, _, err = run(root, 'close', ('alpha',), reason='done elsewhere')
         expect(f'(held) control: the same ticket after a settling result closes: rc={rc} {err!r}',
