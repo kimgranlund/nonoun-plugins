@@ -1347,10 +1347,10 @@ for _rel in ('agents/planner.md', 'agents/planner-L1.md', 'agents/planner-L2.md'
     if all(ph in _text for ph in PLANNER_PROBE) and not [ph for ph in PLANNER_PROBE if ph not in _text.replace(PLANNER_PROBE[0], '')]:
         errors.append(f'check.py: planner probe negative control not flagged for {_rel}')
 # Solo dependents and verbatim criteria (docstring item 55, T-0471): the two Loop rules and the report detect rule.
-SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report')),
+SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report', 'Regenerate:', 'Scan-diff:')),
               ('scripts/results.py', ('def solo_report_error', 'def criterion_spans')),
-              ('agents/solo-L1.md', ('Search-dependents', 'Run-verbatim')), ('agents/solo-L2.md', ('Search-dependents', 'Run-verbatim')),
-              ('agents/solo-L3.md', ('Search-dependents', 'Run-verbatim')))
+              ('agents/solo-L1.md', ('Search-dependents', 'Run-verbatim', 'Regenerate:', 'Scan-diff:')), ('agents/solo-L2.md', ('Search-dependents', 'Run-verbatim', 'Regenerate:', 'Scan-diff:')),
+              ('agents/solo-L3.md', ('Search-dependents', 'Run-verbatim', 'Regenerate:', 'Scan-diff:')))
 def solo_rules_bad(rel, text): return [f'{rel} missing "{ph}"' for r, phrases in SOLO_RULES if r == rel for ph in phrases if ph not in text]
 for _rel, _phrases in SOLO_RULES:
     _f = root/_rel
