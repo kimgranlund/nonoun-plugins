@@ -68,7 +68,7 @@ Two jobs, one form each.
 - Target `CLAUDE.local.md` at the repo root, created if missing, only with `--write-handoff`, and only after the person picks `/compact`.
 - Guard: `git check-ignore CLAUDE.local.md` must pass. It does not pass in this repository today, so the build adds the `.gitignore` entry (or the guard stops and says so).
 - Section key is the exact H2 `## Compaction handoff`, one per file. Replace the span from that H2 to the next H2 or end of file, then append the new one. Touch nothing else.
-- Body at most 8 lines: `Written <YYYY-MM-DD HH:MM> by /sdlc-lite:report compaction. Delete this section when the next task starts.`, then GOAL, STATE, OPEN (max 3), NEXT, POINT (max 3).
+- Body at most 8 lines: `Written <YYYY-MM-DD HH:MM> by /sdlc-lite:plan-compaction. Delete this section when the next task starts.`, then GOAL, STATE, OPEN (max 3), NEXT, POINT (max 3).
 - At the start of every run, look for the H2; if it is older than 24 hours, report it and offer `--clear`.
 - Codex: no file write. Verification of whether Codex rereads `AGENTS.md` after its compaction is not needed once the write is dropped.
 
