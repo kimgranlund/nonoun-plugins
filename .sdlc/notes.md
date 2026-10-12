@@ -313,3 +313,11 @@
 - note: The handoff said K-005 had no file and counted 173 blocked notes (55 plan defect). `docs/kpi/005-solo-first-pass-rate.md` exists now, and the on-disk count is 174 (56), so the report cites both counts.
 - note: The three planning refusals in the handoff's `## Plan review` came from `steps.py lint` and `dispatch.py prepare`. Lint rejects a `.sdlc/` path a step is told to create, and it rejects a foreign-repo `.sdlc/tickets/` path. Both are logged there with the unblock.
 - note: Ranked change 3 would not move K-005, because a held criterion still gives verdict `fail`. The report says to measure `plan defect:` against `deferred:` in `## For the next attempt` instead.
+
+## T-0451: lanes.py core: open, close, sweep, list, check, port (lane lifecycle A) (2026-10-11)
+
+- decide: criterion 8 (worktrees and refs unchanged around the selftest) compares `refs/heads` and the worktree list, which every lane in the repo shares, so concurrent lanes make it fail spuriously. Decide whether to scope it to the selftest's own temp repo.
+- note: `git worktree lock` at open, unlock at close, the finished-agent rule and `extensions.worktreeConfig` are ticket A2, not built here. Sweep and list only read the lock.
+- note: `lanes.py` is not wired into fanout, solo_run, tickets or dispatch (tickets B and C), and the hook message (D), `wait` and board columns are later tickets.
+- note: `lanes.py list --all --json` on this checkout makes one read-only `gh pr list` call per lane, with a 30 s timeout.
+- note: the step 2 `check.sh` guard failed once with no captured output, then passed with no edits in between. The cause is unknown, and the exit code was not captured on the verifier's run.

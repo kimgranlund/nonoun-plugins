@@ -15,6 +15,7 @@ fanout and solo_run open and close their lanes through `lanes.py`, so a merged l
 
 ## Intent
 - Do: ticket B of section 13: `fanout.py` (open in setup, close merged lanes, sweep at start, `lane still open` report lines, `SDLC_LANE_PORT`, `prep` prints `lanes.py open` for a `full` lane and writes the host record, `roll` removes its scratch, docstring and selftest cases); `solo_run.py` (`ensure_worktree` through `lanes.open`, selftest); `skills/fanout/SKILL.md` (a lifecycle paragraph replaces "Lane worktrees stay after the run", step 5 runs `lanes.py sweep`; keep the `.claude/worktrees/` phrase `check.py` pins). Fold in the integration-branch settle: after a non-fast-forward merge of the integration branch, `fanout.py settle` removes the branch and worktree.
+- Also fix the T-0451 flake: the `lanes.py selftest` isolation case (criterion 8 of T-0451, selftest leaves worktrees and refs unchanged) compares the branches and worktrees of the real repository, so another session or lane writing refs during the run makes it fail (observed once in T-0451 step 1, and a first `check.sh` run exited 1 and passed on rerun). Limit the comparison to the selftest's own temporary repository; keep an observed-red control that a leaked ref or worktree in that temp repo is still caught.
 - Non-goals: tickets.py, dispatch.py (C); the hook (D).
 - Done when: `(red)` a fanout selftest case that expects a merged lane's tree gone after `run` fails now; after, `fanout.py selftest` and `solo_run.py selftest` exit 0, a stopped lane stays with its report line; `check.sh` exits 0.
 

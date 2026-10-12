@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c54b22f22ce7 -->
+<!-- sdlc-lite:managed:start v1 sha256:078cd6de2056 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,14 +9,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 13
+- proposed: 12
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
-  - T-0451 lanes.py core: open, close, sweep, list, check, port (lane lifecycle A) (0451-lanes-core)
   - T-0452 fanout.py and solo_run.py use lanes.py (lane lifecycle B) (0452-fanout-solo-use-lanes)
   - T-0453 tickets.py close and dispatch.py prune report open lanes (lane lifecycle C) (0453-close-prune-report-lanes)
   - T-0454 Stray-worktree hook message points to lanes.py (lane lifecycle D) (0454-hook-message-lanes)
@@ -27,7 +26,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 413
+- done: 414
 - dropped: 25
 
 ## Procedures
