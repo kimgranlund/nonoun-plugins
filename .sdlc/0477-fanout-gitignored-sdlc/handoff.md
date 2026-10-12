@@ -27,3 +27,8 @@ Origin: T-0470 investigation, `docs/reports/2026-10-12-maison-wave-7b-mechanics.
 
 ## Constraints
 The failing test lands before or with the fix, with an observed-red control. No prompt wording change.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, including case 20b: a repo with `.sdlc/` gitignored and an uncommitted `handoff.md` and `plan.md` runs `fanout.py run alpha=T-0001` to a merged row, with a driver that fails unless `plan.md` is in the lane worktree.
+- [ ] An uncommitted handoff in a repo that does not ignore `.sdlc/` is still refused (`not committed at`, case 20), and `fanout.py prep` still refuses a gitignored uncommitted handoff (case 22).
+- [ ] `git diff` touches only `plugins/sdlc-lite/scripts/fanout.py` and `docs/references/sdlc-internals.md` (plus this ticket folder).
