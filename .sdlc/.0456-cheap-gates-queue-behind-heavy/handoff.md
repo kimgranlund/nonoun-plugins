@@ -2,7 +2,7 @@
 id: T-0456
 title: "Cheap fanout gates time out in the machine-wide gate lock behind heavy browser jobs"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,7 @@ No model or effort change. Heavy gates keep going through the lock. No capacity 
 - With a peer holding 5 of 6 compute units and `SDLC_GATE_TIMEOUT=1`, a cheap gate merges while a default gate ends as `gate waited 1 s for a slot, not run: ...` (no `red:`, merge reset, logs a1 and a2); a gate command that exits 3 itself stays `red: ... rc=3` (negative control).
 - `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0; `bash plugins/sdlc-lite/scripts/check.sh` exits 0; `python3 scripts/check-packaging.py` exits 0.
 - `docs/specs/sdlc-lite/gate-lock-admission.md` (section 13), `docs/references/sdlc-internals.md` and the `fanout.py` docstring describe `--gate-need`, `SDLC_GATE_TIMEOUT`, the cheap-gate default and the not-run report; the lock's capacity and default need are unchanged.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
