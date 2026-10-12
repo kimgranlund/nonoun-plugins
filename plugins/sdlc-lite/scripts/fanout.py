@@ -579,7 +579,7 @@ def gate_argv(ctx, lane, t, gate):
     --need (gate_need) and the wait limit SDLC_GATE_TIMEOUT seconds when that is set."""
     argv = ['bash', '-c', gate]
     if ctx.get('gate_lock'):
-        pre = [sys.executable, str(SCRIPTS / 'gate_lock.py'), 'run', '--name', f'{lane.name}/{t.id}']
+        pre = [sys.executable, str(SCRIPTS / 'gate_lock.py'), 'run', '--name', f'{lane.name}/{t.id}', '--priority', '1']
         need = gate_need(ctx, gate)
         if need:
             pre += ['--need', need]
@@ -3960,6 +3960,8 @@ def selftest():
             except subprocess.TimeoutExpired:
                 hp.kill()
 
+        pa = gate_argv({'gate_lock': True}, types.SimpleNamespace(name='alpha'), types.SimpleNamespace(id='T-1'), 'true')
+        expect(f'case 21b: a land gate runs at --priority 1, got {pa}', pa[pa.index('--priority') + 1:pa.index('--priority') + 2] == ['1'])
         hold = peer(5)  # 1 of 6 compute units left: a cheap gate (1) fits, a default gate (3) does not
         try:
             rc_b, out_b, err_b, text_b = gate_b_done('cheapfit', probe + 'check.py', SDLC_GATE_TIMEOUT='2')
