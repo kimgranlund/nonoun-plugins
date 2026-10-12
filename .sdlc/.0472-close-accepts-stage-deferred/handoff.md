@@ -2,7 +2,7 @@
 id: T-0472
 title: "tickets.py close accepts a stage-owned deferred criterion (T-0470 finding 2)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ The failing test lands before or with the fix, with an observed-red control. No 
 - [ ] `python3 plugins/sdlc-lite/scripts/tickets.py selftest` passes, and its `(held)` cases show a `deferred integration` hold closing via `--reason`, `--force --reason` and the filer path with `deferred: ticket#1 -> integration` in the close note.
 - [ ] `unmet-dependency` and a `deferred T-NNNN` hold still refuse every close path and write nothing (the `(held)` refusal cases in `tickets.py selftest`).
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` and `python3 plugins/sdlc-lite/scripts/check.py` pass; `steps.py open` is unchanged (diff touches no `steps.py` code).
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
