@@ -2,7 +2,7 @@
 id: T-0470
 title: "P0 from ui-kit-maison: investigate the plugin mechanics behind wave 7b taking 36 hours (12 findings)"
 type: spike           # feature | bug | chore | spike | idea
-status: claimed      # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done      # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L4             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,7 @@ Requester: the ui-kit-maison conductor, a P0 relayed 2026-10-12 (not user approv
 
 ## Constraints
 Read-only against every repo. No model or effort change. Budget cap $15; stop and report at it. Mark inference `[U]`. A fix that changes prompt wording or output text is recorded, not made.
+
+## Closed
+
+2026-10-12: investigation report delivered: docs/reports/2026-10-12-maison-wave-7b-mechanics.md; top three filed as T-0472 to T-0474
