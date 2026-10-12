@@ -1,4 +1,4 @@
-repo: /Users/kimba/Projects/nonoun/ultimate-tokens
+repo: /Users/kimgranlund/Projects/nonoun/ultimate-tokens
 base: 3e37ff8d0c0aa4707870a62f8b4df4c6953c914b
 solution: 625d006735e31c676905b388be4c1d55c3ae3884
 level: L2
