@@ -23,3 +23,6 @@ Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (build split). Gate
 
 ## Constraints
 Hard invariants never vary by tier. No hand edits to generated files.
+
+## Gate check
+gate: not met: T-0458 `Verdict: drop` (docs/reports/2026-10-12-builder-overlay-retest.md); close as dropped per Context. No roles run (2026-10-12, unattended /chain).
