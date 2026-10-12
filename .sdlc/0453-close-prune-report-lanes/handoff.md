@@ -23,3 +23,10 @@ Design (approved by the maintainer 2026-10-11, build A to D as a chain): `docs/s
 
 ## Constraints
 No model or effort change. Never delete unmerged work; archive ref `refs/archive/<date>/<branch>` before any removal. A locked worktree is a running lane. No push, tag or publish. Read-only against any repo it does not own.
+
+## Acceptance criteria
+
+- (red) closing a ticket with an open lane prints `lane still open`: `S=$PWD/plugins/sdlc-lite/scripts; T=$(mktemp -d); cd $T && git init -q -b main . && python3 $S/tickets.py --root .sdlc new chore demo Demo >/dev/null && sed -i.bak 's/^status: .*/status: claimed\nclaimed_by: codex 2026-10-11/' .sdlc/demo/handoff.md && python3 $S/tickets.py --root .sdlc roadmap >/dev/null && printf '.sdlc/\n.worktrees/\n' > .gitignore && git add -A && git -c user.email=a@b.c -c user.name=t commit -qm init && python3 $S/lanes.py open demo --ticket T-0001 >/dev/null && python3 $S/tickets.py --root .sdlc close demo --reason done | grep -q 'lane still open'`
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 (cases k2: one line for a listing lane, none for an unrelated ticket, none outside a git repo).
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 (cases T-0453: listing names the lane, `--done` closes a landed host lane, keeps an unlanded one with `lane still open`, silent without a lane).
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
