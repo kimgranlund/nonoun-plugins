@@ -452,9 +452,30 @@ def auto_worktree(task_dir, cwd):
     return 'solo-' + slug
 
 
-def ensure_worktree(name, base=None):
-    """Create <repo>/.worktrees/<name> on a new branch <name> when missing; return its path. The role cannot do
-    this itself: block-stray-worktree.sh denies a role creating worktrees or branches, so the launcher does."""
+def ensure_worktree(name, base=None, task_dir=None):
+    """Return the worktree path for --worktree <name>, creating it when missing. The role cannot do this itself:
+    block-stray-worktree.sh denies a role creating worktrees or branches, so the launcher does. When the task's
+    handoff.md front matter has an id, the tree is a lanes.py solo lane, <lanes root>/<id>-<slug> on lane/<id>-<slug>
+    (spec section 17.9 B); else <repo>/.worktrees/<name> on a new branch <name>."""
+    sys.path.insert(0, str(SCRIPTS))
+    import lanes
+    import tickets
+    hf = pathlib.Path(task_dir) / 'handoff.md' if task_dir else None
+    meta = (tickets.parse(hf.read_text(encoding='utf-8')) if hf and hf.is_file() else None) or {}
+    tid = str(meta.get('id') or '').strip()
+    if tid:
+        try:
+            ctx = lanes.Ctx(base or '.')
+        except lanes.LaneError as exc:
+            raise Refuse(f'--worktree needs a git repository ({exc})')
+        tree = ctx.root / f'{tid.lstrip("#")}-{lanes.slug(name)}'
+        if tree.is_dir():
+            return str(tree)
+        r = lanes.open_lane(name, kind='solo', tickets=[tid], check_claim=False, cwd=base or '.')
+        if r['rc']:
+            raise Refuse(r['message'])
+        return r['path']
+
     def git(*a):
         return subprocess.run(['git', *a], cwd=str(base or '.'), capture_output=True, text=True)
     top = git('rev-parse', '--show-toplevel')
@@ -973,9 +994,9 @@ def selftest():
             wrepo.mkdir()
             for c in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i']):
                 subprocess.run(['git', *c], cwd=str(wrepo), check=True)
-            dw = ticket('wt')
-            shutil.move(str(dw), str(wrepo / 'wt'))
-            dw = wrepo / 'wt'
+            dw = wrepo / 'wt'  # no id in the front matter: today's .worktrees/<name> on branch <name>
+            dw.mkdir()
+            (dw / 'handoff.md').write_text('## Goal\ng\n')
             pwdf = tmp / 'pwd.out'
             shim(f"pwd -P > {pwdf}\nprintf '%s' '{{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}}'\n")
             cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'L1', '--brief', 'b',
@@ -985,6 +1006,28 @@ def selftest():
             expect('--worktree: run succeeds', cp.returncode == 0)
             expect('--worktree: worktree on a new branch', want.is_dir() and 'lane-x' in br)
             expect('--worktree: session cwd is the worktree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
+            # T-0452: a ticketed task opens its worktree through lanes.py as a solo lane (spec 17.9 B).
+            dl = ticket('wtl')
+            shutil.move(str(dl), str(wrepo / 'wtl'))
+            dl = wrepo / 'wtl'
+            pwdf.unlink(missing_ok=True)
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dl), '--tier', 'L1', '--brief', 'b',
+                                 '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
+            want = (wrepo / '.worktrees' / 'T-0001-lane-x').resolve()
+            head = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=str(want), capture_output=True, text=True).stdout.strip() \
+                if want.is_dir() else ''
+            try:
+                lrec = json.loads((want / '.lane.json').read_text())
+            except (OSError, ValueError):
+                lrec = {}
+            expect('--worktree lanes: run succeeds', cp.returncode == 0)
+            expect('--worktree lanes: the tree is .worktrees/T-0001-lane-x on lane/T-0001-lane-x', head == 'lane/T-0001-lane-x')
+            expect('--worktree lanes: a .lane.json of kind solo lists the ticket',
+                   lrec.get('kind') == 'solo' and lrec.get('tickets') == ['T-0001'] and lrec.get('branch') == 'lane/T-0001-lane-x')
+            expect('--worktree lanes: session cwd is the lane tree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dl), '--tier', 'L1', '--brief', 'b',
+                                 '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
+            expect('--worktree lanes: a second run reuses the existing tree', cp.returncode == 0)
             # T-0345: a second dispatch while a first solo is live defaults to a worktree; a single run keeps today's behavior.
             wr2 = tmp / 'dfrepo'
             wr2.mkdir()
@@ -1127,12 +1170,12 @@ def main():
             if wt:
                 print(f'solo_run.py: another solo is live in this checkout; using worktree {wt} (--no-worktree to stay)', file=sys.stderr)
         if a.backend == 'claude' and not a.exec:
-            path = ensure_worktree(wt, a.cwd) if wt else None
+            path = ensure_worktree(wt, a.cwd, task_dir) if wt else None
             rc, d = dispatch_json(task_dir, a.tier, brief, path)
             if d:
                 print(json.dumps(d, indent=2))
             return rc
-        cwd = ensure_worktree(wt, a.cwd) if wt else a.cwd
+        cwd = ensure_worktree(wt, a.cwd, task_dir) if wt else a.cwd
         return run(task_dir, a.tier, brief, a.backend, cwd, a.timeout, a.raw_out)
     except Refuse as exc:
         print(f'solo_run.py: {exc}', file=sys.stderr)

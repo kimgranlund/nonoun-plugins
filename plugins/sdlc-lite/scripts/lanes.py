@@ -2,7 +2,7 @@
 """lanes.py: the one home of the lane lifecycle. Open, close, sweep, list, check, port and archive a lane.
 
   lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--kind fanout|integration|solo] [--title TEXT]
-                [--root .sdlc] [--dry-run]
+                [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
@@ -13,8 +13,12 @@
   lanes.py selftest
 
 Design: docs/specs/sdlc-lite/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
-open_lane, close_lane, sweep, list_lanes, still_open(root, ticket), landed, config. open_lane and close_lane return
-a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc).
+open_lane, close_lane, sweep, list_lanes, still_open(root, ticket), landed, config, host_record. open_lane and close_lane
+return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc). open_lane takes
+keyword-only path= (the tree; the leaf is its basename), branch= (used verbatim) and check_claim=False (skip the claim
+rule for local ids; the ids are still recorded); the CLI spells them --path, --branch and --no-claim.
+host_record(name, branch, into, tickets, base=None, cwd='.') writes <lanes root>/host/<name>.lane.json with every
+record field (kind host), overwriting a record of that name, and returns it.
 
 Kinds. A tree is a plugin lane when it has a .lane.json at its root, a host record <lanes root>/host/<name>.lane.json,
 or a legacy fanout parent (its parent dir holds merge.lock and logs/). Every other tree is manual: list --all shows
@@ -76,6 +80,8 @@ Truth table for close and sweep; the first matching row wins.
   11         not landed, no --discard                                       not landed in <into>: first <path>; merge it or --discard  1
   12         close --discard on row 6, 7 or 11                              closed <lane> (discarded <sha>)                            0
 
+  merging    sweep --apply only: a lane whose parent dir holds merge.lock   kept <lane>: merging (merge.lock held)              0
+             while another process holds that flock (a land is merging)
   Rows 1 to 5 and locked refuse even with --discard. In sweep a refusing row prints `kept <lane>: <outcome>` and the
   sweep goes on; its exit is 0 unless a close step failed. Sweep keeps any branch in lane_keep:, acts only on plugin
   lanes, deletes no branch that has no lane, and never touches the main worktree or the current checkout. A bare
@@ -741,7 +747,21 @@ def sweep(apply=False, cwd='.'):
         if r or not info:
             res.append(result(0, f'kept {name}: {outcome}', lane=name, path=d['path'], branch=d['branch'], row=row))
             continue
-        x = do_close(ctx, d, outcome, info, dry=not apply)
+        mlock = os.path.join(os.path.dirname(d['path']), 'merge.lock')
+        if apply and os.path.isfile(mlock):
+            with open(mlock, 'a') as mf:  # a fanout lanes dir: close only while no land holds the merge lock
+                try:
+                    fcntl.flock(mf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError:
+                    res.append(result(0, f'kept {name}: merging (merge.lock held)', lane=name, path=d['path'],
+                                      branch=d['branch'], row='merging'))
+                    continue
+                try:
+                    x = do_close(ctx, d, outcome, info, dry=False)
+                finally:
+                    fcntl.flock(mf, fcntl.LOCK_UN)
+        else:
+            x = do_close(ctx, d, outcome, info, dry=not apply)
         res.append(x)
         if x['rc']:
             rc = 1
@@ -812,7 +832,17 @@ def write_record(tree, rec):
     (Path(tree) / RECORD).write_text(json.dumps({k: rec.get(k) for k in FIELDS}) + '\n', encoding='utf-8')
 
 
-def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None, root='.sdlc', dry_run=False, cwd='.'):
+def ticket_title(rootp, tid):
+    """The title of local ticket tid under rootp, or '' when it is not readable."""
+    try:
+        metas = tickets.load(tickets.ticket_dir(rootp))
+    except (tickets.Fail, OSError):
+        return ''
+    return next((str(m.get('title') or '') for _, m in metas if m.get('id') == tid), '')
+
+
+def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None, root='.sdlc', dry_run=False, cwd='.', *,
+              path=None, branch=None, check_claim=True):
     ctx = Ctx(cwd)
     top = ctx.top
     ids = list(tickets or ())
@@ -824,6 +854,9 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     rootp = Path(cwd, root)
     titles = {}
     for t in ids:
+        if not check_claim and LOCAL_ID.fullmatch(t) and rootp.is_dir():
+            titles[t] = ticket_title(rootp, t)
+            continue
         st, msg = claim(rootp, t)
         if st == 'refuse':
             return result(1, msg)
@@ -832,11 +865,16 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         else:
             titles[t] = msg
     if kind == 'integration':
-        branch, leaf = name, slug(name)
+        b0, leaf = name, slug(name)
     else:
         leaf = f'{ids[0].lstrip("#")}-{slug(name)}'
-        branch = f'lane/{leaf}'
-    tree = ctx.root / leaf
+        b0 = f'lane/{leaf}'
+    branch = branch or b0
+    if path:
+        tree = Path(os.path.abspath(os.path.join(ctx.cwd, str(path))))
+        leaf = tree.name
+    else:
+        tree = ctx.root / leaf
     refusal = name_refusal(ctx, branch, tree)  # NAME-FIRST
     if refusal:
         return result(1, '\n'.join(lines + [refusal]), lane=leaf, path=tree, branch=branch)
@@ -880,6 +918,25 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         if rec['setup'] != 'ok':
             lines.append(f'setup: {rec["setup"]}')
     return result(0, '\n'.join(lines), lane=leaf, path=tree, branch=branch, port=rec['port'])
+
+
+def host_record(name, branch, into, tickets, base=None, cwd='.'):
+    """Write <lanes root>/host/<name>.lane.json (kind host, every FIELDS key), overwriting one of that name; return it."""
+    ctx = Ctx(cwd)
+    base_ref = base or ctx.main
+    ids = [tickets] if isinstance(tickets, str) else list(tickets or ())
+    rec = dict(lane=name, kind='host', branch=branch, base=base_ref,
+               base_sha=out(ctx.top, 'rev-parse', '--verify', '-q', base_ref + '^{commit}'), into=into, tickets=ids,
+               port=None, opened=utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'), run_id=os.environ.get('SDLC_RUN_ID') or None,
+               setup=None)
+    hp = ctx.root / 'host' / f'{name}.lane.json'
+    hp.parent.mkdir(parents=True, exist_ok=True)
+    with flock(ctx.root / 'lanes.lock'):
+        if ctx.cfg['lane_ports']:
+            rec['port'] = pick_port(ctx, [d for d in discover(ctx) if not samepath(d['record_path'] or '', hp)])
+        rec = {k: rec.get(k) for k in FIELDS}
+        hp.write_text(json.dumps(rec) + '\n', encoding='utf-8')
+    return rec
 
 
 # ---- list, still_open, check, port, archive ---------------------------------------------------------------
@@ -1063,6 +1120,9 @@ def main(argv=None):
     p.add_argument('--kind', choices=KINDS, default='fanout')
     p.add_argument('--title')
     p.add_argument('--root', default='.sdlc')
+    p.add_argument('--path')
+    p.add_argument('--branch')
+    p.add_argument('--no-claim', action='store_true')
     p.add_argument('--dry-run', action='store_true')
     p = sub.add_parser('close')
     p.add_argument('target')
@@ -1096,7 +1156,7 @@ def main(argv=None):
     try:
         if a.cmd == 'open':
             r = open_lane(a.name, base=a.base, into=a.into, tickets=a.ticket, kind=a.kind, title=a.title, root=a.root,
-                          dry_run=a.dry_run)
+                          dry_run=a.dry_run, path=a.path, branch=a.branch, check_claim=not a.no_claim)
             print(r['message'])
             return r['rc']
         if a.cmd == 'close':
@@ -1714,6 +1774,75 @@ def case_pr_ref(script, base):
     return fails
 
 
+def case_open_path(script, base):
+    t = Fixture(base, script, 'opath')
+    t.ticket(5, 'Five')
+    tree = t.top / '.worktrees' / 'fan' / 'alpha'
+    args = ('open', 'alpha', '--ticket', 'T-5', '--path', str(tree), '--branch', 'wave1-alpha')
+    fails = []
+    rc, o = t.lanes(*args)
+    if rc != 1 or o != 'ticket T-5 not claimed: set claimed_by: first' or tree.exists() or t.ok('rev-parse', '--verify', 'refs/heads/wave1-alpha'):
+        fails.append(f'open path: without --no-claim want the claim refusal and nothing made, got {rc}: {o}')
+    rc, o = t.lanes(*args, '--no-claim')
+    rec = read_json(tree / RECORD) or {}
+    if rc or f'opened alpha at {tree} (branch wave1-alpha, into main)' not in o:
+        fails.append(f'open path: --no-claim did not open at the path: {rc}: {o}')
+    if (rec.get('lane'), rec.get('branch'), rec.get('kind'), rec.get('tickets')) != ('alpha', 'wave1-alpha', 'fanout', ['T-5']) or \
+            t.g('rev-parse', '--abbrev-ref', 'HEAD', cwd=tree) != 'wave1-alpha':
+        fails.append(f'open path: want the tree on wave1-alpha with its record, got {rec}')
+    if t.g('config', '--get', 'branch.wave1-alpha.description') != 'T-5 Five':
+        fails.append('open path: the description lacks the ticket title')
+    return fails
+
+
+def case_host_record(script, base):
+    t = Fixture(base, script, 'hostrec')
+    t.write({'.sdlc/config': 'lane_ports: 47110-47130\n'})
+    fails = []
+    os.environ['SDLC_RUN_ID'] = 'run-h1'
+    try:
+        host_record('h1', 'worktree-h1', 'wave/1', ['T-9'], cwd=str(t.top))
+        rec = host_record('h1', 'worktree-h1', 'wave/2', ['T-9'], cwd=str(t.top))
+    finally:
+        os.environ.pop('SDLC_RUN_ID', None)
+    hp = t.top / '.worktrees' / 'host' / 'h1.lane.json'
+    disk = read_json(hp) or {}
+    want = dict(lane='h1', kind='host', branch='worktree-h1', base='main', base_sha=t.g('rev-parse', 'main'), into='wave/2',
+                tickets=['T-9'], run_id='run-h1', setup=None)
+    if set(disk) != set(FIELDS) or disk != rec or any(disk.get(k) != v for k, v in want.items()) or \
+            not isinstance(disk.get('port'), int) or not disk.get('opened'):
+        fails.append(f'host record: want every field with kind host and the second into, got {disk}')
+    d = next((x for x in discover(Ctx(t.top)) if x['lane'] == 'h1'), None)
+    if not d or d['owner'] != 'host' or d['kind'] != 'host' or d['branch'] != 'worktree-h1' or d['into'] != 'wave/2':
+        fails.append(f'host record: discover did not read it: {d}')
+    return fails
+
+
+def case_sweep_mergelock(script, base):
+    t = Fixture(base, script, 'mlock')
+    lanes_dir = t.top / '.worktrees' / 'fanout'
+    (lanes_dir / 'logs').mkdir(parents=True)
+    mlock = lanes_dir / 'merge.lock'
+    mlock.write_text('')
+    tree = lanes_dir / 'a'
+    t.g('worktree', 'add', '-q', '-b', 'wave1-a', str(tree))
+    t.work(tree)
+    t.merge('wave1-a')
+    fails = []
+    with open(mlock, 'a') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            rc, o = t.lanes('sweep', '--apply')
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+    if rc or 'kept a: merging (merge.lock held)' not in o.splitlines() or not tree.is_dir():
+        fails.append(f'sweep merge.lock: with the lock held want the lane kept as merging, got {rc}: {o}')
+    rc, o = t.lanes('sweep', '--apply')
+    if rc or 'closed a (ancestor)' not in o.splitlines() or tree.exists():
+        fails.append(f'sweep merge.lock: once released want the lane closed, got {rc}: {o}')
+    return fails
+
+
 # markers the mutant copies edit; each is joined so the selftest's own text does not contain the marked line
 MUTANTS = (
     ('NO-RENAMES', "d = git(cwd, 'diff', '--no-renames', '--name-only', '-z', mb, ref)" + '  # NO-RENAMES',
@@ -1760,11 +1889,49 @@ def selftest():
                           GIT_AUTHOR_EMAIL='lanes@selftest', GIT_COMMITTER_NAME='lanes selftest', GIT_COMMITTER_EMAIL='lanes@selftest',
                           GIT_AUTHOR_DATE=ts, GIT_COMMITTER_DATE=ts, PATH=f'{base / "bin"}{os.pathsep}{os.environ.get("PATH", "")}',
                           PYTHONPATH=os.pathsep.join(x for x in (str(HERE), os.environ.get('PYTHONPATH')) if x))
+        old_cwd = os.getcwd()
         try:
-            return run_selftest(script, src, base)
+            sentinel = base / 'sentinel'
+            sentinel.mkdir()
+            for c in (['init', '-q', '-b', 'main'], ['commit', '-q', '--allow-empty', '-m', 'sentinel']):
+                r = git(sentinel, *c)
+                if r.returncode:
+                    print(f'FAIL: isolation: cannot make the sentinel repo: {err(r)}')
+                    return 1
+            os.chdir(str(sentinel))  # a cwd-relative leak in any case lands here, never in the real repository
+            before = sentinel_state(sentinel)
+            run_selftest(script, src, base)
+            fails = []
+            d = state_diff(before, sentinel_state(sentinel))
+            if d:
+                fails.append(d)
+            git(sentinel, 'update-ref', 'refs/heads/leak', 'HEAD')
+            if not state_diff(before, sentinel_state(sentinel)):
+                fails.append('a planted refs/heads/leak was not caught')
+            git(sentinel, 'update-ref', '-d', 'refs/heads/leak')
+            git(sentinel, 'worktree', 'add', '-q', '--detach', str(base / 'planted-wt'))
+            if not state_diff(before, sentinel_state(sentinel)):
+                fails.append('a planted worktree was not caught')
+            if fails:
+                print('FAIL: isolation: ' + ' | '.join(fails))
+                return 1
+            print('ok: isolation: the sentinel repo is unchanged; a planted ref and a planted worktree are both caught')
+            print('ok: lanes.py selftest')
+            return 0
         finally:
+            os.chdir(old_cwd)
             os.environ.clear()
             os.environ.update(saved)
+
+
+def sentinel_state(repo):
+    return [git(repo, 'worktree', 'list', '--porcelain').stdout, git(repo, 'for-each-ref').stdout]
+
+
+def state_diff(a, b):
+    """'' when the two snapshots match, else the changed lines marked - and +."""
+    la, lb = (set(''.join(x).splitlines()) for x in (a, b))
+    return '; '.join([f'-{l}' for l in sorted(la - lb)] + [f'+{l}' for l in sorted(lb - la)])
 
 
 def run_selftest(script, src, base):
@@ -1810,6 +1977,11 @@ def run_selftest(script, src, base):
         need('still_open', [f for f in cs if f.startswith('still_open')], 'the lane still open line, nothing printed')
         need('claim still open', [f for f in cs if not f.startswith('still_open')], 'close prints ticket still open')
         need('case pr ref', case_pr_ref(script, base), 'a local pr/1 beside refs/remotes/pr/1: only the local branch goes')
+        need('open path', case_open_path(script, base),
+             '--path, --branch and --no-claim open an unclaimed ticket there with a record; without --no-claim it refuses')
+        need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
+        need('sweep merge.lock', case_sweep_mergelock(script, base),
+             'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')
@@ -1823,7 +1995,6 @@ def run_selftest(script, src, base):
     except LaneError as e:
         print(f'FAIL: fixture: {e}')
         sys.exit(1)
-    print('ok: lanes.py selftest')
     return 0
 
 
