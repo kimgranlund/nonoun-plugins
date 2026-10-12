@@ -59,6 +59,8 @@ A shared contract is anything other files consume by name or shape: a catalog or
 
 For each file a step changes, find the nearest `AGENTS.md` in that file's folder or a folder above it. Leave out the root entry. List the rest under a `### Read first` subsection, placed after the step's `level:` line and before `### Do`. Each item is one line, ``- `<path>` ``, with the path relative to the repository root. A step whose only entry is the root has no subsection. Files the step only reads are not listed. `steps.py lint` refuses a listed path that does not exist.
 
+`steps.py lint` also refuses a cited `.sdlc/...` path that does not exist. A path the step itself creates is exempt when the step says so: name it in a `[creates: <path>]` marker, on an `Outputs:` line, as the target of a create or write verb in `### Do`, or inside a code span of a `(red)` criterion. A path from another repository is exempt when the step has an `Other repo: <name>` line and writes the path prefixed with that name (`<name>/.sdlc/...`), or writes it as an absolute path outside this repository. A cited path that exists nowhere and is neither declared nor foreign stays refused.
+
 ## Merge steps
 
 When a task merges one lane into another, emit this step block and fill it in. Replace `<branch>` with the lane branch. Replace `<gate command>` with the project's own check or test commands, one criterion per gate, the way you name them for any step. Pick the level with the rubric as usual.

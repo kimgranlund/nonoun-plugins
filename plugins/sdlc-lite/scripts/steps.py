@@ -1488,18 +1488,89 @@ def previous_attempt_span(text):
     return m.start(), m.end() + (nxt.start() if nxt else len(text) - m.end())
 
 
+CREATES_MARK_RE = re.compile(r'\[creates:\s*([^\]]+)\]', re.I)
+OUTPUTS_LINE_RE = re.compile(r'^[ \t]*(?:[-*][ \t]+)?\**outputs?\**[ \t]*:', re.I | re.M)
+CREATE_VERB_RE = re.compile(r'\b(?:creat(?:e|es|ing)|writ(?:e|es|ing)|add(?:s|ing)?|new file|generat(?:e|es|ing))\b', re.I)
+FOREIGN_LINE_RE = re.compile(r'^[ \t]*(?:[-*][ \t]+)?\**(?:other|foreign) repos?\**[ \t]*:[ \t]*(.+)$', re.I | re.M)
+PREFIX_RE = re.compile(r"""[^\s`'"()<>\[\],;|]*/$""")
+
+
+def section_of(text, heading):
+    """The body of the first `### <heading>` (or `## <heading>`) section of text, or ''."""
+    m = re.search(rf'^##+ {re.escape(heading)}[ \t]*$', text, re.M)
+    if not m:
+        return ''
+    nxt = re.search(r'^##+ ', text[m.end():], re.M)
+    return text[m.end():m.end() + (nxt.start() if nxt else len(text))]
+
+
+def declared_future_paths(text):
+    """The .sdlc paths the handoff says the step itself creates: a [creates: <path>, ...] marker anywhere, a
+    path on an `Outputs:` line, a path after a create verb (create, write, add, generate, new file) on a line of
+    ### Do, and a path inside a code span of a (red) criterion (it runs only after the build). A declared folder
+    covers the paths under it."""
+    out = set()
+    for m in CREATES_MARK_RE.finditer(text):
+        out.update(r for r in (p.strip().strip('`').rstrip('.:') for p in re.split(r'[,\s]+', m.group(1))) if r)
+    for m in OUTPUTS_LINE_RE.finditer(text):
+        eol = text.find('\n', m.end())
+        line = text[m.end():eol if eol >= 0 else len(text)]
+        out.update(rel for _, _, rel, _ in cited_sdlc_paths(' ' + line))
+    for line in section_of(text, 'Do').splitlines():
+        v = CREATE_VERB_RE.search(line)
+        if v:
+            out.update(rel for st, _, rel, _ in cited_sdlc_paths(' ' + line) if st - 1 > v.start())
+    for span in red_spans(text):
+        out.update(rel for _, _, rel, _ in cited_sdlc_paths(' ' + span))
+    return out
+
+
+def foreign_repo_names(text):
+    """The repo names a handoff line `Other repo: <name>[, <name>]` (or `Foreign repos:`) declares."""
+    return {n.strip('` .') for m in FOREIGN_LINE_RE.finditer(text) for n in re.split(r'[,;]\s*', m.group(1)) if n.strip('` .')}
+
+
+def repo_roots(folder):
+    """The resolved trees that are this repository: the git toplevel of folder and the main checkout when folder
+    is a linked worktree. [] outside git (no absolute path is then foreign)."""
+    top = git_toplevel(folder)
+    if not top:
+        return []
+    roots = [pathlib.Path(top).resolve()]
+    try:
+        r = subprocess.run(['git', '-C', str(folder), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+        if r.returncode == 0 and r.stdout.strip():
+            roots.append(pathlib.Path(r.stdout.strip()).resolve().parent)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return roots
+
+
+def is_foreign_citation(text, start, anchor, roots, names):
+    """True when the cited path belongs to another repository: an absolute path under none of roots, or a path
+    prefixed with a folder named in names (the handoff's `Other repo:` line)."""
+    if anchor is not None and roots:
+        a = anchor.resolve()
+        if not any(a == r or r in a.parents for r in roots):
+            return True
+    m = PREFIX_RE.search(text[:start])
+    return bool(m and names and names & set(pathlib.PurePosixPath(m.group(0)).parts))
+
+
 def link_findings(handoff):
     """One finding per cited .sdlc path of a step handoff that cannot be trusted before a role is dispatched:
     the path does not exist (the fix is named when a superseded sibling holds the report), or it is a report
     inside the handoff's own step folder that has a step-<n>.superseded-<k>/ sibling (a link meant for the
-    previous attempt, which a later report of the same name would satisfy), outside ## Previous attempt.
-    [] when clean. Runs nothing."""
+    previous attempt, which a later report of the same name would satisfy), outside ## Previous attempt. A missing path the step declares it creates, or that is foreign
+    (declared_future_paths, is_foreign_citation; T-0457), is not a finding. [] when clean. Runs nothing."""
     handoff = pathlib.Path(handoff)
     text = handoff.read_text(encoding='utf-8')
     base = sdlc_base(handoff.parent)
     own = handoff.resolve().parent
     prev = previous_attempt_span(text)
     seen, findings = set(), []
+    future, names, roots = declared_future_paths(text), foreign_repo_names(text), repo_roots(handoff.parent)
     for start, _, rel, anchor in cited_sdlc_paths(text):
         root = anchor or base
         key = (str(anchor), rel)
@@ -1507,6 +1578,9 @@ def link_findings(handoff):
             continue
         seen.add(key)
         p = root / rel
+        if not p.exists() and (is_foreign_citation(text, start, anchor, roots, names)
+                               or any(rel == f or rel.startswith(f.rstrip('/') + '/') for f in future)):
+            continue
         holders = superseded_holders(root, rel)
         shown = f'{anchor}/{rel}' if anchor else rel
         fix = (f'; the previous attempt is {anchor}/{superseded_rel(rel, holders[0])}' if anchor
@@ -5715,6 +5789,48 @@ def selftest():
         rc, _, err = run_main(['lint', str(own)])
         check('(L) superseded-report guidance names the original absolute target',
               rc == 1 and f'{sh}/step-1/builder-L3.md' in err and f'{sh}/step-1.superseded-1/builder-L3.md' in err)
+        # T-0457: a path the step creates and a path from another repo are not citations to refuse
+        def f_lint(body, sub=''):
+            td = l_task({}, cites={3: 'builder-L3.md'})
+            h = ln(td, 3)
+            h.parent.mkdir(parents=True, exist_ok=True)
+            h.write_text('## Task goal\ng\n\n## Step 3: s\nlevel: L1\n' + body, encoding='utf-8')
+            return run_main(['lint', str(h)])
+        miss = '.sdlc/0001-x/sample.py'
+        rc, _, err = f_lint(f'### Do\nRead {miss} first.\n')
+        check('(L) T-0457 control: a missing cited repo file is still refused', rc == 1 and miss in err)
+        rc, _, err = f_lint(f'### Do\nCreate {miss} with the sample.\n')
+        check('(L) T-0457: a path a ### Do line creates passes lint', rc == 0 and err == '')
+        rc, _, err = f_lint(f'### Do\nBuild it.\nOutputs: `{miss}`\n')
+        check('(L) T-0457: a path on an Outputs line passes lint', rc == 0 and err == '')
+        rc, _, err = f_lint(f'### Do\nBuild it. [creates: {miss}]\n### Acceptance criteria\n- `python3 {miss}` runs\n')
+        check('(L) T-0457: a [creates: <path>] marker passes lint', rc == 0 and err == '')
+        rc, _, err = f_lint(f'### Do\nBuild it.\n### Acceptance criteria\n- (red) `python3 {miss}`\n')
+        check('(L) T-0457: a path inside a (red) criterion span passes lint', rc == 0 and err == '')
+        rc, _, err = f_lint(f'### Do\nBuild it.\n### Acceptance criteria\n- `python3 {miss}`\n')
+        check('(L) T-0457 control: the same path in a plain criterion span is still refused', rc == 1 and miss in err)
+        rc, _, err = f_lint(f'### Do\nCreate {miss}.\nRead .sdlc/0001-x/typo.md.\n')
+        check('(L) T-0457 control: a create target does not exempt another missing path',
+              rc == 1 and 'typo.md' in err and 'sample.py' not in err)
+        rc, _, err = f_lint('### Do\nOther repo: ui-kit-maison\nRead ui-kit-maison/.sdlc/tickets/0001-x/handoff.md.\n')
+        check('(L) T-0457: a path prefixed with a declared other repo name passes lint', rc == 0 and err == '')
+        rc, _, err = f_lint('### Do\nRead ui-kit-maison/.sdlc/tickets/0001-x/handoff.md.\n')
+        check('(L) T-0457 control: the same prefix with no Other repo line is still refused',
+              rc == 1 and 'tickets/0001-x/handoff.md' in err)
+        gr = lroot / f'gitrepo{counter[0]}'
+        subprocess.run(['git', 'init', '-q', str(gr)], check=True, capture_output=True)
+        gh = gr / '.sdlc' / '0001-x' / 'step-1' / 'handoff.md'
+        gh.parent.mkdir(parents=True)
+        far = lroot / f'elsewhere{counter[0]}' / '.sdlc' / 'tickets' / '0001-x' / 'verifier.md'
+        gh.write_text(f'## Task goal\ng\n\n## Step 1: s\nlevel: L1\n### Do\nRead {far}.\n', encoding='utf-8')
+        rc, _, err = run_main(['lint', str(gh)])
+        check('(L) T-0457: an absolute path outside the repository passes lint', rc == 0 and err == '')
+        near = gr / '.sdlc' / 'tickets' / '0001-x' / 'verifier.md'
+        gh.write_text(f'## Task goal\ng\n\n## Step 1: s\nlevel: L1\n### Do\nRead {near}.\n', encoding='utf-8')
+        rc, _, err = run_main(['lint', str(gh)])
+        check('(L) T-0457 control: a missing absolute path inside the repository is still refused',
+              rc == 1 and str(near) in err)
+
         # no input hashing change: dispatch.py owns that; here only prove split output is stable when nothing is stale
         td = l_task(rep)
         run_main(['split', str(td)])
