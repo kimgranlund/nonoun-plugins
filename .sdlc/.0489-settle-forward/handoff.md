@@ -2,7 +2,7 @@
 id: T-0489
 title: "fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0481]
@@ -23,3 +23,6 @@ Design: `docs/planning/merge-ops-and-queue.md` (Approach 2, 4, 6; smallest first
 
 ## Constraints
 Main moves only by `--ff-only`. One writer on `fanout.py` at a time. No model or effort change.
+
+## Plan review
+- dispatch.py prepare builder L3 refused step-1: `steps: step-1/handoff.md: cited path does not exist: .sdlc/gate-ledger.jsonl` / `plan defect: replan this step (/chain 3)`. The ledger path names a file inside the selftest fixture repo, not this tree; write it so it is not read as a cited repo path (for example `gate-ledger.jsonl` in the fixture repo, without the `.sdlc/` prefix in backticks), and keep the rest of planner-L2.md unchanged.

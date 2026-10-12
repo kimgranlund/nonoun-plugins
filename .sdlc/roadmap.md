@@ -455,7 +455,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0456 | [.0456-cheap-gates-queue-behind-heavy](.0456-cheap-gates-queue-behind-heavy/handoff.md) | Cheap fanout gates time out in the machine-wide gate lock behind heavy browser jobs | bug | L2 | P2 | none | 🟢 done |
 | T-0457 | [.0457-lint-cited-paths-future-and-foreign](.0457-lint-cited-paths-future-and-foreign/handoff.md) | steps.py lint refuses cited paths a step will create and paths from another repo | bug | L2 | P2 | none | 🟢 done |
 | T-0458 | [.0458-builder-overlay-retest](.0458-builder-overlay-retest/handoff.md) | Retest the builder overlays on tasks where builders actually block, plus one L5 pair | spike | L3 | P2 | T-0450 | 🟢 done |
-| T-0443 | [0443-overlays-other-roles](0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⏳ proposed |
+| T-0443 | [.0443-overlays-other-roles](.0443-overlays-other-roles/handoff.md) | Extend overlays to the other roles and levels, gated on the A/B | feature | L3 | P2 | T-0458 | ⚪ dropped |
 | T-0459 | [.0459-gate-lock-selftest-real-root-flake](.0459-gate-lock-selftest-real-root-flake/handoff.md) | gate_lock selftest isolation case fails when other sessions use the real gate-lock state | bug | L2 | P2 | none | 🟢 done |
 | T-0460 | [.0460-report-skill](.0460-report-skill/handoff.md) | Build /sdlc-lite:report: scripts/report.py and the skill (executive summary, views, health signals, hygiene grade) | feature | L4 | P2 | none | 🟢 done |
 | T-0461 | [.0461-clarify-controlled-language](.0461-clarify-controlled-language/handoff.md) | Apply the controlled language system to /clarify: prompt, question wording, handoff grammar, lint rules, evals | feature | L3 | P2 | T-0460 | 🟢 done |
@@ -479,16 +479,22 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0479 | [.0479-long-gate-recipe](.0479-long-gate-recipe/handoff.md) | Long gates recipe in run-operations.md (T-0470 finding 12) | chore | L1 | P2 | none | 🟢 done |
 | T-0480 | [.0480-light-merge-lane](.0480-light-merge-lane/handoff.md) | Design: a light merge lane with a cadence full gate (from maison, after T-0470) | spike | L3 | P2 | none | 🟢 done |
 | T-0481 | [.0481-light-merge-gate-class](.0481-light-merge-gate-class/handoff.md) | fanout.py land: light gate class from light_scope globs, --light-gate, and cover with gate-ledger.jsonl (T-0480) | feature | L3 | P2 | none | 🟢 done |
-| T-0482 | [0482-light-merge-uncovered-board](0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | ⏳ proposed |
+| T-0482 | [.0482-light-merge-uncovered-board](.0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | 🟢 done |
 | T-0483 | [.0483-report-lanes-waves-views](.0483-report-lanes-waves-views/handoff.md) | /report lanes and /report waves views: lane and wave status with tickets and percent | feature | L2 | P2 | none | 🟢 done |
 | T-0484 | [.0484-gate-lock-policy-reload](.0484-gate-lock-policy-reload/handoff.md) | gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it | bug | L1 | P2 | none | 🟢 done |
 | T-0485 | [0485-solo-result-file](0485-solo-result-file/handoff.md) | solo has no validatable result file | bug | L1 | P2 | none | ⏳ proposed |
 | T-0486 | [0486-redck-retrospective-checkpoint](0486-redck-retrospective-checkpoint/handoff.md) | red-checkpoint marked retrospective though controls were recorded first | bug | L1 | P2 | none | ⏳ proposed |
 | T-0487 | [0487-codex-exec-rollout-absent](0487-codex-exec-rollout-absent/handoff.md) | loaded_context shows rollout absent on codex exec runs | bug | L1 | P2 | none | ⏳ proposed |
 | T-0488 | [.0488-merge-ops-and-queue](.0488-merge-ops-and-queue/handoff.md) | Design: worktree per builder plus a merge queue, and merge-ops as a conductor duty | spike | L3 | P2 | none | 🟢 done |
+<<<<<<< HEAD
 | T-0489 | [0489-settle-forward](0489-settle-forward/handoff.md) | fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) | feature | L3 | P2 | T-0481 | ⏳ proposed |
 | T-0490 | [.0490-solo-worktree-default](.0490-solo-worktree-default/handoff.md) | solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488) | feature | L2 | P2 | none | 🟢 done |
 | T-0491 | [0491-land-gate-priority](0491-land-gate-priority/handoff.md) | fanout land gates run at --priority 1; gate_lock status shows ahead and blocking (T-0488, T-0470 finding 7) | bug | L1 | P2 | none | ⏳ proposed |
+=======
+| T-0489 | [.0489-settle-forward](.0489-settle-forward/handoff.md) | fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) | feature | L3 | P2 | T-0481 | 🟢 done |
+| T-0490 | [0490-solo-worktree-default](0490-solo-worktree-default/handoff.md) | solo_run.py defaults to a worktree when an integration lane is open in the repo (T-0488) | feature | L2 | P2 | none | ⏳ proposed |
+| T-0491 | [.0491-land-gate-priority](.0491-land-gate-priority/handoff.md) | fanout land gates run at --priority 1; gate_lock status shows ahead and blocking (T-0488, T-0470 finding 7) | bug | L1 | P2 | none | 🟢 done |
+>>>>>>> fanout/wave46
 | T-0492 | [0492-merge-ops-duty-block](0492-merge-ops-duty-block/handoff.md) | Merge ops duty block in conductor.md, fanout skill steps 4 and 5, and a recipe in run-operations.md (T-0488) | chore | L2 | P2 | T-0489 | ⏳ proposed |
 | T-0493 | [.0493-industry-alternatives-review](.0493-industry-alternatives-review/handoff.md) | Research: industry standards and alternatives to plan, build, verify, close, and what they mean for the queue | spike | L3 | P2 | none | 🟢 done |
 | T-0494 | [0494-subagent-notice-routing](0494-subagent-notice-routing/handoff.md) | A role that spawns background sub-agents then ends its turn never wakes: completion notices go to the parent session (T-0493) | bug | L1 | P2 | none | ⏳ proposed |

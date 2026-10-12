@@ -2,7 +2,7 @@
 id: T-0443
 title: "Extend overlays to the other roles and levels, gated on the A/B"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped      # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0458]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,9 @@ Design: `.sdlc/.0440-per-tier-agent-prompts/architect-L1.md` (build split). Gate
 
 ## Constraints
 Hard invariants never vary by tier. No hand edits to generated files.
+
+## Gate check
+gate: not met: T-0458 `Verdict: drop` (docs/reports/2026-10-12-builder-overlay-retest.md); close as dropped per Context. No roles run (2026-10-12, unattended /chain).
+
+## Dropped
+Dropped 2026-10-12 by the maintainer: the T-0458 retest was inconclusive (L5 pair: both arms blocked on the same defect, overlay cost +21 percent, n=1), so the existing builder overlays stay as they are and are not extended. Nothing was built; the lane stopped at the gate before planning.
