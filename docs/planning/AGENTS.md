@@ -10,6 +10,7 @@ Proposals and plans that are not built. Each file carries `status:` front matter
 - [author-output-block-draft.md](author-output-block-draft.md)
 - [compaction-prompt.md](compaction-prompt.md)
 - [light-merge-lane.md](light-merge-lane.md)
+- [merge-ops-and-queue.md](merge-ops-and-queue.md)
 - [doc-standards/source-list.md](doc-standards/source-list.md)
 - [docs-schema/design.md](docs-schema/design.md)
 - [sdlc-lite/subagent-mode.md](sdlc-lite/subagent-mode.md)
