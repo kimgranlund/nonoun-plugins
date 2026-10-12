@@ -114,6 +114,8 @@ def dirty_paths(top, d):
     if tracked is None or untracked is None:
         return None
     here = os.path.relpath(os.path.realpath(d), os.path.realpath(top)).replace(os.sep, '/') + '/'
+    # T-0486: a root-level `<role>.out` or `<role>.err` is a launcher's stdout/stderr capture, not an edit
+    untracked = [p for p in untracked if not (p.count('/') == 0 and p.endswith(('.out', '.err')))]
     return sorted(p for p in set(tracked + untracked) if not p.startswith('.sdlc/') and not p.startswith(here))
 
 
@@ -492,6 +494,24 @@ def selftest():
         e = entries(d)
         check('an unsafe tests: entry (.., glob, absolute, directory) declares nothing, so the new file is an edit',
               e[0]['phase'] == 'retrospective' and not e[0].get('prelude') and 'tests:' in err)
+        clean()
+        # T-0486: untracked stdout/stderr capture files at the repo root are launcher output, not edits
+        d = task(impl)
+        (repo / 'builder.out').write_text('o\n')
+        (repo / 'builder.err').write_text('e\n')
+        (repo / 'src.out').mkdir(exist_ok=True)
+        (repo / 'src.out' / 'x.txt').write_text('x\n')
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        check('root-level builder.out and builder.err captures do not make the control retrospective; a nested .out dir file still does',
+              rc == 0 and e[0]['phase'] == 'retrospective' and e[0]['dirty'] == ['src.out/x.txt'])
+        (repo / 'src.out' / 'x.txt').unlink(); (repo / 'src.out').rmdir()
+        d = task(impl)
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        check('only builder.out and builder.err present: pre-edit, nothing dirty',
+              rc == 0 and e[0]['phase'] == 'pre-edit' and e[0]['dirty'] == [])
+        (repo / 'builder.out').unlink(); (repo / 'builder.err').unlink()
         clean()
 
         # T-0425: the control keys to its own criterion and span, not to the whole handoff hash
