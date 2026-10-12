@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f98531073cb4 -->
+<!-- sdlc-lite:managed:start v1 sha256:59bb770494b8 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 15
+- proposed: 20
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
   - T-0458 Retest the builder overlays on tasks where builders actually block, plus one L5 pair (0458-builder-overlay-retest)
   - T-0460 Build /sdlc-lite:report: scripts/report.py and the skill (executive summary, views, health signals, hygiene grade) (0460-report-skill)
@@ -25,6 +25,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0472 tickets.py close accepts a stage-owned deferred criterion (T-0470 finding 2) (0472-close-accepts-stage-deferred)
   - T-0473 redck: phase against the working tree, bind to an ancestor base (T-0470 finding 6) (0473-redck-resume-semantics)
   - T-0474 steps.py lint: a citation whose prefix is exactly / is no citation (T-0470 finding 3b) (0474-lint-root-anchored-citation)
+  - T-0475 steps.py lint warns on a history-shaped criterion (T-0470 finding 1) (0475-history-shaped-criterion-lint)
+  - T-0476 dispatch.py started and status last-activity age for silent agents (T-0470 finding 5) (0476-silent-agent-liveness)
+  - T-0477 fanout copies an uncommitted ticket folder into fanout-owned lane worktrees (T-0470 finding 8) (0477-fanout-gitignored-sdlc)
+  - T-0478 steps.py widen --reason records an unrecognized scope form (T-0470 finding 10) (0478-widen-reason-fallthrough)
+  - T-0479 Long gates recipe in run-operations.md (T-0470 finding 12) (0479-long-gate-recipe)
 - ready: 2
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
