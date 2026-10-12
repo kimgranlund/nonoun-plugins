@@ -482,8 +482,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0482 | [.0482-light-merge-uncovered-board](.0482-light-merge-uncovered-board/handoff.md) | board.py --lanes shows light merges not yet covered by the full gate (T-0480) | feature | L2 | P2 | T-0481 | 🟢 done |
 | T-0483 | [.0483-report-lanes-waves-views](.0483-report-lanes-waves-views/handoff.md) | /report lanes and /report waves views: lane and wave status with tickets and percent | feature | L2 | P2 | none | 🟢 done |
 | T-0484 | [.0484-gate-lock-policy-reload](.0484-gate-lock-policy-reload/handoff.md) | gate_lock.py: a queued waiter rereads policy.json each poll, so a capacity change reaches it | bug | L1 | P2 | none | 🟢 done |
-| T-0485 | [0485-solo-result-file](0485-solo-result-file/handoff.md) | solo has no validatable result file | bug | L1 | P2 | none | ⏳ proposed |
-| T-0486 | [0486-redck-retrospective-checkpoint](0486-redck-retrospective-checkpoint/handoff.md) | red-checkpoint marked retrospective though controls were recorded first | bug | L1 | P2 | none | ⏳ proposed |
+| T-0485 | [.0485-solo-result-file](.0485-solo-result-file/handoff.md) | solo has no validatable result file | bug | L1 | P2 | none | 🟢 done |
+| T-0486 | [.0486-redck-retrospective-checkpoint](.0486-redck-retrospective-checkpoint/handoff.md) | red-checkpoint marked retrospective though controls were recorded first | bug | L1 | P2 | none | 🟢 done |
 | T-0487 | [0487-codex-exec-rollout-absent](0487-codex-exec-rollout-absent/handoff.md) | loaded_context shows rollout absent on codex exec runs | bug | L1 | P2 | none | ⏳ proposed |
 | T-0488 | [.0488-merge-ops-and-queue](.0488-merge-ops-and-queue/handoff.md) | Design: worktree per builder plus a merge queue, and merge-ops as a conductor duty | spike | L3 | P2 | none | 🟢 done |
 <<<<<<< HEAD
@@ -498,5 +498,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0492 | [0492-merge-ops-duty-block](0492-merge-ops-duty-block/handoff.md) | Merge ops duty block in conductor.md, fanout skill steps 4 and 5, and a recipe in run-operations.md (T-0488) | chore | L2 | P2 | T-0489 | ⏳ proposed |
 | T-0493 | [.0493-industry-alternatives-review](.0493-industry-alternatives-review/handoff.md) | Research: industry standards and alternatives to plan, build, verify, close, and what they mean for the queue | spike | L3 | P2 | none | 🟢 done |
 | T-0494 | [0494-subagent-notice-routing](0494-subagent-notice-routing/handoff.md) | A role that spawns background sub-agents then ends its turn never wakes: completion notices go to the parent session (T-0493) | bug | L1 | P2 | none | ⏳ proposed |
+<<<<<<< HEAD
 | T-0495 | [0495-clarify-v3-independent-replay](0495-clarify-v3-independent-replay/handoff.md) | Independent replay of the clarify v3 skill on the ten eval cases (T-0461 follow-up) | chore | L2 | P2 | none | ⏳ proposed |
 | T-0496 | [0496-tests-gate-pilot](0496-tests-gate-pilot/handoff.md) | Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception | feature | L3 | P2 | none | ⏳ proposed |
+=======
+| T-0495 | [.0495-clarify-v3-independent-replay](.0495-clarify-v3-independent-replay/handoff.md) | Independent replay of the clarify v3 skill on the ten eval cases (T-0461 follow-up) | chore | L2 | P2 | none | 🟢 done |
+>>>>>>> fanout/wave47

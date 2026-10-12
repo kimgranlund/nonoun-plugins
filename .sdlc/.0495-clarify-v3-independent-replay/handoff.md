@@ -2,7 +2,7 @@
 id: T-0495
 title: "Independent replay of the clarify v3 skill on the ten eval cases (T-0461 follow-up)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,14 @@ Origin: T-0461 filer follow-up `fix-now`: "Rerun the 10-case replay with an inde
 
 ## Constraints
 Docs and one report only; no plugin file edits. State only what a command shows.
+
+## Acceptance criteria
+- `test -f docs/reports/2026-10-12-clarify-v3-independent-replay.md && head -8 docs/reports/2026-10-12-clarify-v3-independent-replay.md | grep -q "did not judge"` exits 0: the report states in its first lines who ran the replay and that the skill's builder did not judge it.
+- The report table lists all ten cases (01 to 10) with class, lint line and match; `grep -c '^| [0-9][0-9]-' docs/reports/2026-10-12-clarify-v3-independent-replay.md` prints 10.
+- The verifier, a different agent from the replayer, reruns two of the ten cases (its choice) in fresh-context sub-agents with only `SKILL.md` and the ask, lints each with `python3 plugins/sdlc-lite/scripts/plan_check.py clarify --file <output>`, and agrees with the report's class and lint line for those two, or says what differs.
+- `git diff --check` exits 0.
+- `git status --short` shows no plugin file edit (docs, the report and this ticket folder only).
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full

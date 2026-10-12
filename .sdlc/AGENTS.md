@@ -1,8 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 <!-- sdlc-lite:managed:start v1 sha256:5f01b1e4f93e -->
 =======
 <!-- sdlc-lite:managed:start v1 sha256:1613650bab85 -->
 >>>>>>> fanout/wave46
+=======
+<!-- sdlc-lite:managed:start v1 sha256:6d5d4e2f94c4 -->
+>>>>>>> fanout/wave47
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -14,7 +18,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 ## Stages
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - proposed: 16
+=======
+- proposed: 13
+>>>>>>> fanout/wave47
   - T-0443 Extend overlays to the other roles and levels, gated on the A/B (0443-overlays-other-roles)
 =======
 - proposed: 10
@@ -24,8 +32,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0467 Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (0467-plan-merge-a-skill)
   - T-0468 Merge plan skills B: redirect stubs for the four retired names and retargeted checks (0468-plan-merge-b-stubs)
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
+<<<<<<< HEAD
   - T-0485 solo has no validatable result file (0485-solo-result-file)
   - T-0486 red-checkpoint marked retrospective though controls were recorded first (0486-redck-retrospective-checkpoint)
+=======
+  - T-0482 board.py --lanes shows light merges not yet covered by the full gate (T-0480) (0482-light-merge-uncovered-board)
+>>>>>>> fanout/wave47
   - T-0487 loaded_context shows rollout absent on codex exec runs (0487-codex-exec-rollout-absent)
 <<<<<<< HEAD
   - T-0489 fanout.py settle --forward: merge main into a diverged integration branch, regenerate, cover, then fast-forward (T-0488) (0489-settle-forward)
@@ -35,14 +47,21 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 >>>>>>> fanout/wave46
   - T-0492 Merge ops duty block in conductor.md, fanout skill steps 4 and 5, and a recipe in run-operations.md (T-0488) (0492-merge-ops-duty-block)
   - T-0494 A role that spawns background sub-agents then ends its turn never wakes: completion notices go to the parent session (T-0493) (0494-subagent-notice-routing)
+<<<<<<< HEAD
   - T-0495 Independent replay of the clarify v3 skill on the ten eval cases (T-0461 follow-up) (0495-clarify-v3-independent-replay)
   - T-0496 Pilot: solo L2 closes on green criteria with observed-red controls; verifier by exception (0496-tests-gate-pilot)
+=======
+>>>>>>> fanout/wave47
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
 <<<<<<< HEAD
+<<<<<<< HEAD
 - done: 445
+=======
+- done: 447
+>>>>>>> fanout/wave47
 - dropped: 28
 =======
 - done: 446
