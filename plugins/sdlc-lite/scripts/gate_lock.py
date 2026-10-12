@@ -724,10 +724,14 @@ def status_data(root):
         grants.append({'state': state, 'id': g['id'], 'name': g.get('name', '?'), 'pid': g['pid'], 'pgid': g.get('pgid'), 'need': g['need'],
                        'repo': g['repo'], 'priority': g.get('priority', 0), 'age_s': int(now - g.get('granted_at', now))})
     queue = []
+    held = sum(g['need'].get(COMPUTE, 0) for g in L['grants'])
+    holders = [g.get('name', '?') for g in sorted(L['grants'], key=lambda g: g['seq'])]
+    ahead = held
     for i, e in enumerate(queue_view(L)):
         queue.append({'state': 'queued' if alive(e['pid'], e.get('pid_start')) else 'dead', 'position': i + 1, 'id': e['id'],
                       'name': e.get('name', '?'), 'pid': e['pid'], 'need': e['need'], 'repo': e['repo'], 'priority': e['priority'],
-                      'waited_s': int(now - e.get('enqueued_at', now))})
+                      'waited_s': int(now - e.get('enqueued_at', now)), 'ahead': ahead, 'blocking': holders})
+        ahead += e['need'].get(COMPUTE, 0)
     return {'protocol': PROTOCOL, 'state_root': str(root), 'boot': L.get('boot', ''), 'grants': grants, 'queue': queue, 'legacy': legacy_holders()}
 
 
@@ -749,7 +753,8 @@ def cmd_status(argv):
                     f"repo {os.path.basename(g['repo'])}  priority {g['priority']}  age {g['age_s']}s{note}")
     for q in d['queue']:
         rows.append(f"{'queued' if q['state'] == 'queued' else 'dead':<9} name {q['name']}  pid {q['pid']}  #{q['position']}  need {need_text(q['need'])}  "
-                    f"repo {os.path.basename(q['repo'])}  priority {q['priority']}  age {q['waited_s']}s")
+                    f"repo {os.path.basename(q['repo'])}  priority {q['priority']}  age {q['waited_s']}s  "
+                    f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}")
     for h in d['legacy']:
         rows.append(f"legacy    name {h['name']}  pid {h['pid']}  {h['slot']} in {h['dir']} (charged the default need; never touched)")
     if d['legacy']:
@@ -1464,6 +1469,9 @@ def selftest():
             js = json.loads(gl(script, env, 'status', '--json').stdout)
             expect(f'status --json: grants and queue with states, got {js}', js['grants'][0]['state'] == 'admitted' and js['queue'][0]['state'] == 'queued'
                    and js['queue'][0]['position'] == 1)
+            expect(f'status --json: the queued row has ahead and blocking, got {js["queue"][0]}',
+                   js['queue'][0].get('ahead') == 6 and js['queue'][0].get('blocking') == ['HA']
+                   and any('ahead 6' in x and 'blocking HA' in x for x in rows if x.startswith('queued')))
             # cancel while queued: no child, entry removed, exit 128+15
             w.terminate()
             rc = w.wait(timeout=30)
