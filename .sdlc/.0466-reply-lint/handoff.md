@@ -2,7 +2,7 @@
 id: T-0466
 title: "reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,14 @@ Origin: the maintainer asked how the author agent can apply a controlled languag
 
 ## Constraints
 Read-only against transcripts. No model call. No quoting of a transcript beyond the counted fragments in the report. No model or effort change.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/reply_lint.py selftest` exits 0 and prints a `red=` count above 0 and `green=0` for each of R-1 to R-14.
+2. `python3 plugins/sdlc-lite/scripts/reply_lint.py score ~/.claude/projects/-Users-kimgranlund-Projects-nonoun-sdlc-lite/66c988ad-c130-4e4f-9955-2f1db3b3b83c.jsonl --before 2026-10-12T12:55:18Z` exits 0 and prints totals for R-1 to R-14, per-anchor use counts and the prune list.
+3. `bash plugins/sdlc-lite/scripts/check.sh` exits 0 and runs the reply_lint selftest.
+4. `docs/reports/2026-10-12-author-output-comparison.md` holds baseline numbers that match criterion 2's output, the two outcome signals, the confound, and lists the V1 and V2 arms as unverified.
+5. `.claude/agents/sdlc-lite-author.md` is unchanged and the script reads transcripts only (no write to them).
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

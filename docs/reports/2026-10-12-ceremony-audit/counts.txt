@@ -1,0 +1,164 @@
+# T-0464 ceremony audit counts
+WINDOW folders (.sdlc/.0431 to .0459): 27; ALL closed folders: 439
+
+## A. First case: closed tickets since T-0431 in this tree, one row per ticket
+ticket | lane | size | filer files | warning entries by kind (latest filer) | close mode | refused in fanout log | last run ts | close commit | window min [U]
+T-0431 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T02:06:38Z | - | -
+T-0432 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T03:17:05Z | - | -
+T-0433 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T03:33:07Z | - | -
+T-0434 | solo | L1 | 0 | no filer | --reason (no filer) | no | 2026-10-11T03:34:29Z | - | -
+T-0435 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T12:56:13Z | - | -
+T-0436 | solo | L1 | 0 | no filer | --reason (no filer) | no | 2026-10-11T13:31:06Z | - | -
+T-0437 | solo | L1 | 0 | no filer | --reason (no filer) | no | 2026-10-11T13:32:15Z | - | -
+T-0438 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T14:52:36Z | - | -
+T-0439 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T15:31:47Z | - | -
+T-0440 | solo | L1 | 0 | no filer | --reason (no filer) | no | 2026-10-11T18:42:42Z | - | -
+T-0441 | chain | L3 | 1 | other 2, red-checkpoint: retrospective 1, unverified claim 1 | --ack-warnings | fanout-f51.log filer warnings open | 2026-10-11T21:13:39Z | 2026-10-11T14:51:48-07:00 | 38
+T-0442 | chain | L3 | 2 | red-checkpoint: retrospective 2, unverified claim 1 | --ack-warnings | fanout-f54.log filer warnings open | 2026-10-12T01:55:40Z | 2026-10-11T19:33:17-07:00 | 38
+T-0444 | chain | L3 | 2 | other 2, red-checkpoint: retrospective 2, unverified claim 3 | --ack-warnings | fanout-f51.log filer warnings open | 2026-10-11T20:49:29Z | 2026-10-11T14:51:48-07:00 | 62
+T-0445 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T22:41:37Z | - | -
+T-0446 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-11T23:50:57Z | - | -
+T-0447 | chain | L4 | 0 | no filer | --reason (no filer) | no | 2026-10-12T01:13:00Z | - | -
+T-0448 | chain | L3 | 2 | other 1, red-checkpoint: retrospective 2, unverified claim 1 | --ack-warnings | fanout-f53.log filer warnings open | 2026-10-12T00:34:46Z | 2026-10-11T17:46:03-07:00 | 11
+T-0449 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-12T01:54:18Z | - | -
+T-0450 | chain | L3 | 1 | None | no ## Closed line | fanout-f55.log other: skips.md records lane full but has no ## Skipped entry for v | 2026-10-12T02:45:47Z | 2026-10-11T19:46:04-07:00 | 0
+T-0451 | chain | L3 | 1 | flake 2, other 2, red-checkpoint: retrospective 1, unverified claim 1 | --ack-warnings | fanout-f54.log filer warnings open | 2026-10-12T02:49:42Z | 2026-10-11T22:07:35-07:00 | 138
+T-0452 | chain | L3 | 1 | flake 1, other 2, red-checkpoint: retrospective 2 | --ack-warnings | fanout-f57.log filer warnings open | 2026-10-12T07:20:25Z | 2026-10-12T04:40:31-07:00 | 260
+T-0453 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-12T06:12:51Z | - | -
+T-0454 | solo | L1 | 0 | no filer | --reason (no filer) | no | 2026-10-12T05:09:39Z | - | -
+T-0455 | solo | L1 | 0 | no filer | --reason (no filer) | no | 2026-10-12T12:05:58Z | - | -
+T-0456 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-12T12:53:16Z | - | -
+T-0457 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-12T02:14:45Z | - | -
+T-0459 | solo | L2 | 0 | no filer | --reason (no filer) | no | 2026-10-12T12:27:25Z | - | -
+tickets with a filer: 7; tickets whose filer files carry a retrospective red-checkpoint: 6
+entries by kind (latest filer per ticket): flake 3, other 9, red-checkpoint: retrospective 10, unverified claim 7
+filer files under .sdlc/.04* (find .sdlc -maxdepth 2 -path ".sdlc/.04*" -name "filer-L1*.md"): 11
+distinct tickets refused for open filer warnings in /tmp/fanout-f5N.log: ['T-0441', 'T-0442', 'T-0444', 'T-0448', 'T-0451', 'T-0452', 'T-0458', 'T-0460']
+refused for another reason: ['T-0421', 'T-0450', 'T-0462']
+
+## A2. Filer files in the three other repos (find <root> -maxdepth 2 -name "filer-L1*.md")
+/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets: closed (dot) folders 17, filer files 20, task folders 19, folders whose latest filer has warnings 5; entries by kind {'other': 10, 'red-checkpoint: missing': 2, 'red-checkpoint: retrospective': 1, 'unverified claim': 2}; close modes {'--ack-warnings': 3, 'no ## Closed line': 15, 'plain or --reason': 1}
+/Users/kimgranlund/Projects/nonoun/agent-ui/.sdlc: closed (dot) folders 0, filer files 12, task folders 10, folders whose latest filer has warnings 0; entries by kind {}; close modes {'no ## Closed line': 9, 'plain or --reason': 1}
+/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.sdlc: closed (dot) folders 0, filer files 8, task folders 8, folders whose latest filer has warnings 1; entries by kind {'other': 4, 'red-checkpoint: missing': 1, 'unverified claim': 1}; close modes {'--ack-warnings': 1, 'no ## Closed line': 6, 'plain or --reason': 1}
+
+## B. runs.jsonl cost by role and level (dollars, model minutes, runs)
+WINDOW: total $113.85, 1195 min, 91 runs
+  WINDOW architect L1: runs 1, $0, 0 min
+  WINDOW builder L1: runs 4, $0.71, 1 min
+  WINDOW builder L2: runs 3, $2.16, 102 min
+  WINDOW builder L3: runs 14, $31.31, 244 min
+  WINDOW filer L1: runs 10, $1.98, 4 min
+  WINDOW planner L2: runs 7, $13.64, 80 min
+  WINDOW planner L3: runs 4, $13.43, 61 min
+  WINDOW solo L1: runs 5, $1.06, 27 min
+  WINDOW solo L2: runs 13, $32.25, 411 min
+  WINDOW verifier L1: runs 7, $2.7, 54 min
+  WINDOW verifier L2: runs 23, $14.61, 211 min
+ALL: total $1834.51, 10365 min, 1503 runs
+  ALL archaeologist L1: runs 1, $0.25, 1 min
+  ALL architect L1: runs 6, $28.85, 57 min
+  ALL builder L1: runs 80, $15.7, 221 min
+  ALL builder L2: runs 200, $86.59, 591 min
+  ALL builder L3: runs 135, $214.5, 1138 min
+  ALL builder L4: runs 13, $55.5, 205 min
+  ALL filer L1: runs 177, $41.29, 69 min
+  ALL plan-reviewer L1: runs 24, $100.17, 166 min
+  ALL planner L1: runs 35, $8.96, 70 min
+  ALL planner L2: runs 102, $111.9, 683 min
+  ALL planner L3: runs 47, $290.52, 1198 min
+  ALL scout L1: runs 1, $0.32, 1 min
+  ALL solo L1: runs 79, $30.52, 772 min
+  ALL solo L2: runs 90, $318.27, 2575 min
+  ALL solo L3: runs 5, $54.67, 180 min
+  ALL verifier L1: runs 281, $77.9, 779 min
+  ALL verifier L2: runs 168, $89.86, 811 min
+  ALL verifier L3: runs 59, $308.74, 848 min
+
+## C. Filer runs on solo versus chain tickets (ALL)
+solo: tickets 261, tickets with a filer file 6, filer runs 10, $1.55, 3 min
+chain: tickets 178, tickets with a filer file 153, filer runs 167, $39.74, 66 min
+
+## D. Verifier results (ALL): verdicts, and directories with two or more verifier results
+verifier result files 536; verdicts {'fail': 30, 'inherited': 1, 'pass': 505}
+directories with >=2 verifier results: 14; later-round results 14; later-round fails 1; later rounds that followed a pass 0
+first-round verifier fails: 29
+  later-round fail: .sdlc/.0356-verifier-routing-by-level/verifier-L3-2.md
+
+## E. Plan-reviewer results (ALL) by level and verdict
+L1: pass 17, replan 7
+  replan: .sdlc/.0179-messages-entry-files/plan-reviewer-L1.md
+  replan: .sdlc/.0181-messages-wait/plan-reviewer-L1-4.md
+  replan: .sdlc/.0183-supervisor-script/plan-reviewer-L1.md
+  replan: .sdlc/.0184-role-result-schema/plan-reviewer-L1.md
+  replan: .sdlc/.0195-runner-family-task-dir/plan-reviewer-L1-2.md
+  replan: .sdlc/.0197-lane/plan-reviewer-L1.md
+  replan: .sdlc/.0233-reorg-apply/plan-reviewer-L1.md
+plan-reviewer runs in runs.jsonl (ALL): 24, $100.17, 166 min; tickets with a plan-reviewer result: 14
+plan-reviewer results in WINDOW: 0
+
+## F. Full chain versus solo by ticket size (ALL, tickets with runs.jsonl spend)
+L1 chain: tickets 49, with spend 49, total $151.88, median $2.09/ticket, median 10 min/ticket, verifier fails 4
+L1 solo: tickets 104, with spend 81, total $31.16, median $0.34/ticket, median 4 min/ticket, verifier fails 0
+L2 chain: tickets 105, with spend 105, total $538.75, median $3.02/ticket, median 19 min/ticket, verifier fails 5
+L2 solo: tickets 152, with spend 100, total $577.53, median $2.53/ticket, median 26.5 min/ticket, verifier fails 19
+L3 chain: tickets 23, with spend 23, total $459.55, median $13.07/ticket, median 74 min/ticket, verifier fails 3
+L3 solo: tickets 5, with spend 5, total $61.49, median $10.91/ticket, median 49 min/ticket, verifier fails 0
+L4 chain: tickets 1, with spend 1, total $14.13, median $14.13/ticket, median 73 min/ticket, verifier fails 0
+
+## G. Builder and solo result status (ALL)
+  inherited red: .sdlc/.0183-supervisor-script/step-11/builder-L2.md: inherited red: traces selftest (corpus: attempts in no row: .sdlc/0183-supervisor-script/step-7.superseded-1/step-7/buil
+  inherited red: .sdlc/.0447-doc-standards-suite/step-4/builder-L3.md: inherited red: gate_lock selftest (isolation: the real state root was not touched by the selftest)
+builder results 428; status {'blocked': 12, 'done': 414, 'inherited red': 2}
+builder results whose Notes open with "question:": 0
+
+## H. Replans (ALL)
+superseded step dirs: 19 in 11 tickets
+tickets with two or more planner results: 27
+refusals.jsonl lines by tool: {'steps.py lint': 11, 'steps.py split': 1}
+planner runs (ALL) 184, $411.38, 1951 min; planner runs in tickets with >=2 planner results 57, $214.7, 1018 min
+WINDOW tickets with >=2 planner results: .0441-overlay-mechanism-builder-ends, .0444-ticket-area-claimed-paused, .0450-review-traces-solo-fails-and-blocks
+
+## I. Gate-lock red or flake mentions in closed records
+files mentioning gate-lock with flake, contention or timeout (ALL): 18 in 10 tickets
+  WINDOW: .sdlc/.0447-doc-standards-suite/handoff.md
+  WINDOW: .sdlc/.0447-doc-standards-suite/step-4/verifier-L2.md
+  WINDOW: .sdlc/.0451-lanes-core/planner-L2.md
+  WINDOW: .sdlc/.0452-fanout-solo-use-lanes/filer-L1.md
+  WINDOW: .sdlc/.0452-fanout-solo-use-lanes/handoff.md
+  WINDOW: .sdlc/.0452-fanout-solo-use-lanes/step-3/verifier-L2.md
+  WINDOW: .sdlc/.0456-cheap-gates-queue-behind-heavy/verifier-L2.md
+  WINDOW: .sdlc/.0456-cheap-gates-queue-behind-heavy/handoff.md
+  WINDOW: .sdlc/.0459-gate-lock-selftest-real-root-flake/verifier-L2.md
+  WINDOW: .sdlc/.0459-gate-lock-selftest-real-root-flake/handoff.md
+gate timeout lines in /tmp/fanout-f5N.log: 0
+
+## J. WINDOW spend per ticket by role (dollars / model minutes)
+.0431-plan-doc-parser-and-check | solo | $10.57 | 47 min | solo-L2 $10.57/47m
+.0432-plan-done-script | solo | $11.5 | 70 min | solo-L2 $11.5/70m
+.0433-plan-doc-and-run-plan-skills | solo | $2.52 | 16 min | solo-L2 $2.52/16m, verifier-L2 $0/0m
+.0434-plan-doc-docs-and-first-plan | solo | $0.5 | 1 min | solo-L1 $0.5/1m
+.0435-collector-fields | solo | $0 | 0 min | solo-L2 $0/0m
+.0436-run-rules-two-rules | solo | $0.08 | 1 min | solo-L1 $0/0m, verifier-L2 $0.08/1m
+.0437-design-links-live-run | solo | $0 | 0 min | solo-L1 $0/0m
+.0438-executor-live-run-fixes | solo | $2.26 | 0 min | solo-L2 $0/0m, verifier-L2 $2.26/0m
+.0439-land-carries-verifier-record | solo | $0.89 | 0 min | solo-L2 $0/0m, verifier-L2 $0.89/0m
+.0440-per-tier-agent-prompts | solo | $0 | 0 min | architect-L1 $0/0m
+.0441-overlay-mechanism-builder-ends | chain | $8.91 | 81 min | builder-L2 $0.46/16m, builder-L3 $1.91/9m, filer-L1 $0.19/0m, planner-L2 $2.37/23m, planner-L3 $3.15/15m, verifier-L1 $0.39/15m, verifier-L2 $0.43/2m
+.0442-builder-overlay-ab | chain | $6.87 | 74 min | builder-L1 $0.35/0m, builder-L3 $2.87/60m, filer-L1 $0.43/1m, planner-L2 $1.84/9m, verifier-L1 $0.78/2m, verifier-L2 $0.61/2m
+.0444-ticket-area-claimed-paused | chain | $9.69 | 70 min | builder-L1 $0.18/1m, builder-L2 $0.66/15m, builder-L3 $1.65/7m, filer-L1 $0.41/1m, planner-L2 $2.51/12m, planner-L3 $2.92/11m, verifier-L1 $0.77/17m, verifier-L2 $0.59/7m
+.0445-collector-ignores-completed-attempts | solo | $1.23 | 49 min | solo-L2 $0.54/21m, verifier-L2 $0.69/28m
+.0446-record-finds-transcript | solo | $1.11 | 69 min | solo-L2 $0.45/44m, verifier-L2 $0.66/25m
+.0447-doc-standards-suite | chain | $14.13 | 73 min | builder-L3 $6.24/41m, planner-L3 $5.79/29m, verifier-L2 $2.1/4m
+.0448-clarify-v2-intent-to-plan | chain | $6.62 | 54 min | builder-L1 $0.18/0m, builder-L3 $3.13/28m, filer-L1 $0.39/1m, planner-L2 $1.5/7m, verifier-L1 $0.41/1m, verifier-L2 $1.0/17m
+.0449-solo-campaign-stats | solo | $2.32 | 40 min | solo-L2 $2.32/40m
+.0450-review-traces-solo-fails-and-blocks | chain | $5.99 | 20 min | builder-L3 $2.83/10m, filer-L1 $0.19/0m, planner-L2 $0.77/3m, planner-L3 $1.57/6m, verifier-L2 $0.63/1m
+.0451-lanes-core | chain | $8.4 | 130 min | builder-L2 $1.04/70m, builder-L3 $4.71/29m, filer-L1 $0.17/0m, planner-L2 $1.74/9m, verifier-L1 $0.35/19m, verifier-L2 $0.39/2m
+.0452-fanout-solo-use-lanes | chain | $13.07 | 130 min | builder-L3 $7.98/60m, filer-L1 $0.2/0m, planner-L2 $2.9/17m, verifier-L2 $1.99/53m
+.0453-close-prune-report-lanes | solo | $2.48 | 64 min | solo-L2 $2.48/64m
+.0454-hook-message-lanes | solo | $0.24 | 1 min | solo-L1 $0.24/1m
+.0455-fanout-claimed-status | solo | $0.32 | 25 min | solo-L1 $0.32/25m
+.0456-cheap-gates-queue-behind-heavy | solo | $1.74 | 72 min | solo-L2 $0.95/46m, verifier-L2 $0.79/26m
+.0457-lint-cited-paths-future-and-foreign | solo | $1.33 | 61 min | solo-L2 $0.59/42m, verifier-L2 $0.74/19m
+.0459-gate-lock-selftest-real-root-flake | solo | $1.09 | 46 min | solo-L2 $0.34/22m, verifier-L2 $0.75/24m
+WINDOW chain: tickets 8, $73.68, 633 min; planner+plan-reviewer+filer $29.05, 145 min
+WINDOW solo: tickets 19, $40.17, 563 min; planner+plan-reviewer+filer $0, 0 min

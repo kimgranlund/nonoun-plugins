@@ -335,3 +335,9 @@
 2026-10-12: T-0465 invocation fixed by the maintainer: /sdlc-lite:plan compaction <prose>, a kind of /plan (the router rule and first kind are built in T-0465; T-0462 and its build add the other kinds).
 
 2026-10-12: triage by the maintainer: dropped T-0301 (no measured limit stall), T-0317 and T-0381 (covered by T-0456, T-0459, T-0376, T-0413; Codex run.sh path not rechecked); kept T-0316 (live Codex chain run) and T-0385 (one small per-hunk pass), both set ready.
+## T-0464: Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture (2026-10-12)
+
+- decide: Open the follow-up ticket for the retrospective red-checkpoint close block (change 1 in `docs/reports/2026-10-12-ceremony-audit.md`). It cost 6 manual acks, and its measure is acks per wave dropping from 6 to at most 1.
+- note: Changes 2 and 3 (fixture-path lint refusals and the solo L3 trial) are proposed in the report but not ticketed, since only one follow-up ticket per task is allowed.
+- note: The `skips.md` close refusal (T-0450, T-0462) is watched in the report with no ticket proposed until a second wave shows it.
+- note: Minutes lost per refusal, questions that did not change the output, and cost for the other three repos are not measured. They are listed under `## Unverified` in `docs/reports/2026-10-12-ceremony-audit.md`.

@@ -55,6 +55,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 - Proposals mined from runs: `python3 plugins/sdlc-lite/scripts/proposals.py selftest`; read [the proposals entry file](../../.sdlc/proposals/AGENTS.md) before scan, accept, reject, or promote.
 - Prompt references in agents, skills, and overlays: `python3 plugins/sdlc-lite/scripts/prompt_lint.py` (and `selftest`).
 - Thread report: `python3 plugins/sdlc-lite/scripts/report.py selftest`.
+- Author reply rules scored over a session transcript: `python3 plugins/sdlc-lite/scripts/reply_lint.py score <transcript.jsonl>` (and `selftest`).
 - Docs-only verifier skip: `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` (and the `(docs-only)` cases of `tickets.py selftest`).
 - Runner: `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 - Hooks: commands in the hook maintenance reference.
