@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:543fb805c2bc -->
+<!-- sdlc-lite:managed:start v1 sha256:c3a6691d9f9f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 12
+- proposed: 14
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0467 Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout (0467-plan-merge-a-skill)
@@ -22,6 +22,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0498 agents/planner.md: run each criterion against a reference sibling before shipping (retro 12h row 5) (0498-planner-run-each-criterion)
   - T-0499 tickets.py close: no skip entry required for a role with a run record (retro 12h row 6) (0499-close-skips-for-ran-roles)
   - T-0500 agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8) (0500-solo-brief-regenerate-scan)
+  - T-0501 Design: an inner-loop conductor profile (local gate setting, pass with notes, UI parity criterion, single merge path) from agent-ui (0501-inner-loop-profile)
+  - T-0502 lanes.py: a new lane worktree gets the gitignored .claude/settings.local.json (agent-ui retro row 7) (0502-lane-copies-local-settings)
 - ready: 0
 - claimed: 0
 - paused: 0
