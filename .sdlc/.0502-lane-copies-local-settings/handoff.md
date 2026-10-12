@@ -2,7 +2,7 @@
 id: T-0502
 title: "lanes.py: a new lane worktree gets the gitignored .claude/settings.local.json (agent-ui retro row 7)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Origin: agent-ui conductor message 2026-10-12 and /Users/kimgranlund/Projects/no
 
 ## Constraints
 Red check: a `lanes.py selftest` case with an ignored settings file (absent in the lane today). Never copy any other ignored file; never log the file's contents.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
