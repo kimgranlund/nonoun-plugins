@@ -474,7 +474,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0474 | [.0474-lint-root-anchored-citation](.0474-lint-root-anchored-citation/handoff.md) | steps.py lint: a citation whose prefix is exactly / is no citation (T-0470 finding 3b) | bug | L1 | P2 | none | 🟢 done |
 | T-0475 | [.0475-history-shaped-criterion-lint](.0475-history-shaped-criterion-lint/handoff.md) | steps.py lint warns on a history-shaped criterion (T-0470 finding 1) | bug | L2 | P2 | none | 🟢 done |
 | T-0476 | [.0476-silent-agent-liveness](.0476-silent-agent-liveness/handoff.md) | dispatch.py started and status last-activity age for silent agents (T-0470 finding 5) | bug | L2 | P2 | none | 🟢 done |
-| T-0477 | [0477-fanout-gitignored-sdlc](0477-fanout-gitignored-sdlc/handoff.md) | fanout copies an uncommitted ticket folder into fanout-owned lane worktrees (T-0470 finding 8) | bug | L2 | P2 | none | ⏳ proposed |
+| T-0477 | [.0477-fanout-gitignored-sdlc](.0477-fanout-gitignored-sdlc/handoff.md) | fanout copies an uncommitted ticket folder into fanout-owned lane worktrees (T-0470 finding 8) | bug | L2 | P2 | none | 🟢 done |
 | T-0478 | [.0478-widen-reason-fallthrough](.0478-widen-reason-fallthrough/handoff.md) | steps.py widen --reason records an unrecognized scope form (T-0470 finding 10) | bug | L1 | P2 | none | 🟢 done |
 | T-0479 | [.0479-long-gate-recipe](.0479-long-gate-recipe/handoff.md) | Long gates recipe in run-operations.md (T-0470 finding 12) | chore | L1 | P2 | none | 🟢 done |
 | T-0480 | [.0480-light-merge-lane](.0480-light-merge-lane/handoff.md) | Design: a light merge lane with a cadence full gate (from maison, after T-0470) | spike | L3 | P2 | none | 🟢 done |
