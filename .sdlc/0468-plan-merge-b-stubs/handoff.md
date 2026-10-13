@@ -23,3 +23,14 @@ Approved design: `.sdlc/.0462-plan-skills-merge-design/architect-L1.md` (read al
 
 ## Constraints
 No model or effort change. Old skills stay working until B. The skill stays self-contained (`check.py` item 42). Controlled language per T-0461 for plan artifacts. State only what a file or command shows; the replay is unverified if it was not an independent run.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and item 58 flags each of these planted defects when applied to the real stubs (observe red, then restore): a stub that regrows `## 1. Gather`, a stub whose `plan <kind>` token is replaced, a stub folder that regains `references/`, a missing stub.
+2. `python3 scripts/check-packaging.py` exits 0.
+3. `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
+4. `test -z "$(git grep -l 'plan-goal/references\|plan-doc/references\|plan-campaign/references\|plan-fanout/references' -- plugins)"` exits 0: no plugin file points at a deleted old reference.
+5. `test -z "$(ls plugins/sdlc-lite/skills/plan-goal/references plugins/sdlc-lite/skills/plan-campaign/references plugins/sdlc-lite/skills/plan-doc/references plugins/sdlc-lite/skills/plan-fanout/references 2>/dev/null)"` exits 0.
+6. `grep -c 'Redirect: run' plugins/sdlc-lite/skills/plan-goal/SKILL.md plugins/sdlc-lite/skills/plan-campaign/SKILL.md plugins/sdlc-lite/skills/plan-doc/SKILL.md plugins/sdlc-lite/skills/plan-fanout/SKILL.md` prints four lines ending `:1`, and each stub is under 15 lines.
+7. `grep -c '/sdlc-lite:plan doc' plugins/sdlc-lite/agents/conductor.md` prints a count of 1 or more, and `python3 plugins/sdlc-lite/scripts/rename_refs.py links` reports only rows of docs/reports/broken-links-allowlist.md.
+8. `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+verifier: L3

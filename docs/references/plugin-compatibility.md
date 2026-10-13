@@ -21,6 +21,10 @@ Both repository catalogs point to the same two plugin roots. Both host manifests
 
 These checks demonstrate packaging, discovery, and the covered script behavior. They do not demonstrate model adherence to every workflow, installed-session implicit routing, browser portability, or comparative effectiveness against ICM Architect.
 
+## Retired skill names (T-0467, T-0468)
+
+Changelog: `plan-goal`, `plan-campaign`, `plan-doc`, and `plan-fanout` are merged into `/sdlc-lite:plan <kind>` (kinds `steps`, `doc`, `goal`, `campaign`, `fanout`). For one release each old name stays as a redirect stub of under 15 lines that tells the model to run `/sdlc-lite:plan <kind>`; the stubs are removed in the next minor (ticket D of the plan-merge design). `plan-loop`, `plan-verification`, and `run-plan` keep their names. A typed old name still resolves; the old trigger phrases now route to `plan`. `scripts/check.py` item 58 pins the stubs. Codex reads the same skill folders (`skills: ./skills/`), so no Codex manifest change is needed; whether the host picks `plan` over a stub from the description alone is unmeasured (no routing corpus).
+
 ## Remaining behavioral qualification
 
 Before claiming full end-to-end host parity, run fresh installed sessions in each host: a should-trigger case, a near miss, explicit invocation, and a real completion case. For Progressive Context include an intent-only non-code artifact, failed/stale evidence, and an independent reuse exercise. The original package-discovery checks are supplemented by native Codex runner and agent tests in the execution report. Broader benchmark parity across hosts remains unmeasured.

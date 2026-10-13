@@ -118,7 +118,7 @@ Done when is the definition of done. Move an item to `[owner: maintainer]` when 
 - Bad: `- the board looks right after the change` (no command decides it).
 - Good: ``- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py selftest` exits 0``.
 
-Multi-step work (more than one ticket, or a plan doc) also gets a `## Outcome` section after `## Intent`, with the four parts `Outcome:`, `Measured by:`, `Rubric:`, and `Negative control:` as defined in `${CLAUDE_PLUGIN_ROOT}/skills/plan-verification/references/outcome-block.md`. For a plan doc, the front block follows `${CLAUDE_PLUGIN_ROOT}/skills/plan-doc/references/plan-doc-format.md`.
+Multi-step work (more than one ticket, or a plan doc) also gets a `## Outcome` section after `## Intent`, with the four parts `Outcome:`, `Measured by:`, `Rubric:`, and `Negative control:` as defined in `${CLAUDE_PLUGIN_ROOT}/skills/plan-verification/references/outcome-block.md`. For a plan doc, the front block follows `${CLAUDE_PLUGIN_ROOT}/skills/plan/references/doc.md`.
 
 Then lint the block with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py clarify --file <handoff>`, fix each FAIL, and run it again until it exits 0.
 
