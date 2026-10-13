@@ -204,6 +204,14 @@ def selftest():
            and estimate('opus', {}, table)[0] is None)
     expect('unknown model: null with reason', estimate('gpt', {'subagent_tokens': 5}, table)[0] is None)
 
+    # T-0521: every model named in adapters/claude/levels.json resolves to a price; a missing price is reported.
+    lv = json.loads((HERE.parent / 'adapters' / 'claude' / 'levels.json').read_text(encoding='utf-8'))
+    used = sorted({m for role in lv.values() for m, _e in role.values()})
+    expect('levels.json models %s all priced' % used, used and all(estimate(m, {'subagent_tokens': 5}, table)[0] is not None for m in used))
+    cut = {k: v for k, v in table.items() if k != used[0]}
+    expect('negative control: model %s without a price is reported' % used[0],
+           estimate(used[0], {'subagent_tokens': 5}, cut, by_field=False)[2] == 'no price for model %s' % used[0])
+
     # Live evidence (T-0328): the stored L2 and L3 verifier rows priced from transcript usage vs host totals.
     rates, mult = usage_rates()
     expect('usage rates and multipliers load', all(_num(rates.get(k)) for k in ('fable', 'opus', 'sonnet')) and mult)
