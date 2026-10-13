@@ -2,7 +2,7 @@
 id: T-0503
 title: "bug: Claude agents: serialize valid YAML descriptions"
 type: bug
-status: ready
+status: done
 size: L2
 priority: P1
 depends: []
@@ -64,3 +64,7 @@ Compare the relevant observations with the acceptance criteria; add discriminati
 - Keep the dated report immutable. Store new validation evidence in a new dated report.
 - Retain a rejecting defect case and a passing fixed case. Report required live checks as unverified if unavailable.
 - The existing Progressive Context performance-contract link failure is unrelated; do not fix it in this ticket.
+
+## Closed
+
+2026-10-12: built and merged (wave 53 wip lane): verifier L2 passed criteria 1 to 4 with observed controls (34 agent files, 23 invalid before, 0 after); criterion 5 (live Claude discovery and a prepared scout dispatch) was not run and stays UNVERIFIED, recorded for the 0.22.6 release record

@@ -464,7 +464,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0466 | [.0466-reply-lint](.0466-reply-lint/handoff.md) | reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison | chore | L2 | P2 | none | 🟢 done |
 | T-0467 | [.0467-plan-merge-a-skill](.0467-plan-merge-a-skill/handoff.md) | Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout | feature | L3 | P2 | T-0461 | 🟢 done |
 | T-0465 | [0465-compaction-prompt](0465-compaction-prompt/handoff.md) | /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) | feature | L3 | P2 | T-0461, T-0467 | ⏳ proposed |
-| T-0468 | [0468-plan-merge-b-stubs](0468-plan-merge-b-stubs/handoff.md) | Merge plan skills B: redirect stubs for the four retired names and retargeted checks | chore | L2 | P2 | T-0467 | ⏳ proposed |
+| T-0468 | [.0468-plan-merge-b-stubs](.0468-plan-merge-b-stubs/handoff.md) | Merge plan skills B: redirect stubs for the four retired names and retargeted checks | chore | L2 | P2 | T-0467 | 🟢 done |
 | T-0463 | [0463-skill-ui-hints](0463-skill-ui-hints/handoff.md) | Standardize skill argument hints and question UI across all skills, with a parity lint | chore | L3 | P2 | T-0461, T-0468 | ⏳ proposed |
 | T-0469 | [0469-plan-merge-c-summary](0469-plan-merge-c-summary/handoff.md) | Merge plan skills C: plan_check --summary cost line and controlled-language rules | feature | L2 | P2 | T-0468 | ⏳ proposed |
 | T-0470 | [.0470-wave-7b-mechanics-investigation](.0470-wave-7b-mechanics-investigation/handoff.md) | P0 from ui-kit-maison: investigate the plugin mechanics behind wave 7b taking 36 hours (12 findings) | spike | L4 | P1 | none | 🟢 done |
@@ -500,7 +500,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0500 | [.0500-solo-brief-regenerate-scan](.0500-solo-brief-regenerate-scan/handoff.md) | agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8) | chore | L1 | P2 | none | 🟢 done |
 | T-0501 | [.0501-inner-loop-profile](.0501-inner-loop-profile/handoff.md) | Design: an inner-loop conductor profile (local gate setting, pass with notes, UI parity criterion, single merge path) from agent-ui | spike | L3 | P2 | none | 🟢 done |
 | T-0502 | [.0502-lane-copies-local-settings](.0502-lane-copies-local-settings/handoff.md) | lanes.py: a new lane worktree gets the gitignored .claude/settings.local.json (agent-ui retro row 7) | bug | L1 | P2 | none | 🟢 done |
-| T-0503 | [0503-claude-agent-frontmatter](0503-claude-agent-frontmatter/handoff.md) | bug: Claude agents: serialize valid YAML descriptions | bug | L2 | P1 | none | 🔵 ready |
+| T-0503 | [.0503-claude-agent-frontmatter](.0503-claude-agent-frontmatter/handoff.md) | bug: Claude agents: serialize valid YAML descriptions | bug | L2 | P1 | none | 🟢 done |
 | T-0504 | [0504-claude-dispatch-space-paths](0504-claude-dispatch-space-paths/handoff.md) | bug: Claude dispatch: preserve handoff paths containing spaces | bug | L2 | P2 | none | 🔵 ready |
 | T-0505 | [0505-claude-prepared-handoff-freeze](0505-claude-prepared-handoff-freeze/handoff.md) | bug: Claude hooks: freeze handoffs during prepared attempts | bug | L3 | P2 | none | 🔵 ready |
 | T-0506 | [.0506-codex-profile-output-envelope](.0506-codex-profile-output-envelope/handoff.md) | bug: Codex profiles: reconcile fingerprint and report contracts | bug | L2 | P2 | none | 🟢 done |

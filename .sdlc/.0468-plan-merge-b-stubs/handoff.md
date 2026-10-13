@@ -2,7 +2,7 @@
 id: T-0468
 title: "Merge plan skills B: redirect stubs for the four retired names and retargeted checks"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0467]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,7 @@ No model or effort change. Old skills stay working until B. The skill stays self
 7. `grep -c '/sdlc-lite:plan doc' plugins/sdlc-lite/agents/conductor.md` prints a count of 1 or more, and `python3 plugins/sdlc-lite/scripts/rename_refs.py links` reports only rows of docs/reports/broken-links-allowlist.md.
 8. `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
 verifier: L3
+
+## Closed
+
+2026-10-12: built and merged (wave 52 wip lane): verifier L3 passed 7 of 8 criteria with observed controls; criterion 7 is a plan defect (its span was green before and after, so it could not go red), not a build defect
