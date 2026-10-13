@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:6ce6b8c68176 -->
+<!-- sdlc-lite:managed:start v1 sha256:cc9205452fe7 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,17 +9,16 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 5
+- proposed: 4
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0516 Solo ladder follows the builder ladder shifted down one: solo L1 Sonnet high, L2 Opus medium, L3 Opus high (0516-solo-ladder-shift)
   - T-0517 Codex solo L1 follows the shifted builder ladder: gpt-6.1-sol medium (0517-codex-solo-l1-medium)
-  - T-0518 evals.py lock: a later-numbered eval on the same date may supersede the lock (0518-evals-same-day-lock)
   - T-0519 Model batch: planner, architect, plan-reviewer, verifier, scout, researcher, filer, messenger, conductor (maintainer decisions 2026-10-12) (0519-model-batch-0222-7)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 478
+- done: 479
 - dropped: 29
 
 ## Procedures
