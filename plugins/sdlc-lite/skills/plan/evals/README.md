@@ -12,7 +12,7 @@ Six asks, one per kind, each with the kind the skill should resolve, the lint it
 | 03-doc | "so a smaller model can run it" resolves to a plan doc with the `control:` line in the dry run |
 | 04-steps | an argument that names a `handoff.md` resolves to `steps` with no question |
 | 05-campaign | "migrate every page" resolves to a campaign with a census and a partition |
-| 06-compaction | the first token `compaction` selects the compaction kind with no question; the block passes the compaction lint and the return ends with `Run: /compact <paste>` |
+| 06-compaction | the first token `compaction` selects the compaction kind with no question; the block passes the compaction lint and the whole reply passes `plan_check.py compaction --reply` (fence, `lines:`, `pin:`, `Run:` and nothing else) |
 
 ## Ticket placeholders
 
@@ -22,7 +22,7 @@ The design's replay named T-0455, T-0456, T-0459 and T-0381. They are closed or 
 
 1. Run `/sdlc-lite:plan` on each `.ask.md`, in a throwaway worktree, and save what it returns.
 2. Compare the kind it resolved with line 1 of the `.expected.md`.
-3. Run the command on line 2 over the returned block or file. Count a case as passing when the first return passes the lint with no fix round.
+3. Run the command on line 2 over the returned block or file; for `06-compaction` also run the command of its `Return:` line over the whole reply. Count a case as passing when the first return passes the lint with no fix round.
 4. Count the `AskUserQuestion` questions asked and compare with line 3.
 5. Record the two counts (cases passing the lint on first return, of 6; questions asked, summed) in a dated report. Mark the replay unverified when it was not an independent model run.
 

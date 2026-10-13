@@ -5,7 +5,7 @@
   plan_check.py plan [--text T | --file F] [--root .sdlc] [--run]
   plan_check.py clarify [--text T | --file F]
   plan_check.py <kind> ... --summary
-  plan_check.py compaction [--text T | --file F]
+  plan_check.py compaction [--text T | --file F] [--reply]
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -48,6 +48,9 @@ DECISIONS line that is not `<user|agent> <YYYY-MM-DD> <decision> | <reason of 1 
 approval word with neither a double-quoted span nor `[U]`). One warning: compaction-glossary (an unapproved alias from
 docs/references/glossary.md outside code spans; skipped when the file is absent). The selftest prints one `ok: compaction: <rule> ...` line
 per case.
+`compaction --reply` reads the whole reply instead of the block and checks the return shape of references/compaction.md section 6 (rule
+compaction-return): at most one `stale: ` line, the fenced block, then exactly `lines: N of 60`, `pin: M of 40` (both equal to the block's own counts)
+and `Run: /compact <paste>`, with no other line before the fence or after `Run:`.
 """
 import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
@@ -1227,6 +1230,27 @@ def check_compaction(text, entry=None, glossary=None):
     return fails, warns
 
 
+COMPACTION_RETURN_LAST = 'Run: /compact <paste>'
+
+
+def check_compaction_return(reply):
+    """The return shape of references/compaction.md section 6, read on the whole reply: one finding per departure."""
+    rows = reply.strip('\n').splitlines()
+    if rows and rows[0].startswith('stale: '):
+        rows = rows[1:]
+    if not rows or rows[0].strip() != '```':
+        return [('compaction-return', 'the reply does not open with the fence (only one `stale: ` line may come first)')]
+    ends = [i for i, ln in enumerate(rows) if i and ln.strip() == '```']
+    if not ends:
+        return [('compaction-return', 'the fenced block is never closed')]
+    block, tail = '\n'.join(rows[1:ends[0]]), [ln.strip() for ln in rows[ends[0] + 1:]]
+    n_lines, n_pin = compaction_counts(block)
+    want = [f'lines: {n_lines} of {COMPACTION_MAX_LINES}', f'pin: {n_pin} of {COMPACTION_MAX_PIN}', COMPACTION_RETURN_LAST]
+    if tail != want:
+        return [('compaction-return', 'after the fence the reply must be exactly the lines ' + ' / '.join(want) + f'; it holds {len(tail)} line(s): {" / ".join(tail)[:120]}')]
+    return []
+
+
 # ---- driver --------------------------------------------------------------------------------------------------
 def run_check(kind, text, root='.sdlc', run=False, path=None):
     return {'goal': lambda t: check_goal(t, root), 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
@@ -1732,6 +1756,23 @@ def compaction_selftest(expect):
     r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'compaction', '--text', 'DROP x'], capture_output=True, text=True)
     expect('compaction: compaction-order compaction --text "DROP x" exits 1 after the lines and pin counts',
            r.returncode == 1 and r.stdout.startswith('lines: 1 of 60\npin: 0 of 40\nFAIL compaction-order: '))
+    reply = '```\n' + C + '```\nlines: 18 of 60\npin: 7 of 40\nRun: /compact <paste>\n'
+
+    def returned(text):
+        return sorted({r for r, _ in check_compaction_return(text)})
+    expect('compaction: compaction-return passes the fenced block, lines, pin and Run lines', returned(reply) == [])
+    expect('compaction: compaction-return passes one stale line before the fence', returned('stale: written 2026-10-01\n' + reply) == [])
+    for what, text in (('a sentence before the fence', 'Here is the prompt.\n' + reply), ('a next-action line after Run', reply + 'Next, paste it.\n'),
+                       ('the lines and pin lines merged', reply.replace('lines: 18 of 60\npin: 7 of 40', 'lines: 18 of 60, pin: 7 of 40')),
+                       ('a lines count that differs from the block', reply.replace('lines: 18', 'lines: 17')),
+                       ('a missing Run line', reply.replace('Run: /compact <paste>\n', '')), ('an unclosed fence', reply.replace('```\nlines', 'lines'))):
+        expect(f'compaction: compaction-return flags {what}', returned(text) == ['compaction-return'])
+    r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'compaction', '--reply', '--text', 'Sure.\n' + reply], capture_output=True, text=True)
+    expect('compaction: compaction-return --reply exits 1 on a sentence before the fence', r.returncode == 1 and r.stdout.startswith('FAIL compaction-return: '))
+    ref_txt = (HERE.parent / 'skills/plan/references/compaction.md').read_text(encoding='utf-8') if (HERE.parent / 'skills/plan/references/compaction.md').is_file() else ''
+    ex = re.search(r'## Example block[^\n]*\n\n(```\n.*?\n```)', ref_txt, re.S)
+    expect('compaction: the example of references/compaction.md returns in the shape of section 6',
+           bool(ex) and returned(ex.group(1) + '\nlines: %d of 60\npin: %d of 40\nRun: /compact <paste>\n' % compaction_counts(ex.group(1))) == [])
     ref = HERE.parent / 'skills/plan/references/compaction.md'
     f, _ = check_compaction(ref.read_text(encoding='utf-8'), [], '') if ref.is_file() else ([('missing', '')], [])
     expect('compaction: the example block of references/compaction.md passes', f == [] and ref.is_file()
@@ -1970,11 +2011,16 @@ def main(argv):
     g.add_argument('--file')
     ap.add_argument('--root', default='.sdlc')
     ap.add_argument('--run', action='store_true', help='plan only: add the checks that apply before execution starts')
+    ap.add_argument('--reply', action='store_true', help='compaction only: check the return shape of the whole reply, not the block')
     ap.add_argument('--summary', action='store_true', help='after the lint lines, print the cost line: the caps of the tickets the block names against its total cap')
     a = ap.parse_args(argv)
     if a.run and a.kind != 'plan':
         ap.error('--run applies to the plan kind only')
+    if a.reply and a.kind != 'compaction':
+        ap.error('--reply applies to the compaction kind only')
     text = a.text if a.text is not None else (pathlib.Path(a.file).read_text(encoding='utf-8') if a.file else sys.stdin.read())
+    if a.reply:
+        return report('compaction return', check_compaction_return(text), [])
     if a.kind == 'compaction':
         n_lines, n_pin = compaction_counts(text)
         print(f'lines: {n_lines} of {COMPACTION_MAX_LINES}')
