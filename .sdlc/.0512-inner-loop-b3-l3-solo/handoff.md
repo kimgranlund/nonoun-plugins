@@ -2,7 +2,7 @@
 id: T-0512
 title: "steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0510]
@@ -23,3 +23,11 @@ Design: `docs/planning/inner-loop-profile.md`. Opt-in by `profile: inner-loop` i
 
 ## Constraints
 One writer on `steps.py`.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with the (lane) inner-loop cases: L3 with the profile solo, without it full, an L3 titled merge full, L4 and L5 full
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: plugins/sdlc-lite/scripts/steps.py:2859: the lane's merge test is a new `\bmerge\b` (case-insensitive, anywhere in the title) while `ticket_verifier` uses `VERIFIER_MERGE_RE = ^Merge\b` (steps.py:3155) and `docs/planning/inner-loop-profile.md:43` named that regex for the lane; an L3 titled "Fix the merge button" therefore stays on the chain under the profile while its verifier level still reads it as no merge ticket. Conservative, and the criterion only asks that a title with merge stays full, so no fail. | plugins/sdlc-lite/scripts/steps.py:2980: the L3 route sits before the `LANE_MAX_TICKET_CRITERIA` cap, which the message at :2989 scopes to L1 and L2, so an L3 profile ticket with many criteria still goes solo; the handoff names no cap for L3.

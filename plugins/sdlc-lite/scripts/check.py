@@ -235,6 +235,8 @@
    and the Codex route path `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md`, no `## 1. Gather`, and no `references/` folder. Negative controls: a stub that regrows
    `## 1. Gather`, a stub without its kind token, a stub without the redirect description, a stub of 15 lines, a stub with a references folder, and a missing stub must be flagged.
    Ticket D deletes the stubs and this item.
+59. Verifier parity line (T-0513): agents/verifier.md and its generated verifier-L1, L2 and L3 files each hold the `(parity)` rule line (`a `(parity)` criterion passes per named property`,
+   `Read the real and the mockup image`). Negative control: each phrase removed from a file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1398,6 +1400,14 @@ for _rel in ('agents/verifier.md', 'agents/verifier-L1.md', 'agents/verifier-L2.
     errors.extend(f'check.py: verifier notes: {_rel} missing "{ph}"' for ph in VERIFIER_NOTES if ph not in _text)
     if all(ph in _text for ph in VERIFIER_NOTES) and not [ph for ph in VERIFIER_NOTES if ph not in _text.replace(VERIFIER_NOTES[0], '')]:
         errors.append(f'check.py: verifier notes negative control not flagged for {_rel}')
+# Verifier (parity) line (docstring item 59, T-0513): agents/verifier.md and its generated levels carry the per-property parity rule.
+VERIFIER_PARITY = ('a `(parity)` criterion passes per named property', 'Read the real and the mockup image')
+for _rel in ('agents/verifier.md', 'agents/verifier-L1.md', 'agents/verifier-L2.md', 'agents/verifier-L3.md'):
+    _f = root/_rel
+    _text = _f.read_text() if _f.is_file() else ''
+    errors.extend(f'check.py: verifier parity: {_rel} missing "{ph}"' for ph in VERIFIER_PARITY if ph not in _text)
+    if all(ph in _text for ph in VERIFIER_PARITY) and any(all(q in _text.replace(ph, '') for q in VERIFIER_PARITY) for ph in VERIFIER_PARITY):
+        errors.append(f'check.py: verifier parity negative control not flagged for {_rel}')
 # Merge ops (docstring item 56, T-0492): the conductor, the fanout skill and run-operations.md name the same merge commands and the same settle command.
 MERGE_OPS_FILES = ('agents/conductor.md', 'skills/fanout/SKILL.md', 'skills/handoff-format/run-operations.md')
 MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops', 'merge-base --is-ancestor origin/main HEAD', 'gh pr checks <n> --watch --fail-fast')
