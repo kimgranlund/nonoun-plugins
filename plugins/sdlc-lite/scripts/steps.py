@@ -155,6 +155,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             a plan defect: line", and lint and split refuse with the plan defect last line. A word
             that names nothing on disk (and/or, c1) is no token; a plan with no such results is
             unchanged; swap and widen look beside their step handoff and find none.
+            A criterion line whose leading tags hold (parity) (T-0513) names a styling approval: ``- (parity) `<capture
+            command>` writes `<real.png>`; against `<mock.png>`: <property>, <property>`` (at most five named properties,
+            never "matches"). Lint refuses one that names fewer than two distinct image paths (.png, .jpg, .jpeg, .webp,
+            .gif), "(parity) criterion names fewer than two image paths", or no property list (a colon after the last image
+            path, then text), "(parity) criterion names no property list"; the plan defect last line follows.
             Never executes a span and needs no handoff.md. Prints "steps lint: ok", or the split
             refusal on stderr and exits 1. A clean run writes nothing. A refusal appends one JSON line
             {"ts", "tool", "plan", "step", "text"} per finding to refusals.jsonl in the plan's task dir,
@@ -1696,6 +1701,27 @@ def full_gate_commands_for(plan):
     return tickets.full_gate_commands(root) if tickets.inner_loop(root, text) else []
 
 
+IMAGE_PATH_RE = re.compile(r'[\w./@+-]+\.(?:png|jpe?g|webp|gif)\b')
+
+
+def parity_findings(plan, steps):
+    """One finding per (parity) criterion line of a plan step that names fewer than two distinct image
+    paths (.png, .jpg, .jpeg, .webp, .gif) or no property list (a colon after the last image path, then text)."""
+    out = []
+    for n, block in steps.items():
+        for line in criteria_lines(block):
+            if 'parity' not in leading_tags(line):
+                continue
+            paths = list(IMAGE_PATH_RE.finditer(line))
+            if len({m.group(0) for m in paths}) < 2:
+                out.append(f'steps: {plan} step {n}: (parity) criterion names fewer than two image paths: {line.strip()}\n'
+                           '  form: - (parity) `<capture command>` writes `<real.png>`; against `<mock.png>`: <property>, <property>')
+            elif not re.match(r"[>`'\"]*\s*:\s*\w", line[paths[-1].end():]):
+                out.append(f'steps: {plan} step {n}: (parity) criterion names no property list: {line.strip()}\n'
+                           '  name at most five properties after the mockup path, after a colon, never "matches"')
+    return out
+
+
 def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, one for a count over a changing
@@ -1781,7 +1807,8 @@ def lint_steps(plan, steps, tree=None):
                                 f'so it can pass only after the verifier passes: {text}\n'
                                 '  move it to a later step, or declare it held with a trailing '
                                 '[stage: ..., owner: ...] clause')
-    return findings + tests_findings(plan, steps) + defect_dependents(plan, steps) + clause_findings(plan, steps)
+    return (findings + tests_findings(plan, steps) + defect_dependents(plan, steps) + clause_findings(plan, steps)
+            + parity_findings(plan, steps))
 
 
 def lint_or_fail(plan, steps, tree=None, tool='steps.py lint'):
@@ -6149,6 +6176,22 @@ def selftest():
         check('(profile) control: a handoff with profile: default lints clean', rc == 0 and 'plan defect' not in err)
         rc, out, err = run_main(['lint', str(il_plan('il-other', IL.replace('python3 suite.py\n', 'python3 other.py\n')))])
         check('(profile) control: a (guard) that is not the full gate lints clean', rc == 0 and 'plan defect' not in err)
+
+        # (parity) T-0513: a (parity) criterion names two image paths and a property list
+        def parity_plan(name, criterion):
+            d = tmp / name
+            d.mkdir(parents=True)
+            (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace('- one works', criterion)), encoding='utf-8')
+            return d / 'planner-L2.md'
+        rc, out, err = run_main(['lint', str(parity_plan('par-ok', '- (parity) `python3 shot.py out/real.png` writes `out/real.png`; against `mock/card.png`: column count, gutter, filled primary button'))])
+        check('(parity) a capture command, two image paths and a property list lint clean', rc == 0 and 'parity' not in err)
+        rc, out, err = run_main(['lint', str(parity_plan('par-one', '- (parity) `python3 shot.py out/real.png` writes `out/real.png`: column count, gutter'))])
+        check('(parity) a line with one image path is refused', rc == 1 and 'names fewer than two image paths' in err and 'plan defect' in err)
+        rc, out, err = run_main(['lint', str(parity_plan('par-noprops', '- (parity) `python3 shot.py out/real.png` writes `out/real.png`; against `mock/card.png`'))])
+        check('(parity) a line with no property list is refused', rc == 1 and 'names no property list' in err and 'plan defect' in err)
+        rc, out, err = run_main(['lint', str(parity_plan('par-tag', '- (guard) `python3 shot.py out/real.png` writes `out/real.png`'))])
+        check('(parity) control: a line without the (parity) tag is not checked', rc == 0 and 'parity' not in err)
 
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)

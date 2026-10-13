@@ -23,3 +23,10 @@ Design: `docs/planning/inner-loop-profile.md`. Opt-in by `profile: inner-loop` i
 
 ## Constraints
 No new prohibition in `verifier.md`. One writer on `verifier.md` (after B2).
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, and its `(parity)` cases hold: a one-image-path line and a no-property-list line are refused with the plan defect, a full form lints clean (the two refusals were red before `parity_findings` existed).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0, including the `verifier parity` item that flags a verifier file missing either phrase of the `(parity)` line in `plugins/sdlc-lite/agents/verifier.md` (seen red with one phrase removed from `verifier-L1.md`).
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0
+- `grep -q 'a `(parity)` criterion passes per named property' plugins/sdlc-lite/agents/verifier.md` exits 0, and `grep -q 'steps.py lint` refuses a `(parity)` line' plugins/sdlc-lite/skills/handoff-format/SKILL.md` exits 0
