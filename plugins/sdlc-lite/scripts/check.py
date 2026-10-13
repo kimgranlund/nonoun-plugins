@@ -1361,6 +1361,14 @@ for _rel, _phrases in SOLO_RULES:
 _sp = ['python3 a.py check', 'python3 b.py selftest']
 if results.solo_report_error('- `python3 a.py check` exit 0\n- `python3 b.py selftest` exit 0\nverify: needed\n', _sp) is not None: errors.append('check.py: solo report rule flags a complete report')
 if results.solo_report_error('- `python3 a.py check` exit 0\nverify: needed\n', _sp) is None: errors.append('check.py: solo report negative control not flagged for a missing exit-code line')
+# Verifier Notes handle (T-0511): agents/verifier.md and its generated levels carry the handle and the rule line.
+VERIFIER_NOTES = ('Notes: a finding that no criterion names', '`## Notes`')
+for _rel in ('agents/verifier.md', 'agents/verifier-L1.md', 'agents/verifier-L2.md', 'agents/verifier-L3.md'):
+    _f = root/_rel
+    _text = _f.read_text() if _f.is_file() else ''
+    errors.extend(f'check.py: verifier notes: {_rel} missing "{ph}"' for ph in VERIFIER_NOTES if ph not in _text)
+    if all(ph in _text for ph in VERIFIER_NOTES) and not [ph for ph in VERIFIER_NOTES if ph not in _text.replace(VERIFIER_NOTES[0], '')]:
+        errors.append(f'check.py: verifier notes negative control not flagged for {_rel}')
 # Merge ops (docstring item 56, T-0492): the conductor, the fanout skill and run-operations.md name the same merge commands and the same settle command.
 MERGE_OPS_FILES = ('agents/conductor.md', 'skills/fanout/SKILL.md', 'skills/handoff-format/run-operations.md')
 MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops')

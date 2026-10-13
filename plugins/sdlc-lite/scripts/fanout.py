@@ -431,6 +431,7 @@ import argparse, contextlib, datetime, fcntl, json, os, pathlib, re, shlex, shut
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
+import results  # same scripts/ dir: the verifier Notes section
 import order  # same scripts/ dir: newest result file of a role
 import lanes  # same scripts/ dir: the lane lifecycle (open, close, sweep)
 
@@ -930,16 +931,19 @@ def driver_for(ctx, t, kind='full'):
     return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
 
 
-def close_reason(ctx, t, gate=None):
+def close_reason(ctx, t, gate=None, notes=None):
     """The `tickets.py close --reason` text for a ticket a solo agent delivered (a solo lane writes no filer
     file, which close needs otherwise), or None for every other lane. gate, the merge's gate class (T-0481), adds
-    `; gate: <class>`."""
+    `; gate: <class>`. notes, the verifier's `## Notes` lines, add `; verifier notes: ...`."""
     kind, tier = ctx['kinds'].get(t.id, ('', None))
     if kind != 'solo':
         return None
     why = (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
            if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
-    return why + (f'; gate: {gate}' if gate else '')
+    why += f'; gate: {gate}' if gate else ''
+    if notes:
+        why += '; verifier notes: ' + ' | '.join(n.lstrip('-* ').strip() for n in notes)
+    return why
 
 
 def light_refusal(a, root):
@@ -1574,7 +1578,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             record_solo_lane(integ / trel / t.slug, ctx['kinds'][t.id][1])
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
         if close_reason(ctx, t):
-            argv += ['--reason', close_reason(ctx, t, cls)]
+            vf = sorted((integ / trel / t.slug).glob('verifier-L*.md'))
+            argv += ['--reason', close_reason(ctx, t, cls, results.notes_lines(vf[-1]) if vf else None)]
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
         pre = porcelain(integ)
@@ -3701,6 +3706,8 @@ def selftest():
                'solo agent (level L1)' in (close_reason(fake, Ticket('T-2', 'x', 't')) or ''))
         expect('case 15 close negative control: a chain or driver ticket closes through its filer, no --reason',
                close_reason(fake, Ticket('T-3', 'x', 't')) is None and close_reason(fake, Ticket('T-4', 'x', 't')) is None)
+        expect('case 15 close: verifier notes ride in the close reason',
+               'verifier notes: a.py:3 em dash' in close_reason(fake, Ticket('T-2', 'x', 't'), None, ['- a.py:3 em dash']))
         # the solo verifier gate reads only a result that is new since the driver started
         vd = tmp / 'verdict-task'
         vd.mkdir()
