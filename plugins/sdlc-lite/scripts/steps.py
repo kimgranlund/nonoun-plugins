@@ -2855,6 +2855,8 @@ LANE_CONTRACTS = (
 LANE_STICKY = 'skips.md already records full, and a lane never returns from full'
 LANE_NO_SIZE = 'handoff.md front matter has no size of L1 to L5'
 LANE_SOLO_SIZES = ('L1', 'L2')  # the ticket levels the solo lane takes before planning, and lean after it
+LANE_INNER_LOOP_SIZE = 'L3'  # T-0512: size the inner-loop profile also sends to solo before planning (no merge, no security word)
+LANE_MERGE_TITLE_RE = re.compile(r'\bmerge\b', re.I)
 ERE_PATTERN_CHARS = set('^$*+?()[]{}')
 
 
@@ -2975,6 +2977,14 @@ def lane_action(task):
     if not plan:
         if reasons:
             return 'full', point, reasons, read
+        if size == LANE_INNER_LOOP_SIZE and tickets.inner_loop(sdlc_root(t), text):
+            title = str((tickets.parse(text) or {}).get('title', ''))
+            if LANE_MERGE_TITLE_RE.search(title):
+                return 'full', point, ['size L3 stays full: the title names a merge'], read
+            if VERIFIER_SECURITY_RE.search(text):
+                return 'full', point, ['size L3 stays full: the handoff names security'], read
+            return 'solo', point, ['size L3 goes to solo-L3 under profile: inner-loop '
+                                   '(no merge in the title, no security word in the handoff; the one batched verifier stays)'], read
         if size in LANE_SOLO_SIZES and ticket_k > LANE_MAX_TICKET_CRITERIA:
             return 'full', point, [f'ticket lists {ticket_k} criteria (limit {LANE_MAX_TICKET_CRITERIA} for size L1 or L2); '
                                    f'split it into tickets of at most {LANE_MAX_TICKET_CRITERIA}'], read
@@ -5517,6 +5527,29 @@ def selftest():
         check('(lane) before planning, size alone decides: L1 and L2 (aliases S, M) solo, L3 to L5 (aliases L, XL) full, no size full',
               ok and lane == 'full' and reasons == [LANE_NO_SIZE]
               and recs == [f'- lane: full; point: before planning; reasons: {LANE_NO_SIZE}'])
+
+        # (lane) T-0512: under `profile: inner-loop` a size L3 ticket with no merge title and no security word goes solo
+        def il_lane(size, config, title='x', tail=''):
+            d = l_task(l_handoff(size, tail).replace('title: "x"', f'title: "{title}"'))
+            if config is not None:
+                (d.parent / 'config').write_text(config, encoding='utf-8')
+            lane, reasons, _, _ = l_run(d)
+            return lane, reasons
+        ilp = 'profile: inner-loop\n'
+        on_lane, on_why = il_lane('L3', ilp)
+        check('(lane) inner-loop profile: size L3 with no merge title and no security word prints solo, and says why',
+              on_lane == 'solo' and len(on_why) == 1 and 'profile: inner-loop' in on_why[0])
+        check('(lane) control: size L3 without the profile line is full (as before)', il_lane('L3', None)[0] == 'full'
+              and il_lane('L3', '# profile: inner-loop\n')[0] == 'full')
+        check('(lane) control: size L3 with profile: default in the handoff is full',
+              il_lane('L3', ilp, tail='profile: default\n')[0] == 'full')
+        check('(lane) negative control: an L3 titled merge ... stays full under the profile',
+              il_lane('L3', ilp, title='merge the lanes')[0] == 'full')
+        check('(lane) negative control: an L3 handoff naming security stays full under the profile',
+              il_lane('L3', ilp, tail='Fix a security hole.\n')[0] == 'full')
+        check('(lane) negative control: L4 and L5 stay full under the profile',
+              il_lane('L4', ilp)[0] == 'full' and il_lane('L5', ilp)[0] == 'full')
+        check('(lane) the profile leaves L1 and L2 solo', il_lane('L1', ilp)[0] == 'solo' and il_lane('L2', ilp)[0] == 'solo')
 
         ok = True
         for form in (L_F2, 'grep -vxE "docs/c\\.md"', 'grep -vE "^(docs/c\\.md)$"'):

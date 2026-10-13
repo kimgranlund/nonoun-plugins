@@ -23,3 +23,7 @@ Design: `docs/planning/inner-loop-profile.md`. Opt-in by `profile: inner-loop` i
 
 ## Constraints
 One writer on `steps.py`.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with the (lane) inner-loop cases: L3 with the profile solo, without it full, an L3 titled merge full, L4 and L5 full
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0
