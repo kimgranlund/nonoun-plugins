@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Lint a planned /goal, /loop, fanout, campaign, plan-doc, or clarify block before it is handed to the user.
+"""Lint a planned /goal, /loop, fanout, campaign, plan-doc, clarify, or compaction block before it is handed to the user.
 
   plan_check.py goal|loop|fanout|campaign [--text T | --file F] [--root .sdlc]
   plan_check.py plan [--text T | --file F] [--root .sdlc] [--run]
   plan_check.py clarify [--text T | --file F]
+<<<<<<< HEAD
   plan_check.py <kind> ... --summary
+=======
+  plan_check.py compaction [--text T | --file F]
+>>>>>>> fanout/wave54-f
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -30,11 +34,26 @@ items, or a lower-case must, shall or should in `## Constraints`), and clarify-d
 `(source: ...)`). Two warnings: clarify-goal-length (over 2 sentences or 50 words) and clarify-glossary (an unapproved alias from
 docs/references/glossary.md in the Goal or a Do step; skipped when the file is absent). An item starting `[owner: maintainer]` is exempt
 from the two Done when rules. The selftest prints one `ok: clarify: <rule> ...` line per case.
+<<<<<<< HEAD
 Controlled language (T-0469): the goal, campaign and plan kinds add three warnings that reuse the clarify lists: `hedge` (a CLARIFY_HEDGE word in
 the /goal line, a Goal or an Outcome line), `verb` (a How to work or step Do statement that does not start with a CLARIFY_VERBS verb) and
 `rfc2119` (an Authorization with no upper-case MUST, or a lower-case must, shall or should in it). `--summary` on any kind prints one more line
 after the lint lines, `cost: $<sum> of $<cap> (<n> tickets: T-0001 L2 $30, ...)`: the tickets the block names, each at its size level's row in
 budget.py TIERS, against its `$<n> total` figure. A ticket with no size or tier makes the sum `unknown`, never 0; a sum above the cap ends `over`.
+=======
+A compaction block (kind `compaction`, the `/compact` prompt of the plan skill's compaction kind) is unwrapped, then read as one identity
+line, the seven headers GOAL, RULES, DECISIONS, STATE, OPEN, NEXT, DROP, and a last line `NEXT <one action>`. `lines: <N> of 60` and
+`pin: <M> of 40` print first. Nine rules: compaction-words (a line over 20 words; a lone pipe is no word), compaction-verb (a DROP section
+line that starts with neither DROP nor NEXT, or a first token of 3 or more upper-case letters outside KEEP, POINT, DROP, NEXT),
+compaction-order (a header missing, repeated or out of order, not exactly one line before GOAL, or a last line that does not start `NEXT `),
+compaction-lines (over 60 lines), compaction-pin (over 40 PIN lines: lines under GOAL to NEXT that are no header, not `none`, and start with
+neither POINT nor DROP), compaction-em-dash, compaction-entry-copy (a line of 4 or more words that, less its leading verb, equals a line of
+`CLAUDE.md` or `AGENTS.md` in the working directory with its list marker removed; a missing file is skipped), compaction-decision (a
+DECISIONS line that is not `<user|agent> <YYYY-MM-DD> <decision> | <reason of 1 to 5 words> | <pointer>`), and compaction-approval (an
+approval word with neither a double-quoted span nor `[U]`). One warning: compaction-glossary (an unapproved alias from
+docs/references/glossary.md outside code spans; skipped when the file is absent). The selftest prints one `ok: compaction: <rule> ...` line
+per case.
+>>>>>>> fanout/wave54-f
 """
 import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
@@ -1033,6 +1052,7 @@ def check_clarify(text, glossary=None):
     return fails, warns
 
 
+<<<<<<< HEAD
 # ---- controlled language of plan artifacts (T-0469) ---------------------------------------------------------
 # The rules of T-0461 applied to goal, campaign and plan-doc text, reusing the clarify lists and patterns above. Three warnings, not
 # FAILs, until the five-ask replay shows how often they misfire: hedge (a CLARIFY_HEDGE word in the /goal line, a Goal or an Outcome
@@ -1128,13 +1148,98 @@ def cost_line(text, root='.sdlc'):
     over = ' over' if total is not None and cap is not None and total > cap else ''
     return f'cost: {shown} of {f"${cap:g}" if cap is not None else "unknown"} ({len(rows)} ticket{"" if len(rows) == 1 else "s"}' \
            f'{": " + ", ".join(rows) if rows else ""}){over}'
+=======
+# ---- compaction ----------------------------------------------------------------------------------------------
+COMPACTION_HEADERS = ('GOAL', 'RULES', 'DECISIONS', 'STATE', 'OPEN', 'NEXT', 'DROP')
+COMPACTION_VERBS = ('KEEP', 'POINT', 'DROP', 'NEXT')
+COMPACTION_ENTRY = ('CLAUDE.md', 'AGENTS.md')
+COMPACTION_MAX_LINES, COMPACTION_MAX_PIN, COMPACTION_MAX_WORDS = 60, 40, 20
+COMPACTION_EM_DASH = chr(0x2014)  # U+2014, built from its code point: the repository bans the literal character
+COMPACTION_APPROVAL = re.compile(r'(?i)(?<!\w)(?:approv(?:e|ed|al)|authori[sz](?:e|ed|ation)|consent|agreed|signed off)(?!\w)')
+COMPACTION_WHO = re.compile(r'^(?:user|agent) \d{4}-\d{2}-\d{2} \S')
+
+
+def compaction_rows(text):
+    """(section, line) for each non-blank line of an unwrapped block. A header row holds its own name and the line None; a line
+    before the first header holds the section None."""
+    rows, sec = [], None
+    for ln in text.splitlines():
+        s = ln.strip()
+        if s in COMPACTION_HEADERS:
+            sec = s
+            rows.append((s, None))
+        elif s:
+            rows.append((sec, s))
+    return rows
+
+
+def compaction_pins(rows):
+    return [s for sec, s in rows if s is not None and sec in COMPACTION_HEADERS[:6] and s != 'none' and s.split()[0] not in ('POINT', 'DROP')]
+
+
+def compaction_counts(text):
+    """(lines, PIN lines) of a block, counted on the unwrapped text."""
+    text = unwrap(text)
+    return len(text.splitlines()), len(compaction_pins(compaction_rows(text)))
+
+
+def check_compaction(text, entry=None, glossary=None):
+    """`entry` is a list of entry-file texts; None reads CLAUDE.md and AGENTS.md from the working directory and skips a missing file."""
+    text = unwrap(text)
+    fails, warns = [], []
+    rows = compaction_rows(text)
+    body = [(sec, s) for sec, s in rows if s is not None]
+    heads = [sec for sec, s in rows if s is None]
+    if heads != list(COMPACTION_HEADERS):
+        fails.append(('compaction-order', f'the headers read "{" ".join(heads)}"; write {", ".join(COMPACTION_HEADERS)} once each, in that order'))
+    before = next((i for i, (_, s) in enumerate(rows) if s is None), len(rows))
+    if before != 1:
+        fails.append(('compaction-order', f'{before} lines stand before the first header; write one identity line before GOAL'))
+    if not body or rows[-1][1] is None or not rows[-1][1].startswith('NEXT '):
+        fails.append(('compaction-order', 'the last line does not start with `NEXT `'))
+    n_lines, pins = len(text.splitlines()), compaction_pins(rows)
+    if n_lines > COMPACTION_MAX_LINES:
+        fails.append(('compaction-lines', f'the block has {n_lines} lines; the cap is {COMPACTION_MAX_LINES}'))
+    if len(pins) > COMPACTION_MAX_PIN:
+        fails.append(('compaction-pin', f'the block has {len(pins)} PIN lines; the cap is {COMPACTION_MAX_PIN}: demote some to POINT lines'))
+    if COMPACTION_EM_DASH in text:
+        fails.append(('compaction-em-dash', 'the block holds an em dash (U+2014)'))
+    if entry is None:
+        entry = [p.read_text(encoding='utf-8') for p in map(pathlib.Path, COMPACTION_ENTRY) if p.is_file()]
+    known = {' '.join(re.sub(r'^(?:[-*+]|\d+[.)])\s+', '', ln.strip()).split()) for t in entry for ln in t.splitlines()}
+    for sec, s in body:
+        toks = s.split()
+        n = len([t for t in toks if t != '|'])
+        if n > COMPACTION_MAX_WORDS:
+            fails.append(('compaction-words', f'a line holds {n} words; the cap is {COMPACTION_MAX_WORDS}: {s[:80]}'))
+        if sec == 'DROP' and toks[0] not in ('DROP', 'NEXT'):
+            fails.append(('compaction-verb', f'a DROP section line starts with neither DROP nor NEXT: {s[:80]}'))
+        elif re.fullmatch(r'[A-Z]{3,}', toks[0]) and toks[0] not in COMPACTION_VERBS:
+            fails.append(('compaction-verb', f'"{toks[0]}" is not one of {", ".join(COMPACTION_VERBS)}: {s[:80]}'))
+        if len(toks) >= 4 and ' '.join(toks[1:] if toks[0] in COMPACTION_VERBS else toks) in known:
+            fails.append(('compaction-entry-copy', f'a line copies an entry file ({" or ".join(COMPACTION_ENTRY)}); drop it or POINT to the file: {s[:80]}'))
+        if sec == 'DECISIONS' and s != 'none' and toks[0] != 'POINT':
+            cells = [c.strip() for c in s.split('|')]
+            if not (len(cells) == 3 and COMPACTION_WHO.match(cells[0]) and 1 <= len(cells[1].split()) <= 5 and cells[2]):
+                fails.append(('compaction-decision', 'a DECISIONS line is not `<user|agent> <YYYY-MM-DD> <decision> | <reason of 1 to 5 words> | '
+                                                     f'<pointer>`: {s[:80]}'))
+        hit = COMPACTION_APPROVAL.search(s)
+        if hit and not (re.search(r'"[^"\n]+"', s) or '[U]' in s):
+            fails.append(('compaction-approval', f'"{hit.group(0)}" stands with neither the user\'s quoted words nor `[U]`: {s[:80]}'))
+    for a in clarify_glossary_aliases(glossary):
+        pat = re.compile(rf'(?i)(?<!\w){re.escape(a)}(?!\w)')
+        for _, s in body:
+            if pat.search(no_code(s)):
+                warns.append(('compaction-glossary', f'a line uses the unapproved alias "{a}" (docs/references/glossary.md): {s[:80]}'))
+    return fails, warns
+>>>>>>> fanout/wave54-f
 
 
 # ---- driver --------------------------------------------------------------------------------------------------
 def run_check(kind, text, root='.sdlc', run=False, path=None):
     return {'goal': lambda t: check_goal(t, root), 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
             'campaign': lambda t: check_campaign(t, root), 'plan': lambda t: check_plan(t, root, run, path),
-            'clarify': check_clarify}[kind](text)
+            'clarify': check_clarify, 'compaction': check_compaction}[kind](text)
 
 
 def report(kind, fails, warns, out=print):
@@ -1538,12 +1643,117 @@ def clarify_selftest(expect):
             print('  got', got)
 
 
+GOOD_COMPACTION = """Continue T-0465; keep the sections below.
+GOAL
+Build the compaction kind of the plan skill | turn 2
+RULES
+No write to the entry files | "never touch the entry files" turn 4
+DECISIONS
+user 2026-10-12 invocation is a kind of the plan skill | maintainer fixed placement | turn 6
+agent 2026-10-12 handoff write stays off by default | reload unverified | [U]
+STATE
+Branch `fanout/wave54-f`, 0 dirty files
+POINT `.sdlc/0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
+OPEN
+Live check of the `CLAUDE.local.md` reload not run
+NEXT
+planned: verify step 1
+DROP
+DROP tool output, retry history, superseded plans, resolved errors
+NEXT run /sdlc-lite:verify on step 1
+"""
+COMPACTION_FIXTURE_ENTRY = ['# Rules\n\n- Stop only processes owned by the task.\n1. Run commands from the repository root.\n']
+COMPACTION_RULES = ('compaction-words', 'compaction-verb', 'compaction-order', 'compaction-lines', 'compaction-pin', 'compaction-em-dash',
+                    'compaction-entry-copy', 'compaction-decision', 'compaction-approval')
+
+
+def compaction_selftest(expect):
+    """One observed-failing mutant per compaction rule, each flagged as exactly its rule; no rule flags GOOD_COMPACTION."""
+    C = GOOD_COMPACTION
+
+    def rules(text, entry=COMPACTION_FIXTURE_ENTRY):
+        return sorted({r for r, _ in check_compaction(text, entry, CLARIFY_FIXTURE_GLOSSARY)[0]})
+
+    def warned(text):
+        return sorted({r for r, _ in check_compaction(text, COMPACTION_FIXTURE_ENTRY, CLARIFY_FIXTURE_GLOSSARY)[1]})
+
+    def swap(old, new):
+        assert old in C, old
+        return C.replace(old, new, 1)
+
+    def mutant(rule, what, text):
+        got = rules(text)
+        expect(f'compaction: {rule} flags {what}', got == [rule])
+        if got != [rule]:
+            print('  got', got)
+    good = rules(C)
+    expect('compaction: the good block passes', good == [] and warned(C) == [] and compaction_counts(C) == (18, 7))
+    for rule in COMPACTION_RULES:
+        expect(f'compaction: {rule} does not flag GOOD_COMPACTION', rule not in good)
+    state, drop = 'Branch `fanout/wave54-f`, 0 dirty files', 'DROP tool output'
+    mutant('compaction-words', 'a fact line of 24 words', swap(state, state + ' and' + ' one more word' * 6))
+    expect('compaction: compaction-words does not count a pipe as a word',
+           rules(swap('invocation is a kind of the plan skill', ' '.join(['w'] * 13))) == [])
+    mutant('compaction-verb', 'a DROP section line with no leading verb', swap(drop, 'tool output'))
+    mutant('compaction-verb', 'an upper-case first token outside the closed list', swap('Live check of', 'TODO run the check of'))
+    expect('compaction: compaction-verb passes the two-letter fact PR 833 merged', rules(swap(state, state + '\nPR 833 merged')) == [])
+    mutant('compaction-order', 'a missing header', swap('OPEN\n', ''))
+    mutant('compaction-order', 'a repeated header', swap('STATE\n', 'STATE\nSTATE\n'))
+    mutant('compaction-order', 'headers out of order', C.replace('GOAL\n', 'X\n', 1).replace('RULES\n', 'GOAL\n', 1).replace('X\n', 'RULES\n', 1))
+    mutant('compaction-order', 'two lines before GOAL', swap('GOAL\n', 'One more line.\nGOAL\n'))
+    mutant('compaction-order', 'no identity line before GOAL', C.split('\n', 1)[1])
+    mutant('compaction-order', 'a last line that is not NEXT', swap('NEXT run /sdlc-lite:verify on step 1\n', ''))
+    mutant('compaction-lines', 'a block of 63 lines', swap(drop, 'DROP x\n' * 45 + drop))
+    expect('compaction: compaction-lines passes a block of 60 lines', rules(swap(drop, 'DROP x\n' * 42 + drop)) == [])
+    lanes = [f'Lane `l{i:02d}` is open\n' for i in range(34)]
+    mutant('compaction-pin', '41 PIN lines in a block of 52 lines', swap(state, ''.join(lanes) + state))
+    expect('compaction: compaction-pin passes 40 PIN lines', rules(swap(state, ''.join(lanes[:33]) + state)) == [])
+    expect('compaction: compaction-pin does not count POINT, DROP, none or header lines',
+           compaction_counts(swap(state, state + '\nPOINT `a.md` -> the plan\nDROP the old plan\nnone')) == (21, 7))
+    mutant('compaction-em-dash', 'the character U+2014', swap(', 0 dirty files', ' ' + COMPACTION_EM_DASH + ' 0 dirty files'))
+    mutant('compaction-entry-copy', 'a KEEP line copied from an entry file', swap('DECISIONS\n', 'KEEP Stop only processes owned by the task.\nDECISIONS\n'))
+    copied = swap('DECISIONS\n', 'Run commands from the repository root.\nDECISIONS\n')
+    mutant('compaction-entry-copy', 'a fact line copied from a numbered entry line', copied)
+    cwd = os.getcwd()
+    with tempfile.TemporaryDirectory() as d:
+        try:
+            os.chdir(d)
+            none = sorted({r for r, _ in check_compaction(copied, None, '')[0]})
+            pathlib.Path('AGENTS.md').write_text(COMPACTION_FIXTURE_ENTRY[0], encoding='utf-8')
+            one = sorted({r for r, _ in check_compaction(copied, None, '')[0]})
+        finally:
+            os.chdir(cwd)
+    expect('compaction: compaction-entry-copy skips a missing entry file and reads the one present',
+           none == [] and one == ['compaction-entry-copy'])
+    mutant('compaction-decision', 'a decision with no who', swap('user 2026-10-12', 'maintainer 2026-10-12'))
+    mutant('compaction-decision', 'a decision with no date', swap('agent 2026-10-12 ', 'agent '))
+    mutant('compaction-decision', 'a reason of 6 words', swap('reload unverified', 'the reload is not verified yet'))
+    mutant('compaction-decision', 'a decision with an empty pointer', swap(' | [U]', ' |'))
+    mutant('compaction-decision', 'a decision of two fields', swap(' | maintainer fixed placement', ''))
+    opened = 'Live check of the `CLAUDE.local.md` reload not run'
+    mutant('compaction-approval', 'an approval with no quote and no [U]', swap(opened, 'The user approved the merge'))
+    expect('compaction: compaction-approval passes a quoted approval and one marked [U]',
+           rules(swap(opened, 'Merge of the lane | "approved" turn 9\nPush is authorised [U]')) == [])
+    got, bad = warned(swap('0 dirty files', '0 dirty files on this track')), rules(swap('0 dirty files', '0 dirty files on this track'))
+    expect('compaction: compaction-glossary warns on an unapproved alias and fails nothing', got == ['compaction-glossary'] and bad == [])
+    expect('compaction: compaction-glossary skips an alias inside a code span', warned(swap('0 dirty files', '0 dirty files in `track`')) == [])
+    r = subprocess.run([sys.executable, str(HERE / 'plan_check.py'), 'compaction', '--text', 'DROP x'], capture_output=True, text=True)
+    expect('compaction: compaction-order compaction --text "DROP x" exits 1 after the lines and pin counts',
+           r.returncode == 1 and r.stdout.startswith('lines: 1 of 60\npin: 0 of 40\nFAIL compaction-order: '))
+    ref = HERE.parent / 'skills/plan/references/compaction.md'
+    f, _ = check_compaction(ref.read_text(encoding='utf-8'), [], '') if ref.is_file() else ([('missing', '')], [])
+    expect('compaction: the example block of references/compaction.md passes', f == [] and ref.is_file()
+           and compaction_counts(ref.read_text(encoding='utf-8'))[0] > 10)
+    if f:
+        print('  got', f)
+
+
 def selftest():
     bad, n = [], [0]
 
     def expect(label, cond):
         n[0] += 1
-        if label.startswith(('plan: ', 'clarify: ')):
+        if label.startswith(('plan: ', 'clarify: ', 'compaction: ')):
             print(('ok: ' if cond else 'FAIL: ') + label)
         if not cond:
             bad.append(label)
@@ -1747,6 +1957,7 @@ def selftest():
         expect('cost: without --summary no cost line prints', 'cost:' not in buf.getvalue())
     plan_selftest(expect)
     clarify_selftest(expect)
+    compaction_selftest(expect)
     rc = report('goal', *check_goal(GOOD_GOAL), out=lambda s: None)
     expect('report: a passing block exits 0', rc == 0)
     rc = report('goal', *check_goal('nope'), out=lambda s: None)
@@ -1761,7 +1972,7 @@ def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
     ap = argparse.ArgumentParser(prog='plan_check.py', description=__doc__.split('\n')[0])
-    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign', 'plan', 'clarify'))
+    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign', 'plan', 'clarify', 'compaction'))
     g = ap.add_mutually_exclusive_group()
     g.add_argument('--text')
     g.add_argument('--file')
@@ -1772,10 +1983,18 @@ def main(argv):
     if a.run and a.kind != 'plan':
         ap.error('--run applies to the plan kind only')
     text = a.text if a.text is not None else (pathlib.Path(a.file).read_text(encoding='utf-8') if a.file else sys.stdin.read())
+<<<<<<< HEAD
     rc = report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
     if a.summary:
         print(cost_line(text, a.root))
     return rc
+=======
+    if a.kind == 'compaction':
+        n_lines, n_pin = compaction_counts(text)
+        print(f'lines: {n_lines} of {COMPACTION_MAX_LINES}')
+        print(f'pin: {n_pin} of {COMPACTION_MAX_PIN}')
+    return report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
+>>>>>>> fanout/wave54-f
 
 
 if __name__ == '__main__':

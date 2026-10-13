@@ -1,0 +1,21 @@
+Continue the webhook retry design; keep the sections below.
+GOAL
+One ratified retry design for the webhook sender in `docs/design/webhook-retry.md` | turn 1
+RULES
+No new runtime dependency | "no new runtime dependency" turn 3
+Every duration is in seconds | "write every duration in seconds, never milliseconds" turn 4
+DECISIONS
+user 2026-10-12 backoff is exponential with jitter | receivers throttle bursts | turn 6
+user 2026-10-12 the attempt cap is 8 | one day of coverage | turn 9
+agent 2026-10-12 failed events go to the `dead_events` table | no new dependency | turn 13
+STATE
+Draft `docs/design/webhook-retry.md` holds sections 1 and 2; section 3 is not written
+Proposed base delay is 10 seconds
+OPEN
+Delay ceiling of 3600 seconds is proposed and not decided | turn 12
+Who replays dead events (operator command or cron job) waits on the user asking ops | turn 17
+NEXT
+planned: write section 3 (dead events)
+DROP
+DROP tool output, the fixed 30 second option, the cap of 5, the Redis queue idea
+NEXT write section 3 of `docs/design/webhook-retry.md`

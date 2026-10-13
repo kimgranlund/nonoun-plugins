@@ -129,6 +129,10 @@
    `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md (as `plan <kind>` and `plan-loop`);
    skills/plan also names each of the five kind tokens and `references/plan-rules.md` (T-0468).
    Negative controls: each phrase and each kind token removed, a harness reference added, and a routing line removed must be flagged.
+   Compaction kind (T-0465): skills/plan/SKILL.md names `compaction` and `references/compaction.md`; that reference names `plan_check.py compaction`,
+   `Run: /compact`, `lines: N of 60`, `## Compaction handoff`, `compaction_handoff.py`, `git check-ignore`, the verbs `KEEP`, `POINT`, `DROP` and `NEXT`,
+   `[U]`, and `Codex`, and holds no `harness:` reference; skills/sdlc-lite/SKILL.md routes `plan compaction`. Negative controls: each phrase removed
+   from its file, the reference reported empty, a harness reference added, and the entry row removed must be flagged.
 32. Broken-link baseline: the broken relative Markdown links that rename_refs.py `links` reports (code fences and inline code excluded)
    equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
 33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
@@ -1043,6 +1047,25 @@ for _n in _plans:
         if not plan_bad(dict(_plans, **{_n: _plans[_n].replace(_ph, '')}), _entry): errors.append(f'check.py: plan skills negative control not flagged for {_n} without "{_ph}"')
     if not plan_bad(dict(_plans, **{_n: _plans[_n] + ' harness:x'}), _entry): errors.append(f'check.py: plan skills negative control not flagged for a harness reference in {_n}')
     if not plan_bad(_plans, _entry.replace(PLAN_ROUTES[_n], 'x')): errors.append(f'check.py: plan skills negative control not flagged for a missing entry route to {_n}')
+# Plan compaction (docstring item 31, T-0465): the compaction kind of the plan skill, its reference, and the entry route.
+PLAN_COMPACTION_NEEDS = (('skill', ('compaction', 'references/compaction.md')),
+                         ('reference', ('plan_check.py compaction', 'Run: /compact', 'lines: N of 60', '## Compaction handoff', 'compaction_handoff.py',
+                                        'git check-ignore', 'KEEP', 'POINT', 'DROP', 'NEXT', '[U]', 'Codex')),
+                         ('entry', ('plan compaction',)))
+def plan_compaction_bad(texts):
+    """Findings for {'skill': skills/plan/SKILL.md, 'reference': references/compaction.md or '' when it is missing, 'entry': the entry skill}."""
+    out = [f'{name} missing "{ph}"' for name, phrases in PLAN_COMPACTION_NEEDS for ph in phrases if ph not in texts[name]]
+    if not texts['reference']: out.append('skills/plan/references/compaction.md is missing or empty')
+    if 'harness:' in texts['reference']: out.append('skills/plan/references/compaction.md references harness:')
+    return out
+_pc = {'skill': _plans['plan'], 'reference': _rd(root/'skills/plan/references/compaction.md'), 'entry': _entry}
+errors.extend(f'check.py: plan compaction: {m}' for m in plan_compaction_bad(_pc))
+for _name, _phrases in PLAN_COMPACTION_NEEDS:
+    for _ph in _phrases:
+        if not plan_compaction_bad(dict(_pc, **{_name: _pc[_name].replace(_ph, '')})): errors.append(f'check.py: plan compaction negative control not flagged for {_name} without "{_ph}"')
+if plan_compaction_bad(dict(_pc, reference='')) == plan_compaction_bad(dict(_pc, reference='x')): errors.append('check.py: plan compaction negative control not flagged for an empty reference')
+if not plan_compaction_bad(dict(_pc, reference=_pc['reference'] + ' harness:x')): errors.append('check.py: plan compaction negative control not flagged for a harness reference')
+if not plan_compaction_bad(dict(_pc, entry='\n'.join(_l for _l in _pc['entry'].splitlines() if '| plan compaction |' not in _l))): errors.append('check.py: plan compaction negative control not flagged for a removed entry row')
 # Plan verification (docstring item 48): the capture skill, its shared reference, and the plan skill's goal reference that reads it.
 PV_NEEDS = (('skill', ('references/outcome-block.md', 'Codex host', 'Unattended')),
             ('reference', ('Outcome', 'Measured by', 'Rubric', 'Negative control', 'outcome-block', 'done-measured')),
