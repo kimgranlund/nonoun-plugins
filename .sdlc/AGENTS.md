@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:058476106510 -->
+<!-- sdlc-lite:managed:start v1 sha256:1bebac4b00cf -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,14 +9,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 2
-  - T-0521 Recalibrate prices.json for the model rows changed in T-0516, T-0517, T-0519 and T-0520 (0521-prices-recalibrate-new-rows)
+- proposed: 1
   - T-0522 Live host check of the new model rows and of effort: in the messenger and conductor front matter (0522-live-check-new-model-rows)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 486
+- done: 487
 - dropped: 29
 
 ## Procedures
