@@ -92,12 +92,11 @@ The verdict routes the plan:
 | L2 | Opus medium | Several sources, some conflicting |
 | L3 | Opus high | New territory, and the synthesis drives a decision |
 
-## ui-designer (L1 to L2)
+## ui-designer (L1)
 
 | Level | Model / effort | Fits when |
 |---|---|---|
-| L1 | Opus medium | One component or one surface inside a design system the repo already has, or a review |
-| L2 | Opus high | A page or several components, a new pattern, or no design system found |
+| L1 | Opus high | Any DOM or CSS plan, review, or generate task |
 
 The mode comes from the handoff's `mode:` line (`plan`, `review`, or `generate`); generate is the only mode that edits.
 

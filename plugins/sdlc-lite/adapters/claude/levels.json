@@ -9,5 +9,5 @@
   "filer": {"L1": ["sonnet", "low"]},
   "plan-reviewer": {"L1": ["fable", "high"]},
   "solo": {"L1": ["sonnet", "high"], "L2": ["opus", "medium"], "L3": ["opus", "high"]},
-  "ui-designer": {"L1": ["opus", "medium"], "L2": ["opus", "high"]}
+  "ui-designer": {"L1": ["opus", "high"]}
 }

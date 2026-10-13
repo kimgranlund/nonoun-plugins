@@ -1,5 +1,5 @@
 {
-  "eval": ".sdlc/evals/0010-ui-designer-role.md",
-  "previous_eval": ".sdlc/evals/0009-model-batch-roles.md",
-  "table_sha256": "ad1fd99424c6e55232c10a0ad932a5495b7ee105d2e230b18e26a6c2009a737b"
+  "eval": ".sdlc/evals/0011-ui-designer-single-level.md",
+  "previous_eval": ".sdlc/evals/0010-ui-designer-role.md",
+  "table_sha256": "535da6be7e92461a0094057442c8ce233815455faf5b1e41643411eb7c8cf1a7"
 }
