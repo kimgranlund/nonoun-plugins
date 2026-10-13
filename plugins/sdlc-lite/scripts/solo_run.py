@@ -43,7 +43,9 @@ Claude: `SDLC_ROLE=solo claude -p --plugin-dir <plugin> --agent sdlc-lite:solo -
 --dangerously-skip-permissions --output-format json -- <brief>`. Codex: `codex_exec.py solo L1..L3 <brief>`; with SDLC_CODEX_TRANSPORT=subagent it adds
 `--request-file <task dir>/solo-<level>-<attempt>.request.json` (T-0372), the parent answers it through codex_exchange.py,
 and the record says transport subagent (a standalone run says exec).
-Exit status is the session's own, or 1 when it reported an error.
+Exit status is the session's own, or 1 when it reported an error or its result text is empty (no result file is
+written, so stdout says FAILED; T-0531). A handoff that is still the unfilled ticket template of its type refuses
+before any session or dispatch (T-0531).
 """
 import argparse
 import contextlib
@@ -130,6 +132,26 @@ def inner_loop_brief(task_dir, brief):
     return brief
 
 
+def refuse_template(task_dir):
+    """Refuse a handoff that is still the unfilled ticket template of its type (T-0531): every body line that is not a
+    heading or a bare label is a line of that template, by the comparison tickets.py placeholder_problems uses."""
+    sys.path.insert(0, str(SCRIPTS))
+    import steps
+    import tickets
+    handoff = pathlib.Path(task_dir) / 'handoff.md'
+    text = handoff.read_text(encoding='utf-8')
+    kind = re.search(r'(?m)^type:[ \t]*([a-z]+)', text)
+    if not kind or not text.startswith('---'):
+        return
+    try:
+        tpl = tickets.template(steps.sdlc_root(task_dir), kind.group(1)).read_text(encoding='utf-8')
+    except (tickets.Fail, OSError):
+        return
+    prompts = {tickets.prompt_text(ln) for _, ln in tickets.body_lines(tpl)}
+    if all(tickets.prompt_text(ln) in prompts for _, ln in tickets.body_lines(text)):
+        raise Refuse(f'{handoff}: still the unfilled {kind.group(1)} template; write its Goal, Intent and Context first')
+
+
 def dispatch_json(task_dir, tier, brief, worktree=None):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
     tier = tier_of(tier)
@@ -138,6 +160,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     handoff = pathlib.Path(task_dir) / 'handoff.md'
     if not handoff.is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    refuse_template(task_dir)
     brief = inner_loop_brief(task_dir, brief)
     hold = budget_hold(task_dir)
     if hold:
@@ -547,6 +570,7 @@ def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out
     command(tier, brief, backend)  # an unknown backend or level refuses before anything else
     if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    refuse_template(task_dir)
     brief = inner_loop_brief(task_dir, brief)
     argv, model, effort = command(tier, brief, backend)
     lock = lock_path(cwd or task_dir)
@@ -629,6 +653,10 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
         first = (out or '').strip().splitlines()[:1]
         print(f'solo_run.py: FAILED: session stream has no readable result event (JSON parse failure); '
               f'first line: {first[0][:200] if first else "(empty)"}; raw stream log: {log}')
+        failed = 1
+    elif rc == 0 and not (isinstance(text, str) and text.strip()):
+        # T-0531: an empty result text writes no result file, so the run left no record of its work: a failure.
+        print('solo_run.py: FAILED: the session result text is empty, so no solo result file was written')
         failed = 1
     if failed:
         limit_hint(task_dir, tier, text if isinstance(text, str) and text else out)
@@ -738,6 +766,38 @@ def selftest():
             d = ticket('err')
             expect('is_error result exits 1', q(d, 'M', 'b') == 1 and lines(d)[0].get('cost_usd') == 1)
             expect('a plain failure leaves no resume marker (T-0260 control)', not (d / 'solo.limit').exists())
+
+            # T-0531: a result event with empty text leaves no result file, so the run is a failure, not a silent exit 0.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"\",\"total_cost_usd\":1}'\n")
+            d = ticket('empty')
+            out_empty = io.StringIO()
+            with contextlib.redirect_stdout(out_empty), contextlib.redirect_stderr(io.StringIO()):
+                rc_empty = run(str(d), 'M', 'b', cwd=str(tmp))
+            expect('empty result text: exit 1, prints FAILED, writes no result file (T-0531)',
+                   rc_empty == 1 and 'FAILED' in out_empty.getvalue() and not lines(d)[0].get('file')
+                   and not list(d.glob('solo-*.md')))
+
+            # T-0531: a handoff that is still the stamped ticket template refuses before any session; a filled one runs.
+            d = tmp / 'tpl' / '.sdlc' / '0001-x'
+            d.mkdir(parents=True)
+            tpl_text = (SCRIPTS.parent / 'skills' / 'ticket' / 'templates' / 'chore.md').read_text(encoding='utf-8')
+            (d / 'handoff.md').write_text(tpl_text.replace('id: T-0000', 'id: T-0001').replace('title: ""', 'title: "t"'), encoding='utf-8')
+            refused = ''
+            try:
+                q(d, 'M', 'b', cwd=str(tmp))
+            except Refuse as exc:
+                refused = str(exc)
+            expect('template-equal handoff: solo refuses, writes no record (T-0531)',
+                   'unfilled chore template' in refused and not lines(d))
+            try:
+                dispatch_json(str(d), 'L2', 'b')
+                refused = ''
+            except Refuse as exc:
+                refused = str(exc)
+            expect('template-equal handoff: the dispatch start refuses too (T-0531)', 'unfilled chore template' in refused)
+            (d / 'handoff.md').write_text(tpl_text.replace('One or two sentences: the outcome, not the method.', 'Fix the typo.'), encoding='utf-8')
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+            expect('filled handoff: solo runs (T-0531 negative control)', q(d, 'M', 'b', cwd=str(tmp)) == 0 and len(lines(d)) == 1)
 
             # T-0260: a 429 session-limit stop leaves solo.limit and prints the resume hint.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"API Error: 429 session limit reached\"}'\n")

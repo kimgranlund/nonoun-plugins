@@ -33,3 +33,11 @@ Run records: retry names, filer prune, empty solo, closing maison T-0546 observa
 
 ## Constraints
 Preserve reference-safe closure, cross-worktree id uniqueness and explicit follow-up selection. A new or changed check needs a positive case and an observed negative control.
+
+## Acceptance criteria
+verifier: L3
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, and its output holds `ok: prune record: a filer whose ## Follow-ups is not None still prints prune: <name> and is queued (T-0531)` and the non-filer negative control `ok: prune record: a non-filer result with a pending follow-up is not queued (negative control)`.
+- [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0, covering: a result event with empty text exits 1 and prints `FAILED` with no result file; a template-equal handoff refuses in both `run` and `dispatch_json`; a filled handoff still runs.
+- [ ] `git diff --check` exits 0, and no added line holds an em dash.
+- [ ] The prune rule in `dispatch.py`'s docstring and `docs/references/sdlc-internals.md` names the filer exception.
+- Not met here: the retry-name item (observation 9). Its done-when fixture (prepare, record --no-result, prepare) already prints `-L4` then `-L4-2` on HEAD, so it has no red control; see the solo report.
