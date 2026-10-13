@@ -2,7 +2,7 @@
 id: T-0522
 title: "Live host check of the new model rows and of effort: in the messenger and conductor front matter"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0520]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ T-0519 notes say live host behavior is not proven. Pattern to follow: `docs/repo
 
 ## Constraints
 None beyond the repository guidance.
+
+## Closed
+
+2026-10-13: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: `docs/reports/2026-10-13-live-model-rows.md`, header: the report says the rows are "the ones T-0519 and T-0520 landed for 0.22.7" while `plugin.json` still reads 0.22.6. The report states this itself, so the evidence binds to commit `35fdddae`, not to a release. | `/tmp/t0522.1v2wMg` was left behind as scratch. It is harmless, and the builder disclosed it.
