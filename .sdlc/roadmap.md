@@ -517,3 +517,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0517 | [0517-codex-solo-l1-medium](0517-codex-solo-l1-medium/handoff.md) | Codex solo L1 follows the shifted builder ladder: gpt-6.1-sol medium | chore | L1 | P2 | T-0516 | ⏳ proposed |
 | T-0518 | [.0518-evals-same-day-lock](.0518-evals-same-day-lock/handoff.md) | evals.py lock: a later-numbered eval on the same date may supersede the lock | bug | L1 | P2 | none | 🟢 done |
 | T-0519 | [0519-model-batch-0222-7](0519-model-batch-0222-7/handoff.md) | Model batch: planner, architect, plan-reviewer, verifier, scout, researcher, filer, messenger, conductor (maintainer decisions 2026-10-12) | chore | L3 | P2 | T-0516, T-0517 | ⏳ proposed |
+| T-0520 | [0520-ui-designer-agent](0520-ui-designer-agent/handoff.md) | Add a ui-designer role: plans, reviews and generates semantic DOM and CSS, inside-out and outside-in, design-system aware | feature | L3 | P2 | T-0519 | ⏳ proposed |
