@@ -2,7 +2,7 @@
 id: T-0510
 title: "profile: inner-loop, local_gate and full_gate in .sdlc/config: solo_run refuses a full-suite criterion (T-0501 B1)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,7 @@ No model or effort change. One writer on `tickets.py`.
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 (its `(profile)` cases: a `(guard)` on the full gate lints with the plan defect; the same plan without the profile line lints clean)
 - [ ] `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0
 - [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full
