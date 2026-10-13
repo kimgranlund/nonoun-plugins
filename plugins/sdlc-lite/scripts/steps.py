@@ -144,7 +144,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             (the text of the item's code span; lines up to the next ## or ### line, ``` fences
             left out) resolves against the git toplevel of the plan file's folder, else that
             folder outside git. A path that does not exist is a finding: "steps: <plan> step <n>:
-            ### Read first lists a path that does not exist: <path>", and lint and split refuse
+            ### Read first lists a path that does not exist: <path>", unless an earlier step declares it
+            created (declared_future_paths: a [creates: <path>] marker, an Outputs: line, a ### Do create
+            verb, a (red) span; T-0533), and lint and split refuse
             with the plan defect last line. A step with no ### Read first stays valid.
             It also checks the plan's contract dependents (T-0271): every line that starts
             "plan defect:" (after leading blanks) in a step-*/verifier-*.md or step-*/builder-*.md
@@ -1557,6 +1559,29 @@ def declared_future_paths(text):
     return out
 
 
+def covered_by(rel, created):
+    """True when rel is a declared created path or lies under a declared created folder."""
+    return any(rel == f or rel.startswith(f.rstrip('/') + '/') for f in created)
+
+
+def earlier_created(task_dir, n):
+    """The paths the steps before step n declare they create (declared_future_paths, T-0533): from the
+    newest plan's ## Step blocks and the live step-<m>/handoff.md files with m < n. A step may cite a path an
+    earlier step creates."""
+    out = set()
+    with contextlib.suppress(Fail, OSError, UnicodeError):
+        plan, _ = find_plan(pathlib.Path(task_dir))
+        for m, block in parse_steps(plan).items():
+            if m < n:
+                out |= declared_future_paths(block)
+    for d in pathlib.Path(task_dir).glob('step-*'):
+        h = d / 'handoff.md'
+        if re.fullmatch(r'step-\d+', d.name) and int(d.name[5:]) < n and h.is_file():
+            with contextlib.suppress(OSError, UnicodeError):
+                out |= declared_future_paths(h.read_text(encoding='utf-8'))
+    return out
+
+
 def foreign_repo_names(text):
     """The repo names a handoff line `Other repo: <name>[, <name>]` (or `Foreign repos:`) declares."""
     return {n.strip('` .') for m in FOREIGN_LINE_RE.finditer(text) for n in re.split(r'[,;]\s*', m.group(1)) if n.strip('` .')}
@@ -1603,6 +1628,9 @@ def link_findings(handoff):
     prev = previous_attempt_span(text)
     seen, findings = set(), []
     future, names, roots = declared_future_paths(text), foreign_repo_names(text), repo_roots(handoff.parent)
+    sm = STEP_DIR_RE.match(own.name)
+    if sm:
+        future |= earlier_created(own.parent, int(sm.group(1)))
     for start, _, rel, anchor in cited_sdlc_paths(text):
         root = anchor or base
         key = (str(anchor), rel)
@@ -1611,7 +1639,7 @@ def link_findings(handoff):
         seen.add(key)
         p = root / rel
         if not p.exists() and (is_foreign_citation(text, start, anchor, roots, names)
-                               or any(rel == f or rel.startswith(f.rstrip('/') + '/') for f in future)):
+                               or covered_by(rel, future)):
             continue
         holders = superseded_holders(root, rel)
         shown = f'{anchor}/{rel}' if anchor else rel
@@ -1738,14 +1766,17 @@ def lint_steps(plan, steps, tree=None):
     findings = []
     base = None
     full_gates = full_gate_commands_for(plan)
+    created = set()
     for n, block in steps.items():
         paths = read_first_paths(block)
         if paths and base is None:
             folder = pathlib.Path(plan).resolve().parent
             base = pathlib.Path(lane_tree(folder, tree) or folder)
         for rel in paths:
-            if not (base / rel).exists() and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel):
+            if (not (base / rel).exists() and not covered_by(rel, created)
+                    and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel)):
                 findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
+        created |= declared_future_paths(block)
         for line, text in [(x, t) for x in criteria_lines(block) for t in line_spans(x)]:
             if text in full_gates and is_guard_line(line):
                 findings.append(f'steps: {plan} step {n}: plan defect: full gate `{text}` owned by the merge gate; '
@@ -4471,6 +4502,28 @@ def selftest():
               rc == 1 and out == '' and 'does not exist: gone/AGENTS.md' in err
               and err.strip().splitlines()[-1].startswith('plan defect')
               and rc2 == 1 and 'gone/AGENTS.md' in err2 and not (d / 'step-1').exists())
+        # T-0533: a path an earlier step marks [creates: <path>] is no plan defect in a later step; with no
+        # marker the same path is refused as before (the negative control)
+        for tag, mark in (('c-ok', ' [creates: sub/new.md, .sdlc/c-ok/notes.md]'), ('c-bad', '')):
+            d = r / '.sdlc' / tag
+            d.mkdir(parents=True)
+            (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+            s2 = STEP2.replace('### Do', '### Read first\n- `sub/new.md`\n### Do').replace(
+                'Do two.', f'Do two. Read .sdlc/{tag}/notes.md first.')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace('Do one.', 'Do one.' + mark)
+                                                 .replace(STEP2, s2)), encoding='utf-8')
+            rc, out, err = run_main(['lint', str(d)])
+            rc2, _, err2 = run_main(['split', str(d), '--only', '2'])
+            (d / 'step-2').mkdir(exist_ok=True)
+            (d / 'step-2' / 'handoff.md').write_text(f'## Task goal\ng\n\n{s2}\n', encoding='utf-8')
+            rc3, out3, err3 = run_main(['lint', str(d / 'step-2')])
+            if mark:
+                check('(r) T-0533: a path an earlier step marks [creates:] passes lint, split --only, and step lint',
+                      rc == 0 and rc2 == 0 and rc3 == 0 and 'steps lint: ok' in out3 and err3 == '')
+            else:
+                check('(r) T-0533 control: with no create marker lint, split --only, and step lint still refuse',
+                      rc == 1 and 'does not exist: sub/new.md' in err and rc2 == 1 and 'sub/new.md' in err2
+                      and rc3 == 1 and f'.sdlc/{tag}/notes.md' in err3)
 
         # (s) T-0271: a path a verifier or builder result named on a `plan defect:` line must appear in
         # a ## Step block of the plan, else lint and split refuse (the contract dependents rule)

@@ -179,7 +179,7 @@ The step's `### Do` states its validation scope (see `agents/planner.md`): the a
 
 `### Read first` is optional. For each file the step changes, it lists the nearest `AGENTS.md` in that file's folder or a folder above it, leaving out the root entry, one ``- `<path>` `` line each, relative to the repository root. A step whose only entry is the root has no `### Read first`. `steps.py lint` refuses a listed path that does not exist.
 
-`steps.py lint` refuses any cited `.sdlc/...` path that does not exist, except a path the step creates or one from another repository. A created path is declared by a ``[creates: <path>]`` marker, an `Outputs: <path>` line, a create or write verb on a `### Do` line, or a code span of a `(red)` criterion. A foreign path is declared by an `Other repo: <name>` line with the path written as `<name>/.sdlc/...`; an absolute path outside the repository needs no line.
+`steps.py lint` refuses any cited `.sdlc/...` path that does not exist, except a path the step creates or one from another repository. A created path is declared by a ``[creates: <path>]`` marker, an `Outputs: <path>` line, a create or write verb on a `### Do` line, or a code span of a `(red)` criterion; a path an earlier step declares that way is also exempt in later steps, in a cited path and in `### Read first`. A foreign path is declared by an `Other repo: <name>` line with the path written as `<name>/.sdlc/...`; an absolute path outside the repository needs no line.
 
 ### Merge step
 
