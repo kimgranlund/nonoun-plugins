@@ -39,7 +39,11 @@
 # <role>-<level>.running file beside it, allows the edit (exit 0), prints a freeze warning, and
 # appends one line to stale-edits.log beside the handoff; with SDLC_HANDOFF_EDIT_MODE=deny the same
 # case exits 2 with the same message. No .running file, another file name, and a .running file in a
-# different directory pass silently with no log line.
+# different directory pass silently with no log line. Prepared-attempt cases (T-0505) use no hand-made
+# marker: after a real dispatch.py prepare scout L1 in a throwaway repo, warn mode warns and logs one line
+# and deny mode exits 2; after dispatch.py record (completed, and failed on error text) and after
+# dispatch.py recover of a dead-owner attempt the hook is silent; recover leaves an attempt whose owner
+# is alive running, and its handoff stays frozen.
 # Publish phrases, kill-pattern words, and root-search phrases are built with printf so this
 # file never holds one as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
@@ -615,6 +619,74 @@ out=$(run "$wh" "$(wj "$wtmp/other/handoff.md")" ); rc=$?
 [[ $rc -eq 0 && "$out" == *builder-L1* ]] || fail "handoff-edit: a different handoff's own .running was not used (rc=$rc)"
 out=$(run "$wh" '{"tool_name":"Edit","tool_input":{}}'); rc=$?
 [[ $rc -eq 0 && -z "$out" ]] || fail "handoff-edit: missing file_path was not a silent pass (rc=$rc)"
+
+# warn-handoff-edit.sh with a real prepared attempt (T-0505): dispatch.py prepare writes the running marker, so the freeze
+# holds with no hand-made .running file; record (completed or failed) and recover (a dead owner) release it; recover leaves
+# an attempt that another live run owns. One throwaway repo and task folder per case (a live attempt refuses a second
+# prepare in its folder, and the hook logs a denied edit too).
+scripts="$(cd "$(dirname "$0")" && pwd)"
+pa="handoff-edit prepared attempt"
+# pd <repo> <owner pid or ""> <dispatch.py arguments>: dispatch.py run inside <repo> with none of the caller's variables.
+pd() {
+  local repo="$1" owner="$2"; shift 2
+  ( cd "$repo" && env -i PATH="$PATH" HOME="$HOME" ${owner:+SDLC_DISPATCH_PARENT_PID="$owner"} python3 "$scripts/dispatch.py" "$@" )
+}
+# prepared <case> [owner pid]: a fresh repo with one commit and one task folder, then a real prepare scout L1.
+# Sets pr (the repo) and pt (the task folder).
+prepared() {
+  pr="$wtmp/prepared-$1"; pt="$pr/.sdlc/task"
+  git init -q "$pr" && git -C "$pr" -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false commit --allow-empty -qm seed \
+    || fail "$pa $1: could not build the throwaway repo"
+  mkdir -p "$pt" && printf '## Goal\nMap seed.\n\n## Context\nseed\n\n## Question\nWhere is seed?\n' >"$pt/handoff.md"
+  pd "$pr" "${2:-}" prepare scout L1 .sdlc/task/handoff.md >/dev/null 2>"$pr.err" || fail "$pa $1: dispatch.py prepare failed: $(cat "$pr.err")"
+}
+# frozen: the hook's exit code for an edit of the prepared handoff in deny mode; its stderr is left in $out.
+frozen() { out=$(run "$wh" "$(wj "$pt/handoff.md")" SDLC_HANDOFF_EDIT_MODE=deny); }
+
+prepared warn
+out=$(run "$wh" "$(wj "$pt/handoff.md")" -u SDLC_HANDOFF_EDIT_MODE); rc=$?
+[[ $rc -eq 0 ]] || fail "$pa warn: exit $rc, want 0"
+grep -qF "handoff freeze (warning)" <<<"$out" || fail "$pa warn: stderr lacks the freeze warning (prepare left no running marker)"
+grep -q "scout-L1" <<<"$out" || fail "$pa warn: stderr does not name scout-L1"
+[[ "$(grep -c "edited while scout-L1 ran" "$pt/stale-edits.log" 2>/dev/null)" == 1 ]] || fail "$pa warn: stale-edits.log does not hold exactly one line"
+
+prepared deny
+frozen; rc=$?
+[[ $rc -eq 2 ]] || fail "$pa deny: exit $rc, want 2"
+
+prepared completed
+frozen; rc=$?
+[[ $rc -eq 2 ]] || fail "$pa completed: exit $rc before record, want 2"
+pd "$pr" "" record .sdlc/task/scout-L1.dispatch.json >/dev/null 2>&1 \
+  < <(printf '## Map\nNone\n\n## Entry points\nNone\n\n## Not found\nNone\n\n## Carry forward\nNone\n'); rc=$?
+[[ $rc -eq 0 && "$(jq -r .status "$pt/scout-L1.attempt.json")" == completed ]] || fail "$pa completed: dispatch.py record exit $rc, want 0 and a completed attempt"
+frozen; rc=$?
+[[ $rc -eq 0 && -z "$out" ]] || fail "$pa completed: the handoff stayed frozen after record (rc=$rc)"
+
+prepared failed
+frozen; rc=$?
+[[ $rc -eq 2 ]] || fail "$pa failed: exit $rc before record, want 2"
+pd "$pr" "" record .sdlc/task/scout-L1.dispatch.json >/dev/null 2>&1 < <(printf 'API Error: connection reset by peer\n'); rc=$?
+[[ $rc -eq 1 && "$(jq -r .status "$pt/scout-L1.attempt.json")" == failed ]] || fail "$pa failed: dispatch.py record exit $rc, want 1 and a failed attempt"
+frozen; rc=$?
+[[ $rc -eq 0 && -z "$out" ]] || fail "$pa failed: the handoff stayed frozen after a failed record (rc=$rc)"
+
+(exit 0) & gone=$!; wait "$gone"
+prepared recovered "$gone"
+frozen; rc=$?
+[[ $rc -eq 2 ]] || fail "$pa recovered: exit $rc before recover, want 2"
+rec=$(pd "$pr" "" recover "$pt" 2>&1)
+grep -qF "marked interrupted" <<<"$rec" || fail "$pa recovered: dispatch.py recover did not mark the dead-owner attempt interrupted: $rec"
+frozen; rc=$?
+[[ $rc -eq 0 && -z "$out" ]] || fail "$pa recovered: the handoff stayed frozen after recover (rc=$rc)"
+
+# Negative control for recovery: $$ is this suite, alive and older than the attempt, so the attempt belongs to a live run.
+prepared live "$$"
+rec=$(pd "$pr" "" recover "$pt" 2>&1)
+grep -qF "no orphaned attempts" <<<"$rec" || fail "$pa live: dispatch.py recover touched an attempt whose owner is alive: $rec"
+[[ "$(jq -r '"\(.status) \(.parent_pid)"' "$pt/scout-L1.attempt.json")" == "running $$" ]] || fail "$pa live: the attempt is no longer running under pid $$"
+frozen; rc=$?
+[[ $rc -eq 2 ]] || fail "$pa live: exit $rc after recover, want 2 (a live attempt keeps the freeze)"
 
 # Role resolution (hooks/_role.sh): SDLC_ROLE, else the sub-agent's agent_type with the sdlc-lite:
 # prefix and the -L<n> or solo tier suffix removed. Session agents and non-SDLC agents have no role.
