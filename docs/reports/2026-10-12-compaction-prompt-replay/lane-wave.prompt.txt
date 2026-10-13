@@ -1,0 +1,21 @@
+Continue wave 7 on `wave/7`; keep the sections below.
+GOAL
+Tickets T-0101, T-0102 and T-0103 are closed on `wave/7` | turn 1
+RULES
+At most 2 lanes run at once | "at most 2 lanes at once" turn 3
+No ticket closes on a verifier fail | "never close a ticket on a verifier fail" turn 4
+DECISIONS
+agent 2026-10-12 T-0102 gets one replan | criterion was wrong | turn 10
+user 2026-10-12 T-0102 pauses and the user is told when the replan fails | one replan cap | turn 11
+user 2026-10-12 T-0103 merges after T-0102 | shared `config/limits.yaml` | turn 14
+STATE
+T-0101 is merged into `wave/7`, gate `make test` green
+T-0102 replan is building in lane b
+T-0103 is verified in lane c and held
+OPEN
+Budget of T-0102 is at $4 of $5; the raise at $5 is a user-only action | turn 18
+NEXT
+planned: wait for the T-0102 replan build, then verify it
+DROP
+DROP tool output, the dry run listing, the red `test_retry_backoff` log
+NEXT check the T-0102 replan build in lane b

@@ -1,0 +1,21 @@
+Continue T-0465 step 2; keep the sections below.
+GOAL
+Record the replay and the live check of T-0465 in a dated report, gates green | [U]
+RULES
+none
+DECISIONS
+agent 2026-10-12 replay evidence is a dated report | repository home for evidence | [U]
+agent 2026-10-12 handoff write stays off by default | reload unverified | [U]
+STATE
+Branch `fanout/wave54-f`, 7 modified tracked files, 0 open pull requests
+`builder-L2` is running in `.sdlc/0465-compaction-prompt/step-2`
+Ticket T-0465 has status `proposed`; step 1 is verified, pass
+POINT `.sdlc/0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
+POINT `.sdlc/0465-compaction-prompt/step-2/handoff.md` -> the step and its criteria
+OPEN
+Live check of the `CLAUDE.local.md` reload after `/compact` is not run
+NEXT
+planned: build step 2 at level L2
+DROP
+DROP tool output, gate logs, the fixture drafts
+NEXT finish step 2 of T-0465 and verify it

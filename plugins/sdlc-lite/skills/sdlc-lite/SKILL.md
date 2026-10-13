@@ -28,6 +28,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Launch one SDLC Lite agent by name on instructions | agent |
 | Resolve outstanding questions / sweep questions and blockers | open-questions / ask |
 | Plan by kind: steps (default), doc, goal, campaign (a wave plan with a gate and parallel lanes), fanout, and get a paste-ready result | plan <kind> |
+| Author one `/compact` prompt for a manual compaction; it never runs the compaction | plan compaction |
 | Plan a loop and get a paste-ready `/loop` line | plan-loop |
 | Capture an outcome, measure, rubric and negative control before a plan | plan-verification |
 | Write a plan doc (goal, measures, authorization, ticket steps) for a smaller session to run / run an approved plan doc to completion | plan doc / run-plan |

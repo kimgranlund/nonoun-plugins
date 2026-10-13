@@ -1,0 +1,21 @@
+Continue the run of `docs/plans/export-csv.md`; keep the sections below.
+GOAL
+Ship CSV export for the invoices page by running `docs/plans/export-csv.md` to completion | turn 1
+RULES
+No push without asking the user first | "never push without asking me first" turn 3
+Every commit stays under 200 changed lines | "keep every commit under 200 changed lines" turn 4
+DECISIONS
+user 2026-10-12 the delimiter is a comma | US Excel readers | turn 7
+agent 2026-10-12 dates are UTC ISO 8601 | API returns UTC | turn 10
+user 2026-10-12 the streaming writer is out of scope | files are small | turn 11
+STATE
+Branch `feat/export-csv`, 2 dirty files
+Steps 1 to 3 are verified, step 4 is built and not verified, step 5 is not started
+POINT `docs/plans/export-csv.md` -> the 5 steps and their criteria
+OPEN
+Whether the export includes voided invoices waits on the user asking finance | turn 15
+NEXT
+planned: verify step 4
+DROP
+DROP tool output, the failed first build of step 3, the delimiter options
+NEXT verify step 4 (`export/view.py`)
