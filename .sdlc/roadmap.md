@@ -529,4 +529,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0529 | [0529-work-record-writing-rules](0529-work-record-writing-rules/handoff.md) | Writing rules for work records, and a placeholder gate at close (maison T-0546) | chore | L2 | P2 | T-0528 | ⏳ proposed |
 | T-0530 | [0530-lane-record-on-ticket](0530-lane-record-on-ticket/handoff.md) | Lane record on the ticket (maison T-0546) | feature | L2 | P2 | T-0529 | ⏳ proposed |
 | T-0531 | [0531-run-record-names-prune](0531-run-record-names-prune/handoff.md) | Run records: retry names, filer prune, empty solo (maison T-0546) | bug | L2 | P2 | none | ⏳ proposed |
-| T-0532 | [0532-step-tooling-long-suites](0532-step-tooling-long-suites/handoff.md) | Step tooling and long suites (maison T-0546) | feature | L2 | P2 | none | ⏳ proposed |
+| T-0532 | [.0532-step-tooling-long-suites](.0532-step-tooling-long-suites/handoff.md) | Step tooling and long suites (maison T-0546) | feature | L2 | P2 | none | 🟢 done |

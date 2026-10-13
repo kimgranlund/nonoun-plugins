@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a95cc54b35f8 -->
+<!-- sdlc-lite:managed:start v1 sha256:2b0a19d43b6e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,19 +9,18 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 6
   - T-0526 Claim and release commands, plus claim lint (maison T-0546) (0526-claim-release-commands)
   - T-0527 Close references, router links, launcher and root guard (maison T-0546) (0527-close-refs-router-launcher)
   - T-0528 Detect delivered and superseded open tickets (maison T-0546) (0528-detect-delivered-tickets)
   - T-0529 Writing rules for work records, and a placeholder gate at close (maison T-0546) (0529-work-record-writing-rules)
   - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
   - T-0531 Run records: retry names, filer prune, empty solo (maison T-0546) (0531-run-record-names-prune)
-  - T-0532 Step tooling and long suites (maison T-0546) (0532-step-tooling-long-suites)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 489
+- done: 490
 - dropped: 29
 
 ## Procedures
@@ -37,9 +36,9 @@ status: proposed | ready | claimed | paused | blocked | done | dropped
 
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or ask the user.
-2. Set `status: claimed` and add `claimed_by: <claude|codex> <YYYY-MM-DD>` to the front matter, then run `python3 <plugin-root>/scripts/tickets.py --root .sdlc roadmap`.
+2. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc claim <id> --by <claude|codex>`. It sets `status: claimed`, writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:`, and runs `roadmap`. To take over a stale claim, add `--handover --reason "<why>"`.
 3. Start the work through `run.sh`, which puts it in progress: `<plugin-root>/scripts/run.sh planner <level> .sdlc/<folder>/handoff.md`, or `/sdlc-lite:chain .sdlc/<folder>`. Progress shows on `/board`.
-4. Release: remove the `claimed_by:` line and set `status: ready`. Pause: set `status: paused` and add a one-line `paused_reason:`. Rerun `roadmap` after either.
+4. Release: `python3 <plugin-root>/scripts/tickets.py --root .sdlc release <id>`. Pause: set `status: paused` and add a one-line `paused_reason:`, then rerun `roadmap`.
 
 Close a ticket:
 1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 .sdlc/<folder>/handoff.md`.
