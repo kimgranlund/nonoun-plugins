@@ -71,11 +71,11 @@
    `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
    two run.sh lines swapped, must be flagged.
 17. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
-   agents/archaeologist.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the four producing
-   contracts (scout, researcher, architect, archaeologist); `search only what it does not answer` in
+   agents/archaeologist.md, agents/ui-designer.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the five
+   producing contracts (scout, researcher, architect, archaeologist, ui-designer); `search only what it does not answer` in
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
-   four producing roles, so item 13 also requires the `## Carry forward` heading line there.
+   five producing roles, so item 13 also requires the `## Carry forward` heading line there.
 18. Solo agent: agents/solo.md exists and names levels L1, L2, and L3 with `Sonnet high`, the row `| L2 | L2 | Opus medium |`, and
    `Opus high`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol medium, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist; and adapters/claude/levels.json has the
@@ -253,6 +253,12 @@
    unbalanced bracket, and a double quote; H-3 a hint of 101 characters; H-4 a hint flag absent from the body, and a hint flag absent from the mapped script; H-5 a usage
    text with one extra flag; H-6 a reader without the heading, and one with two headings; H-7 a reference skill with a hint. Positive controls: the five must-parse
    hints, a clean reader, and a usage flag carried by the `## Arguments` table under `[options]` add no finding.
+61. UI designer role (T-0520): agents/ui-designer.md names `mode: plan`, `mode: review`, `mode: generate`, `Inside out`, `Outside in`, and
+   `only mode that edits`. The role is one role with a mode that holds the builder's write allowances, so `ui-designer` is in
+   `claude_roles.WRITERS` and absent from the `SDLC_READONLY_ROLES` line of hooks/_role.sh; the two must agree, else one host layer
+   lets the generate mode edit and the other denies it. No hook holds the rule that plan and review never edit: the role
+   contract does, which is why the phrase is required here. Negative controls: each phrase removed, the role removed from
+   WRITERS, the role added to the SDLC_READONLY_ROLES line, and a _role.sh with no such line must each be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -717,7 +723,7 @@ for rel in sorted({r for rels in LEAN_TEMPLATE.values() for r in rels} | {'agent
             mutants += [text.replace('can affect', 'can touch'), text + '\nrerun them all\n', text + '\nrerun all checks\n']
         if any(not lean_template_bad(rel, m) for m in mutants): errors.append(f'check.py: lean template negative control not flagged for {rel}')
 # Carry forward (docstring item 17): producer contracts end with the section; planner and builder read it first.
-CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
+CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md', 'agents/ui-designer.md')
 CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
                  'at most 15 lines': CF_PRODUCERS,
                  'search only what it does not answer': ('agents/planner.md', 'agents/builder.md'),
@@ -730,6 +736,24 @@ for phrase, rels in CARRY_FORWARD.items():
         if carry_forward_missing(text, phrase): errors.append(f'{rel}: carry-forward text missing "{phrase}"')
         elif not carry_forward_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: carry-forward negative control not flagged')
+# UI designer role (docstring item 61, T-0520): the role file names its modes, passes, and edit rule; both write layers agree it writes.
+UI_DESIGNER_PHRASES = ('mode: plan', 'mode: review', 'mode: generate', 'Inside out', 'Outside in', 'only mode that edits')
+def ui_designer_bad(agent, writers, role_sh):
+    bad = [f'agents/ui-designer.md missing "{p}"' for p in UI_DESIGNER_PHRASES if p not in agent]
+    if 'ui-designer' not in writers: bad.append('ui-designer is not in claude_roles.WRITERS')
+    ro = [l for l in role_sh.splitlines() if l.startswith('SDLC_READONLY_ROLES=')]
+    if len(ro) != 1: bad.append('hooks/_role.sh does not hold exactly one SDLC_READONLY_ROLES line')
+    elif ' ui-designer ' in ro[0]: bad.append('hooks/_role.sh SDLC_READONLY_ROLES lists ui-designer, which claude_roles.WRITERS lets write')
+    return bad
+_uf, _uh = root/'agents/ui-designer.md', root/'hooks/_role.sh'
+_ua, _ur = (_uf.read_text() if _uf.is_file() else ''), (_uh.read_text() if _uh.is_file() else '')
+errors.extend(f'check.py: ui-designer role: {m}' for m in ui_designer_bad(_ua, claude_roles.WRITERS, _ur))
+if not ui_designer_bad(_ua, claude_roles.WRITERS, _ur):
+    for _ph in UI_DESIGNER_PHRASES:
+        if not ui_designer_bad(_ua.replace(_ph, ''), claude_roles.WRITERS, _ur): errors.append(f'check.py: ui-designer role negative control not flagged for "{_ph}"')
+    if not ui_designer_bad(_ua, tuple(w for w in claude_roles.WRITERS if w != 'ui-designer'), _ur): errors.append('check.py: ui-designer role negative control not flagged for a role missing from WRITERS')
+    if not ui_designer_bad(_ua, claude_roles.WRITERS, _ur.replace('SDLC_READONLY_ROLES=" ', 'SDLC_READONLY_ROLES=" ui-designer ', 1)): errors.append('check.py: ui-designer role negative control not flagged for a read-only ui-designer')
+    if not ui_designer_bad(_ua, claude_roles.WRITERS, _ur.replace('SDLC_READONLY_ROLES=', 'SDLC_RO=')): errors.append('check.py: ui-designer role negative control not flagged for a missing SDLC_READONLY_ROLES line')
 # Ticket budget (docstring item 22): filing sets it, run.sh gates on it (exit 4), board.py renders it.
 TICKET_BUDGET = {'budget.py set': ('skills/ticket/SKILL.md',),
                  'budget.py': ('scripts/run.sh', 'scripts/board.py'),

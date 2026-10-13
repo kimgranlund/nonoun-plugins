@@ -1,0 +1,107 @@
+<!-- role=ui-designer level=L2 model=opus effort=high -->
+## Mode
+plan
+
+## Decisions
+- Insert point is index.html after line 28, as the last child of `.top`: the summary follows the product grid in reading and tab order, and it is not a product, so it stays out of `.list`.
+- Root is `<section class="card summary" aria-labelledby="summary-title">`: a named section is a region landmark, so a screen reader user can jump to the order from any product. `section` over `aside` because the order is part of the page's main task.
+- Root composes `.card` (styles.css:25-30) for padding, border, radius, and background: one surface definition, and the panel reads as a sibling of the product cards. `.summary` adds layout only. Risk: a later product-only rule on `.card` would leak in.
+- Heading is `<h2 id="summary-title" class="summary-title">Order summary</h2>`: it names the landmark. Level 2 assumes `.title` (index.html:11) is the page's level 1. It is a div today and that fix is out of scope.
+- Items are `<ul class="summary-items" role="list">` with one `<li class="summary-item">` per product: a list announces its count. `role="list"` because `list-style: none` removes list semantics in Safari with VoiceOver.
+- Each row holds three spans, `.summary-item-name`, `.summary-item-qty` with the text "Qty 2", and `.summary-item-total`: `addToCart` can fire twice for one product (index.html:16), so a row needs a quantity. "Qty 2" as visible text reads correctly with no ARIA.
+- Quantity is display only: steppers and remove buttons are not in the goal.
+- Subtotal is `<p class="summary-total" role="status">` wrapping `.summary-total-label` and `.summary-total-amount`: `status` is a polite, atomic live region, so each cart change is announced as "Subtotal $38" while focus stays on the product's add control. `p` over `dl` because there is one pair, and `role="status"` on a `dl` would erase its semantics.
+- The subtotal line stays rendered in every state and shows "$0" when empty: a live region has to be in the DOM before its first change, and the panel does not jump on the first add.
+- Checkout is `<button type="button" class="summary-action">Checkout</button>`: a deviation from the local `div` plus `onclick` action (index.html:16). A button brings focus, Enter and Space, the button role, and native `disabled`. Button over link because the tree has no checkout URL and a link has no disabled state. With a real route, wrap it in a `form` and switch to `type="submit"`. The class stays.
+- Empty state is `<p class="summary-empty">Your order is empty.</p>` plus `disabled` on the button: native `disabled` takes the button out of the tab order, and the visible message says why.
+- Empty styling is derived with `:has()`, not a state class or `hidden`: the rows are the single source of truth. `hidden` would fail on the list, because the author `display: grid` beats the UA `[hidden]` rule.
+- The script contract is two facts, `disabled` on `.summary-action` exactly when no `.summary-item` exists, and the text of `.summary-total-amount`: everything else is CSS.
+- Static markup ships the populated state with two sample rows, priced from index.html:14-20: the tree has no script, so an empty list could not show the rows the goal asks for. Removing the rows and adding `disabled` gives the empty state.
+- Loading, selected, and invalid states are not planned: the tree has no async call, no selection, and no input. If checkout becomes async, set `disabled` and change the label to "Checking out…".
+- Button background is `var(--color-accent)`: styles.css:41 hardcodes the same hex and the plan does not repeat that. White on accent is 6.16:1.
+- Hover is `color-mix(in srgb, var(--color-accent) 85%, var(--color-text))` with no new token: tokens.css has no state colors, there is one consumer, and the mix follows the accent if it changes. It resolves to #234fbb, 7.22:1 under white. Promote it to `--color-accent-hover` when `.card-action` gets the same state.
+- Disabled is `--color-border` behind `--color-muted` text: existing tokens, 4.16:1, and no opacity that would fade the label.
+- Focus is `outline: 2px solid var(--color-accent)` with `outline-offset: 2px` on `:focus-visible`: 6.16:1 against the surface, and the offset leaves a gap between ring and fill. Literal px because the system has no border-width token and styles.css:27 already uses `1px`.
+- `.summary-action:disabled` is written after `:hover`: equal specificity, so source order stops a disabled button from showing hover with no `:not()`.
+- Rows share one grid: `.summary-items` is `grid-template-columns: 1fr auto auto` and each `li` is a `subgrid`, so quantity and total line up across rows on content-sized tracks with no fixed widths.
+- Amounts get `font-variant-numeric: tabular-nums` and `text-align: end`: digits line up down the column.
+- `.summary` is a grid with `gap: var(--space-3)` and each child sets `margin: 0`: spacing lives in one place, as `.list` does with `gap` (styles.css:22), and UA margins on `h2`, `ul`, and `p` do not add to it.
+- `max-inline-size: 28rem` with no media or container query: about two `14rem` card tracks (styles.css:21). Below that the panel fills its container and the name column wraps.
+- The button fills the panel's inline size: it is the single final action and a large target. A deviation from the content-sized `.card-action` (styles.css:38).
+- `.summary-title` is `1.25rem` with `font-weight: inherit`: one step under `.title` at `1.5rem` (styles.css:15), which carries hierarchy by size alone. Literal rem because the system has no type tokens.
+- All rules go in `@layer components` after styles.css:44, one class per selector, named `summary-*` after `card-*`: no specificity fight with existing rules. The exceptions are the state selectors, the pseudo-classes at (0,2,0) and the two `:has()` rules at (0,3,0) and (0,2,0).
+- Logical properties only: matches styles.css:16 and styles.css:34.
+- DOM, populated state: the empty state is the same tree with no `li` and `disabled` on the button.
+
+```html
+<section class="card summary" aria-labelledby="summary-title">
+  <h2 id="summary-title" class="summary-title">Order summary</h2>
+  <ul class="summary-items" role="list">
+    <li class="summary-item">
+      <span class="summary-item-name">Canvas tote</span>
+      <span class="summary-item-qty">Qty 1</span>
+      <span class="summary-item-total">$24</span>
+    </li>
+    <li class="summary-item">
+      <span class="summary-item-name">Enamel mug</span>
+      <span class="summary-item-qty">Qty 1</span>
+      <span class="summary-item-total">$14</span>
+    </li>
+  </ul>
+  <p class="summary-empty">Your order is empty.</p>
+  <p class="summary-total" role="status">
+    <span class="summary-total-label">Subtotal</span>
+    <span class="summary-total-amount">$38</span>
+  </p>
+  <button type="button" class="summary-action">Checkout</button>
+</section>
+```
+
+- CSS, in this order inside `@layer components`: source order carries the hover and disabled rule.
+
+```css
+.summary { display: grid; gap: var(--space-3); max-inline-size: 28rem; margin-block-start: var(--space-4); }
+.summary-title { margin: 0; font-size: 1.25rem; font-weight: inherit; }
+.summary-items { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-2) var(--space-3); margin: 0; padding: 0; list-style: none; }
+.summary-item { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; }
+.summary-item-name { min-inline-size: 0; overflow-wrap: anywhere; }
+.summary-item-qty { color: var(--color-muted); }
+.summary-item-total, .summary-total-amount { font-variant-numeric: tabular-nums; text-align: end; }
+.summary-empty { margin: 0; color: var(--color-muted); }
+.summary-total { display: flex; justify-content: space-between; gap: var(--space-3); margin: 0; padding-block-start: var(--space-3); border-block-start: 1px solid var(--color-border); }
+.summary-total-amount { font-weight: 600; }
+.summary-action { margin: 0; padding: var(--space-2) var(--space-3); border: 0; border-radius: var(--radius-1); background: var(--color-accent); color: var(--color-accent-contrast); font: inherit; cursor: pointer; }
+.summary-action:hover { background: color-mix(in srgb, var(--color-accent) 85%, var(--color-text)); }
+.summary-action:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.summary-action:disabled { background: var(--color-border); color: var(--color-muted); cursor: not-allowed; }
+.summary:has(.summary-item) .summary-empty,
+.summary-items:not(:has(.summary-item)) { display: none; }
+```
+
+## Findings
+None
+
+## Changes
+None
+
+## Context used
+- tokens.css: the whole design system. Six colors, four spaces, two radii. No type, border-width, hover, or disabled tokens.
+- styles.css: layer order `reset, base, components`, the flat `card-*` single-class naming, logical properties, `gap` for collection spacing, the `.card` surface, and the hardcoded accent at line 41.
+- index.html: the insert point, the absence of headings, landmarks, ids, and script, the `div` plus `onclick` action pattern, and the product names and prices.
+- No component library, theme file, or scout, architect, or researcher artifact exists in the tree or the artifacts dir.
+
+## Carry forward
+- Tokens are `--color-surface`, `-text`, `-muted`, `-accent`, `-accent-contrast`, `-border`, `--space-1..4`, `--radius-1..2`, and nothing else (tokens.css:1-14).
+- Layer order is `reset, base, components`; `reset` is declared and empty (styles.css:1).
+- Markup goes after index.html:28, inside `.top`, before its close at index.html:29.
+- CSS goes after styles.css:44, inside `@layer components`, before its close at styles.css:45.
+- Class naming is flat, hyphenated, one class per selector (styles.css:14-44).
+- styles.css:41 hardcodes `#2457d6`, the value of `--color-accent` (tokens.css:5). Do not copy it; use the token.
+- The page has no heading and no landmark; `.title` is a div (index.html:10-11). The planned `h2` assumes it becomes the `h1`.
+- Product actions are `div` plus `onclick`, not focusable (index.html:16, 21, 26). Fixing them is out of scope here.
+- `addToCart` is called and never defined, and the tree has no `script` element or JS file. Search: `git ls-files` plus `grep -rn addToCart` over the tree root, which holds index.html, styles.css, and tokens.css.
+- index.html has no `id` attribute, so `summary-title` is free. Same grep, pattern ` id=`.
+- Contrast from the WCAG formula on tokens.css values: white on accent 6.16, white on the hover mix #234fbb 7.22, muted on surface 5.85, muted on border 4.16, border on surface 1.41.
+- Author `display` on an element beats the UA `[hidden]` rule, which is why the empty state uses `:has()` (planned CSS above, last rule).
+- Script contract: toggle `disabled` on `.summary-action`, write `.summary-total-amount`, add or remove `li.summary-item`. No state class (planned DOM above).
+- `:has()`, `subgrid`, and `color-mix()` are the three newer CSS features the plan relies on, with no fallback for older browsers (planned CSS above).

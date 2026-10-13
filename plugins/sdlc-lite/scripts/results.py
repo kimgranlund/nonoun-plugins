@@ -29,12 +29,16 @@ A verifier criterion has four states (T-0408, docs/specs/sdlc-lite/verifier-held
 structure_error) refuses Verdict pass beside any criterion line that is not pass, and a held line with no #ref
 or no Evidence text. criteria_states and settled_refs read those lines for steps.py.
 
+The ui-designer key section `Mode` names the mode the run took (T-0520): plan, review, or generate, or
+`blocked: <question>` when the handoff's `mode:` line is missing or unknown (the same shape as `inherited red: <tests>`).
+
 Importable from the same scripts/ dir: SCHEMA, ROLES, validate, structure_error, key_value, attempt_reported,
 criteria_states, settled_refs.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile
 
 _INHERITED = ('inherited', r'inherited red: .+', 'inherited red: <tests>')
+_BLOCKED_Q = ('blocked', r'blocked: .+', 'blocked: <question>')
 
 SCHEMA = {
     'builder': {
@@ -70,6 +74,11 @@ SCHEMA = {
         'sections': ('Warnings', 'PR title', 'PR body', 'Changelog entry', 'Follow-ups'),
     },
     'solo': {'key': 'Output', 'allowed': (), 'sections': ('Output',)},
+    'ui-designer': {
+        'key': 'Mode',
+        'allowed': (('plan', r'plan', 'plan'), ('review', r'review', 'review'), ('generate', r'generate', 'generate'), _BLOCKED_Q),
+        'sections': ('Mode', 'Decisions', 'Findings', 'Changes', 'Context used', 'Carry forward'),
+    },
 }
 ROLES = tuple(SCHEMA)
 
@@ -382,9 +391,11 @@ def selftest():
         'architect': '## Approach\na\n\n## Interfaces\ni\n\n## Constraints and assumptions\nc\n\n'
                      '## Rejected alternatives\nr\n\n## Risks\nr\n\n## Carry forward\n- x\n',
         'solo': '## Output\nfiles: x\nverify: skipped\n',
+        'ui-designer': '## Mode\nplan\n\n## Decisions\nd\n\n## Findings\nNone\n\n## Changes\nNone\n\n'
+                       '## Context used\n- tokens.css\n\n## Carry forward\n- x\n',
         'filer': '## Warnings\nNone\n\n## PR title\nt\n\n## PR body\nb\n\n## Changelog entry\nc\n\n## Follow-ups\nNone\n',
     }
-    case('the schema covers the ten roles', set(bodies), set(ROLES))
+    case('the schema covers the eleven roles', set(bodies), set(ROLES))
     for role, body in bodies.items():
         case(f'a valid {role} result passes', validate(write(f'{role}-ok.md', head(role) + body)), None)
         case(f'a valid {role} result passes with --role', validate(write(f'{role}-ok2.md', head(role) + body), role), None)
@@ -409,9 +420,14 @@ def selftest():
     case('a missing builder Status fails',
          validate(write('nostatus.md', head('builder') + '## Changes\na\n')),
          'lacks ## Status (done|blocked|inherited red: <tests>)')
+    case('a missing ui-designer Mode fails',
+         validate(write('nomode.md', head('ui-designer') + '## Decisions\nd\n')),
+         'lacks ## Mode (plan|review|generate|blocked: <question>)')
+    case('ui-designer accepts blocked: <question>',
+         validate(write('ui-blocked.md', head('ui-designer') + '## Mode\nblocked: which surface is this for?\n')), None)
     case('a missing scout Map fails', validate(write('nomap.md', head('scout') + '## Entry points\ne\n')), 'lacks ## Map')
     case('an empty planner Goal body passes', validate(write('emptygoal.md', head('planner') + '## Goal\n\n## Risks\nr\n')), None)
-    for role in ('builder', 'verifier', 'plan-reviewer'):
+    for role in ('builder', 'verifier', 'plan-reviewer', 'ui-designer'):
         key = SCHEMA[role]['key']
         case(f'{role} rejects maybe',
              validate(write(f'{role}-maybe.md', head(role) + f'## {key}\nmaybe\n')),

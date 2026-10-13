@@ -107,7 +107,7 @@ it then does the following.
   success      the attempt is completed, the result path is printed, exit 0.
 Prune (T-0368). The host keeps a finished sub-agent as an idle, addressable teammate until it is stopped. prepare writes
 "prune": true into the dispatch for a one-shot role (scout, researcher, architect, archaeologist, planner, plan-reviewer,
-verifier, filer) and false for builder, whose failed run may be resumed (solo and the messenger are false too); --prune and
+verifier, filer, ui-designer) and false for builder, whose failed run may be resumed (solo and the messenger are false too); --prune and
 --no-prune override it. record on exit 0 with prune true prints `prune: <agent name>` and appends {name, agent_id, role,
 level, recorded_at} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
 result's ## Follow-ups section is not None. `dispatch.py prune` lists the queue with the stop call per entry
@@ -153,7 +153,7 @@ NAME_MAX = 64
 GATES = ('preflight', 'goal', 'links', 'lane', 'specgate', 'budget', 'lock')
 NAME_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 ID_RE = re.compile(r'[0-9]{8}T[0-9]{12}Z-[a-z0-9]+(-[a-z0-9]+)*')
-PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer')
+PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer', 'ui-designer')
 
 
 class Refuse(Exception):
@@ -2736,7 +2736,7 @@ def selftest():
             case('prune flag: prepare sets prune %s for %s' % (role != 'builder', role), rc == 0 and got['prune'] is (role != 'builder'))
         rc, got, err = prep(rb, 'scout', 'L1', '.sdlc/pf0/handoff.md', '--dry-run', '--no-prune')
         case('prune flag: --no-prune turns a one-shot role off', rc == 0 and got['prune'] is False)
-        rc, got, err = prep(rb, 'builder', 'L1', '.sdlc/pf8/handoff.md', '--dry-run', '--prune')
+        rc, got, err = prep(rb, 'builder', 'L1', '.sdlc/pf9/handoff.md', '--dry-run', '--prune')
         case('prune flag: --prune turns a builder on', rc == 0 and got['prune'] is True)
         try:
             rc, got, err = prep(rb, 'scout', 'L1', '.sdlc/pf0/handoff.md', '--dry-run', '--prune', '--no-prune')
