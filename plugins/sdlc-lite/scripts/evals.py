@@ -51,7 +51,7 @@ CLI (global options come before the subcommand)
   check          validate every eval and the lock against the current table hash
   lock --eval PATH
                  cite PATH (from the cwd) in the lock; a replacement must be dated later than the
-                 eval it replaces
+                 eval it replaces, or dated the same with a higher number
   hash           print the current table_sha256
   selftest       run the temp-dir regression cases, including the negative controls
 Exit codes: 0 ok, 1 refusal or failed check, 2 usage error.
@@ -269,9 +269,14 @@ def eval_date(path):
 
 # ---------------------------------------------------------------- lock
 
-def not_later(date, old_date):
-    """True when date is not later than old_date (ISO dates compare as text)."""
-    if date <= old_date:  # rule: date
+def eval_number(path):
+    return NUMBER_RE.match(Path(path).name).group(1)
+
+
+def not_later(date, old_date, number, old_number):
+    """True when the eval is not later than the old one: an earlier date, or the same date and a number
+    that is not higher (ISO dates and zero-padded numbers compare as text)."""
+    if (date, number) <= (old_date, old_number):  # rule: date
         return True
     return False
 
@@ -371,7 +376,7 @@ def check_problems(root, plugin):
             problems.append('%s: previous_eval %s: %s' % (subject, previous, prev_reason))
         if not reason and not prev_reason:
             d, d0 = eval_date(repo / lock['eval']), eval_date(repo / previous)
-            if not_later(d, d0):
+            if not_later(d, d0, eval_number(lock['eval']), eval_number(previous)):
                 problems.append('%s: eval %s date %s is not later than previous_eval %s date %s; '
                                 'a changed table needs a new eval' % (subject, lock['eval'], d, previous, d0))
     return problems
@@ -482,7 +487,7 @@ def cmd_lock(args, root, plugin):
         if old_reason:
             return refuse('%s: lock names no valid eval: %s: %s' % (subject, old, old_reason))
         d, d0 = eval_date(path), eval_date(repo / old)
-        if not_later(d, d0):
+        if not_later(d, d0, eval_number(path), eval_number(old)):
             return refuse('eval %s date %s is not later than the cited eval %s date %s; '
                           'a changed table needs a new eval' % (args.eval, d, old, d0))
         previous = old
@@ -726,6 +731,24 @@ def selftest(plugin):
             rc, out, err = ev(reused, ['check'])
             need(rc == 1 and 'is not later than previous_eval' in out, 'check: rc=%d %r' % (rc, out))
         case('check refuses a lock whose eval is not later than previous_eval', c11)
+
+        def c17(need):
+            d = project(more / 'sameday')
+            for slug in ('one', 'two', 'three'):
+                rc, out, err = ev(d, add_args(slug, date='2026-10-12'))
+                need(rc == 0, 'add %s: rc=%d %r' % (slug, rc, err))
+            rc, out, err = ev(d, add_args('early', date='2026-10-11'))
+            need(rc == 0, 'add early: rc=%d %r' % (rc, err))
+            e = d / '.sdlc' / 'evals'
+            rc, out, err = ev(d, ['lock', '--eval', str(e / '0001-two.md')])
+            need(rc == 0, 'first lock: rc=%d %r' % (rc, err))
+            rc, out, err = ev(d, ['lock', '--eval', str(e / '0002-three.md')])
+            need(rc == 0 and read_json(e / LOCK_NAME).get('eval') == '.sdlc/evals/0002-three.md',
+                 'same date, higher number: rc=%d %r' % (rc, err))
+            for name in ('0001-two.md', '0002-three.md', '0000-one.md', '0003-early.md'):
+                rc, out, err = ev(d, ['lock', '--eval', str(e / name)])
+                need(rc == 1 and 'is not later than' in err, '%s: rc=%d %r' % (name, rc, err))
+        case('lock accepts the same date with a higher number, refuses equal, lower, or earlier', c17)
 
         def c12(need):
             d = project(more / 'gone')
