@@ -1,5 +1,5 @@
 {
-  "builder": {"L1": ["sonnet", "low"], "L2": ["opus", "low"], "L3": ["opus", "high"], "L4": ["opus", "xhigh"], "L5": ["fable", "xhigh"]},
+  "builder": {"L1": ["claude-haiku-5-5", "xhigh"], "L2": ["sonnet", "high"], "L3": ["opus", "medium"], "L4": ["opus", "high"], "L5": ["opus", "xhigh"]},
   "planner": {"L1": ["sonnet", "medium"], "L2": ["opus", "medium"], "L3": ["opus", "xhigh"]},
   "verifier": {"L1": ["sonnet", "medium"], "L2": ["sonnet", "high"], "L3": ["fable", "xhigh"]},
   "researcher": {"L1": ["sonnet", "medium"], "L2": ["opus", "medium"], "L3": ["opus", "high"]},

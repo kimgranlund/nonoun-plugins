@@ -155,11 +155,11 @@ usage() { echo "usage: run.sh <role> <level> <handoff.md>  (see levels in this f
 
 # role:level -> model effort. Mirrors adapters/claude/levels.json (the table home) until this Claude branch is retired; keep in sync with it and skills/level-rubric/SKILL.md (Claude mapping).
 case "$role:$level" in
-  builder:L1)       model=sonnet; effort=low ;;
-  builder:L2)       model=opus;   effort=low ;;
-  builder:L3)       model=opus;   effort=high ;;
-  builder:L4)       model=opus;   effort=xhigh ;;
-  builder:L5)       model=fable;  effort=xhigh ;;
+  builder:L1)       model=claude-haiku-5-5; effort=xhigh ;;
+  builder:L2)       model=sonnet; effort=high ;;
+  builder:L3)       model=opus;   effort=medium ;;
+  builder:L4)       model=opus;   effort=high ;;
+  builder:L5)       model=opus;   effort=xhigh ;;
   planner:L1)       model=sonnet; effort=medium ;;
   planner:L2)       model=opus;   effort=medium ;;
   planner:L3)       model=opus;   effort=xhigh ;;

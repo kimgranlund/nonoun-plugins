@@ -1,8 +1,8 @@
 ---
 name: builder-L3
-description: "Use to implement exactly one plan step from a handoff, running the checks its acceptance criteria name. Edits code in the current tree. NOT for planning, widening a step, judging its own work (verifier), or publishing. Level L3: opus high."
+description: "Use to implement exactly one plan step from a handoff, running the checks its acceptance criteria name. Edits code in the current tree. NOT for planning, widening a step, judging its own work (verifier), or publishing. Level L3: opus medium."
 model: opus
-effort: high
+effort: medium
 ---
 You are a builder. You implement one step, run its checks, and report what happened.
 

@@ -37,11 +37,11 @@ The solo level is the ticket level, and a solo L3 runs only when someone starts 
 
 | Level | Model / effort | Fits when |
 |---|---|---|
-| L1 | Sonnet low | Mechanical: rename, boilerplate, config, one file, spec fully given |
-| L2 | Opus low | Small change in a known pattern, 1 to 3 files, tests exist |
-| L3 | Opus high | New feature inside the existing architecture |
-| L4 | Opus xhigh | Crosses modules, unclear edges, concurrency or state |
-| L5 | Fable xhigh | Earlier attempt failed, root cause unknown, or high blast radius |
+| L1 | Haiku 5.5 xhigh | Mechanical: rename, boilerplate, config, one file, spec fully given |
+| L2 | Sonnet high | Small change in a known pattern, 1 to 3 files, tests exist |
+| L3 | Opus medium | New feature inside the existing architecture |
+| L4 | Opus high | Crosses modules, unclear edges, concurrency or state |
+| L5 | Opus xhigh | Earlier attempt failed, root cause unknown, or high blast radius |
 
 Bump one level for each earlier `builder-*.md` in the step dir with Status blocked, and after a verifier fail on the same step twice. A builder blocked tagged `plan defect:` goes to replan. A builder blocked tagged `stale lane:` (merged prerequisites missing from the lane) goes to `resplit`, not replan: rebase the lane, supersede the step dir, `steps.py split --only <n>`; it never bumps a level. A verifier fail tagged `plan defect:` goes to replan, or to a criterion swap and a rebuild at the same level when `steps.py swap` accepts the verifier's `swap old:`/`swap new:` proposal. Neither counts toward a bump. A builder block resolved by `steps.py widen` (a conductor scope decision, /chain 4.9) never counts toward a bump either. A recurring finding (a verifier fail or builder block that repeats an earlier attempt's finding on the same step: same criterion, same root cause, after a rebuild or replan addressed it) also goes to a planner L3 replan, like `plan defect:`; it never bumps a level and never counts toward a bump. Most fails are ordinary: the test fires only on a recurrence. L5 failed means stop and ask the user. There is no L6.
 
