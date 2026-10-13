@@ -1614,6 +1614,12 @@ def selftest():
         rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run', '--solo-model', 'sonnet')
         case('the runs.jsonl solo record wins over --solo-model: an opus record keeps verifier L2 on sonnet', rc == 0 and got['model'] == 'sonnet')
         (so / 'runs.jsonl').unlink()
+        # T-0516: the solo L2 row is Opus medium (the builder ladder shifted down one), so its record keeps verifier L2 on sonnet
+        l2m, l2e = json.loads((PLUGIN / 'adapters' / 'claude' / 'levels.json').read_text())['solo']['L2']
+        (so / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L2', 'model': l2m}) + '\n')
+        rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run')
+        case('solo L2 is opus medium and its record keeps verifier L2 on sonnet', (l2m, l2e) == ('opus', 'medium') and rc == 0 and got['model'] == 'sonnet')
+        (so / 'runs.jsonl').unlink()
 
         # 3. Verifier at a task dir: the highest live step holds the build; superseded dirs are left out.
         td = sdlc / 'td'
