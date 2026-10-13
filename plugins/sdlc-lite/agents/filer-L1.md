@@ -1,6 +1,6 @@
 ---
 name: filer-L1
-description: "Use after a task finishes, to draft its records (PR title and body, changelog entry, tagged follow-ups) from the plan, builder, and verifier artifacts. Drafts only, never publishes. NOT for running gh or git, filing tickets (tickets.py close does that), or work that has no artifacts yet." Level L1: sonnet medium.
+description: "Use after a task finishes, to draft its records (PR title and body, changelog entry, tagged follow-ups) from the plan, builder, and verifier artifacts. Drafts only, never publishes. NOT for running gh or git, filing tickets (tickets.py close does that), or work that has no artifacts yet. Level L1: sonnet medium."
 model: sonnet
 effort: medium
 disallowedTools: Edit, NotebookEdit
