@@ -1,0 +1,2 @@
+Live check, nothing to build. Run exactly one Bash command: echo "effort=$CLAUDE_EFFORT"
+Then reply with exactly two lines and stop: line 1 is the command's output verbatim; line 2 is model=<the exact model ID stated in your system context, or unknown>. Read no files and run nothing else.

@@ -1,0 +1,20 @@
+You are a live check of the sdlc-lite plugin in a throwaway project. Never edit a file. Spawn each agent type below with the Agent tool, one at a time, in this order, waiting for each to finish (run_in_background false). Pass only subagent_type, description ("live row check"), and prompt. Do NOT pass model or effort. The prompt for every spawn is exactly the PROBE text below (for sdlc-lite:messenger, add a first line "Parent: main. Harness: claude. This is a probe, not a mailbox run: do only the following.").
+
+Agent types:
+sdlc-lite:planner-L1
+sdlc-lite:planner-L3
+sdlc-lite:architect-L1
+sdlc-lite:plan-reviewer-L1
+sdlc-lite:verifier-L1
+sdlc-lite:verifier-L3
+sdlc-lite:scout-L1
+sdlc-lite:researcher-L1
+sdlc-lite:filer-L1
+sdlc-lite:ui-designer-L1
+sdlc-lite:messenger
+
+PROBE:
+Live check, nothing to build. Run exactly one Bash command: echo "effort=$CLAUDE_EFFORT"
+Then reply with exactly two lines and stop: line 1 is the command's output verbatim; line 2 is model=<the exact model ID stated in your system context, or unknown>. Read no files and run nothing else.
+
+When all are done, print one line per agent type: <agent type> | <its line 1> | <its line 2> | <error text if the spawn failed>. Copy the agents' lines verbatim; do not correct or guess them. A spawn that fails is reported as failed, not retried with another type.
