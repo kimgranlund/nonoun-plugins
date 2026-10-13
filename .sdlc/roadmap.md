@@ -463,7 +463,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0464 | [.0464-ceremony-audit](.0464-ceremony-audit/handoff.md) | Audit ceremony versus defects caught; rank candidate changes toward a resolve-and-ship posture | spike | L3 | P2 | none | 🟢 done |
 | T-0466 | [.0466-reply-lint](.0466-reply-lint/handoff.md) | reply_lint.py: score assistant replies against the author output rules, and run the 3-arm comparison | chore | L2 | P2 | none | 🟢 done |
 | T-0467 | [.0467-plan-merge-a-skill](.0467-plan-merge-a-skill/handoff.md) | Merge plan skills A: new /plan skill with kinds steps, doc, goal, campaign, fanout | feature | L3 | P2 | T-0461 | 🟢 done |
-| T-0465 | [0465-compaction-prompt](0465-compaction-prompt/handoff.md) | /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) | feature | L3 | P2 | T-0461, T-0467 | ⏳ proposed |
+| T-0465 | [.0465-compaction-prompt](.0465-compaction-prompt/handoff.md) | /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) | feature | L3 | P2 | T-0461, T-0467 | 🟢 done |
 | T-0468 | [.0468-plan-merge-b-stubs](.0468-plan-merge-b-stubs/handoff.md) | Merge plan skills B: redirect stubs for the four retired names and retargeted checks | chore | L2 | P2 | T-0467 | 🟢 done |
 | T-0463 | [0463-skill-ui-hints](0463-skill-ui-hints/handoff.md) | Standardize skill argument hints and question UI across all skills, with a parity lint | chore | L3 | P2 | T-0461, T-0468 | ⏳ proposed |
 | T-0469 | [.0469-plan-merge-c-summary](.0469-plan-merge-c-summary/handoff.md) | Merge plan skills C: plan_check --summary cost line and controlled-language rules | feature | L2 | P2 | T-0468 | 🟢 done |
@@ -504,9 +504,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0504 | [.0504-claude-dispatch-space-paths](.0504-claude-dispatch-space-paths/handoff.md) | bug: Claude dispatch: preserve handoff paths containing spaces | bug | L2 | P2 | none | 🟢 done |
 | T-0505 | [.0505-claude-prepared-handoff-freeze](.0505-claude-prepared-handoff-freeze/handoff.md) | bug: Claude hooks: freeze handoffs during prepared attempts | bug | L3 | P2 | none | 🟢 done |
 | T-0506 | [.0506-codex-profile-output-envelope](.0506-codex-profile-output-envelope/handoff.md) | bug: Codex profiles: reconcile fingerprint and report contracts | bug | L2 | P2 | none | 🟢 done |
-| T-0507 | [0507-codex-exchange-fingerprint-binding](0507-codex-exchange-fingerprint-binding/handoff.md) | bug: Codex exchange: enforce the dispatched profile binding | bug | L3 | P2 | T-0506 | 🔵 ready |
+| T-0507 | [.0507-codex-exchange-fingerprint-binding](.0507-codex-exchange-fingerprint-binding/handoff.md) | bug: Codex exchange: enforce the dispatched profile binding | bug | L3 | P2 | T-0506 | 🟢 done |
 | T-0508 | [.0508-ask-ticket-layout-sweep](.0508-ask-ticket-layout-sweep/handoff.md) | bug: ask: discover blockers in every supported ticket layout | bug | L2 | P2 | none | 🟢 done |
-| T-0509 | [0509-operator-recovery-agent-inventory](0509-operator-recovery-agent-inventory/handoff.md) | chore: guidance: align recovery behavior and Codex agent counts | chore | L1 | P3 | none | 🔵 ready |
+| T-0509 | [.0509-operator-recovery-agent-inventory](.0509-operator-recovery-agent-inventory/handoff.md) | chore: guidance: align recovery behavior and Codex agent counts | chore | L1 | P3 | none | 🟢 done |
 | T-0510 | [.0510-inner-loop-b1-config](.0510-inner-loop-b1-config/handoff.md) | profile: inner-loop, local_gate and full_gate in .sdlc/config: solo_run refuses a full-suite criterion (T-0501 B1) | feature | L2 | P2 | none | 🟢 done |
 | T-0511 | [.0511-inner-loop-b2-notes](.0511-inner-loop-b2-notes/handoff.md) | verifier: a Notes section for nits, carried into the close reason (T-0501 B2) | chore | L1 | P2 | none | 🟢 done |
 | T-0512 | [.0512-inner-loop-b3-l3-solo](.0512-inner-loop-b3-l3-solo/handoff.md) | steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) | feature | L2 | P2 | T-0510 | 🟢 done |

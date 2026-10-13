@@ -2,7 +2,7 @@
 id: T-0509
 title: "chore: guidance: align recovery behavior and Codex agent counts"
 type: chore
-status: ready
+status: done
 size: L1
 priority: P3
 depends: []
@@ -47,3 +47,7 @@ Host scope: Shared / Codex. Finding F7 in the [Astra review](../../docs/reports/
 - Keep the dated report immutable. Store new validation evidence in a new dated report.
 - Retain a rejecting defect case and a passing fixed case. Report required live checks as unverified if unavailable.
 - The existing Progressive Context performance-contract link failure is unrelated; do not fix it in this ticket.
+
+## Closed
+
+2026-10-12: solo L1 built and merged (wave 54 lane g); no verifier at L1; conductor recovery guidance and Codex agent counts corrected

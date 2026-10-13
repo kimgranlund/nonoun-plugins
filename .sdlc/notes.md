@@ -408,3 +408,17 @@
 - decide: Run a live fresh-Claude check on this tree's plugin and record it as `observed` in a new dated report. Ticket criterion 6 is open, and the builder's headless sub-agent loaded the main checkout's plugin, not this tree's.
 - note: The marker is keyed by role and level, not by attempt stem. Recording one of two same-role, same-level attempts of one session drops the marker while the other still runs (the T-0371 skip). A standing marker from an unrecorded attempt stays until `dispatch.py recover` or `run_lifecycle.py recover` runs.
 - note: The selftest label `prepare --dry-run writes no running marker (T-0505)` also passes on the base. It guards only the placement of the marker write.
+
+## T-0507: bug: Codex exchange: enforce the dispatched profile binding (2026-10-12)
+
+- decide: Criterion 7 (a live named-agent Codex run completing the bound exchange) is unverified; someone must run it on a Codex host, or accept the offline subprocess evidence.
+- note: `block-stray-worktree.sh` denies `git worktree add` inside role sessions because the hook sees no `SDLC_TMP_WORKTREES`. A planner brief should phrase a base-tree check as a `git archive` recipe instead.
+- note: The new report quotes the live fingerprint `0.22.5+e27be4736593` for `sdlc-scout-l1`. Any later edit to `instructions.md` changes it, so the report stays dated evidence and is not rewritten.
+
+## T-0465: /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (2026-10-12)
+
+- decide: Run one live check that Claude Code reloads `CLAUDE.local.md` after `/compact`, plus an independent replay of prompt vs free `/compact` by a session that did not build the skill. Until then `--write-handoff` stays off and the outcome metric has no before value.
+- fix-now: Reconcile the live skill output with the kind's return shape. It printed one sentence before the fence and three attention lines plus a next-action line after `Run:`, and merged the lint's `lines:` and `pin:` lines into one.
+- note: `compaction_handoff.py` goes beyond the step handoff in two places: `write` exits 2 on an empty body, and `status` prints `stale: written unknown` when the section has no `Written` line.
+- note: Rule readings the handoff left open: `compaction-entry-copy` counts 4 words on the whole line, verb included. `compaction-decision` skips `none` and POINT lines. A `none` line in DROP is flagged by `compaction-verb`.
+- note: `docs/reports/AGENTS.md` calls reports immutable. The step 3 builder appended a section to the untracked replay report because the step handoff directed it.

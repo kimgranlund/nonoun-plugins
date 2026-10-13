@@ -2,7 +2,7 @@
 id: T-0507
 title: "bug: Codex exchange: enforce the dispatched profile binding"
 type: bug
-status: ready
+status: done
 size: L3
 priority: P2
 depends: ["T-0506"]
@@ -65,3 +65,12 @@ Compare the relevant observations with the acceptance criteria; add discriminati
 - Keep the dated report immutable. Store new validation evidence in a new dated report.
 - Retain a rejecting defect case and a passing fixed case. Report required live checks as unverified if unavailable.
 - The existing Progressive Context performance-contract link failure is unrelated; do not fix it in this ticket.
+
+## Closed
+
+2026-10-12: warnings acknowledged: all steps verifier pass; criterion 7 (live Codex named-agent exchange) is unverified and the report says so; the worktree-based control used a git archive export because the stray-worktree hook denied git worktree add; full suite ran in the land gates
+
+> - Handoff criterion 7 is unverified. It asks for a fresh callable named-agent Codex run that completes the bound exchange. That run can't happen on this Claude host without nesting a CLI. The new dated report marks it unverified. The fingerprint cases were checked only with real waiter subprocesses and the `codex_exchange.py` CLI.
+> - Step 1 criterion 3 was met by a substitute. `git worktree add` was denied by `block-stray-worktree.sh` because `SDLC_TMP_WORKTREES` was unset. Builder and verifier used a `git archive` export of base `07a5c289` instead. `cmp` showed its `codex_exchange.py` matched the base byte for byte. Each new test failed there on a real assertion.
+> - The full `check.sh` was not run. It is left to the `fanout.py land` gate. `dispatch.py selftest` was run by the step 1 verifier and passed.
+> - Steps 1, 2 and 3 all passed verification. There is no `process-deviations.md` in the artifacts dir or any step folder, so there are no process deviations.

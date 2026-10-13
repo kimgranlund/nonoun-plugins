@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:fdc85dcbdd40 -->
+<!-- sdlc-lite:managed:start v1 sha256:5fa06c13ea5c -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,18 +9,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 4
+- proposed: 3
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
-  - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0516 Solo ladder follows the builder ladder shifted down one: solo L1 Sonnet high, L2 Opus medium, L3 Opus high (0516-solo-ladder-shift)
   - T-0517 Codex solo L1 follows the shifted builder ladder: gpt-6.1-sol medium (0517-codex-solo-l1-medium)
-- ready: 2
-  - T-0507 bug: Codex exchange: enforce the dispatched profile binding (0507-codex-exchange-fingerprint-binding)
-  - T-0509 chore: guidance: align recovery behavior and Codex agent counts (0509-operator-recovery-agent-inventory)
+- ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 475
+- done: 478
 - dropped: 29
 
 ## Procedures

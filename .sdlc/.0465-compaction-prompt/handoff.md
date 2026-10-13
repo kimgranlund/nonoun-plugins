@@ -2,7 +2,7 @@
 id: T-0465
 title: "/plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0461, T-0467]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,13 @@ Origin: handoff from the ultimate-tokens conductor session of 2026-10-12, spec f
 
 ## Constraints
 No write to `AGENTS.md` or `CLAUDE.md`. Read-only except, with `--write-handoff`, the one H2 in `CLAUDE.local.md`. Never record an approval the person did not give in their own words. No model or effort change. One writer on `plan_check.py`, `check.py` and `core.md` at a time (runs after T-0461). The skill stays self-contained (`check.py` item 42).
+
+## Closed
+
+2026-10-12: warnings acknowledged: all steps verifier pass; the live /compact and CLAUDE.local.md check and the replay are unverified (builder replay, not independent) and the report says so; --write-handoff stays off by default
+
+> - No planned step failed. Verdicts: step 1 (verifier L2) pass, step 2 (verifier L1) pass, step 3 (verifier L1) pass. No `process-deviations.md` exists in the artifacts dir or any step folder, so there are no process deviations to list.
+> - The ticket's Done-when asks for one live check that Claude Code loads `CLAUDE.local.md` after `/compact`. It is unverified. A headless builder cannot run `/compact`, and the report line reads `unverified [U]`. `--write-handoff` stays off by default.
+> - The replay in `docs/reports/2026-10-12-compaction-prompt-replay.md` is marked "unverified: not an independent run". The step 2 builder wrote the fixtures, the prompts, both summaries per fixture and the scores, and no summarizer model ran. The replay does not show that the prompt helps. The outcome metric still has no measured before value.
+> - Step 1's verifier did not reproduce the builder's red-first run for the `plan_check.py` rules, because the stub was gone. It ran its own mutant blocks, and each rule fired on its defect. The `compaction_handoff.py` red controls were five sed mutants of a temp copy, run by the builder.
+> - Step 3's live skill run is one headless run with `--dangerously-skip-permissions` and `SDLC_ROLE=conductor` inherited from the parent shell. The verifier did not re-run it. It checked the saved stdout and the lint only.
