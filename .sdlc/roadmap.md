@@ -530,3 +530,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0530 | [0530-lane-record-on-ticket](0530-lane-record-on-ticket/handoff.md) | Lane record on the ticket (maison T-0546) | feature | L2 | P2 | T-0529 | ⏳ proposed |
 | T-0531 | [0531-run-record-names-prune](0531-run-record-names-prune/handoff.md) | Run records: retry names, filer prune, empty solo (maison T-0546) | bug | L2 | P2 | none | ⏳ proposed |
 | T-0532 | [0532-step-tooling-long-suites](0532-step-tooling-long-suites/handoff.md) | Step tooling and long suites (maison T-0546) | feature | L2 | P2 | none | ⏳ proposed |
+| T-0533 | [0533-split-lint-creates-marker](0533-split-lint-creates-marker/handoff.md) | steps.py split lints each step alone: a path an earlier step creates ([creates: ...]) reads as a plan defect (maison T-0546 item 32) | bug | L2 | P2 | none | ⏳ proposed |

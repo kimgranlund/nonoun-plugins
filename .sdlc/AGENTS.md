@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a95cc54b35f8 -->
+<!-- sdlc-lite:managed:start v1 sha256:8ac8a1929d4e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 8
   - T-0526 Claim and release commands, plus claim lint (maison T-0546) (0526-claim-release-commands)
   - T-0527 Close references, router links, launcher and root guard (maison T-0546) (0527-close-refs-router-launcher)
   - T-0528 Detect delivered and superseded open tickets (maison T-0546) (0528-detect-delivered-tickets)
@@ -17,6 +17,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
   - T-0531 Run records: retry names, filer prune, empty solo (maison T-0546) (0531-run-record-names-prune)
   - T-0532 Step tooling and long suites (maison T-0546) (0532-step-tooling-long-suites)
+  - T-0533 steps.py split lints each step alone: a path an earlier step creates ([creates: ...]) reads as a plan defect (maison T-0546 item 32) (0533-split-lint-creates-marker)
 - ready: 0
 - claimed: 0
 - paused: 0
