@@ -2,7 +2,7 @@
 id: T-0526
 title: "Claim and release commands, plus claim lint (maison T-0546)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,7 @@ Preserve reference-safe closure, cross-worktree id uniqueness and explicit follo
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 (the regenerated `.sdlc/AGENTS.md` router is current).
 - The router "Claim a ticket" procedure and `plugins/sdlc-lite/skills/ticket/SKILL.md` describe `claim`, `--handover --reason`, `release`, and the `claim_days:` lint; a `new` refused by a ticket problem names that ticket folder and a one-line fix.
 - `git diff --check` exits 0.
+
+## Closed
+
+2026-10-13: solo L2 built, verifier L2 pass, merged from fanout/wave64-a; gate red was the ticket skill hint length, fixed in the lane
