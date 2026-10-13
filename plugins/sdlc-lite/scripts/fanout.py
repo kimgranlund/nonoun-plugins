@@ -3919,7 +3919,7 @@ def selftest():
 
         # case 19: report names the real model per backend; a gate that ran no tests is flagged
         for be, tier, want in (('claude', 'L1', 'sonnet high'), ('claude', 'L2', 'opus medium'), ('claude', 'L3', 'opus high'),
-                               ('codex', 'L1', 'gpt-6.1-sol low'), ('codex', 'L2', 'gpt-6.1-sol high'),
+                               ('codex', 'L1', 'gpt-6.1-sol medium'), ('codex', 'L2', 'gpt-6.1-sol high'),
                                ('codex', 'L3', 'gpt-6.1-sol xhigh'), ('claude', 'M', 'opus medium'), ('codex', 'L', 'gpt-6.1-sol xhigh')):
             got = solo_model_label(tier, be)
             expect(f'case 19 model label: {be} level {tier} is {want!r}, got {got!r}', got == want)
