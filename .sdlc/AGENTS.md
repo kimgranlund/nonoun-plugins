@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:7d8b8650dbac -->
+<!-- sdlc-lite:managed:start v1 sha256:1d2d512b6b67 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,11 +9,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 4
+- proposed: 3
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
-  - T-0513 A (parity) criterion for styling tickets: screenshot pair with named properties (T-0501 B4) (0513-inner-loop-b4-parity)
 - ready: 3
   - T-0505 bug: Claude hooks: freeze handoffs during prepared attempts (0505-claude-prepared-handoff-freeze)
   - T-0507 bug: Codex exchange: enforce the dispatched profile binding (0507-codex-exchange-fingerprint-binding)
@@ -21,7 +20,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 472
+- done: 473
 - dropped: 29
 
 ## Procedures
