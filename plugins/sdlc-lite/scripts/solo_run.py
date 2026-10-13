@@ -103,6 +103,33 @@ def head_sha(where):
     return r.stdout.strip() or None if r.returncode == 0 else None
 
 
+def inner_loop_brief(task_dir, brief):
+    """The brief for a ticket under the inner-loop profile (T-0510): Refuse when a `## Acceptance criteria` or `Done when:`
+    span equals a `full_gate:` command (the merge gate owns the suite), naming the `local_gate:` lines; else the brief with
+    `Checks: <local_gate lines>` appended when it names none. A repo without `profile: inner-loop` in .sdlc/config, and a
+    handoff with a `profile: default` line, get the brief back unchanged."""
+    handoff = pathlib.Path(task_dir) / 'handoff.md'
+    if not handoff.is_file():
+        return brief
+    sys.path.insert(0, str(SCRIPTS))  # a copy of this file elsewhere (the selftest controls) still finds its siblings
+    import steps
+    import tickets
+    import results
+    text = handoff.read_text(encoding='utf-8')
+    root = steps.sdlc_root(task_dir)
+    if not tickets.inner_loop(root, text):
+        return brief
+    local = tickets.local_gate_commands(root)
+    full = tickets.full_gate_commands(root)
+    for span in results.criterion_spans(text):
+        if span in full:
+            raise Refuse(f'full gate `{span}` in a criterion; the merge gate owns it, the local gate is: '
+                         + (', '.join(local) if local else '(no local_gate: line in .sdlc/config)'))
+    if local and not re.search(r'(?m)^\s*Checks:', brief):
+        brief = brief.rstrip('\n') + '\nChecks: ' + '; '.join(local)
+    return brief
+
+
 def dispatch_json(task_dir, tier, brief, worktree=None):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
     tier = tier_of(tier)
@@ -111,6 +138,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     handoff = pathlib.Path(task_dir) / 'handoff.md'
     if not handoff.is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    brief = inner_loop_brief(task_dir, brief)
     hold = budget_hold(task_dir)
     if hold:
         print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
@@ -513,9 +541,11 @@ def ensure_worktree(name, base=None, task_dir=None):
 
 def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out=None):
     tier = tier_of(tier)
-    argv, model, effort = command(tier, brief, backend)
+    command(tier, brief, backend)  # an unknown backend or level refuses before anything else
     if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    brief = inner_loop_brief(task_dir, brief)
+    argv, model, effort = command(tier, brief, backend)
     lock = lock_path(cwd or task_dir)
     if lock is not None:
         take_lock(lock)
@@ -1159,6 +1189,38 @@ def selftest():
         r1 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()][0]
         expect('complete: with nothing to price, agent_id and duration still land', r1.get('agent_id') == 'ag-8' and r1.get('duration_ms') == 77
                and r1['cost_usd'] is None)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0510: the inner-loop profile refuses a full-suite criterion
+        tmp = pathlib.Path(tmp)
+        cfg = 'profile: inner-loop\nlocal_gate: python3 check.py\nfull_gate: python3 suite.py\n'
+
+        def il(name, config, crit, extra=''):
+            d = tmp / name / '.sdlc' / '0001-x'
+            d.mkdir(parents=True)
+            (d.parent / 'config').write_text(config)
+            (d / 'handoff.md').write_text('---\nid: T-0001\ntitle: t\ntype: chore\nstatus: ready\nsize: L2\n---\n' + extra
+                                          + f'\n## Goal\ng\n\n## Acceptance criteria\n- [ ] `{crit}` exits 0\n')
+            return d
+
+        def il_run(d):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                try:
+                    rc, disp = dispatch_json(str(d), 'L2', 'the brief')
+                except Refuse as exc:
+                    print(f'solo_run.py: {exc}', file=sys.stderr)
+                    rc, disp = 2, None
+            return rc, disp, err.getvalue(), (d / 'runs.jsonl').is_file()
+        rc, disp, err, rec = il_run(il('on', cfg, 'python3 suite.py'))
+        expect('profile: a full-gate criterion exits 2 naming the local gate, no record, no dispatch',
+               rc == 2 and disp is None and not rec and 'full gate `python3 suite.py`' in err and 'python3 check.py' in err)
+        rc, disp, err, rec = il_run(il('off', cfg.replace('profile: inner-loop\n', ''), 'python3 suite.py'))
+        expect('profile control: no profile line dispatches, the brief unchanged',
+               rc == 0 and disp and rec and 'Checks:' not in disp['prompt'])
+        rc, disp, err, rec = il_run(il('local', cfg, 'python3 check.py'))
+        expect('profile control: a local-gate criterion dispatches with Checks: python3 check.py in the prompt',
+               rc == 0 and disp and rec and disp['prompt'].endswith('the brief\nChecks: python3 check.py'))
+        rc, disp, err, rec = il_run(il('dflt', cfg, 'python3 suite.py', 'profile: default\n'))
+        expect('profile control: profile: default in the handoff dispatches', rc == 0 and disp and rec)
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
