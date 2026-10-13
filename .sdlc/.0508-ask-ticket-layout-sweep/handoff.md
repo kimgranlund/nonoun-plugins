@@ -2,7 +2,7 @@
 id: T-0508
 title: "bug: ask: discover blockers in every supported ticket layout"
 type: bug
-status: ready
+status: done
 size: L2
 priority: P2
 depends: []
@@ -63,3 +63,7 @@ Compare the relevant observations with the acceptance criteria; add discriminati
 - Keep the dated report immutable. Store new validation evidence in a new dated report.
 - Retain a rejecting defect case and a passing fixed case. Report required live checks as unverified if unavailable.
 - The existing Progressive Context performance-contract link failure is unrelated; do not fix it in this ticket.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full
