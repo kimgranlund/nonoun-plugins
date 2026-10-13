@@ -431,3 +431,9 @@
 - decide: the `plan` kind question dropped from 5 clickable options to 4 to meet question rule 4 (2 to 4 options). `fanout` is now reachable only through the Other box. Decide whether that is acceptable or rule 4 should allow 5 for this one question.
 - note: the old/new hint table for the ticket notes is in `/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout59/x/.sdlc/0463-skill-ui-hints/hints.md`. The ticket's Done-when asks for it in the ticket notes, so copy or link it at close.
 - note: 12 other skills that name `AskUserQuestion` were read and left unchanged, including `grill`, which marks its first option `(Recommended)` with a tradeoff. The verifier's spot-read found no clear rule violation, but question-rule conformance has no command-level check.
+
+## T-0519: Model batch: planner, architect, plan-reviewer, verifier, scout, researcher, filer, messenger, conductor (maintainer decisions 2026-10-12) (2026-10-13)
+
+- decide: `prices.json` was not recalibrated for the new rows (handoff non-goal); a person must choose whether to open the one follow-up ticket for it.
+- note: the Pareto read behind these decisions comes from third-party Artificial Analysis summaries, is unverified, and has no copy in `docs/reports/`; no replay ran.
+- note: live host behavior of the new rows and of `effort:` in the messenger and conductor front matter is not proven; the full `check.sh` is left to the `fanout.py land` gate.
