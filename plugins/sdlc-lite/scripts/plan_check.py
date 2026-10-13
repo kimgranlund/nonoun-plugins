@@ -4,11 +4,8 @@
   plan_check.py goal|loop|fanout|campaign [--text T | --file F] [--root .sdlc]
   plan_check.py plan [--text T | --file F] [--root .sdlc] [--run]
   plan_check.py clarify [--text T | --file F]
-<<<<<<< HEAD
   plan_check.py <kind> ... --summary
-=======
   plan_check.py compaction [--text T | --file F]
->>>>>>> fanout/wave54-f
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -34,13 +31,11 @@ items, or a lower-case must, shall or should in `## Constraints`), and clarify-d
 `(source: ...)`). Two warnings: clarify-goal-length (over 2 sentences or 50 words) and clarify-glossary (an unapproved alias from
 docs/references/glossary.md in the Goal or a Do step; skipped when the file is absent). An item starting `[owner: maintainer]` is exempt
 from the two Done when rules. The selftest prints one `ok: clarify: <rule> ...` line per case.
-<<<<<<< HEAD
 Controlled language (T-0469): the goal, campaign and plan kinds add three warnings that reuse the clarify lists: `hedge` (a CLARIFY_HEDGE word in
 the /goal line, a Goal or an Outcome line), `verb` (a How to work or step Do statement that does not start with a CLARIFY_VERBS verb) and
 `rfc2119` (an Authorization with no upper-case MUST, or a lower-case must, shall or should in it). `--summary` on any kind prints one more line
 after the lint lines, `cost: $<sum> of $<cap> (<n> tickets: T-0001 L2 $30, ...)`: the tickets the block names, each at its size level's row in
 budget.py TIERS, against its `$<n> total` figure. A ticket with no size or tier makes the sum `unknown`, never 0; a sum above the cap ends `over`.
-=======
 A compaction block (kind `compaction`, the `/compact` prompt of the plan skill's compaction kind) is unwrapped, then read as one identity
 line, the seven headers GOAL, RULES, DECISIONS, STATE, OPEN, NEXT, DROP, and a last line `NEXT <one action>`. `lines: <N> of 60` and
 `pin: <M> of 40` print first. Nine rules: compaction-words (a line over 20 words; a lone pipe is no word), compaction-verb (a DROP section
@@ -53,7 +48,6 @@ DECISIONS line that is not `<user|agent> <YYYY-MM-DD> <decision> | <reason of 1 
 approval word with neither a double-quoted span nor `[U]`). One warning: compaction-glossary (an unapproved alias from
 docs/references/glossary.md outside code spans; skipped when the file is absent). The selftest prints one `ok: compaction: <rule> ...` line
 per case.
->>>>>>> fanout/wave54-f
 """
 import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
@@ -1052,7 +1046,6 @@ def check_clarify(text, glossary=None):
     return fails, warns
 
 
-<<<<<<< HEAD
 # ---- controlled language of plan artifacts (T-0469) ---------------------------------------------------------
 # The rules of T-0461 applied to goal, campaign and plan-doc text, reusing the clarify lists and patterns above. Three warnings, not
 # FAILs, until the five-ask replay shows how often they misfire: hedge (a CLARIFY_HEDGE word in the /goal line, a Goal or an Outcome
@@ -1148,7 +1141,7 @@ def cost_line(text, root='.sdlc'):
     over = ' over' if total is not None and cap is not None and total > cap else ''
     return f'cost: {shown} of {f"${cap:g}" if cap is not None else "unknown"} ({len(rows)} ticket{"" if len(rows) == 1 else "s"}' \
            f'{": " + ", ".join(rows) if rows else ""}){over}'
-=======
+
 # ---- compaction ----------------------------------------------------------------------------------------------
 COMPACTION_HEADERS = ('GOAL', 'RULES', 'DECISIONS', 'STATE', 'OPEN', 'NEXT', 'DROP')
 COMPACTION_VERBS = ('KEEP', 'POINT', 'DROP', 'NEXT')
@@ -1232,7 +1225,6 @@ def check_compaction(text, entry=None, glossary=None):
             if pat.search(no_code(s)):
                 warns.append(('compaction-glossary', f'a line uses the unapproved alias "{a}" (docs/references/glossary.md): {s[:80]}'))
     return fails, warns
->>>>>>> fanout/wave54-f
 
 
 # ---- driver --------------------------------------------------------------------------------------------------
@@ -1983,18 +1975,14 @@ def main(argv):
     if a.run and a.kind != 'plan':
         ap.error('--run applies to the plan kind only')
     text = a.text if a.text is not None else (pathlib.Path(a.file).read_text(encoding='utf-8') if a.file else sys.stdin.read())
-<<<<<<< HEAD
-    rc = report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
-    if a.summary:
-        print(cost_line(text, a.root))
-    return rc
-=======
     if a.kind == 'compaction':
         n_lines, n_pin = compaction_counts(text)
         print(f'lines: {n_lines} of {COMPACTION_MAX_LINES}')
         print(f'pin: {n_pin} of {COMPACTION_MAX_PIN}')
-    return report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
->>>>>>> fanout/wave54-f
+    rc = report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
+    if a.summary:
+        print(cost_line(text, a.root))
+    return rc
 
 
 if __name__ == '__main__':
