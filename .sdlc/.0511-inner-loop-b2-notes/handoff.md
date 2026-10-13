@@ -2,7 +2,7 @@
 id: T-0511
 title: "verifier: a Notes section for nits, carried into the close reason (T-0501 B2)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Design: `docs/planning/inner-loop-profile.md`. Opt-in by `profile: inner-loop` i
 
 ## Constraints
 Affirmative wording, no new prohibition. One writer on `verifier.md`.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
