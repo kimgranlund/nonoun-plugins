@@ -1,0 +1,8 @@
+You are a live check of the sdlc-lite plugin in a throwaway project at <scratch>/proj. Do these steps in order and report each result in plain lines, with the exact command output where short. Never edit anything outside this project.
+1. List every agent type in your available agent types whose name starts with sdlc-lite: (names only, one per line) and print the count.
+2. Run: python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/dispatch.py prepare scout L1 .sdlc/live-check/handoff.md --routing-reason "live check T-0503 T-0505"   Keep its JSON.
+3. Immediately after prepare, before spawning, try to edit .sdlc/live-check/handoff.md with the Edit tool (append the line "probe edit" at the end). Report whether the edit was blocked and the hook message. Then list the files beside the handoff (ls -la .sdlc/live-check).
+4. Spawn the scout with the Agent tool using exactly the printed subagent_type, name, description, model, prompt and run_in_background from the JSON. Wait for it to finish and take its final message.
+5. Run dispatch.py record for it: python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/dispatch.py record <dispatch_file from the JSON> with the scout final message on stdin. Report its exit code and output.
+6. After record, try the same edit on the handoff again. Report whether it was allowed. List the files beside the handoff again.
+Finish with a summary of 6 lines: one pass or fail per step and why.

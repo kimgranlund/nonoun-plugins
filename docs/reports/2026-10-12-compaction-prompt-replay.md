@@ -50,8 +50,8 @@ The command list, run for real:
 - `compaction_handoff.py status --file CLAUDE.local.md` printed `none`.
 - `git status --short` listed 7 modified tracked files; `git branch --show-current` printed `fanout/wave54-f`.
 - `gh pr list` exited 0 and printed nothing.
-- `dispatch.py status .sdlc/0465-compaction-prompt/step-2` printed `builder-L2 running builder-L2 parent_pid=79245`.
-- `steps.py next .sdlc/0465-compaction-prompt/step-2` printed `build L2` and `reason: no builder result; handoff level L2`.
+- `dispatch.py status .sdlc/.0465-compaction-prompt/step-2` printed `builder-L2 running builder-L2 parent_pid=79245`.
+- `steps.py next .sdlc/.0465-compaction-prompt/step-2` printed `build L2` and `reason: no builder result; handoff level L2`.
 - `report.py render` printed `recent: verified step 1 T-0465 | pass | 2026-10-13 01:36Z (+4 more)`; the step 1 fact comes from that line.
 - The ticket `handoff.md` front matter reads `status: proposed`.
 
@@ -70,10 +70,10 @@ agent 2026-10-12 replay evidence is a dated report | repository home for evidenc
 agent 2026-10-12 handoff write stays off by default | reload unverified | [U]
 STATE
 Branch `fanout/wave54-f`, 7 modified tracked files, 0 open pull requests
-`builder-L2` is running in `.sdlc/0465-compaction-prompt/step-2`
+`builder-L2` is running in `.sdlc/.0465-compaction-prompt/step-2`
 Ticket T-0465 has status `proposed`; step 1 is verified, pass
-POINT `.sdlc/0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
-POINT `.sdlc/0465-compaction-prompt/step-2/handoff.md` -> the step and its criteria
+POINT `.sdlc/.0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
+POINT `.sdlc/.0465-compaction-prompt/step-2/handoff.md` -> the step and its criteria
 OPEN
 Live check of the `CLAUDE.local.md` reload after `/compact` is not run
 NEXT

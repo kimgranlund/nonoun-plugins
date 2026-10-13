@@ -1,0 +1,30 @@
+Scout is running in the background. Waiting for its completion notification.
+
+Steps 4 to 6 ran. Step 6 allowed the edit, and `scout-L1.running` is gone.
+
+**Step 3.** The edit was blocked by the `warn-handoff-edit.sh` hook:
+```
+handoff freeze: handoff .../.sdlc/live-check/handoff.md is being read by scout-L1; an edit now makes that result stale input (run.sh flags it on the run line). Scope changes belong in a new ticket.
+```
+Files beside the handoff at that point: `.run.lock`, `handoff.md`, `scout-L1.attempt.json`, `scout-L1.dispatch.json`, `scout-L1.running`.
+
+**Step 4.** The scout (`sdlc-lite:scout-L1`) finished. Its final message names README.md, first line `# live`. Its first line was an HTML comment (`<!-- role=scout level=L1 model=claude-haiku-5-5 effort=low -->`), which sits before the first heading. I could not tell whether the agent or the harness added it.
+
+**Step 5.** `dispatch.py record` exited 0. Output:
+```
+dispatch.py: cleaned: 0 tmp worktrees
+dispatch.py: unpriced: live-check-scout-L1 has no cost row; pass --transcript <jsonl>
+.../.sdlc/live-check/scout-L1.md
+prune: live-check-scout-L1
+```
+I piped the message in with the HTML escapes undone (`&lt;` back to `<`), since the notification showed it escaped.
+
+**Step 6.** The edit was allowed ("updated successfully"), so the freeze lifted after record. I sent the record and the edit in the same turn, so the order was only implied. The probe line is now in `handoff.md`, though `ls` (run before the edit) still shows its size as 149 bytes. Files beside the handoff after record: `.run.lock`, `handoff.md`, `runs.jsonl`, `scout-L1.attempt.json`, `scout-L1.dispatch.json`, `scout-L1.md`, `stale-edits.log`. The `.running` file is gone, and `stale-edits.log` (203 bytes, 21:09) appeared. Its timestamp matches the blocked step 3 edit, but I did not read it.
+
+Summary:
+1. Step 1: pass. 34 `sdlc-lite:` agent types listed.
+2. Step 2: pass. `prepare` exited 0 and returned the JSON.
+3. Step 3: pass. The hook blocked the edit with the freeze message, and `.running` existed.
+4. Step 4: pass. The scout finished and answered README.md, `# live`, with the leading HTML comment noted above.
+5. Step 5: pass. `record` exited 0, wrote `scout-L1.md` and `runs.jsonl`, and removed `.running`. It warned that the run is unpriced.
+6. Step 6: pass. The edit was allowed after record, and the listing changed as described.

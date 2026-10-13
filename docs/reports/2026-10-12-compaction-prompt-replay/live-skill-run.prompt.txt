@@ -11,8 +11,8 @@ Ticket `T-0465` status `proposed`, size L3
 Steps 1 and 2 pass verification
 Step 3 has a builder dispatch and no builder result
 `filer-L1.md` exists in the ticket folder
-POINT `.sdlc/0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
-POINT `.sdlc/0465-compaction-prompt/step-3/handoff.md` -> the open step
+POINT `.sdlc/.0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
+POINT `.sdlc/.0465-compaction-prompt/step-3/handoff.md` -> the open step
 OPEN
 Live check of the `CLAUDE.local.md` reload after `/compact` not run [U]
 Replay report is marked unverified, no independent run
@@ -20,4 +20,4 @@ NEXT
 planned: finish step 3, verify it, then close `T-0465`
 DROP
 DROP tool output, retry history, superseded plans, resolved errors
-NEXT run `python3 plugins/sdlc-lite/scripts/dispatch.py status .sdlc/0465-compaction-prompt/step-3`
+NEXT run `python3 plugins/sdlc-lite/scripts/dispatch.py status .sdlc/.0465-compaction-prompt/step-3`
