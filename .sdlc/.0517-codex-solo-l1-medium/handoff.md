@@ -2,7 +2,7 @@
 id: T-0517
 title: "Codex solo L1 follows the shifted builder ladder: gpt-6.1-sol medium"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0516]
@@ -23,3 +23,7 @@ Builder Codex ladder: L1 Sol low, L2 medium, L3 high, L4 xhigh, L5 max (commit 2
 
 ## Constraints
 Model and effort are the maintainer's decision: change nothing beyond the one row. One writer on the model tables; run after T-0516 merges.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
