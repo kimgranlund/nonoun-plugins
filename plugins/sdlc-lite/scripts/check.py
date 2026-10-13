@@ -119,7 +119,7 @@
    scripts/fanout.py names `budget gate: budget.py ack`; agents/solo.md, skills/agent/SKILL.md, and skills/fanout/SKILL.md name
    the gate and `--new-task` where they start solo. Negative controls: each phrase removed from each file must be flagged.
 29. Ask skill: skills/ask/SKILL.md names `## 1. Sweep`, `## 2. Reason the options`, `## 3. Ask once`, `## 4. Take prose`, `Write it in chat`,
-   `Nothing open.`, `AskUserQuestion`, the sweep searches (blocked tickets and `## Verdict` results), and the plain-text fallback
+   `Nothing open.`, `AskUserQuestion`, the sweep searches (`tickets.py --root .sdlc blockers`, its `--scope`, and `## Verdict` results), and the plain-text fallback
    `If AskUserQuestion is unavailable`, and holds no `harness:` reference; skills/sdlc-lite/SKILL.md and agents/conductor.md route to
    `ask`. Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
 30. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
@@ -961,7 +961,7 @@ for _name, _phrases in SOLO_GATE_NEEDS:
         if not solo_gate_bad(dict(_gate_texts, **{_name: _gate_texts[_name].replace(_ph, '')})): errors.append(f'check.py: solo budget gate negative control not flagged for {_name} without "{_ph}"')
 # Ask skill (docstring item 29): self-contained sweep, reasoned options, one round, a prose path, routed from the entry skill and the conductor.
 _ask, _entry, _cond = _rd(root/'skills/ask/SKILL.md'), _rd(root/'skills/sdlc-lite/SKILL.md'), _rd(root/'agents/conductor.md')
-ASK_NEEDS = ('## 1. Sweep', '## 2. Reason the options', '## 3. Ask once', '## 4. Take prose', 'Write it in chat', 'Nothing open.', 'AskUserQuestion', "grep -rl '^status: blocked'", '## Verdict', 'If AskUserQuestion is unavailable')
+ASK_NEEDS = ('## 1. Sweep', '## 2. Reason the options', '## 3. Ask once', '## 4. Take prose', 'Write it in chat', 'Nothing open.', 'AskUserQuestion', 'tickets.py --root .sdlc blockers', '--scope', '## Verdict', 'If AskUserQuestion is unavailable')
 def ask_bad(ask, entry, cond):
     out = [f'ask SKILL.md missing "{ph}"' for ph in ASK_NEEDS if ph not in ask]
     if re.search(r'harness:', ask): out.append('ask SKILL.md references harness:')

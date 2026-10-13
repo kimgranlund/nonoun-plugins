@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -125,6 +125,13 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, regenerate the roadmap. Refuses, writing
             nothing, on a bad ticket, a non T-NNNN id, or an existing target. --dry-run lists the renames
             and rewrites. Follow with archive --rewrite-refs to hide done and dropped folders
+  blockers  the open-question inventory of tickets, layout-independent: one `<handoff path>: <T-id> <status>: <blocked|deferred>`
+            line per ticket whose status is blocked or whose body holds a `## Deferred` heading, read from
+            layout_paths(root).tickets (flat, ticket_root: tickets and layout: topics alike). done and dropped
+            tickets and closed .NNNN-<slug> folders never count. --scope PATH (a task or ticket dir, repo-relative
+            or absolute, resolved from the cwd, never from <root>) keeps only tickets whose folder holds PATH or
+            sits under it; it never changes where the root or ticket dir is found. Prints `none` when nothing
+            qualifies; a ticket dir or scope that does not exist is an error naming the path, not `none`
   migrate-layout  move a flat root to the topics layout: each ticket folder directly under <root> (load's rule,
             or a .NNNN-<slug> name) to tickets/<name>, each other dir not in check's allowed list and not _ or .
             prefixed to work/<name>, roadmap.md to tickets/roadmap.md and notes.md to notes/notes.md (Path.rename,
@@ -2306,6 +2313,37 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     return out + rewrote + lane_report(root, pid)
 
 
+def cmd_blockers(root, scope=None):
+    """The open-question inventory: blocked or `## Deferred` tickets still open, from the configured ticket dir.
+    The scope filter applies after discovery and never changes where tickets are found."""
+    td = layout_paths(root).tickets
+    if not td.is_dir():
+        raise Fail(f'{td}: ticket dir does not exist (the root is {root}; run from the repository root or pass --root)')
+    sc = None
+    if scope is not None:
+        sp = pathlib.Path(scope)
+        if not sp.exists():
+            raise Fail(f'{scope}: scope does not exist; nothing searched')
+        sc = sp.resolve()
+    rows = []
+    for name, meta in load(td):
+        d = td / name
+        status = meta.get('status')
+        if DOT_RE.fullmatch(name) or status not in ACTIVE:
+            continue
+        dr = d.resolve()
+        if sc is not None and not (dr == sc or dr in sc.parents or sc in dr.parents):
+            continue
+        why = []
+        if status == 'blocked':
+            why.append('blocked')
+        if re.search(r'(?m)^## Deferred\b', (d / 'handoff.md').read_text(encoding='utf-8')):
+            why.append('deferred')
+        if why:
+            rows.append(f'{d / "handoff.md"}: {meta.get("id", "?")} {status}: {", ".join(why)}')
+    return '\n'.join(rows) if rows else 'none'
+
+
 def cmd_roadmap(root, numbered=False):
     td = layout_paths(root).tickets
     numbered = numbered or config_numbered(root)
@@ -2605,6 +2643,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_migrate_layout(root, **kw), ''
         if cmd == 'migrate-size':
             return 0, cmd_migrate_size(root, **kw), ''
+        if cmd == 'blockers':
+            return 0, cmd_blockers(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
@@ -5339,6 +5379,76 @@ def selftest():
         rc, _, err = run(sz, 'check')
         expect(f'(size) negative control: an unknown size still fails check: {err}', rc == 1 and "size='XXL'" in err)
 
+        # ---- blockers: the open-question inventory is the same in every layout; scope never moves the root ----
+        def bl_root(name, cfg):
+            proj = pathlib.Path(tmp) / name
+            r = proj / '.sdlc'
+            r.mkdir(parents=True)
+            if cfg:
+                (r / 'config').write_text(cfg, encoding='utf-8')
+            td = layout_paths(r).tickets
+            for slug, status, deferred in (('alpha', 'blocked', False), ('beta', 'ready', True),
+                                           ('gamma', 'done', True), ('delta', 'ready', False),
+                                           ('eps', 'dropped', False)):
+                rc, _, err = run(r, 'new', ('feature', slug, slug))
+                h = td / slug / 'handoff.md'
+                txt = re.sub(r'(?m)^status:.*$', f'status: {status}', h.read_text(encoding='utf-8'), count=1)
+                if status == 'blocked':
+                    txt += '\n## Blocked\nwaiting\n'
+                if deferred:
+                    txt += '\n## Deferred\nlater\n'
+                h.write_text(txt, encoding='utf-8')
+            return proj, r, td
+
+        def bl_names(out, td):
+            return sorted(ln.replace(str(td) + '/', '', 1) for ln in out.splitlines())
+
+        want_inv = ['alpha/handoff.md: T-0001 blocked: blocked', 'beta/handoff.md: T-0002 ready: deferred']
+        inv = {}
+        for label, cfg in (('flat', ''), ('ticket-root', 'ticket_root: tickets\n'),
+                           ('topics', 'ticket_root: tickets\nlayout: topics\n')):
+            proj, r, td = bl_root(f'bl-{label}', cfg)
+            rc, out, err = run(r, 'blockers')
+            inv[label] = bl_names(out, td)
+            expect(f'(blockers) {label}: blocked and deferred open tickets only, closed ones excluded: rc={rc} '
+                   f'{out!r} {err!r}', rc == 0 and inv[label] == want_inv)
+            rc, out, err = run(r, 'blockers', scope=str(td / 'beta'))
+            expect(f'(blockers) {label}: a task-dir scope keeps only that ticket: {out!r} {err!r}',
+                   rc == 0 and bl_names(out, td) == [want_inv[1]])
+            rc, out, err = run(r, 'blockers', scope=str(td / 'delta'))
+            expect(f'(blockers) {label}: a scope with nothing open prints none: {out!r}', rc == 0 and out == 'none')
+            rc, out, err = run(r, 'blockers', scope=str(td / 'beta' / 'nope'))
+            expect(f'(blockers) {label}: a missing scope is an error, not none: {out!r} {err!r}',
+                   rc == 1 and 'scope does not exist' in err and 'nope' in err)
+            rc, out, err = run(r, 'blockers', scope=str(r))
+            expect(f'(blockers) {label}: scoping to the whole root keeps the full inventory: {out!r} {err!r}',
+                   rc == 0 and bl_names(out, td) == want_inv)
+            if label == 'flat':
+                # the baseline sweep: a hard-coded .sdlc/tickets search errors on the flat layout and the root
+                # search finds the blocker, so the old command could not be trusted for this layout
+                base_rc = subprocess.run(['grep', '-rl', '^status: blocked', '.sdlc/tickets'], cwd=proj,
+                                         capture_output=True, text=True).returncode
+                fix_rc = subprocess.run(['grep', '-rl', '^status: blocked', '.sdlc'], cwd=proj,
+                                        capture_output=True, text=True).returncode
+                expect(f'(blockers) baseline grep on .sdlc/tickets fails for the flat fixture: {base_rc} {fix_rc}',
+                       base_rc == 2 and fix_rc == 0)
+        expect(f'(blockers) flat, ticket-root and topics give one inventory: {inv}',
+               inv['flat'] == inv['ticket-root'] == inv['topics'])
+        miss = pathlib.Path(tmp) / 'bl-missing' / '.sdlc'
+        miss.mkdir(parents=True)
+        (miss / 'config').write_text('ticket_root: tickets\n', encoding='utf-8')
+        rc, out, err = run(miss, 'blockers')
+        expect(f'(blockers) a missing ticket dir is named, not reported as none: {out!r} {err!r}',
+               rc == 1 and str(miss / 'tickets') in err and 'does not exist' in err)
+        proj, r, td = bl_root('bl-closed', 'ticket_root: tickets\n')
+        (td / '.0099-old').mkdir()
+        (td / '.0099-old' / 'handoff.md').write_text(
+            (td / 'alpha' / 'handoff.md').read_text(encoding='utf-8').replace('id: T-0001', 'id: T-0099'),
+            encoding='utf-8')
+        rc, out, err = run(r, 'blockers')
+        expect(f'(blockers) a closed .NNNN-slug folder never contributes, even with a blocked status: {out!r} {err!r}',
+               rc == 0 and '.0099-old' not in out and 'alpha' in out)
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -5434,6 +5544,9 @@ def main(argv):
     p = sub.add_parser('migrate-size', help='rewrite the 0.21.x alias sizes to levels (L1 to L4) in ticket and '
                                             'template front matter; a dry run unless --apply')
     p.add_argument('--apply', action='store_true', help='write the rewrites and regenerate the roadmap')
+    p = sub.add_parser('blockers', help='list open blocked or ## Deferred tickets in the configured layout')
+    p.add_argument('--scope', metavar='PATH',
+                   help='keep only tickets whose folder holds PATH or sits under it; never changes root resolution')
     sub.add_parser('selftest', help='prove every check failure fires')
     a = ap.parse_args(argv)
     cmd = a.cmd or 'check'
@@ -5448,6 +5561,8 @@ def main(argv):
         kw['rewrite_refs'] = a.rewrite_refs
     if cmd == 'migrate-size':
         kw['apply'] = a.apply
+    if cmd == 'blockers':
+        kw['scope'] = a.scope
     if cmd == 'archive':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs
