@@ -53,11 +53,11 @@ The `/fix` fast lane runs builder L1 or L2 (never higher) and verifier L1. A fai
 
 ## verifier (L1 to L3)
 
-Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `dispatch.py prepare` (on Codex, the runner) never lets a verifier run on the build's model family: after a Fable or Sonnet build, a verifier on that family becomes Opus at the same effort, and the dispatch carries the changed `model`.
+Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `dispatch.py prepare` (on Codex, the runner) never lets a verifier run on the build's model family: after a Fable or Sonnet build, a verifier on that family becomes Opus at the same effort; after an Opus build, an Opus verifier (the L1 row) becomes Sonnet at the same effort. The dispatch carries the changed `model`.
 
 | Level | Model / effort | Fits when |
 |---|---|---|
-| L1 | Sonnet medium | Criteria are commands to run |
+| L1 | Opus low | Criteria are commands to run |
 | L2 | Sonnet high | Judgment on behavior and edge cases |
 | L3 | Fable xhigh | Subtle correctness: concurrency, security, data |
 
@@ -67,9 +67,9 @@ A solo ticket's one batched verifier (agents/solo.md) is not chosen by build lev
 
 | Level | Model / effort | Fits when |
 |---|---|---|
-| L1 | Sonnet medium | 1 to 3 obvious steps |
+| L1 | Sonnet high | 1 to 3 obvious steps |
 | L2 | Opus medium | A normal feature |
-| L3 | Opus xhigh | Cross-cutting or risky, or any replan (a builder blocked other than `stale lane:`, or a verifier or `steps.py split` tagged `plan defect:`) |
+| L3 | Opus high | Cross-cutting or risky, or any replan (a builder blocked other than `stale lane:`, or a verifier or `steps.py split` tagged `plan defect:`) |
 
 ## When a plan is reviewed
 
@@ -77,7 +77,7 @@ The plan-reviewer (L1, one level) reviews a plan before any builder starts. It i
 
 Other plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
 
-The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. With planner L2 and L3 both on Opus, a review of a plan by planner L2 or L3 runs on Fable high; only a plan by the Sonnet planner L1 is reviewed on Opus high. `dispatch.py prepare` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
+The reviewer never runs on the planner's model family. Claude: the row is Fable high, so every plan by a Claude planner row (Sonnet L1, Opus L2 and L3) is reviewed on Fable high; a Fable planner result moves the review to Opus high. `dispatch.py prepare` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
 
 The verdict routes the plan:
 - `pass`: `steps.py split`.
@@ -88,7 +88,7 @@ The verdict routes the plan:
 
 | Level | Model / effort | Fits when |
 |---|---|---|
-| L1 | Sonnet medium | One known source, a single fact |
+| L1 | Sonnet high | One known source, a single fact |
 | L2 | Opus medium | Several sources, some conflicting |
 | L3 | Opus high | New territory, and the synthesis drives a decision |
 
@@ -96,15 +96,15 @@ The verdict routes the plan:
 
 | Role | Level | Model / effort |
 |---|---|---|
-| architect | L1 | Fable high |
-| scout | L1 | Haiku 5.5 low |
+| architect | L1 | Opus xhigh |
+| scout | L1 | Sonnet low |
 | archaeologist | L1 | Sonnet medium |
-| filer | L1 | Sonnet medium |
-| plan-reviewer | L1 | Opus high |
+| filer | L1 | Sonnet low |
+| plan-reviewer | L1 | Fable high |
 
 ## Session agents (not pipeline roles)
 
-The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `claude-haiku-5-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case. The messenger is never a prepared dispatch, so `record` does not queue it: when its parent is done with it, run `dispatch.py prune --add <name> --role messenger`, then `dispatch.py prune`.
+The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `sonnet` at effort low is pinned in its own front matter, as is the conductor's `opus` at effort medium, and the messenger's Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case. The messenger is never a prepared dispatch, so `record` does not queue it: when its parent is done with it, run `dispatch.py prune --add <name> --role messenger`, then `dispatch.py prune`.
 
 ## Agent-tool spawns (outside a dispatch)
 
@@ -112,7 +112,7 @@ This section applies to any in-session Agent-tool spawn that is not a prepared d
 
 Every such spawn states `model` explicitly. An unset `model` inherits the session's top model. Pick the seat by class of work:
 
-- Mechanical or gather-only work: `haiku`. The Agent tool takes an alias, and the scout level row pins `claude-haiku-5-5`. On 2026-10-07 (Claude Code 2.1.293) the alias `haiku` resolved to `claude-haiku-5-5`; on an earlier login (Claude Code 2.1.285) it resolved to Sonnet 5.5, so only the transcript model field says what ran.
+- Mechanical or gather-only work: `haiku`. The Agent tool takes an alias; the scout level row is `sonnet` low and no longer pins a Haiku id, so `haiku` is the seat for bare spawns only. On 2026-10-07 (Claude Code 2.1.293) the alias `haiku` resolved to Haiku 5.5; on an earlier login (Claude Code 2.1.285) it resolved to Sonnet 5.5, so only the transcript model field says what ran.
 - Search, review, and routine coding: `sonnet`, the default.
 - Judgment-heavy synthesis: `opus`.
 

@@ -1,12 +1,12 @@
 {
   "builder": {"L1": ["opus", "low"], "L2": ["sonnet", "high"], "L3": ["opus", "medium"], "L4": ["opus", "high"], "L5": ["opus", "xhigh"]},
-  "planner": {"L1": ["sonnet", "medium"], "L2": ["opus", "medium"], "L3": ["opus", "xhigh"]},
-  "verifier": {"L1": ["sonnet", "medium"], "L2": ["sonnet", "high"], "L3": ["fable", "xhigh"]},
-  "researcher": {"L1": ["sonnet", "medium"], "L2": ["opus", "medium"], "L3": ["opus", "high"]},
-  "architect": {"L1": ["fable", "high"]},
-  "scout": {"L1": ["claude-haiku-5-5", "low"]},
+  "planner": {"L1": ["sonnet", "high"], "L2": ["opus", "medium"], "L3": ["opus", "high"]},
+  "verifier": {"L1": ["opus", "low"], "L2": ["sonnet", "high"], "L3": ["fable", "xhigh"]},
+  "researcher": {"L1": ["sonnet", "high"], "L2": ["opus", "medium"], "L3": ["opus", "high"]},
+  "architect": {"L1": ["opus", "xhigh"]},
+  "scout": {"L1": ["sonnet", "low"]},
   "archaeologist": {"L1": ["sonnet", "medium"]},
-  "filer": {"L1": ["sonnet", "medium"]},
-  "plan-reviewer": {"L1": ["opus", "high"]},
+  "filer": {"L1": ["sonnet", "low"]},
+  "plan-reviewer": {"L1": ["fable", "high"]},
   "solo": {"L1": ["sonnet", "high"], "L2": ["opus", "medium"], "L3": ["opus", "high"]}
 }

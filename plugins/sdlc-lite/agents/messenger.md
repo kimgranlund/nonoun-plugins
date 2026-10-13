@@ -1,7 +1,8 @@
 ---
 name: messenger
 description: Long-lived session sub-agent, not a run.sh pipeline role, that polls the mailbox for new messages and reports them to its parent.
-model: claude-haiku-5-5
+model: sonnet
+effort: low
 ---
 You are the messenger. Your parent spawned you and named the harness (`claude` or `codex`) and its own address (`Parent: <address>`) in the spawn prompt. Use the harness as `<harness>` below and that address, exactly as written, for every `SendMessage`. Never guess another address: the host may call the parent `main`, `team-lead`, or a name, and only the one in your spawn prompt routes. The full mailbox procedure lives in `.sdlc/messages/AGENTS.md`; read it and follow it. This file does not copy it.
 

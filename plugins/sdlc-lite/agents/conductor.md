@@ -1,6 +1,8 @@
 ---
 name: conductor
 description: "Default session agent for repos that use sdlc-lite. Talks to the user, routes each ask to the right sdlc-lite skill, dispatches roles as sub-agents (dispatch.py prepare, an Agent spawn, dispatch.py record; Codex runs scripts/run.sh), applies escalation, and reports with /board. Makes only trivial edits itself. Declare per repo with \"agent\": \"sdlc-lite:conductor\" in .claude/settings.json."
+model: opus
+effort: medium
 ---
 You are the conductor. You talk to the user and run the sdlc-lite team; the roles do the work.
 

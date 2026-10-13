@@ -23,13 +23,13 @@
 # "run.sh: <role> result <reason>; see <file>", exit 3. The result-pick heading comes from results.py key.
 # Family rules (Claude backend only; each reads the model= token of the newest result by
 # scripts/order.py): a verifier never runs on the newest build's family (a Fable or Sonnet build
-# moves it to Opus, same effort), and a plan-reviewer never runs on the newest planner result's
-# family (an Opus planner moves it to Fable, same effort; a Fable or Sonnet planner, or no planner
-# result, keeps Opus high). A verifier whose handoff dir holds no builder result (a verifier
+# moves it to Opus, an Opus build moves it to Sonnet, same effort), and a plan-reviewer never runs on
+# the newest planner result's family (an Opus planner moves it to Fable, a Fable planner to Opus, same
+# effort; a Sonnet planner, or no planner result, keeps the row, Fable high). A verifier whose handoff dir holds no builder result (a verifier
 # launched at the task dir) reads instead the newest builder result, by scripts/order.py, of the
 # highest-numbered step-<n>/ under it that holds one. step-<n>.superseded-<k>/ dirs are left out.
 # A verifier whose dir holds no builder result at all reads the model of the newest `role solo` record in
-# runs.jsonl (a solo ticket, T-0356): a Sonnet solo moves it to Opus.
+# runs.jsonl (a solo ticket, T-0356): a Sonnet solo moves it to Opus, an Opus solo moves it to Sonnet.
 # scripts/codex_roles.py resolve applies the same rule on Codex.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
@@ -160,20 +160,20 @@ case "$role:$level" in
   builder:L3)       model=opus;   effort=medium ;;
   builder:L4)       model=opus;   effort=high ;;
   builder:L5)       model=opus;   effort=xhigh ;;
-  planner:L1)       model=sonnet; effort=medium ;;
+  planner:L1)       model=sonnet; effort=high ;;
   planner:L2)       model=opus;   effort=medium ;;
-  planner:L3)       model=opus;   effort=xhigh ;;
-  verifier:L1)      model=sonnet; effort=medium ;;
+  planner:L3)       model=opus;   effort=high ;;
+  verifier:L1)      model=opus;   effort=low ;;
   verifier:L2)      model=sonnet; effort=high ;;
   verifier:L3)      model=fable;  effort=xhigh ;;
-  researcher:L1)    model=sonnet; effort=medium ;;
+  researcher:L1)    model=sonnet; effort=high ;;
   researcher:L2)    model=opus;   effort=medium ;;
   researcher:L3)    model=opus;   effort=high ;;
-  architect:L1)     model=fable;  effort=high ;;
-  scout:L1)         model=claude-haiku-5-5;  effort=low ;;
+  architect:L1)     model=opus;   effort=xhigh ;;
+  scout:L1)         model=sonnet; effort=low ;;
   archaeologist:L1) model=sonnet; effort=medium ;;
-  filer:L1)         model=sonnet; effort=medium ;;
-  plan-reviewer:L1) model=opus; effort=high ;;
+  filer:L1)         model=sonnet; effort=low ;;
+  plan-reviewer:L1) model=fable;  effort=high ;;
   *) usage ;;
 esac
 [[ -f "$handoff" ]] || { echo "handoff not found: $handoff" >&2; exit 2; }
@@ -237,7 +237,7 @@ result="$dir/$name.md"
 log="$dir/$name.log"
 
 # A verifier never runs on the build's model family (T-0005, user decision 2026-09-24):
-# Fable or Sonnet build -> Opus at the same effort.
+# Fable or Sonnet build -> Opus at the same effort; an Opus build -> Sonnet at the same effort (T-0519).
 if [[ "$backend" == claude && "$role" == verifier ]]; then
   built=$(python3 "$plugin_root/scripts/order.py" newest "$dir" builder 2>/dev/null || true)
   # No build in the handoff dir (a verifier launched at the task dir): take the newest build of the
@@ -274,17 +274,20 @@ PY
   if [[ -n "$bmodel" && "$model" == "$bmodel" ]]; then
     case "$model" in
       fable|sonnet) model=opus ;;
+      opus) model=sonnet ;;
     esac
   fi
 fi
 # A plan-reviewer never runs on the planner's model family (T-0171, user decision 2026-09-30):
-# an Opus planner -> Fable at the same effort; a Fable or Sonnet planner, or none, keeps Opus.
+# an Opus planner -> Fable, a Fable planner -> Opus, at the same effort; a Sonnet planner, or none, keeps the row (Fable high, T-0519).
 if [[ "$backend" == claude && "$role" == plan-reviewer ]]; then
   planned=$(python3 "$plugin_root/scripts/order.py" newest "$dir" planner 2>/dev/null || true)
   if [[ -n "$planned" ]]; then
     pmodel=$(grep -o 'model=[a-z]*' "$planned" | head -1 | cut -d= -f2 || true)
     if [[ "$model" == "$pmodel" && "$model" == opus ]]; then
       model=fable
+    elif [[ "$model" == "$pmodel" && "$model" == fable ]]; then
+      model=opus
     fi
   fi
 fi
