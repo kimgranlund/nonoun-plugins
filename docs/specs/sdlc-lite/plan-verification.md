@@ -7,7 +7,7 @@ Status: built (ticket T-0407, 2026-10-09; the build commit is the one that close
 [plan-goal](../../../plugins/sdlc-lite/skills/plan-goal/SKILL.md) fills five sections: Scope, How to work, Budget and stop rules, Authorization, Done when. Three gaps, all observed in the files:
 
 - No section says what the goal is for. Scope lists tickets; nothing states the outcome they serve or why.
-- Done when can be met by closing tickets. `plan_check.py` `done-uncheckable` accepts "a merged ticket" ([goal-rules](../../../plugins/sdlc-lite/skills/plan-goal/references/goal-rules.md), `CHECKABLE`), so a goal can end green with the outcome unmoved.
+- Done when can be met by closing tickets. `plan_check.py` `done-uncheckable` accepts "a merged ticket" ([goal-rules](../../../plugins/sdlc-lite/skills/plan/references/goal.md), `CHECKABLE`), so a goal can end green with the outcome unmoved.
 - plan-goal never reads `docs/goals` or `docs/kpi`, the homes built in 0.22.1 ([goals and KPIs](../repo-onboarding/goals-and-kpi.md), T-0392). Its Gather step reads tickets, lanes and spend only.
 
 ## 2. What the skill produces: the outcome block

@@ -125,9 +125,10 @@
 30. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
    `--include-sdlc` and `--out`, and refuses to write inside the repository; scripts/check.sh runs `inventory.py selftest`;
    docs/planning/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
-31. Plan skills: skills/plan-goal, plan-loop, plan-fanout, and plan-campaign each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
-   `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md.
-   Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
+31. Plan skills: skills/plan and plan-loop each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
+   `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md (as `plan <kind>` and `plan-loop`);
+   skills/plan also names each of the five kind tokens and `references/plan-rules.md` (T-0468).
+   Negative controls: each phrase and each kind token removed, a harness reference added, and a routing line removed must be flagged.
 32. Broken-link baseline: the broken relative Markdown links that rename_refs.py `links` reports (code fences and inline code excluded)
    equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
 33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
@@ -187,9 +188,9 @@
    (`messages-run.py`) and says `beat` never extends the window. Negative controls: a planted versioned path in each scanned kind of file, and each phrase removed.
    scripts/messages.py selftest runs the watch loop through a simulated version-folder rename.
 48. Plan verification (T-0407): skills/plan-verification/SKILL.md names `references/outcome-block.md`, `Codex host`, and `Unattended` and holds no `harness:`
-   reference; references/outcome-block.md names `Outcome`, `Measured by`, `Rubric`, `Negative control`, `outcome-block`, and `done-measured`; skills/plan-goal/SKILL.md
-   names `plan-verification`; skills/plan-goal/references/goal-rules.md names `outcome-block.md`; skills/sdlc-lite/SKILL.md routes to `plan-verification`.
-   Item 31 stays for the four block-returning plan skills. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
+   reference; references/outcome-block.md names `Outcome`, `Measured by`, `Rubric`, `Negative control`, `outcome-block`, and `done-measured`; skills/plan/SKILL.md
+   names `plan-verification`; skills/plan/references/goal.md names `outcome-block.md`; skills/sdlc-lite/SKILL.md routes to `plan-verification`.
+   Item 31 stays for the plan skill and plan-loop. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
 49. Plan-doc parser and linter (T-0431): scripts/plan_doc.py exists and names `def parse`, `def table`, `def goal_line`, and `steps.STEP_RE`; scripts/plan_check.py names
    `GOOD_PLAN`, `def check_plan`, `plan_doc`, and every one of the 19 rule ids of docs/specs/sdlc-lite/plan-doc-executor.md section 3.3 (the list in `PLAN_RULES`) plus the
    warnings `l1-unverified`, `kpi-drift`, and `kpi-unresolved`; scripts/check.sh runs `plan_check.py" selftest` and `plan_doc.py" selftest`. Negative controls: each phrase and
@@ -199,10 +200,11 @@
    (it reuses the parser and the verifier family, order and held rules, and copies none); scripts/check.sh runs `plan_done.py" selftest`; docs/references/sdlc-internals.md has
    a `scripts/plan_done.py` section where that file exists. Negative controls: each phrase removed from each file must be flagged. The cases themselves run in plan_done.py selftest
    (one `plan_done: <row>` case per truth-table row and control of docs/specs/sdlc-lite/plan-doc-executor.md section 4.2).
-51. Plan-doc skills (T-0433): skills/plan-doc/SKILL.md names `## 1. Gather`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`;
-   skills/run-plan/SKILL.md names `Read`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`; references/plan-doc-format.md names `plan_check.py plan`
+51. Plan-doc skills (T-0433, retargeted in T-0468): skills/plan/SKILL.md names `## 1. Gather`, `plan_check.py plan`, `plan_done.py`, `Unattended`, and `Codex host`;
+   skills/plan/references/plan-rules.md names `SDLC_ROLE`;
+   skills/run-plan/SKILL.md names `Read`, `plan_check.py plan`, `plan_done.py`, `Unattended`, `Codex host`, and `SDLC_ROLE`; skills/plan/references/doc.md names `plan_check.py plan`
    and `Goal line`; references/run-rules.md names `plan_done.py`, `steps.py next`, `fanout.py prep`, `plan_done.py resume PD`, `recover --root . --open`, `fanout.py settle`, `status: ready`, and `Close a step only through `land``; neither skill references `harness:` or another plugin; skills/sdlc-lite/SKILL.md
-   and agents/conductor.md route to `plan-doc` and `run-plan`. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
+   and agents/conductor.md route to `plan doc` and `run-plan`. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
 52. Level overlays (T-0441): every overlays/<role>.md stem has levels.json rows, and no .md file sits in a subdirectory of agents/ (an overlay placed in
    agents/overlays/ instead of the plugin's top-level overlays/). The overlay content rules run in claude_roles.py (generate exits 2; its selftest has the cases).
    Negative controls: a planted overlays/ghost.md stem and a planted agents/overlays/x.md path must each be flagged.
@@ -228,6 +230,11 @@
    references/goal.md, references/campaign.md, references/fanout.md, and evals/README.md exist in that folder; skills/sdlc-lite/SKILL.md routes to
    `plan <kind>`. Negative controls: each phrase removed, each kind reference removed, a harness reference added, the entry row removed, and each
    file reported missing must be flagged.
+58. Plan redirect stubs (T-0468): each of skills/plan-goal, plan-campaign, plan-doc, and plan-fanout holds one SKILL.md of under 15 lines with the name of its folder, a
+   description that starts `Redirect: run `/sdlc-lite:plan <kind>`` and ends `removed in the next minor.`, the path `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md`, its kind token,
+   and the Codex route path `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md`, no `## 1. Gather`, and no `references/` folder. Negative controls: a stub that regrows
+   `## 1. Gather`, a stub without its kind token, a stub without the redirect description, a stub of 15 lines, a stub with a references folder, and a missing stub must be flagged.
+   Ticket D deletes the stubs and this item.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -996,23 +1003,26 @@ errors.extend(f'check.py: reorganization apply: {m}' for m in reorg_bad(_reorg_t
 for _name, _phrases in REORG_NEEDS:
     for _ph in _phrases:
         if not reorg_bad(dict(_reorg_texts, **{_name: _reorg_texts[_name].replace(_ph, '')})): errors.append(f'check.py: reorganization apply negative control not flagged for {_name} without {_ph}')
-# Plan skills (docstring item 31): four self-contained planning skills that return a validated paste-ready block, each routed from the entry skill.
+# Plan skills (docstring item 31): the plan skill and plan-loop each return a validated paste-ready block, routed from the entry skill.
 PLAN_NEEDS = ('## 1. Gather', 'plan_check.py', 'AskUserQuestion', 'Why this plan', 'You must authorize', 'Unattended', 'Codex host')
+PLAN_KINDS = ('steps', 'doc', 'goal', 'campaign', 'fanout')
+PLAN_ROUTES = {'plan': 'plan <kind>', 'loop': 'plan-loop'}
+PLAN_EXTRA = {'plan': PLAN_KINDS + ('references/plan-rules.md',)}
 def plan_bad(texts, entry):
     out = []
     for name, body in texts.items():
-        out += [f'{name} SKILL.md missing "{ph}"' for ph in PLAN_NEEDS if ph not in body]
+        out += [f'{name} SKILL.md missing "{ph}"' for ph in PLAN_NEEDS + PLAN_EXTRA.get(name, ()) if ph not in body]
         if re.search(r'harness:', body): out.append(f'{name} SKILL.md references harness:')
-        if f'plan-{name}' not in entry: out.append(f'skills/sdlc-lite/SKILL.md does not route to plan-{name}')
+        if PLAN_ROUTES[name] not in entry: out.append(f'skills/sdlc-lite/SKILL.md does not route to {PLAN_ROUTES[name]}')
     return out
-_plans = {n: _rd(root/f'skills/plan-{n}/SKILL.md') for n in ('goal', 'loop', 'fanout', 'campaign')}
+_plans = {n: _rd(root/('skills/plan/SKILL.md' if n == 'plan' else f'skills/plan-{n}/SKILL.md')) for n in PLAN_ROUTES}
 errors.extend(f'check.py: plan skills: {m}' for m in plan_bad(_plans, _entry))
 for _n in _plans:
-    for _ph in PLAN_NEEDS:
+    for _ph in PLAN_NEEDS + PLAN_EXTRA.get(_n, ()):
         if not plan_bad(dict(_plans, **{_n: _plans[_n].replace(_ph, '')}), _entry): errors.append(f'check.py: plan skills negative control not flagged for {_n} without "{_ph}"')
     if not plan_bad(dict(_plans, **{_n: _plans[_n] + ' harness:x'}), _entry): errors.append(f'check.py: plan skills negative control not flagged for a harness reference in {_n}')
-    if not plan_bad(_plans, _entry.replace(f'plan-{_n}', 'x')): errors.append(f'check.py: plan skills negative control not flagged for a missing entry route to {_n}')
-# Plan verification (docstring item 48): the capture skill, its shared reference, and the plan-goal call that reads it.
+    if not plan_bad(_plans, _entry.replace(PLAN_ROUTES[_n], 'x')): errors.append(f'check.py: plan skills negative control not flagged for a missing entry route to {_n}')
+# Plan verification (docstring item 48): the capture skill, its shared reference, and the plan skill's goal reference that reads it.
 PV_NEEDS = (('skill', ('references/outcome-block.md', 'Codex host', 'Unattended')),
             ('reference', ('Outcome', 'Measured by', 'Rubric', 'Negative control', 'outcome-block', 'done-measured')),
             ('goal', ('plan-verification',)), ('rules', ('outcome-block.md',)), ('entry', ('plan-verification',)))
@@ -1021,7 +1031,7 @@ def pv_bad(texts):
     if 'harness:' in texts['skill']: out.append('plan-verification SKILL.md references harness:')
     return out
 _pv = {'skill': _rd(root/'skills/plan-verification/SKILL.md'), 'reference': _rd(root/'skills/plan-verification/references/outcome-block.md'),
-       'goal': _rd(root/'skills/plan-goal/SKILL.md'), 'rules': _rd(root/'skills/plan-goal/references/goal-rules.md'), 'entry': _entry}
+       'goal': _rd(root/'skills/plan/SKILL.md'), 'rules': _rd(root/'skills/plan/references/goal.md'), 'entry': _entry}
 errors.extend(f'check.py: plan verification: {m}' for m in pv_bad(_pv))
 for _name, _phrases in PV_NEEDS:
     for _ph in _phrases:
@@ -1053,21 +1063,21 @@ for _name, _phrases in PLAN_DONE_NEEDS:
     for _ph in _phrases:
         if not plan_done_bad(dict(_pn, **{_name: _pn[_name].replace(_ph, '')})): errors.append(f'check.py: plan done negative control not flagged for {_name} without "{_ph}"')
 # Plan-doc skills (docstring item 51): the writing skill, the running skill, their references, and the routes to them.
-PDS_NEEDS = (('doc', ('## 1. Gather', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host', 'SDLC_ROLE')),
+PDS_NEEDS = (('doc', ('## 1. Gather', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host')), ('prules', ('SDLC_ROLE',)),
              ('run', ('Read', 'plan_check.py plan', 'plan_done.py', 'Unattended', 'Codex host', 'SDLC_ROLE')),
              ('format', ('plan_check.py plan', 'Goal line')), ('rules', ('plan_done.py', 'steps.py next', 'fanout.py prep', 'plan_done.py resume PD', 'recover --root . --open', 'fanout.py settle', 'status: ready', 'Close a step only through `land`')),
-             ('entry', ('plan-doc', 'run-plan')), ('cond', ('plan-doc', 'run-plan')))
+             ('entry', ('plan doc', 'run-plan')), ('cond', ('/sdlc-lite:plan doc', 'run-plan')))
 def pds_bad(texts):
     out = [f'{name} missing "{ph}"' for name, phrases in PDS_NEEDS for ph in phrases if ph not in texts[name]]
-    out += [f'{name} references harness:' for name in ('doc', 'run', 'format', 'rules') if 'harness:' in texts[name]]
+    out += [f'{name} references harness:' for name in ('doc', 'prules', 'run', 'format', 'rules') if 'harness:' in texts[name]]
     return out
-_pds = {'doc': _rd(root/'skills/plan-doc/SKILL.md'), 'run': _rd(root/'skills/run-plan/SKILL.md'), 'format': _rd(root/'skills/plan-doc/references/plan-doc-format.md'),
+_pds = {'doc': _rd(root/'skills/plan/SKILL.md'), 'prules': _rd(root/'skills/plan/references/plan-rules.md'), 'run': _rd(root/'skills/run-plan/SKILL.md'), 'format': _rd(root/'skills/plan/references/doc.md'),
         'rules': _rd(root/'skills/run-plan/references/run-rules.md'), 'entry': _entry, 'cond': _cond}
 errors.extend(f'check.py: plan-doc skills: {m}' for m in pds_bad(_pds))
 for _name, _phrases in PDS_NEEDS:
     for _ph in _phrases:
         if not pds_bad(dict(_pds, **{_name: _pds[_name].replace(_ph, '')})): errors.append(f'check.py: plan-doc skills negative control not flagged for {_name} without "{_ph}"')
-for _name in ('doc', 'run', 'format', 'rules'):
+for _name in ('doc', 'prules', 'run', 'format', 'rules'):
     if not pds_bad(dict(_pds, **{_name: _pds[_name] + ' harness:x'})): errors.append(f'check.py: plan-doc skills negative control not flagged for a harness reference in {_name}')
 # Broken-link baseline (docstring item 32): runs only where the repository root is a git work tree (not in a consumer install).
 def links_bad(broken, allowed):
@@ -1380,7 +1390,6 @@ for _rel in MERGE_OPS_FILES:
         if _ph in _mo_texts[_rel] and not (_ph == 'Merge ops' and _rel == 'skills/fanout/SKILL.md') and not merge_ops_bad(dict(_mo_texts, **{_rel: _mo_texts[_rel].replace(_ph, '')})): errors.append(f'check.py: merge ops negative control not flagged for {_rel} without {_ph}')
     if not merge_ops_bad(dict(_mo_texts, **{_rel: _mo_texts[_rel].replace('settle <integration> --forward', 'settle <integration>')})): errors.append(f'check.py: merge ops negative control not flagged for a settle command changed in {_rel}')
 # Plan kinds (docstring item 57, T-0467): one plan skill routes five kinds to their references and prints a dry run before every block.
-PLAN_KINDS = ('steps', 'doc', 'goal', 'campaign', 'fanout')
 PLAN_KIND_REFS = tuple(f'references/{k}.md' for k in PLAN_KINDS)
 PLAN_KIND_NEEDS = PLAN_NEEDS + ('|'.join(PLAN_KINDS), 'Dry run (<kind>)', 'references/plan-rules.md') + PLAN_KIND_REFS
 PLAN_KIND_FILES = ('references/plan-rules.md',) + PLAN_KIND_REFS + ('evals/README.md',)
@@ -1399,6 +1408,29 @@ if not plan_kinds_bad(dict(_pk, skill=_pk['skill'] + ' harness:x')): errors.appe
 if not plan_kinds_bad(dict(_pk, entry=_pk['entry'].replace('plan <kind>', ''))): errors.append('check.py: plan kinds negative control not flagged for a missing entry route')
 for _f in PLAN_KIND_FILES:
     if not plan_kinds_bad(dict(_pk, **{_f: ''})): errors.append(f'check.py: plan kinds negative control not flagged for a missing {_f}')
+# Plan redirect stubs (docstring item 58, T-0468): the four retired plan names redirect to the plan skill for one release; ticket D deletes them and this item.
+PLAN_STUB_KINDS = ('goal', 'campaign', 'doc', 'fanout')
+def plan_stubs_bad(texts, refs=()):
+    """Findings for {kind: its SKILL.md text or '' when missing}; refs names the stub folders that still hold a references/ folder."""
+    out = []
+    for k in PLAN_STUB_KINDS:
+        t, f = texts.get(k, ''), f'skills/plan-{k}/SKILL.md'
+        if not t: out.append(f'{f} is missing'); continue
+        if len(t.splitlines()) >= 15: out.append(f'{f} has {len(t.splitlines())} lines, expected under 15')
+        out += [f'{f} missing "{ph}"' for ph in (f'name: plan-{k}', f'plan {k}', '${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md', '${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md') if ph not in t]
+        if not re.search(rf'^description: "Redirect: run `/sdlc-lite:plan {k}`; removed in the next minor\."$', t, re.M): out.append(f'{f} description is not the redirect line')
+        if '## 1. Gather' in t: out.append(f'{f} regrew ## 1. Gather')
+        if k in refs: out.append(f'skills/plan-{k}/references still exists')
+    return out
+_stubs = {k: _rd(root/f'skills/plan-{k}/SKILL.md') for k in PLAN_STUB_KINDS}
+errors.extend(f'check.py: plan stubs: {m}' for m in plan_stubs_bad(_stubs, [k for k in PLAN_STUB_KINDS if (root/f'skills/plan-{k}/references').exists()]))
+for _k in PLAN_STUB_KINDS:
+    for _why, _mut in (('a regrown ## 1. Gather', _stubs[_k] + '\n## 1. Gather\n'), ('a missing kind token', _stubs[_k].replace(f'plan {_k}', 'plan x')),
+                       ('a description without the redirect', _stubs[_k].replace('Redirect: run', 'Plan: run')), ('a missing plan path', _stubs[_k].replace('skills/plan/SKILL.md', 'skills/x.md')),
+                       ('a missing Codex route', _stubs[_k].replace('skills/sdlc-lite/SKILL.md', 'skills/x.md')), ('15 lines', _stubs[_k] + '\n' * 15)):
+        if not plan_stubs_bad(dict(_stubs, **{_k: _mut})): errors.append(f'check.py: plan stubs negative control not flagged for {_why} in plan-{_k}')
+    if not plan_stubs_bad(dict(_stubs, **{_k: ''})): errors.append(f'check.py: plan stubs negative control not flagged for a missing plan-{_k} stub')
+    if not plan_stubs_bad(_stubs, [_k]): errors.append(f'check.py: plan stubs negative control not flagged for a references folder in plan-{_k}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)
