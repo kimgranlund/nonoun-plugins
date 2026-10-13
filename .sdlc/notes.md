@@ -422,3 +422,4 @@
 - note: `compaction_handoff.py` goes beyond the step handoff in two places: `write` exits 2 on an empty body, and `status` prints `stale: written unknown` when the section has no `Written` line.
 - note: Rule readings the handoff left open: `compaction-entry-copy` counts 4 words on the whole line, verb included. `compaction-decision` skips `none` and POINT lines. A `none` line in DROP is flagged by `compaction-verb`.
 - note: `docs/reports/AGENTS.md` calls reports immutable. The step 3 builder appended a section to the untracked replay report because the step handoff directed it.
+- 2026-10-12: maintainer: scout L1 becomes Sonnet low (Claude) and gpt-6.1-sol low (Codex). Applied in the same change as the planner, architect, plan-reviewer and verifier model decision, after T-0516 and T-0517 merge (one eval, one lock). Side effect: scout no longer depends on the haiku alias, which resolved to Sonnet 5.5 on a Max login (docs/reports/haiku-alias-2026-09-30.md).
