@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
-Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--tree PATH] [--override-review REASON] |
+Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--tree PATH] [--override-review REASON] [--supersede] |
                  lint <planner.md | task dir> [--tree PATH] | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
                  next <step dir> |
                  resume <task dir> |
@@ -18,7 +18,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             of the plan folder (the lane worktree when the plan lives there).
             --only N (repeatable) writes only those steps; an N not in the plan is an error.
             Refuses a step whose step-<n>/ already holds builder-*.md or verifier-*.md: rename it
-            to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
+            to step-<n>.superseded-<k>/ first (/chain 4.2), or pass --supersede, which renames each
+            such chosen step dir to the next free step-<n>.superseded-<k>/ (one stderr line each)
+            after every other check passes and before any write. Without --supersede nothing is renamed.
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
             It also refuses a criterion span that joins two checks with an unquoted || (see lint),
@@ -352,7 +354,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             A missing task dir, a task dir with no step-<n>/ (run split first), or a next error on
             a candidate prints one "steps resume: " line on stderr, nothing on stdout, and exits 1.
   swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
-            light path). The pair lives in that verifier's ## For the next attempt: exactly one
+            light path). A solo task dir (no builder result, a solo-L<n>.md result) works too: the
+            newest solo result stands in for the builder result, and the criterion region also
+            includes the task handoff's ## Acceptance criteria. The pair lives in that verifier's ## For the next attempt: exactly one
             line starting "swap old:" holding exactly one code span (the old criterion's command,
             verbatim), and exactly one line starting "swap new:" whose stripped rest is the full
             replacement criterion; zero or two or more of either line, or a swap old: line with no
@@ -553,14 +557,15 @@ def step_guard_timeout(block):
     return guard_timeout_in(block.splitlines())
 
 
-def criteria_indexed(lines):
+def criteria_indexed(lines, heads=('### Acceptance criteria',)):
     """(index, line) for each line under each ### Acceptance criteria of a list of lines, up to the
-    next ## or ### line, with ``` fenced lines left out. The one region rule criteria_lines uses."""
+    next ## or ### line, with ``` fenced lines left out. The one region rule criteria_lines uses.
+    heads names the headings that open a region (swap on a solo task dir adds ## Acceptance criteria)."""
     out = []
     inside = fenced = False
     for i, line in enumerate(lines):
         if line.startswith('## ') or line.startswith('### '):
-            inside = line.strip() == '### Acceptance criteria'
+            inside = line.strip() in heads
             fenced = False
             continue
         if not inside:
@@ -1820,11 +1825,20 @@ def lint_or_fail(plan, steps, tree=None, tool='steps.py lint'):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None, guard_timeout=None, override_review=None, tree=None):
+def next_superseded(d):
+    """The next free step-<n>.superseded-<k> path beside step dir d (k from 1)."""
+    ks = [int(m.group(2)) for c in d.parent.iterdir()
+          if (m := SUPERSEDED_RE.match(c.name)) and f'step-{m.group(1)}' == d.name]
+    return d.parent / f'{d.name}.superseded-{max(ks, default=0) + 1}'
+
+
+def split(target, only=None, guard_timeout=None, override_review=None, tree=None, supersede=False):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
     runnable (guard) spans run before any write, each step under guard_timeout when given, else
     its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT. override_review (a reason)
-    splits a plan whose newest review says replan, and records the override (record_review_override)."""
+    splits a plan whose newest review says replan, and records the override (record_review_override).
+    supersede renames each chosen step dir that holds role output to step-<n>.superseded-<k>/ (next free k)
+    after every check passes and before any write; without it such a step dir refuses."""
     plan, task_dir = find_plan(target)
     err = results.structure_error(plan, 'planner')
     if err is not None:
@@ -1856,12 +1870,16 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
         chosen = [n for n in steps if n in set(only)]
     else:
         chosen = list(steps)
+    held = []
     for n in chosen:
         d = task_dir / f'step-{n}'
         done = sorted(p.name for pat in ('builder-*.md', 'verifier-*.md') for p in d.glob(pat)) if d.is_dir() else []
-        if done:
+        if done and supersede:
+            held.append(d)
+        elif done:
             raise Fail(f'steps: {d} already holds role output ({", ".join(done)}). Per /chain 4.2, rename it '
-                       f'to step-{n}.superseded-<k>/ (next free k) first, then split again. Nothing was written.')
+                       f'to step-{n}.superseded-<k>/ (next free k) first, or split again with --supersede. '
+                       f'Nothing was written.')
     if only:
         plan_timeout = plan_guard_timeout(plan)
         timeouts = {n: guard_timeout if guard_timeout is not None
@@ -1872,6 +1890,10 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
     if override:
         record_review_override(task_dir, *override)
         print(f'steps: review override: {override[0]} says replan; split anyway: {override[1]}', file=sys.stderr)
+    for d in held:
+        dest = next_superseded(d)
+        d.rename(dest)
+        print(f'steps: superseded {d.name} -> {dest.name}', file=sys.stderr)
     written = []
     for n in chosen:
         d = task_dir / f'step-{n}'
@@ -1949,9 +1971,9 @@ def cmd_precheck(task_dir):
     return 0
 
 
-def cmd_split(target, only, guard_timeout=None, override_review=None, tree=None):
+def cmd_split(target, only, guard_timeout=None, override_review=None, tree=None, supersede=False):
     try:
-        written = split(target, only, guard_timeout, override_review, tree)
+        written = split(target, only, guard_timeout, override_review, tree, supersede)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -3289,9 +3311,12 @@ def swap(step_dir, timeout=300):
     if not h.is_file():
         refuse(f'no step handoff at {h}')
     b = order.newest(d, 'builder')
+    solo = b is None and order.newest(d, 'solo') is not None
+    if solo:
+        b = order.newest(d, 'solo')
     v = order.newest(d, 'verifier')
     if b is None or v is None:
-        refuse('the step dir needs a builder result and a verifier result')
+        refuse('the step dir needs a builder (or, in a solo task dir, a solo) result and a verifier result')
     vname = os.path.basename(v)
     if not order.counts_after(v, b):
         refuse(f'verifier {vname} is older than the newest build {os.path.basename(b)}')
@@ -3308,7 +3333,8 @@ def swap(step_dir, timeout=300):
 
     text = h.read_text(encoding='utf-8')
     lines = text.splitlines(keepends=True)
-    items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines])
+    heads = ('### Acceptance criteria', '## Acceptance criteria') if solo else ('### Acceptance criteria',)
+    items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines], heads)
              if list_item(line)]
     targets = [(i, line) for i, line in items if old in line_spans(line)]
     if not targets:
@@ -3848,6 +3874,31 @@ def selftest():
         (d / 'step-2').mkdir()
         (d / 'step-2' / 'verifier-L1.md').write_text(hdr('verifier-L1.md', 'pass\n'), encoding='utf-8')
         refused('(g) verifier-*.md output also refuses', ['split', str(d)], d, needle='superseded')
+        # (g) --supersede: step-2 holding builder-L2.md moves to the next free step-2.superseded-<k>/, then
+        # a new step-2 is written; the negative control (no flag) is the refusal just above
+        d = task()
+        (d / 'step-2').mkdir()
+        (d / 'step-2' / 'handoff.md').write_text('old step 2\n', encoding='utf-8')
+        (d / 'step-2' / 'builder-L2.md').write_text(hdr('builder-L2.md', '## Status\ndone\n'), encoding='utf-8')
+        refused('(g) --supersede negative control: without the flag step-2 with builder-L2.md refuses, '
+                'writes nothing', ['split', str(d), '--only', '2'], d, needle='--supersede')
+        rc, out, err = run_main(['split', str(d), '--only', '2', '--supersede'])
+        sup = d / 'step-2.superseded-1'
+        check('(g) --supersede: step-2 moves to step-2.superseded-1 with its output, a new step-2 is written',
+              rc == 0 and (sup / 'builder-L2.md').is_file()
+              and (sup / 'handoff.md').read_text(encoding='utf-8') == 'old step 2\n'
+              and (d / 'step-2' / 'handoff.md').read_text(encoding='utf-8') == want2
+              and not (d / 'step-2' / 'builder-L2.md').exists() and 'step-2.superseded-1' in err)
+        (d / 'step-2' / 'verifier-L1.md').write_text(hdr('verifier-L1.md', 'pass\n'), encoding='utf-8')
+        rc, _, _ = run_main(['split', str(d), '--only', '2', '--supersede'])
+        check('(g) --supersede: a second supersede takes the next free k (step-2.superseded-2)',
+              rc == 0 and (d / 'step-2.superseded-2' / 'verifier-L1.md').is_file() and sup.is_dir()
+              and (d / 'step-2' / 'handoff.md').read_text(encoding='utf-8') == want2)
+        d = task()
+        (d / 'step-2').mkdir()
+        (d / 'step-2' / 'builder-L2.md').write_text(hdr('builder-L2.md', '## Status\ndone\n'), encoding='utf-8')
+        refused('(g) --supersede renames nothing when another check refuses (--only 9)',
+                ['split', str(d), '--only', '9', '--supersede'], d)
 
         # (h) handoff with no Goal section, and no handoff at all
         d = task(handoff='---\nid: T-0001\n---\n\n## Intent\n- x\n')
@@ -4838,6 +4889,24 @@ def selftest():
               'sibling kept, stdout names old and new',
               rc == 0 and err == '' and (d / 'handoff.md').read_text(encoding='utf-8') == want
               and S_OLD in out and 'test -f handoff.md' in out and len(out.splitlines()) == 1)
+        # solo task dir: solo-L2.md stands in for the builder; the ticket's ## Acceptance criteria is the region
+        solo_h = ('---\nid: T-0001\n---\n\n## Goal\ng\n\n## Acceptance criteria\n- `' + S_OLD
+                  + '` (old check)\n- prose line\n\n## Context\n- `' + S_OLD + '` named here is not a criterion\n')
+        count[0] += 1
+        sd = tmp / f'solo{count[0]}'
+        sd.mkdir()
+        (sd / 'handoff.md').write_text(solo_h, encoding='utf-8')
+        for name, text in (('solo-L2.md', '## Status\ndone\n'), ('verifier-L2.md', swap_v())):
+            (sd / name).write_text(hdr(name, text), encoding='utf-8')
+        (sd / 'runs.jsonl').write_text('{"file": "solo-L2.md"}\n{"file": "verifier-L2.md"}\n', encoding='utf-8')
+        rc, out, err = run_main(['swap', str(sd)])
+        check('swap: a solo task dir with solo-L2.md and a plan-defect verifier fail applies the swap '
+              'to its ## Acceptance criteria line only',
+              rc == 0 and (sd / 'handoff.md').read_text(encoding='utf-8')
+              == solo_h.replace(f'- `{S_OLD}` (old check)', '- `test -f handoff.md` (new check)'))
+        (sd / 'solo-L2.md').unlink()
+        (sd / 'handoff.md').write_text(solo_h, encoding='utf-8')
+        swap_refused('a task dir with neither a builder nor a solo result refuses', sd, needle='solo')
         # (b) already applied: rerun on the swapped handoff exits 0 and writes nothing
         before = snapshot(d)
         rc, out, err = run_main(['swap', str(d)])
@@ -6226,6 +6295,9 @@ def main(argv):
                    help='split a plan whose newest plan review says replan anyway (the user\'s call); records '
                         '"review override: <review file>: <reason>" under ## Plan review in handoff.md; '
                         'a blocked review is never overridden')
+    p.add_argument('--supersede', action='store_true',
+                   help='rename a chosen step-<n>/ that holds builder or verifier output to the next free '
+                        'step-<n>.superseded-<k>/ after every check passes, then split')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p.add_argument('--tree', default=None, metavar='PATH',
@@ -6316,7 +6388,7 @@ def main(argv):
     if a.tree is not None and not os.path.isdir(a.tree):
         print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
         return 1
-    return cmd_split(a.target, a.only, a.guard_timeout, reason, a.tree)
+    return cmd_split(a.target, a.only, a.guard_timeout, reason, a.tree, a.supersede)
 
 
 if __name__ == '__main__':
