@@ -189,6 +189,58 @@ class CodexTests(unittest.TestCase):
         self.assertEqual(codex_roles.fingerprint_of(raw),codex_roles.fingerprint('sdlc-solo-l2'))
         self.assertNotEqual(codex_roles.fingerprint_of(dict(raw,developer_instructions=raw['developer_instructions']+' x')),codex_roles.fingerprint('sdlc-solo-l2'))
 
+    # T-0506: the fingerprint line is a host envelope in front of the shared role body, and every profile says so.
+    def test_every_profile_defines_one_compatible_envelope_and_body_format(self):
+        for name,data in codex_roles.definitions():
+            text=data['developer_instructions']
+            self.assertIsNone(codex_roles.envelope_conflict(text),name)
+            self.assertIn(codex_roles.ENVELOPE_MARK,text,name)
+            self.assertIn('keeps the envelope as its second line',text,name)
+
+    def test_contradictory_envelope_contract_is_rejected_and_the_corrected_one_passes(self):
+        raw=dict(codex_roles.raw_definitions())['sdlc-scout-l1']['developer_instructions']
+        self.assertIn('nothing before the first heading',raw)
+        fp='0.0.0+000000000000'
+        # Observed defect: the pre-T-0506 note demanded a `profile:` first line beside the shared first-heading rule.
+        legacy=raw+('\n\n# Profile fingerprint\nThis profile is revision `'+fp+'`. Before any edit, make the first line of your first message '
+                    'and the first line of your final report exactly `profile: '+fp+'`.')
+        self.assertIn('no envelope rule',codex_roles.envelope_conflict(legacy))
+        fixed=raw+codex_roles.envelope_note(fp)
+        self.assertIsNone(codex_roles.envelope_conflict(fixed))
+
+    def test_fingerprinted_report_passes_the_native_exchange_and_result_parser(self):
+        import codex_exchange,results
+        codex_roles.install(self.repo)
+        fp=codex_roles.fingerprint('sdlc-scout-l1')
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(DEADLINE))
+        def exchange(text):
+            for old in self.step.glob('scout-L1*'):old.unlink()
+            proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],
+                                  cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            request=self.step/'scout-L1.request.json'
+            try:
+                self.wait_for(request.exists,directory=self.step,owner=proc)
+                report=self.step/'child-report.txt';report.write_text(text)
+                codex_exchange.respond(request,report)
+                _,stderr=proc.communicate(timeout=DEADLINE)
+                return proc.returncode,stderr
+            finally:
+                if proc.poll() is None:proc.kill();proc.communicate()
+        body='## Map\n- seed.txt:1: fixture\n\n## Entry points\nseed.txt\n\n## Not found\nNone\n'
+        code,err=exchange('profile: '+fp+'\n\n'+body)
+        self.assertEqual(code,0,err)
+        stored=self.step/'scout-L1.md'
+        lines=stored.read_text().splitlines()
+        self.assertTrue(lines[0].startswith('<!-- role=scout'));self.assertEqual(lines[1],'profile: '+fp)
+        self.assertIsNone(results.validate(str(stored),'scout'))
+        for heading in ('## Map','## Entry points','## Not found'):self.assertIn(heading,lines)
+        self.assertEqual(codex_roles.check_loaded('sdlc-scout-l1',stored.read_text().split('\n',1)[1])[0],'ready')
+        # The envelope is valid but the body is malformed: the parser still rejects it.
+        code,err=exchange('profile: '+fp+'\n\nNo required section\n')
+        self.assertEqual(code,3,err);self.assertIn('lacks ## Map',err)
+        code,err=exchange('profile: '+fp+'\n\n'+body.replace('## Map','## Mapping'))
+        self.assertEqual(code,3,err);self.assertIn('lacks ## Map',err)
+
     def test_handshake_cli_exit_codes(self):
         script=str(ROOT/'scripts/codex_roles.py');fp=codex_roles.fingerprint('sdlc-solo-l2')
         run=lambda *a:subprocess.run(['python3',script,'handshake','sdlc-solo-l2',*a],capture_output=True,text=True,timeout=DEADLINE)
