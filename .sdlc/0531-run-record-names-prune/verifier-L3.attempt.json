@@ -10,7 +10,7 @@
   "effort": "xhigh",
   "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
   "reason_source": "fallback",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-13T19:58:24.779876+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout64/e",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout64/e/.sdlc/0531-run-record-names-prune/handoff.md",
@@ -82,5 +82,7 @@
     "release/0.22.5",
     "release/0.22.6",
     "release/0.22.7"
-  ]
+  ],
+  "finished_at": "2026-10-13T20:47:23.478164+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }
