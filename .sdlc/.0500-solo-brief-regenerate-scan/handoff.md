@@ -2,7 +2,7 @@
 id: T-0500
 title: "agents/solo.md: regenerate derived files and scan em dashes and stale counts before verify (retro 12h rows 7 and 8)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Evidence: `docs/reports/2026-10-12-fleet-retro-12.md` rows 7 and 8: agent-ui, 3 
 
 ## Constraints
 One writer on `solo.md`. No model or effort change.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full

@@ -40,7 +40,7 @@ SCHEMA = {
     'verifier': {
         'key': 'Verdict',
         'allowed': (('pass', r'pass', 'pass'), ('fail', r'fail', 'fail'), _INHERITED),
-        'sections': ('Verdict', 'Criteria', 'Out of scope changes', 'For the next attempt'),
+        'sections': ('Verdict', 'Criteria', 'Out of scope changes', 'For the next attempt', 'Notes'),
     },
     'plan-reviewer': {
         'key': 'Verdict',
@@ -185,6 +185,15 @@ CRITERION_RE = re.compile(
     r'^\s*(?:[-*]\s*)?(?:\d+\.\s*)?(?:#(?:(step-\d+|ticket)#)?(\d+)\s+)?(.+?):\s+'
     r'(pass|fail|unmet-dependency\s+\S+|deferred\s+\S+)\.\s*Evidence:(.*)$', re.I)
 SETTLE_RE = re.compile(r'^\s*[-*]\s*`?#?(step-\d+|ticket)#(\d+)`?\s*$')
+
+
+def notes_lines(path):
+    """The non-blank lines of a verifier result's ## Notes section (nits no criterion names), else []."""
+    try:
+        lines = open(path).read().splitlines()
+    except OSError:
+        return []
+    return [l.strip() for l in _section_lines(lines, 'Notes') if l.strip() and l.strip().lower() != 'none']
 
 
 def _section_lines(lines, name):
@@ -434,6 +443,13 @@ def selftest():
     # T-0408: a verifier may hold a declared criterion (unmet-dependency or deferred); the Verdict stays fail
     vhead = head('verifier')
     held = '## Criteria\n- #4 `test -s out`: deferred integration. Evidence: out/ is absent\n\n'
+    case('a verifier result with a ## Notes section validates',
+         validate(write('notes-ok.md', vhead + '## Verdict\npass\n\n## Criteria\n- #1 `t`: pass. Evidence: e\n\n## For the next attempt\nNone\n\n## Notes\n- a.py:3 em dash in a comment\n')), None)
+    case('Notes before For the next attempt fails',
+         validate(write('notes-order.md', vhead + '## Verdict\npass\n\n## Notes\n- x\n\n## For the next attempt\nNone\n')),
+         '## Notes comes before ## For the next attempt')
+    case('a verdict pass with notes is still refused',
+         validate(write('pass-notes.md', vhead + '## Verdict\npass with notes\n\n## Notes\n- x\n')) is not None, True)
     case('a held criterion under Verdict fail validates',
          validate(write('held-ok.md', vhead + '## Verdict\nfail\n\n' + held + '## For the next attempt\ndeferred: integration\n')), None)
     case('an unmet-dependency criterion under Verdict fail validates',

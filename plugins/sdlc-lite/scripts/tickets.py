@@ -156,6 +156,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             A `merge_gate: light` line and `light_scope: <glob> [<glob>...]` lines (same comment rules, T-0481)
             opt a repo into the fanout light gate class (merge_gate_declared, light_scope_globs): a merge whose paths
             outside the ticket root all match a light_scope glob runs the --light-gate set; tickets.py never acts on them.
+            A `profile: inner-loop` line, `local_gate: <cmd>` lines and `full_gate: <cmd>` lines (same comment rules, T-0510)
+            opt a repo into the inner-loop profile (profile, local_gate_commands, full_gate_commands, inner_loop): solo_run.py
+            refuses a criterion that equals a full_gate command and puts the local gates in the brief, steps.py lint refuses a
+            (guard) on one; a handoff line `profile: default` opts a ticket out. tickets.py itself never acts on them.
             A `ticket_root: tickets` line (same comment rules) puts the ticket dirs in <root>/tickets for new, close,
             roadmap, check, archive and number; `tickets` is the only supported value, and any other value refuses
             every command, writing nothing. Without the line the ticket dirs are <root>/<slug> as before. With it,
@@ -275,6 +279,10 @@ EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
 HASH_BOUND_RE = re.compile(r'\s*hash_bound\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0374: one or more globs per line
 LIGHT_SCOPE_RE = re.compile(r'\s*light_scope\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0481: one or more globs per line
 MERGE_GATE_RE = re.compile(r'\s*merge_gate\s*:\s*light\s*(?:#.*)?')  # T-0481: the light gate class opt-in
+PROFILE_RE = re.compile(r'\s*profile\s*:\s*(\S+)\s*(?:#.*)?')  # T-0510: `profile: inner-loop` opt-in
+LOCAL_GATE_RE = re.compile(r'\s*local_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
+FULL_GATE_RE = re.compile(r'\s*full_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
+HANDOFF_PROFILE_DEFAULT_RE = re.compile(r'(?m)^\s*profile\s*:\s*default\b')  # T-0510: a ticket's opt-out line
 TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
@@ -497,6 +505,53 @@ def merge_gate_declared(root):
         return False
     return any(MERGE_GATE_RE.fullmatch(line) for line in path.read_text(encoding='utf-8').splitlines()
                if line.strip() and not line.lstrip().startswith('#'))
+
+
+def profile(root):
+    """'inner-loop' when <root>/config holds an uncommented `profile: inner-loop` line (T-0510), else None: the
+    owner's opt-in to the inner-loop profile (docs/planning/inner-loop-profile.md). A missing file, a # comment
+    line or any other value is None."""
+    path = root / 'config'
+    if not path.is_file():
+        return None
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = PROFILE_RE.fullmatch(line)
+        if m and m.group(1) == 'inner-loop':
+            return 'inner-loop'
+    return None
+
+
+def _gate_commands(root, regex):
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = regex.fullmatch(line)
+        if m and m.group(1) and m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
+def local_gate_commands(root):
+    """The commands on every `local_gate: <cmd>` line of <root>/config (T-0510), in file order, deduplicated; [] when
+    the file or the line is missing. The checks a solo, builder and verifier run under the inner-loop profile."""
+    return _gate_commands(root, LOCAL_GATE_RE)
+
+
+def full_gate_commands(root):
+    """The commands on every `full_gate: <cmd>` line of <root>/config (T-0510): the suite only the merge gate runs."""
+    return _gate_commands(root, FULL_GATE_RE)
+
+
+def inner_loop(root, handoff_text=''):
+    """True when the inner-loop profile governs a ticket: `profile: inner-loop` in <root>/config and no
+    `profile: default` line in the ticket's handoff text (T-0510)."""
+    return profile(root) == 'inner-loop' and not HANDOFF_PROFILE_DEFAULT_RE.search(handoff_text or '')
 
 
 def ticket_dir(root):

@@ -1347,10 +1347,10 @@ for _rel in ('agents/planner.md', 'agents/planner-L1.md', 'agents/planner-L2.md'
     if all(ph in _text for ph in PLANNER_PROBE) and not [ph for ph in PLANNER_PROBE if ph not in _text.replace(PLANNER_PROBE[0], '')]:
         errors.append(f'check.py: planner probe negative control not flagged for {_rel}')
 # Solo dependents and verbatim criteria (docstring item 55, T-0471): the two Loop rules and the report detect rule.
-SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report')),
+SOLO_RULES = (('agents/solo.md', ('Search-dependents', 'Run-verbatim', 'git grep', 'plan defect: scope misses', 'plan defect: <criterion>', 'results.py" solo-report', 'Regenerate:', 'Scan-diff:')),
               ('scripts/results.py', ('def solo_report_error', 'def criterion_spans')),
-              ('agents/solo-L1.md', ('Search-dependents', 'Run-verbatim')), ('agents/solo-L2.md', ('Search-dependents', 'Run-verbatim')),
-              ('agents/solo-L3.md', ('Search-dependents', 'Run-verbatim')))
+              ('agents/solo-L1.md', ('Search-dependents', 'Run-verbatim', 'Regenerate:', 'Scan-diff:')), ('agents/solo-L2.md', ('Search-dependents', 'Run-verbatim', 'Regenerate:', 'Scan-diff:')),
+              ('agents/solo-L3.md', ('Search-dependents', 'Run-verbatim', 'Regenerate:', 'Scan-diff:')))
 def solo_rules_bad(rel, text): return [f'{rel} missing "{ph}"' for r, phrases in SOLO_RULES if r == rel for ph in phrases if ph not in text]
 for _rel, _phrases in SOLO_RULES:
     _f = root/_rel
@@ -1361,9 +1361,17 @@ for _rel, _phrases in SOLO_RULES:
 _sp = ['python3 a.py check', 'python3 b.py selftest']
 if results.solo_report_error('- `python3 a.py check` exit 0\n- `python3 b.py selftest` exit 0\nverify: needed\n', _sp) is not None: errors.append('check.py: solo report rule flags a complete report')
 if results.solo_report_error('- `python3 a.py check` exit 0\nverify: needed\n', _sp) is None: errors.append('check.py: solo report negative control not flagged for a missing exit-code line')
+# Verifier Notes handle (T-0511): agents/verifier.md and its generated levels carry the handle and the rule line.
+VERIFIER_NOTES = ('Notes: a finding that no criterion names', '`## Notes`')
+for _rel in ('agents/verifier.md', 'agents/verifier-L1.md', 'agents/verifier-L2.md', 'agents/verifier-L3.md'):
+    _f = root/_rel
+    _text = _f.read_text() if _f.is_file() else ''
+    errors.extend(f'check.py: verifier notes: {_rel} missing "{ph}"' for ph in VERIFIER_NOTES if ph not in _text)
+    if all(ph in _text for ph in VERIFIER_NOTES) and not [ph for ph in VERIFIER_NOTES if ph not in _text.replace(VERIFIER_NOTES[0], '')]:
+        errors.append(f'check.py: verifier notes negative control not flagged for {_rel}')
 # Merge ops (docstring item 56, T-0492): the conductor, the fanout skill and run-operations.md name the same merge commands and the same settle command.
 MERGE_OPS_FILES = ('agents/conductor.md', 'skills/fanout/SKILL.md', 'skills/handoff-format/run-operations.md')
-MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops')
+MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops', 'merge-base --is-ancestor origin/main HEAD', 'gh pr checks <n> --watch --fail-fast')
 SETTLE_RE = re.compile(r'fanout\.py settle <integration>(?: --forward)?')
 def merge_ops_bad(texts):
     out = [f'{rel} missing "{ph}"' for rel, text in texts.items() for ph in MERGE_OPS_PHRASES if ph not in text and not (ph == 'Merge ops' and rel == 'skills/fanout/SKILL.md')]
