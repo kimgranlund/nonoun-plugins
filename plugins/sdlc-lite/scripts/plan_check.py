@@ -4,6 +4,7 @@
   plan_check.py goal|loop|fanout|campaign [--text T | --file F] [--root .sdlc]
   plan_check.py plan [--text T | --file F] [--root .sdlc] [--run]
   plan_check.py clarify [--text T | --file F]
+  plan_check.py <kind> ... --summary
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -29,6 +30,11 @@ items, or a lower-case must, shall or should in `## Constraints`), and clarify-d
 `(source: ...)`). Two warnings: clarify-goal-length (over 2 sentences or 50 words) and clarify-glossary (an unapproved alias from
 docs/references/glossary.md in the Goal or a Do step; skipped when the file is absent). An item starting `[owner: maintainer]` is exempt
 from the two Done when rules. The selftest prints one `ok: clarify: <rule> ...` line per case.
+Controlled language (T-0469): the goal, campaign and plan kinds add three warnings that reuse the clarify lists: `hedge` (a CLARIFY_HEDGE word in
+the /goal line, a Goal or an Outcome line), `verb` (a How to work or step Do statement that does not start with a CLARIFY_VERBS verb) and
+`rfc2119` (an Authorization with no upper-case MUST, or a lower-case must, shall or should in it). `--summary` on any kind prints one more line
+after the lint lines, `cost: $<sum> of $<cap> (<n> tickets: T-0001 L2 $30, ...)`: the tickets the block names, each at its size level's row in
+budget.py TIERS, against its `$<n> total` figure. A ticket with no size or tier makes the sum `unknown`, never 0; a sum above the cap ends `over`.
 """
 import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 
@@ -112,6 +118,7 @@ def check_goal(text, root='.sdlc'):
         if not (any(i in d for i in ids) or any(c in d for c in cmds) or (target and target in d)):
             fails.append(('done-measured', 'Done when must name the Measured by id or command, or its target, so closing tickets alone cannot end the goal'))
     warns.extend(kpi_unresolved(text, root))
+    warns.extend(language_goal(text))
     if len(text) > 5000:
         fails.append(('too-long', f'{len(text)} characters; keep it under 5000 so it can be read overnight'))
     return fails, warns
@@ -455,6 +462,8 @@ def check_campaign(text, root='.sdlc', load=None):
         fails.append(('no-goal-block', 'return one fenced /goal block that passes `plan_check.py goal`'))
     else:
         fails.extend((f'goal-{r}', w) for r, w in check_goal(goal)[0])
+        warns.extend(language_goal(goal))
+    warns.extend(lang_warn([('the Campaign line', m.group(0)) for m in re.finditer(r'(?m)^[ \t]*Campaign:[^\n]*', plan)], [], None))
     if not re.search(r'(?im)^\s*Reference PR\b[^\n]*\S', plan):
         warns.append(('no-reference-pr', 'name one reference PR as the pattern every lane copies'))
     l1, cpus = load or machine_load()
@@ -735,6 +744,7 @@ def check_plan(text, root='.sdlc', run=False, path=None):
             bad('done-plan-done', 'Done when must require `plan_done.py` to exit 0, or exit 4 (stopped with state written)')
     warns.extend(kpi_drift(mrows, root))
     warns.extend(kpi_unresolved(text, root))
+    warns.extend(language_plan(doc))
     return fails, warns
 
 
@@ -766,7 +776,7 @@ Negative control: K-002 reads 34.3 now, above the target of 15, so it is red bef
 | K-003 | `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` | results.builder.blocked | <= 1 | down | 4 | now |
 
 ## Authorization
-`onboard.py setup` in step 4 only, after `onboard.py check` exits 0. Publish, push, tag and external writes are not implied.
+The run MUST NOT publish, push, tag or write externally. Authorized: `onboard.py setup` in step 4 only, after `onboard.py check` exits 0.
 
 ## Budget and stop rules
 Stop and write state to .sdlc/notes.md at $60 total, $20 per step, a rate or weekly limit, or three 529s in a row. replan cap: 1, then stop.
@@ -792,7 +802,7 @@ executor: solo-L2
 verify: auto
 cap: $12
 ### Do
-Make the dispatch record name the lane worktree.
+Change the dispatch record to name the lane worktree.
 ### Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`
 2. (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
@@ -820,7 +830,7 @@ executor: auto
 verify: required
 cap: $10
 ### Do
-Refresh the entry file blocks with `python3 plugins/sdlc-lite/scripts/onboard.py setup`.
+Update the entry file blocks with `python3 plugins/sdlc-lite/scripts/onboard.py setup`.
 ### Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/onboard.py check`
 
@@ -1023,6 +1033,103 @@ def check_clarify(text, glossary=None):
     return fails, warns
 
 
+# ---- controlled language of plan artifacts (T-0469) ---------------------------------------------------------
+# The rules of T-0461 applied to goal, campaign and plan-doc text, reusing the clarify lists and patterns above. Three warnings, not
+# FAILs, until the five-ask replay shows how often they misfire: hedge (a CLARIFY_HEDGE word in the /goal line, a Goal or an Outcome
+# line), verb (a How to work or step Do statement whose first word is not in CLARIFY_VERBS) and rfc2119 (an Authorization with no
+# upper-case MUST, or a lower-case must, shall or should in it).
+LANG_OUTCOME = re.compile(r'(?m)^[ \t]*Outcome:[^\n]*')
+
+
+def lang_leads(body, every=False):
+    """The statements of a body that open with a verb: list items and the line after a blank (every non-blank line when every is
+    set), with the list marker removed and fenced lines skipped."""
+    out, blank, fence = [], True, False
+    for ln in body.splitlines():
+        s = ln.strip()
+        if s.startswith('```'):
+            fence = not fence
+            continue
+        if fence:
+            continue
+        if not s:
+            blank = True
+            continue
+        item = re.match(r'(?:[-*]|\d+\.)[ \t]+(.*)', s)
+        if every or blank or item:
+            out.append(item.group(1) if item else s)
+        blank = False
+    return out
+
+
+def lang_warn(hedged, led, auth):
+    """warns for (where, text) pairs to scan for hedge words, pairs whose first word must be a verb, and an Authorization body or None."""
+    warns = []
+    for where, s in hedged:
+        hit = CLARIFY_HEDGE_RE.search(no_code(s))
+        if hit:
+            warns.append(('hedge', f'{where} holds the hedge word "{hit.group(0)}": {s.strip()[:80]}'))
+    for where, s in led:
+        first = re.sub(r'[^a-z]', '', s.split()[0].lower()) if s.split() else ''
+        if first not in CLARIFY_VERBS:
+            warns.append(('verb', f'{where} does not start with a verb from CLARIFY_VERBS: {s[:80]}'))
+    if auth is not None:
+        if not re.search(r'\bMUST\b', no_code(auth)):
+            warns.append(('rfc2119', 'Authorization has no `MUST` or `MUST NOT` line; write what the run MUST NOT do'))
+        for ln in auth.splitlines():
+            hit = CLARIFY_RFC_LOWER.search(no_code(ln))
+            if hit:
+                warns.append(('rfc2119', f'Authorization writes "{hit.group(0)}" in lower case; write MUST or MUST NOT: {ln.strip()[:80]}'))
+    return warns
+
+
+def language_goal(text):
+    """The controlled-language warnings of a /goal block."""
+    text = unwrap(text)
+    sec = sections(text)
+    hedged = [('the /goal line', text.splitlines()[0] if text else '')] + [('the Outcome line', m.group(0)) for m in LANG_OUTCOME.finditer(text)]
+    led = [('How to work', s) for s in lang_leads(re.sub(r'(?i)^\s*How to work[^:\n]*:?', '', sec.get('how', ''), count=1), every=True)]
+    auth = re.sub(r'(?i)^\s*Authori[sz](?:ation|ed)[^:\n]*:?', '', sec['auth'], count=1) if 'auth' in sec else None
+    return lang_warn(hedged, led, auth)
+
+
+def language_plan(doc):
+    """The controlled-language warnings of a parsed plan doc: the Goal and Outcome lines, each step's Do, and Authorization."""
+    hedged = [('the Goal', ln) for ln in (doc.section('Goal') or '').splitlines() if ln.strip()]
+    hedged += [('the Outcome line', m.group(0)) for m in LANG_OUTCOME.finditer(doc.section('Outcome') or '')]
+    led = []
+    for n, st in sorted(doc.steps.items()):
+        m = re.search(r'(?ims)^###[ \t]+Do\b[^\n]*\n(.*?)(?=^###[ \t]|\Z)', st.text)
+        led += [(f'step {n} Do', s) for s in lang_leads(m.group(1))] if m else []
+    return lang_warn(hedged, led, doc.section('Authorization'))
+
+
+# ---- cost line (--summary) -----------------------------------------------------------------------------------
+def cost_line(text, root='.sdlc'):
+    """`cost: $<sum of caps> of $<cap> (<n> tickets: T-0001 L2 $30, ...)` for the tickets a block names. The cap of a ticket is its
+    size level's row in budget.py TIERS. A ticket with no size, no row in TIERS or no folder under root makes the sum `unknown`, never 0;
+    a block that names no ticket sums to `unknown`; no `$<n> total` figure in the block makes the cap `unknown`; a sum above the
+    cap ends with `over`. A ceiling, not a forecast of spend."""
+    import budget  # lazy: budget imports tickets, which no other lint here needs
+    found = load_tickets(root)
+    rows, total = [], 0
+    for tid in dict.fromkeys(re.findall(r'\bT-\d+\b', text)):
+        size = re.search(r'(?m)^size:[ \t]*(\S+)', found[tid]['text'].split('---')[1]) if tid in found else None
+        level = budget.tickets.size_level(size.group(1)) if size else None
+        usd = budget.tier_usd(level) if level else None
+        if usd is None:
+            total = None
+        elif total is not None:
+            total += usd
+        rows.append(f'{tid} {level} ${usd:g}' if usd is not None else f'{tid} unknown')
+    cap = re.search(r'\$\s?(\d+(?:\.\d+)?)\s+total\b|total cap[ :]+\$\s?(\d+(?:\.\d+)?)', text)
+    cap = float(cap.group(1) or cap.group(2)) if cap else None
+    shown = f'${total:g}' if rows and total is not None else 'unknown'
+    over = ' over' if total is not None and cap is not None and total > cap else ''
+    return f'cost: {shown} of {f"${cap:g}" if cap is not None else "unknown"} ({len(rows)} ticket{"" if len(rows) == 1 else "s"}' \
+           f'{": " + ", ".join(rows) if rows else ""}){over}'
+
+
 # ---- driver --------------------------------------------------------------------------------------------------
 def run_check(kind, text, root='.sdlc', run=False, path=None):
     return {'goal': lambda t: check_goal(t, root), 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
@@ -1055,12 +1162,12 @@ Rubric:
 3. Scope held | pass: only T-0001 and T-0002 are closed by this goal.
 Negative control: the measure reads 8.3 now, above the target of 5, so it is red before any ticket lands.
 
-How to work: lane first with steps.py lane; solo for S and M; replan cap one, then record a limit; every claim from a command.
-A verifier fail means fix and re-verify; never merge on a fail.
+How to work: run steps.py lane first, then solo for S and M; keep the replan cap at one, then record a limit; report every claim from a command.
+Fix every verifier fail and re-verify; never merge on a fail.
 
 Budget and stop rules: stop and write state to .sdlc/notes.md at $60 total, $15 per ticket, a rate or weekly limit, or three 529s in a row.
 
-Authorization: publish, push and tag are not implied. Authorized: a fast-forward push of the release commit only if the fact-check passes.
+Authorization: The run MUST NOT publish, push or tag. Authorized: a fast-forward push of the release commit only if the fact-check passes.
 
 Done when: K-001 reads <= 5 (the Measured by command), tickets.py check exits 0 and T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to .sdlc/notes.md.
 ```"""
@@ -1100,12 +1207,12 @@ Rubric:
 3. Scope held | pass: only the four waves land.
 Negative control: the census prints 158 now, above the target of 0, so it is red before Wave 0 lands.
 
-How to work: lane first with steps.py lane; one writer per file; Wave 0 lands before any lane starts; replan cap one, then record a limit.
-A verifier fail means fix and re-verify; never merge on a fail.
+How to work: run steps.py lane first; keep one writer per file; land Wave 0 before any lane starts; keep the replan cap at one, then record a limit.
+Fix every verifier fail and re-verify; never merge on a fail.
 
 Budget and stop rules: stop and write state to .sdlc/notes.md at $900 total, $30 per lane, a rate or weekly limit, or three 529s in a row. No retry loops.
 
-Authorization: publish, tag, and deploy are not implied. Authorized: one plain push per integration branch.
+Authorization: The run MUST NOT publish, tag or deploy. Authorized: one plain push per integration branch.
 
 Done when: `python3 scripts/census-page-css.py` prints 0 and `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist, or the goal stopped on a limit with state written to .sdlc/notes.md.
 ```
@@ -1228,9 +1335,9 @@ def plan_selftest(expect):
         mutant('executor-unknown', 'a planner row is not a worker row', swap('executor: solo-L2', 'executor: planner-L2'))
         mutant('executor-unknown', 'a solo level that does not exist', swap('executor: solo-L2', 'executor: solo-L5'))
         # verifier-seat
-        mutant('verifier-seat', 'verify: none on an L2 step', swap('verify: auto\ncap: $12\n### Do\nMake', 'verify: none\ncap: $12\n### Do\nMake'))
-        mutant('verifier-seat', 'step text assigns verification to the driver', swap('Make the dispatch record name the lane worktree.', 'Make the dispatch record name the lane worktree. The driver verifies this step.'))
-        mutant('verifier-seat', 'verified by the driver', swap('Make the dispatch record name the lane worktree.', 'Make the dispatch record name the lane worktree; verification is done by the driver.'))
+        mutant('verifier-seat', 'verify: none on an L2 step', swap('verify: auto\ncap: $12\n### Do\nChange', 'verify: none\ncap: $12\n### Do\nChange'))
+        mutant('verifier-seat', 'step text assigns verification to the driver', swap('Change the dispatch record to name the lane worktree.', 'Change the dispatch record to name the lane worktree. The driver verifies this step.'))
+        mutant('verifier-seat', 'verified by the driver', swap('Change the dispatch record to name the lane worktree.', 'Change the dispatch record to name the lane worktree; verification is done by the driver.'))
         f, w = check_plan(swap('verify: required\ncap: $10', 'verify: auto\ncap: $10'), root=root)
         expect('plan: an L1 step with verify: auto warns l1-unverified and does not fail', not f and any(r == 'l1-unverified' for r, _ in w))
         # review-missing
@@ -1248,12 +1355,12 @@ def plan_selftest(expect):
         mutant('upsert-sweep', 'the sweep criterion of step 3 deleted', swap("- `git grep -qF 'recover --root' -- docs/references/sdlc-internals.md`\n", ''))
         # authorization
         mutant('authorization', 'Authorization reduced to None while step 4 runs onboard.py setup',
-               swap('`onboard.py setup` in step 4 only, after `onboard.py check` exits 0. Publish, push, tag and external writes are not implied.', 'None.'))
+               swap('The run MUST NOT publish, push, tag or write externally. Authorized: `onboard.py setup` in step 4 only, after `onboard.py check` exits 0.', 'None.'))
         mutant('authorization', 'a step runs git push that Authorization never names',
                swap('Add the sweep and describe it in the internals reference.', 'Add the sweep and describe it in the internals reference, then run git push origin main.'))
         mutant('authorization', 'Authorization section deleted', re.sub(r'(?ms)^## Authorization\n.*?(?=^## Budget)', '', P))
         mutant('authorization', 'a criterion runs gh pr create', swap("- `python3 plugins/sdlc-lite/scripts/onboard.py check`", "- `gh pr create --fill`"))
-        mutant('authorization', 'Authorization says only that it is vague', swap('`onboard.py setup` in step 4 only, after `onboard.py check` exits 0. Publish, push, tag and external writes are not implied.', 'See the maintainer.'))
+        mutant('authorization', 'Authorization says only that it is vague', swap('The run MUST NOT publish, push, tag or write externally. Authorized: `onboard.py setup` in step 4 only, after `onboard.py check` exits 0.', 'See the maintainer.'))
         expect('plan: authorization accepts a push that Authorization names with its condition',
                not check_plan(swap('Add the sweep and describe it in the internals reference.', 'Add the sweep, then run git push origin lane.').replace(
                    '`onboard.py setup` in step 4 only,', 'A plain push of the lane branch in step 3 only; `onboard.py setup` in step 4 only,'), root=root)[0])
@@ -1492,8 +1599,8 @@ def selftest():
         'stop-money': GOOD_GOAL.replace('$60 total, $15 per ticket, ', ''),
         'stop-529': GOOD_GOAL.replace('three 529s in a row', 'errors'),
         'stop-state': GOOD_GOAL.replace('write state to .sdlc/notes.md', 'write state'),
-        'verifier-fail': GOOD_GOAL.replace('A verifier fail means fix and re-verify; never merge on a fail.', ''),
-        'authorization': GOOD_GOAL.replace('publish, push and tag are not implied. Authorized: a fast-forward push of the release commit only if the fact-check passes.', ''),
+        'verifier-fail': GOOD_GOAL.replace('Fix every verifier fail and re-verify; never merge on a fail.', ''),
+        'authorization': GOOD_GOAL.replace('The run MUST NOT publish, push or tag. Authorized: a fast-forward push of the release commit only if the fact-check passes.', ''),
         'done-vague': GOOD_GOAL.replace('tickets.py check exits 0', 'it looks good'),
         'done-limit': GOOD_GOAL.replace(', or the goal stopped on a limit with state written to .sdlc/notes.md', ''),
         'too-long': GOOD_GOAL.replace('Scope', 'x' * 5200 + '\nScope', 1),
@@ -1588,6 +1695,56 @@ def selftest():
         expect('campaign: a ticket root with 0 tickets warns and does not fail', not f and any(r == 'ticket-root' for r, _ in w))
     f, w = check_campaign(GOOD_CAMPAIGN, root='x/.sdlc', load=(0.5, 8))
     expect('campaign: a root named .sdlc never warns about the ticket root', not any(r == 'ticket-root' for r, _ in w))
+    # controlled language (T-0469): each rule has a mutant that must warn as exactly that rule, and the good blocks must not
+    def lang(rule, label, w):
+        expect(f'language: {label} warns {rule}', rule in [r for r, _ in w])
+    lang('hedge', 'goal: a hedged /goal line', check_goal(GOOD_GOAL.replace('/goal Overnight: ship', '/goal Overnight: probably ship'))[1])
+    lang('hedge', 'goal: a hedged Outcome line', check_goal(GOOD_GOAL.replace('Outcome: every run leaves', 'Outcome: ideally every run leaves'))[1])
+    lang('verb', 'goal: a How to work line that opens with a noun', check_goal(GOOD_GOAL.replace('How to work: run steps.py lane', 'How to work: lane first with steps.py lane'))[1])
+    lang('verb', 'goal: a second How to work line that opens with a noun', check_goal(GOOD_GOAL.replace('Fix every verifier fail', 'A verifier fail means: fix every one'))[1])
+    lang('rfc2119', 'goal: an Authorization with no MUST', check_goal(GOOD_GOAL.replace('The run MUST NOT publish, push or tag.', 'Publish, push and tag are not implied.'))[1])
+    lang('rfc2119', 'goal: a lower-case must in Authorization', check_goal(GOOD_GOAL.replace('The run MUST NOT publish', 'The run MUST NOT publish and must not tag; MUST NOT publish'))[1])
+    lang('hedge', 'campaign: a hedged Campaign line', check_campaign(GOOD_CAMPAIGN.replace('Campaign: granular', 'Campaign: ideally granular'), load=(0.5, 8))[1])
+    lang('verb', 'campaign: a goal block How to work that opens with a noun', check_campaign(GOOD_CAMPAIGN.replace('How to work: run steps.py lane first', 'How to work: lane first'), load=(0.5, 8))[1])
+    lang('rfc2119', 'campaign: a goal block Authorization with no MUST', check_campaign(GOOD_CAMPAIGN.replace('The run MUST NOT publish, tag or deploy.', 'Publish, tag and deploy are not implied.'), load=(0.5, 8))[1])
+    lang('hedge', 'plan: a hedged Goal', check_plan(GOOD_PLAN.replace('Build the restart', 'Probably build the restart'))[1])
+    lang('hedge', 'plan: a hedged Outcome line', check_plan(GOOD_PLAN.replace('Outcome: a host restart', 'Outcome: arguably a host restart'))[1])
+    lang('verb', 'plan: a step Do that opens with a noun', check_plan(GOOD_PLAN.replace('### Do\nChange the dispatch', '### Do\nThe dispatch'))[1])
+    lang('verb', 'plan: a bulleted step Do item that opens with a noun', check_plan(GOOD_PLAN.replace('### Do\nChange the dispatch', '### Do\n- Add a test\n- Dispatch record names the lane worktree'))[1])
+    lang('rfc2119', 'plan: an Authorization with no MUST', check_plan(GOOD_PLAN.replace('The run MUST NOT publish, push, tag or write externally. ', 'Publish, push, tag and external writes are not implied. '))[1])
+    lang('rfc2119', 'plan: a lower-case should in Authorization', check_plan(GOOD_PLAN.replace('Authorized: `onboard', 'The run should stop. Authorized: `onboard'))[1])
+    expect('language: the Do verb rule ignores fenced lines', not [r for r, _ in check_plan(GOOD_PLAN.replace('### Do\nChange the dispatch record to name the lane worktree.', '### Do\nChange the dispatch record to name the lane worktree.\n```\nthe dispatch\n```'))[1] if r == 'verb'])
+    expect('language: a hedge word in a code span is not flagged', not [r for r, _ in check_goal(GOOD_GOAL.replace('Outcome: every run', 'Outcome: `maybe` every run'))[1] if r == 'hedge'])
+    expect('language: the good goal, campaign and plan carry no language warning',
+           not [r for r, _ in check_goal(GOOD_GOAL)[1] + check_campaign(GOOD_CAMPAIGN, load=(0.5, 8))[1] + check_plan(GOOD_PLAN)[1] if r in ('hedge', 'verb', 'rfc2119')])
+    f, w = check_goal(GOOD_GOAL.replace('Fix every verifier fail', 'A verifier fail means: fix every one'))
+    expect('language: a language finding warns and does not fail', not f and any(r == 'verb' for r, _ in w))
+    # the cost line (T-0469): a sized ticket, an unsized one, a ticket over the cap, a missing cap, and a block with no ticket
+    with tempfile.TemporaryDirectory() as d:
+        for tid, size in (('T-0001', 'L2'), ('T-0002', 'L3'), ('T-0003', 'L4'), ('T-0004', None)):
+            os.makedirs(os.path.join(d, f'{tid[2:]}-x'))
+            front = f'id: {tid}\nstatus: ready\n' + (f'size: {size}\n' if size else '')
+            pathlib.Path(d, f'{tid[2:]}-x', 'handoff.md').write_text(f'---\n{front}---\n## Goal\nx\n')
+        cap = 'stop at $100 total'
+        expect('cost: two sized tickets sum their caps', cost_line(f'T-0001 T-0002 {cap}', d) == 'cost: $90 of $100 (2 tickets: T-0001 L2 $30, T-0002 L3 $60)')
+        expect('cost: a sum above the cap ends over', cost_line('T-0001 T-0002 stop at $60 total', d) == 'cost: $90 of $60 (2 tickets: T-0001 L2 $30, T-0002 L3 $60) over')
+        expect('cost: a level with no TIERS row sums unknown, never 0', cost_line(f'T-0001 T-0003 {cap}', d) == 'cost: unknown of $100 (2 tickets: T-0001 L2 $30, T-0003 unknown)')
+        expect('cost: a ticket with no size sums unknown, never 0', cost_line(f'T-0004 {cap}', d) == 'cost: unknown of $100 (1 ticket: T-0004 unknown)')
+        expect('cost: a ticket with no folder sums unknown', cost_line(f'T-0099 {cap}', d) == 'cost: unknown of $100 (1 ticket: T-0099 unknown)')
+        expect('cost: no total cap in the block reads unknown', cost_line('T-0001', d) == 'cost: $30 of unknown (1 ticket: T-0001 L2 $30)')
+        expect('cost: a block with no ticket sums unknown, never 0', cost_line(f'no ids {cap}', d) == 'cost: unknown of $100 (0 tickets)')
+        expect('cost: a repeated ticket id counts once', cost_line(f'T-0001 T-0001 {cap}', d).startswith('cost: $30 of $100 (1 ticket'))
+        import io, contextlib
+        for kind, block in (('goal', GOOD_GOAL.replace('T-0001', 'T-0001').replace('T-0002', 'T-0002')), ('plan', GOOD_PLAN)):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = main([kind, '--text', block, '--root', d, '--summary'])
+            lines = buf.getvalue().splitlines()
+            expect(f'cost: --summary on {kind} prints the lint lines then one cost line, exit {rc}', rc == 0 and lines[-1].startswith('cost: ') and lines[-2].startswith('ok: '))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            main(['goal', '--text', GOOD_GOAL, '--root', d])
+        expect('cost: without --summary no cost line prints', 'cost:' not in buf.getvalue())
     plan_selftest(expect)
     clarify_selftest(expect)
     rc = report('goal', *check_goal(GOOD_GOAL), out=lambda s: None)
@@ -1610,11 +1767,15 @@ def main(argv):
     g.add_argument('--file')
     ap.add_argument('--root', default='.sdlc')
     ap.add_argument('--run', action='store_true', help='plan only: add the checks that apply before execution starts')
+    ap.add_argument('--summary', action='store_true', help='after the lint lines, print the cost line: the caps of the tickets the block names against its total cap')
     a = ap.parse_args(argv)
     if a.run and a.kind != 'plan':
         ap.error('--run applies to the plan kind only')
     text = a.text if a.text is not None else (pathlib.Path(a.file).read_text(encoding='utf-8') if a.file else sys.stdin.read())
-    return report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
+    rc = report(a.kind, *run_check(a.kind, text, a.root, a.run, a.file))
+    if a.summary:
+        print(cost_line(text, a.root))
+    return rc
 
 
 if __name__ == '__main__':

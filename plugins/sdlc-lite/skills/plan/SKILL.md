@@ -61,7 +61,7 @@ lanes: <fanout.py run --dry-run output, verbatim>        # fanout and campaign o
 control: plan_done.py exits 1, <n> steps open            # doc only
 ```
 
-Compute `cost:` from `TIERS` in `${CLAUDE_PLUGIN_ROOT}/scripts/budget.py` and the `size:` of each ticket in scope, after `tickets.py check` passes; the plan rules give the form.
+Take `cost:` from `plan_check.py <kind> --summary`, which sums the `TIERS` row of each ticket the block names (`${CLAUDE_PLUGIN_ROOT}/scripts/budget.py`); the steps kind has no such lint, so give its `cost:` as `unknown`. Print the line verbatim; the plan rules say what `unknown` and `over` mean.
 
 Then return the block of the kind, five lines of `Why this plan`, the list `You must authorize`, and the line that a goal pasted as plain text is not registered until it is run as `/goal`. This skill runs nothing it plans.
 

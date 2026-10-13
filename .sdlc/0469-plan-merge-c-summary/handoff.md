@@ -23,3 +23,25 @@ Approved design: `.sdlc/.0462-plan-skills-merge-design/architect-L1.md` (read al
 
 ## Constraints
 No model or effort change. Old skills stay working until B. The skill stays self-contained (`check.py` item 42). Controlled language per T-0461 for plan artifacts. State only what a file or command shows; the replay is unverified if it was not an independent run.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0: it carries a `language:` control per rule (`hedge`, `verb`, `rfc2119`) on goal, campaign and plan, and a `cost:` control for a sized ticket, an unsized one, a level with no TIERS row, a missing cap, a sum over the cap and a block with no ticket.
+2. `python3 plugins/sdlc-lite/scripts/plan_check.py goal --summary --root /nonexistent --text x | grep -q '^cost: unknown of unknown (0 tickets)'` exits 0: the flag exists and prints the line (before the change the flag was an argparse error).
+3. `python3 -c "import sys; sys.path.insert(0,'plugins/sdlc-lite/scripts'); import plan_check as p; g=p.GOOD_GOAL; w=lambda t:[r for r,_ in p.check_goal(t)[1]]; sys.exit(0 if 'hedge' in w(g.replace('/goal Overnight: ship','/goal Overnight: probably ship')) and 'verb' in w(g.replace('How to work: run','How to work: lane first, run')) and 'rfc2119' in w(g.replace('The run MUST NOT publish, push or tag.','Publish is not implied.')) and not w(g) else 1)"` exits 0: each rule warns on its own mutant and the good goal warns on none.
+4. `python3 -c "import re,subprocess,sys; t=open('plugins/sdlc-lite/skills/plan/references/goal.md').read().split('## Example block')[1]; b=re.search(chr(96)*3+r'\n(.*?)'+chr(96)*3, t, re.S).group(1).replace('\${CLAUDE_PLUGIN_ROOT}','plugins/sdlc-lite'); r=subprocess.run([sys.executable,'plugins/sdlc-lite/scripts/plan_check.py','goal'],input=b,capture_output=True,text=True); sys.exit(0 if r.stdout.strip()=='ok: goal plan passes' else 1)"` exits 0: the `goal.md` example passes with no warning.
+5. `grep -q -- '--summary' plugins/sdlc-lite/skills/plan/SKILL.md && grep -q -- '--summary' plugins/sdlc-lite/skills/plan/references/plan-rules.md` exits 0, and `test -z "$(git diff --name-only -- plugins/sdlc-lite/scripts/check.py)"` exits 0: the skill and the rules use the flag and `check.py` is untouched.
+6. `python3 plugins/sdlc-lite/scripts/prompt_lint.py` exits 0.
+7. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (the item 49 phrase set among it).
+8. `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+verifier: L3
+
+## Notes
+
+Five-ask replay (2026-10-12, T-0469). Not an independent model run: one session ran the lint half only, so every count that needs a model is `[U]`. Design asks and what was run:
+1. goal for T-0455 and T-0456: the `GOOD_GOAL` block with those ids through `plan_check.py goal --summary`: `ok: goal plan passes`, `cost: unknown of $60 (2 tickets: T-0455 unknown, T-0456 unknown)`. Both tickets are closed folders (`.NNNN-`), which `load_tickets` does not read, so the cost is unknown, not 0.
+2. fanout for T-0459 and T-0381: `plan_check.py fanout --summary` exits 1 with `unknown-ticket` for both (closed folders), `cost: unknown of unknown (2 tickets: ...)`. The lint and the summary agree that the tickets are not open work.
+3. doc: `GOOD_PLAN` through `plan_check.py plan --summary`: passes with the existing `kpi-drift` warning only, no `hedge`, `verb` or `rfc2119`; `cost: unknown of $60 (2 tickets: T-0413 unknown, T-0414 unknown)` (closed folders).
+4. campaign for every page: `GOOD_CAMPAIGN` through `plan_check.py campaign --summary`: passes, `machine-load` warning only; `cost: unknown of $900 (0 tickets)` (a campaign names lanes, not tickets).
+5. a `/clarify` handoff with `## Outcome` as the argument to doc: not run `[U]`.
+First-return lint count: 4 of 4 blocks run pass their lint with the reworded examples; the model half (does a fresh `/plan` session write a passing block, and the number of questions asked) is `[U]` and needs an independent run. Promotion of `hedge`, `verb` and `rfc2119` from warning to FAIL waits for that run.
+

@@ -24,7 +24,7 @@ reviewed: <plan-reviewer result path>   # required when any step is size L4 or L
 | `## Goal` | One paragraph: what the steps build |
 | `## Outcome` | The lines of the plan-verification outcome block: `Outcome:` with `Why:`, `Measured by:`, `Rubric:`, `Negative control:` |
 | `## Measures` | Table `id, command, read, target, direction, before, when`. The command is backticked and read-only: no `rm`, no push or publish command, no `gh `, no `curl -X`, no `>` redirect. `read` is never empty: a dotted path into the JSON the command prints, or any label (`value`) when it prints one bare number (a command that prints `path:count`, as `git grep -c` does, is `unreadable`: reduce it to one number, for example `git grep -l X | wc -l`). A measure id is a letter, a dash and digits (`K-002`, `M-001`); `Done when` names it. `when` is `now` or `later: <owner>, <date or event>` |
-| `## Authorization` | Exactly what the run may do beyond editing the repository and running checks, each with its condition, or `None` |
+| `## Authorization` | `The run MUST NOT ...` lines, then `Authorized:` and what the run may do beyond editing the repository and running checks, each with its condition |
 | `## Budget and stop rules` | Total dollar cap, per-step caps, three 529s in a row, a rate or weekly limit, `replan cap: 1, then stop`, and the notes path (`.sdlc/notes.md`, or `.sdlc/notes/notes.md`) |
 | `## Step <n>: <title>` | One block per ticket (below) |
 | `## Upserts` | Table `path, mode, step`: every corpus record the run creates, edits or retires; mode is `create`, `edit` or `retire`; one step owns each path |
@@ -53,7 +53,7 @@ For `ticket: new`, run-plan creates the ticket with `tickets.py new` and copies 
 
 ## Lint rules (`plan_check.py plan`)
 
-A FAIL is one rule id: `plan-front`, `no-approval` (with `--run`: status must be approved or running, with `approved_by` and `approved_on`), `outcome-block`, `done-measured`, `measure-row`, `measure-safe`, `later-named`, `step-shape`, `depends-order`, `cap-sum`, `executor-unknown`, `verifier-seat`, `review-missing`, `upsert-shape`, `upsert-sweep`, `authorization`, `stop-rules`, `goal-line`, `done-plan-done`. Warnings: `l1-unverified`, `kpi-drift`, `kpi-unresolved`. Run `plan_check.py plan --file <plan-doc.md> --run` before a run starts; it must exit 0.
+A FAIL is one rule id: `plan-front`, `no-approval` (with `--run`: status must be approved or running, with `approved_by` and `approved_on`), `outcome-block`, `done-measured`, `measure-row`, `measure-safe`, `later-named`, `step-shape`, `depends-order`, `cap-sum`, `executor-unknown`, `verifier-seat`, `review-missing`, `upsert-shape`, `upsert-sweep`, `authorization`, `stop-rules`, `goal-line`, `done-plan-done`. Warnings: `l1-unverified`, `kpi-drift`, `kpi-unresolved`, and the controlled-language `hedge`, `verb` and `rfc2119` (the plan rules). Run `plan_check.py plan --file <plan-doc.md> --run` before a run starts; it must exit 0.
 
 ## Goal line
 

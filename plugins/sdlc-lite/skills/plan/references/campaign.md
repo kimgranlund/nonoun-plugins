@@ -22,7 +22,7 @@ Evidence labels: observed here (a gen-ui-kit campaign, 2026-10-09, as briefed by
 | FAIL pr-unbounded | Wave 3 gives a PR count, a number or a range like 8 to 10 |
 | FAIL no-order | `Dependency order:` says Wave 0 lands on main before any Wave 1 lane starts |
 | FAIL no-goal-block | One fenced `/goal` block |
-| warn no-allowlist, no-reference-pr | Wave 0 has no day-one allowlist; no `Reference PR:` line |
+| warn no-allowlist, no-reference-pr, hedge, verb, rfc2119 | Wave 0 has no day-one allowlist; no `Reference PR:` line; the `Campaign:` line or the goal block breaks the controlled-language rules of the plan rules |
 | warn machine-load | Load average above half the CPU count and a lane cap above the CPUs left free |
 | warn ticket-root | `--root` is not a `.sdlc` folder and holds 0 tickets |
 

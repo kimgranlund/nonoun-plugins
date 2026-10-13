@@ -12,8 +12,7 @@ The rules every kind of `/plan` shares. The skill body gives the order of work; 
 | campaign | a wave plan, then one fenced `/goal` block | `plan_check.py campaign` | [campaign](campaign.md) |
 | fanout | one fenced block of two command lines | `plan_check.py fanout`, then the command itself as `fanout.py run --dry-run` | [fanout](fanout.md) |
 
-- `plan_check.py plan` is the plan doc lint. No `plan_check.py` kind covers steps.
-- Pipe a block to its lint with a quoted heredoc on stdin (no temp file); a plan doc is linted from its file. Fix every `FAIL` line and rerun. Show every `warn` line. Do not return a block, command or plan that fails.
+- `plan_check.py plan` is the plan doc lint. No `plan_check.py` kind covers steps. Pipe a block to its lint with a quoted heredoc on stdin (no temp file); a plan doc is linted from its file. Add `--summary` for the `cost:` line. Fix every `FAIL` line and rerun. Show every `warn` line. Do not return a block, command or plan that fails.
 - Read first, for goal and doc: `docs/specs/doc-standards/intent.md`, when that file exists in the repository.
 
 ## Goal and doc lines
@@ -31,13 +30,14 @@ Goal, doc and campaign carry the four parts Outcome, Measured by, Rubric and Neg
 
 ## Numbers, stop rules, authorization
 
+- Controlled language: the goal, campaign and plan lints warn (`hedge`, `verb`, `rfc2119`) on a hedge word in the `/goal`, Goal or Outcome line, and on a How to work or step Do line whose first word is not a verb of `CLARIFY_VERBS` in `plan_check.py`.
 - Every number comes from the thread or the person's answer, never a default you invented.
 - Stop rules carry numbers: a total dollar cap, a cap per ticket, step or lane, a rate or weekly limit, and three 529s in a row. State goes to the notes file (`.sdlc/notes.md`, or `.sdlc/notes/notes.md` with `layout: topics`). No retry loops. A plan doc adds `replan cap: 1, then stop`.
-- Authorization is explicit. Publish, push, tag, and external writes are never implied: name exactly what is allowed and under what condition, or write `None`.
+- Authorization is explicit. Publish, push, tag, and external writes are never implied. Write it as `The run MUST NOT publish, push or tag.`, then `Authorized: <what is allowed, with its condition>` (`rfc2119` warns on an Authorization with no `MUST` line).
 
 ## Budget levels and the cost line
 
-The dollar cap of each ticket level is `TIERS` in `${CLAUDE_PLUGIN_ROOT}/scripts/budget.py`. Read the table there; do not copy its numbers into a rule. The `cost:` line of the dry run is the sum of the caps of the tickets in scope against the cap the person gave: `cost: $<sum of caps> of $<cap> (<n> tickets: T-0001 L2 $30, ...)`. A ticket with no size, or a level with no row in `TIERS`, counts as `unknown`, never 0; a sum above the cap ends with `over`. The line is a ceiling, not a forecast of spend.
+The dollar cap of each ticket level is `TIERS` in `${CLAUDE_PLUGIN_ROOT}/scripts/budget.py`; do not copy its numbers into a rule. `plan_check.py <kind> --summary` prints the `cost:` line of the dry run: the sum of the caps of the tickets the block names against its `$<n> total` figure, as `cost: $<sum of caps> of $<cap> (<n> tickets: T-0001 L2 $30, ...)`. A ticket with no size, or a level with no row in `TIERS`, makes the sum `unknown`, never 0; a sum above the cap ends with `over`. The line is a ceiling, not a forecast of spend.
 
 ## Goal line
 
