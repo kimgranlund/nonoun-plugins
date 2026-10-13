@@ -522,3 +522,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0522 | [0522-live-check-new-model-rows](0522-live-check-new-model-rows/handoff.md) | Live host check of the new model rows and of effort: in the messenger and conductor front matter | chore | L2 | P2 | T-0520 | ⏳ proposed |
 | T-0523 | [.0523-plan-compaction-return-shape](.0523-plan-compaction-return-shape/handoff.md) | /plan compaction output does not match the kind's declared return shape | bug | L1 | P2 | none | 🟢 done |
 | T-0524 | [.0524-reload-plugins-load-error](.0524-reload-plugins-load-error/handoff.md) | Find and fix the 1 error /reload-plugins reported after 0.22.6 | bug | L1 | P2 | none | 🟢 done |
+| T-0525 | [.0525-maison-0546-triage](.0525-maison-0546-triage/handoff.md) | Triage maison T-0546: 30 work-record gaps, one reply line each | spike | L2 | P2 | none | 🟢 done |
+| T-0526 | [0526-claim-release-commands](0526-claim-release-commands/handoff.md) | Claim and release commands, plus claim lint (maison T-0546) | feature | L2 | P2 | none | ⏳ proposed |
+| T-0527 | [0527-close-refs-router-launcher](0527-close-refs-router-launcher/handoff.md) | Close references, router links, launcher and root guard (maison T-0546) | bug | L2 | P2 | T-0526 | ⏳ proposed |
+| T-0528 | [0528-detect-delivered-tickets](0528-detect-delivered-tickets/handoff.md) | Detect delivered and superseded open tickets (maison T-0546) | feature | L2 | P2 | T-0527 | ⏳ proposed |
+| T-0529 | [0529-work-record-writing-rules](0529-work-record-writing-rules/handoff.md) | Writing rules for work records, and a placeholder gate at close (maison T-0546) | chore | L2 | P2 | T-0528 | ⏳ proposed |
+| T-0530 | [0530-lane-record-on-ticket](0530-lane-record-on-ticket/handoff.md) | Lane record on the ticket (maison T-0546) | feature | L2 | P2 | T-0529 | ⏳ proposed |
+| T-0531 | [0531-run-record-names-prune](0531-run-record-names-prune/handoff.md) | Run records: retry names, filer prune, empty solo (maison T-0546) | bug | L2 | P2 | none | ⏳ proposed |
+| T-0532 | [0532-step-tooling-long-suites](0532-step-tooling-long-suites/handoff.md) | Step tooling and long suites (maison T-0546) | feature | L2 | P2 | none | ⏳ proposed |

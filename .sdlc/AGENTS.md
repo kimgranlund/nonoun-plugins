@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:058476106510 -->
+<!-- sdlc-lite:managed:start v1 sha256:0742c913c952 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,14 +9,21 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 2
+- proposed: 9
   - T-0521 Recalibrate prices.json for the model rows changed in T-0516, T-0517, T-0519 and T-0520 (0521-prices-recalibrate-new-rows)
   - T-0522 Live host check of the new model rows and of effort: in the messenger and conductor front matter (0522-live-check-new-model-rows)
+  - T-0526 Claim and release commands, plus claim lint (maison T-0546) (0526-claim-release-commands)
+  - T-0527 Close references, router links, launcher and root guard (maison T-0546) (0527-close-refs-router-launcher)
+  - T-0528 Detect delivered and superseded open tickets (maison T-0546) (0528-detect-delivered-tickets)
+  - T-0529 Writing rules for work records, and a placeholder gate at close (maison T-0546) (0529-work-record-writing-rules)
+  - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
+  - T-0531 Run records: retry names, filer prune, empty solo (maison T-0546) (0531-run-record-names-prune)
+  - T-0532 Step tooling and long suites (maison T-0546) (0532-step-tooling-long-suites)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 486
+- done: 487
 - dropped: 29
 
 ## Procedures
