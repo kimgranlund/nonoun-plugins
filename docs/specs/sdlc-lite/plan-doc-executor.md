@@ -17,7 +17,7 @@ Facts the design leans on:
 - `steps.py lint` already accepts a whole planner-format plan file by path and printed `steps lint: ok` for `.sdlc/plan-reliability-docs/plan.md` [V, run on 2026-10-09]. Step blocks in the plan doc therefore use the planner's step format unchanged.
 - `dispatch.py family` keeps a verifier off the model the work was done on, reading the solo or builder record, so independence is already enforced at dispatch [V, `dispatch.py:205`].
 - `fanout.py prep` and `land` already do the per-ticket sequence a plan needs: lane choice, the solo or chain dispatch, the batched verifier command for L2 and L3, the locked merge, gates, close [V, fanout.py docstring].
-- `levels.json` holds no Haiku row for solo or builder; Haiku 5.5 exists only as the scout row [V]. A smaller driver session is therefore not a role row, and a Haiku step worker would be a model change, which the maintainer decides [D, section 6].
+- `levels.json` holds no Haiku row for solo or builder, and no Claude row is Haiku now (the scout row is `sonnet` low) [V]. A smaller driver session is therefore not a role row, and a Haiku step worker would be a model change, which the maintainer decides [D, section 6].
 - The goal 002 plan builds `dispatch.py recover --root`, the one-command restart sweep. Today `dispatch.py recover` and `run_lifecycle.py recover` take one handoff directory [V, restart plan section 1]. The first customer therefore runs before the tool it would use.
 
 ## 3. The plan-doc contract

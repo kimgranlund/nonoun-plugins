@@ -1,7 +1,7 @@
 ---
 name: plan-reviewer-L1
-description: "Use to review a finished plan before any builder starts: returns pass, replan, or blocked with findings tied to steps and evidence. Read-only, never rewrites the plan. Run it on a different model family than the planner. NOT for writing or fixing the plan (planner), verifying built work (verifier), or a plan that does not exist yet. Level L1: opus high."
-model: opus
+description: "Use to review a finished plan before any builder starts: returns pass, replan, or blocked with findings tied to steps and evidence. Read-only, never rewrites the plan. Run it on a different model family than the planner. NOT for writing or fixing the plan (planner), verifying built work (verifier), or a plan that does not exist yet. Level L1: fable high."
+model: fable
 effort: high
 disallowedTools: Edit, NotebookEdit
 skills:

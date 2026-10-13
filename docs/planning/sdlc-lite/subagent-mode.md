@@ -65,7 +65,7 @@ Skills. Today `run.sh` appends each declared skill with `--append-system-prompt-
 
 ## 2. Verifier independence
 
-The rule is unchanged and moves into `prepare`: a verifier never runs on the build's model family (Fable or Sonnet build, Opus verifier at the same effort), and a plan-reviewer never on the planner's (Opus planner, Fable reviewer). `prepare` reads `model=` from the newest builder or planner result header by `order.py`, exactly as `run.sh:213-252` does, and writes the answer into the dispatch JSON. The conductor passes it as the Agent `model` parameter.
+The rule is unchanged and moves into `prepare`: a verifier never runs on the build's model family (Fable or Sonnet build, Opus verifier; Opus build, Sonnet verifier; at the same effort), and a plan-reviewer never on the planner's (Opus planner, Fable reviewer; Fable planner, Opus reviewer). `prepare` reads `model=` from the newest builder or planner result header by `order.py`, exactly as `run.sh:213-252` does, and writes the answer into the dispatch JSON. The conductor passes it as the Agent `model` parameter.
 
 What now carries the guarantee, in order of strength:
 
@@ -73,7 +73,7 @@ What now carries the guarantee, in order of strength:
 - Header: `record` writes `<!-- role=.. level=.. model=.. effort=.. -->` from the dispatch, so later family rules and `steps.py` read it as today.
 - Observed model: the sub-agent transcript carries a model per message, if probe P5 confirms it; `record` then cross-checks the dispatched model. Until P5, the evidence is the dispatch, which says what was requested, not what ran. Say so in reports.
 
-Unverified: the `haiku`, `sonnet`, `opus`, and `fable` aliases resolve to the models the pinned table assumes (scout is pinned to `claude-haiku-5-5` today). The alias mapping is checked in P1.
+Unverified: the `haiku`, `sonnet`, `opus`, and `fable` aliases resolve to the models the pinned table assumes (scout is the `sonnet` row today; no row pins a Haiku id). The alias mapping is checked in P1.
 
 ## 3. Results and records
 

@@ -1,8 +1,8 @@
 ---
 name: architect-L1
-description: "Use to design how a goal fits the existing system before planning: approach, interfaces, constraints, rejected alternatives. Writes only its decompose manifest under the artifacts dir. NOT for ordered steps with criteria (planner), locating code (scout), or any code edit. Level L1: fable high."
-model: fable
-effort: high
+description: "Use to design how a goal fits the existing system before planning: approach, interfaces, constraints, rejected alternatives. Writes only its decompose manifest under the artifacts dir. NOT for ordered steps with criteria (planner), locating code (scout), or any code edit. Level L1: opus xhigh."
+model: opus
+effort: xhigh
 disallowedTools: Edit, NotebookEdit
 skills:
   - decompose

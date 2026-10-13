@@ -22,8 +22,9 @@ goal precheck, unfilled-handoff gate, link check, lane gate, spec gate, budget g
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
   preflight    the handoff exists and the current directory is a git work tree with a commit.
   family       a verifier never runs on the newest build's model family (a Fable or Sonnet build moves it to
-               Opus, same effort); a plan-reviewer never on the newest planner's (an Opus planner moves it
-               to Fable). Both read the first model=<[a-z]*> token of the newest result by order.py (a dir with no builder result reads its newest `role solo` runs.jsonl record: a Sonnet solo gets an Opus verifier); a
+               Opus, an Opus build moves it to Sonnet, same effort); a plan-reviewer never on the newest
+               planner's (an Opus planner moves it to Fable, a Fable planner to Opus, same effort; a Sonnet
+               planner or none keeps the row, Fable high). Both read the first model=<[a-z]*> token of the newest result by order.py (a dir with no builder result reads its newest `role solo` runs.jsonl record: a Sonnet solo gets an Opus verifier, an Opus solo a Sonnet one); a
                verifier whose dir holds no builder result reads the highest-numbered live step-<n>/ that
                holds one (step-<n>.superseded-<k>/ is left out).
   goal         planner or plan-reviewer on a task handoff: steps.py precheck.        Refusal exit 2.
@@ -218,15 +219,19 @@ def agent_alias(model):
 def family(role, model, directory, solo=''):
     if role == 'verifier':
         built = order.newest(str(directory), 'builder') or step_build(directory)
-        if built and model == model_of(built) and model in ('fable', 'sonnet'):
+        # a solo ticket has no builder result: its newest runs.jsonl solo record holds the family (T-0284);
+        # a sub-agent lane worktree holds none, so fanout.py prep passes --solo-model (T-0356)
+        other = model_of(built) if built else (solo_model(directory) or solo)
+        if model == other and model in ('fable', 'sonnet'):
             return 'opus'
-        if not built and model == (solo_model(directory) or solo) and model in ('fable', 'sonnet'):
-            return 'opus'  # a solo ticket has no builder result: its newest runs.jsonl solo record holds the family (T-0284);
-            # a sub-agent lane worktree holds none, so fanout.py prep passes --solo-model (T-0356)
+        if model == other and model == 'opus':
+            return 'sonnet'  # T-0519: an Opus build gets a Sonnet verifier, same effort
     elif role == 'plan-reviewer':
         planned = order.newest(str(directory), 'planner')
         if planned and model == model_of(planned) and model == 'opus':
             return 'fable'
+        if planned and model == model_of(planned) and model == 'fable':
+            return 'opus'  # T-0519: the row is Fable high, so a Fable planner moves the review to Opus
     return model
 
 
@@ -1607,6 +1612,19 @@ def selftest():
         (sw / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in ('L1', 'L5')))
         rc, got = same('verifier swap value', repo, 'verifier', 'L3', '.sdlc/t/step-1/handoff.md')
         case('verifier L3 after a fable build moves to opus xhigh', (got['model'], got['effort']) == ('opus', 'xhigh'))
+        # T-0519: verifier L1 is opus low, so an opus build moves it to sonnet at the same effort; no other row moves.
+        for label, blvl, bmod, vlevel, want in (('verifier L1 after an opus builder L1 result runs sonnet low', 'L1', 'opus', 'L1', ('sonnet', 'low')),
+                                                ('verifier L2 after an opus builder L3 result keeps sonnet high', 'L3', 'opus', 'L2', ('sonnet', 'high')),
+                                                ('verifier L3 after an opus builder L4 result keeps fable xhigh', 'L4', 'opus', 'L3', ('fable', 'xhigh')),
+                                                ('verifier L3 after an opus builder L5 result keeps fable xhigh', 'L5', 'opus', 'L3', ('fable', 'xhigh')),
+                                                ('verifier L2 after a sonnet builder L2 result runs opus high', 'L2', 'sonnet', 'L2', ('opus', 'high')),
+                                                ('negative control: verifier L1 after a sonnet builder L2 result keeps opus low', 'L2', 'sonnet', 'L1', ('opus', 'low'))):
+            for old in sw.glob('builder-*.md'):
+                old.unlink()
+            put(sw / ('builder-%s.md' % blvl), '<!-- role=builder level=%s model=%s effort=x -->\n' % (blvl, bmod))
+            (sw / 'runs.jsonl').write_text(json.dumps({'role': 'builder', 'level': blvl, 'file': 'builder-%s.md' % blvl}) + '\n')
+            rc, got = same('T-0519 %s builder %s' % (bmod, blvl), repo, 'verifier', vlevel, '.sdlc/t/step-1/handoff.md')
+            case('T-0519: ' + label, rc == 0 and (got['model'], got['effort']) == want)
         shutil.rmtree(sw)
 
         # 2b. A solo ticket has no builder result: the newest solo record in runs.jsonl holds the family (T-0284).
@@ -1670,14 +1688,21 @@ def selftest():
             (pr / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'planner', 'level': l, 'file': 'planner-%s.md' % l}) + '\n' for l, _ in pairs))
         planners()
         _, got = same('plan-reviewer, no planner', repo, 'plan-reviewer', 'L1', '.sdlc/pr/handoff.md')
-        case('plan-reviewer with no planner keeps opus high', (got['model'], got['effort']) == ('opus', 'high'))
-        for label, pairs, want in (('sonnet planner', [('L1', 'sonnet')], 'opus'), ('fable planner', [('L2', 'fable')], 'opus'),
+        case('plan-reviewer with no planner keeps fable high', (got['model'], got['effort']) == ('fable', 'high'))
+        for label, pairs, want in (('sonnet planner', [('L1', 'sonnet')], 'fable'), ('fable planner', [('L2', 'fable')], 'opus'),
                                    ('opus planner', [('L3', 'opus')], 'fable'),
                                    ('opus planner then fable planner', [('L2', 'opus'), ('L3', 'fable')], 'opus'),
                                    ('fable planner then opus planner', [('L3', 'fable'), ('L2', 'opus')], 'fable')):
             planners(*pairs)
             _, got = same(label, repo, 'plan-reviewer', 'L1', '.sdlc/pr/handoff.md')
             case('plan-reviewer after %s runs %s' % (label, want), got['model'] == want)
+        # T-0519: the plan-reviewer row is fable high; a fable planner result moves it to opus, same effort.
+        planners()
+        rc, got = same('T-0519 plan-reviewer, no planner', repo, 'plan-reviewer', 'L1', '.sdlc/pr/handoff.md')
+        case('T-0519: plan-reviewer with no planner result runs fable high', rc == 0 and (got['model'], got['effort']) == ('fable', 'high'))
+        planners(('L2', 'fable'))
+        rc, got = same('T-0519 plan-reviewer, fable planner', repo, 'plan-reviewer', 'L1', '.sdlc/pr/handoff.md')
+        case('T-0519: plan-reviewer after a fable planner result runs opus high', rc == 0 and (got['model'], got['effort']) == ('opus', 'high'))
         shutil.rmtree(pr)
 
         # 5. Result naming: the lowest free k, as run.sh and run_lifecycle.py.
@@ -2243,7 +2268,7 @@ def selftest():
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', 'scout', 'L1', '.sdlc/t/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         cli = json.loads(p.stdout) if p.returncode == 0 else {}
-        case('CLI prints the dispatch JSON on stdout', p.returncode == 0 and cli.get('model') == 'haiku' and cli.get('subagent_type') == 'sdlc-lite:scout-L1')
+        case('CLI prints the dispatch JSON on stdout', p.returncode == 0 and cli.get('model') == 'sonnet' and cli.get('subagent_type') == 'sdlc-lite:scout-L1')
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', '--routing-reason', 'flag reason', 'scout', 'L1', '.sdlc/t/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=dict(env, SDLC_ROUTING_REASON='env reason'))
         case('--routing-reason is read like the env var and wins over it', p.returncode == 0 and json.loads(p.stdout).get('routing_reason') == 'flag reason')

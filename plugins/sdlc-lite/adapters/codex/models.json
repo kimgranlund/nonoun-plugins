@@ -5,7 +5,7 @@
   "plan-reviewer": {"L1": ["gpt-6-astra", "high"]},
   "researcher": {"L1": ["gpt-6-luna", "medium"], "L2": ["gpt-6.1-sol", "medium"], "L3": ["gpt-6.1-sol", "high"]},
   "architect": {"L1": ["gpt-6-astra", "high"]},
-  "scout": {"L1": ["gpt-5.6-terra", "low"]},
+  "scout": {"L1": ["gpt-6.1-sol", "low"]},
   "archaeologist": {"L1": ["gpt-6-luna", "medium"]},
   "filer": {"L1": ["gpt-6-luna", "medium"]},
   "conductor": {"L1": ["gpt-6-astra", "medium"]},

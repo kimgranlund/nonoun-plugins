@@ -1,5 +1,5 @@
 {
-  "eval": ".sdlc/evals/0008-solo-codex-l1-medium.md",
-  "previous_eval": ".sdlc/evals/0007-solo-ladder-shift.md",
-  "table_sha256": "15301194b0efa953418705861ef390113f2afb2857c3d1414bce0fde8ec9e695"
+  "eval": ".sdlc/evals/0009-model-batch-roles.md",
+  "previous_eval": ".sdlc/evals/0008-solo-codex-l1-medium.md",
+  "table_sha256": "d3047cbdb459100a20a8fc7554ca71e8a7e791bcdef1e769e0be1fa7d8657cab"
 }

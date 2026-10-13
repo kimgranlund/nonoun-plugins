@@ -2,8 +2,8 @@
 # Selftest for run.sh result numbering: three runs of the same role and level must keep every
 # result. The first run writes <role>-<level>.md, later runs write <role>-<level>-2.md, -3.md, ...
 # Each runs.jsonl line must name its result in a "file" field, in run order.
-# Also checks the verifier model swap, the plan-reviewer family rule (dry run: newest planner opus ->
-# --model fable --effort high; newest planner fable, planner sonnet, or no planner -> --model opus
+# Also checks the verifier model swap, the plan-reviewer family rule (dry run: newest planner fable ->
+# --model opus --effort high; newest planner opus, planner sonnet, or no planner -> --model fable
 # --effort high), and .nvmrc resolution against a fake NVM_DIR (exact,
 # partial with numeric highest pick, whole-component matching, alias, missing, no .nvmrc), plus one
 # real run proving the role run sees the matched node bin dir first on PATH, and the result
@@ -15,11 +15,11 @@
 # non-notification one is saved and run.sh exits 3. runs.jsonl takes cost from the last event.
 # Task dir: dry runs of run.sh verifier <level> .sdlc/td/handoff.md, a task dir holding no builder
 # result, read the newest build of the highest-numbered live step-<n>/ under it: a sonnet step-1
-# build moves verifier L1 and L2 to opus (medium, high); a fable build moves verifier L3 to opus
-# xhigh; step-<n>.superseded-<k>/ dirs are ignored either way; step-10 outranks step-2 (numeric
+# build keeps verifier L1 on opus low and moves L2 to opus high; an opus build moves verifier L1 to
+# sonnet low; a fable build moves verifier L3 to opus xhigh; step-<n>.superseded-<k>/ dirs are ignored either way; step-10 outranks step-2 (numeric
 # order); inside one step runs.jsonl order picks the build; a builder result in the task dir itself
-# wins over its step dirs; no build anywhere keeps sonnet medium (L1) and fable xhigh (L3); and a
-# verifier at a live step-3/ with no build ignores a sonnet step-1/. Its failures read
+# wins over its step dirs; no build anywhere keeps opus low (L1) and fable xhigh (L3); and a
+# verifier at a live step-3/ with no build ignores an opus step-1/. Its failures read
 # "task dir: <reason>".
 # Throwaway worktrees: with a stub that adds a worktree under $SDLC_TMP_WORKTREES, a successful run,
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
@@ -172,8 +172,8 @@ out=$(dry L2) || fail "dry run verifier L2 exited non-zero"
 printf '%s\n' '{"role":"builder","level":"L5","file":"builder-L5.md"}' \
   '{"role":"builder","level":"L1","file":"builder-L1.md"}' >"$sw/runs.jsonl"
 out=$(dry L1) || fail "dry run verifier L1 exited non-zero"
-[[ "$out" == *"--model opus --effort medium"* ]] \
-  || fail "L1 newest: verifier L1 should swap sonnet to '--model opus --effort medium', got: $out"
+[[ "$out" == *"--model opus --effort low"* ]] \
+  || fail "L1 newest: verifier L1 should stay '--model opus --effort low' after a sonnet build, got: $out"
 out=$(dry L2) || fail "dry run verifier L2 exited non-zero"
 [[ "$out" == *"--model opus --effort high"* ]] \
   || fail "L1 newest: verifier L2 should swap sonnet to '--model opus --effort high', got: $out"
@@ -193,7 +193,7 @@ tddry() { (cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" ver
 tdwant() { [[ "$3" == *"--agent sdlc-lite:verifier --model $2"* ]] || fail "task dir: $1: want '--model $2', got: $3"; }
 # 1. No build in the task dir; step-1 holds a sonnet build.
 tdreset; tdbuild step-1 L1 sonnet
-tdwant "sonnet step build, verifier L1" "opus --effort medium" "$(tddry L1)"
+tdwant "sonnet step build, verifier L1" "opus --effort low" "$(tddry L1)"
 tdwant "sonnet step build, verifier L2" "opus --effort high" "$(tddry L2)"
 # 2. Newest live build is fable.
 tdreset; tdbuild step-1 L5 fable
@@ -201,9 +201,9 @@ tdwant "fable step build, verifier L3" "opus --effort xhigh" "$(tddry L3)"
 # 3. Superseded step dirs are ignored.
 tdreset; tdbuild step-1 L1 sonnet; mkdir -p "$td/step-2"; echo '## Step 2' >"$td/step-2/handoff.md"
 tdbuild step-2.superseded-1 L3 opus
-tdwant "superseded opus ignored" "opus --effort medium" "$(tddry L1)"
+tdwant "superseded opus ignored" "opus --effort low" "$(tddry L1)"
 tdreset; tdbuild step-1 L3 opus; tdbuild step-2.superseded-1 L1 sonnet
-tdwant "superseded sonnet ignored" "sonnet --effort medium" "$(tddry L1)"
+tdwant "superseded sonnet ignored" "sonnet --effort low" "$(tddry L1)"
 # 4. Step order is numeric, not lexical.
 tdreset; tdbuild step-2 L3 opus; tdbuild step-10 L1 sonnet
 tdwant "step-10 sonnet beats step-2 opus" "opus" "$(tddry L1)"
@@ -214,17 +214,17 @@ tdreset; tdbuild step-1 L5 fable; tdbuild step-1 L1 sonnet
 touch -t 202601010000 "$td/step-1/builder-L5.md" "$td/step-1/builder-L1.md"
 printf '%s\n' '{"role":"builder","level":"L5","file":"builder-L5.md"}' \
   '{"role":"builder","level":"L1","file":"builder-L1.md"}' >"$td/step-1/runs.jsonl"
-tdwant "runs.jsonl newest sonnet" "opus" "$(tddry L1)"
+tdwant "runs.jsonl newest sonnet" "opus --effort high" "$(tddry L2)"
 # 6. The handoff dir's own build wins over its step dirs.
 tdreset; echo '<!-- role=builder level=L3 model=opus effort=high -->' >"$td/builder-L3.md"; tdbuild step-1 L1 sonnet
-tdwant "task dir opus build wins" "sonnet --effort medium" "$(tddry L1)"
+tdwant "task dir opus build wins" "sonnet --effort low" "$(tddry L1)"
 # 7. No builder result anywhere.
 tdreset; mkdir -p "$td/step-1"; echo '## Step 1' >"$td/step-1/handoff.md"
-tdwant "no build, verifier L1" "sonnet --effort medium" "$(tddry L1)"
+tdwant "no build, verifier L1" "opus --effort low" "$(tddry L1)"
 tdwant "no build, verifier L3" "fable --effort xhigh" "$(tddry L3)"
 # 8. A live step with no build reads only under itself, not its siblings.
-tdreset; tdbuild step-1 L1 sonnet; mkdir -p "$td/step-3"; echo '## Step 3' >"$td/step-3/handoff.md"
-tdwant "step-3 verifier ignores step-1" "sonnet --effort medium" "$(tddry L1 .sdlc/td/step-3/handoff.md)"
+tdreset; tdbuild step-1 L3 opus; mkdir -p "$td/step-3"; echo '## Step 3' >"$td/step-3/handoff.md"
+tdwant "step-3 verifier ignores step-1" "opus --effort low" "$(tddry L1 .sdlc/td/step-3/handoff.md)"
 # 9. A solo ticket has no builder result: the newest `role solo` record in runs.jsonl holds the family (T-0356).
 tdreset; printf '%s\n' '{"role":"solo","level":"L2","model":"sonnet"}' >"$td/runs.jsonl"
 tdwant "sonnet solo, verifier L2 moves to opus" "opus --effort high" "$(tddry L2)"
@@ -242,15 +242,15 @@ mkdir -p "$pr"
 echo '## Goal' >"$pr/handoff.md"
 prdry() { (cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" plan-reviewer L1 .sdlc/t/review/handoff.md); }
 out=$(prdry) || fail "dry run plan-reviewer L1 (no planner) exited non-zero"
-[[ "$out" == *"--agent sdlc-lite:plan-reviewer --model opus --effort high"* ]] \
-  || fail "no planner: plan-reviewer should stay '--model opus --effort high', got: $out"
+[[ "$out" == *"--agent sdlc-lite:plan-reviewer --model fable --effort high"* ]] \
+  || fail "no planner: plan-reviewer should stay '--model fable --effort high', got: $out"
 [[ "$out" == *"--disallowedTools Edit Write NotebookEdit"* ]] \
   || fail "plan-reviewer is not read-only, got: $out"
 echo '<!-- role=planner level=L1 model=sonnet effort=medium -->' >"$pr/planner-L1.md"
 echo '{"role":"planner","level":"L1","file":"planner-L1.md"}' >"$pr/runs.jsonl"
 out=$(prdry) || fail "dry run plan-reviewer L1 (sonnet planner) exited non-zero"
-[[ "$out" == *"--model opus --effort high"* ]] \
-  || fail "sonnet planner: plan-reviewer should stay '--model opus --effort high', got: $out"
+[[ "$out" == *"--model fable --effort high"* ]] \
+  || fail "sonnet planner: plan-reviewer should stay '--model fable --effort high', got: $out"
 echo '<!-- role=planner level=L2 model=opus effort=medium -->' >"$pr/planner-L2.md"
 echo '<!-- role=planner level=L3 model=fable effort=xhigh -->' >"$pr/planner-L3.md"
 touch -t 202601010000 "$pr/planner-L2.md" "$pr/planner-L3.md"
@@ -258,23 +258,23 @@ printf '%s\n' '{"role":"planner","level":"L3","file":"planner-L3.md"}' \
   '{"role":"planner","level":"L2","file":"planner-L2.md"}' >"$pr/runs.jsonl"
 out=$(prdry) || fail "dry run plan-reviewer L1 (opus planner) exited non-zero"
 [[ "$out" == *"--model fable --effort high"* ]] \
-  || fail "opus planner newest: plan-reviewer should swap to '--model fable --effort high', got: $out"
+  || fail "opus planner newest: plan-reviewer should stay '--model fable --effort high', got: $out"
 printf '%s\n' '{"role":"planner","level":"L2","file":"planner-L2.md"}' \
   '{"role":"planner","level":"L3","file":"planner-L3.md"}' >"$pr/runs.jsonl"
 out=$(prdry) || fail "dry run plan-reviewer L1 (fable planner) exited non-zero"
 [[ "$out" == *"--model opus --effort high"* ]] \
-  || fail "fable planner newest: plan-reviewer should stay '--model opus --effort high', got: $out"
-# Planner L3 runs on Opus xhigh, so a review after an Opus L3 plan moves to Fable high.
+  || fail "fable planner newest: plan-reviewer should swap to '--model opus --effort high', got: $out"
+# Planner L3 runs on Opus high, and a review after an Opus L3 plan stays on Fable high.
 out=$(cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/review/handoff.md) \
   || fail "dry run planner L3 exited non-zero"
-[[ "$out" == *"--model opus --effort xhigh"* ]] \
-  || fail "planner L3 should run '--model opus --effort xhigh', got: $out"
+[[ "$out" == *"--model opus --effort high"* ]] \
+  || fail "planner L3 should run '--model opus --effort high', got: $out"
 echo '<!-- role=planner level=L3 model=opus effort=xhigh -->' >"$pr/planner-L3.md"
 printf '%s\n' '{"role":"planner","level":"L2","file":"planner-L2.md"}' \
   '{"role":"planner","level":"L3","file":"planner-L3.md"}' >"$pr/runs.jsonl"
 out=$(prdry) || fail "dry run plan-reviewer L1 (opus L3 planner) exited non-zero"
 [[ "$out" == *"--model fable --effort high"* ]] \
-  || fail "opus L3 planner newest: plan-reviewer should swap to '--model fable --effort high', got: $out"
+  || fail "opus L3 planner newest: plan-reviewer should stay '--model fable --effort high', got: $out"
 
 # .nvmrc resolution against a fake NVM_DIR: dry runs assert the one stderr line, then one real
 # run checks that the stub claude sees the matched bin dir first on PATH.

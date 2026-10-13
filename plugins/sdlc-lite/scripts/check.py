@@ -44,7 +44,7 @@
    `unresolved:` in agents/planner.md, agents/plan-reviewer.md, and scripts/steps.py; `Missing decisions` in
    agents/plan-reviewer.md, skills/chain/SKILL.md, and agents/conductor.md; and `plan review:` in agents/planner.md,
    skills/chain/SKILL.md, skills/handoff-format/SKILL.md, and agents/conductor.md.
-12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-5-5`, and names `messages.py` and
+12. Messenger agent: agents/messenger.md exists, pins `model: sonnet` and `effort: low`, and names `messages.py` and
    `.sdlc/messages/AGENTS.md`; adapters/codex/models.json has a `messenger` entry; and the generated
    adapters/codex/agents/sdlc-messenger-l1.toml exists. It also carries the persistent-poller rules (T-0369): `SendMessage` delivery,
    the `Parent: <address>` startup ping, the same-turn loop, the yield line, the `inbox-<repo>-<receiver>` spawn name, the
@@ -743,7 +743,7 @@ for phrase, rels in TICKET_BUDGET.items():
         elif not ticket_budget_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: ticket-budget negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
-MESSENGER_WORDS = ('model: claude-haiku-5-5', 'messages.py', '.sdlc/messages/AGENTS.md',
+MESSENGER_WORDS = ('model: sonnet', 'effort: low', 'messages.py', '.sdlc/messages/AGENTS.md',
                    'SendMessage', 'Parent: <address>', 'messenger up', 'same turn', 'yielding;', 'inbox-<repo>-<receiver>',
                    'use `find`', 'Monitor', 'handled: unknown',  # T-0369: delivery, startup ping, loop, yield, spawn name, host pitfalls, report format
                    'messages.py activate', 'messages.py beat', 'messages.py release', 'scripts/supervisor.py',
