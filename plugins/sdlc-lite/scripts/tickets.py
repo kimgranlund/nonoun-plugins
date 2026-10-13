@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | claim <id> --by <agent> [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -212,7 +212,12 @@ one appended (a missing one is created as that line). Paths in the text are rela
 (else root's parent) in posix form, so the text is the same on every machine. new, close (--dry-run
 included), roadmap, archive and number refuse, writing nothing, while a managed AGENTS.md holds a malformed
 block. new and close follow-ups stamp `router: <ticket dir>/AGENTS.md  # how to claim and close this ticket` as
-the last front matter line. `router` is never validated. Status is set by hand: `status: claimed` needs a
+the last front matter line. `router` is never validated. `claim <id> --by <agent>` sets `status: claimed` and
+writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:` (refusing a held claim unless `--handover
+--reason TEXT`, which replaces the value and appends one dated body line); `release <id>` removes it and sets
+`status: ready`; both regenerate the roadmap. check warns (exit 0) on a claimed_by line with a trailing comment,
+one not directly after created:, and a claim older than `claim_days:` in <root>/config (default 7) with no
+`*.running` file under its folder. Other statuses are set by hand: `status: claimed` needs a
 non-empty `claimed_by:` and `status: paused` a non-empty `paused_reason:`; on any other status neither field is
 validated, so a `claimed_by:` on a ready ticket stays valid. An optional `area:` is the ticket's domain and must
 be one of the `areas: a, b, c` names in <root>/config (config_areas); it is never a lane or branch name. When some
@@ -1202,7 +1207,9 @@ def problems(ts, numbered=False, areas=None):
         for st, field in (('claimed', 'claimed_by'), ('paused', 'paused_reason')):
             v = m.get(field)
             if m.get('status') == st and not (isinstance(v, str) and v.strip()):
-                errs.append(f'{slug}: status {st} needs a non-empty {field}: line in its front matter')
+                fix = (f'run tickets.py claim {m.get("id", slug)} --by <agent>, or set status: ready'
+                       if st == 'claimed' else 'add `paused_reason: <why>`, or set status: ready')
+                errs.append(f'{slug}: status {st} needs a non-empty {field}: line in its front matter; fix: {fix}')
         if 'area' in m and areas is not None:
             a = m['area']
             if not areas:
@@ -1226,6 +1233,155 @@ def problems(ts, numbered=False, areas=None):
     for cyc in cycles(ts):
         errs.append(f'{ids.get(cyc[0], cyc[0])}: dependency cycle {" -> ".join(cyc)}')
     return errs
+
+
+# ---------- claims ----------
+
+CLAIM_KEY_RE = re.compile(r'claimed_by[ \t]*:')
+FM_RE = re.compile(r'---\r?\n(.*?)^---[ \t]*\r?$', re.S | re.M)
+
+
+def config_claim_days(root):
+    """The `claim_days: N` value in <root>/config (the last such line), default 7. A claim older than this with
+    no running attempt in its folder is listed by check."""
+    days = 7
+    path = root / 'config'
+    if path.is_file():
+        for line in path.read_text(encoding='utf-8').splitlines():
+            m = re.fullmatch(r'\s*claim_days\s*:\s*(\d+)\s*(?:#.*)?', line)
+            if m:
+                days = int(m.group(1))
+    return days
+
+
+def claim_warnings(root, td, ts, today=None):
+    """One `warning:` line per claim problem on an open ticket, each naming the ticket folder and the fix: a
+    trailing comment on the `claimed_by:` line, a `claimed_by:` line that is not directly after `created:`
+    (where `claim` writes it), and a `status: claimed` ticket whose claim date is older than claim_days with no
+    `*.running` file anywhere under its folder. Warnings only: check prints them and still passes."""
+    today = today or datetime.date.today()
+    days = config_claim_days(root)
+    out = []
+    for slug, m in ts:
+        if m.get('status') in ('done', 'dropped'):
+            continue
+        h = td / slug / 'handoff.md'
+        fm = FM_RE.match(h.read_text(encoding='utf-8').replace('\r\n', '\n')) if h.is_file() else None
+        if not fm:
+            continue
+        lines = fm.group(1).splitlines()
+        at = [i for i, line in enumerate(lines) if CLAIM_KEY_RE.match(line)]
+        if not at:
+            continue
+        i = at[0]
+        tid = m.get('id', slug)
+        if '#' in lines[i].split(':', 1)[1]:
+            out.append(f'warning: {slug}: claimed_by line has a trailing comment; fix: keep it to '
+                       f'`claimed_by: <agent> <YYYY-MM-DD>` (tickets.py claim {tid} --by <agent> --handover '
+                       f'--reason TEXT rewrites it)')
+        if i == 0 or not re.match(r'created[ \t]*:', lines[i - 1]):
+            out.append(f'warning: {slug}: claimed_by line is not directly after created:; fix: move it there')
+        if m.get('status') == 'claimed':
+            d = DATE_RE.search(str(m.get('claimed_by', '')))
+            try:
+                age = (today - datetime.date.fromisoformat(d.group(0))).days if d else None
+            except ValueError:
+                age = None
+            if age is not None and age > days and not any((td / slug).rglob('*.running')):
+                out.append(f'warning: {slug}: claimed {age} days ago (claim_days {days}) with no running attempt; '
+                           f'fix: tickets.py release {tid}, or tickets.py claim {tid} --by <agent> --handover '
+                           f'--reason TEXT')
+    return out
+
+
+def find_ticket(ts, ref):
+    """(slug, meta) for ref, a T-NNNN id or a ticket folder name; Fail when none matches."""
+    for slug, m in ts:
+        if ref in (m.get('id'), slug):
+            return slug, m
+    raise Fail(f'{ref}: no ticket has this id or folder; nothing written')
+
+
+def set_claim(text, status, value):
+    """text with the front matter's status value set to status (a trailing comment kept) and every claimed_by
+    line removed; value, when given, goes on a `claimed_by: <value>` line directly after `created:`."""
+    fm = FM_RE.match(text)
+    head = fm.group(1)
+    head = re.sub(r'^(status[ \t]*:[ \t]*)[^\s#]*', lambda x: x.group(1) + status, head, count=1, flags=re.M)
+    head = ''.join(line for line in head.splitlines(True) if not CLAIM_KEY_RE.match(line))
+    if value is not None:
+        head, n = re.subn(r'^(created[ \t]*:.*)$', lambda x: f'{x.group(1)}\nclaimed_by: {value}', head, count=1,
+                          flags=re.M)
+        if not n:
+            raise Fail('front matter has no created: line to put claimed_by: after; nothing written')
+    return text[:fm.start(1)] + head + text[fm.end(1):]
+
+
+def write_claim(root, td, ts, slug, text, numbered):
+    """Write text as slug's handoff.md and regenerate the roadmap, after checking the result is a valid ticket."""
+    meta = parse(text)
+    errs = problems([(s, meta if s == slug else m) for s, m in ts], numbered, areas=config_areas(root))
+    if errs:
+        raise Fail('\n'.join(errs + ['nothing written']))
+    (td / slug / 'handoff.md').write_text(text, encoding='utf-8')
+    write_roadmap(root, load(td))
+
+
+def claim_preflight(root, numbered):
+    td = layout_paths(root).tickets
+    numbered = numbered or config_numbered(root)
+    ts = load(td)
+    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
+    if errs:
+        raise Fail('\n'.join(errs + ['nothing written: fix the problems above first (each line names the ticket '
+                                      'folder; edit its handoff.md, then run tickets.py check)']))
+    router_preflight(root)
+    return td, ts, numbered
+
+
+def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=None):
+    """Claim ref for agent by: status claimed and `claimed_by: <by> <date>` directly after created:, then the
+    roadmap. A ticket already claimed refuses unless handover, which needs reason, replaces the value and
+    appends one dated body line naming the old and new holder and the reason."""
+    by = ' '.join((by or '').split())
+    if not by or '#' in by:
+        raise Fail('--by needs an agent name with no #; nothing written')
+    if handover and not (reason or '').strip():
+        raise Fail('--handover needs --reason TEXT; nothing written')
+    if reason and not handover:
+        raise Fail('--reason goes with --handover; nothing written')
+    td, ts, numbered = claim_preflight(root, numbered)
+    slug, m = find_ticket(ts, ref)
+    if m.get('status') in ('done', 'dropped'):
+        raise Fail(f'{slug}: status {m.get("status")}; a closed ticket cannot be claimed; nothing written')
+    cur = m.get('claimed_by')
+    held = cur.strip() if isinstance(cur, str) and cur.strip() else ''
+    if held and not handover:
+        raise Fail(f'{slug}: already claimed by {held}; pick another ticket, or take it over with '
+                   f'--handover --reason TEXT; nothing written')
+    if handover and not held:
+        raise Fail(f'{slug}: not claimed, so there is nothing to hand over; claim it without --handover; '
+                   f'nothing written')
+    date = (today or datetime.date.today()).isoformat()
+    value = f'{by} {date}'
+    text = set_claim((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), 'claimed',
+                     value)
+    if handover:
+        text = text.rstrip('\n') + f'\n\nHandover {date}: from {held} to {by}: {" ".join(reason.split())}\n'
+    write_claim(root, td, ts, slug, text, numbered)
+    return f'{slug}: claimed_by: {value}'
+
+
+def cmd_release(root, ref, numbered=False):
+    """Release ref: remove its claimed_by line and set status ready when it was claimed, then the roadmap."""
+    td, ts, numbered = claim_preflight(root, numbered)
+    slug, m = find_ticket(ts, ref)
+    if m.get('status') != 'claimed' and 'claimed_by' not in m:
+        raise Fail(f'{slug}: not claimed; nothing written')
+    status = 'ready' if m.get('status') == 'claimed' else m.get('status')
+    text = set_claim((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), status, None)
+    write_claim(root, td, ts, slug, text, numbered)
+    return f'{slug}: released, status {status}'
 
 
 # ---------- roadmap ----------
@@ -1572,13 +1728,14 @@ branch name.
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
 ask the user.
-2. Set `status: claimed` and add `claimed_by: <claude|codex> <YYYY-MM-DD>` to the front matter, then run \
-`python3 <plugin-root>/scripts/tickets.py --root <R> roadmap`.
+2. Run `python3 <plugin-root>/scripts/tickets.py --root <R> claim <id> --by <claude|codex>`. It sets \
+`status: claimed`, writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:`, and runs `roadmap`. \
+To take over a stale claim, add `--handover --reason "<why>"`.
 3. Start the work through `run.sh`, which puts it in progress: \
 `<plugin-root>/scripts/run.sh planner <level> <T>/<folder>/handoff.md`, or `/sdlc-lite:chain <T>/<folder>`. \
 Progress shows on `/board`.
-4. Release: remove the `claimed_by:` line and set `status: ready`. Pause: set `status: paused` and add a one-line \
-`paused_reason:`. Rerun `roadmap` after either.
+4. Release: `python3 <plugin-root>/scripts/tickets.py --root <R> release <id>`. Pause: set `status: paused` and \
+add a one-line `paused_reason:`, then rerun `roadmap`.
 
 Close a ticket:
 1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 <T>/<folder>/handoff.md`.
@@ -1878,7 +2035,8 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
     ts = load(td)
     errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
     if errs:
-        raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
+        raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first (each line names the '
+                                      'ticket folder; edit its handoff.md, then run tickets.py check)']))
     router_preflight(root)
     text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=id_floor(root))
     d = td / folder_name(slug, meta['id'], numbered)
@@ -2373,6 +2531,7 @@ def cmd_check(root, numbered=False):
         raise Fail('\n'.join(errs))
     out = [f'ok: {len(ts)} tickets, roadmap current']
     out += placeholder_problems(root, td, ts)
+    out += claim_warnings(root, td, ts)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
                    f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
@@ -2633,6 +2792,10 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_close(root, *args, **kw), ''
         if cmd == 'roadmap':
             return 0, cmd_roadmap(root, **kw), ''
+        if cmd == 'claim':
+            return 0, cmd_claim(root, *args, **kw), ''
+        if cmd == 'release':
+            return 0, cmd_release(root, *args, **kw), ''
         if cmd == 'check':
             return 0, cmd_check(root, **kw), ''
         if cmd == 'archive':
@@ -4735,6 +4898,79 @@ def selftest():
         expect(f'router: the Ticket fields line lists every status in order: {b!r}',
                '\nstatus: proposed | ready | claimed | paused | blocked | done | dropped\n' in b)
 
+        # claim and release: the claim line goes directly after created:, the roadmap is regenerated; claim lint
+        rc_ = pathlib.Path(tmp) / 'rt-claim' / '.sdlc'
+        run(rc_, 'new', ('feature', 'alpha', 'Alpha'))
+        run(rc_, 'new', ('feature', 'beta', 'Beta'))
+        today = datetime.date.today()
+        ha = rc_ / 'alpha' / 'handoff.md'
+        rc, out, err = run(rc_, 'claim', ('T-0001', 'claude'))
+        lines = ha.read_text(encoding='utf-8').splitlines()
+        ci = next((i for i, line in enumerate(lines) if line.startswith('created:')), -1)
+        rc_k, out_k, err_k = run(rc_, 'check')
+        expect(f'claim: claimed_by goes directly after created:, status claimed, roadmap regenerated: rc={rc} '
+               f'{err!r} {lines!r} {out_k!r} {err_k!r}',
+               rc == 0 and lines[ci + 1] == f'claimed_by: claude {today.isoformat()}'
+               and sum(line.startswith('claimed_by:') for line in lines) == 1
+               and any(line.startswith('status: claimed') for line in lines)
+               and '| \U0001f7e1 claimed |' in tr_text(rc_ / 'roadmap.md')
+               and f'  - T-0001 Alpha (alpha), claimed by claude {today.isoformat()}\n' in stage_text(rc_)
+               and rc_k == 0 and 'alpha' not in out_k)
+        rc, _, err = run(rc_, 'claim', ('T-0001', 'codex'))
+        expect(f'claim: a held claim refuses without --handover, naming the holder: rc={rc} {err!r}',
+               rc == 1 and 'already claimed by claude' in err)
+        before = ha.read_text(encoding='utf-8')
+        rc, _, err = run(rc_, 'claim', ('alpha', 'codex'), handover=True, reason='claude session ended')
+        after = ha.read_text(encoding='utf-8')
+        expect(f'claim --handover replaces the value and appends one dated body line: rc={rc} {err!r} {after!r}',
+               rc == 0 and f'\nclaimed_by: codex {today.isoformat()}\n' in after and 'claimed_by: claude' not in after
+               and after.endswith(f'\nHandover {today.isoformat()}: from claude {today.isoformat()} to codex: '
+                                  f'claude session ended\n')
+               and len(after.splitlines()) == len(before.splitlines()) + 2)
+        rc, _, err = run(rc_, 'new', ('feature', 'gamma', 'Gamma'))
+        expect(f'new succeeds beside a ticket with status: claimed and claimed_by: rc={rc} {err!r}', rc == 0)
+        edit(rc_, 'alpha', r'^(claimed_by:.*)$', r'\1  # mine')
+        run(rc_, 'roadmap')
+        rc, out, _ = run(rc_, 'check')
+        expect(f'claim lint: a trailing comment on the claim line warns naming the ticket: rc={rc} {out!r}',
+               rc == 0 and 'warning: alpha: claimed_by line has a trailing comment' in out)
+        edit(rc_, 'alpha', r'^(claimed_by:[^#]*?)\s*#.*$', r'\1')
+        run(rc_, 'roadmap')
+        rc, out, _ = run(rc_, 'check')
+        expect(f'claim lint: the same claim without the comment does not warn: rc={rc} {out!r}',
+               rc == 0 and 'alpha' not in out)
+        edit(rc_, 'alpha', r'^(claimed_by:.*)\n', '')
+        edit(rc_, 'alpha', r'^(priority:.*)$', f'\\1\nclaimed_by: codex {today.isoformat()}')
+        run(rc_, 'roadmap')
+        rc, out, _ = run(rc_, 'check')
+        expect(f'claim lint: a claim line out of place warns: rc={rc} {out!r}',
+               rc == 0 and 'warning: alpha: claimed_by line is not directly after created:' in out)
+        old = (today - datetime.timedelta(days=10)).isoformat()
+        run(rc_, 'claim', ('alpha', 'codex'), handover=True, reason='move the line')
+        edit(rc_, 'alpha', r'^claimed_by:.*$', f'claimed_by: codex {old}')
+        run(rc_, 'roadmap')
+        rc, out, _ = run(rc_, 'check')
+        expect(f'claim lint: a 10-day-old claim with no running attempt is listed: rc={rc} {out!r}',
+               rc == 0 and 'warning: alpha: claimed 10 days ago (claim_days 7) with no running attempt' in out
+               and 'not directly after' not in out)
+        (rc_ / 'alpha' / 'step-1').mkdir()
+        (rc_ / 'alpha' / 'step-1' / 'builder-L2.running').write_text('1\n', encoding='utf-8')
+        rc, out, _ = run(rc_, 'check')
+        expect(f'claim lint: the same claim beside a running attempt is not listed: rc={rc} {out!r}',
+               rc == 0 and 'alpha' not in out)
+        rc, out, err = run(rc_, 'release', ('T-0001',))
+        text = ha.read_text(encoding='utf-8')
+        expect(f'release removes claimed_by, sets status ready and regenerates the roadmap: rc={rc} {err!r}',
+               rc == 0 and 'claimed_by' not in text and '\nstatus: ready' in text and run(rc_, 'check')[0] == 0
+               and '- claimed: 0\n' in stage_text(rc_))
+        rc, _, err = run(rc_, 'release', ('T-0001',))
+        expect(f'release on an unclaimed ticket refuses: rc={rc} {err!r}', rc == 1 and 'not claimed' in err)
+        edit(rc_, 'beta', r'^status:.*$', 'status: claimed')
+        rc, _, err = run(rc_, 'new', ('feature', 'delta', 'Delta'))
+        expect(f'new refusing on a ticket problem names the ticket and the one-line fix: rc={rc} {err!r}',
+               rc == 1 and 'beta: status claimed needs a non-empty claimed_by' in err
+               and 'fix: run tickets.py claim T-0002 --by <agent>, or set status: ready' in err)
+
         # text outside the block and existing CLAUDE.md content are kept; one block and one import after reruns
         rk = pathlib.Path(tmp) / 'rt-keep' / '.sdlc'
         rk.mkdir(parents=True)
@@ -5514,6 +5750,18 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
+    p = sub.add_parser('claim', help='claim a ticket: status claimed and `claimed_by: <agent> <YYYY-MM-DD>` '
+                                     'directly after created:, then regenerate the roadmap')
+    p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
+    p.add_argument('--by', required=True, metavar='AGENT', help='the claiming agent, e.g. claude or codex')
+    p.add_argument('--handover', action='store_true',
+                   help='take over a claimed ticket: replace the claimed_by value and append one dated body line; '
+                        'needs --reason')
+    p.add_argument('--reason', metavar='TEXT', help='with --handover: why the claim changes hands')
+    p.add_argument('--numbered', action='store_true', help='also validate numbered folders (also on via config)')
+    p = sub.add_parser('release', help='release a claim: remove claimed_by, set status ready, regenerate the roadmap')
+    p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
+    p.add_argument('--numbered', action='store_true', help='also validate numbered folders (also on via config)')
     p = sub.add_parser('roadmap', help='regenerate roadmap.md')
     p.add_argument('--numbered', action='store_true',
                    help='also refuse on a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
@@ -5552,8 +5800,13 @@ def main(argv):
     cmd = a.cmd or 'check'
     if cmd == 'selftest':
         return selftest()
-    args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force)}.get(cmd, tuple)()
-    kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check', 'archive') else {}
+    args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force),
+            'claim': lambda: (a.id, a.by), 'release': lambda: (a.id,)}.get(cmd, tuple)()
+    kw = ({'numbered': getattr(a, 'numbered', False)}
+          if cmd in ('new', 'close', 'roadmap', 'check', 'archive', 'claim', 'release') else {})
+    if cmd == 'claim':
+        kw['handover'] = a.handover
+        kw['reason'] = a.reason
     if cmd == 'number':
         kw['dry_run'] = a.dry_run
     if cmd == 'migrate-layout':
