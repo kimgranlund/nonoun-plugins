@@ -34,7 +34,10 @@
 # hooks above each block a sub-agent role input and pass an input with no role, an interactive
 # conductor, or a non-SDLC agent. block-role-write.sh lets a read-only role sub-agent Write only
 # its dispatch result path (Write elsewhere, Edit, and NotebookEdit denied) and leaves the
-# builder, solo, the conductor, and no role unrestricted.
+# builder, solo, the conductor, and no role unrestricted. block-role-rm.sh (T-0538) lets a read-only
+# role remove files only under its throwaway prefix: rm, rmdir, or unlink of a path under it passes (and
+# prints an allow decision when the command is only rm and cd), a path outside it, with .. or an expansion
+# the hook cannot read, is denied with a stderr naming the role, and every other role or no role passes.
 # warn-handoff-edit.sh, for an Edit, Write, or NotebookEdit whose file is named handoff.md with a
 # <role>-<level>.running file beside it, allows the edit (exit 0), prints a freeze warning, and
 # appends one line to stale-edits.log beside the handoff; with SDLC_HANDOFF_EDIT_MODE=deny the same
@@ -60,6 +63,7 @@ ds="$hooks/block-disk-scan.sh"
 rs="$hooks/block-role-spawn.sh"
 wh="$hooks/warn-handoff-edit.sh"
 wrh="$hooks/block-role-write.sh"
+rmh="$hooks/block-role-rm.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -850,6 +854,57 @@ done
 printf '%s' "$(jq -n --arg r "$wd/elsewhere.md" '{subagent_type:"sdlc-lite:verifier-L3",role:"verifier",result:$r}')" >"$wd/stale-L3.dispatch.json"
 run "$wrh" "$(wrj sdlc-lite:verifier-L3 Write "$wd/stale-L3.md")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-role-write: a record whose result is another path unlocked this path: exit $rc, want 2"
+
+# block-role-rm.sh (T-0538): a read-only role removes files only under its throwaway prefix. Allowed under it
+# (and the allow decision is printed when the command is only rm and cd), refused outside it, and every
+# other role or no role passes untouched.
+rmp=/r/.worktrees/tmp/verifier-L1-x
+rmj() { jq -n --arg c "$1" --arg a "$2" '{tool_name:"Bash",tool_input:{command:$c},agent_type:$a,cwd:"/nonexistent"}'; }
+rmenv=(SDLC_ROLE=verifier SDLC_TMP_WORKTREES="$rmp")
+for c in "rm $rmp/out.txt" "rm -rf $rmp/scratch" "rm -f -- $rmp/a.txt $rmp/b.txt" "rm -rf \"$rmp/scratch dir\"" \
+  "rm -rf \$SDLC_TMP_WORKTREES/scratch" "rm -rf \${SDLC_TMP_WORKTREES}/scratch" "cd /r && rm -rf $rmp/scratch" \
+  "cd $rmp && rm -f out.txt" "/bin/rm -f $rmp/out.txt" "sudo rm $rmp/out.txt" "rmdir $rmp/empty" "unlink $rmp/out.txt" \
+  "rm $rmp/a.txt; rm $rmp/b.txt" "ls $rmp && rm $rmp/out.txt" "echo rm /etc/passwd" "git status" "ls -la /tmp"; do
+  out=$(run "$rmh" "$(rmj "$c" "")" "${rmenv[@]}"); rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-rm allows '$c': exit $rc, want 0 (stderr: $out)"
+done
+for c in "rm /etc/passwd" "rm -rf /tmp/x" "rm $rmp/../other/x" "rm $rmp" "rm $rmp/" "rm -rf $rmp/ok /tmp/bad" "rm out.txt" \
+  "rm -rf \$HOME/x" "rm -rf ~/x" "rm -rf \$TMPDIR/x" "cd /tmp && rm -f out.txt" "cd x && rm -f $rmp/ok /etc/y" \
+  "rm -rf /r/.worktrees/tmp/verifier-L1-xx/a" "rm -rf /r/.worktrees/other/a" "ls && rm /etc/x" "rm $rmp/a.txt; rm /etc/x"; do
+  out=$(run "$rmh" "$(rmj "$c" "")" "${rmenv[@]}"); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-rm denies '$c': exit $rc, want 2"
+  grep -q verifier <<<"$out" || fail "block-role-rm '$c': stderr lacks the role"
+done
+# The allow decision (stdout) is printed only when the whole command is rm and cd.
+rma=$(env -u SDLC_ROLE -u SDLC_TMP_WORKTREES "${rmenv[@]}" "$rmh" < <(rmj "rm -rf $rmp/scratch" ""))
+jq -e '.hookSpecificOutput.permissionDecision == "allow"' <<<"$rma" >/dev/null 2>&1 || fail "block-role-rm: rm under the prefix printed no allow decision: '$rma'"
+rma=$(env -u SDLC_ROLE -u SDLC_TMP_WORKTREES "${rmenv[@]}" "$rmh" < <(rmj "rm -rf $rmp/scratch && curl x" ""))
+[[ -z "$rma" ]] || fail "block-role-rm: a command with more than rm and cd printed a decision: '$rma'"
+# A sub-agent has no prefix variable: the prefix is the git toplevel of its cwd plus /.worktrees/tmp.
+rmrepo="$wtmp/rmrepo"; mkdir -p "$rmrepo"; git -C "$rmrepo" init -q
+rmtop=$(git -C "$rmrepo" rev-parse --show-toplevel)
+rmsub() { jq -n --arg c "$1" --arg cwd "$rmrepo" '{tool_name:"Bash",tool_input:{command:$c},agent_type:"sdlc-lite:verifier-L1",cwd:$cwd}'; }
+run "$rmh" "$(rmsub "rm -rf $rmtop/.worktrees/tmp/verifier-L1-x/scratch")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-role-rm allows a verifier sub-agent rm under the repo tmp prefix: exit $rc, want 0"
+for c in "rm -rf $rmtop/src" "rm -rf $rmtop/.worktrees/other/x" "rm -rf /tmp/x"; do
+  run "$rmh" "$(rmsub "$c")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-rm denies a verifier sub-agent '$c': exit $rc, want 2"
+done
+# No prefix at all: every rm is denied. Other roles and no role pass.
+run "$rmh" "$(rmj "rm -rf /r/.worktrees/tmp/x/y" "")" SDLC_ROLE=verifier >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-role-rm with no prefix: exit $rc, want 2"
+for env1 in SDLC_ROLE=builder SDLC_ROLE=solo SDLC_ROLE=conductor SDLC_ROLE=; do
+  run "$rmh" "$(rmj "rm -rf /etc/x" "")" "$env1" SDLC_TMP_WORKTREES="$rmp" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-rm passes '$env1': exit $rc, want 0"
+done
+for at in sdlc-lite:solo-L2 sdlc-lite:builder-L2 sdlc-lite:conductor general-purpose ""; do
+  run "$rmh" "$(rmj "rm -rf /etc/x" "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-rm passes agent '${at:-no role}': exit $rc, want 0"
+done
+for at in sdlc-lite:verifier-L1 sdlc-lite:scout-L1 sdlc-lite:planner-L2; do
+  run "$rmh" "$(rmj "rm -rf /etc/x" "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-rm denies agent '$at' with no prefix: exit $rc, want 2"
+done
 
 # Large commands: each Bash hook must finish a 20 KB heredoc command in under 2 seconds and
 # keep blocking. Bash 3.2 made ${cmd//[class]/} quadratic (40+ s at 8 KB). One positive and one

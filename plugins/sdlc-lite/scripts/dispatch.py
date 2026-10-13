@@ -69,6 +69,8 @@ Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format s
 throwaway-worktree prefix line (.worktrees/tmp/<Agent name>), and for builder and verifier a Base sha line,
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier brief also carries a Report file line:
 the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.
+The line also says the file carries no header (record adds it, T-0538) and names `results.py validate <file> --role verifier --headerless`.
+The prefix line says rm of scratch output under that prefix is allowed and refused elsewhere (hooks/block-role-rm.sh).
 
 Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, spec gate, or a running attempt, 4 budget, 5 lane.
 
@@ -815,11 +817,13 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         prompt = ('%s\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your '
                   'instructions define: start with its first heading, with nothing before it and nothing after the last section.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
-                  'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them when done.'
+                  'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
+                  'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.'
                   % (list_title(directory, role, level, k), handoff_locator(handoff), directory, result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix))
         if role == 'verifier':
             prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
-                       'as your final message; dispatch.py record reads the file, and a missing one fails the run)' % result)
+                       'as your final message, with no <!-- role=... --> header line: dispatch.py record adds it, so check the file with '
+                       'results.py validate <file> --role verifier --headerless; dispatch.py record reads the file, and a missing one fails the run)' % result)
         if base:
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
 
@@ -2422,7 +2426,10 @@ def selftest():
         put(rb / '.sdlc' / 'v1' / 'handoff.md')
         rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md', no_result=True)
         case('a verifier prompt names the report path it must write before it ends',
-             'Report file: %s' % got['result'] in got['prompt'] and 'before you end' in got['prompt'])
+             'Report file: %s' % got['result'] in got['prompt'] and 'before you end' in got['prompt']
+             and 'dispatch.py record adds it' in got['prompt'] and '--role verifier --headerless' in got['prompt'])
+        case('every brief says rm under the tmp prefix is allowed and elsewhere refused, once',
+             got['prompt'].count('rm is allowed there and refused elsewhere') == 1)
         case('a verifier with no report on disk is rejected: exit 1, a message naming the path, no runs.jsonl line',
              rc == 1 and 'no result file at %s' % got['result'] in attempt_of(got)['error'] and 'must write its report there' in attempt_of(got)['error']
              and lines_of(rb / '.sdlc' / 'v1') == [])

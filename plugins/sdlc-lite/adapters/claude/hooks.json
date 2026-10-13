@@ -9,7 +9,8 @@
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-pattern-kill.sh\"" },
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-stray-worktree.sh\"" },
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-repo-format.sh\"" },
-          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-disk-scan.sh\"" }
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-disk-scan.sh\"" },
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-role-rm.sh\"" }
         ]
       },
       {
