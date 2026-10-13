@@ -95,6 +95,7 @@ depends: [T-NNNN, file:<path>, cap:<name>, ...]
 created: YYYY-MM-DD
 from: T-NNNN   # optional, origin ticket id
 provides: [name, ...]   # optional, capability names this ticket delivers
+successor: T-NNNN|<repo>:T-NNNN   # optional, the ticket that supersedes, delivers, verifies or fixed this one
 claimed_by: <harness> <YYYY-MM-DD>   # optional, who works on it; shown in the router; a second claimant checks it first; required when status is claimed
 paused_reason: <one line>   # required when status is paused
 area: <name>   # optional, one of the areas: line in .sdlc/config; a domain, never a lane
@@ -103,6 +104,8 @@ router: .sdlc/AGENTS.md   # stamped by new: the folder rules (.sdlc/tickets/AGEN
 ```
 
 A `file:` depends entry is repo-relative and met once the path exists; it never orders tickets. A `cap:` entry is met once a `done` ticket provides it, and orders the ticket after every provider. `check` fails a malformed entry or an unprovided `cap:`.
+
+A `successor:` names the one ticket that took this one over: it superseded it, delivered it, verified it in an integration ticket, or fixed it in another repository (`<repo>:T-NNNN`). While this ticket is open and a local successor is `done`, `check` prints the ready-to-run `close <folder> --reason "..."` line; a successor in another repository is shown, never resolved. `check` fails a malformed value or a local id no ticket has.
 
 Front matter is purely additive: a handoff with no front matter keeps working unchanged, and no runner requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
 

@@ -308,6 +308,8 @@ TICKETS_CMD_RE = re.compile(r'\s*tickets_cmd\s*:\s*(\S.*?)\s*(?:\s#.*)?')
 MD_LINK_RE = re.compile(r'\]\(\s*<?([^)\s>]+)>?[^)]*\)')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
+SUCCESSOR_RE = re.compile(r'(?:([A-Za-z0-9][A-Za-z0-9._-]*):)?(T-\d{4})')  # T-0528: T-NNNN or <repo>:T-NNNN
+SUBJECT_ID_RE = re.compile(r'(T-\d{4}):')  # T-0528: a commit subject that starts with a ticket id
 
 HEADER = """# Roadmap
 
@@ -1275,6 +1277,8 @@ def problems(ts, numbered=False, areas=None):
                 for x in m['provides']:
                     if not (isinstance(x, str) and CAP_RE.fullmatch(x)):
                         errs.append(f"{slug}: provides item '{x}' is not a name like [A-Za-z0-9][A-Za-z0-9._-]*")
+        if 'successor' in m and not (isinstance(m['successor'], str) and SUCCESSOR_RE.fullmatch(m['successor'])):
+            errs.append(f'{slug}: successor {m["successor"]!r} is not T-NNNN or <repo>:T-NNNN')
         if 'from' in m and not isinstance(m['from'], str):
             errs.append(f'{slug}: from {m["from"]!r} is not a single ticket id')
         for st, field in (('claimed', 'claimed_by'), ('paused', 'paused_reason')):
@@ -1300,6 +1304,9 @@ def problems(ts, numbered=False, areas=None):
                 errs.append(f'{slug}: depends on {dep}, which no ticket has')
             elif k == 'cap' and dep[len('cap:'):] not in prov:
                 errs.append(f'{slug}: depends on {dep}, which no ticket provides')
+        sm = SUCCESSOR_RE.fullmatch(m['successor']) if isinstance(m.get('successor'), str) else None
+        if sm and not sm.group(1) and sm.group(2) not in ids:
+            errs.append(f'{slug}: successor {sm.group(2)}, which no ticket has')
         f = m.get('from')
         if isinstance(f, str) and f not in ids:
             errs.append(f'{slug}: from {f}, which no ticket has')
@@ -1364,6 +1371,75 @@ def claim_warnings(root, td, ts, today=None):
                 out.append(f'warning: {slug}: claimed {age} days ago (claim_days {days}) with no running attempt; '
                            f'fix: tickets.py release {tid}, or tickets.py claim {tid} --by <agent> --handover '
                            f'--reason TEXT')
+    return out
+
+
+def default_branch(base):
+    """The default branch ref of the repo at base: origin/HEAD's target, else a local main, else master; None
+    outside git or when none exists."""
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+    def git(*args):
+        try:
+            p = subprocess.run(['git', '-C', str(base), *args], env=env, capture_output=True, text=True)
+        except OSError:
+            return None
+        return p.stdout.strip() if p.returncode == 0 else None
+    head = git('symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD')
+    if head:
+        return head
+    for name in ('main', 'master'):
+        if git('rev-parse', '--verify', '--quiet', f'refs/heads/{name}^{{commit}}'):
+            return name
+    return None
+
+
+def delivered_warnings(root, ts):
+    """T-0528: one `warning:` line per open ticket whose id starts a commit subject (`T-NNNN:`) on the default
+    branch, naming the newest such commit and the close line. Nothing outside git or with no default branch."""
+    open_ids = {m['id']: slug for slug, m in ts
+                if m.get('status') not in ('done', 'dropped') and isinstance(m.get('id'), str)}
+    if not open_ids:
+        return []
+    base = file_base(root)
+    branch = default_branch(base)
+    if not branch:
+        return []
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    try:
+        p = subprocess.run(['git', '-C', str(base), 'log', '--format=%h %s', branch, '--'], env=env,
+                           capture_output=True, text=True)
+    except OSError:
+        return []
+    if p.returncode:
+        return []
+    seen = {}
+    for line in p.stdout.splitlines():
+        sha, _, subj = line.partition(' ')
+        mo = SUBJECT_ID_RE.match(subj)
+        if mo and mo.group(1) in open_ids and mo.group(1) not in seen:
+            seen[mo.group(1)] = sha
+    cmd = tickets_cmd(root) or f'tickets.py --root {root}'
+    return [f'warning: {open_ids[i]}: {i} is open but commit {sha} on {branch} starts with "{i}:"; fix: '
+            f'{cmd} close {open_ids[i]} --reason "delivered in {sha}"'
+            for i, sha in sorted(seen.items())]
+
+
+def successor_lines(root, ts):
+    """T-0528: for each open ticket with `successor:`, the ready-to-run close line when the local successor is
+    done, or a note naming a successor in another repository, which is never resolved."""
+    status = {m['id']: m.get('status') for _, m in ts if isinstance(m.get('id'), str)}
+    cmd = tickets_cmd(root) or f'tickets.py --root {root}'
+    out = []
+    for slug, m in ts:
+        sm = SUCCESSOR_RE.fullmatch(m['successor']) if isinstance(m.get('successor'), str) else None
+        if not sm or m.get('status') in ('done', 'dropped'):
+            continue
+        if sm.group(1):
+            out.append(f'note: {slug}: successor {sm.group(0)} is in another repository; check it there')
+        elif status.get(sm.group(2)) == 'done':
+            out.append(f'successor: {slug}: {sm.group(2)} is done; run: {cmd} close {slug} --reason '
+                       f'"delivered under {sm.group(2)}"')
     return out
 
 
@@ -1755,6 +1831,8 @@ def render(ts, root):
         status = f"{GLYPH[m['status']]} {m['status']}"
         if m['status'] == 'paused' and isinstance(m.get('paused_reason'), str):
             status += f" ({m['paused_reason'].strip()})".replace('|', '\\|')
+        if isinstance(m.get('successor'), str) and m['successor'].strip():
+            status += f" (successor {m['successor'].strip()})".replace('|', '\\|')
         area = ' ' + area_of(m).replace('|', '\\|') + ' |' if with_area else ''
         rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} |{area} {m['size']} | "
                     f"{m['priority']} | {deps} | {status} |")
@@ -2611,6 +2689,8 @@ def cmd_check(root, numbered=False):
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
     out += link_warnings(root)
+    out += delivered_warnings(root, ts)
+    out += successor_lines(root, ts)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
                    f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
@@ -5885,6 +5965,54 @@ def selftest():
         rc, out, err = run(lr, 'check')
         expect(f'(T-0527) control: the link fixed to the dot folder clears the warning: rc={rc} {out!r} {err!r}',
                rc == 0 and 'warning: AGENTS.md: link' not in out)
+
+        # T-0528: delivered and superseded open tickets
+        dr = pathlib.Path(tmp) / 'c-deliv' / '.sdlc'
+        for slug in ('alpha', 'beta', 'gamma'):
+            run(dr, 'new', ('feature', slug, slug.title()))
+        denv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+        denv.update(GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+
+        def dgit(*args):
+            p = subprocess.run(['git', '-C', str(dr.parent), *args], env=denv, capture_output=True, text=True)
+            if p.returncode:
+                raise AssertionError(f'selftest git fixture failed: git {" ".join(args)}: {p.stderr.strip()}')
+        dgit('init', '-q', '-b', 'main')
+        dgit('add', '-A')
+        dgit('commit', '-q', '-m', 'init')
+        dgit('checkout', '-q', '-b', 'side')
+        dgit('commit', '-q', '--allow-empty', '-m', 'T-0002: x')
+        rc, out, err = run(dr, 'check')
+        expect(f'(T-0528) control: a T-0002: commit on an unmerged branch lists nothing: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'is open but commit' not in out)
+        dgit('checkout', '-q', 'main')
+        dgit('commit', '-q', '--allow-empty', '-m', 'T-0002: x')
+        rc, out, err = run(dr, 'check')
+        rows = [ln for ln in out.splitlines() if 'is open but commit' in ln]
+        expect(f'(T-0528) a T-0002: commit on main makes check list T-0002 with its close line: rc={rc} {out!r} '
+               f'{err!r}', rc == 0 and len(rows) == 1 and rows[0].startswith('warning: beta: T-0002 is open')
+               and f'close beta --reason "delivered in ' in rows[0])
+        edit(dr, 'alpha', r'^created:', 'successor: T-0003\ncreated:')
+        run(dr, 'roadmap')
+        rc, out, err = run(dr, 'check')
+        expect(f'(T-0528) control: successor T-0003 still open prints no close line: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'successor: alpha' not in out)
+        edit(dr, 'gamma', r'^status:.*$', 'status: done')
+        run(dr, 'roadmap')
+        rc, out, err = run(dr, 'check')
+        expect(f'(T-0528) successor T-0003 done prints the ready-to-run close line: rc={rc} {out!r} {err!r}',
+               rc == 0 and f'successor: alpha: T-0003 is done; run: tickets.py --root {dr} close alpha --reason '
+               f'"delivered under T-0003"' in out.splitlines())
+        edit(dr, 'alpha', r'^successor:.*$', 'successor: maison:T-0158')
+        run(dr, 'roadmap')
+        rc, out, err = run(dr, 'check')
+        expect(f'(T-0528) successor maison:T-0158 is accepted and shown, not resolved: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'note: alpha: successor maison:T-0158 is in another repository; check it there'
+               in out.splitlines() and 'successor: alpha' not in out)
+        edit(dr, 'alpha', r'^successor:.*$', 'successor: banana')
+        rc, out, err = run(dr, 'check')
+        expect(f'(T-0528) successor banana is rejected: rc={rc} {err!r}',
+               rc == 1 and "alpha: successor 'banana' is not T-NNNN or <repo>:T-NNNN" in err)
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
