@@ -64,3 +64,6 @@ Compare the relevant observations with the acceptance criteria; add discriminati
 - Keep the dated report immutable. Store new validation evidence in a new dated report.
 - Retain a rejecting defect case and a passing fixed case. Report required live checks as unverified if unavailable.
 - The existing Progressive Context performance-contract link failure is unrelated; do not fix it in this ticket.
+
+## Plan review
+- plan defect: `dispatch.py prepare builder L3` refused step 1 of `planner-L2.md` (steps.py lint, cited path does not exist): `.sdlc/task/handoff.md`, `.sdlc/task`, `.sdlc/task/scout-L1.dispatch.json`, `.sdlc/task/stale-edits.log`. These are paths inside the throwaway repo that criteria 1 and 2 build under `mktemp -d`; the lint reads any `.sdlc/...` token in the step handoff as a repo path. Keep the design (prepare writes the `<role>-<level>.running` marker); rewrite the Do text and criteria so no repo-relative `.sdlc/<name>` token names a path that does not exist in this tree (for example build the fixture path from shell variables, or point the criterion at the hook selftest case), and check the result with `steps.py lint` on a split step handoff.

@@ -58,7 +58,11 @@ parent_pid (SDLC_DISPATCH_PARENT_PID, else the first ancestor process named clau
 that is not a shell or python; never the short-lived tool shell). <stem>.dispatch.json holds subagent_type,
 name, model, effort, prompt (the brief), result, tmp_prefix, base_sha, and what T-0278 needs to write the
 runs.jsonl line (lane_override, specgate, handoff_sha256, routing_reason). A builder or verifier also writes
-base-sha as run.sh does. --dry-run prints the JSON and writes nothing, takes no lock, and skips recovery.
+base-sha as run.sh does. prepare also writes the running marker <role>-<level>.running (the epoch start in whole
+seconds, as run.sh writes it) beside the handoff, so warn-handoff-edit.sh freezes the handoff while the attempt
+runs; record clears it when it closes the attempt completed or failed (a no-result record leaves it), and recover
+clears it when it marks the attempt interrupted (T-0505). --dry-run prints the JSON and writes nothing (no marker
+either), takes no lock, and skips recovery.
 
 Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format sentence) plus a Tree line, a
 throwaway-worktree prefix line (.worktrees/tmp/<Agent name>), and for builder and verifier a Base sha line,
@@ -848,6 +852,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         dispatch['attempt_id'] = attempt['attempt_id']
         run_lifecycle.write(Path(dispatch['attempt_file']), attempt)
         run_lifecycle.write(Path(dispatch['dispatch_file']), dispatch)
+        # T-0505: the running marker warn-handoff-edit.sh, board.py and fleet_status.py read; keyed by role and level, as record and recover unlink it
+        (directory / ('%s-%s.running' % (role, level))).write_text('%d\n' % int(time.time()), encoding='utf-8')
         return dispatch
     finally:
         if lock is not None:
@@ -1847,8 +1853,11 @@ def selftest():
         rc, got, err = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live), SDLC_ROUTING_REASON='selftest reason')
         w = rr / '.sdlc' / 'w'
         case('prepare exits 0 and writes both records', rc == 0 and (w / 'builder-L1.attempt.json').is_file() and (w / 'builder-L1.dispatch.json').is_file())
+        stamp = (w / 'builder-L1.running').read_text() if (w / 'builder-L1.running').is_file() else ''
+        case('prepare writes the running marker with an epoch start (T-0505)',
+             rc == 0 and re.fullmatch(r'[0-9]+\n', stamp) is not None and abs(int(stamp) - time.time()) < 600)
         att = json.loads((w / 'builder-L1.attempt.json').read_text())
-        case('attempt record: running, subagent transport, parent pid', (att['status'], att['transport'], att['parent_pid'], att['backend']) == ('running', 'subagent', live, 'claude'))
+        case('attempt record: running, subagent transport, parent pid',(att['status'], att['transport'], att['parent_pid'], att['backend']) == ('running', 'subagent', live, 'claude'))
         case('attempt record carries the model, effort, handoff hash, and reason',
              (att['model'], att['effort'], att['routing_reason']) == ('sonnet', 'low', 'selftest reason')
              and att['handoff_sha256'] == hashlib.sha256((w / 'handoff.md').read_bytes()).hexdigest())
@@ -2135,8 +2144,10 @@ def selftest():
         (w / 'builder-L1.running').write_text('1\n')
         rc3, got3, err3 = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
         old = json.loads((w / 'builder-L1.attempt.json').read_text())
+        # T-0505: the new attempt (builder-L1-2) writes builder-L1.running again, so the hand-written '1' is gone and an epoch start is there
+        remade = (w / 'builder-L1.running').read_text() if (w / 'builder-L1.running').is_file() else ''
         case('a dead-parent attempt is recovered first', rc3 == 0 and old['status'] == 'interrupted' and 'finished_at' in old and 'recovered' in err3
-             and not (w / 'builder-L1.running').exists())
+             and remade != '1\n' and re.fullmatch(r'[0-9]+\n', remade) is not None)
         case('the new attempt gets the next result name and Agent name', got3['result_name'] == 'builder-L1-2'
              and got3['result'] == str(w / 'builder-L1-2.md') and got3['name'] == 'w-builder-L1-2'
              and (w / 'builder-L1-2.attempt.json').is_file())
@@ -2144,6 +2155,32 @@ def selftest():
         dryrc, drygot, _ = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', '--dry-run')
         case('a dry run writes nothing and takes no lock', dryrc == 0 and drygot['dry_run'] is True and len(list(w.glob('*.attempt.json'))) == 2)
         case('a planner dispatch has no base sha', prep(rr, 'planner', 'L1', '.sdlc/w/handoff.md', '--dry-run')[1]['base_sha'] is None)
+        # T-0505: the running marker follows the attempt. A dry run writes none; recover clears a dead-parent attempt's marker and
+        # keeps the marker of an attempt another live session owns (recover_orphans, and settle inside a second prepare).
+        for name in ('md', 'mr', 'ml'):
+            put(rr / '.sdlc' / name / 'handoff.md')
+        md, mr, ml = (rr / '.sdlc' / name for name in ('md', 'mr', 'ml'))
+        md_before = sorted(p.name for p in md.iterdir())
+        rcd, gd, _ = prep(rr, 'builder', 'L1', '.sdlc/md/handoff.md', '--dry-run', SDLC_DISPATCH_PARENT_PID=str(live))
+        case('prepare --dry-run writes no running marker (T-0505)',
+             rcd == 0 and gd['dry_run'] is True and list(md.glob('*.running')) == [] and sorted(p.name for p in md.iterdir()) == md_before)
+        rcr, _, _ = prep(rr, 'builder', 'L1', '.sdlc/mr/handoff.md', SDLC_DISPATCH_PARENT_PID=str(dead))
+        mr_had = (mr / 'builder-L1.running').is_file()
+        mr_rec, _ = recover_orphans(mr)
+        case('recover removes the running marker of a dead-parent attempt (T-0505)',
+             rcr == 0 and mr_had and mr_rec == ['builder-L1.attempt.json'] and not (mr / 'builder-L1.running').exists()
+             and json.loads((mr / 'builder-L1.attempt.json').read_text())['status'] == 'interrupted')
+        other = os.getppid()  # alive and older than the attempt, and not this process: another run's session
+        rcl, _, _ = prep(rr, 'builder', 'L1', '.sdlc/ml/handoff.md', SDLC_DISPATCH_PARENT_PID=str(other))
+        ml_stamp = (ml / 'builder-L1.running').read_text() if (ml / 'builder-L1.running').is_file() else None
+        ml_rec, ml_live = recover_orphans(ml)
+        rcl2, _, errl2 = prep(rr, 'verifier', 'L1', '.sdlc/ml/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
+        ml_att = json.loads((ml / 'builder-L1.attempt.json').read_text())
+        case('recover keeps a live attempt of another run and its running marker (T-0505)',
+             rcl == 0 and ml_stamp is not None and ml_rec == [] and len(ml_live) == 1 and rcl2 == 2 and 'still running' in errl2
+             and (ml_att['status'], ml_att['parent_pid']) == ('running', other) and 'recovery' not in ml_att
+             and sorted(p.name for p in ml.glob('*.running')) == ['builder-L1.running'] and (ml / 'builder-L1.running').read_text() == ml_stamp
+             and sorted(p.name for p in ml.glob('*.attempt.json')) == ['builder-L1.attempt.json'])
         pid, _ = parent_pid()
         case('parent_pid finds a live ancestor process', pid_alive(pid))
         long_dir = rr / '.sdlc' / ('x' * 100) / 'step-12'
@@ -2367,6 +2404,21 @@ def selftest():
              rc == 2 and 'no result yet at %s; the attempt stays running' % got['result'] in err and '--no-result' in err
              and attempt_of(got)['status'] == 'running' and not (r1 / 'verifier-L1.log').exists() and lines_of(r1) == []
              and not (r1 / 'verifier-L1.limit').exists() and not (r1 / 'verifier-L1.delivery.json').exists())
+        case('a no-result record keeps the running marker (T-0505)',
+             rc == 2 and attempt_of(got)['status'] == 'running' and (r1 / 'verifier-L1.running').is_file())
+        # T-0505: a record that closes the attempt (completed, or failed on error text) clears the marker prepare wrote.
+        cleared = []
+        for name, body, said, want in (('m1', BODY['builder'], None, ('completed', 0)), ('m2', None, 'API Error: connection reset by peer', ('failed', 1))):
+            put(rb / '.sdlc' / name / 'handoff.md')
+            _, gm, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % name, SDLC_DISPATCH_PARENT_PID=live_pid)
+            mark = rb / '.sdlc' / name / 'builder-L1.running'
+            had = mark.is_file()
+            if body is not None:
+                Path(gm['result']).write_text(body, encoding='utf-8')
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                rcm = record(gm['dispatch_file'], stdin=(lambda text=said: text) if said is not None else None)
+            cleared.append(had and (attempt_of(gm)['status'], rcm) == want and not mark.exists())
+        case('record removes the running marker on completed and on failed (T-0505)', cleared == [True, True])
         Path(got['result']).write_text(BODY['verifier'], encoding='utf-8')
         e, o = io.StringIO(), io.StringIO()
         with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
