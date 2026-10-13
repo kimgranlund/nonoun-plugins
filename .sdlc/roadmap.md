@@ -509,7 +509,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0509 | [0509-operator-recovery-agent-inventory](0509-operator-recovery-agent-inventory/handoff.md) | chore: guidance: align recovery behavior and Codex agent counts | chore | L1 | P3 | none | 🔵 ready |
 | T-0510 | [.0510-inner-loop-b1-config](.0510-inner-loop-b1-config/handoff.md) | profile: inner-loop, local_gate and full_gate in .sdlc/config: solo_run refuses a full-suite criterion (T-0501 B1) | feature | L2 | P2 | none | 🟢 done |
 | T-0511 | [.0511-inner-loop-b2-notes](.0511-inner-loop-b2-notes/handoff.md) | verifier: a Notes section for nits, carried into the close reason (T-0501 B2) | chore | L1 | P2 | none | 🟢 done |
-| T-0512 | [0512-inner-loop-b3-l3-solo](0512-inner-loop-b3-l3-solo/handoff.md) | steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) | feature | L2 | P2 | T-0510 | ⏳ proposed |
+| T-0512 | [.0512-inner-loop-b3-l3-solo](.0512-inner-loop-b3-l3-solo/handoff.md) | steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) | feature | L2 | P2 | T-0510 | 🟢 done |
 | T-0513 | [0513-inner-loop-b4-parity](0513-inner-loop-b4-parity/handoff.md) | A (parity) criterion for styling tickets: screenshot pair with named properties (T-0501 B4) | feature | L2 | P2 | none | ⏳ proposed |
 | T-0514 | [.0514-inner-loop-b5-resume-silent](.0514-inner-loop-b5-resume-silent/handoff.md) | dispatch.py resume accepts a running attempt whose transcript is silent (T-0501 B5) | bug | L1 | P2 | none | 🟢 done |
 | T-0515 | [.0515-inner-loop-b6-merge-contract](.0515-inner-loop-b6-merge-contract/handoff.md) | Merge ops names the two PR merge invariants; fanout skill and run-operations (T-0501 B6) | chore | L1 | P2 | none | 🟢 done |
