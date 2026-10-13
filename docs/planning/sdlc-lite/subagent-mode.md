@@ -35,7 +35,7 @@ Agent({description, prompt, subagent_type: "sdlc-lite:solo-L2", model: "sonnet"|
 | Account switch: docs are silent; sub-agents survived repeated `/login`, `claude -p` children were marked interrupted | OBSERVED |
 | Behavior at a session limit; whether a parent restart loses background sub-agents | UNVERIFIED (P7, P4) |
 
-Consequences. Solo levels L1, L2, L3 (Sonnet low, Sonnet high, Opus xhigh) need three definitions, `solo-L1`, `solo-L2`, `solo-L3`, or one definition with a fixed effort and a per-call model; the three levels use three distinct efforts (`low`, `high`, `xhigh`), so a per-effort definition would need three anyway, and the design uses per-level definitions everywhere (section 1) so `check.py` compares rows one to one. Sub-agents inherit the parent's environment, so `SDLC_ROLE` and `SDLC_TMP_WORKTREES` stop being per-role facts, and the hooks resolve the role from `agent_type` (section 4).
+Consequences. Solo levels L1, L2, L3 (Sonnet high, Opus medium, Opus high) need three definitions, `solo-L1`, `solo-L2`, `solo-L3`, or one definition with a fixed effort and a per-call model; the three levels differ in model or effort (`sonnet` `high`, `opus` `medium`, `opus` `high`), so a single definition would need a per-call model and effort anyway, and the design uses per-level definitions everywhere (section 1) so `check.py` compares rows one to one. Sub-agents inherit the parent's environment, so `SDLC_ROLE` and `SDLC_TMP_WORKTREES` stop being per-role facts, and the hooks resolve the role from `agent_type` (section 4).
 
 ## 1. Dispatch contract
 

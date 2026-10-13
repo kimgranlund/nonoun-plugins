@@ -199,7 +199,7 @@ one per role; each defines its output format as its final message, which the run
 
 ## `agents/solo.md`
 
-A session agent, not a `run.sh` role: it delivers one ticket end to end in one session from a typed brief (ticket, files, check commands, done criterion), and is the default lane `steps.py lane` names for ticket levels L1 and L2. Its level table (L1 Sonnet low, L2 Sonnet high, L3 Opus xhigh; the solo level is the ticket level) lives in its body, since effort is a launch parameter, and the Claude rows are `solo` in `adapters/claude/levels.json`; the Codex levels are `solo` L1 to L3 in `adapters/codex/models.json`. Levels L2 and L3 end with one batched `run.sh verifier` at the task dir on another model family; `scripts/check.py` item 18 guards the file, the mapping, and the generated TOMLs.
+A session agent, not a `run.sh` role: it delivers one ticket end to end in one session from a typed brief (ticket, files, check commands, done criterion), and is the default lane `steps.py lane` names for ticket levels L1 and L2. Its level table (L1 Sonnet high, L2 Opus medium, L3 Opus high; the solo level is the ticket level) lives in its body, since effort is a launch parameter, and the Claude rows are `solo` in `adapters/claude/levels.json`; the Codex levels are `solo` L1 to L3 in `adapters/codex/models.json`. Levels L2 and L3 end with one batched `run.sh verifier` at the task dir on another model family; `scripts/check.py` item 18 guards the file, the mapping, and the generated TOMLs.
 
 ## `scripts/solo_run.py`
 

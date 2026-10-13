@@ -219,7 +219,7 @@ Two seats, kept apart:
 | Seat | Set by | What it does | Options |
 |---|---|---|---|
 | Driver | the person who starts the session (`claude --model <m> --effort <e>`), recorded in front matter `driver:` | Runs `run-plan`: the loop above | Haiku 5.5 high, Sonnet low, Sonnet high, or the model and effort of any builder row in `levels.json` |
-| Worker | each step's `executor:` | The solo or builder sub-agent that edits | `auto` (the row `steps.py lane` and the ticket size pick: solo L1 sonnet low, L2 sonnet high, L3 opus xhigh [V levels.json]) or a named row |
+| Worker | each step's `executor:` | The solo or builder sub-agent that edits | `auto` (the row `steps.py lane` and the ticket size pick: solo L1 sonnet high, L2 opus medium, L3 opus high [V levels.json]) or a named row |
 
 `driver:` is not enforced by any script, because the session already exists when the plan is read; `run-plan` prints it and warns when the running model is not the stated one. `executor:` is enforced by `executor-unknown`: only rows that exist. Haiku 5.5 as a worker is not a row, adding one is a model and effort change the maintainer authorizes in its own ticket, and until then a Haiku-driven run uses `auto` workers [D, repository invariant: model and effort defaults are user decisions].
 

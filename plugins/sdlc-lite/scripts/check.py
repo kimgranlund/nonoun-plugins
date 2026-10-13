@@ -76,10 +76,10 @@
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
-18. Solo agent: agents/solo.md exists and names levels L1, L2, and L3 with `Sonnet low`, the row `| L2 | L2 | Sonnet high |`, and
-   `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
+18. Solo agent: agents/solo.md exists and names levels L1, L2, and L3 with `Sonnet high`, the row `| L2 | L2 | Opus medium |`, and
+   `Opus high`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist; and adapters/claude/levels.json has the
-   `solo` levels L1 sonnet low, L2 sonnet high, L3 opus xhigh. Negative controls: each phrase removed, no `solo` key, a changed
+   `solo` levels L1 sonnet high, L2 opus medium, L3 opus high. Negative controls: each phrase removed, no `solo` key, a changed
    `solo` entry, one TOML missing, and a changed levels.json solo level must be flagged.
 19. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
    still passes independent verification`, (2) lane-first routing (`Lane first: run` then `steps.py lane`) and the
@@ -758,7 +758,7 @@ errors.extend(mailbox_missing(mst))
 if not mailbox_missing('') or any(not mailbox_missing(mst.replace(w, '')) for w in MAILBOX_WORDS):
     errors.append('check.py: mailbox lifecycle guard negative control not flagged')
 # Solo agent (docstring item 18): a session agent with levels L1, L2, L3, a Codex mapping, and three generated TOMLs.
-SOLO_WORDS = ('| L1 | L1 |', '| L2 | L2 |', '| L3 | L3 |', 'Sonnet low', '| L2 | L2 | Sonnet high |', 'Opus xhigh')
+SOLO_WORDS = ('| L1 | L1 |', '| L2 | L2 |', '| L3 | L3 |', 'Sonnet high', '| L2 | L2 | Opus medium |', 'Opus high')
 SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'low'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
 def solo_missing(agent_text, codex_models, tomls):
     out = []
@@ -778,10 +778,10 @@ if not solo_missing(st, mc, stomls) and (
         or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
         or not solo_missing(st, mc, stomls - {'l3'})):
     errors.append('check.py: solo guard negative control not flagged')
-SOLO_CLAUDE = {'L1': ['sonnet', 'low'], 'L2': ['sonnet', 'high'], 'L3': ['opus', 'xhigh']}
+SOLO_CLAUDE = {'L1': ['sonnet', 'high'], 'L2': ['opus', 'medium'], 'L3': ['opus', 'high']}
 def solo_levels_bad(claude_solo): return [] if claude_solo == SOLO_CLAUDE else [f'solo: adapters/claude/levels.json solo levels are not {SOLO_CLAUDE}']
 errors.extend(solo_levels_bad(solo_levels))
-if not solo_levels_bad(dict(solo_levels, L2=['sonnet', 'low'])) or not solo_levels_bad({}):
+if not solo_levels_bad(dict(solo_levels, L2=['sonnet', 'high'])) or not solo_levels_bad({}):
     errors.append('check.py: solo levels negative control not flagged')
 # Conductor rules (docstring item 19): philosophy and objective, lane first, stop rules, thin conductor.
 CONDUCTOR_RULES = ('Done is better than perfect. Trust that modern, advanced models are very capable if given useful '
@@ -929,7 +929,7 @@ def fanout_solo_bad(fan, solo, skill):
     return bad
 _ff, _fs, _fk = _rd(root/'scripts/fanout.py'), _rd(root/'agents/solo.md'), _rd(root/'skills/fanout/SKILL.md')
 errors.extend(fanout_solo_bad(_ff, _fs, _fk))
-for _mut in (lambda t: t.replace("'L2': ('sonnet', 'high', 'L2')", "'L2': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause'), lambda t: t.replace('def cmd_land(', 'def cmd_x(')):
+for _mut in (lambda t: t.replace("'L2': ('opus', 'medium', 'L2')", "'L2': ('opus', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause'), lambda t: t.replace('def cmd_land(', 'def cmd_x(')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
 for _ph in ('fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/'):
@@ -971,7 +971,7 @@ def solo_cost_bad(run_py, solo, fan):
     return bad
 _sr = _rd(root/'scripts/solo_run.py')
 errors.extend(solo_cost_bad(_sr, _fs, _ff))
-for _mut in (lambda t: t.replace("'L2': ('sonnet', 'high', 'L2')", "'L2': ('sonnet', 'low', 'L2')"), lambda t: t.replace('cost_reason', 'cost_why')):
+for _mut in (lambda t: t.replace("'L2': ('opus', 'medium', 'L2')", "'L2': ('opus', 'low', 'L2')"), lambda t: t.replace('cost_reason', 'cost_why')):
     if not solo_cost_bad(_mut(_sr), _fs, _ff): errors.append('check.py: solo cost capture negative control not flagged for a changed solo_run.py')
 if not solo_cost_bad(_sr, _fs.replace('solo_run.py', 'the wrapper'), _ff): errors.append('check.py: solo cost capture negative control not flagged for solo.md')
 # Solo budget gate (docstring item 28): solo_run.py stops at 80 percent with no ack, fanout names the outcome, the docs say so.

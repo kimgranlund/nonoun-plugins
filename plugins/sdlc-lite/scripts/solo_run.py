@@ -66,7 +66,7 @@ SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
 # Solo levels (agents/solo.md): level -> (Claude model, Claude effort, level). The same table as fanout.SOLO_TIERS;
 # check.py guards that solo.md, fanout.py and this table agree.
-TIERS = {'L1': ('sonnet', 'low', 'L1'), 'L2': ('sonnet', 'high', 'L2'), 'L3': ('opus', 'xhigh', 'L3')}
+TIERS = {'L1': ('sonnet', 'high', 'L1'), 'L2': ('opus', 'medium', 'L2'), 'L3': ('opus', 'high', 'L3')}
 # Deprecated 0.21.x tier names, accepted by --tier for one release and normalized to the level. ALIAS_OK
 TIER_ALIASES = {'S': 'L1', 'M': 'L2', 'L': 'L3'}  # ALIAS_OK
 
@@ -687,7 +687,7 @@ def selftest():
             expect('one record', len(r) == 1)
             rec = r[0] if r else {}
             expect('record role and level', rec.get('role') == 'solo' and rec.get('level') == 'L2')
-            expect('record model and effort', rec.get('model') == 'sonnet' and rec.get('effort') == 'high')
+            expect('record model and effort', rec.get('model') == 'opus' and rec.get('effort') == 'medium')
             expect('cost matches the result event', rec.get('cost_usd') == 3.25)
             expect('usage, turns, duration copied', rec.get('usage', {}).get('output_tokens') == 20
                    and rec.get('turns') == 7 and rec.get('duration_ms') == 4321)
@@ -808,9 +808,9 @@ def selftest():
             seed(dsub, 1.0)
             rcd, dd = pj(dsub, 'L2', 'the brief')
             recs = lines(dsub)
-            expect('subagent: level L2 dispatch names solo-L2, sonnet high, the brief, and the verifier command',
+            expect('subagent: level L2 dispatch names solo-L2, opus medium, the brief, and the verifier command',
                    rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == '0001-solo-L2' and dd['tier'] == 'L2'
-                   and (dd['model'], dd['effort']) == ('sonnet', 'high')
+                   and (dd['model'], dd['effort']) == ('opus', 'medium')
                    and dd['prompt'].endswith('the brief') and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (dsub / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
             dmark = ticket('subagent-mark', budget_usd=10)
             (dmark / 'handoff.md').write_text((dmark / 'handoff.md').read_text(encoding='utf-8') + '\nverifier: L3\n', encoding='utf-8')
@@ -818,21 +818,21 @@ def selftest():
             expect('subagent: a handoff with a verifier: L3 line prints prepare verifier L3 (T-0356 positive control); the plain ticket above printed L2',
                    rcv == 0 and 'prepare verifier L3' in dv['verifier'] and 'prepare verifier L2' in dd['verifier'])
             expect('subagent: one solo record with transport subagent and cost null, and no session started',
-                   len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'sonnet' and recs[1]['transport'] == 'subagent'
+                   len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'opus' and recs[1]['transport'] == 'subagent'
                    and recs[1]['cost_usd'] is None and not mark.exists())
             expect('subagent: level L1 has no verifier command', pj(dsub, 'L1', 'b')[1]['verifier'] is None)
             _, dw = dispatch_json(str(dsub), 'L2', 'b', 'lane-x')
             expect('subagent: with a worktree the title is line 1, Handoff line 2, Worktree line 3 (T-0363)',
                    [ln.split(':')[0] for ln in dw['prompt'].splitlines()[1:4]] == ['Handoff', 'Worktree', 'Artifacts dir'] and len(dw['prompt'].splitlines()[0]) <= 50)
             # The deprecated 0.21.x tier names are aliases: each dispatches as its level (same model and effort).
-            for alias, level, me in (('S', 'L1', ('sonnet', 'low')), ('M', 'L2', ('sonnet', 'high')), ('L', 'L3', ('opus', 'xhigh'))):
+            for alias, level, me in (('S', 'L1', ('sonnet', 'high')), ('M', 'L2', ('opus', 'medium')), ('L', 'L3', ('opus', 'high'))):
                 _, da = pj(dsub, alias, 'b')
                 expect(f'subagent: alias {alias} dispatches as solo-{level} at {me}',
                        da['subagent_type'] == f'sdlc-lite:solo-{level}' and da['tier'] == level and da['level'] == level
                        and (da['model'], da['effort']) == me and da['name'] == f'0001-solo-{level}')
             _, d3 = pj(dsub, 'L3', 'b')
-            expect('subagent: level L3 is opus xhigh with a verifier command',
-                   d3['subagent_type'] == 'sdlc-lite:solo-L3' and (d3['model'], d3['effort']) == ('opus', 'xhigh') and d3['verifier'])
+            expect('subagent: level L3 is opus high with a verifier command',
+                   d3['subagent_type'] == 'sdlc-lite:solo-L3' and (d3['model'], d3['effort']) == ('opus', 'high') and d3['verifier'])
             # Ack raises the ceiling: the same ticket then starts.
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 rc_ack = budget.cmd_ack(str(d), 20, 'selftest')
@@ -890,7 +890,7 @@ def selftest():
                 if (pr / '.sdlc' / 'cli-alias' / 'runs.jsonl').is_file() else []
             expect(f'CLI: the deprecated --tier S is accepted as L1 with a notice, got rc={cp.returncode} err={cp.stderr[-200:]!r}',  # ALIAS_OK
                    cp.returncode == 0 and '--tier S is deprecated; use --tier L1' in cp.stderr  # ALIAS_OK
-                   and [x.get('level') for x in recs] == ['L1'] and recs[0].get('effort') == 'low')
+                   and [x.get('level') for x in recs] == ['L1'] and recs[0].get('effort') == 'high')
             cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--tier', 'S',
                                  '--brief', 'x'], cwd=str(pr), capture_output=True, text=True, timeout=60)
             expect('CLI: neither --task-dir nor --new-task exits 2', cp.returncode == 2)

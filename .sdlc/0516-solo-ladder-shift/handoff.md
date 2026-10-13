@@ -24,3 +24,14 @@ Origin: the maison conductor's message (its numbers assumed the old builder tabl
 
 ## Constraints
 Model and effort are the maintainer's decision: change nothing beyond the three rows above. One writer on the model tables.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0 and `python3 -c "import json;print(json.load(open('plugins/sdlc-lite/adapters/claude/levels.json'))['solo'])"` prints `{'L1': ['sonnet', 'high'], 'L2': ['opus', 'medium'], 'L3': ['opus', 'high']}`
+- [ ] `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/evals.py check` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and its output holds `ok: solo L2 is opus medium and its record keeps verifier L2 on sonnet`
+- [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0
+- [ ] `python3 scripts/check-packaging.py` exits 0
+- [ ] `git grep -n -E "Sonnet low|Opus xhigh" -- plugins/sdlc-lite/agents/solo.md docs/specs/sdlc-lite/solo-lane-contract.md` exits 1 (no old solo row text remains)

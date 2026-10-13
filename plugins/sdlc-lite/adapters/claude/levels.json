@@ -8,5 +8,5 @@
   "archaeologist": {"L1": ["sonnet", "medium"]},
   "filer": {"L1": ["sonnet", "medium"]},
   "plan-reviewer": {"L1": ["opus", "high"]},
-  "solo": {"L1": ["sonnet", "low"], "L2": ["sonnet", "high"], "L3": ["opus", "xhigh"]}
+  "solo": {"L1": ["sonnet", "high"], "L2": ["opus", "medium"], "L3": ["opus", "high"]}
 }

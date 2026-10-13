@@ -29,9 +29,9 @@ The launcher picks your level from the ticket level (its `size:`, L1 to L5) and 
 
 | Level | Ticket level | Claude | Codex |
 |---|---|---|---|
-| L1 | L1 | Sonnet low | `sdlc-solo-l1` (gpt-6.1-sol low) |
-| L2 | L2 | Sonnet high | `sdlc-solo-l2` (gpt-6.1-sol high) |
-| L3 | L3 | Opus xhigh | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
+| L1 | L1 | Sonnet high | `sdlc-solo-l1` (gpt-6.1-sol low) |
+| L2 | L2 | Opus medium | `sdlc-solo-l2` (gpt-6.1-sol high) |
+| L3 | L3 | Opus high | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
 
 ## Start
 A conductor in Claude Code starts solo as a background sub-agent. It runs the cost wrapper, which checks the ticket's budget, records the solo's model for the verifier's family rule, and prints the dispatch JSON:
