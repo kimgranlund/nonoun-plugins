@@ -2,7 +2,7 @@
 id: T-0527
 title: "Close references, router links, launcher and root guard (maison T-0546)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0526]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,7 @@ Preserve reference-safe closure, cross-worktree id uniqueness and explicit follo
 - The router "Close a ticket" steps name `--rewrite-refs`, and `plugins/sdlc-lite/skills/ticket/SKILL.md` describes the whole-root ignore-off scan, `tickets_cmd:`, the link warning and the root guard.
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
 - `git diff --check` exits 0.
+
+## Closed
+
+2026-10-13: solo L2 built and verified, merged from fanout/wave65-c (the lane's merge conflict was the generated router block)
