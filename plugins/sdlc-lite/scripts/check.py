@@ -77,7 +77,7 @@
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
 18. Solo agent: agents/solo.md exists and names levels L1, L2, and L3 with `Sonnet high`, the row `| L2 | L2 | Opus medium |`, and
-   `Opus high`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
+   `Opus high`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol medium, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist; and adapters/claude/levels.json has the
    `solo` levels L1 sonnet high, L2 opus medium, L3 opus high. Negative controls: each phrase removed, no `solo` key, a changed
    `solo` entry, one TOML missing, and a changed levels.json solo level must be flagged.
@@ -765,7 +765,7 @@ if not mailbox_missing('') or any(not mailbox_missing(mst.replace(w, '')) for w 
     errors.append('check.py: mailbox lifecycle guard negative control not flagged')
 # Solo agent (docstring item 18): a session agent with levels L1, L2, L3, a Codex mapping, and three generated TOMLs.
 SOLO_WORDS = ('| L1 | L1 |', '| L2 | L2 |', '| L3 | L3 |', 'Sonnet high', '| L2 | L2 | Opus medium |', 'Opus high')
-SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'low'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
+SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'medium'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
 def solo_missing(agent_text, codex_models, tomls):
     out = []
     if not agent_text.strip(): out.append('solo: agents/solo.md missing or empty')

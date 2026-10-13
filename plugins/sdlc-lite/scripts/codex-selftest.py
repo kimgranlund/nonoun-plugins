@@ -750,7 +750,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         return [json.loads(l) for l in (ticket/'runs.jsonl').read_text().splitlines()]
 
     def test_solo_native_exchange_levels(self):
-        for tier,agent,effort in (('L1','sdlc-solo-l1','low'),('L2','sdlc-solo-l2','high'),('L3','sdlc-solo-l3','xhigh')):
+        for tier,agent,effort in (('L1','sdlc-solo-l1','medium'),('L2','sdlc-solo-l2','high'),('L3','sdlc-solo-l3','xhigh')):
             with self.subTest(tier=tier):
                 (self.base/'ticket'/'runs.jsonl').unlink(missing_ok=True)
                 known=tuple((self.base/'ticket').glob('solo-*.request.json'))
