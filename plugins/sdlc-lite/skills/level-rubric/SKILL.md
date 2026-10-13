@@ -31,7 +31,7 @@ SDLC Lite has one level scale, L1 to L5, for every sized thing: a role run, a ti
 | L4 | extra large | full chain | none | none, ask the user |
 | L5 | reserved | full chain | none | none, ask the user |
 
-The solo level is the ticket level, and a solo L3 runs only when someone starts it for a large ticket. The Claude solo rows live in `adapters/claude/levels.json` (row `solo`), the Codex ones in `adapters/codex/models.json`. A ticket or a launcher written for an older plugin version may still use the one-letter names; the scripts read each as its level (`tickets.py migrate-size` rewrites ticket front matter).
+The solo level is the ticket level, and a solo L3 runs when someone starts it for a large ticket, or when `steps.py lane` sends it there: under `profile: inner-loop` in `.sdlc/config`, a size L3 ticket with no merge in its title and no security word in its handoff takes the solo lane (T-0512). The Claude solo rows live in `adapters/claude/levels.json` (row `solo`), the Codex ones in `adapters/codex/models.json`. A ticket or a launcher written for an older plugin version may still use the one-letter names; the scripts read each as its level (`tickets.py migrate-size` rewrites ticket front matter).
 
 ## builder (L1 to L5)
 
