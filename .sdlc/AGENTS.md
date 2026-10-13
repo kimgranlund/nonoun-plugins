@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ee34cf0d3d17 -->
+<!-- sdlc-lite:managed:start v1 sha256:03780acebf5d -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,15 +15,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
   - T-0512 steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) (0512-inner-loop-b3-l3-solo)
   - T-0513 A (parity) criterion for styling tickets: screenshot pair with named properties (T-0501 B4) (0513-inner-loop-b4-parity)
-- ready: 4
-  - T-0504 bug: Claude dispatch: preserve handoff paths containing spaces (0504-claude-dispatch-space-paths)
+- ready: 3
   - T-0505 bug: Claude hooks: freeze handoffs during prepared attempts (0505-claude-prepared-handoff-freeze)
   - T-0507 bug: Codex exchange: enforce the dispatched profile binding (0507-codex-exchange-fingerprint-binding)
   - T-0509 chore: guidance: align recovery behavior and Codex agent counts (0509-operator-recovery-agent-inventory)
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 470
+- done: 471
 - dropped: 29
 
 ## Procedures

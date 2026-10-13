@@ -2,7 +2,7 @@
 id: T-0504
 title: "bug: Claude dispatch: preserve handoff paths containing spaces"
 type: bug
-status: ready
+status: done
 size: L2
 priority: P2
 depends: []
@@ -63,3 +63,7 @@ Compare the relevant observations with the acceptance criteria; add discriminati
 - Keep the dated report immutable. Store new validation evidence in a new dated report.
 - Retain a rejecting defect case and a passing fixed case. Report required live checks as unverified if unavailable.
 - The existing Progressive Context performance-contract link failure is unrelated; do not fix it in this ticket.
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: .sdlc/0504-claude-dispatch-space-paths/handoff.md:63: "Store new validation evidence in a new dated report" is not done; no new file under docs/reports. A draft fail for this was dropped because line 63 is a Constraint, not one of the five acceptance criteria. The #5 live artifacts sat under the verifier tmp prefix and were removed with it, so this result file is the only record of that run. | plugins/sdlc-lite/scripts/dispatch.py:294: a path holding both whitespace and a literal `"` is emitted bare, so the gate still truncates it at the first space (the builder says the same). | plugins/sdlc-lite/scripts/fanout.py:487: `SOLO_SUBAGENT_PROMPT` still writes a bare `Handoff: {handoff}`. The value is the repo-relative ticket path (fanout.py:1784), which the hook joins to the payload cwd, so a spaced project path is unaffected; only a ticket folder name with a space would truncate.
