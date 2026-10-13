@@ -515,3 +515,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0515 | [.0515-inner-loop-b6-merge-contract](.0515-inner-loop-b6-merge-contract/handoff.md) | Merge ops names the two PR merge invariants; fanout skill and run-operations (T-0501 B6) | chore | L1 | P2 | none | 🟢 done |
 | T-0516 | [0516-solo-ladder-shift](0516-solo-ladder-shift/handoff.md) | Solo ladder follows the builder ladder shifted down one: solo L1 Sonnet high, L2 Opus medium, L3 Opus high | chore | L2 | P2 | none | ⏳ proposed |
 | T-0517 | [0517-codex-solo-l1-medium](0517-codex-solo-l1-medium/handoff.md) | Codex solo L1 follows the shifted builder ladder: gpt-6.1-sol medium | chore | L1 | P2 | T-0516 | ⏳ proposed |
+| T-0518 | [0518-evals-same-day-lock](0518-evals-same-day-lock/handoff.md) | evals.py lock: a later-numbered eval on the same date may supersede the lock | bug | L1 | P2 | none | ⏳ proposed |
+| T-0519 | [0519-model-batch-0222-7](0519-model-batch-0222-7/handoff.md) | Model batch: planner, architect, plan-reviewer, verifier, scout, researcher, filer, messenger, conductor (maintainer decisions 2026-10-12) | chore | L3 | P2 | T-0516, T-0517 | ⏳ proposed |
