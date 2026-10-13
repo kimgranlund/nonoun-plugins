@@ -33,3 +33,10 @@ Claim and release commands, plus claim lint, closing maison T-0546 observations 
 
 ## Constraints
 Preserve reference-safe closure, cross-worktree id uniqueness and explicit follow-up selection. A new or changed check needs a positive case and an observed negative control.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, and the selftest holds the Done-when cases: `claim` puts `claimed_by:` directly after `created:` and regenerates the roadmap; a trailing comment on the claim line warns naming the ticket while the same claim without it does not; a 10-day-old claim with no running attempt is listed while the same claim beside a `*.running` file is not; `new` succeeds beside a ticket with `status: claimed` and `claimed_by:`.
+- Each new case bites: disabling the claim lint, the running-attempt exemption, the claim line placement, the handover rewrite, or the roadmap write after `claim` makes the selftest fail.
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 (the regenerated `.sdlc/AGENTS.md` router is current).
+- The router "Claim a ticket" procedure and `plugins/sdlc-lite/skills/ticket/SKILL.md` describe `claim`, `--handover --reason`, `release`, and the `claim_days:` lint; a `new` refused by a ticket problem names that ticket folder and a one-line fix.
+- `git diff --check` exits 0.
