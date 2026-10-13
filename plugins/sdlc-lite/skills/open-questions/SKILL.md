@@ -1,13 +1,19 @@
 ---
 name: open-questions
 description: "Clear a task's unresolved items (open questions, unconfirmed defaults, undecided choices) in one batched AskUserQuestion round at the end of a /chain run or session. Use for \"anything still open\", \"loose ends\", \"close this out\", or \"what's still pending\". NOT for ambiguity before a task starts (/clarify); NOT for filing new work as tickets (/ticket)."
-argument-hint: "[task dir]"
+argument-hint: "[<task-dir>]"
 allowed-tools: Read, Grep, Glob, AskUserQuestion
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (a task dir such as `.sdlc/<slug>/`; empty means the current task).
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<task-dir>` | The task dir to scan | the current task | `.sdlc/add-retry/` |
 
 ## 1. Collect
 
@@ -31,7 +37,7 @@ If no item qualifies, report one line, `Nothing open.`, and stop.
 
 Make exactly ONE AskUserQuestion call: 1 to 4 questions, each with 2 to 4 options.
 
-- Put an option first, marked recommended, only where a default or lean was actually stated (the `default:` of a gap line, or a stated lean in the source). Otherwise leave the options unranked.
+- Put an option first, marked `(Recommended)`, only where a default or lean was actually stated (the `default:` of a gap line, or a stated lean in the source). Otherwise leave the options unranked.
 - More than 4 items: ask the 4 most consequential and name the count of the rest in the question framing ("4 of 7 open; 3 minor left").
 - Under /chain 7 (its close-out), the /file decide and publish questions ride in this same call and take two of the four slots, leaving two for the other items.
 - Never a second round in the same turn.
@@ -46,7 +52,7 @@ Headless (`SDLC_HEADLESS=1`, `SDLC_ROLE` set) or no person present: never call A
 
 ## Example
 
-Good: one call, two questions. "Retry budget for the fetch step?" with options `3 (recommended, the gap default)` and `5`; "Keep the legacy flag?" with `Keep` and `Drop`, unranked because nobody stated a lean.
+Good: one call, two questions. "Retry budget for the fetch step?" with options `3 (Recommended)`, the gap default, and `5`; "Keep the legacy flag?" with `Keep` and `Drop`, unranked because nobody stated a lean.
 
 Bad: asking "Anything else you want changed?" (not grounded in a raised item), marking an option recommended with no stated default, or asking again a question the user declined earlier.
 

@@ -1,7 +1,7 @@
 ---
 name: plan
 description: "Plan work by kind and return a linted, paste-ready result with a dry run printed first. Kinds: steps (default: dispatch the planner to turn a goal into ordered steps with acceptance criteria and a builder level per step), doc (a plan doc a smaller session runs with run-plan), goal (one /goal block for unattended work), campaign (a wave plan with a gate and parallel lanes), fanout (one fanout command for ready tickets), compaction (one prompt to paste into a manual /compact). Use for \"buildable steps\", \"write me a goal\", \"overnight goal\", \"plan doc\", \"plan this so a smaller model can run it\", \"plan a campaign\", \"migrate every page\", \"plan a fanout\", \"run these tickets in parallel\", \"compaction prompt\", \"before I /compact\". NOT for running a goal, a plan doc or a fanout (run-plan, fanout), a /loop line (plan-loop), or the outcome block alone (plan-verification)."
-argument-hint: "[steps|doc|goal|campaign|fanout] [L1|L2|L3] <handoff.md | goal | tickets...> | compaction [--write-handoff|--clear] [<prose>]"
+argument-hint: "[steps|doc|goal|campaign|fanout] [L1|L2|L3] <handoff.md|goal|tickets> | compaction [options]"
 allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_done.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/budget.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py run --dry-run:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check:*), Bash(uptime:*), Bash(git log:*), Bash(git grep:*), Bash(git status:*), Bash(gh pr list:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/report.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/skills/plan/scripts/compaction_handoff.py:*)
 ---
 
@@ -9,11 +9,23 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(pytho
 
 Arguments: `$ARGUMENTS` (a kind, then a level, a handoff file, the goal, or ticket ids; empty means infer the goal from the thread; or `compaction [--write-handoff|--clear] [<prose>]`).
 
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `steps\|doc\|goal\|campaign\|fanout` | The kind of plan | `steps` when the rest names a `handoff.md`, else asked | `goal` |
+| `L1\|L2\|L3` | The planner level, for the steps kind | resolved as `references/steps.md` says | `L2` |
+| `<handoff.md\|goal\|tickets>` | A handoff file, the goal, or ticket ids | the goal inferred from the thread | `T-0101 T-0102` |
+| `compaction` | The compaction kind: one prompt to paste into a manual `/compact` | - | `compaction` |
+| `--write-handoff` | With `compaction`: also write the file that `references/compaction.md` names | off | `compaction --write-handoff` |
+| `--clear` | With `compaction`: clear that file and do nothing else | off | `compaction --clear` |
+| `<prose>` | With `compaction`: the focus, passed through verbatim | none | `compaction finish the board fix` |
+
 Read the plan rules at `references/plan-rules.md` for every kind but compaction: the lint of each kind, the rules for numbers, stop rules and authorization, and what to return.
 
 ## 0. Kind and handoff
 
-The kind is the first argument token when it is one of `steps|doc|goal|campaign|fanout`. Otherwise it is `steps` when the rest names a `handoff.md`. Otherwise ask one `AskUserQuestion` with the five kinds, `steps` recommended. Unattended, the kind is `steps`.
+The kind is the first argument token when it is one of `steps|doc|goal|campaign|fanout`. Otherwise it is `steps` when the rest names a `handoff.md`. Otherwise ask one `AskUserQuestion` for the kind, with at most 4 options: `steps` first and recommended, then `doc`, `goal` and `campaign`, and `fanout` named in the question text for the Other box. Unattended, the kind is `steps`.
 
 The first token `compaction` selects the compaction kind: read `references/compaction.md` and follow it alone. The plan rules, sections 1 to 5 and the dry run do not apply to it.
 

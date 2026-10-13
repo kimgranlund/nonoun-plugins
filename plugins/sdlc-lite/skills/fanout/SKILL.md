@@ -1,7 +1,7 @@
 ---
 name: fanout
 description: "Run ticket lanes in parallel: each lane is a git worktree whose tickets run one at a time through the lane `steps.py lane` picks (the `solo` agent for ticket levels L1 and L2, the headless /chain for the rest), merge into an integration branch behind gates, and close there. On the Claude host the parent can dispatch the lanes as isolated background sub-agents (`fanout.py prep` and `land`). Use when several ready tickets can run side by side."
-argument-hint: "<lane>=<ids>... <lane>@<branch>=<ids>... [--base REF] [--integration BRANCH] [--gate CMD]... [--light-gate CMD]... [--lanes-dir DIR] [--rewrite-refs] [--lane auto|solo|full] [--max-lanes N] [--stagger SECS]"
+argument-hint: "<lane>=<ids>... <lane>@<branch>=<ids>... [options]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lanes.py:*), Bash(git merge --ff-only:*), Read
 ---
 
@@ -10,6 +10,23 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py:*), Bash(pyt
 For every role launch, pass `--routing-reason` to `dispatch.py prepare` (Codex: `SDLC_ROUTING_REASON`) as the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, and safe recovery.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<lane>=<ids>` | A lane: a worktree whose tickets run one at a time; ids are comma separated | - | `alpha=T-0101,T-0102` |
+| `<lane>@<branch>=<ids>` | An external lane: a branch an outside agent owns, registered by an `external_branch: <branch>` line in `.sdlc/config` | - | `codex@feat-x=T-0103` |
+| `--root DIR` | The dir holding the tickets | `.sdlc` | `--root .sdlc` |
+| `--base REF` | The ref the integration branch starts from | `HEAD` | `--base main` |
+| `--integration BRANCH` | The integration branch name | `fanout/<today>` | `--integration fanout/wave3` |
+| `--lanes-dir DIR` | The dir holding the lane worktrees | `<toplevel>/.worktrees/fanout` | `--lanes-dir .worktrees/wave3` |
+| `--gate CMD` | A gate command run on each merge; repeat it for more gates | the project check or test commands, added in step 1 | `--gate "scripts/check.sh"` |
+| `--light-gate CMD` | A light-set gate; repeat it for more; needs a `merge_gate: light` line in `.sdlc/config` | none | `--light-gate "npm run lint"` |
+| `--rewrite-refs` | Rewrite files that cite a closed ticket folder to its `.NNNN-<slug>` path; added only when the user picks it in step 2 | off | `--rewrite-refs` |
+| `--lane auto\|solo\|full` | The lane of every ticket; `auto` follows `steps.py lane` per ticket | `auto` | `--lane full` |
+| `--max-lanes N` | The most lanes running at once | 4 | `--max-lanes 2` |
+| `--stagger SECS` | The seconds between lane starts | 20 | `--stagger 60` |
 
 Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. An integration worktree with uncommitted tracked changes is refused before the merge with the outcome `integration dirty: <path>`; nothing is merged or reset, so the edit survives. Inspect a stopped lane's `wip(` commit on its lane branch.
 

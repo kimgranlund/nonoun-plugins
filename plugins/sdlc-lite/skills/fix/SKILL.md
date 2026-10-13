@@ -1,7 +1,7 @@
 ---
 name: fix
 description: "Fast lane for a ticket level L1 item (a doc line, a lint tweak, one test, a one-file fix), run only when the user asks for /fix or the lane script prints `fix`; ticket levels L1 and L2 go to the `solo` agent by default. The conductor writes the step handoff itself, runs builder L1 or L2 and verifier L1, and closes the ticket inline with `tickets.py close --reason`; no planner, no filer, no follow-up tickets. Use for \"/fix\" by name. NOT for a level L1 or L2 ticket by default, which goes to solo; NOT for work touching more than one file's behavior or needing a plan, which is /chain."
-argument-hint: "<ticket slug | one-line ask>"
+argument-hint: "<slug|ask>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Agent, Read, Write, Grep, Glob, AskUserQuestion
 ---
 
@@ -10,6 +10,12 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(p
 For every role launch, pass `--routing-reason` to `dispatch.py prepare` (Codex: `SDLC_ROUTING_REASON`) as the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, and safe recovery.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<slug\|ask>` | A ticket slug, or a one-line ask a handoff is created from | - | `fix-readme-typo` |
 
 The fast lane: one step, no planner, no filer, no follow-up tickets. It runs only when the user asks for it or the lane script prints `fix`; otherwise ticket levels L1 and L2 go to `solo` (agents/solo.md). Layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`; levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`.
 

@@ -1,7 +1,7 @@
 ---
 name: bench
 description: "Benchmark the agent team: run each saved task through /chain in a throwaway worktree, grade it with the real solution's hidden tests, and compare pass rate, cost, and attempts across runs. Use after changing a role, a level table, or a rubric."
-argument-hint: "[task name]"
+argument-hint: "[<task>]"
 allowed-tools: Bash, Agent, Read, Write, Grep, Glob
 ---
 
@@ -10,6 +10,12 @@ allowed-tools: Bash, Agent, Read, Write, Grep, Glob
 For every role launch, pass `--routing-reason` to `dispatch.py prepare` (Codex: `SDLC_ROUTING_REASON`) as the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, and safe recovery.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<task>` | The name of one task in `$BENCH/tasks/`; only that task runs | every task | `add-retry` |
 
 First, before any `cd`, resolve the bench dir once from the session's starting directory: `BENCH=$(${CLAUDE_PLUGIN_ROOT}/scripts/bench-dir.sh)`. It honors `SDLC_BENCH_DIR` as set by `bench.sh`, then `<project>/bench/`, then the plugin's `bench/`. Keep the absolute path for the rest of the run.
 

@@ -1,7 +1,7 @@
 ---
 name: ticket
 description: "Stamp a typed ticket with the next id, or generate the roadmap (.sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with layout: topics) from ticket front matter in dependency order. NOT for free-text briefs, which stay with /handoff."
-argument-hint: "new <type> <slug> \"title\" [--numbered] | close <slug> [--force] [--reason \"<text>\"] [--ack-warnings \"<why>\"] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs]"
+argument-hint: "new <type> <slug> | close <slug> | roadmap | check | archive | number | migrate-layout [options]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/budget.py:*)
 ---
 
@@ -10,6 +10,27 @@ Read first: `docs/specs/doc-standards/work-items.md`, when that file exists in t
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `new`, `close`, `roadmap`, `check`, `archive`, `number`, `migrate-layout`, `migrate-size`, `blockers` | The subcommand, passed to `tickets.py` as written | `check` | `roadmap` |
+| `<type>` | With `new`: `feature`, `bug`, `chore`, `spike`, or `idea` | - | `new bug board-crash` |
+| `<slug>` | With `new`: the bare slug of the new folder. With `close`: the ticket folder | - | `close board-crash` |
+| `"title"` | With `new`: the title stamped into the ticket | none | `new bug board-crash "Board crashes on empty root"` |
+| `--numbered` | With `new`, `close`, `roadmap`, `check`, or `archive`: use `NNNN-<slug>` folders for this call | the `ticket_folders:` line in `.sdlc/config` | `new bug board-crash --numbered` |
+| `--force` | With `close`: close over open Warnings and leave citing files. With `archive`: archive and leave citing files | off | `close board-crash --force` |
+| `--reason TEXT` | With `close`: close a ticket finished by other work, with no filer and no follow-ups | - | `close board-crash --reason "done by T-0101"` |
+| `--ack-warnings TEXT` | With `close`: close while filer Warnings are open, with the reason they no longer apply | - | `close board-crash --ack-warnings "fixed since"` |
+| `--dry-run` | With `close`, `archive`, `number`, or `migrate-layout`: list what would happen and write nothing | off | `close board-crash --dry-run` |
+| `--skip N[,N...]` | With `close`: drop the follow-ups at these 1-based indices; needs `--expect` | none | `--skip 2,3` |
+| `--ticket N` | With `close`: file follow-up N, a `decide:` item, as the one ticket; needs `--expect` | no ticket filed | `--ticket 1` |
+| `--expect DIGEST` | With `close`: the digest from the last line of the dry run | - | `--expect 3fa9c1` |
+| `--rewrite-refs` | With `close`, `archive`, or `migrate-layout`: rewrite files that cite a moved folder | off | `archive --rewrite-refs` |
+| `--keep-refs` | With `close`: leave citing files as they are and list them under `## Closed`, without overriding open Warnings | off | `close board-crash --keep-refs` |
+| `--apply` | With `migrate-size`: write the rewrites; without it the run is a dry run | off | `migrate-size --apply` |
+| `--scope PATH` | With `blockers`: narrow the list to one task or ticket dir | every ticket | `blockers --scope .sdlc/add-retry` |
 
 1. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc $ARGUMENTS`. With no args, run `check`.
 2. On `new`, show the created path and ask the user to fill in the body sections. Give the new ticket a budget at filing with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/budget.py set <ticket dir> --tier L1|L2|L3` (by ticket level: L1 $5, L2 $30, L3 $60; L4 and L5 get none), editable with `--usd N`. When a run stops at 80 percent of it (`dispatch.py prepare` exit 4; Codex: `run.sh`), ask the user one question and record the answer with `budget.py ack <ticket dir> --usd N --reason TEXT`.
