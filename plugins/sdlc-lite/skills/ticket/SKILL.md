@@ -1,7 +1,7 @@
 ---
 name: ticket
 description: "Stamp a typed ticket with the next id, or generate the roadmap (.sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with layout: topics) from ticket front matter in dependency order. NOT for free-text briefs, which stay with /handoff."
-argument-hint: "new <type> <slug> | close <slug> | claim <id> --by <agent> | release <id> | roadmap | check | archive | number | migrate-layout [options]"
+argument-hint: "new <type> <slug> | close <slug> | claim <id> | release <id> | roadmap | check | archive [options]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/budget.py:*)
 ---
 
