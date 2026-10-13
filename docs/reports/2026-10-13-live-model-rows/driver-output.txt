@@ -1,0 +1,19 @@
+🟢 All 11 spawns finished, none failed. Nothing is running or waiting on you.
+
+```
+sdlc-lite:planner-L1 | effort=high | model=claude-sonnet-5-5 |
+sdlc-lite:planner-L3 | effort=high | model=claude-opus-5-5 |
+sdlc-lite:architect-L1 | effort=xhigh | model=claude-opus-5-5 |
+sdlc-lite:plan-reviewer-L1 | effort=high | model=claude-fable-5-1 |
+sdlc-lite:verifier-L1 | effort=low | model=claude-opus-5-5 |
+sdlc-lite:verifier-L3 | effort=xhigh | model=claude-fable-5-1 |
+sdlc-lite:scout-L1 | effort=low | model=claude-sonnet-5-5 |
+sdlc-lite:researcher-L1 | effort=high | model=claude-sonnet-5-5 |
+sdlc-lite:filer-L1 | effort=low | model=claude-sonnet-5-5 |
+sdlc-lite:ui-designer-L1 | effort=medium | model=claude-opus-5-5 |
+sdlc-lite:messenger | effort=low | model=claude-sonnet-5-5 |
+```
+
+- All 10 leveled rows match their level in the agent list. messenger lists no level, so it has nothing to match.
+- The model= values are each agent's own report. They use the same IDs as the model list, but I did not verify them from outside.
+- Each spawn passed run_in_background false, from the "(run_in_background false)" note. No model or effort was passed.

@@ -1,0 +1,23 @@
+spawn sdlc-lite:planner-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:planner-L3 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:architect-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:plan-reviewer-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:verifier-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:verifier-L3 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:scout-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:researcher-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:filer-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:ui-designer-L1 input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+spawn sdlc-lite:messenger input keys: ['description', 'prompt', 'run_in_background', 'subagent_type']
+agent-a8fda8b2dfce49e67.jsonl ['claude-sonnet-5-5'] bash: effort=high effort-fields: ['high'] meta: {"agentType":"sdlc-lite:planner-L1","description":"live row check","toolUseId":"toolu_016tR3DW42cLd5mnmfPcsRYZ","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-a50cfc5f3770199ba.jsonl ['claude-opus-5-5'] bash: effort=high effort-fields: ['high'] meta: {"agentType":"sdlc-lite:planner-L3","description":"live row check","toolUseId":"toolu_01GsNhgQKRemQBXKaVvYYuGU","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-a0723600ea3583ba9.jsonl ['claude-opus-5-5'] bash: effort=xhigh effort-fields: ['xhigh'] meta: {"agentType":"sdlc-lite:architect-L1","description":"live row check","toolUseId":"toolu_01Ffndbs1fpj2BJ8tRhs3fSA","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-a567921e7db65b05f.jsonl ['claude-fable-5-1'] bash: effort=high effort-fields: ['high'] meta: {"agentType":"sdlc-lite:plan-reviewer-L1","description":"live row check","toolUseId":"toolu_01X6zqEN9JArcodKkCLMDp11","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-a9869639a689efcf8.jsonl ['claude-opus-5-5'] bash: effort=low effort-fields: ['low'] meta: {"agentType":"sdlc-lite:verifier-L1","description":"live row check","toolUseId":"toolu_016arGr85FoLPdGDxGJDWTYo","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-afdec83a77dc6cb72.jsonl ['claude-fable-5-1'] bash: effort=xhigh effort-fields: ['xhigh'] meta: {"agentType":"sdlc-lite:verifier-L3","description":"live row check","toolUseId":"toolu_01MfvxgSXTFnXZZFJChyTUVT","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-afe65c10be3d1cf4e.jsonl ['claude-sonnet-5-5'] bash: effort=low effort-fields: ['low'] meta: {"agentType":"sdlc-lite:scout-L1","description":"live row check","toolUseId":"toolu_01UD3CkPXMJAaponpj2Cb5Yf","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-acf12efef98f14945.jsonl ['claude-sonnet-5-5'] bash: effort=high effort-fields: ['high'] meta: {"agentType":"sdlc-lite:researcher-L1","description":"live row check","toolUseId":"toolu_014iYL41dQemjQ9gX6t2DHyG","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-ada4b0dcc6bf6d5b1.jsonl ['claude-sonnet-5-5'] bash: effort=low effort-fields: ['low'] meta: {"agentType":"sdlc-lite:filer-L1","description":"live row check","toolUseId":"toolu_01R4YAKWhYDrT15B53V2mtUg","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-a0001ef269bbf29c3.jsonl ['claude-opus-5-5'] bash: effort=medium effort-fields: ['medium'] meta: {"agentType":"sdlc-lite:ui-designer-L1","description":"live row check","toolUseId":"toolu_01GXSd8zckGB3tc2zYy3ma6u","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+agent-a2c350ad030b0939a.jsonl ['claude-sonnet-5-5'] bash: effort=low effort-fields: ['low'] meta: {"agentType":"sdlc-lite:messenger","description":"live row check","toolUseId":"toolu_01QhB87B6P3LXVgk9SrfMYYJ","spawnDepth":1,"requestShape":"foreground","requestNonInteractive":true}
+record keys: ['advisorModel', 'agentId', 'apiBlockIndex', 'attachment', 'attributionAgent', 'attributionPlugin', 'attributionSkill', 'cwd', 'effort', 'entrypoint', 'gitBranch', 'isSidechain', 'message', 'parentUuid', 'perTurnEffort', 'permissionDecision', 'promptId', 'rendered', 'renderedBesideToolResult', 'renderedRole', 'requestId', 'requestedModel', 'sessionId', 'sourceToolAssistantUUID', 'timestamp', 'type', 'userType', 'uuid', 'version', 'wireToolInputs']
