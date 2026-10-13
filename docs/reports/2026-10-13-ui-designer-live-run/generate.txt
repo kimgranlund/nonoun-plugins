@@ -1,0 +1,52 @@
+<!-- role=ui-designer level=L1 model=opus effort=medium -->
+## Mode
+generate
+
+## Decisions
+- Built from the plan at .sdlc/plan/ui-designer-L2.md with one correction, listed below: the plan covers this exact goal and its DOM and CSS held up against the tree.
+- Correction to the plan: `.summary-action` uses `padding-block` and `padding-inline`, not the physical `padding` shorthand the plan wrote. The file's convention is logical properties (styles.css:16, styles.css:34).
+- The section is the last child of `.top`, after `.list` (index.html:29-49): it follows the products in reading and tab order, and it is not a product, so it stays out of the grid.
+- Root is `<section class="card summary" aria-labelledby="summary-title">`: a named section is a region landmark. `section` over `aside` because the order is part of the page's main task.
+- Root reuses `.card` (styles.css:25-30) for padding, border, radius, and background: one surface definition. `.summary` adds layout only.
+- Heading is an `h2`: it names the landmark. The page has no `h1` yet, because `.title` is a div (index.html:11). Fixing that is outside this goal, so the outline starts at level 2 until it is fixed.
+- Items are a `ul` with `role="list"`: a list announces its count, and `list-style: none` drops list semantics in Safari with VoiceOver unless the role is set.
+- Each row has a name, a quantity as visible text ("Qty 1"), and a line total: one product can be added twice, and plain text needs no ARIA. Quantity is display only, because steppers are not in the goal.
+- Subtotal is a `p` with `role="status"`: a polite live region, so a cart change is announced while focus stays on the product. It stays rendered when the order is empty, because a live region must exist before its first change.
+- Checkout is `<button type="button">`: a deviation from the page's `div` plus `onclick` actions (index.html:16). A button brings focus, Enter and Space, the role, and native `disabled`. Button over link because the tree has no checkout URL.
+- The empty state is derived with `:has()` from the rows, with no state class: the rows are the single source of truth. `hidden` on the list would lose to the author `display: grid`.
+- The static markup ships the populated state with two sample rows ($24 + $14 = $38): the tree has no script, so an empty list could not show the items the goal asks for.
+- Colors come from tokens only. The button uses `var(--color-accent)`, not the hex that styles.css:41 hardcodes.
+- Hover is `color-mix()` of the accent and text tokens, and disabled is `--color-border` behind `--color-muted`: tokens.css has no state colors, and no token was added because tokens.css is not in the handoff's files.
+- Deviations with no token to use: `1.25rem` and `font-weight: 600` (no type tokens), `1px` and `2px` (no border-width token), `28rem` (no size token). Each matches a literal already in styles.css or sits one step from it.
+- The button fills the panel's inline size: it is the single final action. A deviation from the content-sized `.card-action` (styles.css:37-44).
+- Rows share one grid through `subgrid`, and amounts use `tabular-nums` with `text-align: end`: quantity and total line up across rows on content-sized tracks, with no fixed widths.
+- All rules sit in `@layer components`, one flat `summary-*` class per selector, after the `card-*` rules: no specificity fight with existing rules. `:disabled` is written after `:hover` so source order stops a disabled button from showing hover.
+- Not built: loading, selected, and invalid states. The tree has no async call, no selection, and no input.
+- Not checked in a browser: the tree has no dev server or test. The checks run were brace balance on styles.css (23 and 23) and a read of the diff.
+
+## Findings
+None
+
+## Changes
+- index.html: added the order summary `section` at lines 29-49, as the last child of `.top`.
+- styles.css: added 15 `summary-*` rules at lines 46-139, inside `@layer components`.
+
+## Context used
+- tokens.css: the whole design system. Six colors, four spaces, two radii. No type, state, or border-width tokens. Not edited.
+- styles.css: layer order `reset, base, components`, flat `card-*` single-class naming, logical properties, `gap` for collection spacing, and the `.card` surface.
+- index.html: the insert point, the product names and prices for the sample rows, and the absence of headings, ids, and script.
+- .sdlc/plan/ui-designer-L2.md: the DOM and CSS plan for this goal, used as the build spec.
+- .sdlc/review/ui-designer-L1.md: the review of the existing page. Its finding on the physical padding shorthand (styles.css:39) led to the one correction to the plan. Its other findings were left alone as out of scope.
+- No scout, architect, or researcher file exists in .sdlc/generate.
+
+## Carry forward
+- The order summary markup is at index.html:29-49. Its rules are at styles.css:46-139.
+- tokens.css is unchanged. No token was added.
+- Script contract: add or remove `li.summary-item` in `.summary-items`, write the text of `.summary-total-amount`, and set `disabled` on `.summary-action` exactly when no `.summary-item` exists (index.html:31-48).
+- The empty state is the same tree with no `li` and `disabled` on the button. CSS then shows `.summary-empty` and hides the list (styles.css:136-139).
+- `addToCart` is called at index.html:16, 21, 26 and defined nowhere. The tree has no script, so the summary is static sample data. Search: `git ls-files`, which lists index.html, styles.css, tokens.css, and .gitignore.
+- `:has()`, `subgrid`, and `color-mix()` are used with no fallback for older browsers (styles.css:136, styles.css:70, styles.css:120).
+- The page still has no `h1`, `main`, or viewport meta, and the product actions are still divs (index.html:4-26). The review at .sdlc/review/ui-designer-L1.md lists them. None was fixed here.
+- styles.css:41 still hardcodes `#2457d6`. The new rules use `var(--color-accent)` (styles.css:113).
+- Contrast, taken from the plan and not recomputed: white on accent 6.16, white on the hover mix 7.22, muted on border 4.16 (.sdlc/plan/ui-designer-L2.md:104).
+- No browser render was run. A verifier should open index.html and check the populated and empty states.

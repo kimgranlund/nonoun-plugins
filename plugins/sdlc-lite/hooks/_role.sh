@@ -16,9 +16,10 @@
 # another plugin's agent) has no role.
 #
 # A payload without an agent_type costs no jq call.
-SDLC_PIPELINE_ROLES=" scout researcher architect archaeologist planner plan-reviewer builder verifier filer solo "
+SDLC_PIPELINE_ROLES=" scout researcher architect archaeologist planner plan-reviewer builder verifier filer solo ui-designer "
 # The roles that never edit the project: run.sh disallows Edit, Write, and NotebookEdit for exactly
-# these, and claude_roles.py gives exactly these definitions disallowedTools (builder and solo write).
+# these, and claude_roles.py gives exactly these definitions disallowedTools (builder, solo, and ui-designer write;
+# ui-designer edits only in its generate mode, a rule its role contract holds, not a hook).
 # shellcheck disable=SC2034 # read by block-role-write.sh, which sources this file
 SDLC_READONLY_ROLES=" scout researcher architect archaeologist planner plan-reviewer verifier filer "
 

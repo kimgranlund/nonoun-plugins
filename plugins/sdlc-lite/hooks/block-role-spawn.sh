@@ -60,7 +60,7 @@ if [[ "$sub" == "sdlc-lite:messenger" ]]; then
   exit 0
 fi
 
-re_bare='^(scout|researcher|architect|archaeologist|planner|plan-reviewer|builder|verifier|filer|solo|conductor|messenger)(-L[0-9]+|-[SML])?$'  # ALIAS_OK
+re_bare='^(scout|researcher|architect|archaeologist|planner|plan-reviewer|builder|verifier|filer|solo|ui-designer|conductor|messenger)(-L[0-9]+|-[SML])?$'  # ALIAS_OK
 if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   # A bare role name is never a prepared dispatch (prepare prints the sdlc-lite: form), so it
   # fails condition 1 like any other malformed type.

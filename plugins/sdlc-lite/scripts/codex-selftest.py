@@ -469,6 +469,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         self.assertEqual(defs['sdlc-plan-reviewer-l1-alternate']['model'],'gpt-6.1-sol')
         self.assertEqual(defs['sdlc-plan-reviewer-l1-alternate']['model_reasoning_effort'],'high')
         self.assertEqual(defs['sdlc-plan-reviewer-l1-alternate']['sandbox_mode'],'read-only')
+        self.assertEqual(defs['sdlc-ui-designer-l1']['sandbox_mode'],'workspace-write')
 
     def test_runner_records_plan_reviewer_alternate_agent(self):
         import codex_exchange

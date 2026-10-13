@@ -497,6 +497,9 @@ for st in L4 L0 XL X; do
   run "$rs" "$(gj "sdlc-lite:solo-$st" "solo-$st-gate-task" sonnet "$gh")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "spawn gate denies sdlc-lite:solo-$st: exit $rc, want 2"
 done
+# T-0520: the bare role name ui-designer is a role spawn too, so a conductor session cannot start it outside a dispatch.
+run "$rs" "$(rsj sdlc-lite:conductor ui-designer)" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies the bare role name ui-designer (T-0520): exit $rc, want 2"
 # Condition 1: subagent_type is sdlc-lite:<role>-L<n>.
 for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo-X sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
   out=$(run "$rs" "$(gj "$sub" $vn opus "$gh")"); rc=$?
@@ -703,6 +706,7 @@ sdlc-lite:builder-L3|builder
 sdlc-lite:verifier-L1|verifier
 sdlc-lite:plan-reviewer-L2|plan-reviewer
 sdlc-lite:scout-L1|scout
+sdlc-lite:ui-designer-L1|ui-designer
 sdlc-lite:solo-L1|solo
 sdlc-lite:solo-L2|solo
 sdlc-lite:solo-L3|solo
@@ -831,10 +835,11 @@ for spec in "sdlc-lite:verifier-L3|Write|$wd/notes.md" "sdlc-lite:verifier-L3|Wr
 done
 run "$wrh" "$(wrj "" Write "$wd/notes.md")" SDLC_ROLE=planner >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-role-write denies a SDLC_ROLE=planner Write elsewhere: exit $rc, want 2"
-# Not restricted (negative controls): the builder, solo, the conductor, other agents, no role, other tools.
+# Not restricted (negative controls): the builder, solo, ui-designer, the conductor, other agents, no role, other tools.
 for spec in "sdlc-lite:builder-L3|Write|$wd/notes.md" "sdlc-lite:builder-L3|Edit|$wd/notes.md" \
   "sdlc-lite:builder-L3|NotebookEdit|$wd/n.ipynb" "sdlc-lite:builder-L3|Write|/tmp/x.md" \
   "sdlc-lite:solo-L2|Write|$wd/notes.md" "sdlc-lite:solo-L2|Edit|$wd/notes.md" "sdlc-lite:solo-M|Write|$wd/notes.md" \
+  "sdlc-lite:ui-designer-L1|Edit|$wd/notes.md" "sdlc-lite:ui-designer-L1|Write|$wd/notes.md" \
   "sdlc-lite:conductor|Write|$wd/notes.md" "general-purpose|Write|$wd/notes.md" \
   "|Write|$wd/notes.md" "|Edit|$wd/notes.md" "sdlc-lite:verifier-L3|Read|$wd/notes.md" "sdlc-lite:verifier-L3|Bash|$wd/notes.md"; do
   IFS='|' read -r at tool path <<<"$spec"

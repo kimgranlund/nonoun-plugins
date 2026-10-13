@@ -174,6 +174,8 @@ case "$role:$level" in
   archaeologist:L1) model=sonnet; effort=medium ;;
   filer:L1)         model=sonnet; effort=low ;;
   plan-reviewer:L1) model=fable;  effort=high ;;
+  ui-designer:L1)   model=opus;   effort=medium ;;
+  ui-designer:L2)   model=opus;   effort=high ;;
   *) usage ;;
 esac
 [[ -f "$handoff" ]] || { echo "handoff not found: $handoff" >&2; exit 2; }
