@@ -11,6 +11,10 @@
   dispatch.py recover --root DIR [--open] the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414);
                                           --open skips closed (done or dropped) ticket folders, so history is not rewritten (T-0438)
   dispatch.py resume [--root DIR] <name>  the ladder for an orphan: SendMessage by name, by id, then a new attempt
+  dispatch.py resume --limit <name>       mark a running attempt that stopped on a spend or session limit `limit-stopped`, write
+                                          <role>-<level>.limit with the resume call (SendMessage by name keeps its context) and the
+                                          prepare command; refused for an attempt that is not running or has a result (T-0537).
+                                          A limit-stopped attempt can still be recorded once the resumed agent reports.
   dispatch.py selftest
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
@@ -27,6 +31,8 @@ goal precheck, unfilled-handoff gate, link check, lane gate, spec gate, budget g
                planner or none keeps the row, Fable high). Both read the first model=<[a-z]*> token of the newest result by order.py (a dir with no builder result reads its newest `role solo` runs.jsonl record: a Sonnet solo gets an Opus verifier, an Opus solo a Sonnet one); a
                verifier whose dir holds no builder result reads the highest-numbered live step-<n>/ that
                holds one (step-<n>.superseded-<k>/ is left out).
+  row change   (T-0537) the row's model or effort differs from the last runs.jsonl line of the same role and
+               level in the handoff dir: one stderr line `row changed: <role> <level> was <m>/<e>, now <m>/<e>`.
   goal         planner or plan-reviewer on a task handoff: steps.py precheck.        Refusal exit 2.
   unfilled     any role on a task handoff.md whose front matter type has a ticket template (T-0399): a line copied
                from that template (tickets.unfilled_line, the rule tickets.py check warns with), or the template's
@@ -629,6 +635,36 @@ def inner_loop(path):
     return False
 
 
+def limit_stop(name, root='.'):
+    """T-0537: a running attempt whose sub-agent ended on a spend or session limit becomes limit-stopped, with the
+    <role>-<level>.limit marker naming the resume call. Refused (exit 2) for an attempt that is not running or has a result."""
+    for path in sorted(Path(root).glob('**/*.attempt.json')):
+        if '.git' in path.parts or '.worktrees' in path.parts:
+            continue
+        data = read_attempt(path)
+        if name not in (data.get('name'), data.get('agent_name')):
+            continue
+        report = path.with_name(path.name[:-len('.attempt.json')] + '.md')
+        if data.get('status') != 'running':
+            raise Refuse(2, 'dispatch.py: %s is %s, not running; nothing to mark limit-stopped' % (name, data.get('status')))
+        if report.is_file() and report.stat().st_size:
+            raise Refuse(2, 'dispatch.py: %s has a result at %s; record it instead of marking it limit-stopped' % (name, report))
+        agent = data.get('agent_name') or data.get('name')
+        send = 'SendMessage({to: "%s", message: "The limit has reset; continue your work."})' % agent
+        again = 'python3 %s prepare %s %s %s' % (HERE / 'dispatch.py', data.get('role'), data.get('level'), data.get('handoff'))
+        data.update(status='limit-stopped', limit_stopped_at=run_lifecycle.now())
+        run_lifecycle.write(path, data)
+        path.parent.joinpath('%s-%s.running' % (data.get('role'), data.get('level'))).unlink(missing_ok=True)
+        marker = path.parent / ('%s-%s.limit' % (data.get('role'), data.get('level')))
+        marker.write_text(json.dumps(dict(ts=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), role=data.get('role'), level=data.get('level'),
+                                          handoff=data.get('handoff'), resume=send, prepare=again, evidence='marked by resume --limit'),
+                                     separators=(',', ':')) + '\n', encoding='utf-8')
+        return ['limit-stopped: %s' % path,
+                '1. %s   # by name, keeps its context; then record the dispatch as usual' % send,
+                '2. %s   # new attempt, only if the agent is gone' % again]
+    raise Refuse(2, 'dispatch.py: no attempt named %s under %s' % (name, root))
+
+
 def resume(name, root='.'):
     """The resume ladder for an orphaned or interrupted attempt found by stem or Agent name under root.
     Under `profile: inner-loop` a running attempt with a stored agent id whose transcript is silent (SILENT_SECONDS) also gets it (T-0514)."""
@@ -646,8 +682,8 @@ def resume(name, root='.'):
                 silent = bool(transcript) and time.time() - Path(transcript).stat().st_mtime >= SILENT_SECONDS
             except OSError:
                 silent = False
-        if state not in ('orphaned', 'interrupted') and not silent:
-            raise Refuse(2, 'dispatch.py: %s is %s, not orphaned or interrupted; nothing to resume' % (name, state))
+        if state not in ('orphaned', 'interrupted', 'limit-stopped') and not silent:
+            raise Refuse(2, 'dispatch.py: %s is %s, not orphaned, interrupted, or limit-stopped; nothing to resume' % (name, state))
         agent = data.get('agent_name') or data.get('name')
         aid = data.get('agent_id') or 'unknown'
         transcript = data.get('transcript') or 'the sub-agent transcript for %s under ~/.claude/projects/' % (aid if aid != 'unknown' else agent)
@@ -683,6 +719,22 @@ def under(path, prefix):
     """True when path is prefix or below it, by physical path (macOS reports /private/var for /var)."""
     real, base = os.path.realpath(path), os.path.realpath(prefix)
     return real == base or real.startswith(base + os.sep)
+
+
+def row_before(directory, role, level):
+    """(model, effort) of the last runs.jsonl line for role and level in directory, else None (T-0537)."""
+    try:
+        lines = (Path(directory) / 'runs.jsonl').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get('role') == role and row.get('level') == level and row.get('model'):
+            return row.get('model'), row.get('effort')
+    return None
 
 
 def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo='', prune=None, notify='', notify_re='', tree=''):
@@ -732,6 +784,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         raise Refuse(2, 'dispatch.py: ' + str(e))
 
     model = agent_alias(family(role, model, directory, solo))
+    prev = row_before(directory, role, level)
+    if prev and prev != (model, effort):
+        say('row changed: %s %s was %s/%s on the previous attempt, now %s/%s' % (role, level, prev[0], prev[1], model, effort))
     if not dry_run:
         mailbox(role)
 
@@ -1130,7 +1185,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         raise Refuse(2, 'dispatch.py: cannot read attempt record %s: %s' % (attempt_path, e))
     if attempt.get('attempt_id') != d['attempt_id']:
         raise Refuse(2, 'dispatch.py: %s belongs to another attempt than %s' % (attempt_path, dispatch_file))
-    if attempt.get('status') != 'running':
+    if attempt.get('status') not in ('running', 'limit-stopped'):  # T-0537: a limit-stopped agent resumed by SendMessage is recorded as usual
         raise Refuse(2, 'dispatch.py: attempt %s is %s, not running; nothing to record' % (attempt_path.name, attempt.get('status')))
 
     def close(status, rc, **extra):
@@ -1386,6 +1441,7 @@ def main(argv):
     rc_.add_argument('--open', action='store_true', help='with --root: leave ticket folders whose status is done or dropped untouched (the driver\'s form)')
     rs = sub.add_parser('resume', help='print the resume ladder for an orphaned attempt')
     rs.add_argument('name', help='the attempt stem or Agent name')
+    rs.add_argument('--limit', action='store_true', help='mark a running attempt stopped by a spend or session limit limit-stopped and write its .limit marker (T-0537)')
     rs.add_argument('--root', default='.', help='where to search for attempt records')
     pr = sub.add_parser('prune', help='list the finished sub-agents to stop, with the stop call for each')
     pr.add_argument('--root', default='.', help='the project root holding .sdlc/runtime/prune.json')
@@ -1440,7 +1496,7 @@ def main(argv):
             if args.cmd == 'status':
                 out = status(args.directory, args.orphans)
             elif args.cmd == 'resume':
-                out = resume(args.name, args.root)
+                out = limit_stop(args.name, args.root) if args.limit else resume(args.name, args.root)
             elif args.cmd == 'recover' and args.root:
                 if args.directory:
                     print('dispatch.py: recover takes a handoff dir or --root, not both', file=sys.stderr)
@@ -2470,6 +2526,47 @@ def selftest():
         case('a verifier with its report on disk is accepted', rc == 0 and attempt_of(got)['status'] == 'completed')
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', body=BODY['builder'])
         case('a later success in the same dir removes the limit marker', rc == 0 and not (f3 / 'builder-L1.limit').exists())
+
+        # T-0537: a sub-agent stopped by a spend limit with no record: resume --limit marks it limit-stopped and names the resume call.
+        def cli(*argv):
+            e, o = io.StringIO(), io.StringIO()
+            with cwd(rb), contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+                rc = main(list(argv))
+            return rc, o.getvalue(), e.getvalue()
+        for name in ('lm1', 'lm2'):
+            put(rb / '.sdlc' / name / 'handoff.md')
+        lm1 = rb / '.sdlc' / 'lm1'
+        _, gl, _ = prep(rb, 'builder', 'L1', '.sdlc/lm1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        rc, out, err = cli('resume', '--limit', gl['name'], '--root', str(rb))
+        lmark = json.loads((lm1 / 'builder-L1.limit').read_text()) if (lm1 / 'builder-L1.limit').is_file() else {}
+        case('resume --limit marks a running attempt limit-stopped, clears its running marker, and writes the .limit marker with SendMessage by name',
+             rc == 0 and attempt_of(gl)['status'] == 'limit-stopped' and not (lm1 / 'builder-L1.running').exists()
+             and lmark.get('resume', '').startswith('SendMessage({to: "%s"' % gl['name']) and 'prepare builder L1' in lmark.get('prepare', '')
+             and 'SendMessage({to: "%s"' % gl['name'] in out)
+        case('status shows limit-stopped and resume prints the ladder for it',
+             status(lm1)[0].split()[1] == 'limit-stopped' and 'SendMessage' in resume(gl['name'], str(rb))[0])
+        Path(gl['result']).write_text(BODY['builder'], encoding='utf-8')
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            rc = record(gl['dispatch_file'])
+        case('a limit-stopped attempt resumed by SendMessage records as usual and the success removes the marker',
+             rc == 0 and attempt_of(gl)['status'] == 'completed' and not (lm1 / 'builder-L1.limit').exists())
+        rc, out, err = cli('resume', '--limit', gl['name'], '--root', str(rb))
+        case('negative control: resume --limit refuses a completed attempt', rc == 2 and 'completed, not running' in err)
+        _, gl2, _ = prep(rb, 'builder', 'L1', '.sdlc/lm2/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        Path(gl2['result']).write_text(BODY['builder'], encoding='utf-8')
+        rc, out, err = cli('resume', '--limit', gl2['name'], '--root', str(rb))
+        case('negative control: resume --limit refuses a running attempt that has a result, writes no marker, and keeps it running',
+             rc == 2 and 'has a result' in err and attempt_of(gl2)['status'] == 'running' and not (rb / '.sdlc' / 'lm2' / 'builder-L1.limit').exists())
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            record(gl2['dispatch_file'])
+        # T-0537: prepare notes a model or effort that differs from the last recorded attempt of the same role and level.
+        rc, gr, err = prep(rb, 'builder', 'L1', '.sdlc/lm2/handoff.md', '--dry-run')
+        case('negative control: prepare is silent when the row matches the previous attempt', rc == 0 and 'row changed' not in err)
+        with (rb / '.sdlc' / 'lm2' / 'runs.jsonl').open('a') as f:
+            f.write(json.dumps(dict(role='builder', level='L1', model='fable', effort='max')) + '\n')
+        rc, gr, err = prep(rb, 'builder', 'L1', '.sdlc/lm2/handoff.md', '--dry-run')
+        case('prepare prints one row-changed line when the model or effort differs from the previous attempt',
+             rc == 0 and err.count('row changed: builder L1 was fable/max on the previous attempt, now %s/%s' % (gr['model'], gr['effort'])) == 1)
 
         # The CLI: stdin carries the error text; flags carry the notice's numbers.
         env_cli = {k: v for k, v in os.environ.items() if not k.startswith('SDLC_')}
