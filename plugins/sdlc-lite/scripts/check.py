@@ -1212,7 +1212,7 @@ elif GENERATED:
         _gen.write_text(_gen.read_text() + 'hand edit\n')
         if claude_roles_check(_tp).returncode != 1: errors.append('check.py: generated definitions negative control not flagged for a hand edit')
         shutil.copy(root/('agents/' + _gen.name), _gen)
-        _lv = json.loads((_tp/'adapters/claude/levels.json').read_text()); _lv['builder']['L1'][1] = 'low'
+        _lv = json.loads((_tp/'adapters/claude/levels.json').read_text()); _lv['builder']['L1'][1] = 'xhigh'
         (_tp/'adapters/claude/levels.json').write_text(json.dumps(_lv))
         if claude_roles_check(_tp).returncode != 1: errors.append('check.py: generated definitions negative control not flagged for a levels.json effort changed without regenerating')
 CLAUDE_ROLES_NEEDS = ('claude_roles.py" generate --check', 'claude_roles.py" selftest')

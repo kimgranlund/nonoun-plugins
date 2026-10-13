@@ -37,7 +37,7 @@ The solo level is the ticket level, and a solo L3 runs only when someone starts 
 
 | Level | Model / effort | Fits when |
 |---|---|---|
-| L1 | Haiku 5.5 xhigh | Mechanical: rename, boilerplate, config, one file, spec fully given |
+| L1 | Opus low | Mechanical: rename, boilerplate, config, one file, spec fully given |
 | L2 | Sonnet high | Small change in a known pattern, 1 to 3 files, tests exist |
 | L3 | Opus medium | New feature inside the existing architecture |
 | L4 | Opus high | Crosses modules, unclear edges, concurrency or state |

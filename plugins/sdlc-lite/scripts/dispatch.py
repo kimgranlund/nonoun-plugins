@@ -1842,7 +1842,7 @@ def selftest():
         att = json.loads((w / 'builder-L1.attempt.json').read_text())
         case('attempt record: running, subagent transport, parent pid', (att['status'], att['transport'], att['parent_pid'], att['backend']) == ('running', 'subagent', live, 'claude'))
         case('attempt record carries the model, effort, handoff hash, and reason',
-             (att['model'], att['effort'], att['routing_reason']) == ('haiku', 'xhigh', 'selftest reason')
+             (att['model'], att['effort'], att['routing_reason']) == ('opus', 'low', 'selftest reason')
              and att['handoff_sha256'] == hashlib.sha256((w / 'handoff.md').read_bytes()).hexdigest())
         disk = json.loads((w / 'builder-L1.dispatch.json').read_text())
         case('dispatch file equals the printed JSON apart from dry_run', disk == got and got['dry_run'] is False)
@@ -2562,7 +2562,7 @@ def selftest():
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/g4/handoff.md', body='<!-- role=builder level=L5 model=fable effort=max -->\n' + BODY['builder'],
                                mutate={'lane_override': 'chain needed'})
         head_lines = Path(got['result']).read_text().splitlines()
-        case('a header the role wrote is replaced by the dispatch header, once', rc == 0 and head_lines[0] == '<!-- role=builder level=L1 model=haiku effort=xhigh -->'
+        case('a header the role wrote is replaced by the dispatch header, once', rc == 0 and head_lines[0] == '<!-- role=builder level=L1 model=opus effort=low -->'
              and not head_lines[1].startswith('<!--'))
         case('a lane_override carried by the dispatch reaches the runs.jsonl line', lines_of(rb / '.sdlc' / 'g4')[-1].get('lane_override') == 'chain needed')
 

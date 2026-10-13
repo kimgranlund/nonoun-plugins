@@ -1,5 +1,5 @@
 {
-  "builder": {"L1": ["gpt-6-luna", "low"], "L2": ["gpt-6.1-sol", "low"], "L3": ["gpt-6.1-sol", "medium"], "L4": ["gpt-6.1-sol", "high"], "L5": ["gpt-6.1-sol", "xhigh"]},
+  "builder": {"L1": ["gpt-6.1-sol", "low"], "L2": ["gpt-6.1-sol", "medium"], "L3": ["gpt-6.1-sol", "high"], "L4": ["gpt-6.1-sol", "xhigh"], "L5": ["gpt-6.1-sol", "max"]},
   "planner": {"L1": ["gpt-6.1-sol", "medium"], "L2": ["gpt-6.1-sol", "high"], "L3": ["gpt-6-astra", "high"]},
   "verifier": {"L1": ["gpt-6-luna", "low"], "L2": ["gpt-6-luna", "medium"], "L3": ["gpt-6-astra", "high"]},
   "plan-reviewer": {"L1": ["gpt-6-astra", "high"]},
