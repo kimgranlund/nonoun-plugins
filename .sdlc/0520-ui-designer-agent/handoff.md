@@ -32,3 +32,6 @@ A new pipeline role, `ui-designer`, that plans, reviews and generates correct, s
 
 ## Constraints
 Preserve every existing role's contract, level and model. Keep one authoritative location per fact. Run the shared-runner validation row of the root matrix (`bash plugins/sdlc-lite/scripts/check.sh` plus packaging checks) before closing, and add a release-note line for the next patch.
+
+## Plan review
+- plan defect: step 2: `dispatch.py prepare builder L2` refused the step handoff (`steps.py lint`): `cited path does not exist: .sdlc/plan/handoff.md`, `cited path does not exist: .sdlc/review/handoff.md`, `cited path does not exist: .sdlc/generate/handoff.md`; `plan defect: replan this step (/chain 3)`. These three are handoffs inside the throwaway project the step creates, not paths in this repo; lint reads any backticked `.sdlc/...` path in a step handoff as a repo path that must exist. Step 1 is built and verified (pass) and stays as is; rewrite step 2 only, naming the throwaway project's files so that no backticked path reads as a repo path (for example describe them in prose, or as paths under a `<project>` placeholder), and run `steps.py lint` on the result.

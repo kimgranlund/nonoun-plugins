@@ -15,7 +15,7 @@ Each file is the role body of agents/<role>.md verbatim, under a generated front
 has a `## L<n>` section in overlays/<role>.md gets that section as an `## At this level` block inserted immediately
 before the body's `## Output` line (insert_overlay). The frontmatter: name, description (the
 role's, without its run.sh launch sentence, plus the level, serialized once as one double-quoted YAML scalar), model, effort, disallowedTools (every role but
-builder and solo: Edit and NotebookEdit; Write stays open for the role's one result file, which a hook scopes),
+builder, solo, and ui-designer: Edit and NotebookEdit; Write stays open for the role's one result file, which a hook scopes),
 and skills (the role's own list). The verifier and plan-reviewer family remap changes only the Agent `model`
 argument, so it adds no definition.
 
@@ -43,7 +43,7 @@ PLUGIN = Path(__file__).resolve().parents[1]
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 SOLO = 'solo'
 # Roles that edit the project. Every other role is read-only (run.sh disallows Edit, Write, and NotebookEdit).
-WRITERS = ('builder', SOLO)
+WRITERS = ('builder', SOLO, 'ui-designer')
 DISALLOWED = 'Edit, NotebookEdit'
 LAUNCH_SENTENCE = ' Launched headless by scripts/run.sh.'
 GENERATED_RE = re.compile(r'[a-z]+(?:-[a-z]+)*-(?:L\d|S|M|L)')  # S|M|L: the 0.21.x solo files, removed as orphans. ALIAS_OK

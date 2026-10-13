@@ -1,0 +1,48 @@
+<!-- role=ui-designer level=L1 model=opus effort=medium -->
+## Mode
+review
+
+## Decisions
+None
+
+## Findings
+- index.html:4: there is no `<meta name="viewport">`, so phones lay the page out at desktop width and the `auto-fill` grid at styles.css:21 never collapses: add `<meta name="viewport" content="width=device-width, initial-scale=1">` in the head.
+- index.html:10: `div.top` wraps the page's whole primary content but exposes no landmark, and `.top` has no rule in styles.css: make it `<main>` and drop the unused class.
+- index.html:11: `div.title` is the page heading but is not a heading, so the document has no heading outline at all: use `<h1>`. Keep the `.title` rule for size and spacing.
+- index.html:12: `div.list` holds three sibling products as generic divs, so assistive tech announces no list and no item count: use `<ul>` with one `<li>` per product, and reset `list-style`, `margin` and `padding` on it in the components layer.
+- index.html:13: `div.card` (also lines 18 and 23) is a self-contained product with no semantics: make each card the `<li>` itself, or an `<article>` inside the `<li>`, with the product name as its heading.
+- index.html:14: `div.card-name` (also lines 19 and 24) is the card's title but not a heading, so products cannot be reached by heading navigation: use `<h2>`. `.card-name` has no rule in styles.css, so add one that sets size and margin instead of inheriting browser heading defaults.
+- index.html:15: `div.card-price` (also lines 20 and 25) is a generic block: use `<p>`, optionally wrapping the amount in `<data value="24">` so the price is machine-readable.
+- index.html:16: `div.card-action` with `onclick` (also lines 21 and 26) is a fake button. It is not focusable, has no role, and does not respond to Enter or Space, so keyboard and screen-reader users cannot add to cart: use `<button type="button">`.
+- index.html:16: all three actions have the identical name "Add to cart" (also lines 21 and 26), which is ambiguous in a screen reader's button list: give each a name that includes the product, with visually hidden text or `aria-labelledby` pointing at the button and the card heading.
+- index.html:16: the inline `onclick="addToCart('tote')"` (also lines 21 and 26) calls a function that no tracked file defines, and no `<script>` is loaded, so the click throws a ReferenceError. Inline handlers are also blocked by a strict CSP: put the product id in a `data-product` attribute and bind the handler from a script file.
+- styles.css:41: `background: #2457d6` hardcodes the value of `--color-accent` (tokens.css:5), so a theme change will miss this button. This is the only raw colour in the file: use `var(--color-accent)`.
+- styles.css:37: `.card-action` defines only the resting state. There is no `:hover`, `:focus-visible`, `:active` or `:disabled` style, and no focus indicator: add those states on the button, with a visible `:focus-visible` outline using `outline-offset`. tokens.css has no state tokens, so derive hover and active from `--color-accent` (for example with `color-mix`) or add tokens first.
+- styles.css:37: once the element is a `<button>`, this rule does not clear the UA button styles, and the `reset` layer is empty: add `border: 0` and `font: inherit` to the rule. `cursor: pointer` can stay.
+- styles.css:39: `padding: var(--space-2) var(--space-3)` is the physical shorthand, while the rest of the file uses logical properties (styles.css:16, styles.css:34): use `padding-block` and `padding-inline`.
+- styles.css:1: the layer order declares `reset`, but nothing is ever assigned to it: put the list reset and button reset there, or remove `reset` from the order.
+- styles.css:21: `minmax(14rem, 1fr)` forces a 14rem minimum track, so the grid overflows horizontally when the container is narrower than 14rem plus the body padding: use `minmax(min(14rem, 100%), 1fr)`.
+- styles.css:15: `font-size: 1.5rem` is a raw value. tokens.css has no type scale, so there is no token to use and this is a gap in the tokens, not a deviation: add font-size tokens to tokens.css and reference one here. The same applies to the `font-family` at styles.css:9.
+- styles.css:27: `border: 1px solid` uses a raw width, and tokens.css has no border-width token: acceptable as is. If more bordered components appear, add a width token and use it here.
+
+## Changes
+None
+
+## Context used
+- tokens.css: the design system for this surface. It has six colour tokens (lines 2-7), four spacing tokens (lines 8-11) and two radius tokens (lines 12-13). It has no type scale, no state colours, no border-width token and no elevated-surface token.
+- styles.css: the CSS conventions. Layer order is `reset, base, components` (line 1), selectors are single flat classes with a `card-` prefix, and logical properties are already used for margins (lines 16, 34).
+- index.html: the DOM under review. It loads tokens.css before styles.css (lines 6-7) and loads no script.
+- .sdlc/review/handoff.md: `mode: review`, files in scope are index.html and styles.css.
+- No scout, architect or researcher files exist in the artifacts dir, and there is no earlier result for this handoff.
+
+## Carry forward
+- The design system is one file, tokens.css:1-14, holding colour, spacing and radius tokens only. There is no component library or theme.
+- The accent token is `--color-accent: #2457d6` at tokens.css:5. styles.css:41 duplicates its value as a raw hex.
+- tokens.css has no typography, state, border-width or elevation tokens, so hover and focus styles need new tokens or values derived from `--color-accent`.
+- The layer order is `reset, base, components` at styles.css:1. The `reset` layer is empty, and all component rules sit in `components` (styles.css:13-45).
+- The class names in use are `.top`, `.title`, `.list`, `.card`, `.card-name`, `.card-price` and `.card-action`. `.top` and `.card-name` have no CSS rule.
+- `addToCart` is called at index.html:16, 21 and 26 and is not defined in the six tracked files (source: `git ls-files`, then a full read of index.html, styles.css and tokens.css).
+- index.html has no viewport meta, no landmark, no headings, no list markup and no script tag (index.html:1-31).
+- Contrast passes WCAG AA, by estimate: white on `#2457d6` is about 6:1 and `--color-muted` `#5b6672` on white is about 5.9:1. No contrast finding is needed.
+- The three cards are identical in structure (index.html:13-17, 18-22, 23-27), so each card finding applies to all three.
+- I did not write a result file or run `results.py validate`. The harness saves this message as .sdlc/review/ui-designer-L1.md.

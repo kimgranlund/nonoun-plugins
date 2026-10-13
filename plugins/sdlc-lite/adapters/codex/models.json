@@ -11,5 +11,6 @@
   "conductor": {"L1": ["gpt-6-astra", "medium"]},
   "messenger": {"L1": ["gpt-5.6-terra", "low"]},
   "solo": {"L1": ["gpt-6.1-sol", "medium"], "L2": ["gpt-6.1-sol", "high"], "L3": ["gpt-6.1-sol", "xhigh"]},
+  "ui-designer": {"L1": ["gpt-6.1-sol", "medium"], "L2": ["gpt-6.1-sol", "high"]},
   "verifier_alternates": {"gpt-6-luna": "gpt-6.1-sol", "gpt-6-astra": "gpt-6.1-sol"}
 }
