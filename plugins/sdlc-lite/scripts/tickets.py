@@ -52,7 +52,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             `expect` line. --force closes and leaves them. --keep-refs also leaves them, without
             overriding open warnings: the ticket's ## Closed section lists the stale citations, the
             output says `left refs`, and --dry-run lists one `keep <file>` line per file. It does not
-            combine with --rewrite-refs. Outside git there is no scan.
+            combine with --rewrite-refs. Outside git there is no scan. A second pass reads every file under
+            <root> with ignore rules off, so a gitignored <root>/AGENTS.md that cites the folder counts too.
             With no filer-L*.md here, close refuses and, when another git worktree's same-relative
             <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
             this tree, then rerun close.
@@ -227,7 +228,14 @@ check fails, after the ticket problems and the stale-roadmap check, with one lin
 `<label>: router block missing`, `router block stale`, `router block malformed: <reason>`, or
 `no @AGENTS.md import`, where <label> is AGENTS.md, CLAUDE.md, tickets/AGENTS.md, tickets/CLAUDE.md, or under
 topics work/ or notes/ AGENTS.md or CLAUDE.md. With
-no ticket and no <root>/AGENTS.md, check passes.
+no ticket and no <root>/AGENTS.md, check passes when <root> holds a config or roadmap.md.
+Every command but new and selftest refuses, writing nothing, a <root> that holds no config, no roadmap.md and no
+ticket folder: it is not a ticket root, usually a --root resolved from the wrong directory. new starts a root.
+A `tickets_cmd: <command>` line in <root>/config names the repo's own launcher (for example
+`tickets_cmd: python3 .sdlc/tickets-run.py`); the router procedures then print it in place of
+`python3 <plugin-root>/scripts/tickets.py --root <root>`. A trailing ` # comment` is dropped and the last line wins.
+check warns (exit 0) on a relative markdown link in <root>/AGENTS.md, outside the managed block, whose target is
+missing while the same path with one component dotted exists (a link to a ticket folder that close renamed).
 write_roadmap also writes the mailbox entry files under <root>/messages/ through messages.write_entries, creating
 the folder: .gitignore, AGENTS.md, CLAUDE.md, and AGENTS.md and CLAUDE.md in each of new/, read/, done/. The
 router's Mailbox line links messages/AGENTS.md. check does not validate the entry files: they are git-ignored
@@ -296,6 +304,8 @@ LOCAL_GATE_RE = re.compile(r'\s*local_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510
 FULL_GATE_RE = re.compile(r'\s*full_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
 HANDOFF_PROFILE_DEFAULT_RE = re.compile(r'(?m)^\s*profile\s*:\s*default\b')  # T-0510: a ticket's opt-out line
 TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
+TICKETS_CMD_RE = re.compile(r'\s*tickets_cmd\s*:\s*(\S.*?)\s*(?:\s#.*)?')
+MD_LINK_RE = re.compile(r'\]\(\s*<?([^)\s>]+)>?[^)]*\)')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
 
@@ -413,6 +423,66 @@ def config_areas(root):
         mo = AREAS_RE.fullmatch(line)
         if mo:
             out += [a.strip() for a in mo.group(1).split(',') if a.strip() and a.strip() not in out]
+    return out
+
+
+def tickets_cmd(root):
+    """The repo's launcher for this script: the value of the last `tickets_cmd: <command>` line of <root>/config,
+    stripped, with a trailing ` # comment` dropped; '' when the file or the line is missing. The router
+    procedures print it in place of `python3 <plugin-root>/scripts/tickets.py --root <R>`, so the launcher
+    supplies the root itself. Blank and # comment lines are ignored, as in config_areas."""
+    path = root / 'config'
+    if not path.is_file():
+        return ''
+    out = ''
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        mo = TICKETS_CMD_RE.fullmatch(line)
+        if mo:
+            out = mo.group(1)
+    return out
+
+
+def root_guard(root):
+    """Refuse a <root> that is not a ticket root: one holding no config, no roadmap.md and no ticket folder (a
+    dir with a handoff.md) in <root> or <root>/tickets. run applies it to every command but new, which is how
+    a root starts. It catches a --root resolved from the wrong directory before anything is read or written."""
+    if (root / 'config').is_file() or (root / 'roadmap.md').is_file():
+        return
+    for d in (root, root / 'tickets'):
+        if d.is_dir() and any((p / 'handoff.md').is_file() for p in d.iterdir() if p.is_dir()):
+            return
+    raise Fail(f'{root}: holds no config, roadmap.md or ticket folder, so it is not a ticket root; run from the '
+               f'repository root or pass --root <dir>, and start a new root with `new`; nothing written')
+
+
+def link_warnings(root):
+    """One `warning:` line per relative markdown link in <root>/AGENTS.md, outside the managed block, whose
+    target is missing while the same path with one component dotted exists: a link to a ticket folder that close
+    or archive renamed to .NNNN-<slug>. A link with a scheme, an absolute path or only a #fragment is skipped, and
+    so is a missing target with no dot folder. Warnings only: check prints them and still passes."""
+    path = root / 'AGENTS.md'
+    if not path.is_file():
+        return []
+    lines = read_text(path).replace('\r\n', '\n').split('\n')
+    f = onboard.find_block('\n'.join(lines))
+    if f.status == 'block':
+        lines[f.block.start:f.block.end + 1] = []
+    out = []
+    for target in MD_LINK_RE.findall('\n'.join(lines)):
+        rel = target.split('#', 1)[0]
+        if not rel or rel.startswith('/') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:', rel) or (root / rel).exists():
+            continue
+        parts = pathlib.PurePosixPath(rel).parts
+        for i, part in enumerate(parts):
+            if part in ('.', '..') or part.startswith('.'):
+                continue
+            dotted = pathlib.PurePosixPath(*parts[:i], '.' + part, *parts[i + 1:]).as_posix()
+            if (root / dotted).exists():
+                out.append(f'warning: AGENTS.md: link {rel} is missing but {dotted} exists (a closed ticket folder); '
+                           f'point the link at {dotted}')
+                break
     return out
 
 
@@ -831,7 +901,7 @@ def literal_re(old):
     return re.compile(r'(?<![^\s\'"`()<>\[\]])' + re.escape(old) + r'(?![A-Za-z0-9_-])')
 
 
-def outside_refs(root, slug, own=False, roadmap=None):
+def outside_refs(root, slug, own=False, roadmap=None, scan=None):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
     finds candidate files; each is kept only when it holds a reference: the literal old (the original
@@ -847,7 +917,9 @@ def outside_refs(root, slug, own=False, roadmap=None):
     git context cannot redirect the scan. own=True (number) keeps files under the ticket's own folder too, since
     a literal <rel>/<slug> cite there goes stale when the folder is renamed. roadmap is the roadmap path to leave
     out, default <root>/roadmap.md; with `ticket_root: tickets` callers pass the ticket dir as root and
-    roadmap=<root>/roadmap.md, whose tickets/<slug>/handoff.md link would otherwise count as a cite."""
+    roadmap=<root>/roadmap.md, whose tickets/<slug>/handoff.md link would otherwise count as a cite. scan is the
+    dir the second grep covers with ignore rules off, default root: callers pass the whole <root> (T-0527), so a
+    gitignored <root>/AGENTS.md that cites tickets/<slug> counts, not only files under the ticket dir."""
     try:
         here = root.resolve()
         anchor = here
@@ -866,9 +938,10 @@ def outside_refs(root, slug, own=False, roadmap=None):
         if p.returncode not in (0, 1):
             raise ValueError(p.stderr.strip())
         hits = p.stdout
-        if rel.parts:  # the ticket root is often gitignored: scan it with ignore rules off so its citations count too
+        wide = rel if scan is None else scan.resolve().relative_to(top)
+        if wide.parts:  # <root> is often gitignored: scan all of it with ignore rules off so its citations count too
             q = subprocess.run(['git', '-C', str(top), 'grep', '--untracked', '--no-exclude-standard', '-I', '-l', '-z',
-                                '--full-name', '-F', '-e', slug, '--', rel.as_posix()], env=env,
+                                '--full-name', '-F', '-e', slug, '--', wide.as_posix()], env=env,
                                capture_output=True, text=True)
             if q.returncode not in (0, 1):
                 raise ValueError(q.stderr.strip())
@@ -1711,11 +1784,13 @@ ROUTER_PLUGIN_LINE = ('- `<plugin-root>` is the installed sdlc-lite plugin folde
                       '`${CLAUDE_PLUGIN_ROOT}` in Claude Code; in Codex, the folder two levels above the `sdlc-lite` '
                       'skill.\n')
 
+ROUTER_CMD = 'python3 <plugin-root>/scripts/tickets.py --root <R>'  # <CMD> in the procedures, unless tickets_cmd: is set
+
 ROUTER_PROCEDURES = """\
 ## Procedures
 
 Create a ticket:
-1. Run `python3 <plugin-root>/scripts/tickets.py --root <R> new <feature|bug|chore|spike|idea> <slug> "<title>"`. \
+1. Run `<CMD> new <feature|bug|chore|spike|idea> <slug> "<title>"`. \
 Never pick an id by hand: `new` stamps the next id above every worktree's.
 2. Fill in the body sections of the new `handoff.md`.
 
@@ -1728,24 +1803,25 @@ branch name.
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
 ask the user.
-2. Run `python3 <plugin-root>/scripts/tickets.py --root <R> claim <id> --by <claude|codex>`. It sets \
+2. Run `<CMD> claim <id> --by <claude|codex>`. It sets \
 `status: claimed`, writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:`, and runs `roadmap`. \
 To take over a stale claim, add `--handover --reason "<why>"`.
 3. Start the work through `run.sh`, which puts it in progress: \
 `<plugin-root>/scripts/run.sh planner <level> <T>/<folder>/handoff.md`, or `/sdlc-lite:chain <T>/<folder>`. \
 Progress shows on `/board`.
-4. Release: `python3 <plugin-root>/scripts/tickets.py --root <R> release <id>`. Pause: set `status: paused` and \
+4. Release: `<CMD> release <id>`. Pause: set `status: paused` and \
 add a one-line `paused_reason:`, then rerun `roadmap`.
 
 Close a ticket:
 1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 <T>/<folder>/handoff.md`.
-2. Run `python3 <plugin-root>/scripts/tickets.py --root <R> close <folder> --dry-run`. It lists each follow-up as \
+2. Run `<CMD> close <folder> --dry-run`. It lists each follow-up as \
 `<i>. <tag>: <title>` and ends with `expect <digest>`.
-3. Run `python3 <plugin-root>/scripts/tickets.py --root <R> close <folder>`. To file the one `decide:` follow-up \
+3. Run `<CMD> close <folder>`. To file the one `decide:` follow-up \
 worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to \
-`notes.md`; `fix-now:` items are finished before the close.
+`notes.md`; `fix-now:` items are finished before the close. When it refuses because files cite the folder, \
+add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
 4. Work already done by another ticket: \
-`python3 <plugin-root>/scripts/tickets.py --root <R> close <folder> --reason "<why>"`.
+`<CMD> close <folder> --reason "<why>"`.
 """
 
 ROUTER_TEMPLATE = """\
@@ -1863,7 +1939,8 @@ def router_bodies(root, ts):
     """{label: block text} for every managed AGENTS.md: the router at <root> and, with `ticket_root: tickets`,
     the tickets/AGENTS.md block. Text between the markers, ending with a newline. Under `layout: topics` the
     router's first paragraph is ROUTER_TOPICS_INTRO, both procedures send notes to `<R>/notes/notes.md`, and
-    work/AGENTS.md and notes/AGENTS.md get WORK_TEMPLATE and NOTES_TEMPLATE; the flat text is unchanged."""
+    work/AGENTS.md and notes/AGENTS.md get WORK_TEMPLATE and NOTES_TEMPLATE; the flat text is unchanged. Each
+    procedure command starts with <CMD>: the `tickets_cmd:` value of <root>/config, else ROUTER_CMD."""
     r, t = router_paths(root)
     nested = ticket_dir(root) != root
     topics = layout_paths(root).layout == 'topics'
@@ -1873,9 +1950,10 @@ def router_bodies(root, ts):
     if topics:
         body = body.replace(ROUTER_FLAT_INTRO, ROUTER_TOPICS_INTRO, 1)
         body, tickets_body = (b.replace('go to `notes.md`', 'go to `<R>/notes/notes.md`') for b in (body, tickets_body))
-    out = {'AGENTS.md': body.replace('<R>', r).replace('<T>', t)}
+    cmd = tickets_cmd(root) or ROUTER_CMD
+    out = {'AGENTS.md': body.replace('<CMD>', cmd).replace('<R>', r).replace('<T>', t)}
     if nested:
-        out['tickets/AGENTS.md'] = tickets_body.replace('<R>', r).replace('<T>', t)
+        out['tickets/AGENTS.md'] = tickets_body.replace('<CMD>', cmd).replace('<R>', r).replace('<T>', t)
     if topics:
         out['work/AGENTS.md'] = WORK_TEMPLATE
         out['notes/AGENTS.md'] = NOTES_TEMPLATE
@@ -2259,7 +2337,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if got:
         raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
                    f'decided: <who>" line per role under ## Skipped in {d / "skips.md"}; nothing written')
-    top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=layout_paths(root).roadmap) if archive
+    top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=layout_paths(root).roadmap, scan=root) if archive
                                    else (None, '', '', []))
     if refs and not rewrite_refs and not force and not keep_refs:
         via_force = (f' or --keep-refs (close, leave them and record them in the close note)'
@@ -2532,6 +2610,7 @@ def cmd_check(root, numbered=False):
     out = [f'ok: {len(ts)} tickets, roadmap current']
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
+    out += link_warnings(root)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
                    f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
@@ -2561,7 +2640,7 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     if taken:
         raise Fail(f'archive: {", ".join(taken)} already exist(s); nothing written')
     hits = [(name, top, old, new, files) for name in names
-            for top, old, new, files in [outside_refs(td, name, roadmap=layout_paths(root).roadmap)] if files]
+            for top, old, new, files in [outside_refs(td, name, roadmap=layout_paths(root).roadmap, scan=root)] if files]
     if hits and not rewrite_refs and not force:
         raise Fail('archive would rename these folders, but other files reference them:\n'
                    + ''.join(f'{old}:\n' + ''.join(f'  {f}\n' for f in files) for _, _, old, _, files in hits)
@@ -2639,7 +2718,7 @@ def cmd_number(root, dry_run=False):
         raise Fail(f'number: {", ".join(taken)} already exist(s); nothing written')
     hits = []
     for n, new in moves:
-        top, old, _, files = outside_refs(td, n, own=True, roadmap=layout_paths(root).roadmap)
+        top, old, _, files = outside_refs(td, n, own=True, roadmap=layout_paths(root).roadmap, scan=root)
         if files:
             hits.append((n, new, top, old, old.rsplit('/', 1)[0] + '/' + new if '/' in old else new, files))
     rewrite = sorted({f for *_, files in hits for f in files})
@@ -2784,10 +2863,11 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
 
 def run(root, cmd, args=(), **kw):
     """(exit code, stdout, stderr). The CLI and the selftest both go through here.
-    kw goes to new, close, roadmap, check and archive (numbered=)."""
+    kw goes to new, close, roadmap, check and archive (numbered=). Every command but new goes through root_guard."""
     try:
         if cmd == 'new':
             return 0, cmd_new(root, *args, **kw), ''
+        root_guard(root)
         if cmd == 'close':
             return 0, cmd_close(root, *args, **kw), ''
         if cmd == 'roadmap':
@@ -3126,7 +3206,10 @@ def selftest():
             rc, out, err = run(case(mutate), 'check')
             expect(f'no numbered-config warning ({label}): rc={rc} {out!r} {err!r}',
                    rc == 0 and 'ticket_folders: numbered' not in out + err)
-        rc, out, err = run(pathlib.Path(tmp) / 'empty-warn' / '.sdlc', 'check')
+        ew = pathlib.Path(tmp) / 'empty-warn' / '.sdlc'
+        ew.mkdir(parents=True)
+        (ew / 'config').write_text('', encoding='utf-8')  # with no config the root guard refuses (T-0527)
+        rc, out, err = run(ew, 'check')
         expect(f'no numbered-config warning (empty root): rc={rc} {out!r}',
                rc == 0 and 'ticket_folders: numbered' not in out + err)
         # roadmap follows the same rule: numbered mode refuses on a mismatch and writes nothing
@@ -4647,6 +4730,8 @@ def selftest():
                                                         'open T-0002 Solo2 [solo2]', 'expect e3b0c44298fc'])
 
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
+        empty.mkdir(parents=True)
+        (empty / 'config').write_text('', encoding='utf-8')  # with no config the root guard refuses (T-0527)
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
 
@@ -5059,6 +5144,8 @@ def selftest():
         mbox_files = ['.gitignore', 'AGENTS.md', 'CLAUDE.md'] + [f'{s}/{n}' for s in ('new', 'read', 'done')
                                                                   for n in ('AGENTS.md', 'CLAUDE.md')]
         rm = pathlib.Path(tmp) / 'rt-mbox' / '.sdlc'
+        rm.mkdir(parents=True)
+        (rm / 'config').write_text('', encoding='utf-8')  # an empty root is refused (root_guard); config makes it one
         rc, _, err = run(rm, 'roadmap')
         expect(f'router: roadmap writes the mailbox entry files: rc={rc} {err!r}',
                rc == 0 and all((rm / 'messages' / f).is_file() for f in mbox_files)
@@ -5074,6 +5161,7 @@ def selftest():
                (rt / 'messages' / 'AGENTS.md').is_file() and not (rt / 'tickets' / 'messages').exists())
         rf = pathlib.Path(tmp) / 'rt-mbox-refused' / '.sdlc'
         rf.mkdir(parents=True)
+        (rf / 'config').write_text('', encoding='utf-8')
         (rf / 'AGENTS.md').write_text('<!-- sdlc-lite:managed:start v1 sha256:000000000000 -->\nno end\n',
                                       encoding='utf-8')
         rc, _, err = run(rf, 'roadmap')
@@ -5090,6 +5178,7 @@ def selftest():
         # positive: zero tickets and no AGENTS.md passes check
         rz = pathlib.Path(tmp) / 'rt-zero' / '.sdlc'
         rz.mkdir(parents=True)
+        (rz / 'config').write_text('', encoding='utf-8')
         rc, out, err = run(rz, 'check')
         expect(f'router: zero tickets and no AGENTS.md passes check: rc={rc} {out!r} {err!r}',
                rc == 0 and out.splitlines()[0] == 'ok: 0 tickets, roadmap current' and len(out.splitlines()) == 2
@@ -5684,6 +5773,118 @@ def selftest():
         rc, out, err = run(r, 'blockers')
         expect(f'(blockers) a closed .NNNN-slug folder never contributes, even with a blocked status: {out!r} {err!r}',
                rc == 0 and '.0099-old' not in out and 'alpha' in out)
+
+        # T-0527: the ignore-off scan covers the whole <root>, the launcher key, the root guard, the stale-link warning
+        def c_root(name, config):
+            r = pathlib.Path(tmp) / name / '.sdlc'
+            r.mkdir(parents=True)
+            (r / 'config').write_text(config, encoding='utf-8')
+            return r
+
+        def c_filer(d):
+            (d / 'filer-L1.md').write_text('## Warnings\nNone\n\n## Follow-ups\nNone\n', encoding='utf-8')
+
+        def c_ignored():
+            r = c_root(f'c-refs-{len(list(pathlib.Path(tmp).glob("c-refs-*")))}',
+                       'ticket_root: tickets\nticket_folders: numbered\n')
+            cenv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+            subprocess.run(['git', '-C', str(r.parent), 'init', '-q'], env=cenv, capture_output=True)
+            (r.parent / '.gitignore').write_text('.sdlc/\n', encoding='utf-8')
+            run(r, 'new', ('feature', 'a', 'A'))
+            run(r, 'new', ('feature', 'b', 'B'))
+            c_filer(r / 'tickets' / '0002-b')
+            ag = r / 'AGENTS.md'
+            ag.write_text(ag.read_text(encoding='utf-8') + '\nRead tickets/0002-b/handoff.md first.\n',
+                          encoding='utf-8')
+            return r, ag
+
+        if shutil.which('git'):
+            cr, ag = c_ignored()
+            rc, out, err = run(cr, 'close', ('0002-b',), dry_run=True)
+            expect(f'(T-0527) close --dry-run names a cite in a gitignored <root>/AGENTS.md outside the ticket '
+                   f'root: rc={rc} {out!r} {err!r}',
+                   rc == 1 and '  .sdlc/AGENTS.md\n' in err and '--rewrite-refs' in err
+                   and (cr / 'tickets' / '0002-b').is_dir())
+            rc, out, err = run(cr, 'close', ('0002-b',), dry_run=True, rewrite_refs=True)
+            expect(f'(T-0527) close --dry-run --rewrite-refs lists rewrite .sdlc/AGENTS.md: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'rewrite .sdlc/AGENTS.md' in out.splitlines()
+                   and 'tickets/0002-b/handoff.md' in ag.read_text(encoding='utf-8'))
+            # negative control: the scan as it ran before T-0527 (ignore rules off under the ticket root only) lists nothing
+            expect('(T-0527) control: scanning only the ticket root with ignore rules off misses <root>/AGENTS.md',
+                   outside_refs(cr / 'tickets', '0002-b', roadmap=cr / 'roadmap.md')[3] == [])
+            rc, out, err = run(cr, 'close', ('0002-b',), rewrite_refs=True)
+            got = ag.read_text(encoding='utf-8')
+            expect(f'(T-0527) close --rewrite-refs rewrites the gitignored <root>/AGENTS.md cite: rc={rc} {out!r} '
+                   f'{err!r}',
+                   rc == 0 and 'Read tickets/.0002-b/handoff.md first.' in got and 'tickets/0002-b/' not in got
+                   and (cr / 'tickets' / '.0002-b').is_dir() and run(cr, 'check')[0] == 0)
+
+        launcher = 'python3 .sdlc/tickets-run.py'
+        cr = c_root('c-cmd', f'ticket_root: tickets\ntickets_cmd: {launcher}  # the repo launcher\n')
+        rc, _, err = run(cr, 'new', ('feature', 'alpha', 'Alpha'))
+        for label in ('AGENTS.md', 'tickets/AGENTS.md'):
+            block = (cr / label).read_text(encoding='utf-8')
+            expect(f'(T-0527) tickets_cmd: the {label} block runs the launcher and holds no bare tickets.py --root '
+                   f'line: rc={rc} {err!r} {block!r}',
+                   rc == 0 and f'Run `{launcher} new <feature|bug|chore|spike|idea>' in block
+                   and f'`{launcher} close <folder> --dry-run`' in block and 'tickets.py --root' not in block
+                   and '--rewrite-refs' in block[block.index('Close a ticket:'):])
+        expect(f'(T-0527) tickets_cmd: check passes on the launcher block: {run(cr, "check")!r}',
+               run(cr, 'check')[0] == 0)
+        cr = c_root('c-nocmd', 'ticket_root: tickets\n')
+        run(cr, 'new', ('feature', 'alpha', 'Alpha'))
+        block = (cr / 'AGENTS.md').read_text(encoding='utf-8')
+        expect(f'(T-0527) control: with no tickets_cmd line the block keeps the raw tickets.py command: {block!r}',
+               'python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --dry-run' in block
+               and launcher not in block and '--rewrite-refs' in block[block.index('Close a ticket:'):])
+
+        empty = pathlib.Path(tmp) / 'c-empty' / '.sdlc'
+        empty.mkdir(parents=True)
+        for cmd, args in (('check', ()), ('roadmap', ()), ('archive', ()), ('blockers', ()), ('close', ('x',)),
+                          ('claim', ('T-0001', 'claude')), ('release', ('T-0001',))):
+            rc, out, err = run(empty, cmd, args)
+            expect(f'(T-0527) root guard: {cmd} refuses an empty root and writes nothing: rc={rc} {out!r} {err!r}',
+                   rc == 1 and 'holds no config, roadmap.md or ticket folder' in err and not list(empty.iterdir()))
+        gone = pathlib.Path(tmp) / 'c-gone' / '.sdlc'
+        rc, _, err = run(gone, 'check')
+        expect(f'(T-0527) root guard: check refuses a root that does not exist: rc={rc} {err!r}',
+               rc == 1 and 'holds no config, roadmap.md or ticket folder' in err and not gone.exists())
+        cli = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), '--root', str(empty), 'check'],
+                             capture_output=True, text=True)
+        expect(f'(T-0527) root guard: tickets.py --root <empty dir> check exits nonzero: rc={cli.returncode} '
+               f'{cli.stderr!r}', cli.returncode != 0 and 'holds no config' in cli.stderr)
+        rc, _, err = run(empty, 'new', ('feature', 'alpha', 'Alpha'))
+        expect(f'(T-0527) control: new starts an empty root, and check passes there after: rc={rc} {err!r} '
+               f'{run(empty, "check")!r}', rc == 0 and run(empty, 'check')[0] == 0)
+        only = c_root('c-config-only', '# nothing set\n')
+        rc, _, err = run(only, 'check')
+        expect(f'(T-0527) control: a root holding only config is not refused by the root guard: rc={rc} {err!r}',
+               'holds no config' not in err)
+
+        lr = c_root('c-link', 'ticket_folders: numbered\n')
+        run(lr, 'new', ('feature', 'alpha', 'Alpha'))
+        run(lr, 'new', ('feature', 'beta', 'Beta'))
+        ag = lr / 'AGENTS.md'
+        managed = ag.read_text(encoding='utf-8')
+        ag.write_text(managed + '\nSee [alpha](0001-alpha/handoff.md), [beta](0002-beta/handoff.md#goal), '
+                                '[gone](0009-gone/handoff.md), [web](https://example.com/0001-alpha) and '
+                                '[top](#work-records).\n', encoding='utf-8')
+        rc, out, err = run(lr, 'check')
+        expect(f'(T-0527) control: links to open ticket folders give no link warning: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'warning: AGENTS.md: link' not in out)
+        c_filer(lr / '0001-alpha')
+        rc, _, err = run(lr, 'close', ('0001-alpha',))  # outside git there is no reference scan, so the link goes stale
+        rc2, out, err2 = run(lr, 'check')
+        warned = [line for line in out.splitlines() if line.startswith('warning: AGENTS.md: link')]
+        expect(f'(T-0527) check warns on a link whose target is missing while its dot folder exists, and only on '
+               f'it: close rc={rc} {err!r} check rc={rc2} {out!r} {err2!r}',
+               rc == 0 and rc2 == 0 and len(warned) == 1 and '0001-alpha/handoff.md' in warned[0]
+               and '.0001-alpha/handoff.md' in warned[0])
+        ag.write_text(ag.read_text(encoding='utf-8').replace('[alpha](0001-alpha/', '[alpha](.0001-alpha/'),
+                      encoding='utf-8')
+        rc, out, err = run(lr, 'check')
+        expect(f'(T-0527) control: the link fixed to the dot folder clears the warning: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'warning: AGENTS.md: link' not in out)
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)

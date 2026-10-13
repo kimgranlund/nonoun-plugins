@@ -32,3 +32,11 @@ Close references, router links, launcher and root guard, closing maison T-0546 o
 
 ## Constraints
 Preserve reference-safe closure, cross-worktree id uniqueness and explicit follow-up selection. A new or changed check needs a positive case and an observed negative control.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, and the selftest holds the Done-when cases: with `.sdlc/` gitignored, `ticket_root: tickets` and `.sdlc/AGENTS.md` citing `tickets/0002-b/handoff.md`, `close 0002-b --dry-run` names `.sdlc/AGENTS.md`, `--dry-run --rewrite-refs` lists `rewrite .sdlc/AGENTS.md`, and `--rewrite-refs` rewrites it to `tickets/.0002-b/`; with `tickets_cmd: python3 .sdlc/tickets-run.py` both managed blocks hold that string and no `tickets.py --root`; `tickets.py --root <empty dir> check` exits nonzero.
+- Each new case bites: the old scan (ignore rules off under the ticket dir only) finds nothing in that fixture, which the selftest asserts as its negative control; with no `tickets_cmd:` the block keeps the raw command; a root holding only `config` and `new` on an empty root are not refused; a link to an open ticket folder, or one fixed to the dot folder, gives no link warning.
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 (the regenerated `.sdlc/AGENTS.md` router is current).
+- The router "Close a ticket" steps name `--rewrite-refs`, and `plugins/sdlc-lite/skills/ticket/SKILL.md` describes the whole-root ignore-off scan, `tickets_cmd:`, the link warning and the root guard.
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+- `git diff --check` exits 0.
