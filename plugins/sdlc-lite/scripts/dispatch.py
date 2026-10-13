@@ -122,6 +122,7 @@ import io
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -284,6 +285,13 @@ def agent_name(role, level, directory, k):
     if not head:
         head = slug[:max(1, NAME_MAX - len(tail) - len(step))].strip('-') or 'task'
     return head + step + tail
+
+
+def handoff_locator(path):
+    """The value of a prompt's `Handoff:` line (T-0504). A path with whitespace is double-quoted so the spawn gate
+    (hooks/block-role-spawn.sh) reads it whole; a plain path stays bare, and the gate then reads its first token."""
+    path = str(path)
+    return '"%s"' % path if re.search(r'\s', path) and '"' not in path else path
 
 
 def list_title(directory, role, level, k, limit=50):
@@ -799,7 +807,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                   'instructions define: start with its first heading, with nothing before it and nothing after the last section.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them when done.'
-                  % (list_title(directory, role, level, k), handoff, directory, result, toplevel, toplevel, tmp_prefix, tmp_prefix))
+                  % (list_title(directory, role, level, k), handoff_locator(handoff), directory, result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix))
         if role == 'verifier':
             prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
                        'as your final message; dispatch.py record reads the file, and a missing one fails the run)' % result)
@@ -1857,6 +1865,31 @@ def selftest():
              got['prompt'].startswith('w | builder L1\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
                                       'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', w, w / 'builder-L1.md'))
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
+        # T-0504: a repository and task path with spaces still passes the actual spawn hook; a missing record is still denied.
+        if shutil.which('jq') and shutil.which('bash'):
+            sp = tmp / 'with spaces' / 'repo sp'
+            init_repo(sp)
+            put(sp / '.sdlc' / 'a task' / 'handoff.md')
+            rcp, gp, _ = prep(sp, 'builder', 'L1', '.sdlc/a task/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
+            hook = str(PLUGIN / 'hooks' / 'block-role-spawn.sh')
+
+            def spawn(d, prompt=None):
+                payload = json.dumps({'tool_name': 'Agent', 'cwd': str(sp), 'agent_type': 'sdlc-lite:conductor', 'tool_input': {
+                    'subagent_type': d['subagent_type'], 'name': d['name'], 'model': d['model'], 'prompt': prompt or d['prompt']}})
+                h = subprocess.run(['bash', hook], input=payload, capture_output=True, text=True)
+                return h.returncode, h.stderr
+            hrc, herr = spawn(gp) if rcp == 0 else (None, '')
+            case('a prepared payload for a path with spaces passes the spawn hook unchanged', rcp == 0 and ' ' in gp['handoff'] and hrc == 0)
+            case('the Handoff line of a spaced path is one quoted locator', rcp == 0 and ('\nHandoff: "%s"\n' % gp['handoff']) in gp['prompt'])
+            case('trailing explanation after the quoted locator is ignored',
+                 rcp == 0 and spawn(gp, gp['prompt'].replace('"%s"' % gp['handoff'], '"%s" (frozen, see docs/a b.md)' % gp['handoff'], 1))[0] == 0)
+            case('the execution-tree command quotes a path with spaces', rcp == 0 and 'cd %s && ' % shlex.quote(gp['tree']) in gp['prompt'] and "cd '" in gp['prompt'])
+            (sp / '.sdlc' / 'a task' / 'builder-L1.dispatch.json').unlink()
+            mrc, merr = spawn(gp) if rcp == 0 else (None, '')
+            case('a spaced path with no dispatch record is denied with the missing-record diagnostic',
+                 mrc == 2 and 'no dispatch record for' in merr and gp['handoff'] in merr)
+        else:
+            print('skip: no jq or bash for the spaced-path spawn hook cases')
         # T-0366: a solo dispatch's recorded base sha, not the later HEAD, is the verifier's Base sha.
         put(rr / '.sdlc' / 'sb' / 'handoff.md')
         pre = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()

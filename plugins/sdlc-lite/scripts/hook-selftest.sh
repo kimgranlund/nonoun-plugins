@@ -463,6 +463,17 @@ run "$rs" "$(gj $vt $vn opus "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a plain Handoff line (T-0344): exit $rc, want 0"
 run "$rs" "$(gj $vt $vn opus "$gh  (frozen, see docs/a/b.md)")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows trailing text on the Handoff line (T-0344): exit $rc, want 0"
+# T-0504: a path with spaces travels as a double-quoted locator; the text after the closing quote is ignored.
+sp="$gate/with spaces"; mkdir -p "$sp"; : >"$sp/handoff.md"
+printf '%s' '{"model":"opus","name":"gate-task-verifier-L3"}' >"$sp/verifier-L3.dispatch.json"
+run "$rs" "$(gj $vt $vn opus "\"$sp/handoff.md\"")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a quoted Handoff path with spaces (T-0504): exit $rc, want 0"
+run "$rs" "$(gj $vt $vn opus "\"$sp/handoff.md\" (frozen, see docs/a b.md)")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate ignores text after a quoted Handoff path (T-0504): exit $rc, want 0"
+rm -f "$sp/verifier-L3.dispatch.json"
+out=$(run "$rs" "$(gj $vt $vn opus "\"$sp/handoff.md\"")"); rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a quoted spaced path with no record (T-0504): exit $rc, want 2"
+grep -q "no dispatch record for '$vn' beside $sp/handoff.md" <<<"$out" || fail "spawn gate names the whole spaced path in the missing-record denial (T-0504)"
 run "$rs" "$(jq -n --arg cwd "$gate" '{tool_name:"Agent",cwd:$cwd,agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:"gate-task-verifier-L3",model:"opus",prompt:"no line here"}}')" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate denies a prompt with no Handoff line (T-0344): exit $rc, want 2"
 # A solo dispatch (sdlc-lite:solo-L1|L2|L3, solo_run.py) is gated by its record and model only (T-0287 live defect).
