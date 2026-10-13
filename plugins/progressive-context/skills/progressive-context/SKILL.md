@@ -36,3 +36,5 @@ Read only the reference that matches the project or requested design. These inte
 - For a browser JavaScript harness without filesystem context, read [browser harness guidance](references/browser-harness.md).
 - For A2UI compositions and runtime evaluation, read [A2UI guidance](references/a2ui.md).
 - When SDLC Lite is present, read [SDLC Lite integration](references/sdlc-lite.md) to connect contracts with tickets, plans, and verification.
+
+Proposed goals and measurement definitions: [performance contract](references/performance-contract.json). Read when evaluating or changing intended outcomes; ordinary authoring does not require it.

@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "skillId": "progressive-context",
+  "contractVersion": "1.0.0",
+  "status": "proposed",
+  "goals": {
+    "primary": {
+      "id": "usable-capability-context",
+      "statement": "Enable a later worker to find authoritative capability intent, distinguish it from demonstrated behavior, and act within the supported implementation or reuse scope."
+    },
+    "secondary": [
+      {
+        "id": "clear-owned-intent",
+        "statement": "Express actionable capability intent with explicit owners, boundaries and unknowns using existing authoritative records."
+      },
+      {
+        "id": "evidence-bound-status",
+        "statement": "Keep acceptance and reuse claims tied to current evidence and reassess only claims affected by change."
+      },
+      {
+        "id": "independent-reuse",
+        "statement": "Make advertised capability interfaces usable from a separate consumer context with declared dependencies."
+      },
+      {
+        "id": "efficient-navigation",
+        "statement": "Keep task-specific context routes small and sufficient without duplicating authority."
+      }
+    ]
+  },
+  "kpis": [
+    {
+      "id": "intent-actionability",
+      "label": "Capability intent actionability",
+      "goalIds": [
+        "usable-capability-context",
+        "clear-owned-intent"
+      ],
+      "dimension": "Capability intent actionability",
+      "boundary": "Assesses the decisions needed for the requested stage, not completion of a universal template. Intent-only stubs may legitimately retain unknowns; invented requirements fail.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Applicable intent decisions resolved by a consistent owning record or explicitly identified as an actionable unknown with its decision consequence",
+        "denominator": "Applicable intent decisions audited against the requested task and lifecycle scope"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Creation or refinement of capability intent, including explicitly scoped intent-only work.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Task-derived decision inventory covering relevant outcome, boundaries, ownership, interfaces, dependencies and acceptance intent",
+        "Owning contract and relevant source material",
+        "Recorded review applying a fixed rule: supported consistent answer or explicit consequential unknown passes; contradiction, invention or silently missing required decision fails",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "navigation-success",
+      "label": "Task navigation success",
+      "goalIds": [
+        "usable-capability-context",
+        "efficient-navigation"
+      ],
+      "dimension": "Task navigation success",
+      "boundary": "A working link or read alone is insufficient. Measures whether a later consumer can reach the applicable owner and prerequisites through the advertised route, not whether downstream implementation succeeds.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Observed consumer navigation attempts reaching applicable authoritative material and required prerequisites without undocumented maintainer rescue",
+        "denominator": "Consumer navigation attempts with determinate route outcomes, including dead ends, wrong owners and timeouts"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Tasks beginning from a declared entry point with a defined information need.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Entry point, consumer information need and expected applicable sources",
+        "Observed retrieval path and source applicability, not a skill mention alone",
+        "Evidence of arrival at sufficient material or a recorded route failure; distinguish contradictory guidance from link failure",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "assessment-calibration",
+      "label": "Evidence-bound capability status",
+      "goalIds": [
+        "usable-capability-context",
+        "evidence-bound-status"
+      ],
+      "dimension": "Evidence-bound capability status",
+      "boundary": "Measures correctness of status and scope claims, not code quality or number of assessments. Stated missing or stale evidence can be correct. A status field or schema pass is not acceptance.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Audited claims correctly distinguishing intended, implemented, demonstrated, stale and reuse-qualified behavior within the supported scope",
+        "denominator": "Material capability status claims whose subject and evidence can be audited"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Capability assessments, handoffs or release pointers making claims about implementation, acceptance or reuse.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Claim inventory and exact subject, criteria, dependencies and environment identities where material",
+        "Checks actually performed and their results, with original failures and unexecuted criteria",
+        "Review against evidence guide; known unsupported promotions fail, inaccessible evidence remains unknown",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "change-impact-correctness",
+      "label": "Change impact handling",
+      "goalIds": [
+        "evidence-bound-status"
+      ],
+      "dimension": "Change impact handling",
+      "boundary": "Checks whether affected claims are reconsidered and demonstrably unaffected evidence is retained. Avoid rewarding invalidation of every claim or ungrounded reuse of stale results.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Audited change-to-claim decisions correctly retaining evidence, reassessing affected claims, or marking genuinely unresolved impact as needing assessment",
+        "denominator": "Relevant change-to-claim decisions assessed against an independently established dependency and criterion impact analysis"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Changes to implementation, criteria, dependencies or environment affecting previously assessed capabilities.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Before/after material identities and existing dependency/contract links",
+        "Claim inventory and independently reviewed impact expectations, including unaffected controls",
+        "Subsequent assessment records or explicit pending/stale qualification; uncertain impact must not count as accepted",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "independent-reuse-success",
+      "label": "Independent consumer reuse success",
+      "goalIds": [
+        "usable-capability-context",
+        "independent-reuse"
+      ],
+      "dimension": "Independent consumer reuse success",
+      "boundary": "Acceptance in the original project does not imply portability. Measures the advertised reuse scope only; excludes publication volume and package presence.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Eligible separate-consumer attempts completing the specified use with only advertised interfaces, context and dependencies",
+        "denominator": "Eligible reuse attempts with determinate outcomes, including integration failures and task-attributable timeouts"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Capabilities advertising reuse for a named consumer and environment scope.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Public contract and supported reuse scope fixed before assessment",
+        "Separate consumer context and dependency/retrieval trace identifying undocumented rescue",
+        "Observed consumer outcome checks and failed attempts; incomplete capture is disclosed rather than presumed isolated",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "context-burden",
+      "label": "Context retrieval burden",
+      "goalIds": [
+        "usable-capability-context",
+        "efficient-navigation"
+      ],
+      "dimension": "Quality-qualified retrieval cost",
+      "boundary": "Returned task-context content only; not total command-output bytes, model tokens, elapsed time or skill-attributable causal cost. Report task success and failed/incomplete attempts alongside cost; a smaller median alone does not establish improvement.",
+      "measurement": {
+        "kind": "distribution",
+        "observation": "Total UTF-8 bytes of decoded context-bearing tool returns exposed during each eligible attempt, including repeated reads, from task start to the declared delivery boundary. Separate context from mixed tool output only where the return structure permits exact attribution.",
+        "statistic": "median"
+      },
+      "unit": "bytes per quality-qualified attempt",
+      "direction": "lower",
+      "applicability": "Comparable attempts with complete captured context retrieval and independently supported task quality criteria.",
+      "exclusions": [
+        "Incomplete captures from the cost distribution, disclosed with counts and reasons",
+        "Unattributable mixed returns; never estimate their context bytes as exact measurements",
+        "Attempts failing the declared quality criteria from the conditional median, retained in companion outcome counts"
+      ],
+      "evidenceRequirements": [
+        "Paired retrieval calls and returned content with capture boundaries and duplicate-event handling",
+        "Evidence identifying the context-bearing portions and exact byte-count convention",
+        "Task outcome checks, cohort membership and attempt boundaries, including failures and unknowns",
+        "Explicit qualification of uncaptured automatic or initial context; this metric does not claim total model context"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    }
+  ]
+}
