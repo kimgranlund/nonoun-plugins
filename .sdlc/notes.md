@@ -401,3 +401,9 @@
 - note: the new reference files are untracked. Track them in the commit; after that the code-span paths in `SKILL.md` could become Markdown links.
 - 2026-10-12: T-0503 to T-0509 reviewed against main at dbb38c0f: the Astra probes (docs/reports/2026-10-12-sdlc-lite-astra-review/probes.py) reproduce unchanged on current main, so all seven stay valid; none was fixed by T-0472 to T-0515 work. Order: wave 53 = T-0503, T-0506, T-0508 (no file overlap with wave 52); then T-0504, T-0505 after T-0514 (dispatch.py), T-0507 after T-0506, T-0509 after T-0515 (conductor.md). Release 0.22.6 after T-0509.
 - 2026-10-12: maintainer corrected the release point: cut 0.22.6 after T-0515 (wave 52 and whatever else is merged and green by then, wave 53 included only if it has landed); T-0503 to T-0509 that are not landed go to the following patch.
+
+## T-0505: bug: Claude hooks: freeze handoffs during prepared attempts (2026-10-12)
+
+- decide: Run a live fresh-Claude check on this tree's plugin and record it as `observed` in a new dated report. Ticket criterion 6 is open, and the builder's headless sub-agent loaded the main checkout's plugin, not this tree's.
+- note: The marker is keyed by role and level, not by attempt stem. Recording one of two same-role, same-level attempts of one session drops the marker while the other still runs (the T-0371 skip). A standing marker from an unrecorded attempt stays until `dispatch.py recover` or `run_lifecycle.py recover` runs.
+- note: The selftest label `prepare --dry-run writes no running marker (T-0505)` also passes on the base. It guards only the placement of the marker write.

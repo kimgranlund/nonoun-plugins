@@ -2,7 +2,7 @@
 id: T-0505
 title: "bug: Claude hooks: freeze handoffs during prepared attempts"
 type: bug
-status: ready
+status: done
 size: L3
 priority: P2
 depends: []
@@ -67,3 +67,12 @@ Compare the relevant observations with the acceptance criteria; add discriminati
 
 ## Plan review
 - plan defect: `dispatch.py prepare builder L3` refused step 1 of `planner-L2.md` (steps.py lint, cited path does not exist): `.sdlc/task/handoff.md`, `.sdlc/task`, `.sdlc/task/scout-L1.dispatch.json`, `.sdlc/task/stale-edits.log`. These are paths inside the throwaway repo that criteria 1 and 2 build under `mktemp -d`; the lint reads any `.sdlc/...` token in the step handoff as a repo path. Keep the design (prepare writes the `<role>-<level>.running` marker); rewrite the Do text and criteria so no repo-relative `.sdlc/<name>` token names a path that does not exist in this tree (for example build the fixture path from shell variables, or point the criterion at the hook selftest case), and check the result with `steps.py lint` on a split step handoff.
+
+## Closed
+
+2026-10-12: warnings acknowledged: step 1 verifier passed 12 of 12; criterion 6 (live fresh Claude check of the guard) is unverified and the report says so with a recipe; the full suite ran in the land gates
+
+> - Ticket acceptance criterion 6 is unverified. No fresh-Claude run observed the handoff guard during a prepared role and its release after recording. The report at `/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout54/a/docs/reports/2026-10-12-handoff-freeze-prepared-attempts.md` says `Live fresh-Claude check: unverified` and gives the recipe for a later live run.
+> - The full suite (`check.sh` and `check.py`) was not run. The `fanout.py land` gates for lane `fanout/wave54-a` own it.
+> - Step 1 passed: the verifier verdict is pass on all 12 criteria, and `docs_check.py` printed `0 errors, 30 warnings`.
+> - No `process-deviations.md` exists in the artifacts dir or its step folders.
