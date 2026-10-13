@@ -1645,7 +1645,7 @@ user 2026-10-12 invocation is a kind of the plan skill | maintainer fixed placem
 agent 2026-10-12 handoff write stays off by default | reload unverified | [U]
 STATE
 Branch `fanout/wave54-f`, 0 dirty files
-POINT `.sdlc/0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
+POINT `.sdlc/.0465-compaction-prompt/handoff.md` -> goal, constraints, done-when
 OPEN
 Live check of the `CLAUDE.local.md` reload not run
 NEXT

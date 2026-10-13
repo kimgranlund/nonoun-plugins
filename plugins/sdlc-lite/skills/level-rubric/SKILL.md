@@ -25,9 +25,9 @@ SDLC Lite has one level scale, L1 to L5, for every sized thing: a role run, a ti
 
 | Level | Scale | Ticket level: default lane (`steps.py lane`) | Solo agent: Claude, Codex | Ticket budget (`budget.py set --tier`) |
 |---|---|---|---|---|
-| L1 | small | solo | `solo-L1`: Sonnet low, `sdlc-solo-l1` | $5 |
-| L2 | medium | solo | `solo-L2`: Sonnet high, `sdlc-solo-l2` | $30 |
-| L3 | large | full chain | `solo-L3`: Opus xhigh, `sdlc-solo-l3` | $60 |
+| L1 | small | solo | `solo-L1`: Sonnet high, `sdlc-solo-l1` | $5 |
+| L2 | medium | solo | `solo-L2`: Opus medium, `sdlc-solo-l2` | $30 |
+| L3 | large | full chain | `solo-L3`: Opus high, `sdlc-solo-l3` | $60 |
 | L4 | extra large | full chain | none | none, ask the user |
 | L5 | reserved | full chain | none | none, ask the user |
 
