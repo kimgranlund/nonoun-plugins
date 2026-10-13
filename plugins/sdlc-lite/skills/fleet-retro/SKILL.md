@@ -1,7 +1,7 @@
 ---
 name: fleet-retro
 description: "Run a retro of how SDLC Lite served several repos at once: collect each repo's fingerprint, detect waste and stalls mechanically, interview each repo's conductor, write one cost-ranked report where every finding carries an evidence pointer and [V] or [U], check the findings with a sampled verifier and the actionability rubric, and file the confirmed ones after one approval round. Use for \"retro across my repos\", \"where is the plugin costing us\", or a periodic fleet review. NOT for one repo's run traces (review-traces), a live status view (board), or unattended filing."
-argument-hint: "<repo>..."
+argument-hint: "<repo>... [--since DATE] [--until DATE]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_collect.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_detect.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_config.py show:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Agent, Read, Write, Grep, Glob, SendMessage, AskUserQuestion
 ---
 
@@ -10,6 +10,14 @@ Read first: `docs/specs/doc-standards/knowledge-ops.md`, when that file exists i
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. SendMessage becomes the host's way to message another session; with none, run step 3 as skipped. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (one repo path per word; none means the active entries of `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_config.py show --active`, whose second column names each repo's conductor session).
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<repo>` | One repo path per word | the active entries of the fleet registry | `app api` |
+| `--since DATE` | The start of the window | no bound | `--since 2026-10-01` |
+| `--until DATE` | The end of the window; only to reproduce the numbers of an earlier report | no bound | `--until 2026-10-08` |
 
 Every repo is read-only: this skill never writes, commits, or messages into a repo it inspects, and the interview tells a conductor the same. No model call runs before step 3. When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level; read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 

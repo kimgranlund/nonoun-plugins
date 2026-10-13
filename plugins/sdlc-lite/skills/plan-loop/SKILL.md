@@ -1,7 +1,7 @@
 ---
 name: plan-loop
 description: "Plan a /loop: pick the interval or dynamic mode, write a self-contained idempotent prompt with a stop condition, check it with plan_check.py, and return one copy/paste /loop line. Use for \"check this every 20 minutes\", \"keep watching X\", or a status loop. NOT for running the loop."
-argument-hint: "[what to repeat and how often]"
+argument-hint: "[<task>] [<interval>]"
 allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), AskUserQuestion
 ---
 
@@ -9,11 +9,18 @@ allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan
 
 Arguments: `$ARGUMENTS` (what to repeat and, if known, how often).
 
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<task>` | What to repeat | taken from the thread, else asked | `check the deploy` |
+| `<interval>` | How often: `20m`, `1h`, `30s`, or `2d` | taken from the thread, else asked; none means dynamic mode | `20m` |
+
 Read [the loop rules](references/loop-rules.md) for the interval parser, the cron rounding, and the cost note.
 
 ## 1. Gather
 
-Take the task, the cadence, and the end condition from the thread first. Ask only what is missing, once, with reasoned options: how often (the longest interval that still fits the need), and when the loop ends. If `AskUserQuestion` is unavailable, ask in plain lines.
+Take the task, the cadence, and the end condition from the thread first. Ask only what is missing, once, with 2 to 4 reasoned options each: how often (the longest interval that still fits the need), and when the loop ends. If `AskUserQuestion` is unavailable, ask in plain lines.
 
 ## 2. Choose the mode
 

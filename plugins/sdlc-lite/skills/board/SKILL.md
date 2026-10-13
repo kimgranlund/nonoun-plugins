@@ -1,13 +1,22 @@
 ---
 name: board
 description: "The status board for sdlc work: one table (Task, Step, Status, %) rendered from .sdlc/ by scripts/board.py, never written by hand; gains optional ID and Ticket columns when a rendered task's handoff.md has ticket front matter. Use for any status ask (\"status?\", \"where are we\", \"show the board\", \"what is running\") and at every natural pause in /chain or /bench."
-argument-hint: "[task] [--root DIR] [--sort {recent,id,name}] [--lanes]"
+argument-hint: "[<task>] [--root DIR] [--sort recent|id|name] [--lanes]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*)
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<task>` | A task slug; only that task is rendered | every live task | `add-retry` |
+| `--root DIR` | The dir holding the task dirs | `.sdlc` in the cwd | `--root bench/results` |
+| `--sort recent\|id\|name` | The row order: `recent` (mtime), `id` (ticket id as in the roadmap), or `name` (folder name) | by ticket id when any rendered task has a ticket, else by recency | `--sort name` |
+| `--lanes` | A per-worktree lane table instead of the task board | off | `--lanes` |
 
 1. Write one waiting line: `Waiting on: builder L3, step 2` or `Waiting on you: approve publishing`. If nothing is running or pending, `Waiting on: nothing`.
 2. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py --waiting "<line>"`, adding `--task <slug>` if a task was named, `--root <dir>` if given (`<bench dir>/results` for benchmark runs, see `scripts/bench-dir.sh`), and `--sort <mode>` if given. With no flag, the default order is by ticket id when any rendered task has a ticket (unticketed tasks follow by recency), otherwise by recency. `recent` (mtime), `id` (ticket id as in the roadmap) and `name` (folder name) override. For a "lanes" or "worktrees" ask, pass `--lanes` instead of `--task` and `--sort`.

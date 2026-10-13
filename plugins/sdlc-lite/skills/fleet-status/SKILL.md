@@ -9,6 +9,14 @@ allowed-tools: Read, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_status.py 
 
 Arguments: `$ARGUMENTS`
 
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `--repos A,B` | The registry names to report on | every active repo | `--repos app,api` |
+| `--since last\|DATE` | Where Done since starts: the stored snapshot, or a date | `last` | `--since 2026-10-06` |
+| `--ping` | Add the Ping section: the conductors to message for a health report | off | `--ping` |
+
 ## 1. Render
 
 Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_status.py render` from the project root that holds `.sdlc/fleet.json`, passing the arguments through: `--repos A,B` (registry names), `--since last|DATE` (default `last`, the stored snapshot), `--ping`. Each call stores a snapshot, so the next `--since last` starts from this one. The script makes no model call and only reads the repos it inspects; it takes about 15 seconds on a busy machine.
@@ -25,7 +33,7 @@ Print stdout verbatim as the reply, before any question, inside one fenced code 
 
 The rows under `Needs you` are the only reason to ask. None (`Needs you: nothing`): stop after the output.
 
-Otherwise make exactly ONE AskUserQuestion call of 1 to 4 questions, one per row, oldest first. With more than 4 rows ask the 4 oldest and name the rest in the framing ("4 of 7"). Header chips stay under 12 characters. For each row write 2 to 3 options whose descriptions carry the consequence in one line, and put an option first marked `(Recommended)` only when the row or the ticket supports it:
+Otherwise make exactly ONE AskUserQuestion call of 1 to 4 questions, one per row, oldest first. With more than 4 rows ask the 4 oldest and name the rest in the framing ("4 of 7"). Header chips are at most 12 characters and each option label is 1 to 5 words. For each row write 2 to 3 options whose descriptions carry the consequence in one line, and put an option first marked `(Recommended)` only when the row or the ticket supports it:
 
 - `merge` row (State column): `Merge it` first and recommended when the Detail says APPROVED and CLEAN; otherwise `Look at it first` first. Then `Leave it open`.
 - `decision` row: read the ticket's `## Goal` and `## Context` (the row's Source is the ticket folder under that repo's `.sdlc`) and offer the real choices it names. Recommend one only when the ticket states a default.

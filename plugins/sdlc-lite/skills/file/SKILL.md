@@ -1,7 +1,7 @@
 ---
 name: file
 description: "Draft the records for a finished task (PR title and body, changelog entry, follow-ups) from its .sdlc artifacts, then publish only what the user approves."
-argument-hint: "<.sdlc/task dir>"
+argument-hint: "<task-dir>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Agent, Read, Grep, Glob
 ---
 
@@ -10,6 +10,12 @@ Read first: `docs/specs/doc-standards/delivery.md`, when that file exists in thi
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<task-dir>` | The task dir whose records are drafted; its name is the ticket slug | - | `.sdlc/add-retry` |
 
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 

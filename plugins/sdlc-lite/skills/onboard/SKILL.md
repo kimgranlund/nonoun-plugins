@@ -9,6 +9,14 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py:*)
 
 Arguments: `$ARGUMENTS`
 
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `setup` | Show the diff of every change, then write it on approval | the default | `setup` |
+| `--force` | With `setup`: also replace a managed block edited by hand | off | `setup --force` |
+| `check` | Report the state of each managed file and write nothing | - | `check` |
+
 Commands, all run from the repository root:
 - `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup --dry-run` prints a unified diff of every change and writes nothing.
 - `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup [--force]` writes the same changes; `--force` also replaces a managed block edited by hand.

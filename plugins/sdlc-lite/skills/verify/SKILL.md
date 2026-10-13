@@ -1,13 +1,20 @@
 ---
 name: verify
 description: "Verify a built step: dispatch the independent verifier against the step's acceptance criteria. Use after /build."
-argument-hint: "[L1..L3] <step handoff.md>"
+argument-hint: "[L1|L2|L3] <step-handoff.md>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Agent, Read, Write, Grep, Glob
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `L1\|L2\|L3` | The verifier level | per the verifier section of the level rubric: it follows the newest builder level in the step dir | `L2` |
+| `<step-handoff.md>` | The step handoff whose build is verified | - | `.sdlc/add-retry/step-1/handoff.md` |
 
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 

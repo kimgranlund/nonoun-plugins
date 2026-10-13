@@ -241,6 +241,18 @@
    Ticket D deletes the stubs and this item.
 59. Verifier parity line (T-0513): agents/verifier.md and its generated verifier-L1, L2 and L3 files each hold the `(parity)` rule line (`a `(parity)` criterion passes per named property`,
    `Read the real and the mockup image`). Negative control: each phrase removed from a file must be flagged.
+60. Argument hints (T-0463): the standard is docs/specs/doc-standards/prompts.md `## Skill arguments and questions`. A skill reads arguments when its SKILL.md has a line
+   that starts `Arguments: ` then the code span `$ARGUMENTS`. H-1: a reader has an `argument-hint` frontmatter line. H-2: the hint parses under the hint grammar. H-3: the
+   hint is at most 100 characters (the text inside the YAML quotes). H-4: every `--flag` in the hint is in the skill text below the frontmatter and, for a skill in the
+   script map (ticket, board, report, fleet-status, fanout, onboard, review-traces, fleet-retro), in that script's usage text. H-5: for a skill in the script map, every
+   `--flag` in the script's usage text is in the hint, or in the first column of the skill's `## Arguments` table when the hint holds `[options]`, or in the allowlist.
+   H-6: a reader has exactly one `## Arguments` heading whose next non-blank line is the row `| Argument | Meaning | Default | Example |`. H-7: a reference skill
+   (checking-rules, checks-that-bite, handoff-format, level-rubric) has no `argument-hint`. The four plan redirect stubs of item 58 are exempt from H-2 to H-6. Usage text
+   is a script's lines from the first `usage:` line to the next blank line; flags are prompt_lint.FLAG matches. Every rule runs on every skill it applies to. Negative
+   controls, each a mutant that must add a finding for its rule: H-1 a reader without its hint line; H-2 braces, two dots, free text, a space inside angle brackets, an
+   unbalanced bracket, and a double quote; H-3 a hint of 101 characters; H-4 a hint flag absent from the body, and a hint flag absent from the mapped script; H-5 a usage
+   text with one extra flag; H-6 a reader without the heading, and one with two headings; H-7 a reference skill with a hint. Positive controls: the five must-parse
+   hints, a clean reader, and a usage flag carried by the `## Arguments` table under `[options]` add no finding.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1491,6 +1503,140 @@ for _k in PLAN_STUB_KINDS:
         if not plan_stubs_bad(dict(_stubs, **{_k: _mut})): errors.append(f'check.py: plan stubs negative control not flagged for {_why} in plan-{_k}')
     if not plan_stubs_bad(dict(_stubs, **{_k: ''})): errors.append(f'check.py: plan stubs negative control not flagged for a missing plan-{_k} stub')
     if not plan_stubs_bad(_stubs, [_k]): errors.append(f'check.py: plan stubs negative control not flagged for a references folder in plan-{_k}')
+# Argument hints (docstring item 60, T-0463): every argument-reading skill carries a hint in one grammar, an ## Arguments table, and flags that agree with its script.
+HINT_SCRIPTS = {'ticket': 'scripts/tickets.py', 'board': 'scripts/board.py', 'report': 'scripts/report.py', 'fleet-status': 'scripts/fleet_status.py',
+                'fanout': 'scripts/fanout.py', 'onboard': 'scripts/onboard.py', 'review-traces': 'scripts/traces.py', 'fleet-retro': 'scripts/fleet_collect.py'}
+HINT_ALLOW = {
+    # ticket: the skill passes --root itself; --light-gate and --untracked are prose in the tickets.py usage block, not tickets.py flags.
+    'ticket': ('--root', '--light-gate', '--untracked'),
+    # fanout: --main, --require-covered and --ticket belong to subcommands the skill does not route; the skill adds --dry-run itself for the preview run; the rest are internal to the driver and its gates.
+    'fanout': ('--main', '--require-covered', '--ticket', '--dry-run', '--driver', '--no-gate-lock', '--gate-need', '--allow-empty-gate', '--allow-overlap', '--yes-many'),
+    # board: the skill sets --waiting itself, passes --task from the <task> positional, and never passes --summary.
+    'board': ('--waiting', '--task', '--summary'),
+    # onboard: the skill runs `setup --dry-run` itself as the preview.
+    'onboard': ('--dry-run',),
+    # fleet-status: internal state, test and write switches the skill never passes for the user.
+    'fleet-status': ('--fleet', '--state-dir', '--stop-line', '--active-minutes', '--no-gh', '--no-write'),
+    # review-traces: flags that only the detect, clusters and context subcommands take, which the skill sets itself; the skill forwards only --lanes-dir and --max, never --out, --bench-dir, --load-series or --rerun-criteria.
+    'review-traces': ('--repo', '--backend', '--codex-home', '--out', '--bench-dir', '--load-series', '--rerun-criteria'),
+    # fleet-retro: the skill passes --gh itself and never passes --days or --du-timeout.
+    'fleet-retro': ('--gh', '--days', '--du-timeout'),
+}
+HINT_REF_SKILLS = ('checking-rules', 'checks-that-bite', 'handoff-format', 'level-rubric')
+HINT_STUBS = tuple(f'plan-{k}' for k in PLAN_STUB_KINDS)
+HINT_MAX = 100
+HINT_TABLE = '| Argument | Meaning | Default | Example |'
+_H_LOWER = r'[a-z][a-z0-9-]*'
+_H_NAME = r'<[a-z0-9.|-]+>'
+_H_POS = re.compile(rf'{_H_NAME}(?:[=@]{_H_NAME})*(?:\.\.\.)?')
+_H_FLAG = re.compile(rf'--{_H_LOWER}(?: [A-Za-z0-9][A-Za-z0-9_,.|=-]*(?=$|[ \]]))?')
+_H_LEVEL = re.compile(r'L\d(?:\|L\d)*')
+_H_WORD = re.compile(rf'{_H_LOWER}(?:\|{_H_LOWER})*(?:\.\.\.)?')
+def hint_parses(s):
+    """True when s is a hint of the grammar in docs/specs/doc-standards/prompts.md: forms split by ' | ', items by one space, a word only first in its form."""
+    def item(i, first):
+        if s.startswith('[options]', i): return i + 9
+        if s.startswith('[', i):
+            j = forms(i + 1)
+            if j is None or not s.startswith(']', j): return None
+            return j + 4 if s.startswith('...', j + 1) else j + 1
+        for rx in (_H_POS, _H_FLAG, _H_LEVEL) + ((_H_WORD,) if first else ()):
+            m = rx.match(s, i)
+            if m: return m.end()
+        return None
+    def forms(i):
+        while True:
+            first = True
+            while True:
+                i = item(i, first)
+                if i is None: return None
+                first = False
+                if i < len(s) and s[i] == ' ' and not s.startswith(' | ', i): i += 1; continue
+                break
+            if not s.startswith(' | ', i): return i
+            i += 3
+    return forms(0) == len(s)
+def usage_block(src):
+    """A script's usage text: its lines from the first `usage:` line up to, not including, the next blank line."""
+    lines = src.split('\n')
+    for n, l in enumerate(lines):
+        if re.search(r'(?i)\busage:\s*($|\S+\.py)', l):
+            end = next((k for k in range(n, len(lines)) if not lines[k].strip()), len(lines))
+            return '\n'.join(lines[n:end])
+    return ''
+def hints_bad(skills, usage):
+    """Findings for {skill name: SKILL.md text} and {script path: usage text}, each `skills/<name>/SKILL.md: H-<n> <text>`."""
+    out = []
+    for name in sorted(skills):
+        t, f = skills[name], f'skills/{name}/SKILL.md'
+        m = re.match(r'---\n(.*?)\n---\n', t, re.S)
+        fm, body = (m.group(1), t[m.end():]) if m else ('', t)
+        h = re.search(r'^argument-hint:[ \t]*(.*)$', fm, re.M)
+        hint = h.group(1).strip() if h else None
+        if hint and len(hint) > 1 and hint[0] == hint[-1] and hint[0] in '"\'': hint = hint[1:-1]
+        if name in HINT_REF_SKILLS:
+            if hint is not None: out.append(f'{f}: H-7 a reference skill carries an argument-hint')
+            continue
+        if not re.search(r'^Arguments: `\$ARGUMENTS`', t, re.M): continue
+        if hint is None: out.append(f'{f}: H-1 reads $ARGUMENTS but has no argument-hint line')
+        if name in HINT_STUBS: continue
+        script = HINT_SCRIPTS.get(name)
+        uflags = set(prompt_lint.FLAG.findall(usage.get(script, ''))) if script else set()
+        hflags = set(prompt_lint.FLAG.findall(hint or ''))
+        if hint is not None:
+            if not hint_parses(hint): out.append(f'{f}: H-2 hint does not parse under the hint grammar: {hint}')
+            if len(hint) > HINT_MAX: out.append(f'{f}: H-3 hint is {len(hint)} characters, at most {HINT_MAX}')
+            bflags = set(prompt_lint.FLAG.findall(body))
+            out += [f'{f}: H-4 hint flag {x} is not in the skill body' for x in sorted(hflags - bflags)]
+            if script: out += [f'{f}: H-4 hint flag {x} is not in the usage text of {script}' for x in sorted(hflags - uflags)]
+        heads = [n for n, l in enumerate(body.split('\n')) if l.rstrip() == '## Arguments']
+        rows = []
+        if heads:
+            rest = [l for l in body.split('\n')[heads[0] + 1:]]
+            while rest and not rest[0].strip(): rest.pop(0)
+            for l in rest:
+                if not l.startswith('|'): break
+                rows.append(l.rstrip())
+        if script:
+            if not uflags: out.append(f'{f}: H-5 {script} has no usage text')
+            tflags = set(prompt_lint.FLAG.findall('\n'.join(r.split('|')[1] for r in rows[1:]))) if '[options]' in (hint or '') else set()
+            out += [f'{f}: H-5 usage flag {x} of {script} is not in the hint, the ## Arguments table under [options], or the allowlist'
+                    for x in sorted(uflags - hflags - tflags - set(HINT_ALLOW.get(name, ())))]
+        if len(heads) != 1: out.append(f'{f}: H-6 has {len(heads)} `## Arguments` headings, expected 1')
+        elif not rows or rows[0] != HINT_TABLE: out.append(f'{f}: H-6 `## Arguments` is not followed by the row {HINT_TABLE}')
+    return out
+_hs = {p.parent.name: p.read_text() for p in sorted((root/'skills').glob('*/SKILL.md'))}
+_hu = {s: usage_block(_rd(root/s)) for s in sorted(set(HINT_SCRIPTS.values()))}
+_hb = hints_bad(_hs, _hu)
+errors.extend(f'check.py: argument hints: {m}' for m in _hb)
+def _hint_set(text, hint): return re.sub(r'(?m)^argument-hint:.*$', lambda _m: f'argument-hint: "{hint}"', text, count=1)
+def _hint_new(skill, rule, text=None, usage=None):
+    """One rule's findings on one skill of a mutant tree. The tree may be red, so a control never tests the whole result for empty: it mutates the clean reader below, or filters on a flag no real skill holds."""
+    got = hints_bad(_hs if text is None else dict(_hs, **{skill: text}), _hu if usage is None else dict(_hu, **usage))
+    return [m for m in got if m.startswith(f'skills/{skill}/SKILL.md: {rule} ')]
+_HT = f'\n## Arguments\n\n{HINT_TABLE}\n|---|---|---|---|\n'
+# A clean reader built from the real handoff skill: a parsing hint and one table. Each control below mutates it or the real report skill.
+_hk = _hint_set(_hs['handoff'], '<goal>') + ('' if '## Arguments' in _hs['handoff'] else _HT + '| `<goal>` | The goal | none | `fix the login` |\n')
+if [m for m in hints_bad(dict(_hs, handoff=_hk), _hu) if m.startswith('skills/handoff/SKILL.md: ')]: errors.append('check.py: argument hints positive control flagged: a clean reader')
+for _ok in ('<agent> [--level L1|L2|L3] <instructions>', '[L1|L2|L3|L4|L5] <handoff.md>', '[view...] [--since T=last-report] [--last N=5] [--format text|md|json] [options]',
+            '<lane>=<ids>... <lane>@<branch>=<ids>... [options]', '[setup [--force] | check]'):
+    if not hint_parses(_ok) or [m for m in hints_bad(dict(_hs, handoff=_hint_set(_hk, _ok)), _hu) if m.startswith('skills/handoff/SKILL.md: H-2 ')]: errors.append(f'check.py: argument hints positive control flagged: {_ok}')
+if not _hint_new('handoff', 'H-1', re.sub(r'(?m)^argument-hint:.*\n', '', _hk, count=1)): errors.append('check.py: argument hints negative control not flagged for H-1: a reader without its hint line')
+for _why, _bad in (('braces', '{agent-name} [--level L1|L2|L3] {instructions}'), ('two dots', '[L1..L5] <handoff.md>'), ('free text', '[topic or task dir]'),
+                   ('a space inside angle brackets', '<handoff.md | goal>'), ('an unbalanced bracket', '[task'), ('a double quote', 'new <slug> \\"title\\"')):
+    if not _hint_new('handoff', 'H-2', _hint_set(_hk, _bad)): errors.append(f'check.py: argument hints negative control not flagged for H-2: {_why}')
+if _hint_new('handoff', 'H-3', _hint_set(_hk, '<' + 'a' * (HINT_MAX - 2) + '>')): errors.append(f'check.py: argument hints positive control flagged: a hint of {HINT_MAX} characters')
+if not _hint_new('handoff', 'H-3', _hint_set(_hk, '<' + 'a' * (HINT_MAX - 1) + '>')): errors.append('check.py: argument hints negative control not flagged for H-3: a hint of 101 characters')
+if not [m for m in _hint_new('handoff', 'H-4', _hint_set(_hk, '<goal> [--zz-nope]')) if 'skill body' in m]: errors.append('check.py: argument hints negative control not flagged for H-4: a hint flag absent from the body')
+if not [m for m in _hint_new('report', 'H-4', _hint_set(_hs['report'], '[view...] [--zz-nope]') + '\n`--zz-nope`\n') if 'usage text' in m]: errors.append('check.py: argument hints negative control not flagged for H-4: a hint flag absent from the mapped script')
+_hx = {'scripts/report.py': _hu['scripts/report.py'] + ' [--zz-extra]'}
+if not [m for m in _hint_new('report', 'H-5', usage=_hx) if '--zz-extra' in m]: errors.append('check.py: argument hints negative control not flagged for H-5: a usage text with one extra flag')
+if [m for m in _hint_new('report', 'H-5', _hint_set(_hs['report'], '[view...] [options]').replace('## Arguments', '## Old') + _HT + '| `--zz-extra N` | An extra | none | `--zz-extra 1` |\n', _hx) if '--zz-extra' in m]:
+    errors.append('check.py: argument hints positive control flagged: a usage flag carried by the ## Arguments table under [options]')
+if not _hint_new('handoff', 'H-6', _hk.replace('## Arguments', '## Other')): errors.append('check.py: argument hints negative control not flagged for H-6: a reader without the heading')
+if not _hint_new('handoff', 'H-6', _hk + _HT): errors.append('check.py: argument hints negative control not flagged for H-6: a reader with two headings')
+if not _hint_new('handoff', 'H-6', _hk.replace(HINT_TABLE, '| Argument | Meaning |')): errors.append('check.py: argument hints negative control not flagged for H-6: a table with another header row')
+if not _hint_new('checking-rules', 'H-7', _hs['checking-rules'].replace('---\n', '---\nargument-hint: "<x>"\n', 1)): errors.append('check.py: argument hints negative control not flagged for H-7: a reference skill with a hint')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

@@ -1,13 +1,21 @@
 ---
 name: decompose
 description: "Break a scoped problem into parts along two independent planes, outside-in (whole to parts, the structure) and inside-out (actions to surfaces, the behavior), then prove they cover each other with scripts/coverage_check.py. Use when breaking down a technical or UX architecture, a goal, or a system; when a breakdown has structure with no behavior; or when acceptance criteria map to no task. NOT for greenfield decisions still unmade (/grill first); NOT for a concrete screen layout."
-argument-hint: "<handoff.md | what to decompose> [--plan] [--strict]"
+argument-hint: "<handoff.md|topic> [--plan] [--strict]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/skills/decompose/scripts/coverage_check.py:*)
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<handoff.md\|topic>` | The task handoff, or what to decompose | - | `.sdlc/add-retry/handoff.md` |
+| `--plan` | Plan mode: the manifest feeds /plan, so every leaf needs an `accept` predicate | off | `--plan` |
+| `--strict` | Strict mode: advisories block too | off | `--strict` |
 
 A one-direction breakdown hides the other direction's failure. Run both planes independently and let the script find the gap. Depth: `references/method.md`, `references/foundations.md`, `references/best-practices.md`; grade with `references/rubric.md`.
 
