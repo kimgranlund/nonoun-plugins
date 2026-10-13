@@ -98,12 +98,30 @@ def fingerprint_of(data):
     return plugin_version() + '+' + digest
 
 
+ENVELOPE_MARK = 'the host envelope, not part of the role body'
+
+
+def envelope_note(fp):
+    """The appended profile section: the fingerprint line is a host envelope in front of the shared role body (T-0506)."""
+    return ('\n\n# Profile fingerprint\nThis profile is revision `' + fp + '`. Before any edit, make the first line of your first message '
+            'and the first line of your final report exactly `profile: ' + fp + '`. That line is ' + ENVELOPE_MARK + ': your final report is '
+            'the envelope line, then the role body exactly as the shared contract defines it. The contract\'s "nothing before the first heading" '
+            'means nothing between the envelope line and the first heading; the envelope is never a section. The runner stores the report as '
+            'received under its result header, so a stored result keeps the envelope as its second line and the result parser skips it '
+            'and validates the body.')
+
+
+def envelope_conflict(instructions):
+    """None, or why a profile's output instructions cannot all hold: a required `profile:` first line beside a strict
+    "nothing before the first heading" rule with no stated envelope (the pre-T-0506 contradiction)."""
+    if 'exactly `profile: ' in instructions and 'nothing before the first heading' in instructions and ENVELOPE_MARK not in instructions:
+        return 'requires a `profile:` first line and nothing before the first heading, with no envelope rule'
+    return None
+
+
 def with_fingerprint(data):
     """Embed the fingerprint in the profile so the role can state the revision it loaded (T-0389)."""
-    fp = fingerprint_of(data)
-    note = ('\n\n# Profile fingerprint\nThis profile is revision `' + fp + '`. Before any edit, make the first line of your first message '
-            'and the first line of your final report exactly `profile: ' + fp + '`.')
-    return dict(data, developer_instructions=data['developer_instructions'] + note)
+    return dict(data, developer_instructions=data['developer_instructions'] + envelope_note(fingerprint_of(data)))
 
 
 def fingerprint(role):

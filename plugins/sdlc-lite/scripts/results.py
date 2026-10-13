@@ -19,6 +19,11 @@ body runs to the next line starting with "## "; the key value is the first non-b
 lowercased, and must re.fullmatch one allowed regex. The first line must be the header run.sh writes:
 <!-- role=<r> level=<L> model=<m> effort=<e>[ key=value ...] -->.
 
+A Codex report keeps its host envelope (T-0506): run.sh stores the report as received under that header, so a
+stored Codex result may carry one `profile: <fingerprint>` line directly after the header (blank lines allowed).
+It is not a section and is skipped; any other first line that starts `profile:` is a malformed envelope. The role
+body that follows is validated by the same rules, so a valid envelope never excuses a missing or misordered section.
+
 A verifier criterion has four states (T-0408, docs/specs/sdlc-lite/verifier-held-criteria.md): pass, fail,
 `unmet-dependency <subject>` and `deferred <owner>`. The Verdict keeps its three values; validate (not
 structure_error) refuses Verdict pass beside any criterion line that is not pass, and a held line with no #ref
@@ -69,6 +74,8 @@ SCHEMA = {
 ROLES = tuple(SCHEMA)
 
 HEADER = re.compile(r'^<!-- role=([a-z-]+) level=(L[1-5]) model=(\S+) effort=(\S+)((?: [a-z_]+=\S+)*) -->$')
+ENVELOPE = re.compile(r'profile:\s*\S+')
+ENVELOPE_REASON = 'malformed profile envelope (want one `profile: <fingerprint>` line directly after the header)'
 HEADER_REASON = 'first line is not a <!-- role=<r> level=<L> model=<m> effort=<e> --> header'
 
 
@@ -126,6 +133,9 @@ def _check(path, role, value_checks):
     if role is not None and head_role != role:
         return f'header role={head_role} does not match --role {role}'
     role = head_role
+    first = next((line.strip() for line in lines[1:] if line.strip()), '')
+    if first.startswith('profile:') and not ENVELOPE.fullmatch(first):
+        return ENVELOPE_REASON
     spec = SCHEMA[role]
     key = spec['key']
     if value_checks or not spec['allowed']:
@@ -379,6 +389,13 @@ def selftest():
         case(f'{role} rejects bare inherited red',
              validate(write(f'{role}-bare.md', head(role) + f'## {key}\ninherited red\n')),
              f'## {key} first line "inherited red" is not one of {displays(role)}')
+    env = 'profile: 0.25.0+abcdef012345\n'
+    case('a valid profile envelope before a valid scout body passes', validate(write('env-ok.md', head('scout') + env + '\n## Map\n- a:1: x\n')), None)
+    case('a valid envelope does not excuse a missing key section',
+         validate(write('env-nokey.md', head('scout') + env + '## Entry points\nx\n')), 'lacks ## Map')
+    case('a valid envelope does not excuse a misordered body',
+         validate(write('env-order.md', head('scout') + env + '## Not found\nNone\n## Map\n- a:1: x\n')), '## Not found comes before ## Map')
+    case('a malformed envelope is rejected', validate(write('env-bad.md', head('scout') + 'profile:\n## Map\n- a:1: x\n')), ENVELOPE_REASON)
     case('a value is read case-insensitively', validate(write('upper.md', head('builder') + '## Status\nDone\n')), None)
     case('a missing builder Status fails',
          validate(write('nostatus.md', head('builder') + '## Changes\na\n')),

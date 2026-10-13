@@ -28,6 +28,10 @@ There are 25 project agent definitions: 21 base definitions and four alternate d
 
 The `--conductor` option adds a short managed block to the project's top-level `developer_instructions` in `.codex/config.toml`. It tells the main session to load the installed `sdlc-lite` skill and coordinate delivery through the configured workflows and roles. Existing developer instructions, settings, and comments are preserved; repeated setup is idempotent, and `conductor-off` removes only the managed block. Ordinary `install` never opts an existing project in. Run `install ... --conductor --check` to check both agent definitions and conductor guidance. Codex loads project config only for trusted projects, and a new session is needed to pick up changes. This is developer guidance for the main session, not a native named-main-agent binding. See the [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
+## Report envelope
+
+Every generated Codex profile ends with its fingerprint (`codex_roles.py envelope_note`). The `profile: <fingerprint>` line is a host envelope in front of the shared role body, not a section: the final report is the envelope line, then the role body exactly as the shared contract defines it. The shared rule "nothing before the first heading" means nothing between the envelope and the first heading. The runner stores the report as received under its result header, so a stored Codex result retains the envelope as its second line. `results.py` skips one well-formed `profile:` line there (a malformed one is rejected) and validates the body by the usual rules. Claude output is unchanged. Regression: `codex-selftest.py` (`test_every_profile_defines_one_compatible_envelope_and_body_format`, the contradictory-versus-corrected fixture, and the exchange-to-parser case).
+
 ## Default model mapping
 
 | Role | L1 | L2 | L3 | L4 | L5 |
