@@ -1,13 +1,19 @@
 ---
 name: plan-verification
 description: "Capture the outcome a plan serves: one outcome sentence with its why, a measure with its before value and target, a 3 to 5 criterion rubric, and a negative control, as lines another plan skill places in its block. Use before a goal is written (plan-goal reads it), or for \"what is this goal for\", \"how will we know it worked\", \"add a measure to this goal\". NOT for step criteria (planner), pass or fail on built work (verifier), or creating a goal or KPI file."
-argument-hint: "[goal id such as G-001, or the outcome in a sentence]"
+argument-hint: "[<goal-id|outcome>]"
 allowed-tools: Read, Grep, Glob, AskUserQuestion
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host question mechanism. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (a goal id, or the outcome in a sentence; empty means infer it from the thread).
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<goal-id\|outcome>` | A goal id, or the outcome in a sentence | inferred from the thread | `G-001` |
 
 A plan that can end green with the outcome unmoved has no measure. This skill produces the outcome block: Outcome, Measured by, Rubric, Negative control. Read [the outcome block](references/outcome-block.md) for the format, the rules of each part, the control forms, and an example. The caller (plan-goal) places the lines in its block and checks them with `plan_check.py goal`; this skill writes no file under `docs/` and never creates a goal or KPI file.
 

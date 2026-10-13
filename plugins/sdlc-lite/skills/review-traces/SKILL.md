@@ -9,6 +9,14 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/traces.py:*), Bash(pyt
 
 Arguments: `$ARGUMENTS`
 
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<repo>` | The repo whose sdlc run traces are reviewed | - | `.` |
+| `--lanes-dir DIR` | A lanes dir to ingest too; repeat it for more | none | `--lanes-dir .worktrees/fanout` |
+| `--max N` | The most cause clusters to diagnose | 5 | `--max 3` |
+
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery. To dispatch a role, follow the three steps of `${CLAUDE_PLUGIN_ROOT}/agents/conductor.md` ("How you run roles"): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prepare <role> <level> <handoff.md>` runs the gates and prints the dispatch JSON; an `Agent` call passes its `subagent_type`, `name`, `description`, `model`, `prompt`, and `run_in_background` unchanged; `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n> --transcript <sub-agent transcript jsonl> --tool-uses <n> --duration-ms <ms>`, with the sub-agent's final message on stdin, validates and records the result at `<role>-<level>.md` next to the handoff. On Codex a role runs through `SDLC_BACKEND=codex ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh <role> <level> <handoff.md>`. Claude: after `record`, run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prune`, make each `TaskStop task_id=<name>` call it lists, then `prune --done <name>`; a finished sub-agent stays an idle teammate until stopped.
 
 Create a review task dir `.sdlc/<review task>/` from the arguments per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`, with a `handoff.md` naming the repo, every `--lanes-dir`, and `--max`. All stage outputs below go under it.

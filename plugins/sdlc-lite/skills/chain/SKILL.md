@@ -1,7 +1,7 @@
 ---
 name: chain
 description: "Drive one task through the whole loop: optional scout, research, and architect, then plan, then build and verify each step with escalation, then finish loose ends, file, and close out in one question round. Use when a task should run end to end."
-argument-hint: "<handoff.md | goal>"
+argument-hint: "<handoff.md|goal>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_lifecycle.py:*), Agent, Read, Write, Grep, Glob, AskUserQuestion
 ---
 
@@ -10,6 +10,12 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(p
 For every role launch, pass `--routing-reason` to `dispatch.py prepare` (Codex: `SDLC_ROUTING_REASON`) as the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, safe recovery, and `Run a role from a temporary worktree`.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<handoff.md\|goal>` | The task handoff, or the goal a task handoff is created from | - | `.sdlc/add-retry/handoff.md` |
 
 Every role is dispatched from the project root as a sub-agent, in three steps (the full contract is in `${CLAUDE_PLUGIN_ROOT}/agents/conductor.md`, "How you run roles"): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prepare <role> <level> <handoff.md>` runs the gates and prints the dispatch JSON; an `Agent` call passes the printed `subagent_type`, `name`, `description`, `model`, `prompt`, and `run_in_background` unchanged; `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n> --transcript <sub-agent transcript jsonl> --tool-uses <n> --duration-ms <ms>`, with the sub-agent's final message on stdin, validates and records the result; record each role before you prepare the next. Below, "run" a role, or "dispatch" it, means those three steps, and "the result" is `<role>-<level>.md` next to the handoff. On Codex a role runs through `SDLC_BACKEND=codex run.sh <role> <level> <handoff.md>` as the Codex adapter describes. Levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`; layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`. You orchestrate; you never do a role's work yourself. How to spawn depends on the session. Headless (`claude -p`, including `scripts/bench.sh`, which raises `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS`): `prepare` prints `run_in_background: false` under `SDLC_HEADLESS=1`, so every spawn is foreground; wait for its result in the same turn and never end your turn while a role is running, because ending the turn ends the session and abandons the run. `hooks/block-background.sh` denies Bash `run_in_background` calls and denies any Agent call unless `run_in_background` is explicitly `false` (Agent runs in the background by default, so a missing field counts as background) and every Monitor call whenever `SDLC_ROLE` is set or `SDLC_HEADLESS=1`; bench.sh and fanout set `SDLC_HEADLESS=1`, and any other headless launcher (a dogfood script) must set `SDLC_HEADLESS=1` itself. In an interactive session: a role, or a bench task's full /chain, can take 15 to 30 minutes. `prepare` prints `run_in_background: true`; spawn, end the turn, and wait for the completion notification, which re-invokes the session. Never poll with `sleep`. Once notified, run `dispatch.py record`, then read the result from `<role>-<level>.md`. Claude: after `record`, run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prune`, make each `TaskStop task_id=<name>` call it lists, then `prune --done <name>`; a finished sub-agent stays an idle teammate until stopped.
 

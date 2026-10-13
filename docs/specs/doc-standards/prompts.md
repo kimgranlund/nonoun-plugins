@@ -32,3 +32,72 @@ These keep a prompt's references true. They enforce no wording point.
 - prompt_lint P-3: each `${CLAUDE_PLUGIN_ROOT}/<path>` and bare `scripts/<name>.py` path resolves.
 
 P-1 to P-3 are errors and fail check.py item 53. P-4 and P-5 are warnings and P-6 is information; none of the three changes an exit code. The lint baseline is [the agent prompt lint baseline](../../reports/2026-10-11-agent-prompt-lint-baseline.md).
+
+## Skill arguments and questions
+
+A skill reads arguments when its `SKILL.md` has a line that starts `Arguments: ` followed by the code span `$ARGUMENTS`. Such a skill carries an `argument-hint` frontmatter line and one `## Arguments` table. Hint display on the Codex host is unverified: the rules below are checked against the skill files, not against what Codex shows.
+
+### The hint
+
+- Syntax: `<required>`, `[optional]`, `a|b` for a choice, `...` for a repeat, `--flag VALUE` for a flag that takes a value.
+- Order: the subcommand or view first, then positionals, then flags.
+- Enums go inline: `[--format text|md|json]`.
+- A default goes after `=`: `[--since T=last]`.
+- The hint is at most 100 characters. When the flags do not fit, the hint ends with the pointer token `[options]` and the rest go in the `## Arguments` table.
+- The hint shows shape only. Intent stays in `description`.
+- One level notation: `[L1|L2|L3]`, listing the levels that skill allows.
+- A reference skill (`checking-rules`, `checks-that-bite`, `handoff-format`, `level-rubric`) carries no hint.
+
+Grammar. Tokens are separated by one space.
+
+```
+hint       := form (" | " form)*
+form       := item (" " item)*
+item       := word | level | positional | flag | group | "[options]"
+group      := "[" form (" | " form)* "]" ["..."]
+word       := lower ("|" lower)* ["..."]        only as the first item of a form
+level      := "L" digit ("|" "L" digit)*
+positional := "<" name ">" (("=" | "@") "<" name ">")* ["..."]
+name       := one or more of a-z 0-9 . - |      no space
+flag       := "--" lower [" " value]
+value      := one token of A-Z a-z 0-9 _ , . | = -   starting with a letter or digit
+lower      := a-z then a-z 0-9 -
+```
+
+Parses: `<agent> [--level L1|L2|L3] <instructions>`, `[L1|L2|L3|L4|L5] <handoff.md>`, `[setup [--force] | check]`, `<lane>=<ids>... <lane>@<branch>=<ids>... [options]`. Does not parse: braces (`{agent-name}`), two dots (`[L1..L5]`), free text (`[topic or task dir]`), a space inside angle brackets (`<handoff.md | goal>`), an unbalanced bracket, a double quote.
+
+### The Arguments table
+
+One `## Arguments` heading per skill, and the next non-blank line is this header row:
+
+```
+| Argument | Meaning | Default | Example |
+```
+
+One row per positional and per flag the skill exposes to the user. The first column holds the argument as the user types it, in a code span.
+
+### Hint rules
+
+Checked by `plugins/sdlc-lite/scripts/check.py` item 60. Every rule runs on every skill it applies to. The four plan redirect stubs (`plan-goal`, `plan-campaign`, `plan-doc`, `plan-fanout`) are exempt from H-2 to H-6.
+
+- H-1: a skill that reads arguments has an `argument-hint` frontmatter line.
+- H-2: the hint parses under the grammar.
+- H-3: the hint is at most 100 characters, counted inside the YAML quotes.
+- H-4: every `--flag` in the hint appears in the skill text below the frontmatter and, when the skill passes user flags to one script, in that script's usage text.
+- H-5: when the skill passes user flags to one script, every `--flag` in the script's usage text is in the hint, or in the first column of the `## Arguments` table when the hint holds `[options]`, or on the allowlist in `check.py`. A flag goes on the allowlist only when the skill does not expose it to the user.
+- H-6: a skill that reads arguments has exactly one `## Arguments` heading, followed by the header row above.
+- H-7: a reference skill has no `argument-hint`.
+
+A script's usage text is its source lines from the first `usage:` line to the next blank line. The skills checked against a script are `ticket`, `board`, `report`, `fleet-status`, `fanout`, `onboard`, `review-traces`, and `fleet-retro`.
+
+### Question rules
+
+For a skill that calls `AskUserQuestion`. No check.
+
+1. The header chip is at most 12 characters.
+2. A label is 1 to 5 words.
+3. One decision per question.
+4. A question has 2 to 4 options, each with a one-line consequence.
+5. The recommendation comes first, and is marked `(Recommended)` only when evidence supports it.
+6. A `preview` is given when the options are code, config, or layout.
+7. An explicit `Write it in chat` option is given when the answer needs prose.

@@ -1,13 +1,19 @@
 ---
 name: architect
 description: "Design how a goal fits the existing system: approach, interfaces, constraints, rejected alternatives. Use before /plan for cross-cutting or unfamiliar work."
-argument-hint: "<handoff.md | goal>"
+argument-hint: "<handoff.md|goal>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Agent, Read, Write, Grep, Glob
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<handoff.md\|goal>` | An existing handoff file, or the goal a new handoff is created from | - | `.sdlc/add-retry/handoff.md` |
 
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 

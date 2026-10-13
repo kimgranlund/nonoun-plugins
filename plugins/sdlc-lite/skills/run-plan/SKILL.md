@@ -9,6 +9,12 @@ allowed-tools: Read, Grep, Glob, Bash, Agent, SendMessage
 
 Arguments: `$ARGUMENTS` (the path of the plan doc).
 
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<plan-doc.md>` | The path of the plan doc to run | - | `docs/planning/board-speed.md` |
+
 You are the driver. You route by exit codes and run printed commands; you do not judge, grade or improvise. Read the plan doc, then read [the run rules](references/run-rules.md) in full and follow them step by step. Nothing else is read by default.
 
 1. Print `SDLC_ROLE` and `SDLC_HEADLESS` (`printenv SDLC_ROLE SDLC_HEADLESS`). Unattended means never `AskUserQuestion`. If `SDLC_ROLE` is empty, say once that the publish hook does not guard this session and treat every command outside the plan's Authorization as a stop.

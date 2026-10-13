@@ -1,13 +1,19 @@
 ---
 name: clarify
 description: "Sharpen a vague or overloaded ask into an executable one (root goal, deltas, scoped do with a done-condition) and write it into the task handoff. An ask that already states its scope and done-condition passes through in one line. Use for \"what are they actually asking for\", \"is this ask scoped\", or before /plan on a fuzzy request. NOT for a greenfield design with most decisions unmade (/grill); NOT for splitting scoped work into parts (/decompose)."
-argument-hint: "<ask | handoff.md>"
+argument-hint: "<ask|handoff.md>"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, AskUserQuestion
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<ask\|handoff.md>` | The ask to sharpen, or the task handoff that holds it | - | `make the board faster` |
 
 Clarify turns one ask into a plan-ready task handoff in a controlled grammar, or into one pass-through line.
 

@@ -1,13 +1,19 @@
 ---
 name: ask
 description: "Sweep the thread, task folder, tickets, run results, and notes for open questions and blockers, then ask them in one AskUserQuestion round with reasoned options, and take prose input when an answer needs it. Use for \"what is still open\", \"what is blocking us\", \"ask me what you need\", or before a long unattended run. NOT for guessing at questions nobody raised."
-argument-hint: "[topic or task dir]"
+argument-hint: "[<topic|task-dir>]"
 allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(git log:*), Bash(git status:*), Bash(ls:*), AskUserQuestion
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host's question mechanism. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (a topic, or a task dir such as `.sdlc/tickets/<slug>/`; empty means the whole session and the current task).
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<topic\|task-dir>` | A topic, or a task dir that narrows what is reported | the whole session and the current task | `.sdlc/tickets/add-retry/` |
 
 ## 1. Sweep
 
@@ -33,7 +39,7 @@ For each item write 2 to 4 distinct options. Each option's description carries i
 
 ## 3. Ask once
 
-Make exactly ONE AskUserQuestion call of 1 to 4 questions. Order blockers before nice-to-decide items, and the highest stakes first. With more than 4 items, ask the 4 most consequential and name the rest in the framing ("4 of 7 open"). Header chips stay under 12 characters. Never a second round in the same turn. If AskUserQuestion is unavailable in this session (a headless run, for example), ask the same round as numbered plain-text questions with the same options and consequences, then end the turn; say that it is plain text.
+Make exactly ONE AskUserQuestion call of 1 to 4 questions. Order blockers before nice-to-decide items, and the highest stakes first. With more than 4 items, ask the 4 most consequential and name the rest in the framing ("4 of 7 open"). Header chips are at most 12 characters, each option label is 1 to 5 words, and each question holds one decision. Never a second round in the same turn. If AskUserQuestion is unavailable in this session (a headless run, for example), ask the same round as numbered plain-text questions with the same options and consequences, then end the turn; say that it is plain text.
 
 ## 4. Take prose when an answer needs it
 

@@ -1,13 +1,21 @@
 ---
 name: agent
 description: "Launch an SDLC Lite agent by name on instructions: solo delivers a ticket, scout, researcher, architect, and archaeologist answer a question. Other names point to their own skill. NOT for creating agents."
-argument-hint: "{agent-name} [--level L1|L2|L3] {instructions}"
+argument-hint: "<agent> [--level L1|L2|L3] <instructions>"
 allowed-tools: Bash, Agent, Read, Write, Grep, Glob
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `<agent>` | The agent name: `solo`, `scout`, `researcher`, `architect`, or `archaeologist` | - | `scout` |
+| `--level L1\|L2\|L3` | The level to launch the agent at | the Default column of the name table | `--level L2` |
+| `<instructions>` | Everything after the name and the optional flag: the ticket, task, or question | - | `where is the retry logic` |
 
 The first word is the agent name. Everything after the optional `--level` flag is the instructions. Match the name against this list and nothing else; never guess a near match.
 

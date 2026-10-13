@@ -1,13 +1,20 @@
 ---
 name: build
 description: "Build one plan step: dispatch a builder sub-agent at a fixed model and effort per level (L1..L5). If no level is given, take it from the handoff or assess the step first. Args: [level] <step handoff.md>."
-argument-hint: "[L1..L5] <handoff.md>"
+argument-hint: "[L1|L2|L3|L4|L5] <handoff.md>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Agent, Read, Grep, Glob
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
+
+## Arguments
+
+| Argument | Meaning | Default | Example |
+|---|---|---|---|
+| `L1\|L2\|L3\|L4\|L5` | The builder level | the `level:` line of the handoff, else assessed per the level rubric | `L3` |
+| `<handoff.md>` | The step handoff to build | - | `.sdlc/add-retry/step-1/handoff.md` |
 
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 
