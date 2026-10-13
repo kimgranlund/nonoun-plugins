@@ -2,7 +2,7 @@
 id: T-0523
 title: "/plan compaction output does not match the kind's declared return shape"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Filed as fix-now in the T-0465 close notes in `.sdlc/notes.md`.
 
 ## Constraints
 None beyond the repository guidance.
+
+## Closed
+
+2026-10-13: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full

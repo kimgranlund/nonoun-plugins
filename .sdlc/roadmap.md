@@ -520,5 +520,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0520 | [0520-ui-designer-agent](0520-ui-designer-agent/handoff.md) | Add a ui-designer role: plans, reviews and generates semantic DOM and CSS, inside-out and outside-in, design-system aware | feature | L3 | P2 | T-0519 | ⏳ proposed |
 | T-0521 | [0521-prices-recalibrate-new-rows](0521-prices-recalibrate-new-rows/handoff.md) | Recalibrate prices.json for the model rows changed in T-0516, T-0517, T-0519 and T-0520 | chore | L1 | P2 | T-0520 | ⏳ proposed |
 | T-0522 | [0522-live-check-new-model-rows](0522-live-check-new-model-rows/handoff.md) | Live host check of the new model rows and of effort: in the messenger and conductor front matter | chore | L2 | P2 | T-0520 | ⏳ proposed |
-| T-0523 | [0523-plan-compaction-return-shape](0523-plan-compaction-return-shape/handoff.md) | /plan compaction output does not match the kind's declared return shape | bug | L1 | P2 | none | ⏳ proposed |
+| T-0523 | [.0523-plan-compaction-return-shape](.0523-plan-compaction-return-shape/handoff.md) | /plan compaction output does not match the kind's declared return shape | bug | L1 | P2 | none | 🟢 done |
 | T-0524 | [.0524-reload-plugins-load-error](.0524-reload-plugins-load-error/handoff.md) | Find and fix the 1 error /reload-plugins reported after 0.22.6 | bug | L1 | P2 | none | 🟢 done |
