@@ -25,6 +25,13 @@ Step tooling and long suites, closing maison T-0546 observations 10, 11, 20.
 
   Also, `grep -n shard plugins/sdlc-lite/agents/verifier.md` prints a line and `bash plugins/sdlc-lite/scripts/check.sh` passes, which includes generated-agent parity.
 
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, including the `(g) --supersede` cases (step-2 with `builder-L2.md` moves to `step-2.superseded-1` and a new `step-2` is written; without the flag it refuses and writes nothing) and the solo-dir swap case (`solo-L2.md` plus a plan-defect verifier fail applies the swap).
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -c 'supersede\|solo task dir'` prints a count of at least 5 (the new cases ran).
+- `grep -n shard plugins/sdlc-lite/agents/verifier.md` prints rule 5's shard line.
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0 (generated verifier agents carry the rule).
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+
 ## Context
 - Source: maison `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/0546-sdlc-lite-work-record-improvements/observations.md` (the numbered observations named above) and the triage `.sdlc/.0525-maison-0546-triage/architect-L1.md` (group F; read its Constraints and Risks).
 - Maison's hand-written rules are the working reference: `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/AGENTS.md`, `.sdlc/tickets/AGENTS.md`, `.sdlc/writing-rules.md` in that repo. Read only; never edit maison.
