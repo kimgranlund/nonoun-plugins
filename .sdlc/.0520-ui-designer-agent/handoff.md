@@ -2,7 +2,7 @@
 id: T-0520
 title: "Add a ui-designer role: plans, reviews and generates semantic DOM and CSS, inside-out and outside-in, design-system aware"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0519]    # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,12 @@ Preserve every existing role's contract, level and model. Keep one authoritative
 
 ## Plan review
 - plan defect: step 2: `dispatch.py prepare builder L2` refused the step handoff (`steps.py lint`): `cited path does not exist: .sdlc/plan/handoff.md`, `cited path does not exist: .sdlc/review/handoff.md`, `cited path does not exist: .sdlc/generate/handoff.md`; `plan defect: replan this step (/chain 3)`. These three are handoffs inside the throwaway project the step creates, not paths in this repo; lint reads any backticked `.sdlc/...` path in a step handoff as a repo path that must exist. Step 1 is built and verified (pass) and stays as is; rewrite step 2 only, naming the throwaway project's files so that no backticked path reads as a repo path (for example describe them in prose, or as paths under a `<project>` placeholder), and run `steps.py lint` on the result.
+
+## Closed
+
+2026-10-13: warnings acknowledged: verifier passed; unverified items (Codex host, sub-agent dispatch path, plan/review non-edit enforcement) go to T-0522 and the 0.22.7 release record
+
+> - process deviation: red-checkpoint: retrospective: attempt ed8962fc81a54a4d916b5bc57485e74a, handoff sha256 1b1afbecdf9b, 5 of 5 (red) criteria without a pre-edit red control (step 2: the live-run results validate, the `## Mode` key per file, the status files, the report links, and the `## Release note` heading). `redck.py record` ran after step 1's 30 files were already uncommitted in the tree, so it stored the controls as retrospective. The builder says all five were red before step 2's own edits, and the verifier saw each one red against base by absence or by a mutated /tmp copy. Both steps passed, but the passing verdict does not clear this deviation.
+> - Step 2 report figures are unverified. The throwaway project was gone when the verifier ran, so the retained `.txt` results could not be compared byte for byte with the run outputs. The per-run `runs.jsonl` behind the report's model, effort, and cost columns could not be read. No criterion names them. The report header's Claude Code version (`2.1.296`) was not re-run.
+> - The live run is partial. The report's `## Not proven` section lists the Codex host, the sub-agent dispatch path with the generated `ui-designer-L<n>` definitions, whether plan and review modes stay out of the tree (nothing enforces it), and output quality. The generated markup and CSS were not opened in a browser.
+> - The plan needed one replan. Step 2's first handoff was refused by `steps.py lint`, which read backticked throwaway-project paths as repo paths. Step 1 stayed as built and step 2 was rewritten.

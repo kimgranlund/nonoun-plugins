@@ -437,3 +437,10 @@
 - decide: `prices.json` was not recalibrated for the new rows (handoff non-goal); a person must choose whether to open the one follow-up ticket for it.
 - note: the Pareto read behind these decisions comes from third-party Artificial Analysis summaries, is unverified, and has no copy in `docs/reports/`; no replay ran.
 - note: live host behavior of the new rows and of `effort:` in the messenger and conductor front matter is not proven; the full `check.sh` is left to the `fanout.py land` gate.
+
+## T-0520: Add a ui-designer role: plans, reviews and generates semantic DOM and CSS, inside-out and outside-in, design-system aware (2026-10-13)
+
+- decide: Nothing in the tool code stops `ui-designer` from editing in plan or review mode (all write gates key on the role name), so only the role contract and a `check.py` phrase guard hold it. The user decides whether a per-mode gate is worth building.
+- fix-now: Route `ui-designer` results into planner intake and `/chain` (`agents/planner.md:16`, `docs/specs/sdlc-lite/design.md` lines 119 and 124). Today a handoff must cite a result by path. Step 1 left both files untouched, as its handoff required.
+- note: The live run used the legacy `run.sh` Claude branch. The generated `ui-designer-L<n>` agents, the sub-agent dispatch path, and the Codex host have no live evidence.
+- note: Eval number 0010 may collide with another lane's eval after a merge. `evals.py check` reports a duplicate and one eval is renumbered.
