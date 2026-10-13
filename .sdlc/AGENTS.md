@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ee34cf0d3d17 -->
+<!-- sdlc-lite:managed:start v1 sha256:624472154067 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,12 +9,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 5
+- proposed: 6
   - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
   - T-0465 /plan compaction <prose>: a kind of the plan skill that authors one /compact prompt (from the ultimate-tokens handoff) (0465-compaction-prompt)
   - T-0469 Merge plan skills C: plan_check --summary cost line and controlled-language rules (0469-plan-merge-c-summary)
   - T-0512 steps.py lane routes L3 to solo under the inner-loop profile (T-0501 B3) (0512-inner-loop-b3-l3-solo)
   - T-0513 A (parity) criterion for styling tickets: screenshot pair with named properties (T-0501 B4) (0513-inner-loop-b4-parity)
+  - T-0516 Solo ladder follows the builder ladder shifted down one: solo L1 Sonnet high, L2 Opus medium, L3 Opus high (0516-solo-ladder-shift)
 - ready: 4
   - T-0504 bug: Claude dispatch: preserve handoff paths containing spaces (0504-claude-dispatch-space-paths)
   - T-0505 bug: Claude hooks: freeze handoffs during prepared attempts (0505-claude-prepared-handoff-freeze)
