@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:116eb960a22e -->
+<!-- sdlc-lite:managed:start v1 sha256:af8e3c2a2046 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 9
   - T-0527 Close references, router links, launcher and root guard (maison T-0546) (0527-close-refs-router-launcher)
   - T-0528 Detect delivered and superseded open tickets (maison T-0546) (0528-detect-delivered-tickets)
   - T-0529 Writing rules for work records, and a placeholder gate at close (maison T-0546) (0529-work-record-writing-rules)
@@ -19,12 +19,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0535 tickets.py close: a marker that excludes an inventory file from the citation scan (maison T-0546) (0535-close-inventory-skip-marker)
   - T-0536 Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) (0536-plan-defect-order-and-amend)
   - T-0537 dispatch.py: a sub-agent stopped by the spend limit is resumable, and prepare notes a changed model or effort (maison T-0546) (0537-dispatch-limit-stop-and-row-change)
-  - T-0538 Role brief: the result header is added at record time, and cleanup under the tmp prefix is allowed (maison T-0546) (0538-verifier-brief-header-and-tmp-cleanup)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 492
+- done: 493
 - dropped: 29
 
 ## Procedures

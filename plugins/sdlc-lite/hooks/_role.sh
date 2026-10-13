@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sourced by the role hooks (block-publish, block-pattern-kill, block-stray-worktree,
-# block-repo-format, block-disk-scan, block-role-write); never run on its own.
+# block-repo-format, block-disk-scan, block-role-write, block-role-rm); never run on its own.
 #
 #   sdlc_role <hook-input-json>   prints the caller's role, or nothing when the caller has none.
 #

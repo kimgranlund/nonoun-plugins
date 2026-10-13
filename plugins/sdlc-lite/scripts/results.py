@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """One declared result schema per role, and the validator every role result passes before the pipeline reads it.
 
-Usage: results.py validate <result.md> [--role R]   exit 0, or print one "results.py: <file>: <reason>" line and exit 1
+Usage: results.py validate <result.md> [--role R] [--headerless]
+                                                    exit 0, or print one "results.py: <file>: <reason>" line and exit 1;
+                                                    --headerless (needs --role): the file has no header yet, dispatch.py record adds it
        results.py schema [--role R]                 print <role> TAB <key> TAB <allowed|-> TAB <sections>, one line per role
        results.py key <role>                        print the key section name of the role
        results.py solo-report <report.md> --handoff <handoff.md>
@@ -122,7 +124,7 @@ def _token(role, value):
     return next((tok for tok, rx, _ in SCHEMA[role]['allowed'] if re.fullmatch(rx, low)), None)
 
 
-def _check(path, role, value_checks):
+def _check(path, role, value_checks, headerless=False):
     if role is not None and role not in SCHEMA:
         raise ValueError(f'unknown role {role}')
     if not os.path.isfile(path):
@@ -133,6 +135,11 @@ def _check(path, role, value_checks):
         return f'cannot read: {e.strerror}'
     if not any(line.strip() for line in lines):
         return 'empty result'
+    if headerless and not HEADER.match(lines[0].rstrip()):
+        # T-0538: a role validating its own result file before dispatch.py record adds the header.
+        if role is None:
+            return '--headerless needs --role'
+        lines = [f'<!-- role={role} level=L1 model=x effort=x -->'] + lines
     m = HEADER.match(lines[0].rstrip())
     if not m:
         return HEADER_REASON
@@ -169,9 +176,10 @@ def _check(path, role, value_checks):
     return None
 
 
-def validate(path, role=None):
-    """None when the result at path is valid, else one reason string."""
-    return _check(path, role, True)
+def validate(path, role=None, headerless=False):
+    """None when the result at path is valid, else one reason string. headerless (T-0538): a first line that is
+    not a header is read as the body of a result whose header dispatch.py record adds later; needs a role."""
+    return _check(path, role, True, headerless)
 
 
 def structure_error(path, role=None):
@@ -435,6 +443,23 @@ def selftest():
     case('a result with no header fails', validate(write('nohead.md', '## Status\ndone\n'), 'builder'), HEADER_REASON)
     case('a header without level= fails',
          validate(write('nolevel.md', '<!-- role=builder model=sonnet effort=low -->\n## Status\ndone\n')), HEADER_REASON)
+    case('headerless: a body without a header passes with --role',
+         validate(write('hl-ok.md', '## Verdict\npass\n'), 'verifier', headerless=True), None)
+    case('headerless: a body without a header still fails the key rule',
+         validate(write('hl-bad.md', '## Criteria\n1. x\n'), 'verifier', headerless=True),
+         'lacks ## Verdict (pass|fail|inherited red: <tests>)')
+    case('headerless: a body with a bad value still fails', validate(write('hl-val.md', '## Verdict\nmaybe\n'), 'verifier', headerless=True),
+         f'## Verdict first line "maybe" is not one of {displays("verifier")}')
+    case('headerless: --headerless without --role fails', validate(write('hl-norole.md', '## Verdict\npass\n'), None, headerless=True),
+         '--headerless needs --role')
+    case('headerless: a file that has a header is still checked as before',
+         validate(write('hl-head.md', head('builder') + '## Status\ndone\n'), 'verifier', headerless=True),
+         'header role=builder does not match --role verifier')
+    case('without --headerless a body with no header still fails (negative control)',
+         validate(write('hl-neg.md', '## Verdict\npass\n'), 'verifier'), HEADER_REASON)
+    hl = subprocess.run([sys.executable, os.path.abspath(__file__), 'validate', write('hl-cli.md', '## Verdict\npass\n'),
+                         '--role', 'verifier', '--headerless'], capture_output=True, text=True)
+    case('headerless: the validate command line accepts the flag', hl.returncode, 0)
     case('an empty file fails', validate(write('empty.md', ''), 'scout'), 'empty result')
     case('a whitespace-only file fails', validate(write('blank.md', '\n  \n'), 'scout'), 'empty result')
     case('a missing file fails', validate(os.path.join(tmp, 'absent.md')), 'no such file')
@@ -575,6 +600,8 @@ def main(argv):
     v = sub.add_parser('validate', help='validate one result file')
     v.add_argument('file')
     v.add_argument('--role', choices=ROLES)
+    v.add_argument('--headerless', action='store_true',
+                   help='the file has no <!-- role=... --> header yet (dispatch.py record adds it); needs --role')
     s = sub.add_parser('schema', help='print the schema table')
     s.add_argument('--role', choices=ROLES)
     k = sub.add_parser('key', help='print the key section of a role')
@@ -585,7 +612,7 @@ def main(argv):
     sub.add_parser('selftest', help='run the selftest')
     a = ap.parse_args(argv)
     if a.cmd == 'validate':
-        reason = validate(a.file, a.role)
+        reason = validate(a.file, a.role, a.headerless)
         if reason is None:
             return 0
         print(f'results.py: {a.file}: {reason}', file=sys.stderr)
