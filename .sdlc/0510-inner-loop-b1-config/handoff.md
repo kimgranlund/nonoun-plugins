@@ -23,3 +23,9 @@ Design: `docs/planning/inner-loop-profile.md`. Opt-in by `profile: inner-loop` i
 
 ## Constraints
 No model or effort change. One writer on `tickets.py`.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 (its T-0510 cases: a full-gate criterion exits 2 naming the local gate with no record; no profile line, a local-gate criterion with `Checks:` in the prompt, and `profile: default` dispatch)
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 (its `(profile)` cases: a `(guard)` on the full gate lints with the plan defect; the same plan without the profile line lints clean)
+- [ ] `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0

@@ -1682,6 +1682,20 @@ def record_refusals(task_dir, tool, plan, findings, step=None):
         pass
 
 
+def full_gate_commands_for(plan):
+    """The `full_gate:` commands of the plan's .sdlc/config when the inner-loop profile governs the task (T-0510): a
+    `profile: inner-loop` line there and no `profile: default` line in the task's handoff.md; else []."""
+    try:
+        import tickets  # local, as lane_action: a copy of steps.py beside only order.py and results.py has no tickets.py
+    except ImportError:
+        return []
+    folder = pathlib.Path(plan).resolve().parent
+    root = sdlc_root(folder)
+    h = folder / 'handoff.md'
+    text = h.read_text(encoding='utf-8') if h.is_file() else ''
+    return tickets.full_gate_commands(root) if tickets.inner_loop(root, text) else []
+
+
 def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, one for a count over a changing
@@ -1692,6 +1706,7 @@ def lint_steps(plan, steps, tree=None):
     clean. bash -n parses and never executes."""
     findings = []
     base = None
+    full_gates = full_gate_commands_for(plan)
     for n, block in steps.items():
         paths = read_first_paths(block)
         if paths and base is None:
@@ -1701,6 +1716,10 @@ def lint_steps(plan, steps, tree=None):
             if not (base / rel).exists() and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel):
                 findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
         for line, text in [(x, t) for x in criteria_lines(block) for t in line_spans(x)]:
+            if text in full_gates and is_guard_line(line):
+                findings.append(f'steps: {plan} step {n}: plan defect: full gate `{text}` owned by the merge gate; '
+                                'a (guard) names the local_gate: command instead (inner-loop profile, .sdlc/config)')
+                continue
             probe = fill_placeholders(text)
             try:
                 r = subprocess.run(['bash', '-n', '-c', '--', probe], capture_output=True, text=True, timeout=5)
@@ -6077,6 +6096,26 @@ def selftest():
         d = s_step([('builder-L2.md', DONE), ('verifier-L1.md', swap_v(new='`test -f handoff.md` [owner: integration]'))], handoff=S_HELD)
         rc, out, err = run_main(['swap', str(d)])
         check('held: control, a swap that keeps the clause applies', rc == 0 and '[owner: integration]' in (d / 'handoff.md').read_text(encoding='utf-8'))
+
+        # (profile) T-0510: under `profile: inner-loop` a (guard) equal to a `full_gate:` command is a plan defect
+        def il_plan(name, config, handoff=HANDOFF):
+            d = tmp / name / '.sdlc' / 't1'
+            d.mkdir(parents=True)
+            (d.parent / 'config').write_text(config, encoding='utf-8')
+            (d / 'handoff.md').write_text(handoff, encoding='utf-8')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace('- one works', '- (guard) `python3 suite.py`')),
+                                             encoding='utf-8')
+            return d / 'planner-L2.md'
+        IL = 'profile: inner-loop\nlocal_gate: python3 check.py\nfull_gate: python3 suite.py\n'
+        rc, out, err = run_main(['lint', str(il_plan('il-on', IL))])
+        check('(profile) a (guard) on the full gate lints with the plan defect',
+              rc == 1 and 'plan defect: full gate `python3 suite.py` owned by the merge gate' in err)
+        rc, out, err = run_main(['lint', str(il_plan('il-off', IL.replace('profile: inner-loop\n', '')))])
+        check('(profile) control: the same plan without the profile line lints clean', rc == 0 and 'plan defect' not in err)
+        rc, out, err = run_main(['lint', str(il_plan('il-default', IL, HANDOFF.replace('## Goal', 'profile: default\n\n## Goal')))])
+        check('(profile) control: a handoff with profile: default lints clean', rc == 0 and 'plan defect' not in err)
+        rc, out, err = run_main(['lint', str(il_plan('il-other', IL.replace('python3 suite.py\n', 'python3 other.py\n')))])
+        check('(profile) control: a (guard) that is not the full gate lints clean', rc == 0 and 'plan defect' not in err)
 
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
