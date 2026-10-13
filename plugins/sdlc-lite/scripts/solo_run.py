@@ -154,7 +154,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
              role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(tdir),
              attempt_id=attempt, base_sha=head_sha(task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
-    d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
+    d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
     if worktree:
         d['worktree'] = worktree
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)

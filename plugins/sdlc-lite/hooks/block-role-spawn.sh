@@ -8,7 +8,7 @@
 #         its dispatch record and model alone; not sdlc-lite:conductor or a bare role name); the
 #         0.21.x solo names solo-S, solo-M, solo-L pass as deprecated aliases for one release (ALIAS_OK);
 #      2. name is <role>-L<n>-<slug>[-<k>], the same <role>-L<n> as the subagent_type;
-#      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line (its path is the first token; trailing text is ignored): the
+#      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line (its path is the first token, or the whole text of a leading "double-quoted" locator; trailing text is ignored): the
 #         file <name>.dispatch.json, or any *.dispatch.json whose "name" is this name (dispatch.py
 #         prepare writes <role>-L<n>[-<k>].dispatch.json and puts the Agent name inside it);
 #      4. the call's model equals that record's model, so a verifier or plan-reviewer cannot be
@@ -83,7 +83,11 @@ if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   while IFS= read -r line; do
     if [[ "$line" == "Handoff: "* ]]; then
       handoff="${line#Handoff: }"; handoff="${handoff#"${handoff%%[![:space:]]*}"}"
-      handoff="${handoff%%[[:space:]]*}"  # first token only: trailing text is ignored
+      if [[ "$handoff" == \"*\"* ]]; then
+        handoff="${handoff#\"}"; handoff="${handoff%%\"*}"  # a quoted locator ("<path>") holds spaces; text after the closing quote is ignored
+      else
+        handoff="${handoff%%[[:space:]]*}"  # a bare locator is its first token: trailing text is ignored
+      fi
       break
     fi
   done <<<"$prompt"
