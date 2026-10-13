@@ -2,7 +2,7 @@
 id: T-0531
 title: "Run records: retry names, filer prune, empty solo (maison T-0546)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,7 @@ verifier: L3
 - [ ] `git diff --check` exits 0, and no added line holds an em dash.
 - [ ] The prune rule in `dispatch.py`'s docstring and `docs/references/sdlc-internals.md` names the filer exception.
 - Not met here: the retry-name item (observation 9). Its done-when fixture (prepare, record --no-result, prepare) already prints `-L4` then `-L4-2` on HEAD, so it has no red control; see the solo report.
+
+## Closed
+
+2026-10-13: solo L2 built, verifier L3 pass (rerun after spend-limit stop), merged from fanout/wave64-e
