@@ -21,6 +21,8 @@ The planner runs each acceptance criterion against a reference sibling (or the b
 ## Context
 Evidence: `docs/reports/2026-10-12-fleet-retro-12.md` row 5: agent-ui, a planner wrote a grep for an href the sitemap generator never emits; one blocked L3 build and a replan, about 45 min. Mirrors solo's Run-verbatim rule (T-0471). Planner prompt lint baseline: `docs/reports/2026-10-11-agent-prompt-lint-baseline.md` (36 prohibitions against a budget of 5; do not add one).
 
+Evidence (agent-ui): `ui-board-grid/step-1.superseded-1/builder-L3.md` criterion C6, 45 minutes.
+
 ## Constraints
 Affirmative wording, one rule per line. No model or effort change.
 

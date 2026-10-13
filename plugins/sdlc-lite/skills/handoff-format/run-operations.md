@@ -65,8 +65,9 @@ The conductor runs merge operations through scripts, so no lane or tree waits fo
 2. Dequeue: after the user picks it through AskUserQuestion, run `python3 <plugin-root>/scripts/fanout.py settle <integration> --forward --gate "<cmd>"...`, then `python3 <plugin-root>/scripts/lanes.py sweep --apply`. A `lane still open` line or an exit 2 goes to the user with its path.
 3. Status: `python3 <plugin-root>/scripts/board.py --lanes` and `python3 <plugin-root>/scripts/lanes.py list --stale`. A `closable` row is a missed settle or sweep: run step 2's sweep.
 4. Priority: a gate that blocks an integration runs at `gate_lock.py run --priority 1`.
-5. Release: the maintainer cuts the version, notes and tag, through AskUserQuestion.
-6. Never push, tag, publish, delete an unmerged branch, or move main except by fast-forward.
+5. PR merge: the plugin ships no PR merge script; a project's own must keep two invariants, and `settle --forward` keeps both for the local path. (a) The branch head contains the base tip before the merge (`git merge-base --is-ancestor origin/main HEAD`, by rebase or merge commit; never a squash of a branch cut before the last merge). (b) The gates ran at that head sha and none is pending (`gh pr checks <n> --watch --fail-fast` is the GitHub form; read-only).
+6. Release: the maintainer cuts the version, notes and tag, through AskUserQuestion.
+7. Never push, tag, publish, delete an unmerged branch, or move main except by fast-forward.
 
 ## Long gates
 

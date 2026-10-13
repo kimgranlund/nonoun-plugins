@@ -1371,7 +1371,7 @@ for _rel in ('agents/verifier.md', 'agents/verifier-L1.md', 'agents/verifier-L2.
         errors.append(f'check.py: verifier notes negative control not flagged for {_rel}')
 # Merge ops (docstring item 56, T-0492): the conductor, the fanout skill and run-operations.md name the same merge commands and the same settle command.
 MERGE_OPS_FILES = ('agents/conductor.md', 'skills/fanout/SKILL.md', 'skills/handoff-format/run-operations.md')
-MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops')
+MERGE_OPS_PHRASES = ('fanout.py land <branch>', 'lanes.py sweep --apply', 'lanes.py list --stale', 'board.py --lanes', '--priority 1', 'Merge ops', 'merge-base --is-ancestor origin/main HEAD', 'gh pr checks <n> --watch --fail-fast')
 SETTLE_RE = re.compile(r'fanout\.py settle <integration>(?: --forward)?')
 def merge_ops_bad(texts):
     out = [f'{rel} missing "{ph}"' for rel, text in texts.items() for ph in MERGE_OPS_PHRASES if ph not in text and not (ph == 'Merge ops' and rel == 'skills/fanout/SKILL.md')]
