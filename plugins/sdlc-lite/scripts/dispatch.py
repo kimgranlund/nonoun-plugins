@@ -110,7 +110,8 @@ Prune (T-0368). The host keeps a finished sub-agent as an idle, addressable team
 verifier, filer, ui-designer) and false for builder, whose failed run may be resumed (solo and the messenger are false too); --prune and
 --no-prune override it. record on exit 0 with prune true prints `prune: <agent name>` and appends {name, agent_id, role,
 level, recorded_at} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
-result's ## Follow-ups section is not None. `dispatch.py prune` lists the queue with the stop call per entry
+result's ## Follow-ups section is not None (a filer is queued either way: its follow-ups are its output, which tickets.py
+close consumes, T-0531). `dispatch.py prune` lists the queue with the stop call per entry
 (`TaskStop task_id=<name>`); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
 (`fanout.py land` does it for a merged solo). The listing adds `; lane open <path>` to an entry whose host lane (lanes.py) still
 exists, and `--done NAME` then closes that lane through lanes.close_lane and prints `closed lane <path> (<reason>)` or
@@ -1052,14 +1053,15 @@ def attempt_open(directory, name, own):
 
 
 def queue_prune(d, attempt, agent_id):
-    """After a recorded success: queue a dispatch with prune true and print `prune: <name>`; skip an open attempt or a pending follow-up."""
+    """After a recorded success: queue a dispatch with prune true and print `prune: <name>`; skip an open attempt or a pending
+    follow-up, except a filer's: its follow-ups are its output and tickets.py close consumes them (T-0531)."""
     name = attempt.get('agent_name') or d.get('name')
     if not d.get('prune') or not name:
         return False
     if attempt.get('status') != 'completed' or attempt_open(d['artifacts_dir'], name, Path(d['attempt_file'])):
         return False
     try:
-        if follow_up_pending(Path(d['result']).read_text(encoding='utf-8', errors='replace')):
+        if d.get('role') != 'filer' and follow_up_pending(Path(d['result']).read_text(encoding='utf-8', errors='replace')):
             return False
     except OSError:
         return False
@@ -2749,7 +2751,7 @@ def selftest():
             return prune_read(str(repo))
 
         FILER = '## Warnings\nNone\n\n## PR title\nt\n\n## PR body\nb\n\n## Changelog entry\nc\n\n## Follow-ups\n%s\n'
-        for name in ('q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'):
+        for name in ('q1', 'q2', 'q3', 'q4', 'q4b', 'q5', 'q6', 'q7'):
             put(rp / '.sdlc' / name / 'handoff.md')
         rc, got, err, out = go(rp, 'verifier', 'L1', '.sdlc/q1/handoff.md', body=BODY['verifier'], agent_id='ag-v')
         q = queued(rp)
@@ -2761,11 +2763,15 @@ def selftest():
         rc, got, err, out = go(rp, 'scout', 'L1', '.sdlc/q3/handoff.md', body=None, said='boom no heading', agent_id='ag-f')
         case('prune record: a failed record (exit 1) is not queued', rc == 1 and 'prune:' not in out and len(queued(rp)) == 1)
         rc, got, err, out = go(rp, 'filer', 'L1', '.sdlc/q4/handoff.md', body=FILER % 'fix-now: tidy the thing', agent_id='ag-p')
-        case('prune record: a result with a pending follow-up is not queued', rc == 0 and 'prune:' not in out and len(queued(rp)) == 1)
+        case('prune record: a filer whose ## Follow-ups is not None still prints prune: <name> and is queued (T-0531)',
+             rc == 0 and 'prune: %s' % got['name'] in out.splitlines() and len(queued(rp)) == 2)
+        rc, got, err, out = go(rp, 'verifier', 'L1', '.sdlc/q4b/handoff.md', body=BODY['verifier'] + '\n## Follow-ups\nfix-now: tidy the thing\n', agent_id='ag-w')
+        case('prune record: a non-filer result with a pending follow-up is not queued (negative control)',
+             rc == 0 and 'prune:' not in out and len(queued(rp)) == 2)
         rc, got, err, out = go(rp, 'filer', 'L1', '.sdlc/q5/handoff.md', body=FILER % 'None', agent_id='ag-n')
-        case('prune record: a result whose follow-ups are None is queued', rc == 0 and 'prune: %s' % got['name'] in out and len(queued(rp)) == 2)
+        case('prune record: a result whose follow-ups are None is queued', rc == 0 and 'prune: %s' % got['name'] in out and len(queued(rp)) == 3)
         rc, got, err, out = go(rp, 'planner', 'L1', '.sdlc/q6/handoff.md', body=BODY['planner'], agent_id='ag-x', mutate={'prune': False})
-        case('prune record: a dispatch with prune false is not queued (negative control)', rc == 0 and 'prune:' not in out and len(queued(rp)) == 2)
+        case('prune record: a dispatch with prune false is not queued (negative control)', rc == 0 and 'prune:' not in out and len(queued(rp)) == 3)
         rc, got, err, out = go(rp, 'planner', 'L1', '.sdlc/q7/handoff.md', body=BODY['planner'], agent_id='ag-z')
         d7, a7 = json.loads(Path(got['dispatch_file']).read_text()), attempt_of(got)
         again = io.StringIO()
@@ -2777,12 +2783,12 @@ def selftest():
         sib.unlink()
         names = [e['name'] for e in queued(rp)]
         shown = prune_lines(str(rp))
-        case('prune list: one TaskStop task_id=<name> line per queued agent', len(shown) == 3
+        case('prune list: one TaskStop task_id=<name> line per queued agent', len(shown) == 4
              and all(l.startswith('TaskStop task_id=%s ' % n) for l, n in zip(shown, names)))
         listed = io.StringIO()
         with contextlib.redirect_stdout(listed):
             rc_list = main(['prune', '--root', str(rp)])
-        case('prune command lists the queue', rc_list == 0 and listed.getvalue().count('TaskStop task_id=') == 3)
+        case('prune command lists the queue', rc_list == 0 and listed.getvalue().count('TaskStop task_id=') == 4)
         out_done = io.StringIO()
         with contextlib.redirect_stdout(out_done):
             main(['prune', '--root', str(rp), '--done', names[0]])
