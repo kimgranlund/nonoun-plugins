@@ -2,7 +2,7 @@
 id: T-0538
 title: "Role brief: the result header is added at record time, and cleanup under the tmp prefix is allowed (maison T-0546)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ maison T-0546 observations 39, 40: `/Users/kimgranlund/Projects/maison/ui-kit-ma
 
 ## Constraints
 A new or changed check needs a positive case and an observed negative control.
+
+## Closed
+
+2026-10-13: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full
