@@ -2,7 +2,7 @@
 id: T-0469
 title: "Merge plan skills C: plan_check --summary cost line and controlled-language rules"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0468]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,7 @@ Five-ask replay (2026-10-12, T-0469). Not an independent model run: one session 
 5. a `/clarify` handoff with `## Outcome` as the argument to doc: not run `[U]`.
 First-return lint count: 4 of 4 blocks run pass their lint with the reworded examples; the model half (does a fresh `/plan` session write a passing block, and the number of questions asked) is `[U]` and needs an independent run. Promotion of `hedge`, `verb` and `rfc2119` from warning to FAIL waits for that run.
 
+
+## Closed
+
+2026-10-12: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: The `block-stray-worktree.sh` hook denied `git worktree add --detach` under the brief's tmp prefix (the hook sees SDLC_ROLE=solo with SDLC_TMP_WORKTREES unset), so every base-sha control ran on a `git archive` or `git show` extraction of the base files under /tmp/0469-base, never on a worktree; `git worktree list` shows no 0469-verifier entry and the working tree is unchanged. The extraction (/tmp/0469-base and /tmp/0469-base-goal.md) is still in place because the permission system denied `rm -rf`; it is outside the repository. | plugins/sdlc-lite/skills/plan/references/goal.md:46 describes `rfc2119` as firing only when Authorization has no `MUST` line; `lang_warn` in plan_check.py also fires on a lower-case must, shall or should inside Authorization. | docs/reports/plan-skills-live-run.d/goal.txt:15 and docs/reports/2026-10-12-plan-merge-replay.md:57 keep the old `not implied` Authorization form; dated reports are history per AGENTS.md, not shipped guidance, so no change is owed. | Steelman record: draft finding "the campaign template was not reworded as the Do says"; rebuttal: the Do conditions rewording on failing the verb rule and the template has no verb-led line (campaign.md:31-54); dropped. No fail reason remained to file.
