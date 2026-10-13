@@ -696,7 +696,8 @@ jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort 
     attempt_id: $attempt_id, handoff_sha256: $handoff_sha256, stale_input: $stale_input, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
     stray_worktrees: $stray_wt, stray_branches: $stray_br, loaded_context: $loaded_context}
     + (if $specgate == "" then {} else {specgate: $specgate} end)
-    + (if $lane_override == "" then {} else {lane_override: $lane_override} end)' <<<"$last_ev" >>"$dir/runs.jsonl"
+    + (if $lane_override == "" then {} else {lane_override: $lane_override} end)
+    + (if has("profile_fingerprint") then {profile_fingerprint, profile_check} else {} end)' <<<"$last_ev" >>"$dir/runs.jsonl"
 
 if [[ "$stale_input" == true ]]; then
   echo "run.sh: stale input: $handoff changed while $role ran" >&2

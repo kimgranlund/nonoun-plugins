@@ -48,17 +48,22 @@ def _wait_for_agent(role, level, prompt, model, effort, request_file, timeout):
     # A PAIRED checking role (verifier, plan-reviewer) moved off its default model runs its alternate profile.
     if role in codex_roles.PAIRED and model != default_model:
         agent += '-alternate'
+    # The request binds the profile fingerprint computed at dispatch (T-0507); both ends check a report against this stored value.
+    try:
+        binding = codex_roles.fingerprint(agent)
+    except (KeyError, TypeError):
+        raise ValueError('native agent ' + agent + ' has no generated profile to bind; run codex_roles.py generate and install') from None
     context = '\n'.join(f'{key}={os.environ[key]}' for key in ('SDLC_BASE_SHA','SDLC_TMP_WORKTREES') if key in os.environ)
     message = 'Project working directory: ' + str(Path.cwd()) + '\nRun all project commands from that directory, even if your default cwd differs.\n' + prompt + '\n\nRunner context (use these exact values in commands when needed):\n' + context
     payload = dict(request_id=uuid.uuid4().hex, owner_pid=os.getpid(), attempt_id=os.environ.get('SDLC_ATTEMPT_ID'), agent=agent, role=role, level=level, model=model, effort=effort,
-                   prompt=message, response_path=str(response), status='waiting')
+                   profile_fingerprint=binding, prompt=message, response_path=str(response), status='waiting')
     temp = request.with_suffix('.tmp')
     temp.write_text(json.dumps(payload, indent=2)+'\n');temp.replace(request)
     interrupted = [False]
     def interrupt(*_):
         interrupted[0] = True
     previous = {s: signal.signal(s, interrupt) for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
-    report = ''; failed = True; usage = None
+    report = ''; failed = True; usage = None; check = 'not-checked'
     try:
         while not interrupted[0] and time.monotonic()-started < timeout:
             if response.exists():
@@ -68,6 +73,15 @@ def _wait_for_agent(role, level, prompt, model, effort, request_file, timeout):
                 report = data.get('report', '')
                 usage = data.get('usage')
                 failed = data.get('is_error', False) or not isinstance(report, str) or not report.strip()
+                if data.get('is_error', False):
+                    # A reported failure needs no profile line: keep its reason on the request.
+                    lines = report.splitlines() if isinstance(report, str) else []
+                    payload['error'] = 'native agent reported failure: ' + next((line.strip() for line in lines if line.strip()), '')
+                elif not failed:
+                    # Validate against the binding this waiter dispatched, never a recomputed fingerprint.
+                    check, message = codex_roles.check_loaded(agent, report, payload['profile_fingerprint'])
+                    if check != 'ready':
+                        failed = True; payload['error'] = message
                 break
             time.sleep(0.1)
         else:
@@ -78,9 +92,11 @@ def _wait_for_agent(role, level, prompt, model, effort, request_file, timeout):
         for sig, handler in previous.items():signal.signal(sig, handler)
     with exchange_lock(request):
         payload['status'] = 'failed' if failed else 'received'
+        payload['profile_check'] = check
         request.write_text(json.dumps(payload, indent=2)+'\n')
     print(json.dumps(dict(type='result', backend='codex', transport='subagent', is_error=bool(failed),
                          result=report if isinstance(report,str) else '', usage=usage,
+                         profile_fingerprint=payload['profile_fingerprint'], profile_check=check,
                          duration_ms=round((time.monotonic()-started)*1000), num_turns=None, total_cost_usd=None)),flush=True)
     if payload.get('error'):print(payload['error'],file=sys.stderr)
     return 1 if failed else 0
@@ -100,6 +116,14 @@ def respond(request_path, report_path, failed=False):
             raise ValueError('invalid or already answered native request')
         report = Path(report_path).read_text()
         if not report.strip():raise ValueError('empty agent report')
+        # Last check, so the status, owner, destination, and empty-report errors keep their own messages (T-0507).
+        if not failed:
+            binding = payload.get('profile_fingerprint')
+            if not binding:
+                raise ValueError('native request carries no profile fingerprint binding; start a new run')
+            status, message = codex_roles.check_loaded(payload.get('agent', ''), report, binding)
+            if status != 'ready':
+                raise ValueError(message)
         temp = response.with_suffix('.tmp')
         temp.write_text(json.dumps(dict(request_id=payload['request_id'], report=report,is_error=failed))+'\n');temp.replace(response)
         print(response)

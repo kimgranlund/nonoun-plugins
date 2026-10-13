@@ -484,7 +484,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-plan-reviewer-l1-alternate')
             self.assertEqual(payload['model'],'gpt-6.1-sol')
-            report=self.step/'child-report.txt';report.write_text('## Verdict\npass\n\n## Findings\nNone\n')
+            self.assertEqual(payload['profile_fingerprint'],codex_roles.fingerprint('sdlc-plan-reviewer-l1-alternate'))
+            report=self.step/'child-report.txt';report.write_text('profile: '+payload['profile_fingerprint']+'\n## Verdict\npass\n\n## Findings\nNone\n')
             codex_exchange.respond(request,report)
             stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
@@ -506,6 +507,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-plan-reviewer-l1')
             self.assertEqual(payload['model'],'gpt-6-astra')
+            self.assertEqual(payload['profile_fingerprint'],codex_roles.fingerprint('sdlc-plan-reviewer-l1'))
+            report.write_text('profile: '+payload['profile_fingerprint']+'\n## Verdict\npass\n\n## Findings\nNone\n')
             codex_exchange.respond(request,report)
             stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
@@ -557,7 +560,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-scout-l1')
             self.assertIn('SDLC_TMP_WORKTREES=',payload['prompt'])
-            report=self.step/'child-report.txt';report.write_text('## Map\nseed.txt:1\n')
+            fp=codex_roles.fingerprint('sdlc-scout-l1')
+            self.assertEqual(payload['profile_fingerprint'],fp)
+            report=self.step/'child-report.txt';report.write_text('profile: '+payload['profile_fingerprint']+'\n## Map\nseed.txt:1\n')
             codex_exchange.respond(request,report)
             stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
@@ -565,6 +570,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             self.assertFalse((self.base/'probe.json').exists(),'Subagent transport must not launch codex or claude')
             record=json.loads((self.step/'runs.jsonl').read_text())
             self.assertEqual(record['transport'],'subagent')
+            # T-0507: the kept request and the runs.jsonl line hold the dispatched binding.
+            self.assertEqual((record['profile_fingerprint'],record['profile_check']),(fp,'ready'))
+            self.assertEqual(json.loads(request.read_text())['profile_fingerprint'],fp)
             with self.assertRaises(ValueError):codex_exchange.respond(request,report)
         finally:
             if proc.poll() is None:proc.kill();proc.communicate()
@@ -581,11 +589,12 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             request=requests[0];payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-conductor-l1')
             self.assertIn(str(self.repo),payload['prompt'])
-            report=self.repo/'conductor-report.txt';report.write_text('Fixture completed')
+            text='profile: '+payload['profile_fingerprint']+'\nFixture completed'
+            report=self.repo/'conductor-report.txt';report.write_text(text)
             codex_exchange.respond(request,report)
             stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
-            self.assertEqual(json.loads(stdout)['result'],'Fixture completed')
+            self.assertEqual(json.loads(stdout)['result'],text)
             self.assertFalse((self.base/'probe.json').exists())
         finally:
             if proc.poll() is None:proc.kill();proc.communicate()
@@ -599,6 +608,105 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         self.assertFalse(list(self.step.glob('*.running')))
         request=json.loads((self.step/'scout-L1.request.json').read_text())
         self.assertEqual(request['status'],'failed')
+
+    # T-0507: the native exchange binds each request to the dispatched profile fingerprint. A real waiter process and the CLI responder.
+    WAITER=('import sys;sys.path.insert(0,sys.argv[1]);import codex_roles,codex_exchange\n'
+            'if sys.argv[4]:codex_roles.fingerprint=lambda agent:sys.argv[4]\n'
+            'sys.exit(codex_exchange.wait_for_agent("scout","L1","Read seed",sys.argv[3],"low",sys.argv[2],float(sys.argv[5])))')
+    SCOUT_BODY='## Map\n- seed.txt:1: fixture\n\n## Entry points\nseed.txt\n\n## Not found\nNone\n'
+
+    def native_waiter(self,name,fake=''):
+        """Start a scout L1 waiter child; fake, when given, is the fingerprint its process computes at dispatch."""
+        request=self.step/(name+'.request.json')
+        proc=subprocess.Popen(['python3','-c',self.WAITER,str(ROOT/'scripts'),str(request),codex_roles.models()['scout']['L1'][0],fake,str(DEADLINE)],
+                              cwd=self.repo,env=self.env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        try:self.wait_for(request.exists,directory=self.step,owner=proc)
+        except BaseException:
+            if proc.poll() is None:proc.kill();proc.communicate()
+            raise
+        return proc,request
+
+    def native_respond(self,request,text,failed=False):
+        report=request.parent/(request.name.split('.')[0]+'.report.txt');report.write_text(text)
+        cmd=['python3',str(ROOT/'scripts/codex_exchange.py'),str(request),str(report)]+(['--failed'] if failed else [])
+        return subprocess.run(cmd,cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=DEADLINE)
+
+    def test_native_exchange_enforces_the_dispatched_profile_binding(self):
+        fp=codex_roles.fingerprint('sdlc-scout-l1')
+        proc,request=self.native_waiter('bind')
+        try:
+            response=Path(json.loads(request.read_text())['response_path'])
+            for label,first,said in (('missing','','stated no loaded profile fingerprint'),('stale','profile: 0.0.0+stale\n\n','loaded profile 0.0.0+stale')):
+                done=self.native_respond(request,first+self.SCOUT_BODY)
+                self.assertEqual(done.returncode,2,f'a report with a {label} profile line must be refused: {done.stderr}')
+                self.assertIn(said,done.stderr,label)
+                self.assertFalse(response.exists(),label+': a refused report writes no response file')
+                self.assertEqual(json.loads(request.read_text())['status'],'waiting',label)
+            self.assertEqual(json.loads(request.read_text())['profile_fingerprint'],fp)
+            done=self.native_respond(request,'profile: '+fp+'\n\n'+self.SCOUT_BODY)
+            self.assertEqual(done.returncode,0,done.stderr)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+            self.assertEqual(proc.returncode,0,stderr)
+            final=json.loads(request.read_text());event=json.loads(stdout)
+            self.assertEqual((final['status'],final['profile_fingerprint'],final['profile_check']),('received',fp,'ready'))
+            self.assertEqual((event['is_error'],event['profile_fingerprint'],event['profile_check']),(False,fp,'ready'))
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+        # A response file written past respond(): the waiter runs the same check against its own payload.
+        proc,request=self.native_waiter('direct')
+        try:
+            payload=json.loads(request.read_text())
+            response=Path(payload['response_path']);temp=response.with_suffix('.tmp')
+            temp.write_text(json.dumps(dict(request_id=payload['request_id'],report='profile: 0.0.0+stale\n\n'+self.SCOUT_BODY,is_error=False))+'\n')
+            temp.replace(response)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+            self.assertEqual(proc.returncode,1,stderr)
+            final=json.loads(request.read_text());event=json.loads(stdout)
+            self.assertEqual((final['status'],final['profile_check']),('failed','refused'))
+            self.assertIn('refused: sdlc-scout-l1 loaded profile 0.0.0+stale',final['error'])
+            self.assertIn('the attempt binding is '+fp,final['error'])
+            self.assertEqual((event['is_error'],event['profile_check']),(True,'refused'))
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+
+    def test_native_exchange_binding_survives_profile_change_after_dispatch(self):
+        fake='0.0.0+dispatched';live=codex_roles.fingerprint('sdlc-scout-l1')
+        self.assertNotEqual(fake,live)
+        # The waiter dispatched with `fake`; the responder process computes `live`, as after a plugin update mid-run.
+        proc,request=self.native_waiter('changed',fake=fake)
+        try:
+            done=self.native_respond(request,'profile: '+live+'\n\n'+self.SCOUT_BODY)
+            self.assertEqual(done.returncode,2,'the live fingerprint is not the dispatched binding: '+done.stderr)
+            self.assertIn('the attempt binding is '+fake,done.stderr)
+            payload=json.loads(request.read_text())
+            self.assertEqual((payload['status'],payload['profile_fingerprint']),('waiting',fake))
+            done=self.native_respond(request,'profile: '+fake+'\n\n'+self.SCOUT_BODY)
+            self.assertEqual(done.returncode,0,done.stderr)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+            self.assertEqual(proc.returncode,0,stderr)
+            final=json.loads(request.read_text());event=json.loads(stdout)
+            self.assertEqual((final['status'],final['profile_fingerprint'],final['profile_check']),('received',fake,'ready'))
+            self.assertEqual((event['profile_fingerprint'],event['profile_check']),(fake,'ready'))
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+
+    def test_native_exchange_failed_response_needs_no_profile_line(self):
+        reason='could not finish: the fixture tool is missing'
+        proc,request=self.native_waiter('gaveup')
+        try:
+            done=self.native_respond(request,'\n'+reason+'\nsecond line of detail\n',failed=True)
+            self.assertEqual(done.returncode,0,done.stderr)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+            self.assertEqual(proc.returncode,1,stderr)
+            final=json.loads(request.read_text());event=json.loads(stdout)
+            self.assertEqual(final['status'],'failed')
+            self.assertEqual(final.get('error'),'native agent reported failure: '+reason)
+            self.assertEqual(final.get('profile_check'),'not-checked')
+            self.assertTrue(event['is_error'])
+            self.assertIn(reason,event['result']);self.assertIn('second line of detail',event['result'])
+            self.assertEqual(event.get('profile_check'),'not-checked')
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
 
     def test_fanout_uses_codex(self):
         import fanout
@@ -630,7 +738,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
     def solo_requests(self,ticket,proc,known=()):
         return self.wait_for(lambda:[r for r in ticket.glob('solo-*.request.json') if r not in known],directory=ticket,owner=proc)
 
-    def solo_respond(self,request,text='## Result\nsolo fixture done',failed=False):
+    def solo_respond(self,request,text=None,failed=False):
+        # T-0507: a normal response states the request's dispatched profile fingerprint on its first line.
+        if text is None:text='profile: '+json.loads(request.read_text())['profile_fingerprint']+'\n## Result\nsolo fixture done'
         report=request.parent/(request.stem+'.report.txt');report.write_text(text)
         cmd=['python3',str(ROOT/'scripts/codex_exchange.py'),str(request),str(report)]+(['--failed'] if failed else [])
         done=subprocess.run(cmd,capture_output=True,text=True)
@@ -650,6 +760,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                     payload=json.loads(request.read_text())
                     self.assertEqual((payload['agent'],payload['role'],payload['level'],payload['status'],payload['effort']),(agent,'solo',tier,'waiting',effort))
                     self.assertIn('Transport probe',payload['prompt'])
+                    self.assertEqual(payload['profile_fingerprint'],codex_roles.fingerprint(agent))
                     self.solo_respond(request)
                     stdout,stderr=proc.communicate(timeout=DEADLINE)
                     self.assertEqual(proc.returncode,0,stderr)
@@ -662,6 +773,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                 rec=self.solo_records(ticket)[-1]
                 self.assertEqual((rec['backend'],rec['transport'],rec['role'],rec['level'],rec['model'],rec['exit_code']),('codex','subagent','solo',tier,'gpt-6.1-sol',0))
                 self.assertIsNone(rec['cost_usd']);self.assertTrue(rec['cost_reason'])
+                self.assertEqual((rec['profile_fingerprint'],rec['profile_check']),(codex_roles.fingerprint(agent),'ready'))
+                self.assertEqual(json.loads(request.read_text())['profile_fingerprint'],codex_roles.fingerprint(agent))
                 self.assertFalse((self.base/'probe.json').exists(),'a nested codex exec ran')
 
     def test_solo_native_response_failure(self):

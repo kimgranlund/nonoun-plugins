@@ -241,6 +241,9 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
            'stray_worktrees': [], 'stray_branches': []}
     if cost_reason:
         rec['cost_reason'] = cost_reason
+    if 'profile_fingerprint' in (result or {}):  # T-0507: only the Codex native exchange binds a profile
+        rec['profile_fingerprint'] = result['profile_fingerprint']
+        rec['profile_check'] = result.get('profile_check')
     return rec
 
 
