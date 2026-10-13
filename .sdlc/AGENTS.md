@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:0672e9865409 -->
+<!-- sdlc-lite:managed:start v1 sha256:2cb65f3a4e88 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,15 +9,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 3
-  - T-0463 Standardize skill argument hints and question UI across all skills, with a parity lint (0463-skill-ui-hints)
+- proposed: 2
   - T-0519 Model batch: planner, architect, plan-reviewer, verifier, scout, researcher, filer, messenger, conductor (maintainer decisions 2026-10-12) (0519-model-batch-0222-7)
   - T-0520 Add a ui-designer role: plans, reviews and generates semantic DOM and CSS, inside-out and outside-in, design-system aware (0520-ui-designer-agent)
 - ready: 0
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 481
+- done: 482
 - dropped: 29
 
 ## Procedures

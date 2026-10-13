@@ -2,7 +2,7 @@
 id: T-0463
 title: "Standardize skill argument hints and question UI across all skills, with a parity lint"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0461, T-0468]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,12 @@ One writer on `check.py` at a time. Skills stay self-contained (`check.py` item 
 
 ## Notes
 - Old and new hint per skill: [hints.md](hints.md) (33 rows; `report` and the merged `plan` are standardized here, so no follow-up for them).
+
+## Closed
+
+2026-10-13: warnings acknowledged: filer warnings reviewed; verifier passed, none block
+
+> - process deviation: red-checkpoint: retrospective: attempt dcd1ff7ec23a4c84b0223cb8367448d4, handoff sha256 e6c0f2984805, 5 of 5 (red) criteria without a pre-edit red control. This is step 2 (`step-2/process-deviations.md`). The recorder ran before the builder's first edit but reported that 4 source paths already differed from HEAD. Those 4 paths are step 1's uncommitted edits, which step 2 inherits by design, so the record is a base control and not a red-before-edit checkpoint. Step 2's verifier passed it. `step-2/red-checkpoint.jsonl` shows the same span exit 1 before the edits, but the passing verdict does not clear the deviation.
+> - Both steps passed (step 1 verifier L2 pass, step 2 verifier L2 pass). Step 1 ran twice. The first attempt (`step-1.superseded-1`) was blocked with a `plan defect:` on criterion 3, because the `^FAIL` guard also matched the `FAIL: N role levels` summary line. The replan changed the guard to `^FAIL ` with a trailing space, and the second attempt passed.
+> - Nothing is committed. All changes sit in the working tree.
+> - Codex-only hint behavior is unverified. The ticket's non-goals say to state this, and no artifact shows a Codex run.

@@ -425,3 +425,9 @@
 - 2026-10-12: maintainer: scout L1 becomes Sonnet low (Claude) and gpt-6.1-sol low (Codex). Applied in the same change as the planner, architect, plan-reviewer and verifier model decision, after T-0516 and T-0517 merge (one eval, one lock). Side effect: scout no longer depends on the haiku alias, which resolved to Sonnet 5.5 on a Max login (docs/reports/haiku-alias-2026-09-30.md).
 - 2026-10-12: maintainer approved with the pending model batch: researcher L1 Sonnet high (was medium), filer L1 Sonnet low (was medium), messenger Sonnet low (was claude-haiku-5-5). Codex rows for these roles are not changed (no Pareto evidence). The batch waits for T-0516 and T-0517.
 - 2026-10-12: maintainer approved: conductor Claude model pinned to Opus medium (model: opus, effort: medium in agents/conductor.md; today unpinned). Codex conductor stays gpt-6-astra medium. Joins the pending model batch (after T-0516 and T-0517). Needs a check that the conductor is excluded from the run.sh agreement check but still generated for Codex.
+
+## T-0463: Standardize skill argument hints and question UI across all skills, with a parity lint (2026-10-13)
+
+- decide: the `plan` kind question dropped from 5 clickable options to 4 to meet question rule 4 (2 to 4 options). `fanout` is now reachable only through the Other box. Decide whether that is acceptable or rule 4 should allow 5 for this one question.
+- note: the old/new hint table for the ticket notes is in `/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout59/x/.sdlc/0463-skill-ui-hints/hints.md`. The ticket's Done-when asks for it in the ticket notes, so copy or link it at close.
+- note: 12 other skills that name `AskUserQuestion` were read and left unchanged, including `grill`, which marks its first option `(Recommended)` with a tradeoff. The verifier's spot-read found no clear rule violation, but question-rule conformance has no command-level check.

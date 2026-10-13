@@ -78,7 +78,7 @@ New or changed files:
 - No routing corpus beyond `skills/clarify/evals/` and no misroute record exist: verified by grep over `plugins`, `scripts`, `docs`, `.sdlc/notes.md`, `.sdlc/fleet-retro-*/sdlc-lite.json`, `docs/reports` (zero hits); any routing benefit is `[U]`.
 - A skill body may not name a script `--flag` before the script has it: verified by `scripts/prompt_lint.py` docstring P-2 (`:17`); ticket A therefore writes the cost line by instruction and C swaps in `--summary`.
 - The `/clarify` handoff after T-0461 keeps the slot names `Level`, `Do`, `Done when`, `Verify`, `## Outcome` (typed Deltas and numbered Do are additive): unverified, T-0461 is unbuilt; the slot reading binds to those names.
-- T-0463 edits every skill frontmatter and `check.py`: verified at `.sdlc/0463-skill-ui-hints/handoff.md` Intent and Context; the order A, B, T-0463 follows from it.
+- T-0463 edits every skill frontmatter and `check.py`: verified at `.sdlc/.0463-skill-ui-hints/handoff.md` Intent and Context; the order A, B, T-0463 follows from it.
 - Per-call context grows by roughly 60 to 100 lines for every kind: derived from `wc -l` of the five bodies (20, 36, 44, 40, 30) and the 90-line target; unverified until the files exist.
 - Fewer questions after the merge: unverified; the replay measures it.
 
