@@ -28,3 +28,9 @@ Builder L4 sub-agent of the conductor in `.worktrees/fanout70/d`. Guess: headles
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Acceptance criteria
+- (red) For a role (`SDLC_ROLE=builder`), the new PreToolUse(Bash) hook rewrites a command so a bare `cat` gets end of input while the caller's stdin stays open: `python3 -c "import json,os,subprocess as s;i=json.dumps({'tool_name':'Bash','tool_input':{'command':'cat > /dev/null; echo ok','timeout':600000}});o=json.loads(s.run(['bash','plugins/sdlc-lite/hooks/close-role-stdin.sh'],input=i,capture_output=True,text=True,env=dict(os.environ,SDLC_ROLE='builder')).stdout);u=o['hookSpecificOutput']['updatedInput'];assert u['timeout']==600000;r,w=os.pipe();p=s.Popen(['bash','-c',u['command']],stdin=r,stdout=s.PIPE,text=True);assert p.communicate(timeout=10)[0].strip()=='ok'"` exits 0.
+- With no role (`SDLC_ROLE`, `SDLC_HEADLESS` unset, no `agent_type`) the hook prints nothing and exits 0, and `bash plugins/sdlc-lite/scripts/hook-selftest.sh` covers both cases and passes.
+- `adapters/claude/hooks.json` registers the hook under the Bash matcher; `python3 scripts/check-packaging.py` passes.
+- `docs/references/claude-hooks.md` has a section for the hook stating it is Claude only; `git diff --check` passes.
