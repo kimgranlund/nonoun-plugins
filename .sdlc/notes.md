@@ -529,3 +529,4 @@
 
 - decide: I could not remove my scratch copy under /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0550-verifier-L2 (the rm was denied); it holds only a copy of the scripts dir and is safe to delete.
 - decide: I did not run the full check.sh, per the maintainer's note; only --fast.
+- note (2026-10-14, wave 74): `solo_run.py run --no-worktree` run from inside a lane omits the `Tree:` line, so a parent in another directory must add it by hand; always write it (the parent's cwd is unknown to the script). Fold into the next solo_run change.
