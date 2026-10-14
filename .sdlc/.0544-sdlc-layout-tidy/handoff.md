@@ -2,7 +2,7 @@
 id: T-0544
 title: "Lean records E: Layout rule and tidy (0.23.0)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0543]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,14 @@ Preserve independent verification, the recorded build base, reference-safe closu
 3. `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0 with the updated Work records block.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `python3 scripts/check-packaging.py` exits 0.
 5. The grill, review-traces, bench and fleet-retro skills write their work files in the records dir that `order.py records-dir` prints and the fleet-retro interview answer goes by `messages.py send`: `git grep -n -F -e ".sdlc/fleet-retro-<date>.md" -e "<review task>/cluster" -e "<slug>/design.md" -- plugins/sdlc-lite/skills` exits 1.
+
+## Outcome
+
+2026-10-14 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `plugins/sdlc-lite/scripts/tickets.py` `selftest` takes about 4 minutes. Each negative-control run through the full suite was slow; the T-0544 cases are not slow themselves. | note: `tickets.py --root .sdlc check` on this repo now prints 43 loose-entry warnings (`fix-protocol-controls`, `fleet-retro-*` and others). They are warnings only (rc=0) and are what `tidy` is for. Running `tidy --apply` on this repo is a separate decision. | note: I did not break the `claim --by astra` path in the throwaway copy. The case is pass-only evidence, because claim already accepted any word before this change; only the help text and router changed.) · verifier: verifier-L2 (sonnet) · base: ab94588622d9
+- Changed: see commits
+- Commits: 1a64696 T-0544: Lean records E: Layout rule and tidy (0.23.0)
+- Check: 1 `tickets.py selftest` exits 0 and its T-0544 cases cover the layout rule: pass
+- Check: 2 `tickets.py --root .sdlc check` exits 0: pass
+- Check: 3 `onboard.py selftest` exits 0: pass
+- Check: 4 `check.py` and `check-packaging.py` exit 0: pass
+- Check: 5 The skills write their work files in the records dir and the interview answer goes by `messages.p...: pass
