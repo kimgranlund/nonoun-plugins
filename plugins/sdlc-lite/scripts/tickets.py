@@ -1924,6 +1924,7 @@ PLACEHOLDER_KEEP = frozenset({
     'the failing test lands before or with the fix, never after',
     'a decision or a recommendation with cited evidence, written back into this file',
     'timebox. no production code lands from a spike',
+    'if do needs more steps than this level allows (l1-l2 3, l3 6, l4 10, l5 15), file two tickets',  # T-0553 sizing rule
 })
 PLACEHOLDER_SHOWN = 5  # warning lines printed per check, newest ticket first; the rest are counted in one line
 LABEL_ONLY_RE = re.compile(r'(?:[-*]|\d+[.)])?[ \t]*[^:]{1,40}:')  # fullmatch: a bare `- Do:` label

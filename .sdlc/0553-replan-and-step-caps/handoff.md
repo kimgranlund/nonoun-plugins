@@ -27,3 +27,16 @@ Maintainer request 2026-10-14 after maison `.sdlc/tickets/0541-app-shell-referen
 
 ## Constraints
 Ships in 0.23.0. The failing selftests land before or with the gates.
+
+## Acceptance criteria
+verifier: L3
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | grep -q "ok: replan cap: a third planner run: prepare exits 2 like run.sh"` (a third planner prepare is refused, run.sh agrees)
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | grep -q "ok: replan cap: --approved lets planner run 3 through and records it in skips.md"`
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -q "ok: (step cap) lint refuses a 7-step L3 plan and writes nothing"`
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -q "ok: (step cap) a 6-step L3 plan passes lint"`
+- [ ] `grep -q "file two tickets" plugins/sdlc-lite/skills/ticket/templates/feature.md && grep -q "file two tickets" plugins/sdlc-lite/skills/ticket/templates/chore.md`
+- [ ] `grep -q "replan cap" plugins/sdlc-lite/agents/conductor.md && grep -q "replan cap" plugins/sdlc-lite/skills/chain/SKILL.md && grep -q "replan cap" plugins/sdlc-lite/skills/fix/SKILL.md`
+- [ ] `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
+- [ ] `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
+- [ ] `python3 scripts/check-packaging.py`
+- [ ] `bash plugins/sdlc-lite/scripts/check.sh`

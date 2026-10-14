@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The pre-launch half of run.sh for Claude sub-agent dispatch (Python 3.9+).
 
-  dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
+  dispatch.py prepare [--dry-run] [--approved "<who: why>"] <role> <level> <handoff.md>
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
@@ -20,7 +20,7 @@
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
-goal precheck, unfilled-handoff gate, link check, lane gate, spec gate, budget gate, then the one write section.
+goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, then the one write section.
 Records dir (T-0540): every record prepare and record write (result, attempt, dispatch record, .running, .limit,
 base-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <nearest .sdlc>/runtime/tasks/<task>/ (a legacy
 task dir that already holds records keeps them in place); the brief's Artifacts dir line names it. The handoff gates
@@ -43,6 +43,12 @@ dir to its records dir.
                from that template (tickets.unfilled_line, the rule tickets.py check warns with), or the template's
                own Goal text under ## Goal, refuses with one line naming file:line. Exit 2. A handoff with no
                ticket front matter passes.
+  replan       (T-0553) planner: when the records dir already holds two planner results (the first plan and the one
+               replan), prepare refuses, exit 2, with two `dispatch.py: replan cap:` lines naming the count and
+               --approved "<who: why>" (the person's call: split the ticket, approve one more replan, or drop scope).
+               --approved, else SDLC_REPLAN_APPROVED, lets planner run <n+1> through and, once the attempt is written,
+               appends `replan approved: planner run <n+1>: <who: why>` once to the task's skips.md; a dry run writes
+               nothing. Each further planner run needs its own approval. Step handoffs are not planner results.
   links        builder or verifier on a step handoff: steps.py lint <step dir> (T-0379). Every cited .sdlc path
                must exist, and a report of the step's own prior attempt must name its step-<n>.superseded-<k>
                folder. Refusal exit 2.
@@ -83,7 +89,7 @@ the result path it writes with the Write tool before it ends (T-0330); record fa
 The line also says the file carries no header (record adds it, T-0538) and names `results.py validate <file> --role verifier --headerless`.
 The prefix line says rm of scratch output under that prefix is allowed and refused elsewhere (hooks/block-role-rm.sh).
 
-Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, spec gate, or a running attempt, 4 budget, 5 lane.
+Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, replan cap, spec gate, or a running attempt, 4 budget, 5 lane.
 
 record is the post-launch half (T-0278, design section 3). It takes <stem>.dispatch.json and the sub-agent's
 result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty,
@@ -164,7 +170,8 @@ import run_lifecycle  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
-GATES = ('preflight', 'goal', 'links', 'lane', 'specgate', 'budget', 'lock')
+GATES = ('preflight', 'goal', 'replan', 'links', 'lane', 'specgate', 'budget', 'lock')
+APPROVAL_RE = re.compile(r'[^:]*[^\s:][^:]*:\s*\S')  # "<who: why>", the rule steps.py lint --approved checks
 NAME_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 ID_RE = re.compile(r'[0-9]{8}T[0-9]{12}Z-[a-z0-9]+(-[a-z0-9]+)*')
 PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer', 'ui-designer')
@@ -851,6 +858,20 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             raise Refuse(2, 'dispatch.py: %s:%d is unfilled template text %r; fill in the ticket before dispatching %s'
                          % (handoff, hit[0], hit[1].strip()[:60], role))
 
+    replan_approved = ''
+    if 'replan' not in skip and role == 'planner':  # T-0553: the first plan and one replan, then the person decides
+        n = len(order.ordered(records, 'planner'))
+        if n >= 2:
+            replan_approved = ' '.join(os.environ.get('SDLC_REPLAN_APPROVED', '').split())
+            if not replan_approved:
+                raise Refuse(2, 'dispatch.py: replan cap: %s already holds %d planner results (the first plan and the one replan); '
+                                'planner run %d needs the person\'s approval' % (records, n, n + 1),
+                             'dispatch.py: replan cap: ask the person (split the ticket, approve one more replan, or drop scope), '
+                             'then rerun prepare with --approved "<who: why>"')
+            if not APPROVAL_RE.match(replan_approved):
+                raise Refuse(2, 'dispatch.py: replan cap: --approved takes "<who: why>": who approved, a colon, and why')
+            replan_approved = 'replan approved: planner run %d: %s' % (n + 1, replan_approved)
+
     if 'links' not in skip and role in ('builder', 'verifier') and handoff.name == 'handoff.md' and re.fullmatch(r'step-\d+', directory.name):
         p = script('steps.py', 'lint', directory)
         if p.returncode != 0:
@@ -944,9 +965,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             return dispatch
         if notify:
             unregistered_receiver(notify, toplevel)
-        if lane_override:
-            skips, line = order.task_dir(directory) or directory, 'lane override: ' + lane_override
-            skips = Path(skips) / 'skips.md'
+        for line in (['lane override: ' + lane_override] if lane_override else []) + ([replan_approved] if replan_approved else []):
+            skips = Path(order.task_dir(directory) or directory) / 'skips.md'
             if line not in (skips.read_text(encoding='utf-8').splitlines() if skips.is_file() else []):
                 with skips.open('a', encoding='utf-8') as f:
                     f.write(line + '\n')
@@ -1453,6 +1473,8 @@ def main(argv):
     p.add_argument('--dry-run', action='store_true', help='print the JSON; write no record, take no lock')
     p.add_argument('--solo-model', default='', choices=('', 'sonnet', 'opus', 'fable', 'haiku'),
                    help="the solo ticket's model when its runs.jsonl record is not in this tree (a sub-agent lane worktree): the verifier family rule reads it")
+    p.add_argument('--approved', metavar='"WHO: WHY"',
+                   help='the person\'s approval of a planner run past the replan cap (T-0553); wins over SDLC_REPLAN_APPROVED, recorded in skips.md')
     p.add_argument('--routing-reason', help='why this role and level; wins over SDLC_ROUTING_REASON (a command that starts with VAR=... misses a Bash(python3:*) allowlist)')
     pg = p.add_mutually_exclusive_group()
     pg.add_argument('--prune', dest='prune', action='store_true', default=None, help='queue this agent for pruning after a recorded result (the default for a one-shot role)')
@@ -1590,6 +1612,8 @@ def main(argv):
             return 2
     if args.routing_reason is not None:
         os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
+    if args.approved is not None:
+        os.environ['SDLC_REPLAN_APPROVED'] = args.approved
     try:
         out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model, prune=args.prune,
                       notify=args.notify, notify_re=args.notify_re, tree=args.tree)
@@ -1822,7 +1846,7 @@ def selftest():
                     child.unlink()
             for t in taken:
                 put(nm / t, '## Goal\n')
-            _, got = same('naming ' + want, repo, 'planner', 'L3', '.sdlc/nm/handoff.md')
+            _, got = same('naming ' + want, repo, 'planner', 'L3', '.sdlc/nm/handoff.md', SDLC_REPLAN_APPROVED='selftest: naming')
             case('result name is ' + want, os.path.basename(got['result']) == want)
         shutil.rmtree(nm)
 
@@ -1850,6 +1874,32 @@ def selftest():
             case('goal precheck %s names ## Goal' % role, '## Goal' in err)
         put(sdlc / 'gp' / 'handoff.md', '## Goal\nx\n')
         case('goal precheck passes with a ## Goal section', prep(repo, 'planner', 'L1', '.sdlc/gp/handoff.md', '--dry-run')[0] == 0)
+
+        # replan cap (T-0553): two planner results (the first plan and the one replan) stop a third planner run until the
+        # person approves; --approved (or SDLC_REPLAN_APPROVED, run.sh's form) lets it through and records the approval.
+        rp = sdlc / 'rp'
+        put(rp / 'handoff.md', '## Goal\nx\n')
+        put(rp / 'planner-L3.md', '## Goal\n')
+        case('replan cap: a second planner run (one planner result) passes', prep(repo, 'planner', 'L3', '.sdlc/rp/handoff.md', '--dry-run')[0] == 0)
+        put(rp / 'planner-L3-2.md', '## Goal\n')
+        err = refused('replan cap: a third planner run', 2, 'planner', 'L3', '.sdlc/rp/handoff.md', 'replan')
+        case('replan cap: the refusal names the count and the approval flag',
+             'holds 2 planner results' in err and 'planner run 3' in err and '--approved "<who: why>"' in err)
+        rc, _, err = prep(repo, 'planner', 'L3', '.sdlc/rp/handoff.md', '--dry-run', '--approved', 'yes')
+        case('replan cap: --approved needs "<who: why>"', rc == 2 and '<who: why>' in err)
+        rc, _, _ = prep(repo, 'planner', 'L3', '.sdlc/rp/handoff.md', '--dry-run', '--approved', 'maintainer: one more pass')
+        case('replan cap: a dry run with --approved passes and records nothing', rc == 0 and not (rp / 'skips.md').exists())
+        rrc = runsh(repo, 'planner', 'L3', '.sdlc/rp/handoff.md', SDLC_REPLAN_APPROVED='maintainer: one more pass')[0]
+        case('replan cap: run.sh passes with SDLC_REPLAN_APPROVED like prepare --approved', rrc == 0)
+        rc, got, _ = prep(repo, 'planner', 'L3', '.sdlc/rp/handoff.md', '--approved', 'maintainer: one more pass')
+        case('replan cap: --approved lets planner run 3 through and records it in skips.md',
+             rc == 0 and (rp / 'skips.md').is_file() and (rp / 'skips.md').read_text(encoding='utf-8') == 'replan approved: planner run 3: maintainer: one more pass\n')
+        put(rp / 'planner-L3-3.md', '## Goal\n')
+        case('replan cap: a fourth planner run needs its own approval', prep(repo, 'planner', 'L3', '.sdlc/rp/handoff.md', '--dry-run')[0] == 2)
+        put(rp / 'step-1' / 'handoff.md', '## Task goal\nx\n')
+        case('replan cap: step handoffs are not planner runs and other roles are not capped',
+             prep(repo, 'plan-reviewer', 'L1', '.sdlc/rp/handoff.md', '--dry-run')[0] == 0)
+        shutil.rmtree(rp)
 
         # unfilled handoff (T-0399): a ticket handoff still holding its type template's prompt text or Goal default is
         # refused before any verifier or planner runs on it; a filled one passes. run.sh has no such gate, so no parity.

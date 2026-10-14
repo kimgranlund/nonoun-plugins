@@ -67,7 +67,7 @@
 # "run.sh: session limit: resume with: <command>" on stderr (a log reset time adds a `reset` field and " (resets 1:40pm)"); the exit code stays 1. A later success removes the marker.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
 # saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check,
-# 4 ticket budget at 80 percent or more with no ack, 5 lane gate (below).
+# 4 ticket budget at 80 percent or more with no ack, 5 lane gate (below). A replan cap refusal (below) exits 2.
 # Lane gate (T-0274): a planner, builder, or plan-reviewer run on a task or step handoff whose ticket (the task
 # handoff has an `id:` line) gets `steps.py lane --check` on its task dir; lane solo prints the exact
 # solo_run.py command on stderr and exits 5 before any attempt record. SDLC_LANE_OVERRIDE="<reason>" proceeds,
@@ -77,6 +77,13 @@
 # the override itself).
 # Goal precheck: before a planner or plan-reviewer run on a task handoff (not a step dir), run.sh runs
 # steps.py precheck on the handoff dir; no ## Goal section prints the reason and exits 2 before any attempt record.
+# Replan cap (T-0553): before a planner run (dry runs too, never in the run_lifecycle.py child) whose records dir
+# already holds two planner-L*.md results (the first plan and the one replan), run.sh prints two "run.sh: replan cap:"
+# lines naming the count and SDLC_REPLAN_APPROVED="<who: why>" and exits 2 before any attempt record. The person
+# decides (split the ticket, approve one more replan, or drop scope); SDLC_REPLAN_APPROVED="<who: why>" proceeds and
+# appends "replan approved: planner run <n+1>: <who: why>" once to the task's skips.md after every gate passes
+# (not on a dry run). dispatch.py
+# prepare --approved is the Claude twin.
 # Link check (T-0379): before a builder or verifier run on a step handoff (step-<n>/handoff.md), run.sh runs steps.py
 # lint on the step dir; a cited .sdlc path that does not exist, or a report of the step's own prior attempt that does not
 # name its step-<n>.superseded-<k> folder, prints the finding and exits 2 before any attempt record (dry runs too).
@@ -339,6 +346,25 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == pla
   fi
 fi
 
+# Replan cap (see the header): a third planner run on a task needs the person's approval; dry runs too.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && "$role" == planner ]]; then
+  planner_n=0
+  if [[ -d "$dir" ]]; then planner_n=$(find "$dir" -maxdepth 1 -type f -name 'planner-L*.md' | wc -l | tr -d ' '); fi
+  if (( planner_n >= 2 )); then
+    replan_ok=$(printf '%s' "${SDLC_REPLAN_APPROVED:-}" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//')
+    if [[ -z "$replan_ok" ]]; then
+      echo "run.sh: replan cap: $dir already holds $planner_n planner results (the first plan and the one replan); planner run $((planner_n + 1)) needs the person's approval" >&2
+      echo "run.sh: replan cap: ask the person (split the ticket, approve one more replan, or drop scope), then rerun with SDLC_REPLAN_APPROVED=\"<who: why>\"" >&2
+      exit 2
+    fi
+    if ! [[ "$replan_ok" =~ ^[^:]*[^[:space:]:][^:]*:[[:space:]]*[^[:space:]] ]]; then
+      echo "run.sh: replan cap: SDLC_REPLAN_APPROVED takes \"<who: why>\": who approved, a colon, and why" >&2
+      exit 2
+    fi
+    replan_line="replan approved: planner run $((planner_n + 1)): $replan_ok"
+  fi
+fi
+
 # Link check (T-0379): a builder or verifier on a step handoff (<task dir>/step-<n>/handoff.md) needs every cited
 # .sdlc path to exist and every report of the step's own prior attempt to name its step-<n>.superseded-<k> folder
 # (steps.py lint); refuse before any attempt record, dry runs too.
@@ -398,6 +424,10 @@ fi
 # Shared lifecycle owner holds the directory lock across either backend.
 if [[ "${SDLC_DRY_RUN:-}" != 1 && "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
   records_dir_make "$hdir" >/dev/null || { echo "run.sh: cannot make the records dir $dir" >&2; exit 2; }
+  if [[ -n "${replan_line:-}" ]]; then  # the replan cap approval, recorded once every gate has passed
+    replan_skips="$(python3 "$plugin_root/scripts/order.py" task-dir "$hdir" 2>/dev/null || echo "$hdir")/skips.md"
+    grep -qxF "$replan_line" "$replan_skips" 2>/dev/null || printf '%s\n' "$replan_line" >>"$replan_skips"
+  fi
   exec python3 "$plugin_root/scripts/run_lifecycle.py" run "$role" "$level" "$handoff" "$backend" "$model" "$effort"
 fi
 

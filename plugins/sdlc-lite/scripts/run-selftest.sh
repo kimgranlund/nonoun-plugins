@@ -135,10 +135,17 @@ dir="$(rd "$(cd "$repo/.sdlc/t" && pwd)")"
 names=(planner-L3 planner-L3-2 planner-L3-3)
 outs=()
 for i in 1 2 3; do
-  out=$(cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/handoff.md) \
+  if [[ "$i" == 3 ]]; then
+    # T-0553: two planner results stop a third planner run (exit 2, nothing written) until the person approves.
+    cap_rc=0; (cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/handoff.md >/dev/null 2>&1) || cap_rc=$?
+    [[ "$cap_rc" == 2 && ! -e "$dir/planner-L3-3.md" ]] || fail "replan cap: want exit 2 and no planner-L3-3.md, got exit $cap_rc"
+  fi
+  out=$(cd "$repo" && PATH="$tmp/bin:$PATH" SDLC_REPLAN_APPROVED="selftest: naming" "$here/run.sh" planner L3 .sdlc/t/handoff.md) \
     || fail "run $i: run.sh exited non-zero"
   outs+=("$out")
 done
+grep -qx 'replan approved: planner run 3: selftest: naming' "$repo/.sdlc/t/skips.md" \
+  || fail "replan cap: skips.md lacks 'replan approved: planner run 3: selftest: naming'"
 
 # File contents first, so an overwrite is reported as such.
 for i in 1 2 3; do
@@ -281,7 +288,7 @@ out=$(prdry) || fail "dry run plan-reviewer L1 (fable planner) exited non-zero"
 [[ "$out" == *"--model opus --effort high"* ]] \
   || fail "fable planner newest: plan-reviewer should swap to '--model opus --effort high', got: $out"
 # Planner L3 runs on Opus high, and a review after an Opus L3 plan stays on Fable high.
-out=$(cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/review/handoff.md) \
+out=$(cd "$repo" && SDLC_DRY_RUN=1 SDLC_REPLAN_APPROVED="selftest: model row" PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/review/handoff.md) \
   || fail "dry run planner L3 exited non-zero"
 [[ "$out" == *"--model opus --effort high"* ]] \
   || fail "planner L3 should run '--model opus --effort high', got: $out"
