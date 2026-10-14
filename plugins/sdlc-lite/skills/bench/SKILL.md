@@ -27,6 +27,6 @@ Run each task (or only the named one) in turn:
 2. Write everything from `## Goal` down to `.sdlc/bench-<name>/handoff.md`. Never show the agents the header fields, the solution, or the hidden tests.
 3. Run the /chain flow on that handoff, skipping the file stage. Stop the task (record `blocked`) wherever /chain would ask the user.
 4. Grade: copy each `test_paths` file from `tests_from` (`git -C <repo> show <tests_from>:<path> > <path>`), run `check`, and write `grade.md` in the task dir: `hidden_check: pass|fail`, the exit code, and the last 20 lines of output.
-5. Move `.sdlc/bench-<name>` to `$BENCH/results/<YYYY-MM-DD>-<name>/`, then `git -C <repo> worktree remove --force` the worktree and `git -C <repo> worktree prune`.
+5. Move `.sdlc/bench-<name>` (the handoff and `grade.md`) to `$BENCH/results/<YYYY-MM-DD>-<name>/` and its records dir (role results, step dirs, `runs.jsonl`; the path `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/order.py records-dir .sdlc/bench-<name>` prints) to `$BENCH/results/runtime/tasks/<YYYY-MM-DD>-<name>/`, where `bench-summary.sh` reads it, then `git -C <repo> worktree remove --force` the worktree and `git -C <repo> worktree prune`.
 
 Then run `${CLAUDE_PLUGIN_ROOT}/scripts/bench-summary.sh --bench-dir "$BENCH"` and report its table, plus the change from each task's previous run. The hidden check is the real score; the verifier's verdict is reported next to it, and any case where the verifier passed but the hidden check failed is flagged 🔴 (the verifier missed a defect).

@@ -1,6 +1,6 @@
 # Fleet retro interview
 
-The exact message a conductor receives. Send it unchanged.
+The exact message a conductor receives. Send it unchanged except `<retro root>` and `<date>`, which the retro fills in.
 
 ---
 
@@ -37,6 +37,8 @@ One row per finding, ranked by cost, at most 7 rows:
 - Fill every cell; write `none` where there is nothing to say (no fix exists, the cause is outside the plugin, a decision waits on the user).
 - Something that got faster is a row: Symptom is what got faster, Cost the measured saving or `unmeasured`, Prevention `keep`.
 
-Write the answer to
-`.sdlc/fleet-retro-<date>.md` (max 80 lines), with Part 1 on top.
-Reply with one line: the path and your top three findings.
+Send the answer (max 80 lines, Part 1 on top) as one mailbox message, the
+answer on stdin, and write no file in this repo:
+`python3 <plugin>/scripts/messages.py --root <retro root> send --receiver fleet-retro --sender <this repo's folder name> --topic "fleet-retro <date>" --follow-up false -`
+(`<plugin>` is the Part 1 plugin path). Reply with one line: the path `send` prints
+and your top three findings.
