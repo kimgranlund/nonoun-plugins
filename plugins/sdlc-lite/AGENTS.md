@@ -23,7 +23,7 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 ## Behavioral invariants
 
 - `scripts/order.py` owns newest-result ordering; never use file modification time.
-- `scripts/steps.py` owns next-action decisions. Missing verdicts, inherited failures, plan defects, and implementation failures are distinct outcomes. Preserve the one-criterion verifier swap rules and recurring-finding replan route.
+- `scripts/steps.py` owns next-action decisions. Missing verdicts, inherited failures, plan defects, and implementation failures are distinct outcomes. Preserve the one-criterion verifier swap rules, the builder amend route (`steps.py amend`: one criterion of an unbuilt step, one per step, recorded as the task's one replan), and the recurring-finding replan route.
 - Keep the merge-step template consistent across planner and handoff-format and with the builder's commit boundary. `scripts/check.py` validates these contracts.
 - Checks must be able to fail. Preserve independent verification and the recorded build baseline (`SDLC_BASE_SHA`); scope criteria must account for relevant untracked work.
 - Ticket changes must preserve cross-worktree ID uniqueness, reference-safe closure, and explicit follow-up selection. Read the ticket/file skills and associated tests before editing these behaviors.

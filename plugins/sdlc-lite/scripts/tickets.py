@@ -137,11 +137,21 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             prompt line of its type's template as a whole line (the template's default statements, a bare
             `- Label:` line and headings never count): newest id first, at most 5 lines, then one
             `<N> more closed tickets hold template placeholder text` line
+            Outside `layout: topics` it prints `warning: <name>: loose entry at the top of <root>; ...tidy...`
+            (exit stays 0, at most 5 lines, then `<N> more loose entries`) for each entry directly under <root>
+            that the layout rule does not allow (see tidy)
             Last, it fails each done ticket whose skips.md records lane solo, lean, fix, or full (the last
             `- lane:` line under ## Lane) but has neither the result nor a ## Skipped entry (format:
             skills/handoff-format) for a missing planner, verifier step <n> or filer result (a solo ticket has
             no steps, so it needs entries for planner and filer; a full ticket needs the results); no skips.md or
             no lane record (tickets closed before the guard) is exempt
+  tidy      [--apply] list each entry directly under <root> the layout rule does not allow, as
+            `<name> -> archive/<name>`: allowed are AGENTS.md, CLAUDE.md, config, layout.md, roadmap.md, board.md,
+            notes.md, notes, fleet.json, gate-ledger.jsonl, messages, runtime, supervisor, evals, proposals, goals,
+            tickets, work, archive, dogfood, a _- or .-prefixed name, a folder holding handoff.md or plan-doc.md,
+            a name matching a `top_level_allow: a, b` glob of <root>/config, and a name git ignores. A dry run
+            unless --apply, which moves each (git mv when tracked, else a rename) and refuses, moving nothing,
+            while a *.running marker exists under <root> or a destination exists (T-0544)
   number    convert a plain-slug root: rename each ticket folder <slug> to NNNN-<slug> after its id, rewrite
             every cite of <rel>/<slug> (as close's scan finds them, plus files inside the folder) to
             <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, regenerate the roadmap. Refuses, writing
@@ -334,6 +344,7 @@ MD_LINK_RE = re.compile(r'\]\(\s*<?([^)\s>]+)>?[^)]*\)')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
 CITATION_SKIP_RE = re.compile(r'\s*citation_skip\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0535: comma-separated globs
+TOP_LEVEL_ALLOW_RE = re.compile(r'\s*top_level_allow\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0544: comma-separated globs
 SUCCESSOR_RE = re.compile(r'(?:([A-Za-z0-9][A-Za-z0-9._-]*):)?(T-\d{4})')  # T-0528: T-NNNN or <repo>:T-NNNN
 SUBJECT_ID_RE = re.compile(r'(T-\d{4}):')  # T-0528: a commit subject that starts with a ticket id
 
@@ -779,6 +790,102 @@ def root_strays(root):
             f'or notes/' for p in sorted(root.iterdir())
             if p.name not in ROOT_ALLOWED and p.name not in reported and not p.name.startswith('_')
             and not (p.name.startswith('.') and not DOT_RE.fullmatch(p.name))]
+
+
+TOP_ALLOWED = ('AGENTS.md', 'CLAUDE.md', 'config', 'layout.md', 'roadmap.md', 'board.md', 'notes.md', 'notes',
+               'fleet.json', 'gate-ledger.jsonl', 'messages', 'runtime', 'supervisor', 'evals', 'proposals', 'goals',
+               'tickets', 'work', 'archive', 'dogfood')
+
+
+def config_top_level_allow(root):
+    """The globs on every `top_level_allow: a, b` line of <root>/config, comma-separated, each stripped (T-0544)."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        mo = TOP_LEVEL_ALLOW_RE.fullmatch(line)
+        if mo and not line.lstrip().startswith('#'):
+            out += [g.strip() for g in mo.group(1).split(',') if g.strip() and g.strip() not in out]
+    return out
+
+
+def git_ignored_tracked(root, names):
+    """(ignored, tracked): the sets of names (entries directly under root) git ignores and git tracks. Both empty
+    when root is not inside a git work tree or git fails, so a plain folder lists every entry."""
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+    def git(*args, data=None):
+        return subprocess.run(['git', '-C', str(root), *args], env=env, input=data, capture_output=True, text=True)
+
+    try:
+        p = git('rev-parse', '--is-inside-work-tree')
+        if p.returncode or p.stdout.strip() != 'true' or not names:
+            return set(), set()
+        q = git('check-ignore', '--stdin', data='\n'.join(names) + '\n')
+        ignored = {line.strip() for line in q.stdout.splitlines() if line.strip()}
+        t = git('ls-files', '-z', '--', *names)
+        tracked = {f.split('/', 1)[0] for f in t.stdout.split('\0') if f}
+        return ignored, tracked
+    except OSError:
+        return set(), set()
+
+
+def top_level_strays(root):
+    """The names directly under <root> the layout rule does not allow (T-0544), sorted: not in TOP_ALLOWED, not _- or
+    .-prefixed (templates, closed tickets, dotfiles), not a folder holding handoff.md or plan-doc.md, matching no
+    `top_level_allow:` glob of <root>/config, and not ignored by git. [] when <root> is not a dir."""
+    if not root.is_dir():
+        return []
+    globs = config_top_level_allow(root)
+    names = [p.name for p in sorted(root.iterdir())
+             if p.name not in TOP_ALLOWED and not p.name.startswith(('_', '.'))
+             and not (p.is_dir() and ((p / 'handoff.md').is_file() or (p / 'plan-doc.md').is_file()))
+             and not any(fnmatch.fnmatch(p.name, g) for g in globs)]
+    ignored, _ = git_ignored_tracked(root, names)
+    return [n for n in names if n not in ignored]
+
+
+def top_level_warnings(root):
+    """check's warning per top_level_strays name; [] under layout: topics, where root_strays already fails them."""
+    if layout_paths(root).layout == 'topics':
+        return []
+    names = top_level_strays(root)
+    out = [f'warning: {n}: loose entry at the top of {root}; tickets.py --root {root} tidy lists its move into '
+           f'archive/ (or allow it with a top_level_allow: line in {root}/config)' for n in names[:PLACEHOLDER_SHOWN]]
+    if len(names) > PLACEHOLDER_SHOWN:
+        out.append(f'warning: {len(names) - PLACEHOLDER_SHOWN} more loose entries at the top of {root}; '
+                   f'tickets.py --root {root} tidy lists them all')
+    return out
+
+
+def cmd_tidy(root, apply=False):
+    """List, or with apply move, each top_level_strays name into <root>/archive/<name> (T-0544): git mv for a
+    tracked entry, a rename otherwise. apply refuses while any *.running marker exists under <root> or a
+    destination exists. Never touches the project root or a closed ticket folder."""
+    names = top_level_strays(root)
+    if not names:
+        return 'nothing to tidy'
+    moves = [f'{n} -> archive/{n}' for n in names]
+    if not apply:
+        return '\n'.join(moves + ['dry run: nothing moved; rerun with --apply to move'])
+    running = sorted(str(p.relative_to(root)) for p in root.rglob('*.running'))
+    if running:
+        raise Fail('tidy: a role is running (*.running markers): ' + ', '.join(running)
+                   + '; rerun once they finish; nothing moved')
+    taken = [f'archive/{n}' for n in names if (root / 'archive' / n).exists() or (root / 'archive' / n).is_symlink()]
+    if taken:
+        raise Fail(f'tidy: {", ".join(taken)} already exist(s); nothing moved')
+    _, tracked = git_ignored_tracked(root, names)
+    (root / 'archive').mkdir(exist_ok=True)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    for n in names:
+        if n in tracked:
+            subprocess.run(['git', '-C', str(root), 'mv', '-k', '--', n, f'archive/{n}'], env=env,
+                           capture_output=True, text=True)
+        if (root / n).exists() or (root / n).is_symlink():
+            (root / n).rename(root / 'archive' / n)
+    return f'moved {len(names)} entr{"y" if len(names) == 1 else "ies"} into archive/:\n' + '\n'.join(moves)
 
 
 GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
@@ -2006,6 +2113,17 @@ ROUTER_CMD = 'python3 <plugin-root>/scripts/tickets.py --root <R>'  # <CMD> in t
 ROUTER_PROCEDURES = """\
 ## Procedures
 
+Folder layout:
+- The top of `<R>` holds only ticket and task folders (a folder with a `handoff.md` or `plan-doc.md`), \
+`AGENTS.md`, `CLAUDE.md`, `config`, `roadmap.md`, `board.md`, `notes.md`, `notes/`, `fleet.json`, \
+`gate-ledger.jsonl`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, \
+`archive/`, and `_`- or `.`-prefixed entries. A `top_level_allow: <glob>, ...` line in `<R>/config` allows more.
+- Run records (role results, attempts, `runs.jsonl`, `skips.md`) go in the git-ignored records dir \
+`<R>/runtime/tasks/<folder>/` (`<plugin-root>/scripts/order.py records-dir <T>/<folder>` prints it). Notes go to \
+`notes.md`, an answer to another agent goes by `messages.py send`, anything else into `archive/`.
+- `<CMD> check` warns on any other top-level entry; `<CMD> tidy` lists its move into `archive/` and \
+`<CMD> tidy --apply` makes it. Move nothing under `<R>` while a `*.running` marker exists: a role is using it.
+
 Create a ticket:
 1. Run `<CMD> new <feature|bug|chore|spike|idea> <slug> "<title>"`. \
 Never pick an id by hand: `new` stamps the next id above every worktree's.
@@ -2020,7 +2138,7 @@ branch name.
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
 ask the user.
-2. Run `<CMD> claim <id> --by <claude|codex>`. It sets \
+2. Run `<CMD> claim <id> --by <agent>`, the agent one lowercase word (`claude`, `codex`, `astra`). It sets \
 `status: claimed`, writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:`, and runs `roadmap`. \
 To take over a stale claim, add `--handover --reason "<why>"`.
 3. Start the work through `run.sh`, which puts it in progress: \
@@ -2046,6 +2164,14 @@ folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
 3. Only when a filer draft was asked for (`/file`): `<CMD> close <folder> --filer`.
 4. Work already done by another ticket: \
 `<CMD> close <folder> --reason "<why>"`.
+
+Ticket lifecycle:
+1. Pick and claim: `<CMD> claim <id> --by <agent>`.
+2. Lane: `python3 <plugin-root>/scripts/steps.py lane <T>/<folder>` prints the lane.
+3. Build: the solo agent, `/sdlc-lite:fix`, or `/sdlc-lite:chain <T>/<folder>`.
+4. Verify: one independent verifier per ticket (`/sdlc-lite:verify`).
+5. Land: `python3 <plugin-root>/scripts/fanout.py land <branch>` for a lane branch, else merge the branch.
+6. Close: `<CMD> close <folder> --changed "<one line>"`, as in Close a ticket above.
 """
 
 ROUTER_TEMPLATE = """\
@@ -2994,6 +3120,7 @@ def cmd_check(root, numbered=False):
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
     out += link_warnings(root)
+    out += top_level_warnings(root)
     out += delivered_warnings(root, ts)
     out += successor_lines(root, ts)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
@@ -3265,6 +3392,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_check(root, **kw), ''
         if cmd == 'archive':
             return 0, cmd_archive(root, **kw), ''
+        if cmd == 'tidy':
+            return 0, cmd_tidy(root, **kw), ''
         if cmd == 'number':
             return 0, cmd_number(root, **kw), ''
         if cmd == 'migrate-layout':
@@ -6578,6 +6707,62 @@ def selftest():
         expect(f'(T-0528) successor banana is rejected: rc={rc} {err!r}',
                rc == 1 and "alpha: successor 'banana' is not T-NNNN or <repo>:T-NNNN" in err)
 
+    # T-0544 layout rule: check warns on a loose top-level entry, tidy lists and moves it; claim --by any word
+    with tempfile.TemporaryDirectory() as tmp:
+        lr = pathlib.Path(tmp) / 'lay' / '.sdlc'
+        run(lr, 'new', ('feature', 'alpha', 'Alpha'))
+        (lr / 'notes.md').write_text('# Notes\n', encoding='utf-8')
+        (lr / 'board.md').write_text('board\n', encoding='utf-8')
+        (lr / 'plan-x').mkdir()
+        (lr / 'plan-x' / 'plan-doc.md').write_text('# Plan\n', encoding='utf-8')
+        rc, out, err = run(lr, 'check')
+        expect(f'(T-0544) check stays silent on allowed names (negative control): rc={rc} {out!r} {err!r}',
+               rc == 0 and 'loose entry' not in out)
+        (lr / 'pause-2026-10-06.md').write_text('paused\n', encoding='utf-8')
+        (lr / 'kept-1.md').write_text('kept\n', encoding='utf-8')
+        with open(lr / 'config', 'a', encoding='utf-8') as fh:
+            fh.write('top_level_allow: kept-*\n')
+        rc, out, err = run(lr, 'check')
+        expect(f'(T-0544) check warns on a stray top-level file and names tidy: rc={rc} {out!r} {err!r}',
+               rc == 0 and f'warning: pause-2026-10-06.md: loose entry at the top of {lr}; tickets.py --root {lr} '
+               f'tidy lists its move into archive/' in out and 'kept-1.md' not in out)
+
+        def listing():
+            return sorted((str(q.relative_to(lr)), q.read_bytes() if q.is_file() else b'')
+                          for q in lr.rglob('*'))
+
+        before = listing()
+        rc, out, err = run(lr, 'tidy')
+        expect(f'(T-0544) tidy without --apply lists the move and changes nothing: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.splitlines()[0] == 'pause-2026-10-06.md -> archive/pause-2026-10-06.md'
+               and listing() == before)
+        (lr / 'alpha' / 'builder-L2.running').write_text('', encoding='utf-8')
+        mid = listing()
+        rc, out, err = run(lr, 'tidy', apply=True)
+        expect(f'(T-0544) tidy --apply refuses while a *.running marker exists: rc={rc} {out!r} {err!r}',
+               rc == 1 and 'alpha/builder-L2.running' in err and listing() == mid)
+        (lr / 'alpha' / 'builder-L2.running').unlink()
+        rc, out, err = run(lr, 'tidy', apply=True)
+        expect(f'(T-0544) tidy --apply moves the stray file into archive/: rc={rc} {out!r} {err!r}',
+               rc == 0 and (lr / 'archive' / 'pause-2026-10-06.md').read_text(encoding='utf-8') == 'paused\n'
+               and not (lr / 'pause-2026-10-06.md').exists() and (lr / 'kept-1.md').is_file()
+               and (lr / 'plan-x' / 'plan-doc.md').is_file() and (lr / 'alpha' / 'handoff.md').is_file())
+        rc, out, err = run(lr, 'check')
+        expect(f'(T-0544) check is silent once tidy moved the stray: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'loose entry' not in out)
+        (lr / 'pause-2026-10-06.md').write_text('again\n', encoding='utf-8')
+        rc, out, err = run(lr, 'tidy', apply=True)
+        expect(f'(T-0544) tidy --apply refuses when the destination exists: rc={rc} {out!r} {err!r}',
+               rc == 1 and 'archive/pause-2026-10-06.md already exist' in err
+               and (lr / 'pause-2026-10-06.md').read_text(encoding='utf-8') == 'again\n')
+        rc, out, err = run(lr, 'claim', ('T-0001', 'astra'))
+        expect(f'(T-0544) claim --by astra is accepted: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.startswith('alpha: claimed_by: astra '))
+        b = (lr / 'AGENTS.md').read_text(encoding='utf-8')
+        expect(f'(T-0544) the router holds Folder layout and Ticket lifecycle and claims by <agent>: {b!r}',
+               '\nFolder layout:\n' in b and '\nTicket lifecycle:\n' in b and '--by <agent>' in b
+               and '<claude|codex>' not in b)
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -6655,7 +6840,7 @@ def main(argv):
     p = sub.add_parser('claim', help='claim a ticket: status claimed and `claimed_by: <agent> <YYYY-MM-DD>` '
                                      'directly after created:, then regenerate the roadmap')
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
-    p.add_argument('--by', required=True, metavar='AGENT', help='the claiming agent, e.g. claude or codex')
+    p.add_argument('--by', required=True, metavar='AGENT', help='the claiming agent: one lowercase word, e.g. claude, codex or astra')
     p.add_argument('--handover', action='store_true',
                    help='take over a claimed ticket: replace the claimed_by value and append one dated body line; '
                         'needs --reason')
@@ -6681,6 +6866,11 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='turn numbered mode on and, on success, persist it in <root>/config '
                         '(also on via that config)')
+    p = sub.add_parser('tidy', help='list each loose top-level entry of the root (not on the layout allow-list) with '
+                                    'its move into archive/; a dry run unless --apply')
+    p.add_argument('--apply', action='store_true',
+                   help='move them (git mv when tracked); refuses while a *.running marker exists or a destination '
+                        'exists')
     p = sub.add_parser('number', help='convert plain <slug> ticket folders to NNNN-<slug>, rewrite their cites, '
                                       'and turn numbered mode on')
     p.add_argument('--dry-run', action='store_true',
@@ -6714,7 +6904,7 @@ def main(argv):
     if cmd == 'migrate-layout':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs
-    if cmd == 'migrate-size':
+    if cmd in ('migrate-size', 'tidy'):
         kw['apply'] = a.apply
     if cmd == 'blockers':
         kw['scope'] = a.scope
