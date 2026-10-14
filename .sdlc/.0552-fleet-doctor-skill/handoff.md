@@ -2,7 +2,7 @@
 id: T-0552
 title: "fleet-doctor skill: diagnose slow or stuck runs and offer resolutions"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,17 @@ Maintainer request 2026-10-14, after a manual diagnosis in the maintainer sessio
 
 ## Constraints
 The failing selftests land before or with the rules. Ships in 0.23.0 (maintainer, 2026-10-14). New files only (script, skill), so it runs beside wave 71.
+
+## Outcome
+
+2026-10-14 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: plugins/sdlc-lite/scripts/fleet_doctor.py:resolve_kill: `slow-check` is accepted for `--kill`, but no `slow-check` resolution offers a kill; harmless (it needs a finding naming the pid and the same command), but the accepted set and the offered set differ. | plugins/sdlc-lite/scripts/fleet_doctor.py:detect stdin-wait: a bare `cat`/`tee`/`head` at under 1% CPU is read as an idle stdin reader; a consumer at the end of a slow producer pipe (`slow | cat`) has the same signature. The approval step limits the harm; decide whether to check the reader's stdin is a tty or pipe with no writer.) · verifier: verifier-L2 (sonnet) · base: d08fb0d8dc43
+- Changed: see commits
+- Commits: 04ccbe7 T-0552: fleet-doctor skill: diagnose slow or stuck runs and offer resolutions
+- Check: 1 selftest exits 0 with a positive fixture and a just-short negative control per rule: pass
+- Check: 2 `test "$(... selftest | grep -c 'negative control: silent')" -eq 7`: pass
+- Check: 3 live-probe: pass
+- Check: 4 `check.py`: pass
+- Check: 5 `check-packaging.py`: pass
+- Check: 6 `prompt_lint.py`: pass
+- Check: 7 no tracked file outside `.sdlc` changed: pass
+- Check: 8 no em dash in the new files: pass
