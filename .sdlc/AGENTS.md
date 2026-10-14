@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:59f750417053 -->
+<!-- sdlc-lite:managed:start v1 sha256:a6f481fc05cd -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 8
   - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
   - T-0536 Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) (0536-plan-defect-order-and-amend)
   - T-0543 Lean records D: Close writes the Outcome (0.23.0) (0543-close-writes-outcome)
@@ -17,6 +17,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0545 Lean records F: Docs and release 0.23.0 (0.23.0) (0545-lean-records-docs-release)
   - T-0547 traces selftest corpus case counts in-flight runtime attempts, so check.sh is red inside a role run (0547-traces-inflight-attempts)
   - T-0548 A role's Bash call that reads stdin (bare cat > file) hangs the run with no timeout (0548-role-bash-stdin-hang)
+  - T-0549 Role sub-agents stop inheriting the parent's plan mode (permissionMode: default), so Bash stops prompting (0549-role-permission-mode)
 - ready: 0
 - claimed: 0
 - paused: 0
