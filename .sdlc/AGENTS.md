@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:934ba5d8d1ae -->
+<!-- sdlc-lite:managed:start v1 sha256:ccf31464b5d4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 8
+- proposed: 9
   - T-0536 Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) (0536-plan-defect-order-and-amend)
   - T-0544 Lean records E: Layout rule and tidy (0.23.0) (0544-sdlc-layout-tidy)
   - T-0545 Lean records F: Docs and release 0.23.0 (0.23.0) (0545-lean-records-docs-release)
@@ -18,6 +18,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0550 Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep (0550-standard-worktree-scratch-layout)
   - T-0551 Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (0551-builder-scoped-checks)
   - T-0552 fleet-doctor skill: diagnose slow or stuck runs and offer resolutions (0552-fleet-doctor-skill)
+  - T-0553 Hard gates: a third planner run and an oversized plan stop for the person (0553-replan-and-step-caps)
 - ready: 0
 - claimed: 0
 - paused: 0
