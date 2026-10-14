@@ -23,5 +23,15 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Context
 Maintainer request 2026-10-14, after a manual diagnosis in the maintainer session: the T-0543 step 2 builder hung 39 min on `cat > /tmp/x` (T-0548); `check.sh` took 47 min against an 18 min norm with load average 54 on 20 cores; `fontd` at 101% CPU for 26 days; maison Playwright lanes were the heavy peer. The fixes applied by hand: kill the one pid, `killall fontd`, a one-line throttle message to the maison, agent-ui and gen-ui-kit conductors, tickets T-0548 and T-0551. Name `fleet-doctor` (joins `/fleet-status` and `/fleet-retro`), so it does not collide with Claude Code's built-in `/doctor` (user decision).
 
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/fleet_doctor.py selftest` exits 0: for each of the 7 rules a positive fixture fires exactly that rule and a negative-control fixture just short of it is observed silent; collect over stubbed ps, lsof and runs records; resolve refuses a pid in no finding, a reused pid, a name outside `DAEMONS`, and a daemon with no finding.
+2. `test "$(python3 plugins/sdlc-lite/scripts/fleet_doctor.py selftest | grep -c 'negative control: silent')" -eq 7` exits 0.
+3. `bash .sdlc/0552-fleet-doctor-skill/live-probe.sh` exits 0: on the live machine a planted idle `cat` under the session is reported as `stdin-wait` with its pid, resolve refuses the sibling writer pid, and resolve kills the reader while the writer survives. The approval step itself needs a person and is not exercised headless.
+4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 with `skills/fleet-doctor/SKILL.md` present.
+5. `python3 scripts/check-packaging.py` exits 0.
+6. `python3 plugins/sdlc-lite/scripts/prompt_lint.py` exits 0.
+7. `test -z "$(git diff --name-only HEAD -- . ':(exclude).sdlc')"` exits 0: no tracked file outside `.sdlc` changes (new files only).
+8. `python3 -c "import sys; sys.exit(any(chr(0x2014) in open(p).read() for p in sys.argv[1:]))" plugins/sdlc-lite/scripts/fleet_doctor.py plugins/sdlc-lite/skills/fleet-doctor/SKILL.md` exits 0: no em dash in the new files.
+
 ## Constraints
 The failing selftests land before or with the rules. Ships in 0.23.0 (maintainer, 2026-10-14). New files only (script, skill), so it runs beside wave 71.
