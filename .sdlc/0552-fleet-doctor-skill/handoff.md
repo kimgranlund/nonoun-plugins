@@ -24,4 +24,4 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 Maintainer request 2026-10-14, after a manual diagnosis in the maintainer session: the T-0543 step 2 builder hung 39 min on `cat > /tmp/x` (T-0548); `check.sh` took 47 min against an 18 min norm with load average 54 on 20 cores; `fontd` at 101% CPU for 26 days; maison Playwright lanes were the heavy peer. The fixes applied by hand: kill the one pid, `killall fontd`, a one-line throttle message to the maison, agent-ui and gen-ui-kit conductors, tickets T-0548 and T-0551. Name `fleet-doctor` (joins `/fleet-status` and `/fleet-retro`), so it does not collide with Claude Code's built-in `/doctor` (user decision).
 
 ## Constraints
-The failing selftests land before or with the rules. After 0.23.0.
+The failing selftests land before or with the rules. Ships in 0.23.0 (maintainer, 2026-10-14). New files only (script, skill), so it runs beside wave 71.
