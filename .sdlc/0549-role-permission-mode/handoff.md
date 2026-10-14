@@ -1,6 +1,6 @@
 ---
 id: T-0549
-title: "Role Bash calls stop tripping the host's plan mode (permissionMode: default), so Bash stops prompting"
+title: "Role Bash calls avoid bash -c on built strings, so the host stops asking for approval under bypass"
 type: chore           # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
