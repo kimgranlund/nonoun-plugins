@@ -24,3 +24,12 @@ Maintainer report 2026-10-14, with a screenshot from the maison `0535-planner-L3
 
 ## Constraints
 Wording only, plus the probe; no hook that rewrites commands.
+
+## Acceptance criteria
+- `grep -c 'Run each check as a plain command' plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/agents/solo.md` prints 1 for each file.
+- `! grep -n 'one .bash -c. per criterion' plugins/sdlc-lite/agents/*.md plugins/sdlc-lite/adapters/codex/agents/*.toml` exits 0 (the planner no longer tells roles to wrap criteria in `bash -c`).
+- `grep -c 'Never wrap a criterion in' plugins/sdlc-lite/agents/planner.md` prints 1.
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
+- `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
+- No added line in the diff holds an em dash, and no `bypassPermissions` or `permissionMode` appears in any shipped agent file.
+- Live probe (manual, recorded in the solo report): a sub-agent under a bypassing headless parent following the new rule runs criteria as plain commands with no approval and no permission denial.
