@@ -2,14 +2,12 @@
 id: T-0555
 title: "Wall-clock budgets per role and per ticket, enforced by dispatch.py"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 claimed_by: claude 2026-10-14
-branch: lane/T-0555-w74-0555
-worktree: .claude/worktrees/T-0555-w74-0555
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +33,16 @@ Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or w
 - `bash plugins/sdlc-lite/scripts/check.sh --fast` exits 0; the full `check.sh` is the land gate's.
 - `git diff --check` exits 0.
 - `plugins/sdlc-lite/agents/conductor.md` tells the conductor to check an over-budget role (stdin wait, stall) and ask the person, and a headless or unattended lane to stop the ticket as `blocked`; `.claude/agents/sdlc-lite-author.md` sends both flags to the user; no role is killed automatically.
+
+## Outcome
+
+2026-10-14 · lane: full L3 · verdict: pass · verifier: verifier-L2 (sonnet) · base: none
+- Changed: see commits
+- Commits: none
+- Check: 1 dispatch.py selftest exits 0 with the T-0555 cases: pass
+- Check: 2 `check.py` exits 0: pass
+- Check: 3 `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0: pass
+- Check: 4 `bash plugins/sdlc-lite/scripts/check.sh --fast` exits 0: pass
+- Check: 5 `git diff --check` exits 0: pass
+- Check: 6 conductor.md and sdlc-lite-author.md wording, no auto-kill: pass
+- Follow-up: decide: The generated codex conductor TOML is modified and codex_roles.py... -> notes.md
