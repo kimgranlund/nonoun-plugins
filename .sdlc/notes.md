@@ -500,3 +500,16 @@
 - note: The probe cannot go red headlessly. Per the brief, old2.json (the old `run(){ bash -c ...}` pattern) shows `permission_denials: []` and no prompt, so the "prompt before, none after" contrast in the handoff's Done-when was not reproduced. Criterion #7 only requires the after case, so it passes; the live probe therefore shows the new run is clean, not that the rule removes the interactive prompt.
 - note: The probe's sub-agent was given the rule in its prompt, not loaded from the shipped agent file. The shipped text itself is checked only by the grep criteria.
 - note: check.sh took 42 minutes under host load (load average 40 to 55) and exceeds the 15 minute foreground limit.
+
+## T-0551: Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (2026-10-14)
+
+- decide: Throwaway worktree and scratch under the tmp prefix were removed; the tree was not changed.
+
+## T-0556: Heavy checks a role runs inside its lane go through gate_lock.py (2026-10-14)
+
+- decide: I did not run the full `check.sh`, per the maintainer note. The land gate runs it.
+- decide: The em dashes on added lines in the Codex TOML files also appear on the removed lines (6 each). They are not new.
+
+## T-0557: check.sh runs selftests in parallel and offers a fast tier (2026-10-14)
+
+- decide: The planted-failure copy lacked repo context (docs and .claude), so check.py, fanout and other jobs also failed there. Not a defect in the build; the plant control stands on the named planted jobs and exit 1.

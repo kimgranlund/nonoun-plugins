@@ -2,7 +2,7 @@
 id: T-0557
 title: "check.sh runs selftests in parallel and offers a fast tier"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,15 @@ Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or w
 - The fast tier passes in under 5 minutes: `python3 -c "import subprocess, sys, time; t = time.time(); rc = subprocess.run(['bash', 'plugins/sdlc-lite/scripts/check.sh', '--fast']).returncode; print('fast tier %.0fs' % (time.time() - t)); sys.exit(rc or time.time() - t >= 300)"`
 - An unknown flag is refused: `! bash plugins/sdlc-lite/scripts/check.sh --bogus`
 - Packaging and whitespace stay clean: `python3 scripts/check-packaging.py` and `git diff --check`
+
+## Outcome
+
+2026-10-14 · lane: full L3 · verdict: pass · verifier: verifier-L2 (sonnet) · base: none
+- Changed: see commits
+- Commits: none
+- Check: 1 pool selftest: pass
+- Check: 2 full tier passes, every earlier check still queued: pass
+- Check: 3 fast tier under 5 minutes: pass
+- Check: 4 unknown flag refused: pass
+- Check: 5 packaging and whitespace clean: pass
+- Follow-up: decide: The planted-failure copy lacked repo context docs and .claude, so... -> notes.md

@@ -2,7 +2,7 @@
 id: T-0556
 title: "Heavy checks a role runs inside its lane go through gate_lock.py"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,16 @@ Heavy checks a role runs inside its lane (heavy suites, browser tests, the full 
 
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or with the change.
+
+## Outcome
+
+2026-10-14 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: e4d0d7b38c97
+- Changed: see commits
+- Commits: a2cf6a4 T-0556: heavy in-lane checks run through gate_lock.py
+- Check: 1 `claude_roles.py generate --check` exits 0: pass
+- Check: 2 `codex_roles.py generate --check` exits 0: pass
+- Check: 3 `check.py` exits 0: pass
+- Check: 4 `gate_lock.py selftest` exits 0: pass
+- Check: 5 `grep -c 'gate_lock.py" run -- <cmd>'` prints 1 for each of the four files: pass
+- Follow-up: decide: I did not run the full check.sh, per the maintainer note -> notes.md
+- Follow-up: decide: The em dashes on added lines in the Codex TOML files also appear on... -> notes.md
