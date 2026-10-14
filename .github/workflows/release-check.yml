@@ -1,0 +1,33 @@
+# Release check on a clean machine at the lowest hosted CI cost (T-0554): v* tags and manual dispatch only,
+# never every push or PR, and never the wip/main backup branch. The full check.sh stays the local land gate.
+name: release-check
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The fast tier's plugin-validate job runs `claude plugin validate`, a local check with no model call.
+      - run: npm install -g @anthropic-ai/claude-code@2.1.300
+      - run: git config --global user.name ci && git config --global user.email ci@localhost
+      - run: python3 scripts/check-packaging.py
+      - run: bash plugins/sdlc-lite/scripts/check.sh --fast
