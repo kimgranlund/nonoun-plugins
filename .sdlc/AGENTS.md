@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c8b98a348898 -->
+<!-- sdlc-lite:managed:start v1 sha256:5fbb99f19c91 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,10 +16,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0555 Wall-clock budgets per role and per ticket, enforced by dispatch.py (0555-role-ticket-time-budgets)
 - ready: 0
 - claimed: 4
-  - T-0551 Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (0551-builder-scoped-checks), claimed by claude 2026-10-14
-  - T-0553 Hard gates: a third planner run and an oversized plan stop for the person (0553-replan-and-step-caps), claimed by claude 2026-10-14
-  - T-0556 Plugin-level machine-wide slot limit for heavy commands across repos (0556-shared-heavy-slot), claimed by claude 2026-10-14
-  - T-0557 check.sh runs selftests in parallel and offers a fast tier (0557-check-sh-speed), claimed by claude 2026-10-14
+  - T-0551 Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (0551-builder-scoped-checks), claimed by claude 2026-10-14, branch lane/T-0551-w72-0551
+  - T-0553 Hard gates: a third planner run and an oversized plan stop for the person (0553-replan-and-step-caps), claimed by claude 2026-10-14, branch lane/T-0553-w72-0553
+  - T-0556 Plugin-level machine-wide slot limit for heavy commands across repos (0556-shared-heavy-slot), claimed by claude 2026-10-14, branch lane/T-0556-w72-0556
+  - T-0557 check.sh runs selftests in parallel and offers a fast tier (0557-check-sh-speed), claimed by claude 2026-10-14, branch lane/T-0557-w72-0557
 - paused: 0
 - blocked: 0
 - done: 513
