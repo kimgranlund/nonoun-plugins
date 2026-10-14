@@ -60,7 +60,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 - Docs-only verifier skip and the tests-gate pilot: `python3 plugins/sdlc-lite/scripts/verify_scope.py selftest` (its `tests-gate ok:` and `tests-gate red:` cases, and the `(docs-only)` and `(tests-gate)` cases of `tickets.py selftest`).
 - Runner: `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 - Hooks: commands in the hook maintenance reference.
-- Full regression suite: `bash plugins/sdlc-lite/scripts/check.sh`.
+- Full regression suite: `bash plugins/sdlc-lite/scripts/check.sh` (jobs run in parallel; the land gate). Quick tier for builders and CI: `bash plugins/sdlc-lite/scripts/check.sh --fast`.
 
 A role behavior change needs a focused live run on a throwaway project. Benchmark fixtures must expose all names and constraints pinned by hidden checks and demonstrate both failure and success. If a verifier passes while a hidden check fails, resolve the discrepancy before tuning models.
 Raw transcripts and benchmark logs are ignored; retain appropriate result reports and run records. Keep dated validation evidence separate from current instructions.
