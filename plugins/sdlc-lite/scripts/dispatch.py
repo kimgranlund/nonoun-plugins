@@ -6,8 +6,10 @@
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
-                                          transcript also shows `last activity <age>`, and `silent` after 30 minutes without a write (T-0476)
-  dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
+                                          transcript also shows `last activity <age>`, and `silent` after 30 minutes without a write (T-0476);
+                                          a running one past its role's time budget ends `over-budget <age> (budget <n>m)` (T-0555)
+  dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text), then one `over-budget:` line per
+                                          running attempt past its role's time budget, naming the check (a stdin wait, a stall) and the person
   dispatch.py recover --root DIR [--open] the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414);
                                           --open skips closed (done or dropped) ticket folders, so history is not rewritten (T-0438)
   dispatch.py resume [--root DIR] <name>  the ladder for an orphan: SendMessage by name, by id, then a new attempt
@@ -20,7 +22,7 @@
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
-goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, then the one write section.
+goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, time gate, then the one write section.
 Records dir (T-0540): every record prepare and record write (result, attempt, dispatch record, .running, .limit,
 base-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <nearest .sdlc>/runtime/tasks/<task>/ (a legacy
 task dir that already holds records keeps them in place); the brief's Artifacts dir line names it. The handoff gates
@@ -56,6 +58,14 @@ dir to its records dir.
                SDLC_LANE_OVERRIDE="<reason>" (appended once to skips.md, carried as lane_override).
   specgate     plan-reviewer: specgate.py check, exit 2, unless SDLC_SPECGATE=off (carried as specgate).
   budget       budget.py report: warn or over with no ack, exit 4. No budget or no ticket proceeds.
+  time         (T-0555) any role on a ticket whose `size:` has a time budget (TICKET_MINUTES: L1 60m, L2 120m, L3 420m,
+               L4 840m, L5 1680m of agent time). Used time is each runs.jsonl row's duration_ms, else its closed attempt
+               record's started_at to finished_at, over the ticket's records dir and folder, once per attempt_id. At or past
+               the ceiling prepare refuses, exit 2, with two `dispatch.py: time budget:` lines (check the last role for a stdin
+               wait or a stall, ask the person; a headless lane stops the ticket as blocked). --approved "<who: why>", else
+               SDLC_TIME_APPROVED, lets the role through and appends `time budget approved: <used>m of <ceiling>m: <who: why>`
+               to the ticket folder's skips.md; each such line raises the ceiling to <used> plus one budget. A dry run writes
+               nothing. No ticket or no size proceeds.
   lock         replaces run_lifecycle.py's directory lock. Under a brief file lock, every running attempt
                record in the records dir whose parent pid is dead is marked interrupted and recovered; one
                whose parent is alive refuses, exit 2. A second prepare therefore cannot start while a
@@ -89,8 +99,11 @@ since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier bri
 the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.
 The line also says the file carries no header (record adds it, T-0538) and names `results.py validate <file> --role verifier --headerless`.
 The prefix line says rm of scratch output under that prefix is allowed and refused elsewhere (hooks/block-role-rm.sh).
+The last line is the role's wall-clock budget (T-0555), `Time budget: <n>m wall clock for <role> <level>`, from ROLE_MINUTES
+(3x the median recorded duration of that role and level, floor 10 minutes; 60 for a row with no record); prepare stores it
+as time_budget_min in the dispatch and the attempt, and status and recover flag a running attempt past it. Nothing is killed.
 
-Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, replan cap, spec gate, or a running attempt, 4 budget, 5 lane.
+Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, replan cap, time budget, spec gate, or a running attempt, 4 budget, 5 lane.
 
 record is the post-launch half (T-0278, design section 3). It takes <stem>.dispatch.json and the sub-agent's
 result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty,
@@ -174,7 +187,7 @@ import wtroot  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
-GATES = ('preflight', 'goal', 'replan', 'links', 'lane', 'specgate', 'budget', 'lock')
+GATES = ('preflight', 'goal', 'replan', 'links', 'lane', 'specgate', 'budget', 'time', 'lock')
 APPROVAL_RE = re.compile(r'[^:]*[^\s:][^:]*:\s*\S')  # "<who: why>", the rule steps.py lint --approved checks
 NAME_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 ID_RE = re.compile(r'[0-9]{8}T[0-9]{12}Z-[a-z0-9]+(-[a-z0-9]+)*')
@@ -605,6 +618,7 @@ def recover_root(root, open_only=False):
             lines += ['recovered: %s' % (Path(directory) / name),
                       '  resume: python3 %s prepare %s %s %s' % (me, data.get('role'), data.get('level'), data.get('handoff'))]
         lines += ['running: %s' % (Path(directory) / entry) for entry in live]
+        lines += over_budget_lines(directory)
     return lines or ['no orphaned attempts']
 
 
@@ -647,6 +661,100 @@ def age_text(seconds):
     return '%ds' % seconds
 
 
+# T-0555 wall-clock budgets, in minutes. A role row is 3x the median recorded duration_ms of that role and level in this
+# repo's runs.jsonl records (2026-10-14, 128 timed runs), rounded up to 5 minutes, floor 10; a row with no record gets
+# ROLE_MINUTES_DEFAULT. A ticket's budget is its total agent time by size (L2 median 0.4 h, L3 median 2.3 h on that date).
+ROLE_MINUTES = {('architect', 'L1'): 40, ('builder', 'L1'): 10, ('builder', 'L2'): 15, ('builder', 'L3'): 45, ('builder', 'L4'): 240,
+                ('filer', 'L1'): 10, ('plan-reviewer', 'L1'): 45, ('planner', 'L2'): 50, ('planner', 'L3'): 55, ('solo', 'L2'): 140,
+                ('verifier', 'L1'): 10, ('verifier', 'L2'): 25, ('verifier', 'L3'): 50}
+ROLE_MINUTES_DEFAULT = 60
+TICKET_MINUTES = {'L1': 60, 'L2': 120, 'L3': 420, 'L4': 840, 'L5': 1680}
+TIME_APPROVED_RE = re.compile(r'time budget approved: (\d+)m of \d+m: ')
+
+
+def role_minutes(role, level):
+    return ROLE_MINUTES.get((role, level), ROLE_MINUTES_DEFAULT)
+
+
+def iso_epoch(text):
+    """Epoch seconds of an ISO time (a trailing Z allowed), else None."""
+    try:
+        return datetime.fromisoformat(str(text).replace('Z', '+00:00')).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def over_budget(data):
+    """(elapsed seconds, budget minutes) of a running attempt past its role's wall-clock budget (the attempt's
+    time_budget_min, else role_minutes), else None."""
+    began = iso_epoch(data.get('started_at'))
+    if began is None:
+        return None
+    budget = data.get('time_budget_min')
+    budget = budget if isinstance(budget, int) and budget > 0 else role_minutes(data.get('role'), data.get('level'))
+    elapsed = time.time() - began
+    return (elapsed, budget) if elapsed >= budget * 60 else None
+
+
+def over_budget_lines(directory):
+    """One `over-budget:` line per running attempt in directory past its role's budget, with the check to make."""
+    lines = []
+    for path in sorted(Path(directory).glob('*.attempt.json')):
+        data = read_attempt(path)
+        hit = over_budget(data) if attempt_state(data) == 'running' else None
+        if hit:
+            lines.append('over-budget: %s running %s, budget %dm: check the role for a stdin wait or a stall, then ask the person (%s)'
+                         % (path.name[:-len('.attempt.json')], age_text(hit[0]), hit[1], path))
+    return lines
+
+
+def ticket_minutes(ticket):
+    """Agent minutes a ticket folder has used: each runs.jsonl row's duration_ms, else its closed (completed or failed)
+    attempt record's started_at to finished_at, over the records dir and the ticket folder, once per attempt_id."""
+    roots = {order.records_dir(ticket).resolve(), Path(ticket).resolve()}
+    seen, total = set(), 0.0
+    for f in sorted({f.resolve() for r in roots if r.is_dir() for f in r.rglob('runs.jsonl')}):
+        for line in f.read_text(encoding='utf-8', errors='replace').splitlines():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            ms = rec.get('duration_ms') if isinstance(rec, dict) else None
+            aid = rec.get('attempt_id') if isinstance(rec, dict) else None
+            if not isinstance(ms, (int, float)) or isinstance(ms, bool) or ms <= 0 or aid in seen:
+                continue
+            total += ms / 60000
+            if aid:
+                seen.add(aid)
+    for f in sorted({f.resolve() for r in roots if r.is_dir() for f in r.rglob('*.attempt.json')}):
+        try:
+            data = json.loads(f.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict) or data.get('status') not in ('completed', 'failed') or data.get('attempt_id') in seen:
+            continue
+        began, ended = iso_epoch(data.get('started_at')), iso_epoch(data.get('finished_at'))
+        if began is not None and ended is not None and ended > began:
+            total += (ended - began) / 60
+            if data.get('attempt_id'):
+                seen.add(data['attempt_id'])
+    return total
+
+
+def ticket_time(ticket):
+    """(used minutes, ceiling minutes, budget minutes, size) for a ticket folder with a size budget, else None. Each
+    `time budget approved: <n>m of ...` line in its skips.md raises the ceiling to n plus one budget."""
+    meta = budget.front(Path(ticket) / 'handoff.md') or {}
+    size = tickets.size_level(meta.get('size', ''))
+    if size not in TICKET_MINUTES:
+        return None
+    try:
+        approved = [int(m.group(1)) for m in TIME_APPROVED_RE.finditer((Path(ticket) / 'skips.md').read_text(encoding='utf-8'))]
+    except OSError:
+        approved = []
+    return ticket_minutes(ticket), max(approved, default=0) + TICKET_MINUTES[size], TICKET_MINUTES[size], size
+
+
 def status(directory, orphans_only=False):
     """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones.
     A running attempt with a stored agent id and one sub-agent transcript adds `last activity <age>` (the transcript's mtime) and `silent` at 30 minutes or more (T-0476)."""
@@ -666,6 +774,9 @@ def status(directory, orphans_only=False):
                 idle = None
             if idle is not None:
                 line += ' last activity %s' % age_text(idle) + (' silent' if idle >= SILENT_SECONDS else '')
+            hit = over_budget(data)
+            if hit:
+                line += ' over-budget %s (budget %dm)' % (age_text(hit[0]), hit[1])
         report = Path(directory) / (stem + '.md')
         if state in ('running', 'orphaned') and report.is_file() and report.stat().st_size:
             line += ' report-written-unrecorded'  # T-0383: the role reported but nobody recorded it, so no verdict was delivered
@@ -911,6 +1022,21 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         if rep and rep['state'] != 'ok':
             raise Refuse(4, 'dispatch.py: budget %s%%: ask the user; budget.py ack' % rep['percent'])
 
+    time_approved, time_ticket = '', None
+    if 'time' not in skip:  # T-0555: a ticket past its agent-time budget waits for the person
+        time_ticket = budget.ticket_of(handoff)
+        tt = ticket_time(time_ticket) if time_ticket is not None else None
+        if tt and tt[0] >= tt[1]:
+            time_approved = ' '.join(os.environ.get('SDLC_TIME_APPROVED', '').split())
+            if not time_approved:
+                raise Refuse(2, 'dispatch.py: time budget: %s has used %dm of agent time, past its %dm (size %s, %dm per approval); %s %s needs the person\'s approval'
+                                % (time_ticket, tt[0], tt[1], tt[3], tt[2], role, level),
+                             'dispatch.py: time budget: check the last role (a stdin wait, a stall), ask the person (go on, split the ticket, or drop scope), '
+                             'then rerun prepare with --approved "<who: why>"; a headless lane stops the ticket as blocked')
+            if not APPROVAL_RE.match(time_approved):
+                raise Refuse(2, 'dispatch.py: time budget: --approved takes "<who: why>": who approved, a colon, and why')
+            time_approved = 'time budget approved: %dm of %dm: %s' % (tt[0], tt[1], time_approved)
+
     lock = None
     try:
         if not dry_run:
@@ -951,6 +1077,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                        'results.py validate <file> --role verifier --headerless; dispatch.py record reads the file, and a missing one fails the run)' % result)
         if base:
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
+        minutes = role_minutes(role, level)
+        prompt += ('\nTime budget: %dm wall clock for %s %s; past it, dispatch.py status flags this attempt and the conductor checks on you'
+                   % (minutes, role, level))
 
         sha = hashlib.sha256(handoff.read_bytes()).hexdigest()
         reason = os.environ.get('SDLC_ROUTING_REASON', '').strip()
@@ -962,7 +1091,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         prune=role in PRUNE_ROLES if prune is None else bool(prune),
                         role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix, scratch=scratch,
                         base_sha=base, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
-                        handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate,
+                        handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate, time_budget_min=minutes,
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
                         attempt_file=str(records / (stem + '.attempt.json')),
                         dispatch_file=str(records / (stem + '.dispatch.json')), dry_run=dry_run)
@@ -977,10 +1106,13 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             if line not in (skips.read_text(encoding='utf-8').splitlines() if skips.is_file() else []):
                 with skips.open('a', encoding='utf-8') as f:
                     f.write(line + '\n')
+        if time_approved:  # in the ticket folder, where ticket_time reads it
+            with (Path(time_ticket) / 'skips.md').open('a', encoding='utf-8') as f:
+                f.write(time_approved + '\n')
         attempt = dict(attempt_id=uuid.uuid4().hex, name=stem, agent_name=name, role=role, level=level, backend='claude',
                        transport='subagent', model=model, effort=effort, routing_reason=dispatch['routing_reason'],
                        reason_source='caller' if reason else 'fallback', status='running', started_at=run_lifecycle.now(),
-                       project=os.getcwd(), handoff=str(handoff), parent_pid=pid, parent_pid_source=source, handoff_sha256=sha,
+                       project=os.getcwd(), handoff=str(handoff), parent_pid=pid, parent_pid_source=source, handoff_sha256=sha, time_budget_min=minutes,
                        worktrees_before=[p for p, _ in worktrees(toplevel)], branches_before=branches(toplevel))
         dispatch['attempt_id'] = attempt['attempt_id']
         run_lifecycle.write(Path(dispatch['attempt_file']), attempt)
@@ -1510,7 +1642,8 @@ def main(argv):
     p.add_argument('--solo-model', default='', choices=('', 'sonnet', 'opus', 'fable', 'haiku'),
                    help="the solo ticket's model when its runs.jsonl record is not in this tree (a sub-agent lane worktree): the verifier family rule reads it")
     p.add_argument('--approved', metavar='"WHO: WHY"',
-                   help='the person\'s approval of a planner run past the replan cap (T-0553); wins over SDLC_REPLAN_APPROVED, recorded in skips.md')
+                   help='the person\'s approval of a planner run past the replan cap (T-0553) or a role on a ticket past its time budget (T-0555); '
+                        'wins over SDLC_REPLAN_APPROVED and SDLC_TIME_APPROVED, recorded in skips.md')
     p.add_argument('--routing-reason', help='why this role and level; wins over SDLC_ROUTING_REASON (a command that starts with VAR=... misses a Bash(python3:*) allowlist)')
     pg = p.add_mutually_exclusive_group()
     pg.add_argument('--prune', dest='prune', action='store_true', default=None, help='queue this agent for pruning after a recorded result (the default for a one-shot role)')
@@ -1611,7 +1744,7 @@ def main(argv):
                 print('dispatch.py: recover needs a handoff dir or --root DIR', file=sys.stderr)
                 return 2
             else:
-                out = ['marked interrupted: ' + n for n in recover_orphans(args.directory)[0]] or ['no orphaned attempts']
+                out = (['marked interrupted: ' + n for n in recover_orphans(args.directory)[0]] or ['no orphaned attempts']) + over_budget_lines(args.directory)
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -1649,7 +1782,7 @@ def main(argv):
     if args.routing_reason is not None:
         os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     if args.approved is not None:
-        os.environ['SDLC_REPLAN_APPROVED'] = args.approved
+        os.environ['SDLC_REPLAN_APPROVED'] = os.environ['SDLC_TIME_APPROVED'] = args.approved
     try:
         out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model, prune=args.prune,
                       notify=args.notify, notify_re=args.notify_re, tree=args.tree)
@@ -2029,6 +2162,67 @@ def selftest():
         case('under 80 percent passes', prep(repo, 'verifier', 'L1', '.sdlc/bg/handoff.md', '--dry-run')[0] == 0)
         ticket(sdlc / 'bn', 'L2')
         case('a ticket with no budget passes', prep(repo, 'verifier', 'L1', '.sdlc/bn/handoff.md', '--dry-run')[0] == 0)
+
+        # time budgets (T-0555). A ticket past its agent-time budget for its size refuses the next role until the person
+        # approves; each approval allows one more budget. run.sh has no time gate, so no parity.
+        tt = sdlc / 'tt'
+        ticket(tt, 'L1')
+        put(R(tt) / 'runs.jsonl', json.dumps({'role': 'solo', 'level': 'L1', 'duration_ms': 40 * 60000, 'attempt_id': 't1'}) + '\n')
+        case('time budget: a ticket inside its budget passes', prep(repo, 'verifier', 'L1', '.sdlc/tt/handoff.md', '--dry-run')[0] == 0)
+        put(R(tt) / 'verifier-L1.attempt.json', json.dumps({'attempt_id': 't2', 'status': 'completed', 'role': 'verifier', 'level': 'L1',
+                                                             'started_at': '2026-10-14T10:00:00+00:00', 'finished_at': '2026-10-14T10:30:00+00:00'}))
+        before = sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts)
+        rc, _, err = prep(repo, 'verifier', 'L1', '.sdlc/tt/handoff.md')
+        case('time budget: a ticket past its budget (a 40m run row and a 30m attempt) refuses the next role, exit 2, naming the minutes and --approved',
+             rc == 2 and 'time budget:' in err and '70m' in err and '60m' in err and '--approved "<who: why>"' in err)
+        case('time budget: the refusal wrote nothing', before == sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts))
+        with clean_env(), cwd(repo), contextlib.redirect_stderr(io.StringIO()):
+            try:
+                passed = prepare('verifier', 'L1', '.sdlc/tt/handoff.md', dry_run=True, skip=('time',))
+            except Refuse:
+                passed = None
+        case('time budget: negative control, without the time gate the ticket past its budget goes through', bool(passed))
+        rc, _, err = prep(repo, 'verifier', 'L1', '.sdlc/tt/handoff.md', '--dry-run', '--approved', 'yes')
+        case('time budget: --approved needs "<who: why>"', rc == 2 and '<who: why>' in err)
+        rc, _, _ = prep(repo, 'verifier', 'L1', '.sdlc/tt/handoff.md', '--dry-run', '--approved', 'maintainer: finish the verify')
+        case('time budget: a dry run with --approved passes and records nothing', rc == 0 and not (tt / 'skips.md').exists())
+        rc, _, _ = prep(repo, 'verifier', 'L1', '.sdlc/tt/handoff.md', '--approved', 'maintainer: finish the verify')
+        case('time budget: --approved lets the role through and records it once in skips.md',
+             rc == 0 and (tt / 'skips.md').is_file() and (tt / 'skips.md').read_text(encoding='utf-8') == 'time budget approved: 70m of 60m: maintainer: finish the verify\n')
+        case('time budget: after an approval the next role passes inside one more budget',
+             prep(repo, 'scout', 'L1', '.sdlc/tt/handoff.md', '--dry-run')[0] == 0)
+        with (R(tt) / 'runs.jsonl').open('a', encoding='utf-8') as f:
+            f.write(json.dumps({'role': 'solo', 'level': 'L1', 'duration_ms': 60 * 60000, 'attempt_id': 't3'}) + '\n')
+        rc, _, err = prep(repo, 'scout', 'L1', '.sdlc/tt/handoff.md', '--dry-run')
+        case('time budget: past the approved budget too, the next role needs a new approval', rc == 2 and '130m' in err)
+        shutil.rmtree(tt)
+        shutil.rmtree(R(tt))
+
+        # A running attempt past its role's wall-clock budget is flagged by status and recover; one inside it is not.
+        def at(offset, fn, *a):
+            real = time.time
+            time.time = lambda: real() + offset
+            try:
+                return fn(*a)
+            finally:
+                time.time = real
+        tr = tmp / 'tr'
+        init_repo(tr)
+        put(tr / '.sdlc' / 'ob' / 'handoff.md')
+        rc, ob, _ = prep(tr, 'builder', 'L2', '.sdlc/ob/handoff.md', SDLC_DISPATCH_PARENT_PID=str(os.getpid()))
+        case('time budget: the brief names the role budget and the attempt stores it',
+             rc == 0 and '\nTime budget: 15m wall clock for builder L2' in ob['prompt']
+             and json.loads(Path(ob['attempt_file']).read_text()).get('time_budget_min') == 15)
+        late = at(16 * 60, status, R(tr / '.sdlc' / 'ob'))
+        case('time budget: status flags a running attempt past its role budget', len(late) == 1 and ' running ' in late[0] and late[0].endswith(' over-budget 16m (budget 15m)'))
+        case('negative control: status leaves a running attempt inside its budget unflagged', 'over-budget' not in status(R(tr / '.sdlc' / 'ob'))[0])
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            at(16 * 60, main, ['recover', str(tr / '.sdlc' / 'ob')])
+        case('time budget: recover names the attempt past its budget and the check to make',
+             'over-budget: builder-L2 running 16m, budget 15m' in out.getvalue() and 'stdin' in out.getvalue())
+        rec = at(16 * 60, recover_root, str(tr))
+        case('time budget: recover --root names it too', any(l.startswith('over-budget: ') and 'builder-L2' in l for l in rec))
+        case('negative control: recover --root flags nothing inside the budget', not any('over-budget' in l for l in recover_root(str(tr))))
 
         # preflight: handoff, row, git work tree, commit, generated definition, skills.
         case('preflight: a missing handoff exits 2 like run.sh', prep(repo, 'builder', 'L1', '.sdlc/none/handoff.md')[0] == 2

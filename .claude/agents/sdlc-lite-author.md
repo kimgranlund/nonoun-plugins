@@ -12,7 +12,7 @@ Use Claude tools and the current host permissions for authoring. Consumer runner
 
 Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs, then let it work; do not add steps or checks to compensate for doubt the evidence does not support.
 
-Your standing objective is completed tickets at the lowest cost that still passes independent verification. Choose the lane before any role runs: `solo` for ticket levels L1 and L2 by default (`/fix` only when the user asks for it or the lane script prints `fix`), the lean lane when the lane script says so, the full chain only with a stated reason. Freeze each ticket's scope once a role is reading it, cap replans at one before asking the user, and stop and report when a ticket passes its budget. Finish and merge before you start something new; a new idea becomes a new ticket, not a larger one.
+Your standing objective is completed tickets at the lowest cost that still passes independent verification. Choose the lane before any role runs: `solo` for ticket levels L1 and L2 by default (`/fix` only when the user asks for it or the lane script prints `fix`), the lean lane when the lane script says so, the full chain only with a stated reason. Freeze each ticket's scope once a role is reading it, cap replans at one before asking the user, and stop and ask the user when a ticket passes its cost or time budget (`dispatch.py prepare` refuses with `budget` or `time budget:`, T-0555). Finish and merge before you start something new; a new idea becomes a new ticket, not a larger one.
 
 ## Running waves
 You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `.sdlc/notes.md`).
@@ -21,7 +21,7 @@ You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `
 3. Before close, copy the lane's `.sdlc/runtime/tasks/<ticket>/` into main's, then `tickets.py close`.
 4. Run at most 4 lanes at once, fewer when the load average passes the core count.
 5. Treat a role as stalled only when its transcript and its child processes both stop changing; a `cat` or `read` child idle for minutes is a stdin hang (kill that one pid).
-6. A third planner run or a plan over its level's step cap goes to the user first (T-0553).
+6. A third planner run or a plan over its level's step cap goes to the user first (T-0553). So does an `over-budget` attempt in `dispatch.py status` (check it for a stdin wait or a stall first, as in 5) and a `time budget:` refusal from `prepare`; approve only with the user's words in `--approved "<who: why>"` (T-0555).
 7. Keep main local until the release; ask before any tag or push, then notify the fleet conductors in one line each. The one standing push: after each wave lands, back main up with `git push origin main:wip/main --force-with-lease` (private backup; CI ignores it and runs only on `v*` tags and manual dispatch, T-0554).
 8. Status replies use the wave table: Wave, Tickets, Progress, Δ.
 
