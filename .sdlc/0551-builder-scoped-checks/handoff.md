@@ -1,0 +1,25 @@
+---
+id: T-0551
+title: "Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway"
+type: chore           # feature | bug | chore | spike | idea
+status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
+priority: P2         # P1 | P2 | P3
+depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+created: 2026-10-14
+router: .sdlc/AGENTS.md  # how to claim and close this ticket
+---
+
+## Goal
+A builder runs the checks its step's acceptance criteria name, plus the narrow suites the change touches, and does not run the full `check.sh` when the land gate (fanout `--gate`, `/chain` final verify) runs it anyway.
+
+## Intent
+- Do: change the builder contract (and its generated variants) so the full `check.sh` is run only when a criterion names it or the step is the ticket's last step with no land gate; otherwise the builder runs the named criteria and the touched suites. Same review for solo where a verifier and a land gate follow.
+- Non-goals: removing `check.sh` from any verifier or gate; changing what the land gate runs.
+- Done when: the contract says so, `claude_roles.py generate --check` and `check.py` pass, and one lane run in a throwaway project shows a builder step finishing without a full `check.sh` while the land gate still runs it.
+
+## Context
+Maintainer request 2026-10-14 ("proceed 1-4" on the slow-lane analysis). T-0543 wave 70: step 3 builder took 50 min, about 47 of it a full `check.sh` (normally 18 min) on an overloaded machine (load average 54 on 20 cores); step 2's verifier and the land gate ran it again. Run records: `.worktrees/fanout70/d/.sdlc/runtime/tasks/0543-close-writes-outcome/runs.jsonl`.
+
+## Constraints
+A step whose criterion names `check.sh` still runs it.

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:63162c8fc244 -->
+<!-- sdlc-lite:managed:start v1 sha256:881c0dd85fe9 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 10
   - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
   - T-0536 Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) (0536-plan-defect-order-and-amend)
   - T-0543 Lean records D: Close writes the Outcome (0.23.0) (0543-close-writes-outcome)
@@ -19,6 +19,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0548 A role's Bash call that reads stdin (bare cat > file) hangs the run with no timeout (0548-role-bash-stdin-hang)
   - T-0549 Role Bash calls avoid bash -c on built strings, so the host stops asking for approval under bypass (0549-role-permission-mode)
   - T-0550 Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep (0550-standard-worktree-scratch-layout)
+  - T-0551 Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (0551-builder-scoped-checks)
 - ready: 0
 - claimed: 0
 - paused: 0
