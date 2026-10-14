@@ -34,7 +34,7 @@ Profile handshake. Listed is not loaded at the current revision: an install does
 
 Not ready means stop before claiming: name the missing role and the action, and never substitute a builder or another level, fall back to Claude, or start a nested Codex CLI. A fresh session alone does not prove the build can start: after it, start the solo wrapper above and confirm `<ticket folder>/solo-<level>-<attempt>.request.json` appears with status waiting; if it does not, that is a launcher repair, not a restart.
 
-Resume packet. When a session ends or is replaced before the work does, leave this in the ticket folder or the handoff, a few lines and no transcript:
+Resume packet. When a session ends or is replaced before the work does, leave this in the records dir that `python3 @SDLC_PLUGIN_ROOT@/scripts/order.py records-dir <ticket folder>` prints, not in the ticket folder, a few lines and no transcript:
 - ticket: path of its `handoff.md`, and the claim (`claimed_by`) and run state (newest `*.request.json` status, `runs.jsonl` rows, lane branch and worktree).
 - base and scope: the conductor-approved base sha and the files or areas in scope.
 - launcher issues: each unresolved one, with its ticket id.

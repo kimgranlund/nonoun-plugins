@@ -94,6 +94,10 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 fail() { echo "run selftest: FAIL: $*"; exit 1; }
+# rd <task dir>: its records dir (order.py records-dir), where run.sh writes results, logs, attempts, base-sha and
+# runs.jsonl; rdm also makes it, for a case that seeds a record before the run.
+rd() { python3 "$here/order.py" records-dir "$1"; }
+rdm() { local d; d=$(rd "$1"); mkdir -p "$d"; printf '%s\n' "$d"; }
 
 # T-0288: the Claude branch is legacy; every case below exercises it, so opt in. The refusal cases unset it.
 export SDLC_CLAUDE_EXEC=1
@@ -127,7 +131,7 @@ refuse_out=$(cd "$repo" && env -u SDLC_CLAUDE_EXEC PATH="$tmp/bin:$PATH" SDLC_BA
 [[ "$refuse_rc" == 2 ]] || fail "claude retirement: want exit 2 without SDLC_CLAUDE_EXEC, got $refuse_rc"
 [[ "$(printf '%s\n' "$refuse_out" | wc -l | tr -d ' ')" == 1 && "$refuse_out" == *"dispatch.py prepare"* ]] || fail "claude retirement: want one line naming dispatch.py prepare, got: $refuse_out"
 
-dir="$(cd "$repo/.sdlc/t" && pwd)"
+dir="$(rd "$(cd "$repo/.sdlc/t" && pwd)")"
 names=(planner-L3 planner-L3-2 planner-L3-3)
 outs=()
 for i in 1 2 3; do
@@ -155,22 +159,34 @@ files=$(jq -r '.file // "MISSING"' "$dir/runs.jsonl" | tr '\n' ' ')
   || fail "runs.jsonl file fields are '$files', want 'planner-L3.md planner-L3-2.md planner-L3-3.md'"
 leftover=$(find "$dir" -name '*.running')
 [[ -z "$leftover" ]] || fail "a .running file is left over: $leftover"
+# Records dir: the three runs wrote nothing beside the handoff; a legacy task dir (runs.jsonl beside its
+# handoff) keeps recording in place and gets no runtime dir.
+[[ "$dir" == "$repo/.sdlc/runtime/tasks/t" || "$dir" == "$(cd "$repo" && pwd -P)/.sdlc/runtime/tasks/t" ]] \
+  || fail "records dir: run.sh wrote to $dir, want .sdlc/runtime/tasks/t"
+[[ ! -e "$repo/.sdlc/t/planner-L3.md" && ! -e "$repo/.sdlc/t/runs.jsonl" ]] || fail "records dir: a result or runs.jsonl landed beside the handoff"
+mkdir -p "$repo/.sdlc/legacy"
+cp "$repo/.sdlc/t/handoff.md" "$repo/.sdlc/legacy/handoff.md"
+echo '{}' >"$repo/.sdlc/legacy/runs.jsonl"
+lout=$(cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/legacy/handoff.md) || fail "records dir legacy: run.sh exited non-zero"
+[[ "$lout" == */.sdlc/legacy/planner-L3.md && -f "$repo/.sdlc/legacy/planner-L3.md" ]] || fail "records dir legacy: result is '$lout', want .sdlc/legacy/planner-L3.md"
+[[ "$(wc -l <"$repo/.sdlc/legacy/runs.jsonl" | tr -d ' ')" == 2 && ! -e "$repo/.sdlc/runtime/tasks/legacy" ]] || fail "records dir legacy: runs.jsonl not appended in place, or a runtime dir was made"
 
 # Verifier model swap reads the newest build from runs.jsonl order, not file times (dry run).
 sw="$repo/.sdlc/t/step-1"
 mkdir -p "$sw"
 echo '## Goal' >"$sw/handoff.md"
-echo '<!-- role=builder level=L5 model=fable effort=xhigh -->' >"$sw/builder-L5.md"
-echo '<!-- role=builder level=L1 model=sonnet effort=low -->' >"$sw/builder-L1.md"
-touch -t 202601010000 "$sw/builder-L5.md" "$sw/builder-L1.md"
+swr="$(rdm "$sw")"  # task t records in runtime, so its step records do too (order.py rule 2)
+echo '<!-- role=builder level=L5 model=fable effort=xhigh -->' >"$swr/builder-L5.md"
+echo '<!-- role=builder level=L1 model=sonnet effort=low -->' >"$swr/builder-L1.md"
+touch -t 202601010000 "$swr/builder-L5.md" "$swr/builder-L1.md"
 dry() { (cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" verifier "$1" .sdlc/t/step-1/handoff.md); }
 printf '%s\n' '{"role":"builder","level":"L1","file":"builder-L1.md"}' \
-  '{"role":"builder","level":"L5","file":"builder-L5.md"}' >"$sw/runs.jsonl"
+  '{"role":"builder","level":"L5","file":"builder-L5.md"}' >"$swr/runs.jsonl"
 out=$(dry L2) || fail "dry run verifier L2 exited non-zero"
 [[ "$out" == *"--model sonnet --effort high"* ]] \
   || fail "L5 newest: verifier L2 should stay '--model sonnet --effort high', got: $out"
 printf '%s\n' '{"role":"builder","level":"L5","file":"builder-L5.md"}' \
-  '{"role":"builder","level":"L1","file":"builder-L1.md"}' >"$sw/runs.jsonl"
+  '{"role":"builder","level":"L1","file":"builder-L1.md"}' >"$swr/runs.jsonl"
 out=$(dry L1) || fail "dry run verifier L1 exited non-zero"
 [[ "$out" == *"--model opus --effort low"* ]] \
   || fail "L1 newest: verifier L1 should stay '--model opus --effort low' after a sonnet build, got: $out"
@@ -327,12 +343,13 @@ rrepo="$tmp/rrepo"
 mkdir -p "$rrepo"
 echo x >"$rrepo/h.md"
 git -C "$rrepo" init -q
+rrec="$(rd "$rrepo")"
 git -C "$rrepo" add -A
 git -C "$rrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
   commit -q -m init
 # want_rc <rc> <role> <level> <result text>: runs run.sh with that result, checks the exit code.
 want_rc() {
-  res "$4"; rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
+  res "$4"; rm -f "$rrec"/*-L*.md "$rrec"/*.log "$rrec"/*.attempt.json "$rrec/runs.jsonl"
   local rc=0
   (cd "$rrepo" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" "$2" "$3" h.md \
     >/dev/null 2>"$tmp/rerr") || rc=$?
@@ -340,8 +357,8 @@ want_rc() {
 }
 want_rc 3 builder L2 $'## Changes\nNone'
 grep -q '## Status' "$tmp/rerr" || fail "builder no Status: stderr does not name ## Status: $(cat "$tmp/rerr")"
-[[ -f "$rrepo/builder-L2.md" ]] || fail "builder no Status: result file not kept"
-grep -q '"file":"builder-L2.md"' "$rrepo/runs.jsonl" || fail "builder no Status: runs.jsonl line not kept"
+[[ -f "$rrec/builder-L2.md" ]] || fail "builder no Status: result file not kept"
+grep -q '"file":"builder-L2.md"' "$rrec/runs.jsonl" || fail "builder no Status: runs.jsonl line not kept"
 want_rc 3 builder L2 $'## Status\nmaybe'
 want_rc 0 builder L2 $'## Status\ninherited red: test_a'
 want_rc 3 builder L2 $'## Status\ninherited red'
@@ -374,7 +391,7 @@ res2() {
 }
 # pick_rc <rc> <role> <level>: runs run.sh on the current res.json, checks the exit code.
 pick_rc() {
-  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
+  rm -f "$rrec"/*-L*.md "$rrec"/*.log "$rrec"/*.attempt.json "$rrec/runs.jsonl"
   local rc=0
   (cd "$rrepo" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" "$2" "$3" h.md \
     >/dev/null 2>"$tmp/rerr") || rc=$?
@@ -382,23 +399,23 @@ pick_rc() {
 }
 res2 $'## Verdict\npass' 1
 pick_rc 0 verifier L1
-grep -qx '## Verdict' "$rrepo/verifier-L1.md" || fail "result pick: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrepo/verifier-L1.md")"
-! grep -q 'stale monitor' "$rrepo/verifier-L1.md" || fail "result pick: verifier-L1.md holds the task-notification result"
-grep -q 'stderr noise' "$rrepo/verifier-L1.log" || fail "result pick: the log holds no non-JSON stderr line"
-cost=$(jq -r '.cost_usd' "$rrepo/runs.jsonl")
+grep -qx '## Verdict' "$rrec/verifier-L1.md" || fail "result pick: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrec/verifier-L1.md")"
+! grep -q 'stale monitor' "$rrec/verifier-L1.md" || fail "result pick: verifier-L1.md holds the task-notification result"
+grep -q 'stderr noise' "$rrec/verifier-L1.log" || fail "result pick: the log holds no non-JSON stderr line"
+cost=$(jq -r '.cost_usd' "$rrec/runs.jsonl")
 [[ "$cost" == 3 ]] || fail "result pick: runs.jsonl cost_usd is '$cost', want 3 (the last result event)"
 res2 'working on it' 1
 pick_rc 3 verifier L1
-grep -q 'working on it' "$rrepo/verifier-L1.md" || fail "no heading: the non-notification result was not saved"
-! grep -q 'stale monitor' "$rrepo/verifier-L1.md" || fail "no heading: verifier-L1.md holds the task-notification result"
+grep -q 'working on it' "$rrec/verifier-L1.md" || fail "no heading: the non-notification result was not saved"
+! grep -q 'stale monitor' "$rrec/verifier-L1.md" || fail "no heading: verifier-L1.md holds the task-notification result"
 # heading rule: two results, neither a task notification; the earlier one holds the heading, the
 # later one does not. Only the heading rule saves the earlier one (the fallback picks the last).
 { jq -nc '{type:"result",is_error:false,result:"## Verdict\npass",total_cost_usd:1,duration_ms:1,num_turns:1}'
   jq -nc '{type:"result",is_error:false,result:"done, see above",total_cost_usd:2,duration_ms:1,num_turns:2}'
 } >"$tmp/res.json"
 pick_rc 0 verifier L1
-grep -qx '## Verdict' "$rrepo/verifier-L1.md" || fail "heading rule: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrepo/verifier-L1.md")"
-! grep -q 'done, see above' "$rrepo/verifier-L1.md" || fail "heading rule: verifier-L1.md holds the later headingless result"
+grep -qx '## Verdict' "$rrec/verifier-L1.md" || fail "heading rule: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrec/verifier-L1.md")"
+! grep -q 'done, see above' "$rrec/verifier-L1.md" || fail "heading rule: verifier-L1.md holds the later headingless result"
 
 # Real run: the stub claude records the first PATH entry it sees.
 printf '20\n' >"$nrepo/.nvmrc"
@@ -445,6 +462,7 @@ chmod +x "$tmp/wbin/claude"
 wrepo="$tmp/wrepo"
 mkdir -p "$wrepo"
 echo x >"$wrepo/h.md"
+wrec="$(rd "$wrepo")"
 git -C "$wrepo" init -q
 git -C "$wrepo" add -A
 git -C "$wrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
@@ -456,7 +474,7 @@ wtop=$(git -C "$wrepo" rev-parse --show-toplevel)
 # want_wt <mode> <rc>: one real run with that stub mode, then the worktree assertions.
 want_wt() {
   local rc=0 env_seen wts
-  rm -f "$tmp/wtenv" "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo"/*.attempt.json "$wrepo/runs.jsonl"
+  rm -f "$tmp/wtenv" "$wrec"/*-L*.md "$wrec"/*.log "$wrec"/*.attempt.json "$wrec/runs.jsonl"
   (cd "$wrepo" && STUB_MODE="$1" PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md \
     >/dev/null 2>"$tmp/werr") || rc=$?
   [[ "$rc" == "$2" ]] || fail "worktree $1 run: exit $rc, want $2 ($(cat "$tmp/werr"))"
@@ -481,7 +499,7 @@ git -C "$wrepo" worktree add -q --detach "$wrepo/.worktrees/tmp/builder-$dead/w"
   || fail "stale prefix: could not add the dead-owner worktree"
 git -C "$wrepo" worktree add -q --detach "$wrepo/.worktrees/tmp/builder-$$/w" HEAD >/dev/null 2>&1 \
   || fail "stale prefix: could not add the live-owner worktree"
-rm -f "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo"/*.attempt.json "$wrepo/runs.jsonl"
+rm -f "$wrec"/*-L*.md "$wrec"/*.log "$wrec"/*.attempt.json "$wrec/runs.jsonl"
 src=0
 (cd "$wrepo" && STUB_MODE=ok PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>"$tmp/werr") || src=$?
 [[ "$src" == 0 ]] || fail "stale prefix: run.sh exited $src, want 0 ($(cat "$tmp/werr"))"
@@ -510,7 +528,7 @@ echo "$$" >"$STUB_READY.tmp" && mv "$STUB_READY.tmp" "$STUB_READY"
 exec sleep 30
 EOF
 chmod +x "$tmp/tbin/claude"
-rm -f "$tmp/term.ready" "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo"/*.attempt.json "$wrepo/runs.jsonl"
+rm -f "$tmp/term.ready" "$wrec"/*-L*.md "$wrec"/*.log "$wrec"/*.attempt.json "$wrec/runs.jsonl"
 (cd "$wrepo" || exit 1; export STUB_READY="$tmp/term.ready" PATH="$tmp/tbin:$PATH"
   exec "$here/run.sh" builder L1 h.md) >/dev/null 2>"$tmp/terr" &
 tpid=$!
@@ -560,13 +578,14 @@ brun() {
     || fail "base $1 run: run.sh exited non-zero ($(cat "$tmp/berr"))"
   cat "$tmp/baseseen" 2>/dev/null || echo MISSING
 }
-bfile() { head -1 "$brepo/s/base-sha" 2>/dev/null || echo MISSING; }
+brec="$(rd "$brepo/s")"
+bfile() { head -1 "$brec/base-sha" 2>/dev/null || echo MISSING; }
 (cd "$brepo" && SDLC_DRY_RUN=1 PATH="$tmp/bbin:$PATH" "$here/run.sh" builder L1 s/handoff.md >/dev/null 2>&1) \
   || fail "base dry run: run.sh exited non-zero"
-[[ ! -e "$brepo/s/base-sha" ]] || fail "base dry run: builder dry run wrote base-sha"
+[[ ! -e "$brec/base-sha" ]] || fail "base dry run: builder dry run wrote base-sha"
 seen=$(SDLC_BASE_SHA=leak brun planner)
 [[ "$seen" == unset ]] || fail "base planner: SDLC_BASE_SHA is '$seen', want unset (caller exported 'leak')"
-[[ ! -e "$brepo/s/base-sha" ]] || fail "base planner: planner run wrote base-sha"
+[[ ! -e "$brec/base-sha" ]] || fail "base planner: planner run wrote base-sha"
 seen=$(brun builder)
 [[ "$seen" == "$b0" ]] || fail "base first builder: SDLC_BASE_SHA is '$seen', want HEAD $b0"
 [[ "$(bfile)" == "$b0" ]] || fail "base first builder: base-sha is '$(bfile)', want HEAD $b0"
@@ -585,7 +604,7 @@ bm=$(bg rev-parse HEAD)
 seen=$(brun verifier)
 [[ "$seen" == "$bm" ]] || fail "base after resync merge: SDLC_BASE_SHA is '$seen', want merge $bm"
 [[ "$(bfile)" == "$bm" ]] || fail "base after resync merge: base-sha is '$(bfile)', want $bm"
-echo junk >"$brepo/s/base-sha"
+echo junk >"$brec/base-sha"
 seen=$(brun builder)
 head_now=$(bg rev-parse HEAD)
 [[ "$seen" == "$head_now" ]] || fail "base junk: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
@@ -596,7 +615,7 @@ bg commit -q --allow-empty -m other
 na=$(bg rev-parse HEAD)
 bg checkout -q -
 bg merge-base --is-ancestor "$na" HEAD && fail "base non-ancestor: fixture commit $na is an ancestor of HEAD"
-echo "$na" >"$brepo/s/base-sha"
+echo "$na" >"$brec/base-sha"
 seen=$(brun verifier)
 [[ "$seen" == "$head_now" ]] || fail "base non-ancestor: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
 [[ "$(bfile)" == "$head_now" ]] || fail "base non-ancestor: base-sha is '$(bfile)', want HEAD $head_now"
@@ -608,11 +627,12 @@ echo l >"$tmp/blane/lane.txt"
 lg add lane.txt
 lg commit -q -m lane
 lane_head=$(lg rev-parse HEAD)
-echo "$b0" >"$tmp/blane/s/base-sha"
+blrec="$(rdm "$tmp/blane/s")"
+echo "$b0" >"$blrec/base-sha"
 seen=$(cd "$tmp/blane" && PATH="$tmp/bbin:$PATH" "$here/run.sh" builder L1 s/handoff.md >/dev/null 2>&1; cat "$tmp/baseseen")
 [[ "$seen" == "$lane_head" ]] || fail "base stale lane: SDLC_BASE_SHA is '$seen', want lane HEAD $lane_head (stored $b0 is older than the fork)"
-[[ "$(head -1 "$tmp/blane/s/base-sha")" == "$lane_head" ]] || fail "base stale lane: base-sha not rewritten to lane HEAD $lane_head"
-echo "$lane_head" >"$tmp/blane/s/base-sha"
+[[ "$(head -1 "$blrec/base-sha")" == "$lane_head" ]] || fail "base stale lane: base-sha not rewritten to lane HEAD $lane_head"
+echo "$lane_head" >"$blrec/base-sha"
 echo m >"$tmp/blane/m.txt"
 lg add m.txt
 lg commit -q -m more
@@ -636,29 +656,29 @@ srun() {
 }
 hand_orig=$(cat "$brepo/s/handoff.md")
 # A rework (a second dispatch after lane commits) keeps the base recorded at the first dispatch.
-echo "$lane_head" >"$brepo/s/base-sha"
+echo "$lane_head" >"$brec/base-sha"
 seen=$(srun builder)
 [[ "$seen" == "$lane_head" ]] || fail "base shared handoff, rework keeps the recorded base: SDLC_BASE_SHA is '$seen', want $lane_head (lane HEAD $lane_tip, main HEAD $fork)"
 grep -q "base ${lane_head:0:12}: recorded" "$tmp/berr" || fail "base shared handoff: the chosen base and why were not printed ($(cat "$tmp/berr"))"
 # Nothing recorded: the execution tree's HEAD, never the main checkout's HEAD.
-rm -f "$brepo/s/base-sha"
+rm -f "$brec/base-sha"
 seen=$(srun builder)
 [[ "$seen" == "$lane_tip" ]] || fail "base shared handoff, first dispatch: SDLC_BASE_SHA is '$seen', want the lane HEAD $lane_tip (main HEAD is $fork)"
 # A wrong but valid supplied base is refused and the right one kept.
-echo "$lane_head" >"$brepo/s/base-sha"
+echo "$lane_head" >"$brec/base-sha"
 seen=$(srun builder SDLC_BASE_SHA="$fork")
 [[ "$seen" == "$lane_head" ]] || fail "base shared handoff, wrong supplied base: SDLC_BASE_SHA is '$seen', want the recorded $lane_head (supplied main HEAD $fork)"
 grep -q "SDLC_BASE_SHA refused: $fork" "$tmp/berr" || fail "base shared handoff, wrong supplied base: no 'SDLC_BASE_SHA refused' line ($(cat "$tmp/berr"))"
 seen=$(srun verifier SDLC_BASE_SHA="$lane_head")
 [[ "$seen" == "$lane_head" ]] || fail "base shared handoff, matching supplied base: SDLC_BASE_SHA is '$seen', want $lane_head"
 grep -q "SDLC_BASE_SHA refused" "$tmp/berr" && fail "base shared handoff, matching supplied base was refused ($(cat "$tmp/berr"))"
-rm -f "$brepo/s/base-sha"
+rm -f "$brec/base-sha"
 seen=$(srun builder SDLC_BASE_SHA="$fork")
 [[ "$seen" == "$lane_tip" ]] || fail "base shared handoff, wrong supplied base on a first dispatch: SDLC_BASE_SHA is '$seen', want the lane HEAD $lane_tip"
 grep -q "SDLC_BASE_SHA refused: $fork" "$tmp/berr" || fail "base shared handoff, wrong supplied base on a first dispatch: no refusal line ($(cat "$tmp/berr"))"
 # A base the handoff names wins over the recorded one and over a supplied one, even older than the lane fork.
 printf '%s\nbase: %s\n' "$hand_orig" "$b0" >"$brepo/s/handoff.md"
-echo "$lane_head" >"$brepo/s/base-sha"
+echo "$lane_head" >"$brec/base-sha"
 seen=$(srun builder)
 [[ "$seen" == "$b0" ]] || fail "base shared handoff, named base: SDLC_BASE_SHA is '$seen', want the handoff-named $b0 (recorded $lane_head)"
 grep -q "base ${b0:0:12}: named in the handoff" "$tmp/berr" || fail "base shared handoff, named base: the why was not printed ($(cat "$tmp/berr"))"
@@ -675,7 +695,7 @@ rm -f "$tmp/baseseen"
 grep -q "SDLC_BASE_SHA refused: .*$na" "$tmp/berr" || fail "base shared handoff, invalid named base: no refusal line ($(cat "$tmp/berr"))"
 [[ ! -e "$tmp/baseseen" ]] || fail "base shared handoff, invalid named base: the role still ran"
 printf '%s\n' "$hand_orig" >"$brepo/s/handoff.md"
-echo "$lane_head" >"$brepo/s/base-sha"
+echo "$lane_head" >"$brec/base-sha"
 seen=$(srun planner SDLC_BASE_SHA="$lane_head")
 [[ "$seen" == unset ]] || fail "base shared handoff, planner: SDLC_BASE_SHA is '$seen', want unset"
 
@@ -703,6 +723,7 @@ chmod +x "$tmp/sbin/claude"
 srepo="$tmp/srepo"
 mkdir -p "$srepo"
 echo x >"$srepo/h.md"
+srec="$(rd "$srepo")"
 git -C "$srepo" init -q
 git -C "$srepo" add -A
 git -C "$srepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
@@ -710,7 +731,7 @@ git -C "$srepo" -c user.name=selftest -c user.email=selftest@example.invalid -c 
 # stray_run <mode> <rc>: one real run with that stub mode; stderr lands in $tmp/serr.
 stray_run() {
   local rc=0
-  rm -f "$srepo"/*-L*.md "$srepo"/*.log "$srepo"/*.attempt.json "$srepo/runs.jsonl"
+  rm -f "$srec"/*-L*.md "$srec"/*.log "$srec"/*.attempt.json "$srec/runs.jsonl"
   (cd "$srepo" && STUB_MODE="$1" PATH="$tmp/sbin:$PATH" "$here/run.sh" builder L1 h.md \
     >/dev/null 2>"$tmp/serr") || rc=$?
   [[ "$rc" == "$2" ]] || fail "stray $1 run: exit $rc, want $2 ($(cat "$tmp/serr"))"
@@ -746,8 +767,8 @@ stray_run stray 0
 want_strays "stray ok run"
 jq -e '(.stray_branches | length == 2) and (.stray_branches | map(test("^builder-[0-9]+-(wt-)?br$")) | all)
   and (.stray_worktrees | length == 2)
-  and (.stray_worktrees | map(test("/(srepo-stray-br|tmp/stray-det)$")) | all)' "$srepo/runs.jsonl" >/dev/null \
-  || fail "stray ok run: runs.jsonl stray fields wrong: $(cat "$srepo/runs.jsonl")"
+  and (.stray_worktrees | map(test("/(srepo-stray-br|tmp/stray-det)$")) | all)' "$srec/runs.jsonl" >/dev/null \
+  || fail "stray ok run: runs.jsonl stray fields wrong: $(cat "$srec/runs.jsonl")"
 stray_clean
 stray_run strayfail 1
 want_strays "stray failing run"
@@ -755,8 +776,8 @@ stray_clean
 for m in none prefix; do
   stray_run "$m" 0
   ! grep -q stray "$tmp/serr" || fail "stray $m run: printed a stray line: $(cat "$tmp/serr")"
-  jq -e '.stray_worktrees == [] and .stray_branches == []' "$srepo/runs.jsonl" >/dev/null \
-    || fail "stray $m run: runs.jsonl stray fields not empty arrays: $(cat "$srepo/runs.jsonl")"
+  jq -e '.stray_worktrees == [] and .stray_branches == []' "$srec/runs.jsonl" >/dev/null \
+    || fail "stray $m run: runs.jsonl stray fields not empty arrays: $(cat "$srec/runs.jsonl")"
 done
 
 # Temporary worktree recipe (run-operations): a bare clone with a dirty primary worktree. The role
@@ -798,8 +819,9 @@ rc=0
 [[ "$rc" == 0 ]] || fail "temporary worktree recipe: run.sh exited $rc, want 0 ($(cat "$tmp/terr"))"
 cwd_seen=$(cat "$tmp/cwd" 2>/dev/null || echo MISSING)
 [[ "$cwd_seen" == "$wt" ]] || fail "temporary worktree recipe: the role ran in '$cwd_seen', want the temporary worktree $wt"
-[[ -f "$primary/.sdlc/t/scout-L1.md" ]] || fail "temporary worktree recipe: $primary/.sdlc/t/scout-L1.md is missing"
-[[ -f "$primary/.sdlc/t/runs.jsonl" ]] || fail "temporary worktree recipe: $primary/.sdlc/t/runs.jsonl is missing"
+prec="$(rd "$primary/.sdlc/t")"
+[[ -f "$prec/scout-L1.md" ]] || fail "temporary worktree recipe: $prec/scout-L1.md is missing"
+[[ -f "$prec/runs.jsonl" ]] || fail "temporary worktree recipe: $prec/runs.jsonl is missing"
 inwt=$(find "$wt" \( -name 'scout-L1*' -o -name runs.jsonl -o -name '*.attempt.json' -o -name handoff.md \) -print)
 [[ -z "$inwt" ]] || fail "temporary worktree recipe: result files appeared under the temporary worktree: $(tr '\n' ' ' <<<"$inwt")"
 wtstat=$(git -C "$wt" status --porcelain --ignored)
@@ -836,7 +858,7 @@ git -C "$erepo" init -q
 git -C "$erepo" add -A
 git -C "$erepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
   commit -q -m init
-edir="$(cd "$erepo" && pwd)"
+edir="$(rd "$(cd "$erepo" && pwd)")"
 erc=0
 eout=$(cd "$erepo" && PATH="$tmp/ebin:$PATH" "$copy/scripts/run.sh" planner L3 h.md 2>"$tmp/eerr") || erc=$?
 [[ ! -s "$copy/scripts/run.sh" ]] || fail "self-edit: the stub did not truncate the copy's run.sh"
@@ -856,10 +878,10 @@ est=$(jq -r '.status' "$edir/planner-L3.attempt.json" 2>/dev/null || echo MISSIN
 # not change the exit code; traces.py context on a missing log prints {"status":"log absent"} and exits 0
 # (never an empty list), and on a Codex log with a thread id and no rollout prints {"status":"exec ephemeral: no rollout written"}.
 ctx_run() { # <stub log file> <run.sh> -> exit code in ctx_rc, stderr in $tmp/cerr, last runs.jsonl line in ctx_line
-  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
+  rm -f "$rrec"/*-L*.md "$rrec"/*.log "$rrec"/*.attempt.json "$rrec/runs.jsonl"
   ctx_rc=0
   (cd "$rrepo" && STUB_RESULT="$1" PATH="$tmp/bin:$PATH" "$2" scout L1 h.md >/dev/null 2>"$tmp/cerr") || ctx_rc=$?
-  ctx_line=$(tail -n 1 "$rrepo/runs.jsonl" 2>/dev/null || true)
+  ctx_line=$(tail -n 1 "$rrec/runs.jsonl" 2>/dev/null || true)
 }
 { jq -nc '{type:"assistant",message:{content:[{type:"tool_use",name:"Read",input:{file_path:"/r/AGENTS.md"}},{type:"tool_use",name:"Read",input:{file_path:"/r/docs/a.md"}}]}}'
   jq -nc '{type:"assistant",message:{content:[{type:"tool_use",name:"Read",input:{file_path:"/r/AGENTS.md"}},{type:"tool_use",name:"Bash",input:{command:"cat /r/b.md"}}]}}'
@@ -1029,8 +1051,8 @@ for pair in S:L1 M:L2 L2:L2; do
     || fail "lane gate: size ${pair%%:*} did not print --tier ${pair##*:} (exit $rc): $(cat "$tmp/lga")"
 done
 [[ ! -e "$tmp/count" ]] || fail "lane gate: a gated planner called the stub claude"
-[[ -z "$(find "$sgrepo/.sdlc/lg-s" -name '*.attempt.json' -o -name runs.jsonl -o -name skips.md)" ]] \
-  || fail "lane gate: a gated planner left a record"
+[[ -z "$(find "$sgrepo/.sdlc/lg-s" -name '*.attempt.json' -o -name runs.jsonl -o -name skips.md)" && ! -e "$(rd "$sgrepo/.sdlc/lg-s")" ]] \
+  || fail "lane gate: a gated planner left a record (or made its records dir)"
 for lrole in builder plan-reviewer; do
   rc=$(lgrun "$tmp/lg1" lg-s "$lrole" handoff.md SDLC_DRY_RUN=1)
   [[ "$rc" == 5 ]] || fail "lane gate: $lrole on a size L1 ticket exited $rc, want 5: $(cat "$tmp/lg1")"
@@ -1046,12 +1068,12 @@ rc=$(lgrun "$tmp/lg2" lg-s planner handoff.md "SDLC_LANE_OVERRIDE=chain needs a 
 [[ "$rc" == 0 ]] || fail "lane gate: planner with SDLC_LANE_OVERRIDE exited $rc, want 0: $(cat "$tmp/lg2")"
 grep -qxF 'lane override: chain needs a merge step' "$sgrepo/.sdlc/lg-s/skips.md" \
   || fail "lane gate: skips.md lacks the override line: $(cat "$sgrepo/.sdlc/lg-s/skips.md" 2>&1)"
-[[ "$(tail -n 1 "$sgrepo/.sdlc/lg-s/runs.jsonl" | jq -r '.lane_override')" == 'chain needs a merge step' ]] \
-  || fail "lane gate: runs.jsonl line lacks lane_override: $(tail -n 1 "$sgrepo/.sdlc/lg-s/runs.jsonl")"
+[[ "$(tail -n 1 "$(rd "$sgrepo/.sdlc/lg-s")/runs.jsonl" | jq -r '.lane_override')" == 'chain needs a merge step' ]] \
+  || fail "lane gate: runs.jsonl line lacks lane_override: $(tail -n 1 "$(rd "$sgrepo/.sdlc/lg-s")/runs.jsonl")"
 lgmk lg-l L3
 rc=$(lgrun "$tmp/lg3" lg-l planner)
 [[ "$rc" == 0 ]] || fail "lane gate: planner on a size L3 ticket exited $rc, want 0 (full lane is not gated): $(cat "$tmp/lg3")"
-! tail -n 1 "$sgrepo/.sdlc/lg-l/runs.jsonl" | jq -e 'has("lane_override")' >/dev/null 2>&1 \
+! tail -n 1 "$(rd "$sgrepo/.sdlc/lg-l")/runs.jsonl" | jq -e 'has("lane_override")' >/dev/null 2>&1 \
   || fail "lane gate: an ungated run line carries lane_override"
 lgmk lg-n L1 none
 rc=$(lgrun "$tmp/lg4" lg-n planner)
@@ -1079,15 +1101,16 @@ printf '{"type":"result","is_error":false,"result":"## Goal\\nstale probe","tota
 SEOF
 chmod +x "$tmp/sbin/claude"
 stale_run() {
-  rm -f "$srepo/.sdlc/s"/planner-L*.md "$srepo/.sdlc/s"/*.log "$srepo/.sdlc/s"/*.attempt.json "$srepo/.sdlc/s/runs.jsonl" "$srepo/.sdlc/s/notes.md"
+  ssrec="$(rd "$srepo/.sdlc/s")"
+  rm -f "$ssrec"/planner-L*.md "$ssrec"/*.log "$ssrec"/*.attempt.json "$ssrec/runs.jsonl" "$srepo/.sdlc/s/notes.md"
   echo '## Goal' >"$srepo/.sdlc/s/handoff.md"
   launch_sha=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$srepo/.sdlc/s/handoff.md")
   src=0
   (cd "$srepo" && STUB_STALE="$1" STUB_HANDOFF="$srepo/.sdlc/s/handoff.md" PATH="$tmp/sbin:$PATH" \
     "$here/run.sh" planner L2 .sdlc/s/handoff.md >"$tmp/s_o" 2>"$tmp/s_e") || src=$?
   [[ $src == 0 ]] || fail "stale input: $1: run.sh exited $src: $(cat "$tmp/s_e")"
-  got_stale=$(jq -r '.stale_input' "$srepo/.sdlc/s/runs.jsonl" | tail -1)
-  got_sha=$(jq -r '.handoff_sha256' "$srepo/.sdlc/s/runs.jsonl" | tail -1)
+  got_stale=$(jq -r '.stale_input' "$ssrec/runs.jsonl" | tail -1)
+  got_sha=$(jq -r '.handoff_sha256' "$ssrec/runs.jsonl" | tail -1)
   nlines=$(grep -c "run.sh: stale input:" "$tmp/s_e" || true)
 }
 stale_run none
@@ -1145,6 +1168,7 @@ n0=$(bcount); brc=0
 # Session limit (T-0260): a failed run whose log shows a 429 leaves <role>-<level>.limit and prints the resume
 # command, exit 1; a failure with no limit text leaves no marker; a later success removes the marker.
 mkdir -p "$tmp/limitbin" "$repo/.sdlc/lim"
+limrec="$(rd "$repo/.sdlc/lim")"
 echo '## Goal' >"$repo/.sdlc/lim/handoff.md"
 printf '#!/usr/bin/env bash\necho "API Error: 429 session limit reached" >&2\nexit 1\n' >"$tmp/limitbin/claude"
 printf '#!/usr/bin/env bash\necho "boom" >&2\nexit 1\n' >"$tmp/limitbin/claude-plain"
@@ -1156,27 +1180,27 @@ lrc=0
 grep -qF "session limit: resume with: bash $here/../scripts/run.sh planner L3" "$tmp/lerr" \
   || grep -qE "session limit: resume with: bash .*/run.sh planner L3 .*/lim/handoff.md" "$tmp/lerr" \
   || fail "$label: no resume line on stderr: $(cat "$tmp/lerr")"
-[[ -s "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label: no planner-L3.limit marker"
-jq -e '.resume | test("run.sh planner L3")' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label: marker has no resume command"
-jq -e 'has("reset") | not' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label control: a no-reset log wrote a reset field"
+[[ -s "$limrec/planner-L3.limit" ]] || fail "$label: no planner-L3.limit marker"
+jq -e '.resume | test("run.sh planner L3")' "$limrec/planner-L3.limit" >/dev/null || fail "$label: marker has no resume command"
+jq -e 'has("reset") | not' "$limrec/planner-L3.limit" >/dev/null || fail "$label control: a no-reset log wrote a reset field"
 ! grep -qF "(resets" "$tmp/lerr" || fail "$label control: a no-reset log printed a reset"
-rm -f "$repo/.sdlc/lim/planner-L3.limit"
+rm -f "$limrec/planner-L3.limit"
 # T-0298: a log that prints a reset time lands it in the marker and the hint.
 printf '#!/usr/bin/env bash\necho "API Error: 429 session limit reached, resets 1:40pm" >&2\nexit 1\n' >"$tmp/limitbin/claude-reset"
 chmod +x "$tmp/limitbin/claude-reset"
 mkdir -p "$tmp/resetbin"; cp "$tmp/limitbin/claude-reset" "$tmp/resetbin/claude"
 (cd "$repo" && PATH="$tmp/resetbin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>"$tmp/lerr") || :
-jq -e '.reset == "1:40pm"' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label reset: marker has no reset 1:40pm"
+jq -e '.reset == "1:40pm"' "$limrec/planner-L3.limit" >/dev/null || fail "$label reset: marker has no reset 1:40pm"
 grep -qF "resets 1:40pm" "$tmp/lerr" || fail "$label reset: hint has no resets 1:40pm"
-rm -f "$repo/.sdlc/lim/planner-L3.limit"
+rm -f "$limrec/planner-L3.limit"
 mv "$tmp/limitbin/claude-plain" "$tmp/limitbin/claude"
 lrc=0
 (cd "$repo" && PATH="$tmp/limitbin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>"$tmp/lerr") || lrc=$?
 [[ "$lrc" == 1 ]] || fail "$label control: run.sh exited $lrc, want 1"
-[[ ! -e "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label control: a plain failure left a limit marker"
+[[ ! -e "$limrec/planner-L3.limit" ]] || fail "$label control: a plain failure left a limit marker"
 ! grep -qF "session limit" "$tmp/lerr" || fail "$label control: a plain failure printed a limit line"
-echo '{}' >"$repo/.sdlc/lim/planner-L3.limit"
+echo '{}' >"$limrec/planner-L3.limit"
 (cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>/dev/null) || fail "$label: a stub success failed"
-[[ ! -e "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label: a success left the stale marker"
+[[ ! -e "$limrec/planner-L3.limit" ]] || fail "$label: a success left the stale marker"
 
 echo "run selftest: PASS"

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Usage: run.sh <role> <level> <handoff.md>
 # Runs one role headless in the current directory with the level's model and effort.
-# Writes <handoff dir>/<role>-<level>.md (the agent's report) and <role>-<level>.log
+# Writes <records dir>/<role>-<level>.md (the agent's report) and <role>-<level>.log, where the records dir is
+# scripts/order.py records_dir of the handoff dir (<nearest .sdlc>/runtime/tasks/<task>/, or the handoff dir for a
+# legacy task dir that already holds records)
 # (raw stream-json: one JSON event per line, stderr mixed in). A rerun of the same role and level (a replan, a rebuild) never overwrites: it
 # writes <role>-<level>-<k>.md and .log with the lowest free k >= 2, and prints the path it
 # wrote; readers take the newest file. Keeps <role>-<level>.running while the run is live
-# (for /board and the status line), and appends one line to <handoff dir>/runs.jsonl for /bench;
+# (for /board and the status line), and appends one line to <records dir>/runs.jsonl for /bench;
 # its "file" field names the result, and scripts/order.py orders results by those lines.
 # Claude backend runs with --dangerously-skip-permissions; hooks/block-publish.sh still blocks publishing (via SDLC_ROLE). Every role except builder gets Edit/Write/NotebookEdit disallowed.
 # Preflight: exits 2 unless the current directory is in a git work tree with at least one commit.
@@ -226,7 +228,14 @@ fi
 
 plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
 handoff="$(cd "$(dirname "$handoff")" && pwd)/$(basename "$handoff")"
-dir="$(dirname "$handoff")"
+# hdir is the handoff dir (the handoff gates read it); dir is its records dir (scripts/records.sh, the
+# scripts/order.py records_dir rule), where everything this run writes or numbers goes. skips.md stays in the
+# task folder (order.py task-dir).
+hdir="$(dirname "$handoff")"
+# shellcheck source=records.sh
+. "$plugin_root/scripts/records.sh"
+# A dry run only names it; a real run makes it (records_dir_make) once every gate has passed, before the lifecycle owner.
+dir="$(records_dir "$hdir")"
 # Never overwrite an earlier result: the first run is <role>-<level>, later ones <role>-<level>-<k>.
 name="${SDLC_ATTEMPT_NAME:-$role-$level}"
 if [[ -z "${SDLC_ATTEMPT_NAME:-}" && ( -e "$dir/$name.md" || -e "$dir/$name.request.json" ) ]]; then
@@ -298,7 +307,9 @@ fi
 # model; resolve then prints a third token "shared" (T-0163, T-0171).
 shared=""
 if [[ "$backend" == codex ]]; then
-  resolved=$(python3 "$plugin_root/scripts/codex_roles.py" resolve "$role" "$level" "$dir") || exit 2
+  # A dry run of a new task has no records dir yet: resolve reads the handoff dir (order.py maps it the same way).
+  rdir="$dir"; [[ -d "$rdir" ]] || rdir="$hdir"
+  resolved=$(python3 "$plugin_root/scripts/codex_roles.py" resolve "$role" "$level" "$rdir") || exit 2
   read -r model effort shared <<<"$resolved"
 fi
 shared_with_builder=false; shared_note=""
@@ -320,10 +331,10 @@ fi
 # Goal precheck (T-0261): a planner or plan-reviewer on a task handoff (<task dir>/handoff.md, not a step
 # dir) needs the ## Goal section steps.py split reads; refuse before any attempt record, dry runs too.
 if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == plan-reviewer ) \
-      && "$(basename "$handoff")" == handoff.md && "$(basename "$dir")" != step-* ]]; then
-  if ! goal_out=$(python3 "$plugin_root/scripts/steps.py" precheck "$dir" 2>&1); then
+      && "$(basename "$handoff")" == handoff.md && "$(basename "$hdir")" != step-* ]]; then
+  if ! goal_out=$(python3 "$plugin_root/scripts/steps.py" precheck "$hdir" 2>&1); then
     printf '%s\n' "$goal_out" >&2
-    echo "run.sh: steps.py precheck refused the task handoff in $dir; add a ## Goal section" >&2
+    echo "run.sh: steps.py precheck refused the task handoff in $hdir; add a ## Goal section" >&2
     exit 2
   fi
 fi
@@ -332,8 +343,8 @@ fi
 # .sdlc path to exist and every report of the step's own prior attempt to name its step-<n>.superseded-<k> folder
 # (steps.py lint); refuse before any attempt record, dry runs too.
 if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == builder || "$role" == verifier ) \
-      && "$(basename "$handoff")" == handoff.md && "$(basename "$dir")" =~ ^step-[0-9]+$ ]]; then
-  if ! links_out=$(python3 "$plugin_root/scripts/steps.py" lint "$dir" 2>&1); then
+      && "$(basename "$handoff")" == handoff.md && "$(basename "$hdir")" =~ ^step-[0-9]+$ ]]; then
+  if ! links_out=$(python3 "$plugin_root/scripts/steps.py" lint "$hdir" 2>&1); then
     printf '%s\n' "$links_out" >&2
     echo "run.sh: steps.py lint refused the links in $handoff; fix the cited paths (rewrite them to the step-<n>.superseded-<k> folder) before dispatching" >&2
     exit 2
@@ -343,9 +354,8 @@ fi
 # Lane gate (see the header): solo is the path of least resistance; a planner, builder, or plan-reviewer on a
 # solo-lane ticket needs SDLC_LANE_OVERRIDE. Parent process only, dry runs too.
 if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == builder || "$role" == plan-reviewer ) ]]; then
-  lane_dir="$dir"
-  [[ "$(basename "$dir")" != step-* ]] || lane_dir="$(dirname "$dir")"
-  if [[ -f "$lane_dir/handoff.md" ]] && grep -Eq '^id: *T-[0-9]+' "$lane_dir/handoff.md" \
+  lane_dir="$(python3 "$plugin_root/scripts/order.py" task-dir "$hdir" 2>/dev/null || true)"
+  if [[ -n "$lane_dir" && -f "$lane_dir/handoff.md" ]] && grep -Eq '^id: *T-[0-9]+' "$lane_dir/handoff.md" \
      && ! { [[ -f "$lane_dir/skips.md" ]] && grep -Ei '^(- )?lane: ' "$lane_dir/skips.md" | tail -n 1 | grep -Eviq '^(- )?lane: *solo'; } \
      && [[ "$(python3 "$plugin_root/scripts/steps.py" lane --check "$lane_dir" 2>/dev/null | head -n 1)" == solo ]]; then
     if [[ -n "${SDLC_LANE_OVERRIDE:-}" ]]; then
@@ -367,9 +377,9 @@ fi
 if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && "$role" == plan-reviewer ]]; then
   if [[ "${SDLC_SPECGATE:-}" == off ]]; then
     echo "run.sh: SDLC_SPECGATE=off: spec gate skipped" >&2
-  elif ! specgate_out=$(python3 "$plugin_root/scripts/specgate.py" check "$dir" 2>&1); then
+  elif ! specgate_out=$(python3 "$plugin_root/scripts/specgate.py" check "$hdir" 2>&1); then
     [[ -z "$specgate_out" ]] || printf '%s\n' "$specgate_out" >&2
-    echo "run.sh: specgate.py check refused the plan in $dir; replan, or set SDLC_SPECGATE=off" >&2
+    echo "run.sh: specgate.py check refused the plan in $hdir; replan, or set SDLC_SPECGATE=off" >&2
     exit 2
   fi
 fi
@@ -387,6 +397,7 @@ fi
 
 # Shared lifecycle owner holds the directory lock across either backend.
 if [[ "${SDLC_DRY_RUN:-}" != 1 && "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
+  records_dir_make "$hdir" >/dev/null || { echo "run.sh: cannot make the records dir $dir" >&2; exit 2; }
   exec python3 "$plugin_root/scripts/run_lifecycle.py" run "$role" "$level" "$handoff" "$backend" "$model" "$effort"
 fi
 
@@ -451,9 +462,9 @@ if [[ "$role" == builder || "$role" == verifier ]]; then
   base=""
   # T-0376/T-0381: git runs in the execution tree. That is the handoff's own tree, except a handoff in the
   # main checkout run from inside an owned lane worktree (the shared-handoff shape), where it is that lane.
-  xt="$dir"
-  gd=$(cd "$dir" && cd "$(git rev-parse --git-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
-  gc=$(cd "$dir" && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+  xt="$hdir"
+  gd=$(cd "$hdir" && cd "$(git rev-parse --git-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+  gc=$(cd "$hdir" && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
   if [[ -n "$gd" && "$gd" == "$gc" ]]; then
     ct=$(git rev-parse --show-toplevel 2>/dev/null || true)
     if [[ -n "$ct" ]]; then

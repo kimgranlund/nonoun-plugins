@@ -10,6 +10,7 @@ import time
 import unittest
 
 import codex_roles
+import order
 
 ROOT = codex_roles.ROOT
 # One deadline for every wait and child timeout, generous enough for a loaded host.
@@ -47,6 +48,11 @@ class CodexTests(unittest.TestCase):
         self.step = self.repo/'work'; self.step.mkdir()
         self.handoff = self.step/'handoff.md'; self.handoff.write_text('## Goal\nLocate seed.\n')
 
+    @property
+    def rec(self):
+        """The records dir of the step (order.records_dir): results, runs.jsonl, requests and markers land there."""
+        return order.records_dir(self.step)
+
     def tearDown(self):
         self.tmp.cleanup()
 
@@ -83,8 +89,8 @@ class CodexTests(unittest.TestCase):
     def test_result_and_rerun(self):
         for suffix in ['', '-2']:
             p=self.role(); self.assertEqual(p.returncode,0,p.stderr)
-            self.assertIn('## Map',(self.step/f'scout-L1{suffix}.md').read_text())
-        records=[json.loads(s) for s in (self.step/'runs.jsonl').read_text().splitlines()]
+            self.assertIn('## Map',(self.rec/f'scout-L1{suffix}.md').read_text())
+        records=[json.loads(s) for s in (self.rec/'runs.jsonl').read_text().splitlines()]
         self.assertEqual([r['file'] for r in records],['scout-L1.md','scout-L1-2.md'])
         self.assertEqual(records[-1]['backend'],'codex')
         self.assertIsNone(records[-1]['cost_usd'])
@@ -95,18 +101,18 @@ class CodexTests(unittest.TestCase):
         self.assertEqual(probe['args'][probe['args'].index('--sandbox')+1],'read-only')
         self.assertFalse(any('dangerously' in a for a in probe['args']))
         self.assertIn(str(self.handoff),probe['prompt'])
-        self.assertFalse(list(self.step.glob('*.running')))
+        self.assertFalse(list(self.rec.glob('*.running')))
 
     def test_invalid_result_is_kept_but_fails(self):
         p=self.role('bad');self.assertEqual(p.returncode,3,p.stderr)
-        self.assertTrue((self.step/'scout-L1.md').exists())
+        self.assertTrue((self.rec/'scout-L1.md').exists())
         self.assertIn('lacks ## Map',p.stderr)
 
     def test_failed_or_missing_result_never_passes(self):
         for mode in ['exit','missing','timeout']:
             p=self.role(mode);self.assertNotEqual(p.returncode,0)
-            self.assertFalse((self.step/'scout-L1.md').exists())
-            self.assertFalse(list(self.step.glob('*.running')))
+            self.assertFalse((self.rec/'scout-L1.md').exists())
+            self.assertFalse(list(self.rec.glob('*.running')))
 
     def test_dry_run(self):
         before=set(self.step.iterdir());p=self.role(dry=True)
@@ -214,12 +220,12 @@ class CodexTests(unittest.TestCase):
         fp=codex_roles.fingerprint('sdlc-scout-l1')
         env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(DEADLINE))
         def exchange(text):
-            for old in self.step.glob('scout-L1*'):old.unlink()
+            for old in self.rec.glob('scout-L1*'):old.unlink()
             proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],
                                   cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-            request=self.step/'scout-L1.request.json'
+            request=self.rec/'scout-L1.request.json'
             try:
-                self.wait_for(request.exists,directory=self.step,owner=proc)
+                self.wait_for(request.exists,directory=self.rec,owner=proc)
                 report=self.step/'child-report.txt';report.write_text(text)
                 codex_exchange.respond(request,report)
                 _,stderr=proc.communicate(timeout=DEADLINE)
@@ -229,7 +235,7 @@ class CodexTests(unittest.TestCase):
         body='## Map\n- seed.txt:1: fixture\n\n## Entry points\nseed.txt\n\n## Not found\nNone\n'
         code,err=exchange('profile: '+fp+'\n\n'+body)
         self.assertEqual(code,0,err)
-        stored=self.step/'scout-L1.md'
+        stored=self.rec/'scout-L1.md'
         lines=stored.read_text().splitlines()
         self.assertTrue(lines[0].startswith('<!-- role=scout'));self.assertEqual(lines[1],'profile: '+fp)
         self.assertIsNone(results.validate(str(stored),'scout'))
@@ -445,8 +451,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                 p=subprocess.run(['bash',str(plugin/'scripts/run.sh'),'verifier','L1',str(self.handoff)],cwd=self.repo,
                                  env=dict(self.env,MODE='verdict'),capture_output=True,text=True,timeout=DEADLINE)
                 self.assertEqual(p.returncode,0,p.stderr)
-                record=json.loads((self.step/'runs.jsonl').read_text().splitlines()[-1])
-                header=(self.step/record['file']).read_text().splitlines()[0]
+                record=json.loads((self.rec/'runs.jsonl').read_text().splitlines()[-1])
+                header=(self.rec/record['file']).read_text().splitlines()[0]
                 self.assertIn('model='+model,header)
                 self.assertEqual('shared_with_builder=yes' in header,shared)
                 self.assertEqual(record['role'],'verifier')
@@ -479,9 +485,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         planner.write_text('<!-- role=planner level=L3 model=gpt-6-astra effort=high -->\n## Goal\nx\n')
         proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'plan-reviewer','L1',str(self.handoff)],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        request=self.step/'plan-reviewer-L1.request.json'
+        request=self.rec/'plan-reviewer-L1.request.json'
         try:
-            self.wait_for(request.exists,directory=self.step,owner=proc)
+            self.wait_for(request.exists,directory=self.rec,owner=proc)
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-plan-reviewer-l1-alternate')
             self.assertEqual(payload['model'],'gpt-6.1-sol')
@@ -490,9 +496,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             codex_exchange.respond(request,report)
             stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
-            header=(self.step/'plan-reviewer-L1.md').read_text().splitlines()[0]
+            header=(self.rec/'plan-reviewer-L1.md').read_text().splitlines()[0]
             self.assertIn('model=gpt-6.1-sol',header)
-            record=json.loads((self.step/'runs.jsonl').read_text().splitlines()[-1])
+            record=json.loads((self.rec/'runs.jsonl').read_text().splitlines()[-1])
             self.assertEqual(record['role'],'plan-reviewer')
             self.assertEqual(record['model'],'gpt-6.1-sol')
             self.assertIs(record['shared_with_builder'],False)
@@ -502,9 +508,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         planner.write_text('<!-- role=planner level=L3 model=gpt-6.1-sol effort=high -->\n## Goal\nx\n')
         proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'plan-reviewer','L1',str(self.handoff)],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        request=self.step/'plan-reviewer-L1-2.request.json'
+        request=self.rec/'plan-reviewer-L1-2.request.json'
         try:
-            self.wait_for(request.exists,directory=self.step,owner=proc)
+            self.wait_for(request.exists,directory=self.rec,owner=proc)
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-plan-reviewer-l1')
             self.assertEqual(payload['model'],'gpt-6-astra')
@@ -555,9 +561,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(DEADLINE))
         proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        request=self.step/'scout-L1.request.json'
+        request=self.rec/'scout-L1.request.json'
         try:
-            self.wait_for(request.exists,directory=self.step,owner=proc)
+            self.wait_for(request.exists,directory=self.rec,owner=proc)
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-scout-l1')
             self.assertIn('SDLC_TMP_WORKTREES=',payload['prompt'])
@@ -567,9 +573,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             codex_exchange.respond(request,report)
             stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
-            self.assertTrue((self.step/'scout-L1.md').exists())
+            self.assertTrue((self.rec/'scout-L1.md').exists())
             self.assertFalse((self.base/'probe.json').exists(),'Subagent transport must not launch codex or claude')
-            record=json.loads((self.step/'runs.jsonl').read_text())
+            record=json.loads((self.rec/'runs.jsonl').read_text())
             self.assertEqual(record['transport'],'subagent')
             # T-0507: the kept request and the runs.jsonl line hold the dispatched binding.
             self.assertEqual((record['profile_fingerprint'],record['profile_check']),(fp,'ready'))
@@ -585,8 +591,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         proc=subprocess.Popen(['python3',str(ROOT/'scripts/codex_exec.py'),'conductor','L1','Process fixture task'],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         try:
-            requests=self.wait_for(lambda:list((self.repo/'.sdlc').glob('native-conductor-*.request.json')),
-                                   directory=self.repo/'.sdlc',owner=proc)
+            requests=self.wait_for(lambda:list((self.repo/'.sdlc'/'runtime').glob('native-conductor-*.request.json')),
+                                   directory=self.repo/'.sdlc'/'runtime',owner=proc)
             request=requests[0];payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-conductor-l1')
             self.assertIn(str(self.repo),payload['prompt'])
@@ -605,9 +611,9 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         self.env['SDLC_CODEX_TRANSPORT']='subagent'
         p=self.role('timeout')
         self.assertNotEqual(p.returncode,0)
-        self.assertFalse((self.step/'scout-L1.md').exists())
-        self.assertFalse(list(self.step.glob('*.running')))
-        request=json.loads((self.step/'scout-L1.request.json').read_text())
+        self.assertFalse((self.rec/'scout-L1.md').exists())
+        self.assertFalse(list(self.rec.glob('*.running')))
+        request=json.loads((self.rec/'scout-L1.request.json').read_text())
         self.assertEqual(request['status'],'failed')
 
     # T-0507: the native exchange binds each request to the dispatched profile fingerprint. A real waiter process and the CLI responder.
@@ -621,7 +627,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         request=self.step/(name+'.request.json')
         proc=subprocess.Popen(['python3','-c',self.WAITER,str(ROOT/'scripts'),str(request),codex_roles.models()['scout']['L1'][0],fake,str(DEADLINE)],
                               cwd=self.repo,env=self.env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        try:self.wait_for(request.exists,directory=self.step,owner=proc)
+        try:self.wait_for(request.exists,directory=self.rec,owner=proc)
         except BaseException:
             if proc.poll() is None:proc.kill();proc.communicate()
             raise
@@ -737,7 +743,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         return proc,ticket
 
     def solo_requests(self,ticket,proc,known=()):
-        return self.wait_for(lambda:[r for r in ticket.glob('solo-*.request.json') if r not in known],directory=ticket,owner=proc)
+        return self.wait_for(lambda:[r for r in order.records_dir(ticket).glob('solo-*.request.json') if r not in known],directory=order.records_dir(ticket),owner=proc)
 
     def solo_respond(self,request,text=None,failed=False):
         # T-0507: a normal response states the request's dispatched profile fingerprint on its first line.
@@ -748,13 +754,13 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         self.assertEqual(done.returncode,0,done.stderr)
 
     def solo_records(self,ticket):
-        return [json.loads(l) for l in (ticket/'runs.jsonl').read_text().splitlines()]
+        return [json.loads(l) for l in (order.records_dir(ticket)/'runs.jsonl').read_text().splitlines()]
 
     def test_solo_native_exchange_levels(self):
         for tier,agent,effort in (('L1','sdlc-solo-l1','medium'),('L2','sdlc-solo-l2','high'),('L3','sdlc-solo-l3','xhigh')):
             with self.subTest(tier=tier):
-                (self.base/'ticket'/'runs.jsonl').unlink(missing_ok=True)
-                known=tuple((self.base/'ticket').glob('solo-*.request.json'))
+                (order.records_dir(self.base/'ticket')/'runs.jsonl').unlink(missing_ok=True)
+                known=tuple(order.records_dir(self.base/'ticket').glob('solo-*.request.json'))
                 proc,ticket=self.solo_launch(tier)
                 try:
                     request=self.solo_requests(ticket,proc,known)[0]
@@ -769,8 +775,8 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                 finally:
                     if proc.poll() is None:proc.kill();proc.communicate()
                 self.assertEqual(json.loads(request.read_text())['status'],'received')
-                self.assertEqual([p.name for p in ticket.iterdir() if p.name.startswith('solo-') and not p.name.endswith('.request.json') and not p.name.endswith('.report.txt') and not (p.name.startswith('solo-L') and p.name.endswith('.md'))],[])
-                self.assertEqual(len([p for p in ticket.iterdir() if p.name.startswith(f'solo-{tier}-') and p.name.endswith('.md')]),1,'T-0485: one solo result file')
+                self.assertEqual([p.name for p in order.records_dir(ticket).iterdir() if p.name.startswith('solo-') and not p.name.endswith('.request.json') and not p.name.endswith('.report.txt') and not (p.name.startswith('solo-L') and p.name.endswith('.md'))],[])
+                self.assertEqual(len([p for p in order.records_dir(ticket).iterdir() if p.name.startswith(f'solo-{tier}-') and p.name.endswith('.md')]),1,'T-0485: one solo result file')
                 rec=self.solo_records(ticket)[-1]
                 self.assertEqual((rec['backend'],rec['transport'],rec['role'],rec['level'],rec['model'],rec['exit_code']),('codex','subagent','solo',tier,'gpt-6.1-sol',0))
                 self.assertIsNone(rec['cost_usd']);self.assertTrue(rec['cost_reason'])

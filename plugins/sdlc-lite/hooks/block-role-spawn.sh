@@ -79,35 +79,48 @@ if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   fi
 
   prompt="$(jq -r '.tool_input.prompt // ""' <<<"$input" 2>/dev/null)"
-  handoff=""
-  while IFS= read -r line; do
-    if [[ "$line" == "Handoff: "* ]]; then
-      handoff="${line#Handoff: }"; handoff="${handoff#"${handoff%%[![:space:]]*}"}"
-      if [[ "$handoff" == \"*\"* ]]; then
-        handoff="${handoff#\"}"; handoff="${handoff%%\"*}"  # a quoted locator ("<path>") holds spaces; text after the closing quote is ignored
-      else
-        handoff="${handoff%%[[:space:]]*}"  # a bare locator is its first token: trailing text is ignored
+  cwd="$(jq -r '.cwd // ""' <<<"$input" 2>/dev/null)"
+  # locator <prefix>: the value of the first prompt line starting with <prefix>, quoted or its first token,
+  # made absolute against .cwd; empty when no such line.
+  locator() {
+    local line v=""
+    while IFS= read -r line; do
+      if [[ "$line" == "$1"* ]]; then
+        v="${line#"$1"}"; v="${v#"${v%%[![:space:]]*}"}"
+        if [[ "$v" == \"*\"* ]]; then
+          v="${v#\"}"; v="${v%%\"*}"  # a quoted locator ("<path>") holds spaces; text after the closing quote is ignored
+        else
+          v="${v%%[[:space:]]*}"  # a bare locator is its first token: trailing text is ignored
+        fi
+        break
       fi
-      break
-    fi
-  done <<<"$prompt"
+    done <<<"$prompt"
+    [[ -z "$v" || "$v" == /* ]] || v="${cwd:-$PWD}/$v"
+    printf '%s' "$v"
+  }
+  handoff="$(locator 'Handoff: ')"
   [[ -n "$handoff" ]] || deny "the prompt of '$name' has no 'Handoff: <path>' line, so no dispatch record can be found. $prepare_hint"
-  if [[ "$handoff" != /* ]]; then
-    cwd="$(jq -r '.cwd // ""' <<<"$input" 2>/dev/null)"
-    handoff="${cwd:-$PWD}/$handoff"
-  fi
-  dir="${handoff%/*}"
+  # The record sits in the Artifacts dir (the records dir dispatch.py prepare names), else beside the handoff
+  # (a legacy task dir). A missing or nonexistent Artifacts dir falls back to the handoff dir silently.
+  artifacts="$(locator 'Artifacts dir: ')"
+  hdir="${handoff%/*}"
   record=""
-  if [[ -f "$dir/$name.dispatch.json" ]]; then
-    record="$dir/$name.dispatch.json"
-  else
-    for f in "$dir"/*.dispatch.json; do
-      [[ -f "$f" ]] || continue
-      if jq -e --arg n "$name" '.name == $n' "$f" >/dev/null 2>&1; then record="$f"; break; fi
-    done
-  fi
+  for dir in "$artifacts" "$hdir"; do
+    [[ -n "$dir" && -d "$dir" ]] || continue
+    if [[ -f "$dir/$name.dispatch.json" ]]; then
+      record="$dir/$name.dispatch.json"
+    else
+      for f in "$dir"/*.dispatch.json; do
+        [[ -f "$f" ]] || continue
+        if jq -e --arg n "$name" '.name == $n' "$f" >/dev/null 2>&1; then record="$f"; break; fi
+      done
+    fi
+    [[ -z "$record" ]] || break
+  done
+  where="beside $handoff"
+  [[ -z "$artifacts" || ! -d "$artifacts" ]] || where="in the Artifacts dir $artifacts or beside $handoff"
   [[ -n "$record" ]] ||
-    deny "no dispatch record for '$name' beside $handoff (looked for $name.dispatch.json and a *.dispatch.json naming it). $prepare_hint"
+    deny "no dispatch record for '$name' $where (looked for $name.dispatch.json and a *.dispatch.json naming it). $prepare_hint"
 
   want="$(jq -r '.model // ""' "$record" 2>/dev/null)"
   model="$(jq -r '.tool_input.model // ""' <<<"$input" 2>/dev/null)"

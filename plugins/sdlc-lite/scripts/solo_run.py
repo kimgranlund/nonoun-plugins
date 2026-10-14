@@ -66,6 +66,14 @@ import uuid
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
+sys.path.insert(0, str(SCRIPTS))
+import order  # noqa: E402  same scripts/ dir: the records dir rule (records_dir)
+
+
+def records(task_dir):
+    """The task's records dir (order.records_dir), made when missing: runs.jsonl, dispatch records, results and markers go
+    there; handoff.md and skips.md stay in the task folder."""
+    return order.records_dir(task_dir, create=True)
 # Solo levels (agents/solo.md): level -> (Claude model, Claude effort, level). The same table as fanout.SOLO_TIERS;
 # check.py guards that solo.md, fanout.py and this table agree.
 TIERS = {'L1': ('sonnet', 'high', 'L1'), 'L2': ('opus', 'medium', 'L2'), 'L3': ('opus', 'high', 'L3')}
@@ -174,16 +182,16 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     tdir = pathlib.Path(task_dir).resolve()
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=dispatch.agent_name('solo', tier, tdir, 1), description=dispatch.list_description(tdir, 'solo', tier),
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
-             role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(tdir),
+             role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(records(tdir)),
              attempt_id=attempt, base_sha=head_sha(task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
-    d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
+    d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {dispatch.handoff_locator(d["artifacts_dir"])}\n{brief}'
     if worktree:
         d['worktree'] = worktree
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
     else:
         mark_live(task_dir, attempt)
-    (pathlib.Path(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
+    (records(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
     rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
     rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
     append(task_dir, rec)
@@ -233,7 +241,7 @@ def native_codex():
 
 def request_path(task_dir, level, attempt):
     """The native exchange request for one attempt. The attempt id is fresh per run, so a rerun never overwrites an earlier request."""
-    return pathlib.Path(task_dir).resolve() / f'solo-{level}-{attempt[:8]}.request.json'
+    return records(pathlib.Path(task_dir).resolve()) / f'solo-{level}-{attempt[:8]}.request.json'
 
 
 def clean_exchange(request):
@@ -289,7 +297,7 @@ def limit_hint(task_dir, tier, text):
     if rm:
         rec['reset'] = rm.group(1)
     try:
-        (pathlib.Path(task_dir) / 'solo.limit').write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
+        (records(task_dir) / 'solo.limit').write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
     except OSError:
         pass
     print('solo_run.py: session limit: the work is in the tree (fanout keeps it in the lane WIP commit); '
@@ -330,7 +338,7 @@ def append(task_dir, rec):
     task_dir = pathlib.Path(task_dir)
     if not (task_dir / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
-    with (task_dir / 'runs.jsonl').open('a', encoding='utf-8') as f:
+    with (records(task_dir) / 'runs.jsonl').open('a', encoding='utf-8') as f:
         f.write(json.dumps(rec, separators=(',', ':')) + '\n')
 
 
@@ -344,7 +352,7 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None, agent_
         usage = {'subagent_tokens': tokens}
     if usage is not None and tool_uses is not None:
         usage = {**usage, 'tool_uses': tool_uses}
-    f = pathlib.Path(task_dir) / 'runs.jsonl'
+    f = order.records_dir(task_dir) / 'runs.jsonl'
     if not f.is_file():
         unmark_live(task_dir, attempt)
         return None
@@ -633,7 +641,7 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
     if isinstance(text, str) and text.strip():  # T-0485: a result file results.py validate --role solo can check
         name = f"solo-{rec['level']}-{attempt[:8]}.md"
         head = f"<!-- role=solo level={rec['level']} model={model} effort={effort} -->\n"
-        (pathlib.Path(task_dir) / name).write_text(head + '## Output\n' + text.rstrip() + '\n', encoding='utf-8')
+        (records(task_dir) / name).write_text(head + '## Output\n' + text.rstrip() + '\n', encoding='utf-8')
         rec['file'] = name
     append(task_dir, rec)
     if isinstance(text, str) and text:
@@ -647,7 +655,7 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
     failed = 1 if rc == 0 and (result or {}).get('is_error') else rc
     if rc == 0 and result is None:
         # T-0346: an unreadable stream (no result event) is a failure, said on stdout with the raw first line and the log path.
-        log = pathlib.Path(raw_out) if raw_out else pathlib.Path(task_dir) / 'solo.stream.log'
+        log = pathlib.Path(raw_out) if raw_out else records(task_dir) / 'solo.stream.log'
         if not raw_out:
             log.write_text(out or '', encoding='utf-8')
         first = (out or '').strip().splitlines()[:1]
@@ -661,7 +669,7 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
     if failed:
         limit_hint(task_dir, tier, text if isinstance(text, str) and text else out)
     else:
-        (pathlib.Path(task_dir) / 'solo.limit').unlink(missing_ok=True)
+        order.records_dir(task_dir).joinpath('solo.limit').unlink(missing_ok=True)
     return failed
 
 
@@ -699,7 +707,7 @@ def selftest():
             return d
 
         def lines(d):
-            f = d / 'runs.jsonl'
+            f = order.records_dir(d) / 'runs.jsonl'
             return [json.loads(x) for x in f.read_text().splitlines()] if f.is_file() else []
 
         old_path = os.environ['PATH']
@@ -724,7 +732,7 @@ def selftest():
                    and rec.get('turns') == 7 and rec.get('duration_ms') == 4321)
             expect('attempt id set', isinstance(rec.get('attempt_id'), str) and len(rec['attempt_id']) >= 8)
             expect('exit status 0', rc == 0)
-            rf = d / rec.get('file', '')
+            rf = order.records_dir(d) / rec.get('file', '')
             vr = subprocess.run([sys.executable, str(SCRIPTS / 'results.py'), 'validate', str(rf), '--role', 'solo'],
                                 capture_output=True, text=True) if rec.get('file') else None
             expect('record file is a solo result that results.py validates (T-0485)',
@@ -738,8 +746,8 @@ def selftest():
             with contextlib.redirect_stdout(out_bad), contextlib.redirect_stderr(io.StringIO()):
                 rc_bad = run(str(d), 'S', 'b', cwd=str(tmp))
             expect('malformed stream: non-zero exit and stdout names the log path (T-0346)',
-                   rc_bad != 0 and str(d / 'solo.stream.log') in out_bad.getvalue() and 'not json' in out_bad.getvalue()
-                   and (d / 'solo.stream.log').is_file())
+                   rc_bad != 0 and str(order.records_dir(d) / 'solo.stream.log') in out_bad.getvalue() and 'not json' in out_bad.getvalue()
+                   and (order.records_dir(d) / 'solo.stream.log').is_file())
 
             shim(f"printf '%s\\n' '[{{\"type\":\"system\"}},{ok_json}]'\n")
             d = ticket('arr')
@@ -765,7 +773,7 @@ def selftest():
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"e\",\"total_cost_usd\":1}'\n")
             d = ticket('err')
             expect('is_error result exits 1', q(d, 'M', 'b') == 1 and lines(d)[0].get('cost_usd') == 1)
-            expect('a plain failure leaves no resume marker (T-0260 control)', not (d / 'solo.limit').exists())
+            expect('a plain failure leaves no resume marker (T-0260 control)', not (order.records_dir(d) / 'solo.limit').exists())
 
             # T-0531: a result event with empty text leaves no result file, so the run is a failure, not a silent exit 0.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"\",\"total_cost_usd\":1}'\n")
@@ -805,7 +813,7 @@ def selftest():
             err = io.StringIO()
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
                 rc = run(d, 'M', 'b')
-            mk = d / 'solo.limit'
+            mk = order.records_dir(d) / 'solo.limit'
             tmp_limit = d
             got = json.loads(mk.read_text()) if mk.is_file() else {}
             expect('limit stop: exits 1, solo.limit has the resume command and evidence',
@@ -818,11 +826,11 @@ def selftest():
             err = io.StringIO()
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
                 rc = run(d, 'M', 'b')
-            mk = d / 'solo.limit'
+            mk = order.records_dir(d) / 'solo.limit'
             got = json.loads(mk.read_text()) if mk.is_file() else {}
             expect('limit stop with a reset: marker reset is 1:40pm and the hint says so',
                    rc == 1 and got.get('reset') == '1:40pm' and 'resets 1:40pm' in err.getvalue())
-            expect('limit stop without a reset: no reset field (T-0298 control)', 'reset' not in json.loads((tmp_limit / 'solo.limit').read_text()))
+            expect('limit stop without a reset: no reset field (T-0298 control)', 'reset' not in json.loads((order.records_dir(tmp_limit) / 'solo.limit').read_text()))
 
             # A ticket over 80 percent through solo cost alone trips the budget stop.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":8.5}'\n")
@@ -874,7 +882,7 @@ def selftest():
             expect('subagent: level L2 dispatch names solo-L2, opus medium, the brief, and the verifier command',
                    rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == '0001-solo-L2' and dd['tier'] == 'L2'
                    and (dd['model'], dd['effort']) == ('opus', 'medium')
-                   and dd['prompt'].endswith('the brief') and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (dsub / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
+                   and dd['prompt'].endswith('the brief') and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (order.records_dir(dsub) / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
             dmark = ticket('subagent-mark', budget_usd=10)
             (dmark / 'handoff.md').write_text((dmark / 'handoff.md').read_text(encoding='utf-8') + '\nverifier: L3\n', encoding='utf-8')
             rcv, dv = pj(dmark, 'L2', 'the brief')
@@ -942,15 +950,15 @@ def selftest():
             cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-task',
                                  '--tier', 'L1', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
                                 env=dict(os.environ), timeout=60)
-            recs = [json.loads(x) for x in (pr / '.sdlc' / 'cli-task' / 'runs.jsonl').read_text().splitlines()] \
-                if (pr / '.sdlc' / 'cli-task' / 'runs.jsonl').is_file() else []
+            recs = [json.loads(x) for x in (order.records_dir(pr / '.sdlc' / 'cli-task') / 'runs.jsonl').read_text().splitlines()] \
+                if (order.records_dir(pr / '.sdlc' / 'cli-task') / 'runs.jsonl').is_file() else []
             expect(f'new task CLI: rc 0 and one solo record, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
                    cp.returncode == 0 and [x.get('role') for x in recs] == ['solo'] and recs[0].get('level') == 'L1')
             cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-alias',
                                  '--tier', 'S', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
                                 env=dict(os.environ), timeout=60)
-            recs = [json.loads(x) for x in (pr / '.sdlc' / 'cli-alias' / 'runs.jsonl').read_text().splitlines()] \
-                if (pr / '.sdlc' / 'cli-alias' / 'runs.jsonl').is_file() else []
+            recs = [json.loads(x) for x in (order.records_dir(pr / '.sdlc' / 'cli-alias') / 'runs.jsonl').read_text().splitlines()] \
+                if (order.records_dir(pr / '.sdlc' / 'cli-alias') / 'runs.jsonl').is_file() else []
             expect(f'CLI: the deprecated --tier S is accepted as L1 with a notice, got rc={cp.returncode} err={cp.stderr[-200:]!r}',  # ALIAS_OK
                    cp.returncode == 0 and '--tier S is deprecated; use --tier L1' in cp.stderr  # ALIAS_OK
                    and [x.get('level') for x in recs] == ['L1'] and recs[0].get('effort') == 'high')
@@ -991,7 +999,7 @@ def selftest():
                     expect(name + ' refused', False)
                 except Refuse:
                     expect(name + ' refused', True)
-            expect('refusals wrote no record', not (d / 'runs.jsonl').exists())
+            expect('refusals wrote no record', not (order.records_dir(d) / 'runs.jsonl').exists())
 
             # Two runs get two attempt ids.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
@@ -1177,7 +1185,7 @@ def selftest():
             # T-0350: recording a finished sub-agent solo (dispatch.py record) clears its marker, so the next solo stays here.
             c5, j5 = disp('par5')
             expect('recorded solo: before the record, a live marker forces the next solo into a worktree', c5.returncode == 0 and j5.get('worktree'))
-            rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(wr2 / 'par4' / f'{j4["name"]}.dispatch.json')],
+            rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(wr2 / 'par4') / f'{j4["name"]}.dispatch.json')],
                                 capture_output=True, text=True, timeout=60)
             c6, j6 = disp('par6')
             expect('recorded solo: record exits 0 and clears the marker, the next solo keeps the checkout',
@@ -1222,7 +1230,7 @@ def selftest():
         tr = d / 't.jsonl'
         tr.write_text(json.dumps({'message': {'id': 'm1', 'usage': {'input_tokens': 10, 'output_tokens': 1000,
                                                                       'cache_read_input_tokens': 500000}}}) + '\n')
-        row = lambda: [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()]
+        row = lambda: [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
         expect('solo row starts unpriced', row()[0]['cost_usd'] is None)
         expect('complete: unknown attempt prices nothing', complete(d, 'zzzz', 'M', str(tr)) is None and row()[0]['cost_usd'] is None)
         got = complete(d, disp['attempt_id'], 'M', str(tr))
@@ -1234,22 +1242,22 @@ def selftest():
         (d / 'handoff.md').write_text('x\n')
         rc, disp = dispatch_json(str(d), 'M', 'brief')
         got = complete(d, disp['attempt_id'], 'M', None, 1234, agent_id='ag-3', tool_uses=7, duration_ms=900)
-        r0 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()][0]
+        r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()][0]
         expect('complete: row carries agent_id, duration_ms and tool_uses', got is not None and r0.get('agent_id') == 'ag-3'
                and r0.get('duration_ms') == 900 and r0['usage'].get('tool_uses') == 7)
     with tempfile.TemporaryDirectory() as tmp:  # T-0355: dispatch.py record takes the solo_run.py dispatch file end to end
         d = pathlib.Path(tmp)
         (d / 'handoff.md').write_text('x\n')
         rc, disp = dispatch_json(str(d), 'M', 'brief')
-        rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(d / f'{disp["name"]}.dispatch.json'),
+        rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json'),
                              '--tokens', '5000', '--agent-id', 'ag-9', '--duration-ms', '4321'], capture_output=True, text=True, timeout=60)
-        r0 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()]
+        r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
         expect('record: a solo dispatch file records end to end with cost, agent_id and duration', rp.returncode == 0 and len(r0) == 1
                and r0[0]['cost_usd'] and r0[0].get('agent_id') == 'ag-9' and r0[0].get('duration_ms') == 4321)
-        (d / 'runs.jsonl').unlink()
+        (order.records_dir(d) / 'runs.jsonl').unlink()
         rc, disp = dispatch_json(str(d), 'M', 'brief')
         complete(d, disp['attempt_id'], 'M', None, None, agent_id='ag-8', duration_ms=77)
-        r1 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()][0]
+        r1 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()][0]
         expect('complete: with nothing to price, agent_id and duration still land', r1.get('agent_id') == 'ag-8' and r1.get('duration_ms') == 77
                and r1['cost_usd'] is None)
     with tempfile.TemporaryDirectory() as tmp:  # T-0510: the inner-loop profile refuses a full-suite criterion
@@ -1272,7 +1280,7 @@ def selftest():
                 except Refuse as exc:
                     print(f'solo_run.py: {exc}', file=sys.stderr)
                     rc, disp = 2, None
-            return rc, disp, err.getvalue(), (d / 'runs.jsonl').is_file()
+            return rc, disp, err.getvalue(), (order.records_dir(d) / 'runs.jsonl').is_file()
         rc, disp, err, rec = il_run(il('on', cfg, 'python3 suite.py'))
         expect('profile: a full-gate criterion exits 2 naming the local gate, no record, no dispatch',
                rc == 2 and disp is None and not rec and 'full gate `python3 suite.py`' in err and 'python3 check.py' in err)

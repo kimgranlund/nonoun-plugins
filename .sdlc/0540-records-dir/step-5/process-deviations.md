@@ -1,0 +1,2 @@
+# Process deviations (written by redck.py audit; the verifier and filer read this file)
+process deviation: red-checkpoint: retrospective: attempt 7c67b11d67344d09a2509bd915e33915, handoff sha256 8068706f38d9, 2 of 2 (red) criteria without a pre-edit red control: `t=$(printf %s "${SDLC_TMP_WORKTREES:-${TMPDIR:-/tmp}}") && t="${t%/...`; `out=$(python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1) && ...`

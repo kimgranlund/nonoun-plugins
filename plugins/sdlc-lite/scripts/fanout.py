@@ -994,9 +994,10 @@ def write_solo_skips(taskdir, tier):
 
 
 def verifier_files(taskdir):
-    """The task dir's verifier result file names now (the batched-verification baseline)."""
+    """The task's verifier result file names now, in its records dir (order.records_dir; the batched-verification
+    baseline)."""
     try:
-        return {f.name for f in pathlib.Path(taskdir).iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
+        return {f.name for f in order.records_dir(taskdir).iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
     except OSError:
         return set()
 
@@ -1021,14 +1022,13 @@ def solo_verdict(taskdir, before):
 
 
 def planned_scope(root, slug):
-    """The paths allow-listed by the scope criteria of <ticket dir>/<slug>/step-<n>/handoff.md, where the
-    ticket dir is tickets.ticket_dir(root), or None when no step handoff yields an entry (the ticket is not planned)."""
+    """The paths allow-listed by the scope criteria of the step-<n>/handoff.md files of <ticket dir>/<slug>, where the
+    ticket dir is tickets.ticket_dir(root) and the step dirs sit in its records dir (order.records_dir) or beside the
+    ticket handoff (steps.step_dirs), or None when no step handoff yields an entry (the ticket is not planned)."""
     found, any_entry = set(), False
     tdir = tickets.ticket_dir(pathlib.Path(root)) / slug
-    steps_dirs = sorted(d for d in tdir.iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)) \
-        if tdir.is_dir() else []
-    for d in steps_dirs:
-        h = d / 'handoff.md'
+    for _, d in sorted(steps.step_dirs(tdir).items()):
+        h = steps.step_handoff(d)
         if not h.is_file():
             continue
         for _, line in steps.criteria_indexed(h.read_text(encoding='utf-8').splitlines()):
@@ -1813,7 +1813,7 @@ def write_solo_row(taskdir, tier):
 def price_solo_row(taskdir, tier, transcript, tokens):
     """Price the lane's unpriced solo row from the sub-agent transcript (or notice tokens); the price, or None."""
     import solo_run
-    f = pathlib.Path(taskdir) / 'runs.jsonl'
+    f = order.records_dir(taskdir) / 'runs.jsonl'
     if not f.is_file() or (not transcript and tokens is None):
         return None
     for line in reversed(f.read_text(encoding='utf-8').splitlines()):
@@ -2806,17 +2806,19 @@ def selftest():
 
     # T-0331: prep writes an unpriced solo row; land --transcript prices it (negative control: no usage prices nothing)
     with tempfile.TemporaryDirectory() as t331:
-        td = pathlib.Path(t331)
+        from order import records_dir as records_dir_  # selftest binds a local named order further down
+        td = pathlib.Path(t331) / '.sdlc' / 't331'  # a .sdlc parent keeps the records dir inside the temp dir
+        td.mkdir(parents=True)
         (td / 'handoff.md').write_text('---\nid: T-0001\n---\n', encoding='utf-8')
         aid = write_solo_row(td, 'L1')
-        row = json.loads((td / 'runs.jsonl').read_text().splitlines()[-1])
+        row = json.loads((records_dir_(td) / 'runs.jsonl').read_text().splitlines()[-1])
         expect('T-0331 prep writes an unpriced solo row', row.get('role') == 'solo' and row.get('usage') is None and row.get('attempt_id') == aid)
         expect('T-0331 negative control: no transcript or tokens prices nothing', price_solo_row(td, 'L1', None, None) is None)
         tr = td / 'tr.jsonl'
         tr.write_text(json.dumps({'message': {'id': 'm', 'usage': {'input_tokens': 6, 'output_tokens': 847,
                       'cache_read_input_tokens': 58134, 'cache_creation_input_tokens': 32972}}}) + '\n', encoding='utf-8')
         cost = price_solo_row(td, 'S', str(tr), None)  # ALIAS_OK: a 0.21.x tier name still prices the row
-        row = json.loads((td / 'runs.jsonl').read_text().splitlines()[-1])
+        row = json.loads((records_dir_(td) / 'runs.jsonl').read_text().splitlines()[-1])
         expect('T-0331 land prices the solo row from the transcript', cost and row.get('cost_usd') == cost and row.get('cost_estimated') is True)
 
     def make_repo(repo, specs, extra=None):
@@ -3620,6 +3622,21 @@ def selftest():
         expect('case 14 planned scope: dry runs create no fanout/* branch, worktree or lanes dir',
                sh(pr, 'branch', '--list', 'fanout/*').stdout.strip() == ''
                and len(sh(pr, 'worktree', 'list').stdout.splitlines()) == 1 and not pl.exists())
+        # records-dir variant: a ticket planned into order.records_dir (step-1/ under .sdlc/runtime/tasks/<slug>)
+        # reads its scope there; the in-place case above is the legacy control
+        rdp = tmp / 'planned-rd' / '.sdlc'
+        (rdp / 'e').mkdir(parents=True)
+        (rdp / 'e' / 'handoff.md').write_text('---\nid: T-0005\n---\n\n## Goal\ne\n', encoding='utf-8')
+        rds = rdp / 'runtime' / 'tasks' / 'e' / 'step-1'
+        rds.mkdir(parents=True)
+        rds.joinpath('handoff.md').write_text(
+            '## Step 1\n### Acceptance criteria\n'
+            '- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | grep -vxF -e shared.txt -e a.txt)"`\n',
+            encoding='utf-8')
+        got_rd, got_ip = planned_scope(rdp, 'e'), planned_scope(pr / '.sdlc', 'a')
+        expect(f'case 14 planned scope (records dir): a step handoff in order.records_dir is read, got {got_rd!r}; '
+               f'in place (legacy control) got {got_ip!r}',
+               got_rd == {'shared.txt', 'a.txt'} and got_ip == {'shared.txt', 'a.txt'})
 
         # 15. Solo first: the lane per ticket, the commands, the lane cap and stagger, and the overlap refusal.
         sr = tmp / 'solofirst'
@@ -3866,17 +3883,23 @@ def selftest():
             proc_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', 'x=T-0001,T-0002',
                                     '--base', 'main', '--integration', 'fanout/meter', '--lanes-dir', str(ll_),
                                     '--stagger', '0'], cwd=str(rr_), env=env_, capture_output=True, text=True, timeout=300)
+            # The solo rows live in the lane's runtime records dir, which LANE_ADD leaves off the branch (ignored), so
+            # they are read from the closed lane's archive (lanes.close_lane copies the lane's .sdlc there, ignored
+            # files included). The git-object read below is the legacy fallback (records in the task folder).
+            bodies_ = [f_.read_text(encoding='utf-8') for s_ in ('one', 'two')
+                       for f_ in sorted((rr_ / '.git' / 'sdlc-lane-archive').glob(f'*/.sdlc/runtime/tasks/{s_}/runs.jsonl'))]
+            if not bodies_:
+                bodies_ = [sh(rr_, 'show', f'fanout/meter:.sdlc/{d_}/runs.jsonl').stdout for s_ in ('one', 'two')
+                           for d_ in (s_, '.' + {'one': '0001', 'two': '0002'}[s_] + '-' + s_)]
             recs_ = []
-            for s_ in ('one', 'two'):
-                for d_ in (s_, '.' + {'one': '0001', 'two': '0002'}[s_] + '-' + s_):
-                    body_ = sh(rr_, 'show', f'fanout/meter:.sdlc/{d_}/runs.jsonl').stdout
-                    for ln_ in body_.splitlines():
-                        try:
-                            r_ = json.loads(ln_)
-                        except ValueError:
-                            continue
-                        if isinstance(r_, dict) and r_.get('role') == 'solo':
-                            recs_.append(r_)
+            for body_ in bodies_:
+                for ln_ in body_.splitlines():
+                    try:
+                        r_ = json.loads(ln_)
+                    except ValueError:
+                        continue
+                    if isinstance(r_, dict) and r_.get('role') == 'solo':
+                        recs_.append(r_)
             return proc_, recs_
 
         pm, solo_recs = metered_lane('on', False)
@@ -4198,6 +4221,7 @@ def selftest():
                and f'--base {main_p1}' in pp.stdout and '--gate true' in pp.stdout)
         p1_files = [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all', '--ignored').stdout.splitlines()
                     if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl', '.worktrees/lanes.lock'))
+                    and ln != '!! .sdlc/runtime/.gitignore'  # the records dir's ignore file (order.records_dir)
                     and not re.fullmatch(r'!! \.worktrees/host/T-000[123]-solo\.lane\.json', ln)]
         expect(f'case 22 prep: creates no branch, worktree, lanes dir or file in the repo but the dispatch records and the host '
                f'lane records (T-0452), got {p1_files}',

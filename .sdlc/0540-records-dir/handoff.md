@@ -24,3 +24,12 @@ Maintainer decisions: `.sdlc/notes.md` "Lean work records (maintainer decisions 
 
 ## Constraints
 Preserve independent verification, the recorded build base, reference-safe closure and restart recovery. Legacy task folders stay readable with no migration.
+
+## Plan review
+plan review: blocked: .sdlc/0540-records-dir/plan-reviewer-L1.md
+plan review: decision: maintainer picked (c): skips.md stays in the task folder in A (see Intent "Decided"); tickets.py skip_missing and fanout selftest case 16 stay unchanged.
+plan review: replan: step 3: drop the skips.md move; step 3 keeps skips.md writers (record_lane, write_solo_skips) on the task folder so fanout case 16 stays green.
+plan review: replan: step 2: run_lifecycle.run derives its dir from the handoff and its only caller is run.sh (step 4); order the run.sh/run_lifecycle/lifecycle-selftest change in one step so every step's criteria are green on their own.
+plan review: replan: step 2: hook-selftest.sh prepared cases record .sdlc/task/scout-L1.dispatch.json and read $pt/scout-L1.attempt.json (hook-selftest.sh:667-677, :691); update those with stale-edits.log.
+plan review: replan: plan: drop the claim that step 3 does not need step 2's code.
+plan defect: dispatch.py prepare builder L3 step-1 refused: steps.py lint link check: "cited path does not exist" for fixture paths written as "$d/.sdlc/<name>" in criteria and Do text (step 1: 30, step 2: 19, step 3: 10 findings; e.g. .sdlc/0001-a, .sdlc/.0002-b/step-2, .sdlc/runtime/tasks/0001-a, .sdlc/task). The lint treats a "$d/" prefixed .sdlc path as a repo-relative citation unless it sits in a (red) criterion code span or a [creates: ...] marker (steps.py declared_future_paths, cited_sdlc_paths). Fix: keep the plan from planner-L3-2.md (it passed review plan-reviewer-L1-2.md) and declare every fixture path in each step with one [creates: <path>, ...] marker (or another form the lint accepts); run `steps.py lint` on each step handoff text before returning. Carry the plan-reviewer-L1-2 notes-fix lines into step 2 Notes.

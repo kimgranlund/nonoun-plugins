@@ -11,9 +11,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
-            then write <task dir>/step-<n>/handoff.md as "## Task goal", the goal, a blank line,
+            then write <records dir>/step-<n>/handoff.md as "## Task goal", the goal, a blank line,
             and the step block verbatim (## Step <n>: ... up to the next ## heading, trailing
-            blank lines trimmed). Prints one line per file written.
+            blank lines trimmed). Prints one line per file written. The records dir is
+            order.records_dir(<task dir>): .sdlc/runtime/tasks/<name>/, or the task dir itself for a
+            legacy task that already records in place. Every command takes a task, records or step dir
+            on either side; handoff.md, ## Plan review and skips.md stay in the task folder, and the
+            step paths printed are the records-side ones.
             --tree PATH sets the work tree --only runs its (guard) and (red) spans in, else the git toplevel
             of the plan folder (the lane worktree when the plan lives there).
             --only N (repeatable) writes only those steps; an N not in the plan is an error.
@@ -457,16 +461,70 @@ class Fail(Exception):
     """A refusal: the message goes to stderr and the command exits 1. Never a traceback."""
 
 
+def _as_given(given, path):
+    """path, in the form given was written in: given itself when both name the same dir, else path (relative to the
+    working dir when given was relative)."""
+    g = pathlib.Path(given)
+    if os.path.abspath(g) == os.path.abspath(path):
+        return g
+    return pathlib.Path(os.path.relpath(path)) if not g.is_absolute() else pathlib.Path(path)
+
+
+def task_of(path):
+    """The task folder (handoff.md, ## Goal, ## Plan review, skips.md) for a task, records or step dir on either
+    side (order.task_dir); a records dir with no task folder is itself."""
+    t = order.task_dir(path)
+    return pathlib.Path(path) if t is None else _as_given(path, t)
+
+
+def records_of(path, create=False):
+    """The records dir (results, runs.jsonl, step-<n>/ dirs) for a task, records or step dir on either side
+    (order.records_dir; a legacy task is its own records dir). create makes a runtime records dir. Without create, an
+    existing dir whose records dir does not exist (a hand-written step-<n>/ beside its handoff) is read in place."""
+    r = order.records_dir(path, create)
+    if not create and not r.is_dir() and pathlib.Path(path).is_dir():
+        return pathlib.Path(path)
+    return _as_given(path, r)
+
+
+def step_handoff(d):
+    """The handoff.md of a step dir on either side: its own, else its twin's (a hand-written task-side step whose
+    records twin dispatch.py prepare created holds its handoff task-side), else d/handoff.md (missing)."""
+    d = pathlib.Path(d)
+    h = d / 'handoff.md'
+    if h.is_file():
+        return h
+    a = pathlib.Path(os.path.abspath(d))
+    t = order.task_dir(a)
+    for twin in ((t / a.name) if t is not None else None, order.records_dir(a)):
+        if twin is not None and twin != a and (twin / 'handoff.md').is_file():
+            return twin / 'handoff.md'
+    return h
+
+
+def step_dirs(task):
+    """{n: step-<n> dir} of a task, records or step-holding dir: the records side and the task side united, the
+    records-side dir preferred (a hand-written step-<n>/ may exist only beside the task handoff)."""
+    out = {}
+    for side in (task_of(task), records_of(task)):
+        if pathlib.Path(side).is_dir():
+            for c in pathlib.Path(side).iterdir():
+                if c.is_dir() and re.fullmatch(r'step-\d+', c.name):
+                    out[int(c.name[5:])] = c
+    return out
+
+
 def find_plan(target):
-    """Return (planner file, task dir) for a planner file or a task dir."""
+    """Return (planner file, task dir) for a planner file, or a task, records or step dir on either side. The plan
+    comes through order (the records dir); the task dir is the task folder (task_of)."""
     target = pathlib.Path(target)
     if target.is_dir():
         plan = order.newest(target, 'planner')
         if not plan:
             raise Fail(f'steps: no planner-*.md in {target}')
-        return pathlib.Path(plan), target
+        return pathlib.Path(plan), task_of(target)
     if target.is_file():
-        return target, target.parent
+        return target, task_of(target.parent)
     raise Fail(f'steps: no such file or directory: {target}')
 
 
@@ -852,12 +910,16 @@ def base_sha(top, step_dir=None):
                            stdin=subprocess.DEVNULL, timeout=30)
         return c if r.returncode == 0 else None
     if step_dir is not None:
+        # base-sha lives in the records dir; the handoff is the one in the dir given (a task-level handoff stays in
+        # the task folder), else the records-side step handoff
+        given, step_dir = pathlib.Path(step_dir), records_of(step_dir)
+        named = given / 'handoff.md' if (given / 'handoff.md').is_file() else pathlib.Path(step_dir) / 'handoff.md'
         with contextlib.suppress(OSError, UnicodeDecodeError, subprocess.SubprocessError):
-            m = NAMED_BASE_RE.search((pathlib.Path(step_dir) / 'handoff.md').read_text(encoding='utf-8'))
+            m = NAMED_BASE_RE.search(named.read_text(encoding='utf-8'))
             if m:
                 if usable(m.group(1)):
                     return usable(m.group(1))
-                print(f'steps.py: SDLC_BASE_SHA refused: {pathlib.Path(step_dir) / "handoff.md"} names base '
+                print(f'steps.py: SDLC_BASE_SHA refused: {named} names base '
                       f'{m.group(1)}, which is not a commit that is an ancestor of HEAD in {top}', file=sys.stderr)
         with contextlib.suppress(OSError, UnicodeDecodeError, subprocess.SubprocessError):
             first = ((pathlib.Path(step_dir) / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
@@ -1574,9 +1636,9 @@ def earlier_created(task_dir, n):
         for m, block in parse_steps(plan).items():
             if m < n:
                 out |= declared_future_paths(block)
-    for d in pathlib.Path(task_dir).glob('step-*'):
-        h = d / 'handoff.md'
-        if re.fullmatch(r'step-\d+', d.name) and int(d.name[5:]) < n and h.is_file():
+    for m, d in step_dirs(task_dir).items():
+        h = step_handoff(d)
+        if m < n and h.is_file():
             with contextlib.suppress(OSError, UnicodeError):
                 out |= declared_future_paths(h.read_text(encoding='utf-8'))
     return out
@@ -1684,7 +1746,7 @@ def held_line(line):
 
 
 def record_refusals(task_dir, tool, plan, findings, step=None):
-    """Append one JSON line {ts, tool, plan, step, text} per finding to <task dir>/refusals.jsonl, the record
+    """Append one JSON line {ts, tool, plan, step, text} per finding to <records dir>/refusals.jsonl, the record
     K-004's early count reads. plan is the plan (or step handoff) path relative to the task dir's git toplevel,
     else to the task dir; step is the given step, else the n of the first "step <n>:" in the finding's first
     line, else null; text is that first line. A line whose (plan, text) the file already holds is skipped. No
@@ -1696,7 +1758,7 @@ def record_refusals(task_dir, tool, plan, findings, step=None):
         task_dir = pathlib.Path(task_dir)
         top = git_toplevel(task_dir)
         rel = os.path.relpath(pathlib.Path(plan).resolve(), pathlib.Path(top or task_dir).resolve())
-        path = task_dir / REFUSALS
+        path = records_of(task_dir) / REFUSALS
         seen = set()
         if path.is_file():
             for line in path.read_text(encoding='utf-8').splitlines():
@@ -1729,7 +1791,7 @@ def full_gate_commands_for(plan):
         return []
     folder = pathlib.Path(plan).resolve().parent
     root = sdlc_root(folder)
-    h = folder / 'handoff.md'
+    h = task_of(folder) / 'handoff.md'
     text = h.read_text(encoding='utf-8') if h.is_file() else ''
     return tickets.full_gate_commands(root) if tickets.inner_loop(root, text) else []
 
@@ -1901,9 +1963,10 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
         chosen = [n for n in steps if n in set(only)]
     else:
         chosen = list(steps)
+    rec = records_of(task_dir)
     held = []
     for n in chosen:
-        d = task_dir / f'step-{n}'
+        d = rec / f'step-{n}'
         done = sorted(p.name for pat in ('builder-*.md', 'verifier-*.md') for p in d.glob(pat)) if d.is_dir() else []
         if done and supersede:
             held.append(d)
@@ -1926,11 +1989,12 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
         d.rename(dest)
         print(f'steps: superseded {d.name} -> {dest.name}', file=sys.stderr)
     written = []
+    rec = records_of(task_dir, create=True)
     for n in chosen:
-        d = task_dir / f'step-{n}'
+        d = rec / f'step-{n}'
         d.mkdir(parents=True, exist_ok=True)
         path = d / 'handoff.md'
-        body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(task_dir, n))
+        body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(rec, n))
         body, moved = rewrite_prior_links(body, sdlc_base(task_dir))
         for old_rel, new_rel in moved:
             print(f'steps: step {n}: rewrote prior-report link {old_rel} -> {new_rel}', file=sys.stderr)
@@ -1945,9 +2009,8 @@ def earlier_widened(task_dir, n):
     """The paths listed under ## Scope widened in the live step-<m>/handoff.md files with m < n, in
     step order, no duplicates. A superseded or non-numeric step dir is not live."""
     found = []
-    for m, d in sorted((int(p.name[5:]), p) for p in pathlib.Path(task_dir).glob('step-*')
-                       if re.fullmatch(r'step-\d+', p.name) and int(p.name[5:]) < n):
-        h = d / 'handoff.md'
+    for m, d in sorted((m, p) for m, p in step_dirs(task_dir).items() if m < n):
+        h = step_handoff(d)
         if not h.is_file():
             continue
         lines = h.read_text(encoding='utf-8').splitlines()
@@ -1994,7 +2057,7 @@ def inherit_widened(text, paths):
 def cmd_precheck(task_dir):
     """Fail fast, before any planner or plan-reviewer runs, when split could not read the task goal."""
     try:
-        read_goal(pathlib.Path(task_dir), allow_empty=True)
+        read_goal(task_of(task_dir), allow_empty=True)
     except Fail as e:
         print(f'{e}; steps.py split reads the goal from the ## Goal section of the task handoff '
               f'(a "## Task goal" heading belongs to step handoffs only)', file=sys.stderr)
@@ -2044,6 +2107,9 @@ def lean_warnings(plan, task_dir, steps):
 def step_handoff_of(target):
     """The handoff.md of target when it is a step folder (step-<n>/) or a handoff.md inside one, else None."""
     t = pathlib.Path(target)
+    d = t.parent if t.name == 'handoff.md' else t
+    if STEP_DIR_RE.match(os.path.basename(os.path.abspath(d))):  # either side: the twin holding the handoff
+        t = step_handoff(d) if t.name == 'handoff.md' or not t.is_file() else t
     if t.is_dir() and STEP_DIR_RE.match(t.resolve().name):
         t = t / 'handoff.md'
     return t if t.is_file() and t.name == 'handoff.md' and STEP_DIR_RE.match(t.resolve().parent.name) else None
@@ -2145,7 +2211,7 @@ def clause_findings(plan, steps):
 
 def step_criterion_lines(d):
     """{k: line}: the k-th bullet line (1-based) under ### Acceptance criteria of <step dir>/handoff.md."""
-    h = pathlib.Path(d) / 'handoff.md'
+    h = step_handoff(d)
     if not h.is_file():
         return {}
     items = [line for _, line in criteria_indexed(h.read_text(encoding='utf-8').splitlines()) if BULLET_RE.match(line)]
@@ -2170,10 +2236,8 @@ def ticket_criterion_lines(task):
 
 
 def live_step_dirs(task):
-    """[(name, path)] of the live step-<n>/ dirs of a task dir, by n."""
-    t = pathlib.Path(task)
-    got = [(int(c.name[5:]), c.name, c) for c in t.iterdir() if c.is_dir() and re.fullmatch(r'step-\d+', c.name)]
-    return [(name, c) for _, name, c in sorted(got)]
+    """[(name, path)] of the live step-<n>/ dirs of a task dir, by n (they live in its records dir)."""
+    return [(c.name, c) for _, c in sorted(step_dirs(task).items())]
 
 
 def declared_meta(task):
@@ -2251,7 +2315,7 @@ def held_items(task, root=None):
     hold_item. A step-dir result's bare #k is that step's criterion, a task-dir result's bare #k is ticket#k, and
     a task-dir Verdict pass settles the refs under its ## Settles. Newest is by the run record's ts, then step dir
     before task dir, then order.py; a result with no ts loses to a recorded one. Reads only."""
-    task = pathlib.Path(task)
+    task = task_of(task)
     declared = declared_meta(task)
     if not declared:
         return []
@@ -2322,7 +2386,7 @@ def is_verified_hold(d, w):
 
 
 def cmd_open(task, explain=False):
-    t = pathlib.Path(task)
+    t = task_of(task)
     if not t.is_dir():
         print(f'steps open: no such directory: {t}', file=sys.stderr)
         return 1
@@ -2441,7 +2505,7 @@ def is_plan_defect(path):
 
 
 def handoff_level(d):
-    h = d / 'handoff.md'
+    h = step_handoff(d)
     if not h.is_file():
         raise Fail(f'steps next: no builder result and no {h} to read a level from')
     for line in h.read_text(encoding='utf-8').splitlines():
@@ -2469,12 +2533,13 @@ def batch_verified(step_dir):
     m = STEP_DIR_RE.fullmatch(d.name)
     if not m:
         return None
+    d = records_of(d)
     n, task_dir = int(m.group(1)), d.parent
     b = order.newest(d, 'builder')
     if b is None or build_status_or_none(b) != 'done' or result_level(b) >= 4:
         return None
     title = ''
-    h = d / 'handoff.md'
+    h = step_handoff(d)
     if h.is_file():
         for line in h.read_text(encoding='utf-8').splitlines():
             t = STEP_RE.match(line)
@@ -2503,10 +2568,11 @@ def batch_verified(step_dir):
 
 def next_action(step_dir):
     """Return (action, level or None, reason, [result paths read]). Reads only; never file times.
-    Ordering comes from order.py alone (ordered, newest, counts_after)."""
-    d = pathlib.Path(step_dir)
+    Ordering comes from order.py alone (ordered, newest, counts_after). A step dir on the task side reads its
+    records-side twin (records_of)."""
+    d = records_of(step_dir)
     if not d.is_dir():
-        raise Fail(f'steps next: no such directory: {d}')
+        raise Fail(f'steps next: no such directory: {step_dir}')
     builders = order.ordered(d, 'builder')
     b = order.newest(d, 'builder')
     if b is None:
@@ -2673,13 +2739,13 @@ def resume_action(task):
     t = pathlib.Path(task)
     if not t.is_dir():
         raise Fail(f'steps resume: no such directory: {t}')
-    nums = sorted(int(m.group(1)) for c in t.iterdir()
-                  if c.is_dir() and (m := STEP_DIR_RE.fullmatch(c.name)))
+    dirs = step_dirs(t)
+    nums = sorted(dirs)
     if not nums:
         raise Fail(f'steps resume: {t} has no step-<n>/ dirs; run steps.py split {t} first')
     held = None
     for n in nums:
-        d = pathlib.Path(task) / f'step-{n}'
+        d = dirs[n]
         try:
             action, level, reason, read = next_action(d)
         except Fail as e:
@@ -2839,7 +2905,7 @@ def review_action(task):
     """Return (action, level or None, reason, [result paths read]) for a task dir's newest plan:
     split, review L1, replan, or stop. Reads only; never file times. Ordering comes from order.py
     alone (ordered, newest, counts_after)."""
-    t = pathlib.Path(task)
+    t = task_of(task)
     if not t.is_dir():
         raise Fail(f'steps review: no such directory: {t}')
     plans = order.ordered(t, 'planner')
@@ -3029,7 +3095,7 @@ def lane_action(task):
     # Imported here, not at the top: results.py's selftest copies steps.py beside only order.py and
     # results.py and runs steps.py next, so a top-level import would fail there.
     import tickets
-    t = pathlib.Path(task)
+    t = task_of(task)
     if not t.is_dir():
         raise Fail(f'steps lane: no such directory: {t}')
     h, skips = t / 'handoff.md', t / 'skips.md'
@@ -3216,7 +3282,7 @@ def cmd_lane(task, check=False):
     try:
         lane, point, reasons, read = lane_action(task)
         if not check:
-            record_lane(task, lane, point, reasons)
+            record_lane(task_of(task), lane, point, reasons)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -3269,7 +3335,7 @@ def ticket_verifier(text):
 
 
 def cmd_verifier_level(task):
-    h = pathlib.Path(task) / 'handoff.md'
+    h = task_of(task) / 'handoff.md'
     if not h.is_file():
         print(f'steps verifier-level: no handoff.md in {task}', file=sys.stderr)
         return 1
@@ -3330,15 +3396,15 @@ def list_item(line):
 def swap(step_dir, timeout=300):
     """Apply the newest verifier's criterion swap to <step dir>/handoff.md after every check passes.
     Returns the one stdout line. Raises Fail (last line 'plan defect: ...; replan this step (/chain 4.2)')
-    and writes nothing on any refusal."""
-    d = pathlib.Path(step_dir)
+    and writes nothing on any refusal. A task-side step dir means its records-side twin (records_of)."""
+    d = records_of(step_dir)
 
     def refuse(why, detail=()):
         raise Fail('\n'.join(list(detail) + [f'plan defect: steps swap refused: {why}{SWAP_DEFECT}']))
 
     if not d.is_dir():
         refuse(f'no such directory: {d}')
-    h = d / 'handoff.md'
+    h = step_handoff(d)
     if not h.is_file():
         refuse(f'no step handoff at {h}')
     b = order.newest(d, 'builder')
@@ -3568,12 +3634,12 @@ def widen(step_dir, paths, timeout=300, reason=None, tree=None):
     stdout line. Raises Fail (last line
     'plan defect: steps widen refused: ...; replan this step (/chain 4.2)') and writes nothing on any
     refusal."""
-    d = pathlib.Path(step_dir)
+    d = records_of(step_dir)
 
     def refuse(why, detail=()):
         raise Fail('\n'.join(list(detail) + [f'plan defect: steps widen refused: {why}{SWAP_DEFECT}']))
 
-    h = d / 'handoff.md'
+    h = step_handoff(d)
     if not h.is_file():
         refuse(f'no step handoff at {h}')
     if not paths:
@@ -6314,6 +6380,64 @@ def selftest():
         check('(parity) a line with no property list is refused', rc == 1 and 'names no property list' in err and 'plan defect' in err)
         rc, out, err = run_main(['lint', str(parity_plan('par-tag', '- (guard) `python3 shot.py out/real.png` writes `out/real.png`'))])
         check('(parity) control: a line without the (parity) tag is not checked', rc == 0 and 'parity' not in err)
+
+        # (records dir) T-0540: step dirs live in the records dir (order.records_dir); handoff.md and skips.md stay
+        # in the task folder. Legacy control: a task folder that already records in place keeps its step dirs there.
+        sd = tmp / 'rd' / '.sdlc'
+        rt = sd / 'runtime' / 'tasks'
+        tf, rf = sd / '0001-r', rt / '0001-r'
+        tf.mkdir(parents=True)
+        rf.mkdir(parents=True)
+        (tf / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (rf / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN), encoding='utf-8')
+        rc, out, err = run_main(['split', str(tf)])
+        rc2, out2, _ = run_main(['resume', str(tf)])
+        rc3, out3, _ = run_main(['next', str(tf / 'step-1')])
+        check('(records dir) split writes step dirs in the records dir',
+              rc == 0 and out.split() == [str(rf / 'step-1' / 'handoff.md'), str(rf / 'step-2' / 'handoff.md')]
+              and (rf / 'step-1' / 'handoff.md').read_text(encoding='utf-8') == want1
+              and sorted(p.name for p in tf.iterdir()) == ['handoff.md']
+              and (sd / 'runtime' / '.gitignore').read_text(encoding='utf-8') == '*\n'
+              and rc2 == 0 and out2.splitlines()[0] == str(rf / 'step-1')
+              and rc3 == 0 and out3.splitlines()[0] == 'build L2')
+        lt = sd / '0002-s'
+        lt.mkdir()
+        (lt / 'handoff.md').write_text(HANDOFF.replace('title: "x"\n', 'title: "x"\nsize: L3\n'), encoding='utf-8')
+        rc, out, _ = run_main(['lane', str(rt / '0002-s')])
+        skips = lt / 'skips.md'
+        check('(records dir) lane keeps skips.md in the task folder',
+              rc == 0 and out.splitlines()[0] == 'full' and skips.is_file()
+              and '- lane: full; point: before planning;' in skips.read_text(encoding='utf-8')
+              and not (rt / '0002-s').exists() and sorted(p.name for p in lt.iterdir()) == ['handoff.md', 'skips.md'])
+        lg = sd / '0003-l'
+        lg.mkdir()
+        (lg / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (lg / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN), encoding='utf-8')
+        (lg / 'runs.jsonl').write_text('{"file": "planner-L2.md"}\n', encoding='utf-8')
+        rc, out, _ = run_main(['split', str(lg)])
+        check('(records dir) legacy control: a task folder holding runs.jsonl keeps its step dirs in place',
+              rc == 0 and (lg / 'step-1' / 'handoff.md').read_text(encoding='utf-8') == want1
+              and (lg / 'step-2' / 'handoff.md').is_file() and not (rt / '0003-l').exists())
+        # a hand-written task-side step handoff whose records twin dispatch.py prepare created (empty of handoffs)
+        hw = sd / '0004-h'
+        (hw / 'step-1').mkdir(parents=True)
+        (hw / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (hw / 'step-1' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n', encoding='utf-8')
+        (rt / '0004-h' / 'step-1').mkdir(parents=True)
+        rc, out, err = run_main(['lint', str(hw / 'step-1')])
+        rc2, out2, err2 = run_main(['next', str(hw / 'step-1')])
+        rc3, out3, err3 = run_main(['resume', str(hw)])
+        check('(records dir) a task-side step handoff with an empty records twin: lint, next and resume read it',
+              rc == 0 and 'steps lint: ok' in out and rc2 == 0 and out2.splitlines()[0] == 'build L2'
+              and rc3 == 0 and out3.splitlines()[:2] == [str(rt / '0004-h' / 'step-1'), 'build L2'])
+        # a hand-written task-side step-1/ with a records dir that holds no step-1 twin: step_dirs lists the task side
+        ts = sd / '0005-t'
+        (ts / 'step-1').mkdir(parents=True)
+        (ts / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (rt / '0005-t').mkdir(parents=True)
+        got = step_dirs(ts).get(1)
+        check('(records dir) step_dirs lists a task-side step dir',
+              got is not None and os.path.realpath(got) == os.path.realpath(ts / 'step-1'))
 
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)

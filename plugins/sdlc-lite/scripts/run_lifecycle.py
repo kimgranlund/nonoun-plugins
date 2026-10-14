@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Own a handoff-directory lock and durable attempt record across either host backend."""
+"""Own a records-directory lock and durable attempt record across either host backend.
+
+The records dir is order.records_dir of the handoff dir: <nearest .sdlc>/runtime/tasks/<task>/, or the handoff dir
+itself for a legacy task dir that already holds records."""
 import argparse
 from datetime import datetime, timezone
 import fcntl
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import subprocess
@@ -13,6 +17,7 @@ import sys
 import time
 import uuid
 
+import order
 import readiness
 
 
@@ -59,7 +64,7 @@ def recover(directory):
 
 
 def run(role, level, handoff, backend, model, effort):
-    directory = handoff.resolve().parent
+    directory = order.records_dir(handoff.resolve().parent, create=True)
     transport = os.environ.get('SDLC_CODEX_TRANSPORT', 'exec') if backend == 'codex' else 'exec'
     if transport not in ('exec', 'subagent'):
         raise ValueError('Unknown transport: ' + transport)
@@ -144,6 +149,9 @@ def main():
     a = p.parse_args()
     if a.command == 'run':
         return run(a.role, a.level, Path(a.handoff), a.backend, a.model, a.effort)
+    d = a.directory
+    if (d / 'handoff.md').is_file() or re.fullmatch(r'step-\d+(\.superseded-\d+)?', d.name):
+        a.directory = order.records_dir(d)  # a task or step dir maps to its records dir; any other dir is taken as given
     if a.command == 'recover':
         print(json.dumps(dict(recovered=recover(a.directory), next='Inspect artifacts and working tree, then rerun the original command as a new attempt. Never replay an old report.')))
     else:
