@@ -82,9 +82,14 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             prints "invalid result: <path>: <reason>" before the review check and the goal read.
             Every check runs before any write: a failure prints on stderr, exits 1, and writes nothing
             but the refusal record: a lint refusal, a red guard or a guard tree change, and a red-first
-            refusal each append one line per finding to <task dir>/refusals.jsonl (tool "steps.py split",
-            written after the guard and (red) snapshots; see lint). Other refusals (a rejected review,
-            an invalid result, a missing goal, a step folder that holds role output) record nothing.
+            refusal (split, split --only, and swap) each append one line per finding under ## Plan review
+            in <task dir>/handoff.md (T-0543, record_plan_review; written after the guard and (red)
+            snapshots): "- <YYYY-MM-DD> plan defect at split: step <n>: <why>", n the finding's first
+            "step <n>:" and why the rest of its first line, or with no step "- <date> plan defect at split:
+            <the first line after its "steps: <plan>" prefix>". The section is created at the end of the
+            file when missing; a line whose text after the date the section holds is skipped; no handoff.md,
+            or a read or write failure, writes nothing. Other refusals (a rejected review, an invalid
+            result, a missing goal, a step folder that holds role output) record nothing.
   precheck  fail fast (exit 1, naming ## Goal) when <task dir>/handoff.md has no ## Goal section, as split
             would; run.sh calls it before a planner or plan-reviewer on a task handoff. Writes nothing.
   lint      <step dir | step-<n>/handoff.md> (T-0379): check the .sdlc paths a step handoff cites. Each must exist, and a
@@ -92,8 +97,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             step-<n>.superseded-<k>/ sibling must name that superseded folder, not the live step-<n>/ (a later report of the
             same name would satisfy it), except under ## Previous attempt. Exit 1, "plan defect: ..." last; dispatch.py
             prepare and run.sh run it before a builder or verifier on a step handoff. A <placeholder>, glob, or
-            $VAR path is no citation. A refusal appends one line per finding to refusals.jsonl in the task dir (the
-            step folder's parent), with step the folder's n (see the plan lint below); a clean run writes nothing.
+            $VAR path is no citation. Lint writes nothing, refusal or not (the planner lints its own drafts).
             split rewrites the same links in the handoffs it writes: a cited step-<n>/<report> that is absent while a
             step-<n>.superseded-<k>/ sibling holds it becomes the highest-k sibling's path (one stderr line each);
             a path that exists or already names a superseded folder is kept, and no report is touched. (The plan text
@@ -169,14 +173,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             .gif), "(parity) criterion names fewer than two image paths", or no property list (a colon after the last image
             path, then text), "(parity) criterion names no property list"; the plan defect last line follows.
             Never executes a span and needs no handoff.md. Prints "steps lint: ok", or the split
-            refusal on stderr and exits 1. A clean run writes nothing. A refusal appends one JSON line
-            {"ts", "tool", "plan", "step", "text"} per finding to refusals.jsonl in the plan's task dir,
-            the record K-004's early count reads: ts UTC (%Y-%m-%dT%H:%M:%SZ), tool "steps.py lint" (or
-            "steps.py split" from split), plan the plan path relative to the task dir's git toplevel
-            (else the task dir), step the n of the finding's first "step <n>:" (else null), text the
-            finding's first line. A line whose (plan, text) the file already holds is skipped, so the
-            same refusal of the same plan is written once. A read or write failure (a read-only tree) is
-            skipped silently: no exit code or output changes.
+            refusal on stderr and exits 1. Lint writes nothing, clean or refused (T-0543: the planner
+            lints its own drafts); the same findings under split are recorded under ## Plan review (see
+            split).
             After a clean lint it also prints coarse-step warnings on stderr (stdout and exit 0
             unchanged; split, swap, and widen print none) when the plan meets the lean plan
             conditions: the plan file name level is L1 or L2 (a name with no level, such as
@@ -988,7 +987,7 @@ def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
         lines += [f'steps: {plan} {which}: (guard) criteria changed the work tree: {p}' for p in changed]
         red.append(f'{which} (guard) criteria changed the work tree: {", ".join(changed)}')
     if red:
-        record_refusals(task_dir, 'steps.py split', plan, [x for x in lines if not x.startswith(' ')])
+        record_plan_review(task_dir, plan, [x for x in lines if not x.startswith(' ')])
         raise Fail('\n'.join(lines + [f'plan defect: {"; ".join(red)}; replan this step (/chain 3)']))
 
 
@@ -1107,7 +1106,7 @@ def run_red(plan, steps, chosen, task_dir, timeouts, tree=None):
     items = [(n, text, timeouts[n]) for n in chosen for text in red_spans(steps[n]) if not guard_skipped(text)]
     found = red_first(items, top, top or str(tree or task_dir), base_sha(top))
     if found:
-        record_refusals(task_dir, 'steps.py split', plan, [f'steps: {plan} red-first: {m}' for m in found])
+        record_plan_review(task_dir, plan, [f'steps: {plan} red-first: {m}' for m in found])
         raise Fail('\n'.join([f'steps: {plan} red-first: {m}' for m in found]
                              + [f'plan defect: red-first: {len(found)} refusal(s); replan this step (/chain 3)']))
 
@@ -1725,7 +1724,7 @@ def tests_findings(plan, steps):
 VERIFIER_RESULT_RE = re.compile(r'verifier-L[\d*?\[]')
 STEP_FOLDER_RE = re.compile(r'\bstep-(\d+)/')
 FINDING_STEP_RE = re.compile(r'\bstep (\d+):')
-REFUSALS = 'refusals.jsonl'
+PLAN_REVIEW_DATED_RE = re.compile(r'^- \d{4}-\d{2}-\d{2} (.*)$')
 
 
 def reads_own_verifier(text, n):
@@ -1745,39 +1744,45 @@ def held_line(line):
     return m is not None and line[:m.start()].count('`') % 2 == 0
 
 
-def record_refusals(task_dir, tool, plan, findings, step=None):
-    """Append one JSON line {ts, tool, plan, step, text} per finding to <records dir>/refusals.jsonl, the record
-    K-004's early count reads. plan is the plan (or step handoff) path relative to the task dir's git toplevel,
-    else to the task dir; step is the given step, else the n of the first "step <n>:" in the finding's first
-    line, else null; text is that first line. A line whose (plan, text) the file already holds is skipped. No
-    findings, no write; a read or write failure (a read-only tree) is skipped silently, so no caller's exit
-    code or output changes."""
+def record_plan_review(task_dir, plan, findings):
+    """Append one line per split refusal finding under ## Plan review in the task's handoff.md (T-0543), the shape
+    fleet_collect's SPLIT_DEFECT_RE counts: `- <YYYY-MM-DD> plan defect at split: step <n>: <why>`, n the first
+    "step <n>:" of the finding's first line and why the rest of that line; with no step, `- <date> plan defect at
+    split: <that line after its "steps: <plan>" prefix>`. The handoff is order.task_dir's for a records path, else
+    task_dir's own; when it is absent nothing is written. The section is created at the end of the file when
+    missing. A line whose text after the date the section already holds is skipped. No findings, no write; a read
+    or write failure (a read-only tree) is skipped silently, so no caller's exit code or output changes."""
     if not findings:
         return
     try:
-        task_dir = pathlib.Path(task_dir)
-        top = git_toplevel(task_dir)
-        rel = os.path.relpath(pathlib.Path(plan).resolve(), pathlib.Path(top or task_dir).resolve())
-        path = records_of(task_dir) / REFUSALS
-        seen = set()
-        if path.is_file():
-            for line in path.read_text(encoding='utf-8').splitlines():
-                with contextlib.suppress(ValueError, AttributeError):
-                    row = json.loads(line)
-                    seen.add((row.get('plan'), row.get('text')))
-        ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-        rows = []
+        h = task_of(task_dir) / 'handoff.md'
+        if not h.is_file():
+            return
+        with open(h, encoding='utf-8', newline='') as f:
+            text = f.read()
+        held, inside = set(), False
+        for line in text.splitlines():
+            if line.startswith('## '):
+                inside = line.rstrip() == '## Plan review'
+            elif inside and (m := PLAN_REVIEW_DATED_RE.match(line.rstrip())):
+                held.add(m.group(1))
+        date = time.strftime('%Y-%m-%d', time.gmtime())
+        new = text
         for f in findings:
-            text = f.split('\n', 1)[0]
-            if (rel, text) in seen:
+            first = f.split('\n', 1)[0]
+            m = FINDING_STEP_RE.search(first)
+            if m:
+                body = f'plan defect at split: step {m.group(1)}: {first[m.end():].strip()}'
+            else:
+                rest = first[len(f'steps: {plan}'):] if first.startswith(f'steps: {plan}') else first
+                body = f'plan defect at split: {rest.lstrip(": ").strip()}'
+            if body in held:
                 continue
-            seen.add((rel, text))
-            m = FINDING_STEP_RE.search(text)
-            n = step if step is not None else int(m.group(1)) if m else None
-            rows.append(json.dumps({'ts': ts, 'tool': tool, 'plan': rel, 'step': n, 'text': text}) + '\n')
-        if rows:
-            with open(path, 'a', encoding='utf-8') as fh:
-                fh.write(''.join(rows))
+            held.add(body)
+            new = section_text(new, '## Plan review', f'- {date} {body}', at_end=True)
+        if new != text:
+            with open(h, 'w', encoding='utf-8', newline='') as fh:
+                fh.write(new)
     except (OSError, UnicodeError):
         pass
 
@@ -1910,11 +1915,13 @@ def lint_steps(plan, steps, tree=None):
 
 
 def lint_or_fail(plan, steps, tree=None, tool='steps.py lint'):
-    """Raise Fail with every lint finding and the plan defect last line, after recording each finding in the
-    plan folder's refusals.jsonl (record_refusals, under tool). A clean plan writes nothing."""
+    """Raise Fail with every lint finding and the plan defect last line. Under split (tool 'steps.py split') each
+    finding is first recorded under ## Plan review in the task handoff (record_plan_review); steps.py lint records
+    nothing, since the planner lints its own drafts. A clean plan writes nothing."""
     findings = lint_steps(plan, steps, tree)
     if findings:
-        record_refusals(pathlib.Path(plan).parent, tool, plan, findings)
+        if tool == 'steps.py split':
+            record_plan_review(pathlib.Path(plan).parent, plan, findings)
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
@@ -2120,8 +2127,6 @@ def cmd_lint(target, tree=None):
     if h is not None:
         findings = link_findings(h)
         if findings:
-            d = h.resolve().parent
-            record_refusals(d.parent, 'steps.py lint', h, findings, int(STEP_DIR_RE.match(d.name).group(1)))
             print('\n'.join(findings + [PLAN_DEFECT]), file=sys.stderr)
             return 1
         print('steps lint: ok')
@@ -3820,14 +3825,20 @@ BROKEN_PLAN = PLAN.replace('- one works', BROKEN_CRITERION)
 
 
 def snapshot(root):
-    """Every file under root but the refusal record (refusals.jsonl, which a refusal appends to by design):
-    relative path -> (mtime_ns, bytes)."""
+    """Every file under root: relative path -> (mtime_ns, bytes). A handoff.md is held by content alone, without
+    the ## Plan review growth a split refusal appends by design (T-0543): its `- <date> plan defect at split: `
+    lines, and the section heading when that growth created it."""
     snap = {}
     for dirpath, _, files in os.walk(root):
         for f in files:
-            if f == REFUSALS:
-                continue
             p = pathlib.Path(dirpath) / f
+            if f == 'handoff.md':
+                text = p.read_bytes()
+                kept = re.sub(rb'(?m)^- \d{4}-\d{2}-\d{2} plan defect at split: .*\n', b'', text)
+                if kept != text:
+                    kept = re.sub(rb'\n?## Plan review\n\Z', b'', kept)
+                snap[str(p.relative_to(root))] = (None, kept)
+                continue
             snap[str(p.relative_to(root))] = (p.stat().st_mtime_ns, p.read_bytes())
     return snap
 
@@ -6256,11 +6267,14 @@ def selftest():
         check('held: lint accepts stage, owner and needs clauses', rc == 0 and out.startswith('steps lint: ok'))
 
         # (circ) T-0415: lint refuses a criterion that reads its own step's verifier result (it can pass only after
-        # that verifier passes) unless its line is held; each lint or split refusal appends one line per finding to
-        # refusals.jsonl in the task dir, once per (plan, text); a clean run writes nothing
-        def circ_rows(d):
-            f = d / REFUSALS
-            return [json.loads(x) for x in f.read_text(encoding='utf-8').splitlines()] if f.is_file() else []
+        # that verifier passes) unless its line is held. T-0543: steps.py lint records nothing; a split refusal appends
+        # one line per finding under ## Plan review in the task handoff, once per text; a clean run writes nothing
+        def review_lines(d):
+            h = d / 'handoff.md'
+            return [x for x in h.read_text(encoding='utf-8').splitlines() if ' plan defect at split: ' in x] if h.is_file() else []
+
+        def no_refusals(root):
+            return not any(pathlib.Path(root).rglob('refusals.jsonl'))
 
         own = 'grep -q pass .sdlc/x/step-2/verifier-L2.md'
         circ_msg = "acceptance criterion reads this step's own verifier result, so it can pass only after the verifier passes"
@@ -6279,7 +6293,7 @@ def selftest():
         d = task(plan=PLAN.replace('- two works', f'- `{own}` [stage: integration; owner: integration]'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(circ) negative control: the same criterion with a held clause passes lint',
-              rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err and not (d / REFUSALS).exists())
+              rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err and review_lines(d) == [])
         gl = 'grep -q pass .sdlc/x/step-2/verifier-L*.md'
         d = task(plan=PLAN.replace('- two works', f'- `{gl}`'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
@@ -6291,50 +6305,48 @@ def selftest():
         d = task(plan=PLAN.replace('- two works', '- `grep -q pass .sdlc/x/step-1/verifier-L2.md`'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(circ) negative control: a criterion that reads an earlier step verifier result passes lint',
-              rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err and not (d / REFUSALS).exists())
+              rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err and review_lines(d) == [])
 
         d = o_repo('`test -s .sdlc/x/step-1/verifier-L1.md`')
-        rc, _, err = run_main(['lint', str(d)])
-        rows = circ_rows(d)
-        once = rows[0] if len(rows) == 1 else {}
         (d / 'step-3').mkdir()
         (d / 'step-3' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 3: y\nlevel: L1\n### Do\n'
                                                  'read .sdlc/x/missing-report.md\n', encoding='utf-8')
+        before = snapshot(d.parent.parent)
+        rc, _, err = run_main(['lint', str(d)])
         rc_h, _, err_h = run_main(['lint', str(d / 'step-3')])
-        rows_h = circ_rows(d)
-        check('(circ) a lint refusal appends one line to refusals.jsonl in the task dir',
-              rc == 1 and sorted(once) == ['plan', 'step', 'text', 'tool', 'ts']
-              and re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', once['ts']) is not None
-              and once['tool'] == 'steps.py lint' and once['plan'] == '.sdlc/x/planner-L2.md' and once['step'] == 1
-              and once['text'] == err.splitlines()[0] and circ_msg in once['text']
-              and rc_h == 1 and len(rows_h) == 2 and rows_h[1]['plan'] == '.sdlc/x/step-3/handoff.md'
-              and rows_h[1]['step'] == 3 and rows_h[1]['text'] == err_h.splitlines()[0])
-        rc_a, _, err_a = run_main(['lint', str(d)])
+        check('(T-0543) a lint refusal writes nothing',
+              rc == 1 and circ_msg in err and rc_h == 1 and 'missing-report.md' in err_h
+              and snapshot(d.parent.parent) == before and review_lines(d) == [] and no_refusals(d.parent.parent))
+        old_h = (d / 'handoff.md').read_text(encoding='utf-8')
         rc_b, _, err_b = run_main(['split', str(d), '--only', '1'])
-        rc_c, _, err_c = run_main(['lint', str(d / 'step-3')])
-        check('(circ) the same refusal of the same plan is written once',
-              rc_a == 1 and err_a == err and rc_b == 1 and circ_msg in err_b and rc_c == 1 and err_c == err_h
-              and circ_rows(d) == rows_h)
+        rows = review_lines(d)
+        rc_c, _, err_c = run_main(['split', str(d)])
+        new_h = (d / 'handoff.md').read_text(encoding='utf-8')
+        today = time.strftime('%Y-%m-%d', time.gmtime())
+        check('(T-0543) a split refusal appends one ## Plan review line',
+              rc_b == 1 and circ_msg in err_b and rc_c == 1 and len(rows) == 1
+              and rows[0] == f'- {today} plan defect at split: step 1: {circ_msg}: test -s .sdlc/x/step-1/verifier-L1.md'
+              and review_lines(d) == rows and new_h == old_h + f'\n## Plan review\n{rows[0]}\n'
+              and no_refusals(d.parent.parent))
 
         d = o_repo('(guard) `test -f circ-missing`')
         rc, _, _ = run_main(['split', str(d), '--only', '1'])
-        g = circ_rows(d)
+        g = review_lines(d)
         d = o_repo('(red) `test -d .sdlc`')
         rc_r, _, _ = run_main(['split', str(d), '--only', '1'])
-        r = circ_rows(d)
-        check('(circ) split records a red guard and a red-first refusal as steps.py split',
-              rc == 1 and len(g) == 1 and g[0]['tool'] == 'steps.py split' and g[0]['step'] == 1
-              and '(guard) criterion is red now' in g[0]['text']
-              and rc_r == 1 and len(r) == 1 and r[0]['tool'] == 'steps.py split' and r[0]['step'] == 1
-              and 'red-first: step 1:' in r[0]['text'])
-        d = task(plan=PLAN.replace('- two works', f'- `{own}`'))
-        os.chmod(d, 0o555)
+        r = review_lines(d)
+        check('(circ) split records a red guard and a red-first refusal under ## Plan review',
+              rc == 1 and len(g) == 1 and g[0].endswith(': (guard) criterion is red now (exit 1): test -f circ-missing')
+              and ' plan defect at split: step 1: ' in g[0]
+              and rc_r == 1 and len(r) == 1 and ' plan defect at split: step 1: `test -d .sdlc` is green now' in r[0])
+        d = o_repo('`test -s .sdlc/x/step-1/verifier-L1.md`')
+        os.chmod(d / 'handoff.md', 0o444)
         try:
-            rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+            rc, out, err = run_main(['split', str(d)])
         finally:
-            os.chmod(d, 0o755)
-        check('(circ) a read-only task dir records nothing and the refusal is unchanged',
-              rc == 1 and out == '' and circ_msg in err and 'Traceback' not in err and not (d / REFUSALS).exists())
+            os.chmod(d / 'handoff.md', 0o644)
+        check('(circ) a read-only handoff records nothing and the refusal is unchanged',
+              rc == 1 and out == '' and circ_msg in err and 'Traceback' not in err and review_lines(d) == [])
         # swap keeps the bracket clause
         S_HELD = S_HANDOFF.replace('(old check)', '[owner: integration]')
         d = s_step([('builder-L2.md', DONE), ('verifier-L1.md', swap_v(new='`test -f handoff.md`'))], handoff=S_HELD)

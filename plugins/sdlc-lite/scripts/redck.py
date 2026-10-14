@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Red checkpoint: a builder records its (red) criteria failing before it edits, and a completed build without that record leaves a process deviation.
 
-Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | audit <handoff.md | dir> [--attempt-id ID] | selftest}
+Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | audit <handoff.md | dir> [--attempt-id ID] | deviations <dir> | selftest}
   record    run before the first edit of a build. Every (red) criterion of the handoff (a list item whose
             leading tags hold (red), outside ``` fences, the spans specgate.py red would run) runs once in the
             current tree (steps.red_first: the tree is snapshotted and restored, a timeout is a refusal) and one
@@ -41,10 +41,18 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
               prelude-changed   the pre-edit control is red but a declared test no longer matches the sha256 it stored
               missing           no control bound to this attempt (or the attempt id is empty)
             The run status is the worst span (missing, prelude-changed, retrospective, green-baseline, preserved, ok); none
-            when the handoff has no (red) criterion. Missing, prelude-changed, retrospective, and green-baseline append one
-            line "process deviation: red-checkpoint: <status>: ..." (once) to <records dir>/process-deviations.md
-            and an audit line to red-checkpoint.jsonl. Exit 0 always: a deviation is recorded, it does not fail
-            the run. agents/verifier.md and agents/filer.md read process-deviations.md.
+            when the handoff has no (red) criterion. Every audit appends an audit line to red-checkpoint.jsonl; for
+            missing, prelude-changed, retrospective, and green-baseline that line also stores, under the key
+            deviation, the line "process deviation: red-checkpoint: <status>: ..." it prints on stderr (T-0543: no
+            process-deviations.md is written). Exit 0 always: a deviation is recorded, it does not fail the run.
+  deviations  <dir>, a task, records or step dir. Print the process deviations recorded there, the lines the
+            verifier, filer and builder read: `redck.py deviations <dir>` reads red-checkpoint.jsonl in
+            order.records_dir(<dir>) and in each live step-<n>/ under it, in step order (step-<n>.superseded-<k>/
+            dirs are left out), and prints the deviation line of each audit row whose status is deviating, prefixed
+            "step-<n>: " for the rows of a step dir under it; an older audit row without the key prints "process deviation:
+            red-checkpoint: <status>: attempt <id or unbound>". The process deviation: lines of a legacy
+            process-deviations.md in the same dirs print too. An identical line prints once. Writes nothing; a
+            missing dir prints nothing; exit 0 always. deviation_lines(dir) returns the same lines.
 Three records stay apart: runner acceptance (results.py validate and the runs.jsonl completed status say the
 report has the right shape), the builder's own check results (its report, unverified), and independent
 verification (the verifier verdict). This file speaks only to the order of the (red) controls. A pre-edit
@@ -55,21 +63,20 @@ record before it edits; nothing stops an edit before it. The audit at completion
 a missing checkpoint is always recorded. A Claude PreToolUse hook could deny the first source edit until a
 control exists; no such hook is registered, and Codex has no hook to register. Live Codex behavior is unverified.
 """
-import argparse, contextlib, hashlib, io, json, os, pathlib, subprocess, sys, tempfile, time
+import argparse, contextlib, hashlib, io, json, os, pathlib, re, subprocess, sys, tempfile, time
 
 import order  # same scripts/ dir: the records dir rule (records_dir)
 import steps
 
 CHECKPOINT = 'red-checkpoint.jsonl'
-DEVIATIONS = 'process-deviations.md'
-DEVIATION_HEADER = '# Process deviations (written by redck.py audit; the verifier and filer read this file)'
+LEGACY_DEVIATIONS = 'process-deviations.md'  # read only: written by an audit before T-0543
 RANK = {'ok': 0, 'preserved': 1, 'green-baseline': 2, 'retrospective': 3, 'prelude-changed': 4, 'missing': 5}
 DEVIATING = ('missing', 'retrospective', 'green-baseline', 'prelude-changed')
 
 
 def resolve(target, create=False):
-    """(handoff, records dir): the dir argument goes through order.records_dir, which holds red-checkpoint.jsonl,
-    process-deviations.md and the *.attempt.json files; a task-side step dir reads its records-side handoff.
+    """(handoff, records dir): the dir argument goes through order.records_dir, which holds red-checkpoint.jsonl
+    and the *.attempt.json files; a task-side step dir reads its records-side handoff.
     create makes a runtime records dir (a writer: record, audit)."""
     t = pathlib.Path(target)
     if t.is_dir() or (not t.exists() and t.name != 'handoff.md'):
@@ -290,8 +297,9 @@ def cmd_audit(target, attempt_id=''):
         note = f' (original from attempt {src})' if src and s == 'preserved' else f' (declared test changed: {src})' if src else ''
         print(f'redck: audit: {s}{note}: {clip(span)}')
     print(f'redck: audit: {status}')
-    append(d, dict(type='audit', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, status=status,
-                   spans=[dict(span=sp, status=s) for sp, s, _ in per]))
+    row = dict(type='audit', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, status=status,
+               spans=[dict(span=sp, status=s) for sp, s, _ in per])
+    line = None
     if status in DEVIATING:
         bad = [clip(sp) for sp, s, _ in per if s in DEVIATING]
         changed = '; '.join(src for _, s, src in per if s == 'prelude-changed' and src)
@@ -299,12 +307,44 @@ def cmd_audit(target, attempt_id=''):
                 else '(red) criteria without a pre-edit red control')
         line = (f'process deviation: red-checkpoint: {status}: attempt {aid or "unbound"}, handoff sha256 {sha[:12]}, '
                 f'{len(bad)} of {len(per)} {what}: ' + '; '.join(f'`{b}`' for b in bad))
-        f = d / DEVIATIONS
-        have = f.read_text(encoding='utf-8').splitlines() if f.is_file() else []
-        if line not in have:
-            with f.open('a', encoding='utf-8') as out:
-                out.write(('' if have else DEVIATION_HEADER + '\n') + line + '\n')
+        row['deviation'] = line
+    append(d, row)
+    if line:
         print(f'redck: {line}', file=sys.stderr)
+    return 0
+
+
+def deviation_lines(target):
+    """The process deviation lines recorded for a task, records or step dir (see deviations in the docstring):
+    audit rows of red-checkpoint.jsonl, then a legacy process-deviations.md, per dir, the records dir first and then
+    each live step-<n>/ under it in step order, whose lines carry "step-<n>: ". Reads only; a missing dir gives []."""
+    d = order.records_dir(target)
+    dirs = [d]
+    with contextlib.suppress(OSError):
+        steps_ = [c for c in d.iterdir() if c.is_dir() and re.fullmatch(r'step-\d+', c.name)]
+        dirs += sorted(steps_, key=lambda c: int(c.name.split('-')[1]))
+    out, seen = [], set()
+    for x in dirs:
+        prefix = '' if x == d else f'{x.name}: '
+        found = []
+        with contextlib.suppress(OSError, UnicodeError):
+            for e in entries(x):
+                if e.get('type') == 'audit' and e.get('status') in DEVIATING:
+                    found.append(e.get('deviation') or
+                                 f'process deviation: red-checkpoint: {e.get("status")}: attempt {e.get("attempt_id") or "unbound"}')
+            legacy = x / LEGACY_DEVIATIONS
+            if legacy.is_file():
+                found += [l for l in legacy.read_text(encoding='utf-8').splitlines() if l.startswith('process deviation:')]
+        for l in found:
+            if prefix + l not in seen:
+                seen.add(prefix + l)
+                out.append(prefix + l)
+    return out
+
+
+def cmd_deviations(target):
+    for l in deviation_lines(target):
+        print(l)
     return 0
 
 
@@ -350,9 +390,8 @@ def selftest():
             (d / 'handoff.md').write_text(ticket(*crit), encoding='utf-8')
             return d
 
-        def lines(d, name=DEVIATIONS):
-            f = d / name
-            return f.read_text(encoding='utf-8').splitlines() if f.is_file() else []
+        def lines(d):
+            return run_main(['deviations', str(d)])[1].splitlines()
 
         def devs(d):
             return [l for l in lines(d) if l.startswith('process deviation: red-checkpoint: ')]
@@ -372,7 +411,7 @@ def selftest():
         rc2, out2, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
         check('no tagged criteria: record and audit say so, write no checkpoint and no deviation',
               rc == 0 and 'no (red) criteria' in out and rc2 == 0 and 'audit: none' in out2
-              and not (d / CHECKPOINT).exists() and not (d / DEVIATIONS).exists())
+              and not (d / CHECKPOINT).exists() and lines(d) == [])
 
         # valid pre-edit control, then the edit
         d = task(red)
@@ -392,7 +431,7 @@ def selftest():
         rc_b, out_b, _ = run_main(['audit', str(d3), '--attempt-id', 'A1'])
         check('missing evidence: audit records one process-deviation line (idempotent) and exits 0',
               rc == 0 and out.rstrip().endswith('audit: missing') and len(devs(d3)) == 1 and 'missing' in devs(d3)[0]
-              and lines(d3)[0] == DEVIATION_HEADER and 'test -f out.txt' in devs(d3)[0] and rc_b == 0 and len(devs(d3)) == 1)
+              and lines(d3) == devs(d3) and 'test -f out.txt' in devs(d3)[0] and rc_b == 0 and len(devs(d3)) == 1)
         (repo / 'out.txt').unlink()
 
         # green at baseline is surfaced, never a red control
@@ -660,6 +699,35 @@ def selftest():
         check('T-0473: work committed after the base with no earlier red is green-baseline (control)',
               len(e) == 1 and e[0]['phase'] == 'pre-edit' and e[0]['result'] == 'green' and o.rstrip().endswith('audit: green-baseline'))
 
+        # T-0543: the audit writes no side file; deviations reads the audit rows (and a legacy file) back
+        check('(T-0543) audit writes no process-deviations.md',
+              not any(repo.rglob(LEGACY_DEVIATIONS)) and not any(r2.rglob(LEGACY_DEVIATIONS)))
+        td = repo / '.sdlc' / 'runtime' / 'tasks' / 'dv'
+        for n in (2, 1):
+            sd = td / f'step-{n}'
+            sd.mkdir(parents=True)
+            (sd / 'handoff.md').write_text(ticket(red), encoding='utf-8')
+            run_main(['audit', str(sd), '--attempt-id', f'S{n}'])
+            run_main(['audit', str(sd), '--attempt-id', f'S{n}'])
+        (td / 'step-1' / 'handoff.md').write_text(ticket(red, '- (red) `test -f two.txt`'), encoding='utf-8')
+        run_main(['audit', str(td / 'step-1'), '--attempt-id', 'S1'])
+        (td / 'step-1.superseded-1').mkdir()
+        (td / 'step-1.superseded-1' / CHECKPOINT).write_text(json.dumps(dict(type='audit', status='missing', attempt_id='OLD')) + '\n')
+        (td / CHECKPOINT).write_text(json.dumps(dict(type='audit', status='missing', attempt_id='')) + '\n'
+                                     + json.dumps(dict(type='audit', status='ok', attempt_id='Z')) + '\n')
+        (td / 'step-2' / LEGACY_DEVIATIONS).write_text('# Process deviations\nprocess deviation: red-checkpoint: missing: attempt L\n')
+        rc, out, err = run_main(['deviations', str(td)])
+        got = out.splitlines()
+        rows = [e for e in entries(td / 'step-1') + entries(td / 'step-2') if e.get('type') == 'audit']
+        check('(T-0543) deviations prints one line per deviating audit row',
+              rc == 0 and len(got) == 5 and got[0] == 'process deviation: red-checkpoint: missing: attempt unbound'
+              and got[1].startswith('step-1: process deviation: red-checkpoint: missing: attempt S1, handoff sha256 ')
+              and got[2].startswith('step-1: ') and '2 of 2' in got[2] and got[1] != got[2]
+              and got[3].startswith('step-2: process deviation: red-checkpoint: missing: attempt S2, ')
+              and got[4] == 'step-2: process deviation: red-checkpoint: missing: attempt L'
+              and all(r.get('deviation') for r in rows) and 'OLD' not in out and deviation_lines(td) == got
+              and not (td / LEGACY_DEVIATIONS).exists() and run_main(['deviations', str(td / 'nope')])[:2] == (0, ''))
+
     if misses:
         print('redck selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -677,13 +745,17 @@ def main(argv):
     p.add_argument('target', help='a handoff.md or its dir')
     p.add_argument('--attempt-id', default='', help='the attempt (default SDLC_ATTEMPT_ID, else the newest running builder attempt record)')
     p.add_argument('--timeout', type=float, default=steps.DEFAULT_GUARD_TIMEOUT, help='seconds per span (default 300)')
-    p = sub.add_parser('audit', help='judge a completed build against its recorded controls; write a process deviation when it lacks them')
+    p = sub.add_parser('audit', help='judge a completed build against its recorded controls; record a process deviation when it lacks them')
     p.add_argument('target', help='a handoff.md or its dir')
     p.add_argument('--attempt-id', default='', help='the completed attempt (default as record)')
+    p = sub.add_parser('deviations', help='print the process deviation lines recorded for a task, records or step dir')
+    p.add_argument('dir', help='a task, records or step dir')
     sub.add_parser('selftest', help='prove every status and the binding controls')
     a = ap.parse_args(argv)
     if a.cmd == 'selftest':
         return selftest()
+    if a.cmd == 'deviations':
+        return cmd_deviations(a.dir)
     if a.cmd == 'record':
         return cmd_record(a.target, a.attempt_id, a.timeout)
     return cmd_audit(a.target, a.attempt_id)

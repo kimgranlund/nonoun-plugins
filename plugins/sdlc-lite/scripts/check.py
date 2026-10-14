@@ -56,7 +56,7 @@
 13. Result schema: for each role in results.SCHEMA, agents/<role>.md has every declared section as a `## <Section>`
    line, first occurrences in declared order; scripts/run.sh and scripts/steps.py hold no copy of the schema table.
    Negative controls: builder body with `## Changes` and `## Checks` swapped; run.sh with an `allowed='x'` line.
-14. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
+14. Lean lane text: `## Lean chain` and `writes the Outcome` appear in skills/chain/SKILL.md;
    `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
    agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
 15. Evals lock: when `<plugin>/../../.sdlc` exists, `scripts/evals.py check` must pass for it: every eval is valid,
@@ -183,7 +183,8 @@
 44. Generated-definition parity (T-0351): `codex_roles.py generate --check` and `claude_roles.py generate --check` pass inside check.py; negative control: a planted edit
    to a temp copy of agents/conductor.md without regenerating is flagged.
 45. Red checkpoint (T-0378): `redck.py" record` appears in agents/builder.md; `redck.py` in scripts/run.sh and scripts/dispatch.py (the completion audit);
-   `process-deviations.md` in agents/verifier.md, agents/filer.md, and scripts/redck.py. Negative control: each phrase removed must be flagged.
+   `redck.py" deviations` in agents/verifier.md, agents/filer.md, and agents/builder.md, and `deviations <dir>` in scripts/redck.py (T-0543: the
+   deviations live in red-checkpoint.jsonl audit rows; no process-deviations.md). Negative control: each phrase removed must be flagged.
 46. Lean template (T-0385): agents/planner.md names `selected-test count`, `just to write the plan`, `validation scope`, `integration gate`, and `no record exists`;
    skills/handoff-format/SKILL.md names `validation scope`; agents/solo.md, scripts/fanout.py (both briefs) say `can affect` after a fix and never `rerun them all` or
    `rerun all checks`. Negative controls: each phrase removed, and a planted old phrase, must be flagged.
@@ -653,7 +654,7 @@ for rel in READ_FIRST_FILES:
         errors.append(f'{rel}: read-first negative control not flagged')
 # Lean lane text (docstring item 14): the lean chain section and the coarse-step rule name their phrases.
 LEAN_LANE = {'## Lean chain': ('skills/chain/SKILL.md',),
-             'always runs the filer': ('skills/chain/SKILL.md',),
+             'writes the Outcome': ('skills/chain/SKILL.md',),
              'independently verifiable outcome': ('agents/planner.md',),
              'steps lint: warning:': ('agents/planner.md', 'scripts/steps.py')}
 def lean_missing(text, phrase): return phrase not in text
@@ -692,7 +693,8 @@ else:
 # Red checkpoint (docstring item 45): the builder records before editing, completion audits, the verifier and filer read the deviations.
 RED_CHECKPOINT = {'redck.py" record': ('agents/builder.md',),
                   'redck.py': ('scripts/run.sh', 'scripts/dispatch.py'),
-                  'process-deviations.md': ('agents/verifier.md', 'agents/filer.md', 'scripts/redck.py')}
+                  'redck.py" deviations': ('agents/verifier.md', 'agents/filer.md', 'agents/builder.md'),
+                  'deviations <dir>': ('scripts/redck.py',)}
 def red_checkpoint_missing(text, phrase): return phrase not in text
 for phrase, rels in RED_CHECKPOINT.items():
     for rel in rels:

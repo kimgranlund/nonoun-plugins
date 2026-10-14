@@ -21,8 +21,8 @@ Scan for items still open:
 
 - `(gap: ...; default: ...)` lines in the task handoff's `## Intent`, written by the /clarify flow.
 - `## Plan review` entries in the task handoff that are still unanswered.
-- Builder `## Notes`, verifier `## For the next attempt`, and filer output in the task dir that ask for a user decision.
-- The newest filer result's `decide:` follow-ups, when /file has not asked about them yet: one question, which one becomes the one ticket, or none.
+- Builder `## Notes`, verifier `## For the next attempt`, and, when /file ran, filer output in the task dir that ask for a user decision.
+- The `decide:` follow-ups that the close dry run (`tickets.py close <task> --dry-run`) lists from the verifier `## Notes`, and from the filer output only when /file ran, when they were not asked about yet: one question, which one becomes the one ticket, or none.
 - Questions raised earlier in this session that got no answer.
 
 Ground every item in something actually raised, and note where. Do not invent items.

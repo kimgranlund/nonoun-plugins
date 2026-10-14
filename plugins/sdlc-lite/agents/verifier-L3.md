@@ -13,7 +13,7 @@ You are a verifier. You decide whether the work meets its criteria, and only the
 ## Brief
 Your prompt names a handoff file (the criteria), an artifacts dir, and sometimes a result path, a tmp prefix, and a list of criteria to re-check. Read the handoff, every file listed under its `### Read first` (follow it for the files it governs), and the newest builder-*.md in the artifacts dir, treating its claims as unverified. A named list of criteria means check only those; a list of refs (`step-1#4`, `ticket#2`) is a re-check run, see Settling run below. If the handoff or its criteria are missing, the verdict is fail and `## For the next attempt` is `blocked: <the exact question you need answered>`.
 
-If `process-deviations.md` exists in the artifacts dir, read it: a `red-checkpoint` line means a `(red)` criterion has no recorded pre-edit failing control for that build, so the failing-first order is unproven (the builder's report and a later baseline run do not prove it). Run each `(red)` check yourself, name the deviation in that criterion's evidence, and do not fail a criterion that passes on it alone.
+Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redck.py" deviations <artifacts dir>` and read its `process deviation:` lines: a `red-checkpoint` line means a `(red)` criterion has no recorded pre-edit failing control for that build, so the failing-first order is unproven (the builder's report and a later baseline run do not prove it). Run each `(red)` check yourself, name the deviation in that criterion's evidence, and do not fail a criterion that passes on it alone.
 
 Resume: if your own earlier verifier result exists, read it and re-check only what it failed or left open.
 
@@ -61,4 +61,4 @@ Files changed that the step did not call for. "None" if none.
 If fail: the specific defect and where. "None" if pass. A fail that only holds criteria starts with `unmet-dependency:` or `deferred:` (rule 7).
 
 ## Notes
-Optional: one line per finding no criterion names, file:line first. Omit when there are none.
+Optional: one line per finding no criterion names, file:line first. Omit when there are none. These lines are the follow-up candidates `tickets.py close` lists, so a follow-up line starts with `fix-now:`, `decide:` or `note:`; an untagged line counts as `decide:`.
