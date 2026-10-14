@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:8874ce0a83d7 -->
+<!-- sdlc-lite:managed:start v1 sha256:ba07fe00da5a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,9 +9,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 8
   - T-0545 Lean records F: Docs and release 0.23.0 (0.23.0) (0545-lean-records-docs-release)
-  - T-0549 Role Bash calls avoid bash -c on built strings, so the host stops asking for approval under bypass (0549-role-permission-mode)
   - T-0550 Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep (0550-standard-worktree-scratch-layout)
   - T-0551 Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (0551-builder-scoped-checks)
   - T-0553 Hard gates: a third planner run and an oversized plan stop for the person (0553-replan-and-step-caps)
@@ -23,7 +22,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 512
+- done: 513
 - dropped: 29
 
 ## Procedures

@@ -494,3 +494,9 @@
 - decide: plugins/sdlc-lite/agents/verifier.md (Notes section): the line before the new sentence still says "file:line first" while the new sentence says follow-up lines start with a tag. The builder flagged this and the handoff asked for the sentence as written.
 - decide: plugins/sdlc-lite/skills/chain/SKILL.md sections 5 and 6: removing item 1 renumbered the loose-end items to 5.1 to 5.3, while the handoff Do still refers to 5.3 and 5.4. check.py pins the phrases rather than the numbers and passes.
 - Lane orchestration (maintainer, 2026-10-14): wave 72 (T-0550, T-0553) runs with the maintainer session as conductor, each role a sub-agent via `dispatch.py prepare` with the lane's `Tree:` line, landing through `fanout.py land`; compare time and cost with wave 71's `claude -p` lanes for the 0.23.0 notes.
+
+## T-0549: Role Bash calls avoid bash -c on built strings, so the host stops asking for approval under bypass (2026-10-14)
+
+- note: The probe cannot go red headlessly. Per the brief, old2.json (the old `run(){ bash -c ...}` pattern) shows `permission_denials: []` and no prompt, so the "prompt before, none after" contrast in the handoff's Done-when was not reproduced. Criterion #7 only requires the after case, so it passes; the live probe therefore shows the new run is clean, not that the rule removes the interactive prompt.
+- note: The probe's sub-agent was given the rule in its prompt, not loaded from the shipped agent file. The shipped text itself is checked only by the grep criteria.
+- note: check.sh took 42 minutes under host load (load average 40 to 55) and exceeds the 15 minute foreground limit.
