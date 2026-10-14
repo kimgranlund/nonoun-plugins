@@ -17,6 +17,7 @@ A ticket cannot loop: the third planner run on a ticket, and a plan with more st
 - Do: `dispatch.py prepare planner ...` (and `run.sh planner`, which Codex uses) refuses when the ticket's records already hold two planner results (the first plan plus the one allowed replan), printing the count and the approval flag. `--approved "<who: why>"` lets it through and records the approval in the ticket's records. Step handoffs written by `steps.py split` are not planner runs and do not count.
 - Do: `steps.py lint` (run before split) refuses a plan whose step count exceeds the cap for the ticket's `size:` level: L1 and L2 3 steps, L3 6, L4 10, L5 15. The message says to split the ticket or get approval; `--approved` lets it through the same way.
 - Do: the conductor, `/chain` and `/fix` contracts say what to do on either refusal: stop and ask the person with one AskUserQuestion (split the ticket, approve one more replan, or drop scope); headless runs stop with status `blocked` naming the cap.
+- Do: the ticket templates gain one sizing line under `## Intent`: "If Do needs more steps than this level allows (L1-L2 3, L3 6, L4 10, L5 15), file two tickets."
 - Non-goals: changing the plan-reviewer rules; cleaning up Codex lock files (left to T-0550's sweep, maintainer decision 2026-10-14).
 - Done when: selftests show a third planner prepare refused and allowed with `--approved`, a 7-step L3 plan refused by lint and a 6-step one passed (negative controls observed red); `check.sh`, `claude_roles.py generate --check` and packaging pass.
 

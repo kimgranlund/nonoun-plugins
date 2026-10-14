@@ -551,3 +551,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0551 | [0551-builder-scoped-checks](0551-builder-scoped-checks/handoff.md) | Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway | chore | L2 | P2 | none | ⏳ proposed |
 | T-0552 | [0552-fleet-doctor-skill](0552-fleet-doctor-skill/handoff.md) | fleet-doctor skill: diagnose slow or stuck runs and offer resolutions | feature | L2 | P2 | none | ⏳ proposed |
 | T-0553 | [0553-replan-and-step-caps](0553-replan-and-step-caps/handoff.md) | Hard gates: a third planner run and an oversized plan stop for the person | feature | L2 | P1 | none | ⏳ proposed |
+| T-0554 | [0554-ci-and-backup-push](0554-ci-and-backup-push/handoff.md) | Minimal low-cost CI on release tags, and a private backup push of main each wave | chore | L2 | P2 | none | ⏳ proposed |
+| T-0555 | [0555-role-ticket-time-budgets](0555-role-ticket-time-budgets/handoff.md) | Wall-clock budgets per role and per ticket, enforced by dispatch.py | feature | L3 | P2 | none | ⏳ proposed |
+| T-0556 | [0556-shared-heavy-slot](0556-shared-heavy-slot/handoff.md) | Plugin-level machine-wide slot limit for heavy commands across repos | feature | L2 | P2 | none | ⏳ proposed |
+| T-0557 | [0557-check-sh-speed](0557-check-sh-speed/handoff.md) | check.sh runs selftests in parallel and offers a fast tier | chore | L3 | P2 | none | ⏳ proposed |
