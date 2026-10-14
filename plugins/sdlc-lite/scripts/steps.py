@@ -147,6 +147,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             step, or declare it held with a trailing [stage: ..., owner: ...] clause". A criterion line
             that ends with a held clause (CLAUSE_RE, outside any code span) is exempt, and a span that
             names an earlier step's result (step-1/verifier-L2.md from step 2) passes.
+            It must not name a path a later step creates (T-0536, order_findings): a non-(guard) criterion span of
+            step n whose path token (trim_path_token, NAME= prefix dropped; holding / or a file extension; not
+            absolute, $VAR, redirect, glob, URL, or ..) does not exist, that no step k <= n names outside its
+            acceptance criteria, and that a later step m declares it creates ([creates:], Outputs:, a ### Do create
+            verb) is a finding "steps: <plan> step <n>: acceptance criterion names <path>, which a later step
+            creates (step <m>), so it can pass only after step <m>: <span>", one per (n, path), first m. Lint, not
+            a plan-reviewer or planner self-check: those are model judgments with no negative control.
             A step may carry a ### Read first subsection: the entry files a role reads before
             the step, one list item per path in the one-line form - `<path>`. Each listed path
             (the text of the item's code span; lines up to the next ## or ### line, ``` fences
@@ -297,9 +304,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest builder Status inherited red: <tests> -> inherited (a gate already red at
                 the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
-              newest builder Status blocked              -> replan (whatever its Notes say), except Notes whose
+              newest builder Status blocked              -> replan, except Notes whose
                 first line starts "stale lane:" (missing merged prerequisites, not a plan defect) -> resplit:
-                rebase the lane, move the step dir to step-<n>.superseded-<k>, steps.py split --only <n>
+                rebase the lane, move the step dir to step-<n>.superseded-<k>, steps.py split --only <n>;
+                and Notes whose first line starts "plan defect:" and hold one amend old:/amend new: pair
+                (see amend): the step handoff no longer holds the old span and holds the new text ->
+                rebuild L<level>; else no other builder result in the dir holds a pair, the step is not
+                built, and the task's one replan is unused -> amend L<level> (apply it with steps.py
+                amend, then rebuild at that level); else replan, the reason naming why no amend.
+                An amend-routed block is never counted for a rebuild or a bump.
               no verifier result counts after the build  -> verify L<verifier level>,
                 but done when batch_verified(step dir) names a task-dir verifier result: the
                 newest task-dir verifier-*.md (order.py) whose ## Verified section lists
@@ -385,6 +398,27 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             step dir, the old span, and the new text. Every refusal prints on stderr, ends with a
             last line "plan defect: steps swap refused: <why>; replan this step (/chain 4.2)",
             exits 1, and writes nothing.
+  amend     amend <step dir> [--timeout SECONDS]: apply the newest blocked builder's one criterion amend to
+            <step dir>/handoff.md (/chain 4.10). The pair lives in that builder's ## Notes: the first
+            non-blank line starts "plan defect:", then exactly one line starting "amend old:" holding
+            exactly one code span (the old criterion's command, verbatim) and exactly one line starting
+            "amend new:" whose stripped rest is the full replacement criterion. Refusals: no step
+            handoff; the dir is not step-<n>; no builder result; the newest builder's Status is not
+            blocked or its Notes do not start "plan defect:"; no pair; the step is already built (a
+            builder result with Status done, or any verifier result: a built step's criterion changes
+            only through the verifier's swap); another builder result in the dir holds a pair (one
+            amend per step); the task already used its one replan (two or more planner-*.md results
+            in its records dir, or an "amend applied:" line under the task handoff's ## Plan review);
+            then every target and new-text check swap makes. The build is partial, so only a (guard)
+            line's new spans run (exit 0, work tree unchanged) and a (red) line's new spans must each
+            exit nonzero now (a timeout refuses); a plain criterion is not run. When no criterion line
+            holds the old span but one line's text after its marker equals the new text, it prints
+            "amend: already applied", exits 0, and writes nothing (checked before the replan cap). On
+            success it replaces only the target line, appends "- amend applied: step <n>: old `<old>`
+            -> new <new>" under ## Plan review in the task handoff (the section created at the end when
+            missing), and prints "steps amend: <step dir>: old `<old>` -> new <new>". Every refusal
+            prints on stderr, ends with a last line "plan defect: steps amend refused: <why>; replan
+            this step (/chain 4.2)", exits 1, and writes nothing.
   widen     widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--tree PATH] [--reason WHY]: apply a conductor scope
             decision to <step dir>/handoff.md, so the next builder does not block on the old scope
             guard. Each path must be repo-relative, match [A-Za-z0-9._/@+-]+, not start with - or /,
@@ -1385,6 +1419,16 @@ PATH_LINENO_RE = re.compile(r':\d+(?::\d+)?$')
 PATH_EXT_RE = re.compile(r'[A-Za-z0-9_-]\.[A-Za-z0-9]{1,8}$')
 
 
+def trim_path_token(raw):
+    """One whitespace token trimmed of markdown and sentence punctuation (PATH_TRIM), a trailing :line, and any
+    leading ./ (the one trim defect_path_tokens and order_path_tokens share)."""
+    tok = raw.strip(PATH_TRIM)
+    tok = PATH_LINENO_RE.sub('', tok).strip(PATH_TRIM)
+    while tok.startswith('./'):
+        tok = tok[2:]
+    return tok
+
+
 def defect_path_tokens(text, base):
     """The path tokens in one `plan defect:` line's text: a whitespace-separated token, trimmed of
     markdown and sentence punctuation (and a trailing :line), that holds a / or ends in a file
@@ -1392,10 +1436,7 @@ def defect_path_tokens(text, base):
     such as and/or, pass/fail, or c1 names nothing on disk and is no token."""
     out = []
     for raw in text.split():
-        tok = raw.strip(PATH_TRIM)
-        tok = PATH_LINENO_RE.sub('', tok).strip(PATH_TRIM)
-        while tok.startswith('./'):
-            tok = tok[2:]
+        tok = trim_path_token(raw)
         if not tok or tok.startswith(('/', '~', '-', '$')) or '://' in tok:
             continue
         if '/' not in tok and not PATH_EXT_RE.search(tok):
@@ -1822,6 +1863,91 @@ def parity_findings(plan, steps):
     return out
 
 
+ASSIGN_PREFIX_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
+
+
+def order_path_tokens(text):
+    """The path-like tokens of a span or line for the order check (T-0536): a whitespace token trimmed as
+    trim_path_token, with a leading NAME= assignment prefix dropped, that holds a / or ends in a file extension;
+    skipped when it starts with /, ~, -, $, <, >, or 2>, holds :// or *, or has a .. part. Existence is not checked."""
+    out = []
+    for raw in text.split():
+        bare = raw.lstrip('`\'"(')
+        if bare.startswith(('<', '>', '2>')) or '*' in raw:
+            continue
+        tok = trim_path_token(raw)
+        tok = trim_path_token(ASSIGN_PREFIX_RE.sub('', tok))
+        if not tok or tok.startswith(('/', '~', '-', '$', '<', '>', '2>')) or '://' in tok or '*' in tok:
+            continue
+        if '/' not in tok and not PATH_EXT_RE.search(tok):
+            continue
+        if '..' in tok.split('/'):
+            continue
+        if tok not in out:
+            out.append(tok)
+    return out
+
+
+def declared_future_any(block):
+    """The paths of any kind a step block declares it creates (T-0536; the general-path twin of
+    declared_future_paths, which reads only .sdlc paths): a [creates: <path>, ...] marker, a path on an Outputs:
+    line, and a path after a create verb on a line of its ### Do section."""
+    out = set()
+    for m in CREATES_MARK_RE.finditer(block):
+        out.update(order_path_tokens(m.group(1).replace(',', ' ')))
+    for m in OUTPUTS_LINE_RE.finditer(block):
+        eol = block.find('\n', m.end())
+        out.update(order_path_tokens(block[m.end():eol if eol >= 0 else len(block)]))
+    for line in section_of(block, 'Do').splitlines():
+        v = CREATE_VERB_RE.search(line)
+        if v:
+            out.update(order_path_tokens(line[v.end():]))
+    return out
+
+
+def without_criteria(block):
+    """A step block with its ### Acceptance criteria section (heading and body, up to the next ## or ### line) cut out."""
+    kept, inside = [], False
+    for line in block.splitlines():
+        if line.startswith('## ') or line.startswith('### '):
+            inside = line.strip() == '### Acceptance criteria'
+            if inside:
+                continue
+        if not inside:
+            kept.append(line)
+    return '\n'.join(kept)
+
+
+def order_findings(plan, steps, base):
+    """One finding per (step n, path) where a non-(guard) criterion span of step n names a path that does not exist
+    under base, that no step k <= n names outside its acceptance criteria, and that a later step m > n declares it
+    creates (declared_future_any): the criterion can pass only after step m (T-0536). Names the first such m."""
+    order = sorted(steps)
+    owned = {n: without_criteria(steps[n]) for n in order}
+    declared = {n: declared_future_any(steps[n]) for n in order}
+    findings = []
+    for n in order:
+        seen = set()
+        for line in criteria_lines(steps[n]):
+            if is_guard_line(line):
+                continue
+            for span in line_spans(line):
+                for tok in order_path_tokens(span):
+                    if tok in seen or (base / tok).exists():
+                        continue
+                    if any(tok in owned[k] for k in order if k <= n):
+                        continue
+                    m = next((m for m in order if m > n and covered_by(tok, declared[m])), None)
+                    if m is None:
+                        continue
+                    seen.add(tok)
+                    findings.append(f'steps: {plan} step {n}: acceptance criterion names {tok}, which a later step '
+                                    f'creates (step {m}), so it can pass only after step {m}: {span}\n'
+                                    f"  move the criterion to step {m}, or name the path in this step's Do when this "
+                                    'step creates it')
+    return findings
+
+
 def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, one for a count over a changing
@@ -1910,8 +2036,14 @@ def lint_steps(plan, steps, tree=None):
                                 f'so it can pass only after the verifier passes: {text}\n'
                                 '  move it to a later step, or declare it held with a trailing '
                                 '[stage: ..., owner: ...] clause')
-    return (findings + tests_findings(plan, steps) + defect_dependents(plan, steps) + clause_findings(plan, steps)
-            + parity_findings(plan, steps))
+    if base is None:
+        folder = pathlib.Path(plan).resolve().parent
+        try:
+            base = pathlib.Path(lane_tree(folder, tree) or folder)
+        except Fail:
+            base = folder
+    return (findings + tests_findings(plan, steps) + order_findings(plan, steps, base) + defect_dependents(plan, steps)
+            + clause_findings(plan, steps) + parity_findings(plan, steps))
 
 
 def lint_or_fail(plan, steps, tree=None, tool='steps.py lint'):
@@ -2615,7 +2747,26 @@ def next_action(step_dir):
                     f'newest builder {os.path.basename(b)} is blocked by a stale lane, not a plan defect ({first}); '
                     f'rebase the lane onto the merged prerequisites, move {d.name} to {d.name}.superseded-<k> '
                     f'(next free k), then steps.py split --only {n} <task dir>; never a replan', read)
-        return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
+        name = os.path.basename(b)
+        pair = amend_pair(b) if first.startswith('plan defect:') else None
+        if pair is not None and amend_applied(d, pair):
+            return ('rebuild', level, f'{name} proposed a criterion amend that is applied; rebuild at L{level}', read)
+        why = ''
+        if pair is not None:
+            if earlier_amend(d, b):
+                why = ' (its amend is not offered: the step already had one)'
+            elif step_built(d):
+                why = ' (its amend is not offered: the step is already built; only the verifier\'s swap changes it)'
+            elif used := replan_used(d):
+                why = f' (its amend is not offered: the task already used its one replan: {used})'
+            else:
+                return ('amend', level,
+                        f'{name} is blocked with a plan defect and proposes one criterion amend; '
+                        f'apply it with steps.py amend, then rebuild at L{level}', read)
+        elif any(section_lines_start(b, p, 'Notes') for p in ('amend old:', 'amend new:')):
+            why = (' (its amend lines are not a plan defect: note with exactly one amend old: holding one code '
+                   'span and one amend new:)')
+        return 'replan', None, f'newest builder {name} is blocked (a blocked build replans){why}', read
     v = order.newest(d, 'verifier')
     if v is None or not order.counts_after(v, b):
         batch = batch_verified(d)
@@ -3356,35 +3507,42 @@ def cmd_verifier_level(task):
 SWAP_DEFECT = '; replan this step (/chain 4.2)'
 
 
-def section_lines_start(path, prefix):
-    """The stripped lines under ## For the next attempt that start with prefix."""
+def section_lines_start(path, prefix, heading='For the next attempt'):
+    """The stripped lines under ## <heading> (default For the next attempt) that start with prefix."""
     try:
-        body = section(path, 'For the next attempt') or []
+        body = section(path, heading) or []
     except Exception:
         return []
     return [line.strip() for line in body if line.strip().startswith(prefix)]
 
 
-def swap_pair(path):
-    """(old span, new text) from a verifier result's ## For the next attempt, or None.
-    A pair is exactly one line starting 'swap old:' holding exactly one code span (stripped of one
-    edge space, like line_spans) and exactly one line starting 'swap new:' with a non-empty value."""
-    olds = section_lines_start(path, 'swap old:')
-    news = section_lines_start(path, 'swap new:')
+def section_pair(path, heading, prefix):
+    """(old span, new text) from a result's ## <heading>, or None. A pair is exactly one line starting
+    '<prefix> old:' holding exactly one code span (stripped of one edge space, like line_spans) and exactly
+    one line starting '<prefix> new:' with a non-empty value."""
+    po, pn = f'{prefix} old:', f'{prefix} new:'
+    olds = section_lines_start(path, po, heading)
+    news = section_lines_start(path, pn, heading)
     if len(olds) != 1 or len(news) != 1:
         return None
     spans = []
-    for m in SPAN_RE.finditer(olds[0][len('swap old:'):]):
+    for m in SPAN_RE.finditer(olds[0][len(po):]):
         text = m.group(2)
         if text.startswith(' '):
             text = text[1:]
         if text.endswith(' '):
             text = text[:-1]
         spans.append(text)
-    new = news[0][len('swap new:'):].strip()
+    new = news[0][len(pn):].strip()
     if len(spans) != 1 or not spans[0].strip() or not new:
         return None
     return spans[0], new
+
+
+def swap_pair(path):
+    """(old span, new text) from a verifier result's ## For the next attempt 'swap old:'/'swap new:' lines,
+    or None (section_pair)."""
+    return section_pair(path, 'For the next attempt', 'swap')
 
 
 def earlier_swap(d, v):
@@ -3396,6 +3554,53 @@ def list_item(line):
     """(indent, marker, text after the marker) for a '-' or '*' list item line, else None."""
     m = re.match(r'^(\s*)([-*]) (.*)$', line)
     return (m.group(1), m.group(2), m.group(3)) if m else None
+
+
+def criterion_targets(lines, heads, old):
+    """(items, targets) of a handoff's lines (keepends): items are the (index, line) list items of the criteria
+    region under heads, targets the items holding old among their command spans."""
+    items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines], heads)
+             if list_item(line)]
+    return items, [(i, line) for i, line in items if old in line_spans(line)]
+
+
+def new_applied(items, new):
+    """True when one criterion item's text after its marker equals new: the swap or amend is already applied."""
+    return any(list_item(line)[2].strip() == new for _, line in items)
+
+
+def one_target(targets, old, refuse):
+    """The one (index, line) target, else refuse: no line or several lines hold the old span."""
+    if not targets:
+        refuse(f'no criterion line holds the old span: {old}')
+    if len(targets) > 1:
+        refuse(f'{len(targets)} criterion lines hold the old span: {old}')
+    return targets[0]
+
+
+def check_new_text(h, target, new, refuse):
+    """The new criterion's command spans after every text check a swap or amend makes, else refuse: it keeps the
+    target's (guard) tag, (red) tag and bracket clause, holds a command span, has no HEAD^1 or <placeholder> span,
+    and lints clean (lint_steps against handoff h)."""
+    if new.startswith('(guard)') != is_guard_line(target):
+        refuse('the new text must start with (guard) exactly when the old criterion line does: '
+               f'old {"is" if is_guard_line(target) else "is not"} a (guard) line')
+    if is_red_line(new) != is_red_line(target):
+        refuse('the new text must carry (red) in its leading tags exactly when the old criterion line does: '
+               f'old {"is" if is_red_line(target) else "is not"} a (red) line')
+    if parse_clause(target)[0] != parse_clause(f'- {new}')[0]:
+        refuse('the new text must keep the old criterion line\'s bracket clause unchanged: '
+               f'old {target.strip()}')
+    spans = line_spans(f'- {new}')
+    if not spans:
+        refuse(f'the new criterion holds no runnable command span: {new}')
+    skipped = [s for s in spans if guard_skipped(s)]
+    if skipped:
+        refuse(f'a new span references HEAD^1 or holds a <placeholder>, so it cannot run now: {skipped[0]}')
+    findings = lint_steps(h, {1: f'## Step 1: swap\nlevel: L1\n### Acceptance criteria\n- {new}'})
+    if findings:
+        refuse(f'the new criterion does not lint: {new}', findings)
+    return spans
 
 
 def swap(step_dir, timeout=300):
@@ -3436,35 +3641,11 @@ def swap(step_dir, timeout=300):
     text = h.read_text(encoding='utf-8')
     lines = text.splitlines(keepends=True)
     heads = ('### Acceptance criteria', '## Acceptance criteria') if solo else ('### Acceptance criteria',)
-    items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines], heads)
-             if list_item(line)]
-    targets = [(i, line) for i, line in items if old in line_spans(line)]
-    if not targets:
-        if any(list_item(line)[2].strip() == new for _, line in items):
-            return 'swap: already applied'
-        refuse(f'no criterion line holds the old span: {old}')
-    if len(targets) > 1:
-        refuse(f'{len(targets)} criterion lines hold the old span: {old}')
-    idx, target = targets[0]
-
-    if new.startswith('(guard)') != is_guard_line(target):
-        refuse('the new text must start with (guard) exactly when the old criterion line does: '
-               f'old {"is" if is_guard_line(target) else "is not"} a (guard) line')
-    if is_red_line(new) != is_red_line(target):
-        refuse('the new text must carry (red) in its leading tags exactly when the old criterion line does: '
-               f'old {"is" if is_red_line(target) else "is not"} a (red) line')
-    if parse_clause(target)[0] != parse_clause(f'- {new}')[0]:
-        refuse('the new text must keep the old criterion line\'s bracket clause unchanged: '
-               f'old {target.strip()}')
-    spans = line_spans(f'- {new}')
-    if not spans:
-        refuse(f'the new criterion holds no runnable command span: {new}')
-    skipped = [s for s in spans if guard_skipped(s)]
-    if skipped:
-        refuse(f'a new span references HEAD^1 or holds a <placeholder>, so it cannot run now: {skipped[0]}')
-    findings = lint_steps(h, {1: f'## Step 1: swap\nlevel: L1\n### Acceptance criteria\n- {new}'})
-    if findings:
-        refuse(f'the new criterion does not lint: {new}', findings)
+    items, targets = criterion_targets(lines, heads, old)
+    if not targets and new_applied(items, new):
+        return 'swap: already applied'
+    idx, target = one_target(targets, old, refuse)
+    spans = check_new_text(h, target, new, refuse)
 
     top = git_toplevel(d)
     cwd = top or str(d)
@@ -3497,6 +3678,159 @@ def swap(step_dir, timeout=300):
 def cmd_swap(step_dir, timeout=300):
     try:
         line = swap(step_dir, timeout)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(line)
+    return 0
+
+
+# --- amend ------------------------------------------------------------------
+# A builder blocked by one defective criterion of an unbuilt step proposes one amend in its ## Notes (under the
+# "plan defect:" line); steps.py amend applies it after the swap checks. It is the task's one replan: the script
+# records "amend applied:" under ## Plan review in the task handoff, so the cap never depends on the conductor.
+
+AMEND_STEP_RE = re.compile(r'^step-(\d+)$')
+
+
+def amend_pair(path):
+    """(old span, new text) from a builder result's ## Notes 'amend old:'/'amend new:' lines, or None
+    (section_pair)."""
+    return section_pair(path, 'Notes', 'amend')
+
+
+def earlier_amend(d, b):
+    """True when a builder result in d other than b proposes an amend: one amend per step."""
+    return any(x != b and amend_pair(x) is not None for x in order.ordered(d, 'builder'))
+
+
+def notes_first(path):
+    """The first non-blank stripped line under ## Notes, else ''."""
+    return next((line.strip() for line in (section(path, 'Notes') or []) if line.strip()), '')
+
+
+def step_built(d):
+    """True when the step is already built: a builder result in d with Status done, or any verifier result."""
+    return (any(build_status_or_none(x) == 'done' for x in order.ordered(d, 'builder'))
+            or bool(order.ordered(d, 'verifier')))
+
+
+def replan_used(d):
+    """Why the task of step dir d already used its one replan, else None: its records dir holds two or more
+    planner-*.md results (order.ordered, as lean_only_reasons counts them), or the task handoff's ## Plan review
+    holds an "amend applied:" line."""
+    task = task_of(d)
+    n = len(order.ordered(records_of(task), 'planner'))
+    if n >= 2:
+        return f'{n} planner results (a replan)'
+    h = task / 'handoff.md'
+    if h.is_file():
+        inside = False
+        for line in h.read_text(encoding='utf-8').splitlines():
+            if line.startswith('## '):
+                inside = line.rstrip() == '## Plan review'
+            elif inside and 'amend applied:' in line:
+                return f'the task handoff ## Plan review holds an amend: {line.strip()}'
+    return None
+
+
+def amend_applied(d, pair):
+    """True when the step handoff no longer holds the old span in a criterion line and one criterion line's
+    text equals the new text."""
+    h = step_handoff(d)
+    if not h.is_file():
+        return False
+    items, targets = criterion_targets(h.read_text(encoding='utf-8').splitlines(keepends=True),
+                                       ('### Acceptance criteria',), pair[0])
+    return not targets and new_applied(items, pair[1])
+
+
+def amend(step_dir, timeout=300):
+    """Apply the newest blocked builder's one criterion amend to <step dir>/handoff.md after every check passes,
+    and record it under ## Plan review in the task handoff. Returns the one stdout line. Raises Fail (last line
+    'plan defect: steps amend refused: ...; replan this step (/chain 4.2)') and writes nothing on any refusal.
+    Unlike swap, the build is partial: only a (guard) line's spans run (exit 0, work tree unchanged), and a (red)
+    line's spans must each exit nonzero now; a plain criterion is not run."""
+    d = records_of(step_dir)
+
+    def refuse(why, detail=()):
+        raise Fail('\n'.join(list(detail) + [f'plan defect: steps amend refused: {why}{SWAP_DEFECT}']))
+
+    if not d.is_dir():
+        refuse(f'no such directory: {d}')
+    h = step_handoff(d)
+    if not h.is_file():
+        refuse(f'no step handoff at {h}')
+    m = AMEND_STEP_RE.match(d.name)
+    if not m:
+        refuse(f'{d} is not a step-<n> dir of a task')
+    b = order.newest(d, 'builder')
+    if b is None:
+        refuse('the step dir holds no builder result')
+    bname = os.path.basename(b)
+    if build_status_or_none(b) != 'blocked':
+        refuse(f'newest builder {bname} is not blocked')
+    if not notes_first(b).startswith('plan defect:'):
+        refuse(f'newest builder {bname} does not start ## Notes with "plan defect:"')
+    pair = amend_pair(b)
+    if pair is None:
+        refuse(f'newest builder {bname} has no single amend old: (one code span) and amend new: pair')
+    old, new = pair
+    lines = h.read_text(encoding='utf-8').splitlines(keepends=True)
+    items, targets = criterion_targets(lines, ('### Acceptance criteria',), old)
+    if not targets and new_applied(items, new):
+        return 'amend: already applied'
+    if step_built(d):
+        refuse('the step is already built (a builder result with Status done, or a verifier result); '
+               'a built step\'s criterion changes only through the verifier\'s steps.py swap')
+    if earlier_amend(d, b):
+        refuse(f'another builder result in {d} already proposed an amend; one amend per step')
+    used = replan_used(d)
+    if used:
+        refuse(f'the task already used its one replan: {used}')
+    idx, target = one_target(targets, old, refuse)
+    spans = check_new_text(h, target, new, refuse)
+
+    guard, red_line = is_guard_line(target), is_red_line(target)
+    if guard or red_line:
+        top = git_toplevel(d)
+        cwd = top or str(d)
+        base = base_sha(exec_toplevel(d), d)
+        before = tree_state(top) if top and guard else None
+        detail, bad = [], []
+        for s in spans:
+            rc, tail = run_guard(s, cwd, timeout, base)
+            if guard and rc != 0:
+                why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
+                detail.append(f'steps amend: {d}: new (guard) span is red now ({why}): {s}')
+                detail += [f'  {t}' for t in tail]
+                bad.append(f'(guard) red now: {s}')
+            elif red_line and not guard and (rc is None or rc == 0):
+                why = f'timed out after {timeout:g}s' if rc is None else 'exit 0'
+                detail.append(f'steps amend: {d}: new (red) span is not red before the build ({why}): {s}')
+                bad.append(f'(red) green now: {s}')
+        after = tree_state(top) if before is not None else None
+        changed = tree_changes(before, after) if after is not None else []
+        if changed:
+            detail += [f'steps amend: {d}: new criterion span changed the work tree: {p}' for p in changed]
+            bad.append(f'the new criterion changed the work tree: {", ".join(changed)}')
+        if bad:
+            refuse('; '.join(bad), detail)
+
+    indent, marker, _ = list_item(target)
+    ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
+    lines[idx] = f'{indent}{marker} {new}{ending}'
+    task_h = task_of(d) / 'handoff.md'
+    record = f'- amend applied: step {m.group(1)}: old `{old}` -> new {new}'
+    old_task = task_h.read_text(encoding='utf-8') if task_h.is_file() else ''
+    h.write_text(''.join(lines), encoding='utf-8')
+    task_h.write_text(section_text(old_task, '## Plan review', record, at_end=True), encoding='utf-8')
+    return f'steps amend: {d}: old `{old}` -> new {new}'
+
+
+def cmd_amend(step_dir, timeout=300):
+    try:
+        line = amend(step_dir, timeout)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -4059,6 +4393,27 @@ def selftest():
         rc2, _, _ = run_main(['split', str(d)])
         check('(j) lint on a task dir skips an older broken planner-L3.md, like split',
               rc == 0 and out.strip() == 'steps lint: ok' and err == '' and rc2 == 0)
+
+        # (order) T-0536: a criterion naming a path a later step creates can pass only after that step
+        order_plan = ('# Plan\n\n## Step 1: Use the tool\nlevel: L2\n### Do\nCall the tool.\n'
+                      '### Acceptance criteria\n- `test -f tools/new-tool.sh`\n\n'
+                      '## Step 2: Make the tool\nlevel: L2\n### Do\nCreate `tools/new-tool.sh`.\n'
+                      '### Acceptance criteria\n- `test -x tools/new-tool.sh`\n')
+        d = task(plan=order_plan)
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(order) refuses a criterion naming a path a later step creates',
+              rc == 1 and 'which a later step creates (step 2)' in err and 'step 1:' in err)
+        d = task(plan=order_plan.replace('Call the tool.', 'Create `tools/new-tool.sh` and call it.'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check("(order) negative: the step's own Do creates the path", rc == 0 and 'a later step creates' not in err)
+        d = task(plan=order_plan)
+        (d / 'tools').mkdir()
+        (d / 'tools' / 'new-tool.sh').write_text('#!/bin/sh\n', encoding='utf-8')
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(order) negative: the path exists in the tree', rc == 0 and 'a later step creates' not in err)
+        d = task(plan=order_plan.replace('- `test -f tools/', '- (guard) `test -f tools/'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(order) negative: a (guard) line names the path', rc == 0 and 'a later step creates' not in err)
 
         # (lean) coarse-step warnings after a clean lint
         def lean_plan(levels, n_crit=2, title='Thing', assume=''):
@@ -4714,7 +5069,7 @@ def selftest():
               nxt(step(4, [('builder-L4.md', DONE)]), 'verify L3'))
         check('next verify: build L3 done, no verifier -> verify L2',
               nxt(step(3, [('builder-L3.md', DONE)]), 'verify L2'))
-        check('next replan: a blocked builder replans, whatever its Notes say',
+        check('next replan: a blocked builder with no amend pair replans',
               nxt(step(2, [('builder-L2.md', BLOCKED)]), 'replan'))
         STALE = '## Status\nblocked\n\n## Notes\nstale lane: T-0042 is not merged into this lane\n'
         rc, out, err = run_main(['next', str(step(2, [('builder-L2.md', STALE)]))])
@@ -4987,6 +5342,104 @@ def selftest():
                     'step-3': ('c', [])}, [('verifier-L3.md', BOTH)])
         check('next batch: a per-step fail counting after the build wins over a pass listing -> rebuild',
               nxt(t / 'step-2', 'rebuild L2'))
+
+        # amend: a blocked builder's plan-defect note proposes one criterion amend for an unbuilt step;
+        # steps.py amend applies it and records it as the task's one replan, next routes to it.
+        A_OLD = 'test -f zzz-amend-old'
+        A_HANDOFF = ('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n### Do\nd\n### Acceptance criteria\n'
+                     '- (guard) `test -d .`\n- `' + A_OLD + '` (old check)\n- prose line\n')
+        A_NEW = '`test -f zzz-amend-new` (new check)'
+
+        def amend_b(old=A_OLD, new=A_NEW):
+            return (f'## Status\nblocked\n\n## Notes\nplan defect: c2 names the wrong file\n'
+                    f'amend old: `{old}`\namend new: {new}\n')
+
+        def a_task(files, task_files=(), task_handoff='## Goal\ng\n', n=1):
+            """A task dir with handoff.md, step-<n>/handoff.md and files in run order; task_files are
+            task-dir results in run order."""
+            count[0] += 1
+            t = tmp / f'amend{count[0]}'
+            d = t / f'step-{n}'
+            d.mkdir(parents=True)
+            (t / 'handoff.md').write_text(task_handoff, encoding='utf-8')
+            (d / 'handoff.md').write_text(A_HANDOFF, encoding='utf-8')
+            for where, fs in ((d, files), (t, task_files)):
+                for name, text in fs:
+                    (where / name).write_text(hdr(name, text), encoding='utf-8')
+                if fs:
+                    (where / 'runs.jsonl').write_text(''.join(f'{{"file": "{x}"}}\n' for x, _ in fs),
+                                                      encoding='utf-8')
+            return t, d
+
+        def amend_refused(t, d, needle):
+            before_h, before_t = ((x / 'handoff.md').read_text(encoding='utf-8') for x in (d, t))
+            rc, out, err = run_main(['amend', str(d)])
+            last = err.strip().splitlines()[-1] if err.strip() else ''
+            return (rc == 1 and out == '' and needle in err
+                    and last.startswith('plan defect: steps amend refused:')
+                    and last.endswith('; replan this step (/chain 4.2)')
+                    and (d / 'handoff.md').read_text(encoding='utf-8') == before_h
+                    and (t / 'handoff.md').read_text(encoding='utf-8') == before_t)
+
+        t, d = a_task([('builder-L2.md', amend_b())])
+        rc, out, err = run_main(['amend', str(d)])
+        want = A_HANDOFF.replace(f'- `{A_OLD}` (old check)', f'- {A_NEW}')
+        task_text = (t / 'handoff.md').read_text(encoding='utf-8')
+        first_ok = (rc == 0 and err == '' and (d / 'handoff.md').read_text(encoding='utf-8') == want
+                    and out.strip() == f'steps amend: {d}: old `{A_OLD}` -> new {A_NEW}'
+                    and task_text == f'## Goal\ng\n\n## Plan review\n- amend applied: step 1: old `{A_OLD}` -> new {A_NEW}\n')
+        before = snapshot(t)
+        rc, out, err = run_main(['amend', str(d)])
+        check('(amend) applies one criterion',
+              first_ok and rc == 0 and out.strip() == 'amend: already applied' and snapshot(t) == before)
+        # a (red) line: a new span green now refuses; a (guard) line: a new span red now refuses
+        R_A = A_HANDOFF.replace('- `' + A_OLD + '`', '- (red) `' + A_OLD + '`')
+        t, d = a_task([('builder-L2.md', amend_b(new='(red) `test -f handoff.md` (new check)'))])
+        (d / 'handoff.md').write_text(R_A, encoding='utf-8')
+        red_green = amend_refused(t, d, '(red) green now')
+        t, d = a_task([('builder-L2.md', amend_b('test -d .', '(guard) `test -f zzz-none`'))])
+        guard_red = amend_refused(t, d, '(guard) red now')
+        t, d = a_task([('builder-L2.md', amend_b(new='(red) `test -f zzz-amend-new` (new check)'))])
+        (d / 'handoff.md').write_text(R_A, encoding='utf-8')
+        rc, _, _ = run_main(['amend', str(d)])
+        check('(amend) a (red) line runs its new spans red-first, a (guard) line green, a plain line not at all',
+              red_green and guard_red and rc == 0 and first_ok)
+        check('(amend) refuses: the step is already built',
+              amend_refused(*a_task([('builder-L2.md', DONE), ('builder-L2-2.md', amend_b())]), 'already built')
+              and amend_refused(*a_task([('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
+                                         ('builder-L2-2.md', amend_b())]), 'already built')
+              and amend_refused(*a_task([('verifier-L1.md', FAIL), ('builder-L2.md', amend_b())]),
+                                'already built'))
+        A_PLAN = '## Steps\n## Step 1: x\nlevel: L2\n'
+        other = '## Goal\ng\n\n## Plan review\n- amend applied: step 2: old `x` -> new `y`\n'
+        check('(amend) refuses: the task already used its one replan',
+              amend_refused(*a_task([('builder-L2.md', amend_b())],
+                                    [('planner-L2.md', A_PLAN), ('planner-L3.md', A_PLAN)]),
+                            'already used its one replan')
+              and amend_refused(*a_task([('builder-L2.md', amend_b())], task_handoff=other),
+                                'already used its one replan'))
+        check('(amend) refuses: one amend per step, a note with no pair, a note that is not a plan defect',
+              amend_refused(*a_task([('builder-L2.md', amend_b()), ('builder-L2-2.md', amend_b())]),
+                            'one amend per step')
+              and amend_refused(*a_task([('builder-L2.md', BLOCKED)]), 'no single amend old:')
+              and amend_refused(*a_task([('builder-L2.md', amend_b().replace('plan defect:', 'other:'))]),
+                                'plan defect:'))
+
+        def a_next(d, want):
+            rc, out, err = run_main(['next', str(d)])
+            return rc == 0 and out.splitlines()[:1] == [want]
+        t, d = a_task([('builder-L2.md', amend_b())])
+        routes = a_next(d, 'amend L2')
+        run_main(['amend', str(d)])
+        routes = routes and a_next(d, 'rebuild L2')
+        t, d = a_task([('builder-L2.md', amend_b())], [('planner-L2.md', A_PLAN), ('planner-L3.md', A_PLAN)])
+        routes = routes and a_next(d, 'replan')
+        t, d = a_task([('builder-L2.md', amend_b())], task_handoff=other)
+        routes = routes and a_next(d, 'replan')
+        t, d = a_task([('builder-L2.md', amend_b()), ('builder-L2-2.md', amend_b())])
+        routes = routes and a_next(d, 'replan')
+        t, d = a_task([('builder-L2.md', DONE), ('builder-L2-2.md', amend_b())])
+        check('(amend) next routes', routes and a_next(d, 'replan'))
 
         # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
         # after every check, next routes to it. Spans run from the step dir (tmp is outside git).
@@ -6513,6 +6966,10 @@ def main(argv):
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='per-span timeout for the new criterion (default 300); a timeout refuses. Spans run with '
                         'SDLC_BASE_SHA from the handoff\'s `base:` line, else <step dir>/base-sha, else HEAD of the execution tree')
+    p = sub.add_parser('amend', help="apply the newest blocked builder's one criterion amend to a step handoff")
+    p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder results')
+    p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
+                   help='per-span timeout for a new (guard) or (red) criterion (default 300); a timeout refuses')
     p = sub.add_parser('widen', help='add paths to the one scope criterion of a step handoff')
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md')
     p.add_argument('paths', nargs='*', metavar='path', help='repo-relative paths to allow (one or more)')
@@ -6560,6 +7017,11 @@ def main(argv):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
             return 1
         return cmd_swap(a.step_dir, a.timeout)
+    if a.cmd == 'amend':
+        if not 0 < a.timeout < float('inf'):
+            print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
+            return 1
+        return cmd_amend(a.step_dir, a.timeout)
     if a.cmd == 'lint':
         if a.tree is not None and not os.path.isdir(a.tree):
             print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
