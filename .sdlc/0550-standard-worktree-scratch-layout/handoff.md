@@ -5,7 +5,7 @@ type: chore           # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
-depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+depends: [T-0543, T-0544]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
@@ -18,12 +18,12 @@ A session with no SDLC Lite context finds every worktree SDLC Lite creates in Cl
 - Do: resolve the root from the main checkout (`git rev-parse --git-common-dir` parent), never from the current tree, so a role inside a lane never nests (`.worktrees/t0535-lane/.worktrees/tmp/...` seen in maison, 2026-10-14).
 - Do: non-worktree scratch (probe files, mutated copies) goes to a per-run dir under the system temp dir (`$TMPDIR`), matching Claude Code's session scratchpad convention, not into the repo.
 - Do: each run's folder holds an owner marker (pid, start time, ticket, role). The sweep (`lanes.py sweep`, and the `dispatch.py record` stray check) removes only folders whose owner is dead and older than a time limit, and reports folders with no marker (legacy, hand-made) without deleting them.
-- Do: migration. Existing `.worktrees/` in consumer repos keep working for reads and landing; new runs create under the new root; the sweep reports `.worktrees/` leftovers; release notes say how to move or remove them. The `block-role-worktree` and `block-role-rm` hooks accept the new prefix.
+- Do: migration script `plugins/sdlc-lite/scripts/migrate-0.23.sh`, run once per consumer repo when installing 0.23.0. Dry run by default (prints each planned move), `--apply` to act; idempotent (a second run is a no-op); run from the repo root. It moves each registered worktree under `.worktrees/` to `.claude/worktrees/` with `git worktree move` (never `mv`), skips and reports a worktree with uncommitted changes, a live owner (running pid or `.running` marker), or a lane not yet landed; ensures `.claude/worktrees/` is git-ignored; runs `tickets.py tidy` (T-0544) for loose `.sdlc/` files; leaves unregistered folders in place and lists them; removes `.worktrees/` only when it ends empty. Read paths keep accepting `.worktrees/` for one release so an unmigrated repo still lands its lanes. The `block-role-worktree` and `block-role-rm` hooks accept the new prefix.
 - Non-goals: changing Claude Code's own `--worktree` or Agent-isolation behavior; deleting a consumer's existing folders automatically.
-- Done when: a fanout run and a sub-agent role run in a throwaway project create worktrees only under `.claude/worktrees/` and scratch only under `$TMPDIR`; a role started inside a lane gets a prefix under the main checkout's root (selftest with a negative control); the sweep removes a dead-owner folder past the limit, keeps a live one, and reports an unmarked one (selftest); `check.sh` and packaging checks pass.
+- Done when: `migrate-0.23.sh` selftest on a fixture repo: a clean worktree moves and `git worktree list` shows the new path; a dirty one and a live one are skipped and reported (negative controls); a second run changes nothing; dry run changes nothing. A fanout run and a sub-agent role run in a throwaway project create worktrees only under `.claude/worktrees/` and scratch only under `$TMPDIR`; a role started inside a lane gets a prefix under the main checkout's root (selftest with a negative control); the sweep removes a dead-owner folder past the limit, keeps a live one, and reports an unmarked one (selftest); `check.sh` and packaging checks pass.
 
 ## Context
 Maintainer decision 2026-10-14: "a new session that does not use SDLC or has context should not have to figure out that in this project the worktrees go somewhere unusual"; chose `.claude/worktrees/` (Claude Code's default for `claude --worktree`, EnterWorktree, and Agent `isolation: worktree`) for both hosts. Today: lanes in `.worktrees/fanoutNN/`, role scratch in `.worktrees/tmp/<agent>` (`dispatch.py` :906, `run.sh` :37, builder/verifier/planner contracts), lane archive in `.git/sdlc-lane-archive/`. Maison holds many unowned `.worktrees/` folders (`batchA`, `b-0152-s3`, `acc-*`).
 
 ## Constraints
-Run after 0.23.0 ships. Do not move worktrees a running lane is using. The failing selftests land before or with the change.
+Ships in 0.23.0 (maintainer, 2026-10-14: "we need a migration shell script that each repo can run as part of installing 0.23.0"); depends on T-0544 for `tidy`. Do not move worktrees a running lane is using. The failing selftests land before or with the change.
