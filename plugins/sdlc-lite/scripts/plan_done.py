@@ -23,7 +23,8 @@ A step `ticket: new <type> <slug>` is its ticket once a folder named <NNNN>-<slu
 cell is a dotted path into the JSON the command prints (`runs.interrupted.lost_min_median`), or ignored when the command prints one bare
 number; anything else, a failing command or a timeout reads `unreadable`, never green. The comparison uses the operator in `target`
 (`<= 15`), else the direction (down `<=`, up `>=`, hold `=`).
-`stop` writes plan-state.json beside the plan and one line to the notes file the plan names, exit 0. `replan` counts in the same file:
+`stop` writes plan-state.json into the plan dir's records dir (order.records_dir: .sdlc/runtime/tasks/<plan dir name>/, or
+the plan dir itself when it already holds records; a legacy plan-state.json beside the plan is still read) and one line to the notes file the plan names, exit 0. `replan` counts in the same file:
 the first call exits 0, the second refuses (exit 2), writes the stop record and prints `replan cap reached: stopped`. plan-state.json
 holds `replans` and `stopped` and nothing else, and never contributes to done. `resume` clears the stop record (keeps `replans`) and
 writes one notes line, exit 0: the step after the cause of a stop is fixed, so a stop record never needs hand removal.
@@ -191,12 +192,20 @@ def later_lines(doc):
     return lines
 
 
+def state_path(plan, create=False):
+    """plan-state.json in the plan dir's records dir (order.records_dir)."""
+    return order.records_dir(pathlib.Path(plan).parent, create=create) / STATE
+
+
 def read_state(plan):
-    try:
-        data = json.loads((pathlib.Path(plan).parent / STATE).read_text(encoding='utf-8'))
-    except (OSError, ValueError):
-        return {}
-    return data if isinstance(data, dict) else {}
+    """The records-dir plan-state.json, else the legacy one beside the plan, else {}."""
+    for path in (state_path(plan), pathlib.Path(plan).parent / STATE):
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        return data if isinstance(data, dict) else {}
+    return {}
 
 
 # ---- the verdict ---------------------------------------------------------------------------------------------
@@ -301,7 +310,7 @@ def notes_path(plan, root):
 
 
 def write_state(plan, state):
-    path = pathlib.Path(plan).parent / STATE
+    path = state_path(plan, create=True)
     keep = {k: state[k] for k in ('replans', 'stopped') if k in state}
     tmp = path.with_name(STATE + '.tmp')
     tmp.write_text(json.dumps(keep, indent=2) + '\n', encoding='utf-8')
@@ -508,11 +517,11 @@ def selftest():
     tmp, root, plan = fresh()
     ed(root / '0413-resume' / 'handoff.md', 'status: done', 'status: ready')
     rc, out = cli(plan, root, 'stop', str(plan), '--reason', 'weekly limit', '--resume', 'rerun it')
-    expect('plan_done: stop exits 0 and writes plan-state.json', rc == 0 and (plan.parent / STATE).is_file(), (rc, out))
+    expect('plan_done: stop exits 0 and writes plan-state.json', rc == 0 and state_path(plan).is_file(), (rc, out))
     row('S a stop record plus one open item exits 4 with the resume command', run_all(root, plan), 4, 'stopped: weekly limit; resume: rerun it')
     ed(root / '0413-resume' / 'handoff.md', 'status: ready', 'status: done')
     row('S contrast: a stop record with everything green exits 0', run_all(root, plan), 0, 'plan done')
-    state = json.loads((plan.parent / STATE).read_text(encoding='utf-8'))
+    state = json.loads(state_path(plan).read_text(encoding='utf-8'))
     expect('plan_done: plan-state.json holds replans and stopped and nothing else', sorted(state) == ['replans', 'stopped'] and state['replans'] == 0, state)
     expect('plan_done: stop appended one line to the notes file the plan names', (root / 'notes.md').read_text(encoding='utf-8').count('stopped: weekly limit') == 1)
     # resume (T-0438): the stop record clears without hand removal; the replan count survives
@@ -523,7 +532,7 @@ def selftest():
     expect('plan_done: the default resume command names the resume subcommand', f'plan_done.py resume {plan}' in run_all(root, plan)['last'], run_all(root, plan)['last'])
     rc, out = cli(plan, root, 'resume', str(plan))
     expect('plan_done: resume exits 0 and prints what it cleared', rc == 0 and out == ['resumed: cleared stop "merge conflict"'], (rc, out))
-    st = json.loads((plan.parent / STATE).read_text(encoding='utf-8'))
+    st = json.loads(state_path(plan).read_text(encoding='utf-8'))
     row('resume: the open item is exit 1 again, no longer the sticky exit 4', run_all(root, plan), 1, 'open: step 2')
     expect('plan_done: resume keeps the replan count and holds no stop', st == {'replans': 1}, st)
     expect('plan_done: resume appended one notes line', (root / 'notes.md').read_text(encoding='utf-8').count('resumed after: merge conflict') == 1)
@@ -553,18 +562,30 @@ def selftest():
         shutil.rmtree(root / folder)
     res = run_all(root, plan)
     row('unstarted the goal 002 shaped plan exits 1', res, 1, 'open: step 1')
-    expect('plan_done: unstarted lists every step open', [i[1] for i in res['items'] if i[0] == 'C1'] == [1, 2, 3, 4] and not (root / 'demo' / STATE).exists(), res['items'])
+    expect('plan_done: unstarted lists every step open', [i[1] for i in res['items'] if i[0] == 'C1'] == [1, 2, 3, 4] and not state_path(plan).exists(), res['items'])
     # replan cap, stop on the second call
     tmp, root, plan = fresh()
     rc1, out1 = cli(plan, root, 'replan', str(plan), '--reason', 'plan defect in step 2')
-    expect('plan_done: the first replan exits 0 and counts', rc1 == 0 and json.loads((plan.parent / STATE).read_text())['replans'] == 1, (rc1, out1))
+    expect('plan_done: the first replan exits 0 and counts', rc1 == 0 and json.loads(state_path(plan).read_text())['replans'] == 1, (rc1, out1))
     rc2, out2 = cli(plan, root, 'replan', str(plan), '--reason', 'again')
-    st = json.loads((plan.parent / STATE).read_text(encoding='utf-8'))
+    st = json.loads(state_path(plan).read_text(encoding='utf-8'))
     expect('plan_done: a second replan refuses (exit 2), prints replan cap reached: stopped and writes the stop record',
            rc2 == 2 and out2 == ['replan cap reached: stopped'] and st['replans'] == 1 and st['stopped']['reason'].startswith('replan cap reached'), (rc2, out2, st))
     expect('plan_done: the refusal also wrote the notes line', 'replan cap reached' in (root / 'notes.md').read_text(encoding='utf-8'))
     ed(root / '0413-resume' / 'handoff.md', 'status: done', 'status: ready')
     row('replan cap: the stop the refusal wrote ends the run with exit 4 while an item is open', run_all(root, plan), 4, 'stopped: replan cap reached')
+    # records dir (T-0541): solo runs.jsonl and the verifier pass only in .sdlc/runtime/tasks/<folder>/, or in place (legacy)
+    for label, runtime in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+        tmp, root, plan = fresh()
+        if runtime:
+            for folder, _, _ in TICKETS:
+                rd = root / 'runtime' / 'tasks' / folder
+                rd.mkdir(parents=True)
+                for name in ('verifier-L2.md', 'runs.jsonl'):
+                    os.replace(root / folder / name, rd / name)
+        moved = all((root / f / 'runs.jsonl').exists() != runtime for f, _, _ in TICKETS)
+        res = run_all(root, plan)
+        expect(f'plan_done: {label}: prints plan done', moved and res['code'] == 0 and res['last'] == 'plan done', (moved, res['code'], res['last'], res['items']))
     # the command line
     tmp, root, plan = fresh()
     rc, out = cli(plan, root)

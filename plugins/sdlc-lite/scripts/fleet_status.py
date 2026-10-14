@@ -86,8 +86,10 @@ here or in scan_repo() and not in the schema fails the selftest. The notes below
                 the newest `ts` among its last rows, its mtime only when no row has a ts, because a git checkout or
                 merge refreshes the mtime of every tracked file; a log counts by mtime). stale: the board claims
                 work and none of those holds. queued or done: the board claims no work and none of those holds.
-                Markers and activity are read in the task folder, its `step-*` folders and the same ticket folder in
-                each linked worktree. handoff.md and skips.md are never activity.
+                Markers and activity are read in the task folder, its records dir (order.records_dir:
+                .sdlc/runtime/tasks/<folder>/, or the task folder itself for legacy records), that dir's `step-*`
+                folders, and the same ticket folder in each linked worktree. handoff.md and skips.md are never
+                activity.
       flags     `ticket-done-board-open` when the ticket is done or dropped yet a role is still marked running on it (built or failed step history of a closed ticket is not a claim).
     counts      rows per state
     needs_you[] {kind: blocked, id, task, title, owner: user | conductor | unknown, note, age_s} for each ticket
@@ -124,6 +126,7 @@ import board          # same scripts/ dir: the board's own task and row logic (d
 import fleet_collect  # same scripts/ dir: bounded subprocess, worktree discovery, process classes
 import fleet_config   # same scripts/ dir: the repo registry
 import messages       # same scripts/ dir: ID_RE only; a message file is never opened here
+import order          # same scripts/ dir: records_dir, where a task's markers, attempts and runs live
 import tickets        # same scripts/ dir: the only front matter parser
 
 UTC = datetime.timezone.utc
@@ -341,11 +344,15 @@ def worktree_regex(path):
 
 
 def step_dirs(task_dir):
-    """The task folder and its direct step-* folders (superseded ones included: a marker there is still a marker)."""
+    """The task folder, its records dir (order.records_dir) when that differs, and the records dir's direct step-*
+    folders (superseded ones included: a marker there is still a marker)."""
     out = [task_dir]
+    rd = str(order.records_dir(task_dir))
+    if os.path.abspath(rd) != os.path.abspath(task_dir):
+        out.append(rd)
     try:
-        out += sorted(os.path.join(task_dir, n) for n in os.listdir(task_dir)
-                      if n.startswith('step-') and os.path.isdir(os.path.join(task_dir, n)))
+        out += sorted(os.path.join(rd, n) for n in os.listdir(rd)
+                      if n.startswith('step-') and os.path.isdir(os.path.join(rd, n)))
     except OSError:
         pass
     return out
@@ -1552,6 +1559,15 @@ def selftest_collect():
         kids.append(subprocess.Popen([sys.executable, '-c', sleeper, t1], stdin=subprocess.DEVNULL))
         kids.append(subprocess.Popen([sys.executable, '-c', sleeper], stdin=subprocess.DEVNULL))
         kids.append(subprocess.Popen([sys.executable, '-c', sleeper], stdin=subprocess.DEVNULL))
+        # records dir (T-0541): t14 keeps its marker and attempt only in .sdlc/runtime/tasks/<folder>/, t15 in place
+        rdr = os.path.join(tmp, 'rdrepo')                                 # its own repo: the main one stays without runtime/
+        os.makedirs(rdr)
+        git(rdr, 'init', '-q', '-b', 'main')
+        t14 = ticket(rdr, '0014-runtime-marker' + U, 'T-0014', 'ready', built=False)
+        t15 = ticket(rdr, '0015-legacy-marker' + U, 'T-0015', 'ready', built=False)
+        r14 = os.path.join(rdr, '.sdlc', 'runtime', 'tasks', os.path.basename(t14))
+        kids.append(subprocess.Popen([sys.executable, '-c', sleeper], stdin=subprocess.DEVNULL))
+        kids.append(subprocess.Popen([sys.executable, '-c', sleeper], stdin=subprocess.DEVNULL))
         dead = subprocess.Popen([sys.executable, '-c', 'pass'])
         dead.wait()
         time.sleep(1.2)                                                   # kids are older than the markers below
@@ -1561,6 +1577,9 @@ def selftest_collect():
         attempt(t5, 'builder', 'L1', kids[1].pid)
         write(os.path.join(t6, 'builder-L1.running'), '%d\n' % (int(time.time()) - 3600))   # started an hour ago
         attempt(t6, 'builder', 'L1', kids[2].pid)                         # but this pid started a moment ago: reused
+        for d, kid in ((r14, kids[3]), (t15, kids[4])):
+            write(os.path.join(d, 'builder-L1.running'), '%d\n' % int(time.time()))
+            attempt(d, 'builder', 'L1', kid.pid)
         before = snap(tmp)
 
         sd = os.path.join(tmp, 'state')
@@ -1574,6 +1593,11 @@ def selftest_collect():
         ok('stale: a board row with no process, marker or activity', st['T-0003'] == 'stale')
         ok('idle: no process or marker, but a runs.jsonl changed just now', st['T-0004'] == 'idle')
         ok('queued: a ticket with no plan and no signal', st['T-0008'] == 'queued')
+        sr = states(collect([{'name': 'rd', 'path': rdr, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False, now=t0), 'rd')
+        ok('records dir: runtime-only fixture: a marker with a live attempt pid only in the records dir is live',
+           sr.get('T-0014') == 'live' and not os.path.exists(os.path.join(t14, 'builder-L1.running')))
+        ok('records dir: legacy fixture: the same marker in the task folder is live',
+           sr.get('T-0015') == 'live' and not os.path.exists(os.path.join(rdr, '.sdlc', 'runtime', 'tasks', os.path.basename(t15))))
         ok('a done ticket with no step work is not a board row', 'T-0012' not in st)
         row = {r['id']: r for r in out['repos'][0]['rows']}
         ok('live: evidence names the process', 'process' in row['T-0001']['evidence'][0])

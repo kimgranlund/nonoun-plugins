@@ -7,7 +7,8 @@ forward only through accept (which needs a valid eval), reject (which needs a re
 files an idea ticket through tickets.py new). scan never writes a source file and never changes a status.
 
 Sources (walked under --root with os.walk: names sorted, symlinks not followed, dot folders included; the
-top-level proposals, messages, runtime, and dogfood dirs and the --proposals dir are skipped)
+top-level proposals, messages, runtime, and dogfood dirs and the --proposals dir are skipped, except runtime/tasks,
+the records dirs that hold each task's runs.jsonl and role results)
   runs.jsonl   one JSON object per line; a line whose role or level is not a string is skipped
   role result  a file named (builder|verifier)-L[1-5](-<suffix>)?.md; sections parse as in results.py
   notes.md     <root>/notes.md lines of the form `- fix-now: <text>` or `- decide: <text>`
@@ -19,7 +20,8 @@ Patterns (a key with two or more occurrences becomes a candidate)
   next-attempt <text>    the same `## For the next attempt` text (lowercased) in different dirs
   plan-defect            `plan defect:` lines in failing verifiers and blocked builders
   follow-up <tag> <text> the same notes.md follow-up line
-  A dir subject is repo-relative, with the leading dot dropped from a closed ticket folder .NNNN-<slug>.
+  A dir subject is repo-relative, with the leading dot dropped from a closed ticket folder .NNNN-<slug>; a records
+  dir <root>/runtime/tasks/<key>/... has the subject <root>/<key>/..., the same as its task folder.
 
 Proposal file: <proposals>/<kind>-<first 8 hex of sha256(pattern)>[-<k>]/proposal.md
   ---
@@ -160,6 +162,8 @@ def rel(path, repo):
 
 def subject_of(dirpath, repo):
     parts = Path(dirpath).relative_to(repo).parts
+    if parts[1:3] == ('runtime', 'tasks') and len(parts) > 3:
+        parts = parts[:1] + parts[3:]
     return '/'.join(p[1:] if DOT_TICKET_RE.fullmatch(p) else p for p in parts)
 
 
@@ -217,7 +221,9 @@ def collect(root, proposals):
         here = Path(dirpath)
         keep = []
         for name in sorted(dirnames):
-            if here == root and name in SKIP_TOP:
+            if here == root and name in SKIP_TOP and name != 'runtime':
+                continue
+            if here == root / 'runtime' and name != 'tasks':
                 continue
             if (here / name).resolve() == proposals:
                 continue
@@ -1108,6 +1114,30 @@ def selftest(plugin):
             lambda need, rc, out, err: need(len(changed(base27, manifest(m27))) >= 1,
                                             'the source check saw no change after the mutant scan: rc=%d %r'
                                             % (rc, err)), r27))
+
+        def records(proj, runtime):
+            s = proj / '.sdlc'
+            w(s / '.0007-x/handoff.md', '---\nid: T-0007\nstatus: done\n---\n')
+            d = s / ('runtime/tasks/0007-x' if runtime else '.0007-x')
+            w(d / 'runs.jsonl', '{"role":"planner","level":"L2"}\n{"role":"planner","level":"L3"}\n')
+            if runtime:
+                w(s / 'runtime/tasks/0008-y/runs.jsonl', '{"role":"planner","level":"L2"}\n')
+                w(s / 'runtime/traces/k/runs.jsonl', '{"role":"planner","level":"L2"}\n{"role":"planner","level":"L3"}\n')
+            track(proj)
+            return proj
+
+        for runtime, label in ((True, 'runtime-only'), (False, 'legacy')):
+            def cr(need, proj=records(t / ('rec-' + label), runtime), runtime=runtime):
+                rc, out, err = ev(proj, ['scan'])
+                props = sorted((proj / '.sdlc/proposals').glob('*/proposal.md'))
+                need(rc == 0 and len(props) == 1, 'scan: rc=%d %r %r %r' % (rc, out, err, props))
+                lines = (read(props[0]) if props else '').split('\n')
+                need('pattern: replan .sdlc/0007-x' in lines, 'pattern %r' % lines)
+                where = '.sdlc/runtime/tasks/0007-x/' if runtime else '.sdlc/.0007-x/'
+                ev_lines = [l for l in lines if l.startswith('- ')]
+                need(len(ev_lines) == 2 and all(l.startswith('- ' + where) for l in ev_lines), 'evidence %r' % ev_lines)
+            case('records dir: %s fixture: planner rows in a records dir file one replan candidate under the '
+                 'task folder subject' % label, cr)
 
         def c20(need):
             need(runs[0] > 0, 'no command ran')
