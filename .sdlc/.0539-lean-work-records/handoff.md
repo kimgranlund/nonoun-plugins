@@ -2,7 +2,7 @@
 id: T-0539
 title: "Lean work records: a ticket leaves its handoff plus one Outcome; no ceremony files (0.23.0 design)"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L4             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Evidence 2026-10-13: a solo ticket here leaves 8 to 10 committed files (`.sdlc/.
 
 ## Constraints
 Preserve independent verification (one verifier per ticket), the recorded build base (`SDLC_BASE_SHA`, which may live in runtime), reference-safe closure and recovery after a host restart. Keep one authoritative location per fact.
+
+## Closed
+
+2026-10-13: design done: build tickets T-0540 to T-0545; T-0529, T-0534, T-0535 merged into them

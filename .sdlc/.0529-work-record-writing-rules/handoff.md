@@ -2,7 +2,7 @@
 id: T-0529
 title: "Writing rules for work records, and a placeholder gate at close (maison T-0546)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0528]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ Writing rules for work records, and a placeholder gate at close, closing maison 
 
 ## Constraints
 Preserve reference-safe closure, cross-worktree id uniqueness and explicit follow-up selection. A new or changed check needs a positive case and an observed negative control.
+
+## Closed
+
+2026-10-13: merged into T-0543 (placeholder gate) and T-0545 (writing rules) by the T-0539 design
