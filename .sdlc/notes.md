@@ -475,3 +475,4 @@
 - Codex live named-agent exchange (line 414; T-0507, T-0316): deferred past 0.23.0, stays UNVERIFIED in release notes.
 - ui-designer per-mode write gate (line 443): declined; the role contract and check.py guard are enough until a mis-edit is observed.
 - `/compact` `--write-handoff` live check (line 420): left off for now.
+- Worktree root (maintainer, 2026-10-14): all SDLC Lite worktrees move to `<main checkout>/.claude/worktrees/` on both hosts, scratch to `$TMPDIR`; T-0550, after 0.23.0.
