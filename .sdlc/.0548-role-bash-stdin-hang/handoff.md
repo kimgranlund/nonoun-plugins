@@ -2,7 +2,7 @@
 id: T-0548
 title: "A role's Bash call that reads stdin (bare cat > file) hangs the run with no timeout"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,13 @@ The failing test lands before or with the fix, never after.
 - With no role (`SDLC_ROLE`, `SDLC_HEADLESS` unset, no `agent_type`) the hook prints nothing and exits 0, and `bash plugins/sdlc-lite/scripts/hook-selftest.sh` covers both cases and passes.
 - `adapters/claude/hooks.json` registers the hook under the Bash matcher; `python3 scripts/check-packaging.py` passes.
 - `docs/references/claude-hooks.md` has a section for the hook stating it is Claude only; `git diff --check` passes.
+
+## Outcome
+
+2026-10-14 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: the claim in the docs section that Claude Code drops its own `< /dev/null` when a command holds a heredoc rests on `docs/reports/2026-10-14-role-bash-stdin-probe.md`, which I did not rerun (no live model call); no criterion names it. | note: no `builder-*.md` exists in the artifacts dir; the verdict rests on the tree, not a builder claim (solo lane).) · verifier: verifier-L2 (sonnet) · base: ab94588622d9
+- Changed: see commits
+- Commits: b93e735 T-0548: A role's Bash call that reads stdin (bare cat > file) hangs the run with no timeout
+- Check: 1 (red) role hook rewrites a bare `cat` onto closed input while the caller's stdin stays open: pass
+- Check: 2 no role prints nothing, exit 0, selftest covers both cases and passes: pass
+- Check: 3 hooks.json registers the hook under the Bash matcher, check-packaging passes: pass
+- Check: 4 claude-hooks.md has a section stating Claude only, `git diff --check` passes: pass
