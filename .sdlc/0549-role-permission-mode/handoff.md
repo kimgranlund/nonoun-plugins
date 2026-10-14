@@ -1,6 +1,6 @@
 ---
 id: T-0549
-title: "Role sub-agents stop inheriting the parent's plan mode (permissionMode: default), so Bash stops prompting"
+title: "Role Bash calls stop tripping the host's plan mode (permissionMode: default), so Bash stops prompting"
 type: chore           # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
@@ -11,15 +11,16 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-Role sub-agents stop asking the maintainer to approve Bash calls, with the cause proven live before any frontmatter change ships.
+Role sub-agents stop triggering Claude Code's built-in "This shell -c script runs rm and could not be checked" approval, which asks even under bypass permissions.
 
 ## Intent
-- Do: first reproduce a sub-agent Bash approval prompt in a throwaway project and record the parent's permission mode and the exact prompt. Then fix the proven cause. The candidate is `permissionMode: default` in the role frontmatter that `scripts/claude_roles.py` generates, so roles stop inheriting a parent's plan mode and the user's own allow rules (`"Bash"`) apply.
-- Non-goals: `bypassPermissions` in any shipped agent; changing a user's settings.
-- Done when: the live probe shows the prompt before the fix and none after; a parent in `bypassPermissions` mode still runs its roles with no prompts (no regression); `claude_roles.py generate --check` and `check.sh` pass.
+- Do: add one rule to the shared role command guidance (the place every role reads it, e.g. `skills/handoff-format` or the agent contracts `claude_roles.py` generates from): run each check as a plain command, and never pass a built string to `bash -c "$var"`, `sh -c`, or `eval`. A helper like `run(){ bash -c "$2"; }` is exactly the pattern to avoid. When a criterion is itself a shell string, run it as written in its own call.
+- Do: a live probe in a throwaway project under a bypassing parent: the old pattern prompts, and the new guidance produces a run with no prompt.
+- Non-goals: `bypassPermissions` or `permissionMode` in any shipped agent (the user always runs bypass, and the parent mode already wins); changing a user's settings.
+- Done when: the rule is in the role guidance, `claude_roles.py generate --check` and `check.sh` pass, and the live probe shows the prompt before and none after.
 
 ## Context
-Maintainer report 2026-10-14: "I keep having to approve sub-agents use of Bash." The user settings already allow `Bash` and set `defaultMode: plan`. The user says they always run with bypass permissions on. Under a bypassing parent, sub-agent frontmatter modes do not apply (docs/references/claude-hooks.md, probe P1), so inherited plan mode may not be the cause. The probe decides. Other candidates to rule out: a session that started in plan mode before switching, or a prompt from a protected path.
+Maintainer report 2026-10-14, with a screenshot from the maison `0535-planner-L3-4` agent. The command defined `run(){ out=$(bash -c "$2" 2>&1); ... }` and passed criteria strings into it, along with `sed -i` and `git worktree add`. The host showed "This shell -c script runs rm and could not be checked. Do you want to proceed?" while the user ran bypass permissions. That text is not from an sdlc-lite hook (grep of `plugins/sdlc-lite/hooks/` finds none), so it is Claude Code's own check on a `bash -c` script whose content it cannot read. Inherited plan mode is ruled out: the user always runs bypass, and under a bypassing parent the sub-agent's mode does not apply (docs/references/claude-hooks.md, probe P1).
 
 ## Constraints
-No change ships before the probe identifies the cause.
+Wording only, plus the probe; no hook that rewrites commands.
