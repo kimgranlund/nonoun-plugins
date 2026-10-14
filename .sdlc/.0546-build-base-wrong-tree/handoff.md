@@ -2,7 +2,7 @@
 id: T-0546
 title: "Build base taken from the wrong tree: solo_run --cwd and resumed lanes record a base that is not the build's start"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0540]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ Preserve the recorded build baseline (`SDLC_BASE_SHA`). A check must be able to 
 - [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, with the case `a resumed lane with nothing recorded: the verifier base is the lane fork point, not its WIP HEAD, and it says so`, the `.lane.json` record case, and `negative control: a builder with nothing recorded starts at the lane HEAD (the WIP commit)`.
 - [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - [ ] `git diff --check` exits 0.
+
+## Closed
+
+2026-10-14: delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full
