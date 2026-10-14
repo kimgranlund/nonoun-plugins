@@ -10,7 +10,7 @@
   "effort": "high",
   "routing_reason": "Batched independent verifier for solo T-0537",
   "reason_source": "caller",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-13T21:58:23.293845+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout66/k",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout66/k/.sdlc/0537-dispatch-limit-stop-and-row-change/handoff.md",
@@ -80,5 +80,7 @@
     "release/0.22.5",
     "release/0.22.6",
     "release/0.22.7"
-  ]
+  ],
+  "finished_at": "2026-10-14T00:06:46.404205+00:00",
+  "recovery": "Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt."
 }
