@@ -22,6 +22,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Context
 2026-10-14: `check.sh` took 18 min idle and 47 min under load, and runs in every builder, verifier, and gate.
+2026-10-14 (solo, 20 cores, machine not idle): before, sequential full run 1843s, exit 0 (load 27 to 15); after, parallel full run 440s, exit 0, 54 jobs (load 37 to 29); `--fast` 99s, 45 jobs. Negative control: a planted failing `budget.py selftest` (fast) and `gate_lock.py selftest` (full only) gave `--fast` exit 1 naming budget and full exit 1 naming gate_lock first; the plants were reverted.
 
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or with the change.
+
+## Acceptance criteria
+- The pool runs jobs concurrently, honors the job bound, and a planted failing job fails the run with its name first and its output kept: `python3 plugins/sdlc-lite/scripts/check_pool.py selftest`
+- The full tier passes, every earlier check still queued: `bash plugins/sdlc-lite/scripts/check.sh`
+- The fast tier passes in under 5 minutes: `python3 -c "import subprocess, sys, time; t = time.time(); rc = subprocess.run(['bash', 'plugins/sdlc-lite/scripts/check.sh', '--fast']).returncode; print('fast tier %.0fs' % (time.time() - t)); sys.exit(rc or time.time() - t >= 300)"`
+- An unknown flag is refused: `! bash plugins/sdlc-lite/scripts/check.sh --bogus`
+- Packaging and whitespace stay clean: `python3 scripts/check-packaging.py` and `git diff --check`
