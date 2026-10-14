@@ -457,3 +457,15 @@
 - note: `dispatch.py` selftest (around :2456) and `specgate.py` selftest fail when `TMPDIR` sits inside a git worktree, because their "outside git" fixtures break there. They pass with the system `TMPDIR`.
 - note: `handoff-format/SKILL.md` still says "Add `.sdlc/` to `.gitignore` unless the user wants the trail committed", which sits loosely against "records are local and ignored". T-0545 owns the docs specs.
 - note: `redck.py` recorded 2 controls for 3 (red) criteria in step 4, and nobody investigated why.
+
+## T-0541: Lean records B: Cost, board and fleet readers (0.23.0) (2026-10-14)
+
+- note: `## Outcome` is not written until T-0543, so the lane reads in `fleet_collect.py` and `board.py` that parse it are fallback-only and untested against real Outcome output.
+- note: Leftovers from the step 1 builder remain outside the scratch prefix: an `rr.XXXXXX` dir under `$TMPDIR` and `/tmp/x`. Step 2's verifier also left a `git archive` copy at `.worktrees/tmp/0541-s2-verifier-L2/base`, because `rm` was refused. All three are harmless to remove by hand.
+- note: The `git worktree add` hook rejects creation when `SDLC_TMP_WORKTREES` is unset in the hook environment. Builders and verifiers had to fall back to `git archive` for base-sha red runs.
+
+## T-0542: Lean records C: Fanout carries records by copy (0.23.0) (2026-10-14)
+
+- note: `check.sh` is red when run inside a role run on a ticket, because the traces selftest case `corpus: this repo's .sdlc traces ingest whole` (`plugins/sdlc-lite/scripts/traces/selftest.py` lines 2024-2054) lists in-flight `.attempt.json` files as "attempts in no row". The fix belongs to the 0539 wave (parts D or E).
+- note: `fanout.py` `merge_gate_close` runs `copy_lane_records` a second time per land. The copy is idempotent, so this is harmless.
+- note: `SDLC_TMP_WORKTREES` was unset in the session, so `hooks/block-stray-worktree.sh` refused role-created throwaway worktrees. Verifiers used plain copies under the tmp prefix.

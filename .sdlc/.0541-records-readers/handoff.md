@@ -2,7 +2,7 @@
 id: T-0541
 title: "Lean records B: Cost, board and fleet readers (0.23.0)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0540]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,12 @@ Maintainer decisions: `.sdlc/notes.md` "Lean work records (maintainer decisions 
 
 ## Constraints
 Preserve independent verification, the recorded build base, reference-safe closure and restart recovery. Legacy task folders stay readable with no migration.
+
+## Closed
+
+2026-10-14: warnings acknowledged: process deviations only: verifiers ran every red control against the base archive; all steps pass
+
+> - process deviation: red-checkpoint: retrospective: attempt 4c2fc64fdc814fa4b9ee1d7743ee6f78, handoff sha256 41f9ce21a7e0, 7 of 7 (red) criteria in step 2 had no pre-edit red control recorded before the edit. The tree already held step 1's uncommitted edits, so the builder recorded it as retrospective. The step 2 verifier later ran each of the 7 criteria against a `git archive` of the base sha. All 7 failed there (red) and passed on the built tree. A passing verdict does not clear this deviation.
+> - All three steps passed their verifiers (step 1, step 2, step 3: pass). No step failed or lacks a verdict.
+
+2026-10-14: kept stale refs to .sdlc/0541-records-readers in: .sdlc/.0540-records-dir/step-3/verifier-L3.md, .sdlc/runtime/tasks/0541-records-readers/planner-L3.md, .sdlc/runtime/tasks/0541-records-readers/step-1/builder-L3.md, .sdlc/runtime/tasks/0541-records-readers/step-1/handoff.md, .sdlc/runtime/tasks/0541-records-readers/step-1/verifier-L2.md, .sdlc/runtime/tasks/0541-records-readers/step-2/verifier-L2.md, .sdlc/runtime/tasks/0541-records-readers/step-3/verifier-L2.md
