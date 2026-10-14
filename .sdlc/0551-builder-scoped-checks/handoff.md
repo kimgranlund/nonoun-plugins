@@ -24,3 +24,10 @@ Maintainer request 2026-10-14 ("proceed 1-4" on the slow-lane analysis). T-0543 
 
 ## Constraints
 A step whose criterion names `check.sh` still runs it.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `grep -c 'Run the full .check.sh. only when a criterion names it' plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/solo.md` prints 1 for each file.
+- Live: one lane run in a throwaway project shows a builder step finishing without a full `check.sh` while the land gate still runs it (maintainer run; not done by solo).
