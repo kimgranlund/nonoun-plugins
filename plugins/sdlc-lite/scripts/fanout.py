@@ -428,7 +428,7 @@ selftest
   and, after the land of its last ticket, is gone with an archive ref and its branch deleted.
   Case 34 (T-0481, light gate class): config `merge_gate: light` and `light_scope: src/components/** src/registry.ts`, a
   solo lane touching only src/components/x/a.txt and src/registry.ts landed with `--gate false --light-gate true` merges
-  with `"gate": "light"` in land.jsonl and `gate: light` in the ## Closed note; the same lane also touching README.md is
+  with `"gate": "light"` in land.jsonl and `gate: light` in the ticket's ## Outcome; the same lane also touching README.md is
   `red: false rc=1`; land_command emits --light-gate; settle --require-covered exits 2 before cover and 0 after it,
   cover writing one committed ledger entry naming T-0001; without the declaration a land with no --light-gate is
   `red: false rc=1` and one with it exits 2; a red cover prints the bisect line.
@@ -938,10 +938,11 @@ def driver_for(ctx, t, kind='full'):
 
 
 def close_reason(ctx, t, gate=None, notes=None, has_filer=True):
-    """The `tickets.py close --reason` text for a ticket a solo agent delivered (a solo lane writes no filer
-    file, which close needs otherwise), or, until the verdict gate (T-0543) replaces it, for any other lane with
-    has_filer False (the full chain lane runs no filer by default, lean records); else None. gate, the merge's gate
-    class (T-0481), adds `; gate: <class>`. notes, the verifier's `## Notes` lines, add `; verifier notes: ...`."""
+    """The `tickets.py close --reason` text for a ticket a solo agent delivered, or for any other lane with has_filer
+    False (the full chain lane runs no filer by default, lean records); else None, and land closes a lane with a filer
+    result through `close --filer`. Land checks the lane's verdict before it merges (branch_verdict), so the close
+    by reason carries the merge's gate class (T-0481) into the Outcome verdict: gate adds `; gate: <class>`. notes,
+    the verifier's `## Notes` lines, add `; verifier notes: ...`."""
     kind, tier = ctx['kinds'].get(t.id, ('', None))
     if kind != 'solo':
         if has_filer:
@@ -1639,6 +1640,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         if close_reason(ctx, t, has_filer=has_filer):
             vf = sorted(rec.glob('verifier-L*.md')) or sorted(folder.glob('verifier-L*.md'))
             argv += ['--reason', close_reason(ctx, t, cls, results.notes_lines(vf[-1]) if vf else None, has_filer)]
+        elif has_filer:
+            argv.append('--filer')
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
         pre = porcelain(integ)
@@ -5058,8 +5061,8 @@ def selftest():
                f'out={g1.stdout[-500:]!r} err={g1.stderr[-300:]!r}', g1.returncode == 0 and 'merged' in g1.stdout
                and 'gate: light' in g1.stdout)
         expect(f'T-0481 light: the land.jsonl line carries "gate": "light", got {journal!r}', '"gate": "light"' in journal)
-        expect(f'T-0481 light: the ticket\'s ## Closed note names gate: light, got {closed[-400:]!r}',
-               '## Closed' in closed and 'gate: light' in closed.split('## Closed', 1)[-1])
+        expect(f'T-0481 light: the ticket\'s ## Outcome names gate: light, got {closed[-400:]!r}',
+               '## Outcome' in closed and 'gate: light' in closed.split('## Outcome', 1)[-1])
         g2 = verb(lg, 'land', 'worktree-T-0002-solo', *lg_pin, '--gate', 'false', '--light-gate', 'true')
         expect(f'T-0481 light negative control: a lane also touching README.md runs the full set, got rc={g2.returncode} '
                f'out={g2.stdout[-400:]!r}', g2.returncode == 1 and 'red: false rc=1' in g2.stdout

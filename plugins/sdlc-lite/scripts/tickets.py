@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | claim <id> --by <agent> [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | claim <id> --by <agent> [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -15,10 +15,12 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Numbered mode (--numbered, or a `ticket_folders: numbered` line in <root>/config) names
             the folder NNNN-<slug> after the stamped id; the slug is given bare. On success,
             new --numbered persists the mode by adding that line to <root>/config if it is absent
-  close     after /file: read the task's newest filer-L*.md, refuse while its Warnings are open
-            (unless --force), file at most one Follow-ups bullet as a proposed idea ticket with
-            from: <id>, append the rest to <root>/notes.md, set the ticket done, then regenerate the
-            roadmap. Each bullet starts with a tag, `fix-now:`, `decide:` or `note:` (case as written,
+  close     check the verifier verdict (the verdict gate, below), file at most one follow-up item as a
+            proposed idea ticket with from: <id>, append the rest to <root>/notes.md, set the ticket done,
+            append ## Outcome (below), then regenerate the roadmap. The items are the ## Notes lines of each
+            gated verifier result (results.notes_lines), steps in order, then the task level; close --filer
+            reads them from the Follow-ups bullets of the task's newest filer-L*.md instead (after /file) and
+            refuses while its Warnings are open (unless --force), with no verdict gate. Each item starts with a tag, `fix-now:`, `decide:` or `note:` (case as written,
             optional spaces after the colon); an untagged bullet counts as decide. Title, slug, duplicate
             check and ticket context use the text after the tag; the digest covers the full bullet.
             close --ticket N files only item N (1-based) as a ticket; it refuses, writing nothing, when N
@@ -50,11 +52,14 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             <rel>/.<slug> in each file with the rename, adding `; rewrote refs in <files>` to the
             output; --dry-run --rewrite-refs lists one `rewrite <file>` line per file before the
             `expect` line. --force closes and leaves them. --keep-refs also leaves them, without
-            overriding open warnings: the ticket's ## Closed section lists the stale citations, the
+            overriding open warnings: an Outcome Deviation line lists the stale citations, the
             output says `left refs`, and --dry-run lists one `keep <file>` line per file. It does not
             combine with --rewrite-refs. Outside git there is no scan. A second pass reads every file under
             <root> with ignore rules off, so a gitignored <root>/AGENTS.md that cites the folder counts too.
-            With no filer-L*.md here, close refuses and, when another git worktree's same-relative
+            Files under <root>/runtime/ never cite. A file matching a glob on a `citation_skip: a, b` line of
+            <root>/config (the lines accumulate) is skipped too: the output adds `; citation scan skipped
+            (citation_skip): <files>` and --dry-run prints `skip-cite <file>` (T-0535).
+            With --filer and no filer-L*.md here, close refuses and, when another git worktree's same-relative
             <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
             this tree, then rerun close.
             A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
@@ -86,17 +91,33 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             them. Outside git there is no scan. --dry-run prints one `<name> -> .<name>` line per
             folder, then with --rewrite-refs one `rewrite <file>` line per citing file, and writes
             nothing; without either flag it refuses the same way. --numbered persists the mode
-            close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
-            (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
-            ## Closed section with today's date and TEXT, and files no follow-ups
-            close --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
+            close --reason TEXT is for a ticket whose work other tickets did: it skips the verdict gate
+            and the filer (warnings and follow-ups ignored), sets the ticket done, appends ## Outcome
+            with verdict `closed by reason (TEXT)`, and files no follow-ups
+            close --filer --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
             longer apply: follow-ups, duplicates, --dry-run, --skip/--expect and the numbered rename work
-            as for a plain close, and the handoff gains a ## Closed section with today's date,
-            `warnings acknowledged: TEXT`, and the Warnings text quoted line by line (`> `). It refuses,
-            writing nothing, with --force, with --reason, with empty TEXT, or when Warnings is None
-            On every path (plain, --reason, --ack-warnings, --dry-run) close refuses, writing nothing, when
-            the ticket's skips.md records lane solo, lean, fix, or full but lacks a result or a ## Skipped entry
-            for a role the full chain would have run, as check does; no skips.md or no lane record is exempt
+            as for a plain close, and each Warnings line becomes an Outcome line `- Deviation:
+            acknowledged warning (TEXT): <line>`. It refuses, writing nothing, without --filer, with --force,
+            with --reason, with empty TEXT, or when Warnings is None
+            The verdict gate (default close, no --filer or --reason): each live step-<n> dir of the task's
+            records dir (else the task level) needs its newest verifier result to say pass, or a counting
+            `- skip: verifier; step: <n|all>; reason: <why>; decided: <who>` entry under ## Skipped of
+            skips.md (the task folder's, else the records dir's), which covers the step whatever its verifier
+            state, or the docs-only or tests-gate waiver. Fail, inherited red, an unparsable verdict, or no
+            result refuses, writing nothing, naming the result and verdict or the records dir; --force never
+            passes it. The placeholder gate: on the default and --filer routes and their dry runs, a handoff
+            still holding a template prompt line of its type refuses, naming the line; --reason bypasses it.
+            ## Outcome, appended on every route: `<YYYY-MM-DD> · lane: <solo|full|fix> <size> · verdict: <v>
+            · verifier: <role-level> (<model>) · base: <sha12>`, then `- Changed: <--changed TEXT, else see
+            commits>`, `- Commits: <sha7> <subject>; ...` (git log <base>..HEAD, subjects starting `<id>:`,
+            else none), one `- Check:` line per verifier criterion, `- Deviation:` lines (a step covered by
+            a skip entry, recorded process deviations, the waiver, acknowledged warnings, kept stale refs,
+            deferred criteria) and one `- Follow-up: <tag>: <title> -> <T-NNNN | notes.md>` line per filed
+            item. verdict is `closed by reason (<why>)`, pass, `skipped (<reason>)` (a skip entry or the
+            waiver covers a step), or `skipped (filer route)`
+            On every path (plain, --filer, --reason, --ack-warnings, --dry-run) close refuses, writing nothing,
+            when the ticket's skips.md records lane solo, lean, fix, or full but lacks a result or a ## Skipped
+            entry for the planner or a step verifier, as check does; no skips.md or no lane record is exempt
   roadmap   regenerate the roadmap (<root>/roadmap.md, or <root>/tickets/roadmap.md with `layout: topics`) in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
@@ -261,6 +282,7 @@ Build progress is not tracked here: /board derives it from each task's step arti
 import argparse
 import collections
 import datetime
+import fnmatch
 import hashlib
 import heapq
 import json
@@ -311,6 +333,7 @@ TICKETS_CMD_RE = re.compile(r'\s*tickets_cmd\s*:\s*(\S.*?)\s*(?:\s#.*)?')
 MD_LINK_RE = re.compile(r'\]\(\s*<?([^)\s>]+)>?[^)]*\)')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
+CITATION_SKIP_RE = re.compile(r'\s*citation_skip\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0535: comma-separated globs
 SUCCESSOR_RE = re.compile(r'(?:([A-Za-z0-9][A-Za-z0-9._-]*):)?(T-\d{4})')  # T-0528: T-NNNN or <repo>:T-NNNN
 SUBJECT_ID_RE = re.compile(r'(T-\d{4}):')  # T-0528: a commit subject that starts with a ticket id
 
@@ -428,6 +451,23 @@ def config_areas(root):
         mo = AREAS_RE.fullmatch(line)
         if mo:
             out += [a.strip() for a in mo.group(1).split(',') if a.strip() and a.strip() not in out]
+    return out
+
+
+def config_citation_skip(root):
+    """The globs on every `citation_skip: a, b` line of <root>/config, in order, comma-separated, each stripped,
+    empty ones dropped; they accumulate like areas:. outside_refs leaves out a file whose toplevel-relative path
+    matches one (fnmatch), so a generated inventory that lists ticket paths is no citation (T-0535)."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        mo = CITATION_SKIP_RE.fullmatch(line)
+        if mo:
+            out += [g.strip() for g in mo.group(1).split(',') if g.strip() and g.strip() not in out]
     return out
 
 
@@ -906,7 +946,7 @@ def literal_re(old):
     return re.compile(r'(?<![^\s\'"`()<>\[\]])' + re.escape(old) + r'(?![A-Za-z0-9_-])')
 
 
-def outside_refs(root, slug, own=False, roadmap=None, scan=None):
+def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
     finds candidate files; each is kept only when it holds a reference: the literal old (the original
@@ -924,7 +964,10 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None):
     out, default <root>/roadmap.md; with `ticket_root: tickets` callers pass the ticket dir as root and
     roadmap=<root>/roadmap.md, whose tickets/<slug>/handoff.md link would otherwise count as a cite. scan is the
     dir the second grep covers with ignore rules off, default root: callers pass the whole <root> (T-0527), so a
-    gitignored <root>/AGENTS.md that cites tickets/<slug> counts, not only files under the ticket dir."""
+    gitignored <root>/AGENTS.md that cites tickets/<slug> counts, not only files under the ticket dir.
+    Files under <base>/runtime/ (the runtime records, never a citation; base is scan when given, else root) are always
+    left out, and so are files matching a citation_skip: glob of <base>/config (config_citation_skip, fnmatch on the
+    toplevel-relative path, T-0535). skipped, a list, collects the citation_skip files that held a reference."""
     try:
         here = root.resolve()
         anchor = here
@@ -956,15 +999,25 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None):
         else:
             skip = (roadmap.parent.resolve() / roadmap.name).relative_to(top).as_posix()
         lit = literal_re(old)
+        cbase = (scan if scan is not None else root).resolve()
+        runtime = (cbase.relative_to(top) / 'runtime').as_posix() + '/'
+        globs = config_citation_skip(cbase)
         files = []
         for f in sorted({f for f in hits.split('\0') if f and f != skip and (own or not f.startswith(old + '/'))}):
+            if f.startswith(runtime):
+                continue
+            marked = any(fnmatch.fnmatch(f, g) for g in globs)
             try:
                 text = (top / f).read_bytes().decode('utf-8', 'surrogateescape')
             except OSError:
-                files.append(f)  # unreadable: keep it, so the scan refuses instead of passing silently
+                if not marked:
+                    files.append(f)  # unreadable: keep it, so the scan refuses instead of passing silently
                 continue
             if lit.search(text) or ref_tokens(text, top, f, old):
-                files.append(f)
+                if not marked:
+                    files.append(f)
+                elif skipped is not None:
+                    skipped.append(f)
         return top, old, new, files
     except (OSError, ValueError):
         return None, '', '', []
@@ -1342,7 +1395,7 @@ def claim_warnings(root, td, ts, today=None):
     """One `warning:` line per claim problem on an open ticket, each naming the ticket folder and the fix: a
     trailing comment on the `claimed_by:` line, a `claimed_by:` line that is not directly after `created:`
     (where `claim` writes it), and a `status: claimed` ticket whose claim date is older than claim_days with no
-    `*.running` file anywhere under its folder. Warnings only: check prints them and still passes."""
+    `*.running` file anywhere under its folder or its records dir. Warnings only: check prints them and still passes."""
     today = today or datetime.date.today()
     days = config_claim_days(root)
     out = []
@@ -1371,7 +1424,8 @@ def claim_warnings(root, td, ts, today=None):
                 age = (today - datetime.date.fromisoformat(d.group(0))).days if d else None
             except ValueError:
                 age = None
-            if age is not None and age > days and not any((td / slug).rglob('*.running')):
+            if age is not None and age > days and not any(
+                    any(x.rglob('*.running')) for x in {td / slug, records_of(td / slug)} if x.is_dir()):
                 out.append(f'warning: {slug}: claimed {age} days ago (claim_days {days}) with no running attempt; '
                            f'fix: tickets.py release {tid}, or tickets.py claim {tid} --by <agent> --handover '
                            f'--reason TEXT')
@@ -1590,21 +1644,36 @@ def skip_section(text, heading):
     return out
 
 
-def skip_missing(d, covered=()):
-    """(lane, [missing roles]) for ticket dir d's skips.md, or None when exempt: no skips.md, no ## Lane
-    section, no `- lane:` line in it, or a last lane other than solo, lean, fix, or full. The full chain's planner,
-    verifier per live step-<digits>/ and filer each need a counting `- skip: <role>; ...` entry under
-    ## Skipped when their result is missing (format: skills/handoff-format, Layout). covered names roles to
-    count as skipped (close passes ('verifier',) for a docs-only diff, T-0429, or a tests-gate one, T-0496)."""
+def records_of(d):
+    """The records dir of ticket dir d (order.records_dir: <base>/runtime/tasks/<key> for a 0.23 ticket, d itself for a
+    legacy one); d when that dir does not exist, so a hand-written step-<n>/ beside the handoff is still read."""
+    r = run_order.records_dir(d)
+    return r if r.is_dir() else d
+
+
+def skips_path(d):
+    """The skips.md close reads and writes: d/skips.md when it exists (steps.py lane, /fix and /chain write it in the
+    task folder), else the records dir's, else d/skips.md (the write target when neither exists)."""
     f = d / 'skips.md'
-    if not f.is_file():
-        return None
-    text = f.read_text(encoding='utf-8')
-    lanes = [ln[len('- lane: '):].split(';', 1)[0].strip()
-             for ln in (skip_section(text, 'Lane') or []) if ln.startswith('- lane: ')]
-    if not lanes or lanes[-1] not in ('solo', 'lean', 'fix', 'full'):
-        return None
-    cover = {}
+    if f.is_file():
+        return f
+    r = records_of(d) / 'skips.md'
+    return r if r.is_file() else f
+
+
+def live_steps(d):
+    """[(n, step-<n> dir)] of the live step dirs in d's records dir, by n."""
+    r = records_of(d)
+    try:
+        return sorted((int(p.name[5:]), p) for p in r.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
+    except OSError:
+        return []
+
+
+def skip_entries(text):
+    """[(role, {key: value})] of the counting `- skip: <role>; step: ...; reason: ...; decided: ...` lines under
+    ## Skipped of a skips.md text, in file order: an entry counts only with both reason: and decided:."""
+    out = []
     for ln in skip_section(text, 'Skipped') or []:
         if not ln.startswith('- skip: '):
             continue
@@ -1615,27 +1684,51 @@ def skip_missing(d, covered=()):
                 k, v = part.split(':', 1)
                 kv[k.strip()] = v.strip()
         if kv.get('reason') and kv.get('decided'):
-            cover.setdefault(parts[0].strip(), set()).add(kv.get('step', ''))
+            out.append((parts[0].strip(), kv))
+    return out
+
+
+def last_lane(text):
+    """The lane of the last `- lane:` line under ## Lane of a skips.md text, else None."""
+    lanes = [ln[len('- lane: '):].split(';', 1)[0].strip()
+             for ln in (skip_section(text, 'Lane') or []) if ln.startswith('- lane: ')]
+    return lanes[-1] if lanes else None
+
+
+def skip_missing(d, covered=()):
+    """(lane, [missing roles]) for ticket dir d's skips.md (skips_path), or None when exempt: no skips.md, no ## Lane
+    section, no `- lane:` line in it, or a last lane other than solo, lean, fix, or full. The full chain's planner and
+    verifier per live step-<digits>/ (under the records dir) each need a counting `- skip: <role>; ...` entry under
+    ## Skipped when their result is missing (format: skills/handoff-format, Layout); the filer is opt-in, so it needs
+    none. covered names roles to count as skipped (close passes ('verifier',) for a docs-only diff, T-0429, or a
+    tests-gate one, T-0496)."""
+    f = skips_path(d)
+    if not f.is_file():
+        return None
+    text = f.read_text(encoding='utf-8')
+    lane = last_lane(text)
+    if lane not in ('solo', 'lean', 'fix', 'full'):
+        return None
+    cover = {}
+    for role, kv in skip_entries(text):
+        cover.setdefault(role, set()).add(kv.get('step', ''))
     def ran(dd, role):  # a result file or a runs.jsonl record for the role: it ran, so nothing was skipped (T-0499)
         return bool(run_order.ordered(dd, role)) or any(r.get('role') == role for _, r in run_order.records(dd))
     missing = []
     if not ran(d, 'planner') and 'planner' not in cover:
         missing.append('planner')
-    steps = sorted(int(p.name[5:]) for p in d.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
-    for n in steps:
-        if 'verifier' not in covered and not ran(d / f'step-{n}', 'verifier') and not (
+    for n, sd in live_steps(d):
+        if 'verifier' not in covered and not ran(sd, 'verifier') and not (
                 cover.get('verifier', set()) & {str(n), 'all'}):
             missing.append(f'verifier step {n}')
-    if not ran(d, 'filer') and 'filer' not in cover:
-        missing.append('filer')
-    return (lanes[-1], missing) if missing else None
+    return (lane, missing) if missing else None
 
 
 def recorded_base(d):
-    """The commit a ticket's build started from: the first line of <d>/base-sha, else of the lowest live step-<n>/base-sha;
-    None when no role recorded one."""
-    steps = sorted((int(p.name[5:]), p) for p in d.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
-    for f in [d / 'base-sha'] + [p / 'base-sha' for _, p in steps]:
+    """The commit a ticket's build started from: the first line of base-sha in d's records dir, else of the lowest
+    live step-<n>/base-sha there; None when no role recorded one."""
+    r = records_of(d)
+    for f in [r / 'base-sha'] + [p / 'base-sha' for _, p in live_steps(d)]:
         try:
             first = (f.read_text(encoding='utf-8').splitlines() or [''])[0].strip()
         except OSError:
@@ -1646,11 +1739,12 @@ def recorded_base(d):
 
 
 def solo_report(d):
-    """The report file of the ticket's last `role: solo` row in <d>/runs.jsonl, resolved in d; None when there is no
-    such row or its `file` is empty."""
+    """The report file of the ticket's last `role: solo` row in runs.jsonl of d's records dir, resolved there; None
+    when there is no such row or its `file` is empty."""
     name = None
+    r = records_of(d)
     try:
-        rows = (d / 'runs.jsonl').read_text(encoding='utf-8').splitlines()
+        rows = (r / 'runs.jsonl').read_text(encoding='utf-8').splitlines()
     except OSError:
         return None
     for line in rows:
@@ -1660,7 +1754,7 @@ def solo_report(d):
             continue
         if isinstance(rec, dict) and rec.get('role') == 'solo':
             name = rec.get('file')
-    return str(d / name) if name and isinstance(name, str) else None
+    return str(r / name) if name and isinstance(name, str) else None
 
 
 def docs_waiver(d):
@@ -1682,8 +1776,9 @@ def docs_waiver(d):
 
 
 def add_skip_line(f, line):
-    """Append one `- skip:` line to the end of the ## Skipped section of skips.md f, adding the section when it is absent."""
-    lines = f.read_text(encoding='utf-8').splitlines(keepends=True)
+    """Append one `- skip:` line to the end of the ## Skipped section of skips.md f (skips_path: the one close read),
+    adding the section, and the file, when it is absent."""
+    lines = f.read_text(encoding='utf-8').splitlines(keepends=True) if f.is_file() else ['# Skips\n']
     start = next((i for i, ln in enumerate(lines) if ln.rstrip() == '## Skipped'), None)
     if start is None:
         if lines and not lines[-1].endswith('\n'):
@@ -1705,10 +1800,11 @@ def skip_line(folder, got):
 
 def skip_problems(td, ts):
     """One line per done ticket whose skips.md records lane solo, lean, fix, or full but has neither the result nor a ## Skipped entry for a
-    role the full chain would have run (skip_missing). Only check and close use it, not problems()."""
+    role the full chain would have run (skip_missing), read through its records dir. A closed .NNNN-<slug> folder is
+    skipped: its records may be gone. Only check and close use it, not problems()."""
     out = []
     for folder, m in ts:
-        if m.get('status') == 'done':
+        if m.get('status') == 'done' and not DOT_RE.fullmatch(folder):  # a closed .NNNN- folder is history (T-0543)
             got = skip_missing(td / folder)
             if got:
                 out.append(skip_line(folder, got))
@@ -1941,13 +2037,13 @@ the roadmap and in `lanes.py list --all`. A worktree made by hand: add the `bran
 3. `lanes.py close <name>` removes the `branch:` line once the lane closes.
 
 Close a ticket:
-1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 <T>/<folder>/handoff.md`.
-2. Run `<CMD> close <folder> --dry-run`. It lists each follow-up as \
-`<i>. <tag>: <title>` and ends with `expect <digest>`.
-3. Run `<CMD> close <folder>`. To file the one `decide:` follow-up \
-worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to \
-`notes.md`; `fix-now:` items are finished before the close. When it refuses because files cite the folder, \
-add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
+1. Run `<CMD> close <folder> --dry-run`. It checks the verifier verdict, lists each verifier `## Notes` line as \
+`<i>. <tag>: <title>`, and ends with `expect <digest>`.
+2. Run `<CMD> close <folder> --changed "<one line>"`. It appends `## Outcome` to the handoff. To file the one \
+`decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` \
+items go to `notes.md`; `fix-now:` items are finished before the close. When it refuses because files cite the \
+folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
+3. Only when a filer draft was asked for (`/file`): `<CMD> close <folder> --filer`.
 4. Work already done by another ticket: \
 `<CMD> close <folder> --reason "<why>"`.
 """
@@ -2370,38 +2466,137 @@ def lane_report(root, pid):
     return ''.join('\n' + ln for ln in lines)
 
 
+def gated_verifiers(d, entries):
+    """One row per gated verifier of ticket dir d: each live step-<n> dir of its records dir, else the task level.
+    A row is {label, n, path, verdict, cover}: path the newest verifier result (run_order.newest) or None, verdict
+    its results.key_value or None, cover the first counting `- skip: verifier` entry (skip_entries kv) whose step:
+    is <n> or all (the task level: all, ticket, or no step:), else None."""
+    import results  # local like steps: only close reads verifier verdicts
+    steps_ = live_steps(d)
+    rows = []
+    for n, sd in (steps_ or [(None, d)]):
+        v = run_order.newest(sd, 'verifier')
+        toks = {str(n), 'all'} if n is not None else {'all', 'ticket', ''}
+        rows.append({'label': f'step-{n}' if n is not None else 'task', 'n': n, 'path': v,
+                     'verdict': results.key_value(v, 'verifier') if v else None,
+                     'cover': next((kv for kv in entries if kv.get('step', '') in toks), None)})
+    return rows
+
+
+def verifier_name(path):
+    """`<role>-<level> (<model>)` from the header comment of a result file, else None."""
+    import results
+    try:
+        with open(path, encoding='utf-8') as f:
+            m = results.HEADER.match(f.readline().rstrip())
+    except (OSError, UnicodeError, TypeError):
+        return None
+    return f'{m.group(1)}-{m.group(2)} ({m.group(3)})' if m else None
+
+
+def outcome_checks(path, prefix):
+    """`<prefix><k> <criterion text, clipped to 100>: <state>` for each results.CRITERION_RE line of a verifier
+    result's ## Criteria (k is the line's #k, else its ordinal)."""
+    import results
+    try:
+        body = section(pathlib.Path(path).read_text(encoding='utf-8'), 'Criteria') or ''
+    except (OSError, UnicodeError):
+        return []
+    out = []
+    for line in body.splitlines():
+        m = results.CRITERION_RE.match(line)
+        if m:
+            text = ' '.join(m.group(3).split())
+            text = text if len(text) <= 100 else text[:97] + '...'
+            out.append(f'{prefix}{m.group(2) or len(out) + 1} {text}: {" ".join(m.group(4).lower().split())}')
+    return out
+
+
+def outcome_commits(d, base, pid):
+    """`<sha7> <subject>; ...` for `git log <base>..HEAD` from the toplevel of d, keeping subjects that start
+    `<pid>:`; 'none' with no base, no git, or no match. GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped."""
+    if not base:
+        return 'none'
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    try:
+        p = subprocess.run(['git', '-C', str(d), 'rev-parse', '--show-toplevel'], env=env, capture_output=True, text=True)
+        if p.returncode:
+            return 'none'
+        q = subprocess.run(['git', '-C', p.stdout.strip(), 'log', '--format=%H %s', f'{base}..HEAD'], env=env,
+                           capture_output=True, text=True)
+    except OSError:
+        return 'none'
+    if q.returncode:
+        return 'none'
+    got = [f'{sha[:7]} {subj}' for sha, _, subj in (ln.partition(' ') for ln in q.stdout.splitlines())
+           if subj.startswith(f'{pid}:')]
+    return '; '.join(got) or 'none'
+
+
+def outcome_section(meta, lane, verdict, verifier, base, changed, commits, checks, deviations, follow):
+    """The `## Outcome` block close appends to the handoff body (every route): one header line, then Changed and
+    Commits always, then one Check, Deviation and Follow-up line each."""
+    size = size_level(str(meta.get('size', ''))) or '?'
+    lines = [f'{datetime.date.today().isoformat()} · lane: {lane} {size} · verdict: {verdict} · '
+             f'verifier: {verifier or "none"} · base: {base[:12] if base else "none"}',
+             f'- Changed: {" ".join(changed.split()) if changed and changed.strip() else "see commits"}',
+             f'- Commits: {commits}']
+    lines += [f'- Check: {c}' for c in checks]
+    lines += [f'- Deviation: {x}' for x in deviations]
+    lines += [f'- Follow-up: {x}' for x in follow]
+    return '\n## Outcome\n\n' + '\n'.join(lines) + '\n'
+
+
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
-              ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False):
-    """Read the newest filer-L*.md: refuse on open warnings, file at most one follow-up (the --ticket item) as
-    a proposed idea ticket with from: <id>, append every other follow-up that is not skipped or a duplicate to
-    <root>/notes.md, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
-    Each Follow-ups bullet has a tag (follow_tag): fix-now, decide or note; untagged counts as decide. Title,
-    slug, duplicate check and ticket context use the text after the tag; the digest covers the full bullets.
-    ticket: the one 1-based index to file; it must be a decide item, in range, not skipped, not a duplicate,
-    and (unless dry_run) comes with expect. Without it, close files no ticket.
-    numbered (or <root>/config) names the follow-up folder NNNN-<slug> after its new id.
-    On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does.
-    reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups.
+              ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False, filer=False, changed=None):
+    """Close a ticket and append its ## Outcome. Three routes; every refusal writes nothing.
+    Default (no filer, no reason): the verdict gate. Each live step-<n> dir in the records dir (else the task level)
+    needs its newest verifier (run_order.newest) to say pass, or a counting `- skip: verifier; step: <n|all>;
+    reason: ...; decided: ...` entry under ## Skipped of skips.md (skips_path), which covers the step whatever its
+    verifier state, or the docs-only or tests-gate waiver (docs_waiver). Anything else (fail, inherited red, no verdict,
+    no result) refuses, naming the result and its verdict or the records dir; --force never passes this gate. The
+    follow-up items are the ## Notes lines of each passed or covered step's newest verifier, in step order, then the
+    task level's (results.notes_lines, a leading `- ` or `* ` stripped).
+    filer=True: read the newest filer-L*.md: refuse on open warnings (unless force or ack_warnings), and its
+    Follow-ups bullets are the items. With no filer here, the refusal names every other worktree's same-relative
+    <slug>/ holding a filer-L*.md (glob only, never read). No verdict gate runs.
+    reason (not None): no verdict gate and no filer; set done, file no follow-ups.
+    Follow-up items: each has a tag (follow_tag): fix-now, decide or note; untagged counts as decide. Title, slug,
+    duplicate check and ticket context use the text after the tag; the digest covers the full items.
+    ticket: the one 1-based index to file as a proposed idea ticket with from: <id>; it must be a decide item, in
+    range, not skipped, not a duplicate, and (unless dry_run) comes with expect. Without it close files no ticket.
+    Every other item that is not skipped or a duplicate goes to <root>/notes.md.
+    numbered (or <root>/config) names the follow-up folder NNNN-<slug> after its new id; on success, --numbered
+    persists `ticket_folders: numbered` in <root>/config, as new does.
     A follow-up matching any other ticket (ts, never the one being closed) by normalized title or slug base is skipped as a duplicate.
-    skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing.
-    The dry run ends with `expect <digest>` (follow_digest). expect: that digest; required with skip (unless
-    dry_run), and any mismatch with the current Follow-ups refuses, so stale indices are never applied.
+    skip: 1-based indices not to file. dry_run: same refusals, list the plan, write nothing. The dry run ends with
+    `expect <digest>` (follow_digest). expect: that digest; required with skip and ticket (unless dry_run), and any
+    mismatch with the current items refuses, so stale indices are never applied.
+    The placeholder gate (T-0529): on the default and filer routes and their dry runs, a handoff still holding a
+    template prompt line (unfilled_line) refuses; reason bypasses it.
+    The ## Outcome (outcome_section): the header line (date, lane from skips.md with lean as full, size, verdict,
+    verifier from the result header, base from recorded_base), Changed (changed, else "see commits"), Commits
+    (outcome_commits), one Check line per criterion of each read verifier, Deviation lines (steps covered by a skip
+    entry, redck.deviation_lines, the waiver, acknowledged warnings, kept stale refs, deferred criteria) and one
+    Follow-up line per item filed as a ticket or appended to notes.md. The verdict: `closed by reason (<why>)`;
+    pass when every gated verifier passed; `skipped (<reason>)` when a skip entry (its reason:) or the waiver (its
+    class) covers a step; `skipped (filer route)` on the filer route with an uncovered non-pass.
+    ack_warnings (not None, filer route only): pass the open-warnings gate with a recorded reason instead of force;
+    each Warnings line becomes a Deviation line `acknowledged warning (<why>): <line>`. It refuses with force, with
+    reason, without filer, when empty, and when the filer's Warnings is None.
     Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap.
-    With no filer here, the refusal names every other worktree's same-relative <slug>/ holding a filer-L*.md
-    (glob only, never read), so work filed in a lane worktree can be committed or copied in.
-    ack_warnings (not None): pass the open-warnings gate with a recorded reason instead of force; the write
-    appends a ## Closed section with the date, `warnings acknowledged: <why>` and the Warnings quoted with `> `.
-    It refuses with force, with reason, when empty, and when the filer's Warnings is None.
     Before archiving, outside_refs lists files outside the folder that reference it, as the literal <rel>/<slug>
     (ending at `/`, the end of a token, or punctuation, never running on into a longer folder name) or as a path token resolving to it relative to the citing file, from the toplevel, or absolute: with hits,
     close refuses unless rewrite_refs (rewrite_files turns each reference into the .<slug> form, keeping its
     relative or absolute form, with the rename; the dry run lists `rewrite <file>`) or force (close and leave
-    them). keep_refs leaves them too without force, and records the stale citations in a ## Closed section.
+    them). keep_refs leaves them too without force, and records the stale citations as a Deviation line.
+    Files under <root>/runtime/ never cite; a file matching a citation_skip: glob is skipped and named in the result
+    line (`; citation scan skipped (citation_skip): <files>`; the dry run prints `skip-cite <file>`).
     Plain slug folders never move, so never scan.
     A criterion still held (steps.open_items: a verifier reported it unmet-dependency or deferred and no later result
     passed it) refuses every close, --reason and --force included; nothing is written (T-0408). The one exception
     is a declared `deferred` criterion owned by a stage word (not a T-NNNN ticket): its owner stage runs after the
-    close, so the close goes ahead and writes `deferred: <ref> -> <owner>` into the ## Closed note (T-0472).
+    close, so the close goes ahead and writes `deferred: <ref> -> <owner>` as a Deviation line (T-0472).
     After a successful close, one `lane still open: <path> (branch <b>, <reason>)` line per plugin lane that lists the
     ticket (lanes.still_open) follows the result line; the exit code is unchanged (T-0453)."""
     if keep_refs and rewrite_refs:
@@ -2413,6 +2608,11 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if ack_warnings is not None and reason is not None:
         raise Fail(f'{slug}: --ack-warnings closes through the filer and --reason skips it, so they do not '
                    f'combine; use one; nothing written')
+    if ack_warnings is not None and not filer:
+        raise Fail(f'{slug}: --ack-warnings acknowledges filer warnings, so it needs --filer; nothing written')
+    if filer and reason is not None:
+        raise Fail(f'{slug}: --filer closes through the filer and --reason skips it, so they do not combine; '
+                   f'use one; nothing written')
     if ack_warnings is not None and not ack_warnings.strip():
         raise Fail(f'{slug}: empty --ack-warnings; give the reason the open warnings no longer apply; '
                    f'nothing written')
@@ -2448,6 +2648,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
                    f'follow-ups; nothing written')
     import steps  # local like messages: only close needs the verifier's held criteria (T-0408)
+    import redck  # local: only close reads the recorded process deviations
+    import results
     held = steps.open_items(d, root)
     to_stage = [i for i in held if i['state'] == 'deferred' and i['status'] == 'held' and not ID_RE.fullmatch(i['who'])]
     deferred = [f"deferred: {i['ref']} -> {i['who']}" for i in to_stage]
@@ -2456,36 +2658,85 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{slug}: criteria still held: '
                    + ', '.join(f"{i['ref']} {i['state']} {i['who']}" for i in held)
                    + '; settle them in the owner stage; nothing written')
+    skips_f = skips_path(d)
     got = skip_missing(d)
     docs_base = docs_waiver(d) if got and any(m.startswith('verifier') for m in got[1]) else None
-    if docs_base:  # T-0429, T-0496: a docs-only or tests-gate diff closes on its own checks; the guard below still counts planner and filer
+    if docs_base:  # T-0429, T-0496: a docs-only or tests-gate diff closes on its own checks; the guard below still counts the planner
         got = skip_missing(d, covered=('verifier',))
+    if got:
+        raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
+                   f'decided: <who>" line per role under ## Skipped in {skips_f}; nothing written')
+    skips_text = skips_f.read_text(encoding='utf-8') if skips_f.is_file() else ''
+    lane = {'lean': 'full', 'solo': 'solo', 'fix': 'fix'}.get(last_lane(skips_text), 'full')
+    rows = gated_verifiers(d, [kv for role, kv in skip_entries(skips_text) if role == 'verifier'])
+    if not filer and reason is None:  # the verdict gate
+        if docs_base is None and any(r['verdict'] != 'pass' and not r['cover'] for r in rows):
+            docs_base = docs_waiver(d)
+        bad = [] if docs_base else [r for r in rows if r['verdict'] != 'pass' and not r['cover']]
+        if bad:
+            where = records_of(d)
+            raise Fail(f'{slug}: the verifier verdict does not allow a close:\n'
+                       + ''.join(f"  {r['label']}: {r['path']} verdict {r['verdict'] or 'unparsable'}\n" if r['path']
+                                 else f"  {r['label']}: no verifier result in {where if r['n'] is None else where / r['label']}\n"
+                                 for r in bad)
+                       + f'run the verifier, or add "- skip: verifier; step: <n|all>; reason: <why>; decided: <who>" '
+                         f'under ## Skipped in {skips_f}, or close --reason "<why>"; nothing written')
 
     def note_docs_waiver():
         if docs_base:
-            add_skip_line(d / 'skips.md', f'- skip: verifier; step: all; reason: {docs_base[1]} diff against {docs_base[0][:12]} '
-                                          f'(verify_scope.py); decided: tickets.py close')
-    if got:
-        raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
-                   f'decided: <who>" line per role under ## Skipped in {d / "skips.md"}; nothing written')
-    top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=layout_paths(root).roadmap, scan=root) if archive
-                                   else (None, '', '', []))
+            add_skip_line(skips_f, f'- skip: verifier; step: all; reason: {docs_base[1]} diff against {docs_base[0][:12]} '
+                                   f'(verify_scope.py); decided: tickets.py close')
+    cite_skipped = []
+    top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=layout_paths(root).roadmap, scan=root,
+                                                skipped=cite_skipped) if archive else (None, '', '', []))
     if refs and not rewrite_refs and not force and not keep_refs:
-        via_force = (f' or --keep-refs (close, leave them and record them in the close note)'
+        via_force = (f' or --keep-refs (close, leave them and record them in the Outcome)'
                      + ('' if ack_warnings is not None else ' or --force (close anyway, leaving them)'))
         raise Fail(f'{slug}: close renames it to {dot.name}, but these files outside it reference {old_ref}:\n'
                    + ''.join(f'  {f}\n' for f in refs)
                    + f'rerun with --rewrite-refs (rewrite them to {new_ref}){via_force}; nothing written')
     rewrite = refs if rewrite_refs else []
-
-    kept = (f'{datetime.date.today().isoformat()}: kept stale refs to {old_ref} in: ' + ', '.join(refs)
-            if keep_refs and refs else '')
+    cite_note = f'; citation scan skipped (citation_skip): {", ".join(cite_skipped)}' if cite_skipped else ''
 
     def rewrite_now():
         rewrite_files(top, rewrite, old_ref, new_ref)
         if rewrite:
             return f'; rewrote refs in {", ".join(rewrite)}'
         return f'; left refs to {old_ref} in {", ".join(refs)}' if refs else ''
+
+    # the Outcome parts every route shares
+    passed = all(r['verdict'] == 'pass' for r in rows)
+    entry_cov = [r for r in rows if r['verdict'] != 'pass' and r['cover']]
+    deviations = [(f"step {r['n']} verifier skipped: " if r['n'] is not None else 'verifier skipped: ')
+                  + r['cover']['reason'] for r in entry_cov]
+    deviations += redck.deviation_lines(d)
+    if docs_base:
+        deviations.append(f'verifier skipped: {docs_base[1]} diff against {docs_base[0][:12]} (verify_scope.py)')
+    if passed:
+        verdict = 'pass'
+    elif entry_cov:
+        verdict = f"skipped ({entry_cov[0]['cover']['reason']})"
+    elif docs_base:
+        verdict = f'skipped ({docs_base[1]})'
+    else:
+        verdict = 'skipped (filer route)'
+    step_paths = [r['path'] for r in rows if r['n'] is not None and r['path']]
+    task_v = run_order.newest(d, 'verifier') if rows[0]['n'] is not None else None
+    who = verifier_name(step_paths[-1] if step_paths else (task_v or rows[0]['path']))
+    read = [(r['path'], f"{r['label']}#" if r['n'] is not None else '', r['verdict'] == 'pass' or bool(r['cover'])
+             or bool(docs_base)) for r in rows if r['path']]
+    if task_v:
+        read.append((task_v, '', results.key_value(task_v, 'verifier') == 'pass'))
+    checks = [c for p, prefix, _ in read for c in outcome_checks(p, prefix)]
+    base = recorded_base(d)
+    commits = outcome_commits(d, base, pid)
+    kept = (f'kept stale refs to {old_ref} in: ' + ', '.join(refs) if keep_refs and refs else '')
+
+    def outcome(v, follow=(), warn_lines=()):
+        devs = deviations + [f'acknowledged warning ({ack_warnings.strip()}): {ln.strip()}' for ln in warn_lines
+                             if ln.strip()] + ([kept] if kept else []) + deferred
+        return outcome_section(meta, lane, v, who, base, changed, commits, checks, devs, follow)
+
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
     head = normalize_size_text(head)[0]
@@ -2498,11 +2749,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         body = raw[fm.end():]
         if body and not body.endswith('\n'):
             body += '\n'
-        body += f'\n## Closed\n\n{datetime.date.today().isoformat()}: {why}\n'
-        if deferred:
-            body += '\n' + '\n'.join(deferred) + '\n'
-        if kept:
-            body += f'\n{kept}\n'
+        body += outcome(f'closed by reason ({why})')
         note_docs_waiver()
         h.write_bytes((head + body).encode('utf-8'))
         if archive:
@@ -2512,35 +2759,42 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if flag:
             ensure_numbered_config(root)
         moved = f'; moved to {dot.name}' if archive else ''
-        return (f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}'
+        return (f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}{cite_note}'
                 + ''.join('; ' + x for x in deferred) + lane_report(root, pid))
-    filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
-    if not filers:
-        held = []
-        for _, r in other_ticket_dirs(root):
-            try:
-                if any((r / d.name).glob('filer-L*.md')):
-                    held.append(str(r / d.name))
-            except OSError:
-                pass
-        hint = (f'; a filer record exists in {", ".join(held)}; commit or copy it into this tree, then rerun close'
-                if held else '')
-        raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first{hint}; nothing written')
-    filer = filers[-1]
-    text = filer.read_text(encoding='utf-8')
-    warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
-    if warnings is None or follow is None:
-        raise Fail(f'{filer}: missing a ## Warnings or ## Follow-ups section; nothing written')
-    if ack_warnings is not None and is_none(warnings):
-        raise Fail(f'{slug}: no open warnings to acknowledge in {filer.name}; rerun without --ack-warnings; '
-                   f'nothing written')
-    if not is_none(warnings) and not force and ack_warnings is None:
-        raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record '
-                   f'why they no longer apply, or --force to override):\n{warnings}')
-    items = [] if is_none(follow) else bullets(follow)
-    if not is_none(follow) and not items:
-        raise Fail(f'{filer}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
-                   f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
+    warnings = None
+    if filer:
+        filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
+        if not filers:
+            held = []
+            for _, r in other_ticket_dirs(root):
+                try:
+                    if any((r / d.name).glob('filer-L*.md')):
+                        held.append(str(r / d.name))
+                except OSError:
+                    pass
+            hint = (f'; a filer record exists in {", ".join(held)}; commit or copy it into this tree, then rerun close'
+                    if held else '')
+            raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first{hint}; nothing written')
+        src = filers[-1]
+        text = src.read_text(encoding='utf-8')
+        warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
+        if warnings is None or follow is None:
+            raise Fail(f'{src}: missing a ## Warnings or ## Follow-ups section; nothing written')
+        if ack_warnings is not None and is_none(warnings):
+            raise Fail(f'{slug}: no open warnings to acknowledge in {src.name}; rerun without --ack-warnings; '
+                       f'nothing written')
+        if not is_none(warnings) and not force and ack_warnings is None:
+            raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record '
+                       f'why they no longer apply, or --force to override):\n{warnings}')
+        items = [] if is_none(follow) else bullets(follow)
+        if not is_none(follow) and not items:
+            raise Fail(f'{src}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
+                       f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
+        src_name, origin = src.name, f'{final}/{src.name}'
+    else:
+        items = [re.sub(r'^[-*][ \t]+', '', ln) for p, _, ok in read if ok for ln in results.notes_lines(p)]
+        items = [x for x in items if x.strip()]
+        src_name, origin = 'the verifier notes', 'verifier notes'
     digest = follow_digest(items)
     if skip is not None and not dry_run and expect is None:
         raise Fail(f'{slug}: --skip needs --expect <digest> from the dry run that listed the indices '
@@ -2549,7 +2803,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{slug}: --ticket needs --expect <digest> from the dry run that listed the indices '
                    f'(run close --dry-run first); nothing written')
     if expect is not None and expect.strip() != digest:
-        raise Fail(f'{slug}: --expect {expect} does not match the current Follow-ups in {filer.name} '
+        raise Fail(f'{slug}: --expect {expect} does not match the current Follow-ups in {src_name} '
                    f'(digest {digest}); the list changed since the dry run, so the --skip indices may point '
                    f'at other items; rerun close --dry-run; nothing written')
     skipped = sorted(set(skip or ()))
@@ -2576,19 +2830,19 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     # ids stay above every other worktree's max
     floor = id_floor(root)
     # plan everything first, so a refusal in the middle writes nothing
-    planned, notes, lines, dups = [], [], [], []
+    planned, notes, lines, dups, follow_lines = [], [], [], [], []
     for i, item in enumerate(items, 1):
         tag, text = follow_tag(item)
         no_emphasis = re.sub(r'(?<!\w)_{1,2}(\S.*?\S|\S)_{1,2}(?!\w)', r'\1', text)
         plain = ' '.join(re.sub(r'[`*\[\]()]', '', no_emphasis).split())
         title = follow_up_title(plain)
-        base = '-'.join(re.findall(r'[a-z0-9]+', plain.lower())[:5]) or 'follow-up'
+        base_ = '-'.join(re.findall(r'[a-z0-9]+', plain.lower())[:5]) or 'follow-up'
         if numbered:
-            base = strip_prefix(base) or 'follow-up'
+            base_ = strip_prefix(base_) or 'follow-up'
         if i in skipped:
-            lines.append(f'{i}. {tag}: {title} [{base}] skip (--skip)')
+            lines.append(f'{i}. {tag}: {title} [{base_}] skip (--skip)')
             continue
-        key, nt = strip_prefix(base), norm_title(title)
+        key, nt = strip_prefix(base_), norm_title(title)
         dup = next(((kid, kname) for kt, kbase, kid, kname in known if (nt and kt == nt) or kbase == key), None)
         if dup:
             if i == ticket:
@@ -2596,22 +2850,29 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                            f'nothing written')
             mark = f'duplicate of {dup[0]} ({dup[1]})'
             dups.append(f'{title} ({mark})')
-            lines.append(f'{i}. {tag}: {title} [{base}] {mark}')
+            lines.append(f'{i}. {tag}: {title} [{base_}] {mark}')
             continue
         if i != ticket:
             notes.append((tag, text))
             lines.append(f'{i}. {tag}: {title} note')
+            follow_lines.append(f'{tag}: {title} -> notes.md')
             continue
         tid = f'T-{max(max((int(x["id"][2:]) for _, x in ts), default=0), floor) + 1:04d}'
-        s, k = base, 2
+        s, k = base_, 2
         while (td / (name := folder_name(s, tid, numbered))).exists() or any(x == name for x, _ in ts):
-            s, k = f'{base}-{k}', k + 1
-        ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{text}'
+            s, k = f'{base_}-{k}', k + 1
+        ctx = f'Follow-up from {pid} ({origin}):\n\n{text}'
         t, _ = stamp(root, ts, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
         planned.append((name, t))
         lines.append(f'{i}. {tag}: {title} [{name}] ticket')
+        follow_lines.append(f'{tag}: {title} -> {(parse(t) or {}).get("id", tid)}')
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
+    hole = unfilled_line(root, raw)
+    if hole:
+        raise Fail(f'{slug}/handoff.md:{hole[0]}: still holds {meta.get("type")} template placeholder text: '
+                   f'{hole[1].strip()[:60]!r}; fill it in, or close --reason "<why>" when the work was done '
+                   f'elsewhere; nothing written')
     if dry_run:
         opens = [f'open {m["id"]} {m.get("title", "")} [{x}]'
                  for x, m in sorted(ts, key=lambda e: e[1]['id'])
@@ -2636,6 +2897,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
                          + [f'rewrite {f}' for f in rewrite]
                          + ([f'keep {f}' for f in refs] if keep_refs else [])
+                         + [f'skip-cite {f}' for f in cite_skipped]
                          + [f'expect {digest}'])
 
     note_docs_waiver()
@@ -2645,20 +2907,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if notes:
         append_notes(root, pid, meta.get('title') or slug, notes)
     body = raw[fm.end():]
-    if ack_warnings is not None:
-        if body and not body.endswith('\n'):
-            body += '\n'
-        quoted = '\n'.join(f'> {ln}' if ln.strip() else '>' for ln in warnings.splitlines())
-        body += (f'\n## Closed\n\n{datetime.date.today().isoformat()}: warnings acknowledged: '
-                 f'{ack_warnings.strip()}\n\n{quoted}\n')
-    if kept:
-        if body and not body.endswith('\n'):
-            body += '\n'
-        body += (f'\n{kept}\n' if '\n## Closed\n' in body else f'\n## Closed\n\n{kept}\n')
-    if deferred:
-        if body and not body.endswith('\n'):
-            body += '\n'
-        body += ('\n' if '\n## Closed\n' in body else '\n## Closed\n\n') + '\n'.join(deferred) + '\n'
+    if body and not body.endswith('\n'):
+        body += '\n'
+    acked = warnings.splitlines() if ack_warnings is not None and warnings else []
+    body += outcome(verdict, follow_lines, acked)
     h.write_bytes((head + body).encode('utf-8'))
     if archive:
         d.rename(dot)
@@ -2677,7 +2929,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if ack_warnings is not None:
         out += f'; warnings acknowledged: {ack_warnings.strip()}'
     out += ''.join('; ' + x for x in deferred)
-    return out + rewrote + lane_report(root, pid)
+    return out + rewrote + cite_note + lane_report(root, pid)
 
 
 def cmd_blockers(root, scope=None):
@@ -3030,10 +3282,34 @@ def run(root, cmd, args=(), **kw):
 
 def selftest():
     misses = []
+    cli_run = globals()['run']
+
+    def run(root, cmd, args=(), **kw):
+        """The CLI run; a close with no reason defaults to --filer, the route these cases predate (T-0543). The
+        verdict-gate cases pass filer=False."""
+        if cmd == 'close' and kw.get('reason') is None:
+            kw.setdefault('filer', True)
+        keep = kw.pop('keep_template', False)
+        rc, out, err = cli_run(root, cmd, args, **kw)
+        if cmd == 'new' and rc == 0 and not keep:  # a lane fills the handoff in before close (T-0529 gate)
+            h = pathlib.Path(out)
+            fill(h.parent.parent, h.parent.name)
+        return rc, out, err
 
     def expect(label, cond):
         if not cond:
             misses.append(label)
+
+    def fill(root, slug):
+        """Fill in every template prompt line of a ticket's handoff, the way its lane would (the T-0529 gate). root is
+        the dir holding the ticket folder (unfilled_line finds no _templates there and reads the plugin's)."""
+        h = root / slug / 'handoff.md'
+        text = h.read_text(encoding='utf-8')
+        while (hole := unfilled_line(root, text)):
+            lines = text.split('\n')
+            lines[hole[0] - 1] = f'Filled in by the selftest, line {hole[0]}.'
+            text = '\n'.join(lines)
+        h.write_text(text, encoding='utf-8')
 
     def edit(root, slug, pattern, repl):
         h = root / slug / 'handoff.md'
@@ -3047,6 +3323,8 @@ def selftest():
         base = pathlib.Path(tmp) / 'base' / '.sdlc'
         rc_a, out_a, err_a = run(base, 'new', ('feature', 'alpha', 'Alpha | one'))
         rc_b, out_b, err_b = run(base, 'new', ('bug', 'beta', 'Fix #12'))
+        fill(base, 'alpha')
+        fill(base, 'beta')
         expect(f'new alpha: rc={rc_a} {err_a}', rc_a == 0 and out_a.endswith('alpha/handoff.md'))
         expect(f'new beta: rc={rc_b} {err_b}', rc_b == 0)
         ids = {s: m.get('id') for s, m in load(base)}
@@ -3430,8 +3708,8 @@ def selftest():
             ctx += ''.join((root / s / 'handoff.md').read_text(encoding='utf-8') for s in one)
             if i == 1:
                 expect('(a) parent done, rest byte-identical, body status line untouched',
-                       (root / 'alpha' / 'handoff.md').read_bytes()
-                       == before_h.replace(b'status: proposed', b'status: done', 1)
+                       (root / 'alpha' / 'handoff.md').read_bytes().startswith(
+                           before_h.replace(b'status: proposed', b'status: done', 1) + b'\n## Outcome\n\n')
                        and b'status: this body line is not front matter' in before_h)
                 rc, out, err = run(root, 'check')
                 expect(f'(a) check passes after close: rc={rc} {err}', rc == 0 and 'ok: 3 tickets' in out)
@@ -3578,13 +3856,14 @@ def selftest():
         expect(f'(j) refused close --numbered writes no config: rc={rc} {err!r}',
                rc == 1 and not (root / 'config').exists() and snap(root) == before)
 
-        # (k) --reason closes with no filer file: done, a ## Closed section, check passes
+        # (k) --reason closes with no filer file: done, an ## Outcome with verdict closed by reason, check passes
         root = case(lambda r: None)
         rc, out, err = run(root, 'close', ('alpha',), reason='done by T-0002')
         text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
         expect(f'(k) --reason closes without a filer: rc={rc} {err!r} {out!r}',
                rc == 0 and status(root) == 'done' and 'reason' in out
-               and text.rstrip().endswith(f'## Closed\n\n{datetime.date.today().isoformat()}: done by T-0002')
+               and f'## Outcome\n\n{datetime.date.today().isoformat()} · lane: full L2 · verdict: closed by reason '
+                   f'(done by T-0002) · verifier: none · base: none\n- Changed: see commits\n- Commits: none\n' in text
                and run(root, 'check')[0] == 0)
         # (k2) T-0453: a close prints one `lane still open` line per plugin lane that lists the ticket; the exit code is unchanged
         if shutil.which('git') is None:
@@ -3982,6 +4261,7 @@ def selftest():
             rc, _, err = run(root, 'new', ('feature', 'x'), numbered=True)  # 0003-x, T-0003; persists config
             if rc:
                 raise AssertionError(f'selftest fixture 0003-x not made: {err}')
+            fill(root, '0003-x')
 
         def x_filer(follow):
             return filer('filer-L1.md', 'None', follow, slug='0003-x')
@@ -4014,7 +4294,8 @@ def selftest():
         text = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8') if (root / '.0003-x').is_dir() else ''
         expect(f'(u) numbered --reason close renames: rc={rc} out={out!r} err={err!r} tree={tree(root)}',
                rc == 0 and out.endswith('; moved to .0003-x') and not (root / '0003-x').exists()
-               and '## Closed' in text and status(root, '.0003-x') == 'done' and run(root, 'check')[0] == 0)
+               and '## Outcome' in text and 'verdict: closed by reason (done elsewhere)' in text
+               and status(root, '.0003-x') == 'done' and run(root, 'check')[0] == 0)
         rc, out, err = run(root, 'new', ('feature', 'y'), numbered=True)
         got = dict(load(root)).get('0004-y', {}).get('id')
         expect(f'(u) next new --numbered after a dot folder gets T-0004: rc={rc} {out!r} {err!r} id={got!r}',
@@ -4154,7 +4435,7 @@ def selftest():
             note = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8')
             expect(f'(u) keep-refs: closes, leaves the cite, close note lists docs/spec.md: rc={rc} {out!r} {err!r}',
                    rc == 0 and 'kept refs' not in err and out.endswith('; left refs to .sdlc/0003-x in docs/spec.md')
-                   and '## Closed' in note and 'kept stale refs to .sdlc/0003-x in: docs/spec.md' in note
+                   and '## Outcome' in note and '- Deviation: kept stale refs to .sdlc/0003-x in: docs/spec.md' in note
                    and spec.read_text(encoding='utf-8') == 'see .sdlc/0003-x/handoff.md\n'
                    and status(root, '.0003-x') == 'done')
 
@@ -4298,28 +4579,29 @@ def selftest():
 
         # (w) --ack-warnings closes past open warnings with a recorded reason; warned: 'step-2 verifier fail'
         today = datetime.date.today().isoformat()
-        # (w1) ack close: done, the follow-up filed, a ## Closed section quoting the warning, check passes
+        # (w1) ack close: done, the follow-up filed, an Outcome Deviation line per warning, check passes
         root = case(warned)
         rc, out, err = close_one(root, 1, ack_warnings='committed later')
         text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
         expect(f'(w1) --ack-warnings closes with open warnings: rc={rc} out={out!r} err={err!r} text={text!r}',
                rc == 0 and status(root) == 'done' and len(fresh(root, {'alpha', 'beta'})) == 1
                and out.endswith('; warnings acknowledged: committed later')
-               and text.rstrip().endswith(f'## Closed\n\n{today}: warnings acknowledged: committed later\n\n'
-                                          f'> step-2 verifier fail')
+               and '\n- Deviation: acknowledged warning (committed later): step-2 verifier fail\n' in text
+               and '\n- Follow-up: decide: Add retry to fetch -> T-0003' in text
                and run(root, 'check')[0] == 0)
-        # (w2) a multi-line Warnings section is quoted line by line, verbatim after `> `
+        # (w2) a multi-line Warnings section gives one Outcome Deviation line per warning line, verbatim
         root = case(filer('filer-L1.md', '- step-2 verifier fail\n- nothing committed yet', '- Add retry to fetch'))
         rc, out, err = run(root, 'close', ('alpha',), ack_warnings='fixed on main')
         text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
         expect(f'(w2) multi-line warnings quoted line by line: rc={rc} {err!r} text={text!r}',
-               rc == 0 and text.rstrip().endswith(f'{today}: warnings acknowledged: fixed on main\n\n'
-                                                  f'> - step-2 verifier fail\n> - nothing committed yet'))
+               rc == 0 and '\n- Deviation: acknowledged warning (fixed on main): - step-2 verifier fail\n'
+               '- Deviation: acknowledged warning (fixed on main): - nothing committed yet\n' in text)
         # (w3) --ack-warnings with --force, (w4) with --reason, (w5) empty or whitespace: refuse, write nothing
         for label, args, kw, want in (('w3', ('alpha', True), {'ack_warnings': 'x'}, '--force'),
                                       ('w4', ('alpha',), {'ack_warnings': 'x', 'reason': 'y'}, '--reason'),
                                       ('w5', ('alpha',), {'ack_warnings': ''}, 'empty --ack-warnings'),
-                                      ('w5', ('alpha',), {'ack_warnings': '   '}, 'empty --ack-warnings')):
+                                      ('w5', ('alpha',), {'ack_warnings': '   '}, 'empty --ack-warnings'),
+                                      ('w10', ('alpha',), {'ack_warnings': 'x', 'filer': False}, 'needs --filer')):
             root = case(warned)
             before = snap(root)
             rc, _, err = run(root, 'close', args, **kw)
@@ -4353,16 +4635,16 @@ def selftest():
                and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch']
                and (notes(root) or '').endswith('\n- decide: Split the runner\n')
                and 'skipped by --skip: 2' in out and 'warnings acknowledged: ok' in out)
-        # (w9) numbered: an ack close renames 0003-x to .0003-x and the moved handoff holds ## Closed
+        # (w9) numbered: an ack close renames 0003-x to .0003-x and the moved handoff holds ## Outcome
         root = case(both(numbered_x, filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch',
                                            slug='0003-x')))
         rc, out, err = run(root, 'close', ('0003-x',), numbered=True, ack_warnings='committed later')
         text = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8') if (root / '.0003-x').is_dir() else ''
-        expect(f'(w9) numbered ack close renames and keeps ## Closed: rc={rc} out={out!r} err={err!r} '
+        expect(f'(w9) numbered ack close renames and keeps ## Outcome: rc={rc} out={out!r} err={err!r} '
                f'tree={tree(root)}',
                rc == 0 and '; moved to .0003-x' in out and not (root / '0003-x').exists()
-               and status(root, '.0003-x') == 'done' and '## Closed' in text
-               and 'warnings acknowledged: committed later' in text and '> step-2 verifier fail' in text
+               and status(root, '.0003-x') == 'done' and '## Outcome' in text
+               and '- Deviation: acknowledged warning (committed later): step-2 verifier fail' in text
                and run(root, 'check')[0] == 0)
 
         # archive: done and dropped NNNN- folders move to .NNNN-, a ready one stays
@@ -5034,7 +5316,7 @@ def selftest():
         b = block_of(rl / 'AGENTS.md')
         expect(f'router: procedures name .sdlc paths and no absolute path: {b!r}',
                '--root .sdlc new <feature|bug|chore|spike|idea>' in b
-               and '<plugin-root>/scripts/run.sh filer L1 .sdlc/<folder>/handoff.md' in b
+               and 'python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --filer' in b
                and '${CLAUDE_PLUGIN_ROOT}' in b and str(tmp) not in b and ROUTER_HERE in b)
 
         # contents with tickets in every status, closed dot folders included
@@ -5455,8 +5737,8 @@ def selftest():
 
         built = ('step-1/builder-L1.md', 'step-1/verifier-L1.md')
         rc, _, err = run(sk_root('fix-miss', ['fix'], files=built), 'check')
-        expect(f'(skips) check: fix ticket missing planner and filer fails: rc={rc} {err!r}',
-               rc == 1 and 'lean-a: skips.md records lane fix but has no ## Skipped entry for planner, filer' in err)
+        expect(f'(skips) check: fix ticket missing the planner fails, the opt-in filer is not required: rc={rc} {err!r}',
+               rc == 1 and err.endswith('lean-a: skips.md records lane fix but has no ## Skipped entry for planner'))
         rc, _, err = run(sk_root('fix-ok', ['fix'], PL + FL, files=built), 'check')
         expect(f'(skips) check: entries for planner and filer pass: rc={rc} {err!r}', rc == 0)
         rc, _, err = run(sk_root('none', None, files=built), 'check')
@@ -5472,11 +5754,11 @@ def selftest():
         rc, _, err = run(ranrec, 'check')
         expect(f'(skips) check: lane full with run records for planner and filer, no skip line, passes: rc={rc} {err!r}', rc == 0)
         rc, _, err = run(sk_root('tofull-miss', ['lean', 'full'], files=built), 'check')
-        expect(f'(skips) check: lane full missing planner and filer fails: rc={rc} {err!r}',
-               rc == 1 and 'lean-a: skips.md records lane full but has no ## Skipped entry for planner, filer' in err)
+        expect(f'(skips) check: lane full missing the planner fails: rc={rc} {err!r}',
+               rc == 1 and err.endswith('lean-a: skips.md records lane full but has no ## Skipped entry for planner'))
         rc, _, err = run(sk_root('solo-miss', ['solo']), 'check')
         expect(f'(skips) check: lane solo with no entries fails: rc={rc} {err!r}',
-               rc == 1 and 'lean-a: skips.md records lane solo but has no ## Skipped entry for planner, filer' in err)
+               rc == 1 and err.endswith('lean-a: skips.md records lane solo but has no ## Skipped entry for planner'))
         rc, _, err = run(sk_root('solo-ok', ['solo'], PL + FL), 'check')
         expect(f'(skips) check: lane solo with planner and filer entries passes: rc={rc} {err!r}', rc == 0)
         rc, _, err = run(sk_root('solo-open', ['solo'], status_done=False), 'check')
@@ -5495,7 +5777,7 @@ def selftest():
         r = sk_root('close-reason', ['fix'], files=built, status_done=False)
         rc, _, err = run(r, 'close', ('lean-a',), reason='x')
         expect(f'(skips) close --reason without entries refuses, status unchanged: rc={rc} {err!r}',
-               rc == 1 and 'no ## Skipped entry for planner, filer' in err and err.endswith('nothing written')
+               rc == 1 and 'no ## Skipped entry for planner;' in err and err.endswith('nothing written')
                and status(r, 'lean-a') == 'proposed')
         r = sk_root('close-filer', ['lean'], files=built, status_done=False)
         filer('filer-L1.md', 'None', 'None', slug='lean-a')(r)
@@ -5758,6 +6040,217 @@ def selftest():
             expect(f'(mig) a root outside git refuses: rc={rc} {err!r}',
                    rc == 1 and 'not inside a git work tree' in err and (nr / 'alpha').is_dir())
 
+    # ---- T-0543: the default close gates on the verifier verdict and appends ## Outcome; T-0529 placeholder gate;
+    # T-0535 citation_skip; runtime records are read and never cite ----
+    with tempfile.TemporaryDirectory() as tmp:
+        genv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+        def g(cwd, *args):
+            return subprocess.run(['git', '-C', str(cwd), *args], env=genv, capture_output=True, text=True)
+
+        def vres(verdict, state='pass', note='None'):
+            return (f'<!-- role=verifier level=L2 model=sonnet effort=high -->\n## Verdict\n{verdict}\n\n## Criteria\n'
+                    f'- #1 `make test` passes: {state}. Evidence: ran it.\n\n## Out of scope changes\nNone.\n\n'
+                    f'## For the next attempt\nNone\n\n## Notes\n{note}\n')
+
+        def oc_root(name, verdicts=('pass',), skipped='', note='None', legacy=False, kind='feature', slug='tk',
+                    numbered=False, cfg='', git=False, lane=True):
+            """A ticket whose records sit under <root>/runtime/tasks/<slug> (legacy: in the task folder): one
+            step-<n>/ per verdict (None: a builder result only), lane full, the planner skipped."""
+            r = pathlib.Path(tmp) / f'oc-{name}' / '.sdlc'
+            if cfg:
+                r.mkdir(parents=True)
+                (r / 'config').write_text(cfg, encoding='utf-8')
+            rc, out, err = run(r, 'new', (kind, slug, 'Tk'), numbered=numbered)
+            if rc:
+                raise AssertionError(f'selftest fixture {name} not made: {err}')
+            d = pathlib.Path(out).parent
+            rec = d if legacy else r / 'runtime' / 'tasks' / d.name
+            for i, v in enumerate(verdicts, 1):
+                (rec / f'step-{i}').mkdir(parents=True, exist_ok=True)
+                (rec / f'step-{i}' / 'builder-L3.md').write_text('', encoding='utf-8')
+                if v is not None:
+                    (rec / f'step-{i}' / 'verifier-L2.md').write_text(
+                        vres(v, 'pass' if v == 'pass' else 'fail', note), encoding='utf-8')
+            (d / 'skips.md').write_text('# Skips\n\n' + ('## Lane\n- lane: full; point: p; reasons: r\n\n' if lane else '')
+                                        + '## Skipped\n'
+                                        '- skip: planner; step: all; reason: no plan; decided: lane\n' + skipped,
+                                        encoding='utf-8')
+            if not legacy:
+                (r / 'runtime' / '.gitignore').write_text('*\n', encoding='utf-8')
+            if git:
+                g(r.parent, 'init', '-q')
+                g(r.parent, 'config', 'user.email', 't@t')
+                g(r.parent, 'config', 'user.name', 't')
+                g(r.parent, 'add', '-A')
+                g(r.parent, 'commit', '-qm', 'base')
+                (rec / 'base-sha').write_text(g(r.parent, 'rev-parse', 'HEAD').stdout, encoding='utf-8')
+            run(r, 'roadmap')
+            return r, d
+
+        def handoff(d):
+            for p in (d / 'handoff.md', d.parent / ('.' + d.name) / 'handoff.md'):
+                if p.is_file():
+                    return p.read_text(encoding='utf-8')
+            return ''
+
+        have_git = shutil.which('git') is not None
+        # (T-0543 outcome) a close over a passing verifier appends ## Outcome: lane, verdict, Check and Commits lines
+        r, d = oc_root('outcome', git=have_git)
+        if have_git:
+            (r.parent / 'x.txt').write_text('x\n', encoding='utf-8')
+            g(r.parent, 'add', 'x.txt')
+            g(r.parent, 'commit', '-qm', 'T-0001: add x')
+            (r.parent / 'y.txt').write_text('y\n', encoding='utf-8')
+            g(r.parent, 'add', 'y.txt')
+            g(r.parent, 'commit', '-qm', 'chore: unrelated')
+        rc, out, err = run(r, 'close', ('tk',), filer=False, changed='added x')
+        text = handoff(d)
+        expect(f'(T-0543 outcome) a passing verifier closes with ## Outcome: rc={rc} {out!r} {err!r} {text!r}',
+               rc == 0 and status(r, 'tk') == 'done' and '\n## Outcome\n\n' in text and '## Closed' not in text
+               and ' · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: ' in text
+               and '\n- Changed: added x\n' in text and '\n- Check: step-1#1 `make test` passes: pass\n' in text
+               and '\n- Commits: ' in text and out == 'T-0001 done; follow-up ticket: none; 0 follow-up(s) appended to notes.md')
+        if have_git:
+            expect(f'(T-0543 outcome) Commits keeps only the ticket\'s own subjects: {text!r}',
+                   re.search(r'\n- Commits: [0-9a-f]{7} T-0001: add x\n', text) is not None and 'unrelated' not in text)
+
+        # (T-0543 verdict gate) a failing newest verifier refuses and writes nothing, --force included
+        r, d = oc_root('fail', verdicts=('pass', 'fail'))
+        for kw in ({}, {'force': True}, {'dry_run': True}):
+            before = snap(r)
+            rc, out, err = run(r, 'close', ('tk',), filer=False, **kw)
+            expect(f'(T-0543 verdict gate) a failing step-2 verifier refuses {kw}: rc={rc} {out!r} {err!r}',
+                   rc == 1 and 'step-2: ' in err and 'step-2/verifier-L2.md verdict fail' in err and '--reason' in err
+                   and err.endswith('nothing written') and snap(r) == before and status(r, 'tk') == 'proposed')
+        # (T-0543 verdict gate) no verifier result refuses, naming the records dir
+        r, d = oc_root('none', verdicts=(None,), lane=False)
+        before = snap(r)
+        rc, out, err = run(r, 'close', ('tk',), filer=False)
+        expect(f'(T-0543 verdict gate) no verifier result refuses, naming the records dir: rc={rc} {err!r}',
+               rc == 1 and f'no verifier result in {r / "runtime" / "tasks" / "tk" / "step-1"}' in err
+               and snap(r) == before)
+        # (T-0543 verdict gate) a covering skip entry closes a failed step: verdict skipped (<reason>), one Deviation line
+        r, d = oc_root('cover', verdicts=('pass', 'fail'),
+                       skipped='- skip: verifier; step: 2; reason: loose end left open; decided: conductor\n')
+        rc, out, err = run(r, 'close', ('tk',), filer=False)
+        text = handoff(d)
+        expect(f'(T-0543 verdict gate) a skip entry over a failed step-2 verifier closes: rc={rc} {err!r} {text!r}',
+               rc == 0 and 'verdict: skipped (loose end left open)' in text
+               and '\n- Deviation: step 2 verifier skipped: loose end left open\n' in text
+               and '\n- Check: step-2#1 `make test` passes: fail\n' in text)
+
+        # (T-0543 notes) the verifier Notes lines are the follow-ups, and --ticket files one
+        r, d = oc_root('notes', note='- decide: Add retry to fetch\n- note: keep the flag')
+        rc, out, err = run(r, 'close', ('tk',), filer=False, dry_run=True)
+        expect(f'(T-0543 notes) the dry run lists each verifier note: rc={rc} {out!r} {err!r}',
+               rc == 0 and '1. decide: Add retry to fetch note' in out.splitlines()
+               and '2. note: keep the flag note' in out.splitlines()
+               and out.splitlines()[-1] == 'expect ' + follow_digest(['decide: Add retry to fetch', 'note: keep the flag']))
+        rc, out, err = close_one(r, 1, slug='tk', filer=False)
+        made = {s: m for s, m in load(r) if s != 'tk'}
+        text = handoff(d)
+        ctx = ''.join((r / s / 'handoff.md').read_text(encoding='utf-8') for s in made)
+        expect(f'(T-0543 notes) --ticket 1 files the decide: note as a ticket: rc={rc} {out!r} {err!r} {text!r}',
+               rc == 0 and list(made) == ['add-retry-to-fetch'] and 'Follow-up from T-0001 (verifier notes):' in ctx
+               and '\n- Follow-up: decide: Add retry to fetch -> T-0002\n' in text
+               and '\n- Follow-up: note: keep the flag -> notes.md\n' in text
+               and (notes(r) or '').endswith('\n- note: keep the flag\n'))
+
+        # (T-0543 reason) --reason writes an Outcome with closed by reason and no ## Closed, past a failing verifier
+        r, d = oc_root('reason', verdicts=('fail',))
+        rc, out, err = run(r, 'close', ('tk',), reason='done by T-0009')
+        text = handoff(d)
+        expect(f'(T-0543 reason) --reason writes the Outcome: rc={rc} {err!r} {text!r}',
+               rc == 0 and 'verdict: closed by reason (done by T-0009)' in text and '## Closed' not in text
+               and '\n- Changed: see commits\n- Commits: none\n' in text)
+        before = snap(r)
+        rc, _, err = run(r, 'close', ('tk',), reason='x', filer=True)
+        expect(f'(T-0543 reason) --filer with --reason refuses: rc={rc} {err!r}', rc == 1 and '--filer' in err)
+
+        # (T-0529) a bug handoff still holding the template Repro prompt refuses; the filled-in one closes
+        r, d = oc_root('ph', kind='bug', slug='bg')
+        lines = (d / 'handoff.md').read_text(encoding='utf-8').split('\n')
+        at = lines.index('## Repro') + 1
+        lines[at] = '1. Exact command or steps, from a clean checkout.'
+        (d / 'handoff.md').write_text('\n'.join(lines), encoding='utf-8')
+        for kw in ({}, {'dry_run': True}, {'filer': True}):
+            if kw.get('filer'):
+                filer('filer-L1.md', 'None', 'None', slug='runtime/tasks/bg')(r)  # the filer result sits in the records dir
+            before = snap(r)
+            rc, out, err = run(r, 'close', ('bg',), **{'filer': False, **kw})
+            expect(f'(T-0529) a template Repro line refuses {kw}: rc={rc} {out!r} {err!r}',
+                   rc == 1 and f"bg/handoff.md:{at + 1}: still holds bug template placeholder text: "
+                               f"'1. Exact command or steps, from a clean checkout.'" in err and '--reason' in err
+                   and snap(r) == before)
+        edit(r, 'bg', r'^1\. Exact command.*$', '1. run make test')
+        rc, out, err = run(r, 'close', ('bg',), filer=False)
+        expect(f'(T-0529) the filled-in bug ticket closes: rc={rc} {out!r} {err!r}', rc == 0 and status(r, 'bg') == 'done')
+
+        # (T-0543 runtime) a runtime-only task folder (handoff.md and skips.md) closes with the verdict found
+        r, d = oc_root('rt-only', git=have_git)
+        rec = r / 'runtime' / 'tasks' / 'tk'
+        names = sorted(p.name for p in d.iterdir())
+        rc, out, err = run(r, 'close', ('tk',), filer=False)
+        text = handoff(d)
+        sha = (rec / 'base-sha').read_text(encoding='utf-8').strip()[:12] if have_git else 'none'
+        expect(f'(T-0543 runtime) a runtime-only fixture closes with the verdict found: {names} rc={rc} {err!r} {text!r}',
+               names == ['handoff.md', 'skips.md'] and (rec / 'step-1' / 'verifier-L2.md').is_file()
+               and rc == 0 and 'verdict: pass' in text and f'· base: {sha}\n' in text)
+        # (T-0543 runtime) a legacy in-place fixture still closes
+        r, d = oc_root('legacy', legacy=True)
+        rc, out, err = run(r, 'close', ('tk',), filer=False)
+        expect(f'(T-0543 runtime) a legacy in-place fixture still closes: rc={rc} {err!r}',
+               rc == 0 and (d / 'step-1' / 'verifier-L2.md').is_file() and 'verdict: pass' in handoff(d))
+
+        if have_git:
+            # (T-0543 runtime) a cite under runtime/ is no citation; the same cite outside runtime/ is one
+            r, d = oc_root('rt-cite', numbered=True, git=True)
+            (r / 'runtime' / 'tasks' / d.name / 'trail.md').write_text(f'see .sdlc/{d.name}/handoff.md\n', encoding='utf-8')
+            rc, out, err = run(r, 'close', (d.name,), filer=False)
+            expect(f'(T-0543 runtime) a cite under runtime/ is no citation: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.endswith('; moved to .0001-tk'))
+            tr = pathlib.Path(tmp) / 'oc-trt' / '.sdlc'
+            (tr / 'tickets' / '0001-tk').mkdir(parents=True)
+            (tr / 'runtime' / 'tasks').mkdir(parents=True)
+            (tr / 'runtime' / 'tasks' / 'x.md').write_text('see .sdlc/tickets/0001-tk/handoff.md\n', encoding='utf-8')
+            (tr / 'cites.md').write_text('see .sdlc/tickets/0001-tk/handoff.md\n', encoding='utf-8')
+            g(tr.parent, 'init', '-q')
+            got = outside_refs(tr / 'tickets', '0001-tk', roadmap=tr / 'roadmap.md', scan=tr)[3]
+            expect(f'(T-0543 runtime) under ticket_root: tickets the runtime dir is <scan>/runtime/: {got}',
+                   got == ['.sdlc/cites.md'])
+
+            # (T-0535) a citation_skip: inventory outside runtime/ is skipped and the close succeeds; unmarked, it refuses
+            for label, cfg in (('marked', 'citation_skip: docs/inventory.md, other/*.md\n'), ('unmarked', '')):
+                r, d = oc_root(f'cs-{label}', numbered=True, git=True, cfg=cfg)
+                (r.parent / 'docs').mkdir()
+                (r.parent / 'docs' / 'inventory.md').write_text(f'- .sdlc/{d.name}/handoff.md\n', encoding='utf-8')
+                rc, dry, _ = run(r, 'close', (d.name,), filer=False, dry_run=True)
+                before = snap(r)
+                rc, out, err = run(r, 'close', (d.name,), filer=False)
+                if label == 'marked':
+                    expect(f'(T-0535) a citation_skip: inventory is skipped and the close succeeds: rc={rc} {out!r} '
+                           f'{err!r} {dry!r}',
+                           rc == 0 and out.endswith('; moved to .0001-tk; citation scan skipped (citation_skip): '
+                                                    'docs/inventory.md')
+                           and 'skip-cite docs/inventory.md' in dry.splitlines())
+                else:
+                    expect(f'(T-0535) unmarked, the same close refuses: rc={rc} {err!r}',
+                           rc == 1 and 'docs/inventory.md' in err and '--rewrite-refs' in err and snap(r) == before)
+
+        # (T-0543 check) check skips a closed .NNNN- folder whose records are absent, and flags an open-named done one
+        r = pathlib.Path(tmp) / 'oc-check' / '.sdlc'
+        run(r, 'new', ('feature', 'tk', 'Tk'), numbered=True)
+        run(r, 'new', ('feature', 'tk2', 'Tk2'), numbered=True)
+        for name in ('0001-tk', '0002-tk2'):
+            edit(r, name, r'^status:\s*\S+', 'status: done')
+            (r / name / 'skips.md').write_text('# Skips\n\n## Lane\n- lane: full; point: p; reasons: r\n', encoding='utf-8')
+        (r / '0001-tk').rename(r / '.0001-tk')
+        run(r, 'roadmap')
+        rc, out, err = run(r, 'check')
+        expect(f'(T-0543 check) check skips .0001-tk and flags the open-named done 0002-tk2: rc={rc} {err!r}',
+               rc == 1 and err == '0002-tk2: skips.md records lane full but has no ## Skipped entry for planner')
+
     # placeholder lint: a closed ticket that still holds template prompt text is a warning, never a failure
     with tempfile.TemporaryDirectory() as tmp:
         pr = pathlib.Path(tmp) / 'pl' / '.sdlc'
@@ -5766,8 +6259,8 @@ def selftest():
             rc, out, err = run(root, 'check')
             return rc, [x for x in out.splitlines() if 'template placeholder text' in x or 'more closed tickets' in x], err
 
-        run(pr, 'new', ('bug', 'beta', 'Beta'))
-        run(pr, 'new', ('bug', 'gamma', 'Gamma'))
+        run(pr, 'new', ('bug', 'beta', 'Beta'), keep_template=True)
+        run(pr, 'new', ('bug', 'gamma', 'Gamma'), keep_template=True)
         rc, got, err = ph(pr)
         expect(f'(ph) open tickets holding template text give no warning: rc={rc} {got} {err!r}', rc == 0 and got == [])
         run(pr, 'close', ('beta',), reason='done elsewhere')
@@ -5794,7 +6287,7 @@ def selftest():
                rc == 0 and len(got) == 1 and got[0].startswith('warning: gamma/handoff.md:'))
         # more than PLACEHOLDER_SHOWN: newest first, then one count line
         for i in range(PLACEHOLDER_SHOWN + 1):
-            run(pr, 'new', ('chore', f'c{i}', 'C'))
+            run(pr, 'new', ('chore', f'c{i}', 'C'), keep_template=True)
             run(pr, 'close', (f'c{i}',), reason='x')
         rc, got, err = ph(pr)
         expect(f'(ph) {PLACEHOLDER_SHOWN} lines newest first then a count line: rc={rc} {got} {err!r}',
@@ -5808,7 +6301,7 @@ def selftest():
             (PLUGIN / 'skills' / 'ticket' / 'templates' / 'chore.md').read_text(encoding='utf-8').replace(
                 'One or two sentences: the outcome, not the method.', 'Say what and why in one line.'),
             encoding='utf-8')
-        run(ov, 'new', ('chore', 'delta', 'Delta'))
+        run(ov, 'new', ('chore', 'delta', 'Delta'), keep_template=True)
         run(ov, 'close', ('delta',), reason='x')
         rc, got, err = ph(ov)
         expect(f'(ph) the repo template text is the placeholder: rc={rc} {got} {err!r}',
@@ -6107,21 +6600,30 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='name the folder NNNN-<slug> after the new id and persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
-    p = sub.add_parser('close', help='after /file: set the ticket done, file at most one decide: follow-up as a '
-                                     'ticket (--ticket N) and append the rest to <root>/notes.md (skipping '
-                                     'duplicates of existing tickets); --dry-run lists them first; '
-                                     'or --reason TEXT: set it done without a filer file; '
-                                     '--ack-warnings TEXT: close while filer warnings are open, with a reason')
+    p = sub.add_parser('close', help='check the verifier verdict, set the ticket done, append ## Outcome, file at '
+                                     'most one decide: verifier note as a ticket (--ticket N) and append the rest '
+                                     'to <root>/notes.md (skipping duplicates of existing tickets); --dry-run lists '
+                                     'them first; --changed TEXT: the Outcome Changed: line; --filer: close through '
+                                     'the newest filer-L*.md instead (its Warnings gate and Follow-ups); '
+                                     'or --reason TEXT: set it done without a verdict gate or filer; '
+                                     '--ack-warnings TEXT: with --filer, close while filer warnings are open, with a reason')
     p.add_argument('slug')
-    p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
+    p.add_argument('--force', action='store_true',
+                   help='close even while the filer warnings are open or files cite the folder; never passes the '
+                        'verifier verdict gate')
+    p.add_argument('--filer', action='store_true',
+                   help='close through the newest filer-L*.md (after /file): its Warnings gate and its Follow-ups '
+                        'instead of the verifier verdict gate and the verifier notes')
+    p.add_argument('--changed', metavar='TEXT',
+                   help='the one-line `- Changed:` text of the ## Outcome (default: see commits)')
     p.add_argument('--reason', metavar='TEXT',
-                   help='close without a filer file (work done elsewhere): set done, append a ## Closed '
-                        'section with the date and TEXT, file no follow-ups (refuses with --dry-run, --skip, --expect '
-                        'or --ticket)')
+                   help='close with no verdict gate and no filer (work done elsewhere): set done, append ## Outcome '
+                        'with verdict `closed by reason (TEXT)`, file no follow-ups (refuses with --dry-run, --skip, '
+                        '--expect, --ticket or --filer)')
     p.add_argument('--ack-warnings', metavar='TEXT',
-                   help='close while the filer warnings are open: record TEXT and the quoted warnings in a '
-                        '## Closed section, file follow-ups as normal (refuses with --force, with --reason, '
-                        'with empty TEXT, or when no warnings are open)')
+                   help='with --filer: close while the filer warnings are open: each warning line becomes an Outcome '
+                        '`- Deviation: acknowledged warning (TEXT): <line>`, follow-ups file as normal (refuses '
+                        'without --filer, with --force, with --reason, with empty TEXT, or when no warnings are open)')
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <tag>: <title> with a mark: '
                         '[<slug>] ticket (the --ticket item), note (bound for notes.md), skip (--skip), or '
@@ -6146,7 +6648,7 @@ def main(argv):
                         'refusing; --force closes and leaves them')
     p.add_argument('--keep-refs', action='store_true',
                    help='numbered mode: close and leave the citing files as they are, without --force overriding '
-                        'warnings; the ## Closed section lists the stale citations (--dry-run lists `keep <file>`)')
+                        'warnings; an Outcome Deviation line lists the stale citations (--dry-run lists `keep <file>`)')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
@@ -6228,6 +6730,8 @@ def main(argv):
         kw['ticket'] = a.ticket
         kw['rewrite_refs'] = a.rewrite_refs
         kw['keep_refs'] = a.keep_refs
+        kw['filer'] = a.filer
+        kw['changed'] = a.changed
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)
         except Fail as e:
