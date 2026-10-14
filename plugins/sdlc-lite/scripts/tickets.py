@@ -1482,6 +1482,7 @@ def problems(ts, numbered=False, areas=None):
 
 CLAIM_KEY_RE = re.compile(r'claimed_by[ \t]*:')
 BRANCH_KEY_RE = re.compile(r'branch[ \t]*:')
+WORKTREE_KEY_RE = re.compile(r'worktree[ \t]*:')
 FM_RE = re.compile(r'---\r?\n(.*?)^---[ \t]*\r?$', re.S | re.M)
 
 
@@ -1559,6 +1560,39 @@ def default_branch(base):
     return None
 
 
+def worktree_warnings(root, ts):
+    """T-0550: one `warning:` line per ticket whose `worktree:` (relative to the main checkout) is not a registered
+    git worktree on the ticket's `branch:`. Nothing outside git."""
+    rows = [(slug, m) for slug, m in ts if isinstance(m.get('worktree'), str) and m['worktree'].strip()]
+    if not rows:
+        return []
+    import wtroot  # same scripts/ dir
+    top = wtroot.main_top(file_base(root))
+    if not top:
+        return []
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    p = subprocess.run(['git', '-C', top, 'worktree', 'list', '--porcelain'], capture_output=True, text=True, env=env)
+    if p.returncode:
+        return []
+    reg, cur = {}, None
+    for line in p.stdout.splitlines():
+        if line.startswith('worktree '):
+            cur = os.path.realpath(line[9:])
+            reg[cur] = None
+        elif line.startswith('branch refs/heads/') and cur:
+            reg[cur] = line[len('branch refs/heads/'):]
+    out = []
+    for slug, m in rows:
+        wt, br = m['worktree'].strip(), (m.get('branch') or '').strip() if isinstance(m.get('branch'), str) else ''
+        real = os.path.realpath(os.path.join(top, wt))
+        if real not in reg:
+            out.append(f'warning: {slug}: worktree: {wt} is not a registered worktree; '
+                       f'remove the line (tickets.py branch {m.get("id") or slug}) or reopen the lane')
+        elif reg[real] != br:
+            out.append(f'warning: {slug}: worktree: {wt} is on branch {reg[real] or "(detached)"}, not the ticket branch: {br or "(none)"}')
+    return out
+
+
 def delivered_warnings(root, ts):
     """T-0528: one `warning:` line per open ticket whose id starts a commit subject (`T-NNNN:`) on the default
     branch, naming the newest such commit and the close line. Nothing outside git or with no default branch."""
@@ -1631,16 +1665,19 @@ def set_claim(text, status, value):
     return text[:fm.start(1)] + head + text[fm.end(1):]
 
 
-def set_branch(text, value):
-    """text with every front matter `branch:` line removed; value, when given, goes on a `branch: <value>` line
-    directly after `claimed_by:`, else directly after `created:`."""
+def set_branch(text, value, worktree=None):
+    """text with every front matter `branch:` and `worktree:` line removed; value, when given, goes on a `branch: <value>`
+    line directly after `claimed_by:`, else directly after `created:`, and worktree, when given, on a `worktree: <path>`
+    line right after it (T-0550)."""
     fm = FM_RE.match(text)
     if not fm:
         raise Fail('no front matter; nothing written')
-    head = ''.join(line for line in fm.group(1).splitlines(True) if not BRANCH_KEY_RE.match(line))
+    head = ''.join(line for line in fm.group(1).splitlines(True)
+                   if not BRANCH_KEY_RE.match(line) and not WORKTREE_KEY_RE.match(line))
     if value is not None:
+        add = f'branch: {value}' + (f'\nworktree: {worktree}' if worktree else '')
         for key in ('claimed_by', 'created'):
-            head, n = re.subn(rf'^({key}[ \t]*:.*)$', lambda x: f'{x.group(1)}\nbranch: {value}', head, count=1,
+            head, n = re.subn(rf'^({key}[ \t]*:.*)$', lambda x: f'{x.group(1)}\n{add}', head, count=1,
                               flags=re.M)
             if n:
                 break
@@ -1649,21 +1686,23 @@ def set_branch(text, value):
     return text[:fm.start(1)] + head + text[fm.end(1):]
 
 
-def record_branch(root, tid, branch, only=None):
-    """Set (branch given) or remove (branch None) the `branch:` line of local ticket tid under root, then regenerate
-    the roadmap and router. A removal with only= acts only while the line's value is only. Returns the folder
-    written, or None when there is no such ticket or nothing to change. lanes.py open and close call it."""
+def record_branch(root, tid, branch, only=None, worktree=None):
+    """Set (branch given) or remove (branch None) the `branch:` line, and the `worktree:` line beside it (T-0550: the
+    lane's repo-relative path, given with the branch), of local ticket tid under root, then regenerate the roadmap and
+    router. A removal with only= acts only while the branch value is only. Returns the folder written, or None when
+    there is no such ticket or nothing to change. The one writer: lanes.py open and close, and `tickets.py branch`."""
     td = layout_paths(root).tickets
     ts = load(td)
     hit = next(((s, m) for s, m in ts if m.get('id') == tid), None)
     if hit is None:
         return None
     slug, m = hit
-    cur = m.get('branch')
-    cur = cur.strip() if isinstance(cur, str) else ''
-    if (branch is None and (not cur or (only is not None and cur != only))) or (branch is not None and cur == branch):
+    cur, wt = (m.get(k).strip() if isinstance(m.get(k), str) else '' for k in ('branch', 'worktree'))
+    if branch is None and (not (cur or wt) or (only is not None and cur != only)):
         return None
-    text = set_branch((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), branch)
+    if branch is not None and cur == branch and wt == (worktree or ''):
+        return None
+    text = set_branch((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), branch, worktree)
     write_claim(root, td, ts, slug, text, config_numbered(root))
     return slug
 
@@ -1733,6 +1772,16 @@ def cmd_release(root, ref, numbered=False):
     text = set_claim((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), status, None)
     write_claim(root, td, ts, slug, text, numbered)
     return f'{slug}: released, status {status}'
+
+
+def cmd_branch(root, ref, branch=None, worktree=None):
+    """T-0550: set (branch given) or clear the ticket's `branch:` and `worktree:` lines through record_branch."""
+    _, ts, _ = claim_preflight(root, False)
+    slug, m = find_ticket(ts, ref)
+    got = record_branch(root, m.get('id'), branch, worktree=worktree)
+    if got is None:
+        return f'{slug}: nothing to change'
+    return f'{slug}: ' + (f'branch: {branch}' + (f', worktree: {worktree}' if worktree else '') if branch else 'branch: and worktree: removed')
 
 
 # ---------- roadmap ----------
@@ -2135,6 +2184,9 @@ status: proposed | ready | claimed | paused | blocked | done | dropped
 - `area:` is optional: the ticket's domain, one of the `areas:` names in `<R>/config`. It is never a lane or \
 branch name.
 - `paused_reason:` is the one-line reason a `status: paused` ticket waits; `status: claimed` needs `claimed_by:`.
+- `branch:` and `worktree:` name the ticket's lane branch and its worktree (relative to the main checkout, under \
+`.claude/worktrees/`); the lane opener writes both and its close removes both. `check` warns on a `worktree:` that \
+is not a registered worktree on that branch.
 
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
@@ -2151,9 +2203,10 @@ add a one-line `paused_reason:`, then rerun `roadmap`.
 Open a lane:
 1. Claim the ticket first: `<plugin-root>/scripts/lanes.py open` refuses an unclaimed local ticket.
 2. Run `python3 <plugin-root>/scripts/lanes.py open <name> --kind solo --ticket <id>`. It makes the worktree \
-and branch and writes `branch: <lane branch>` after `claimed_by:`, so verified, unmerged work stays visible on \
-the roadmap and in `lanes.py list --all`. A worktree made by hand: add the `branch:` line yourself.
-3. `lanes.py close <name>` removes the `branch:` line once the lane closes.
+and branch under `.claude/worktrees/` and writes `branch: <lane branch>` and `worktree: <path>` after \
+`claimed_by:`, so verified, unmerged work stays visible on the roadmap and in `lanes.py list --all`. A worktree \
+made by hand: run `<CMD> branch <id> <branch> --worktree <path>`.
+3. `lanes.py close <name>` removes the `branch:` and `worktree:` lines once the lane closes.
 
 Close a ticket:
 1. Run `<CMD> close <folder> --dry-run`. It checks the verifier verdict, lists each verifier `## Notes` line as \
@@ -3123,6 +3176,7 @@ def cmd_check(root, numbered=False):
     out += link_warnings(root)
     out += top_level_warnings(root)
     out += delivered_warnings(root, ts)
+    out += worktree_warnings(root, ts)
     out += successor_lines(root, ts)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
@@ -3389,6 +3443,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_claim(root, *args, **kw), ''
         if cmd == 'release':
             return 0, cmd_release(root, *args, **kw), ''
+        if cmd == 'branch':
+            return 0, cmd_branch(root, *args, **kw), ''
         if cmd == 'check':
             return 0, cmd_check(root, **kw), ''
         if cmd == 'archive':
@@ -5495,6 +5551,38 @@ def selftest():
                got == '0002-b' and 'branch:' not in (r5 / '0002-b' / 'handoff.md').read_text(encoding='utf-8')
                and tr_text(r5 / 'roadmap.md') == rm_before and stage_text(r5) == st_before
                and 'branch' not in st_before and run(r5, 'check')[0] == 0)
+        # worktree: (T-0550) written beside branch: by the same function, removed with it, and check warns on a stale one
+        rw = pathlib.Path(tmp) / 'rt-wt'
+        rw.mkdir()
+        g = lambda *x: subprocess.run(['git', '-C', str(rw), '-c', 'user.name=t', '-c', 'user.email=t@t', *x],
+                                      capture_output=True, text=True)
+        g('init', '-q', '-b', 'main')
+        run(rw / '.sdlc', 'new', ('feature', 'a', 'A'))
+        edit(rw / '.sdlc', 'a', r'^status:.*$', 'status: claimed')
+        edit(rw / '.sdlc', 'a', r'^created:(.*)$', r'created:\1\nclaimed_by: claude 2026-10-14')
+        run(rw / '.sdlc', 'roadmap')
+        g('add', '-A')
+        g('commit', '-q', '-m', 'init')
+        g('worktree', 'add', '-q', '-b', 'lane/T-0001-a', str(rw / '.claude' / 'worktrees' / 'T-0001-a'))
+        got = record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='.claude/worktrees/T-0001-a')
+        h = (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8')
+        rc, out, _ = run(rw / '.sdlc', 'check')
+        expect(f'worktree: record_branch writes worktree: right after branch:, and check is quiet for a registered lane: {out!r} {h!r}',
+               got == 'a' and 'branch: lane/T-0001-a\nworktree: .claude/worktrees/T-0001-a\n' in h and rc == 0
+               and 'worktree:' not in out)
+        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='.claude/worktrees/gone')
+        rc, out, _ = run(rw / '.sdlc', 'check')
+        expect(f'worktree: check warns on a worktree: that is not a registered worktree (negative control): {out!r}',
+               rc == 0 and 'warning: a: worktree: .claude/worktrees/gone is not a registered worktree' in out)
+        g('worktree', 'add', '-q', '-b', 'other', str(rw / '.claude' / 'worktrees' / 'o'))
+        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='.claude/worktrees/o')
+        rc, out, _ = run(rw / '.sdlc', 'check')
+        expect(f'worktree: check warns on a worktree on another branch: {out!r}',
+               'warning: a: worktree: .claude/worktrees/o is on branch other, not the ticket branch: lane/T-0001-a' in out)
+        rc, out, _ = run(rw / '.sdlc', 'branch', ('T-0001',))
+        h = (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'worktree: tickets.py branch <id> with no branch removes branch: and worktree: together: {out!r}',
+               rc == 0 and 'branch:' not in h and 'worktree:' not in h and 'worktree:' not in run(rw / '.sdlc', 'check')[1])
 
         # area, claimed and paused: validation runs one way; the Area column shows only when an area exists
         ra = pathlib.Path(tmp) / 'rt-area' / '.sdlc'
@@ -6850,6 +6938,10 @@ def main(argv):
     p = sub.add_parser('release', help='release a claim: remove claimed_by, set status ready, regenerate the roadmap')
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
     p.add_argument('--numbered', action='store_true', help='also validate numbered folders (also on via config)')
+    p = sub.add_parser('branch', help='set or clear the branch: and worktree: lines of a ticket (T-0550); the lane opener calls the same function')
+    p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
+    p.add_argument('branch', nargs='?', help='the lane branch; omit to remove both lines')
+    p.add_argument('--worktree', help='the lane worktree, relative to the main checkout (.claude/worktrees/<lane>)')
     p = sub.add_parser('roadmap', help='regenerate roadmap.md')
     p.add_argument('--numbered', action='store_true',
                    help='also refuse on a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
@@ -6894,7 +6986,7 @@ def main(argv):
     if cmd == 'selftest':
         return selftest()
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force),
-            'claim': lambda: (a.id, a.by), 'release': lambda: (a.id,)}.get(cmd, tuple)()
+            'claim': lambda: (a.id, a.by), 'release': lambda: (a.id,), 'branch': lambda: (a.id, a.branch)}.get(cmd, tuple)()
     kw = ({'numbered': getattr(a, 'numbered', False)}
           if cmd in ('new', 'close', 'roadmap', 'check', 'archive', 'claim', 'release') else {})
     if cmd == 'claim':
@@ -6902,6 +6994,8 @@ def main(argv):
         kw['reason'] = a.reason
     if cmd == 'number':
         kw['dry_run'] = a.dry_run
+    if cmd == 'branch':
+        kw['worktree'] = a.worktree
     if cmd == 'migrate-layout':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs

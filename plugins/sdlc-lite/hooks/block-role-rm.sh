@@ -11,8 +11,10 @@
 #   any path operand outside the prefix, relative after a cd to an unknown place, holding an
 #   expansion the hook cannot read (a variable other than $SDLC_TMP_WORKTREES), or a .. segment:
 #     denied (exit 2).
-# The prefix is $SDLC_TMP_WORKTREES when set, else <git toplevel of the hook cwd>/.worktrees/tmp, the
-# parent of every dispatch tmp prefix (as block-stray-worktree.sh). With no prefix every rm is denied.
+# The prefix is $SDLC_TMP_WORKTREES when set, else <main checkout of the hook cwd>/.claude/worktrees/tmp, the
+# parent of every dispatch tmp prefix (as block-stray-worktree.sh; the main checkout is the parent of the common
+# .git dir, so a role inside a lane gets the main checkout's prefix, T-0550), plus the dispatch scratch root
+# ${TMPDIR:-/tmp}/sdlc-lite (scripts/wtroot.py). With no prefix every rm is denied.
 # The builder, solo, the conductor, any other agent, and a session with no role pass untouched.
 # Fails open when python3 is missing or the command cannot be tokenized (an unterminated quote).
 # shellcheck source=_role.sh
@@ -31,13 +33,18 @@ cwd=$(jq -r '.cwd // ""' <<<"$input" 2>/dev/null)
 [[ -n $cwd ]] || cwd=$PWD
 prefix=${SDLC_TMP_WORKTREES:-}
 if [[ -z $prefix && -z "${SDLC_ROLE:-}" ]]; then
-  top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) && prefix="$top/.worktrees/tmp"
+  top=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || top=""
+  if [[ "${top##*/}" == .git ]]; then top="${top%/.git}"; else top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null); fi
+  scratch="${TMPDIR:-/tmp}"
+  [[ -n $top ]] && prefix="$top/.claude/worktrees/tmp"$'\n'"${scratch%/}/sdlc-lite"
 fi
 
 read -r -d '' checker <<'PY' || true
 import posixpath, shlex, sys
 
 cmd, prefix, cwd = sys.argv[1], sys.argv[2], sys.argv[3]
+prefixes = [p.rstrip('/') for p in prefix.split('\n') if p.strip('/')]
+prefix = prefixes[0] if prefixes else ''
 try:
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=';&|()')
     lex.whitespace_split = True
@@ -93,7 +100,7 @@ for words in cmds:
             reasons.append(f'{p} (relative after a cd to a place the hook cannot read)')
         else:
             full = posixpath.normpath(q if q.startswith('/') else posixpath.join(cwd, q))
-            if not (full + '/').startswith(prefix.rstrip('/') + '/') or full == prefix.rstrip('/'):
+            if not any((full + '/').startswith(x + '/') and full != x for x in prefixes):
                 reasons.append(f'{p} (outside the prefix)')
 print('deny ' + '; '.join(reasons) if reasons else ('allow' if only_rm_cd else 'open'))
 PY
@@ -101,7 +108,8 @@ if ! command -v python3 >/dev/null 2>&1; then exit 0; fi
 verdict=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" 2>/dev/null) || exit 0
 case "$verdict" in
   deny*)
-    echo "Blocked for sdlc role '$role': rm of ${verdict#deny }. A read-only role removes only scratch it wrote under its throwaway prefix (${prefix:-unset}); give the full path under it, or \$SDLC_TMP_WORKTREES/<name>, with no variable, ~, or .. in it." >&2
+    shown=${prefix//$'\n'/ or the scratch dir }
+    echo "Blocked for sdlc role '$role': rm of ${verdict#deny }. A read-only role removes only scratch it wrote under its throwaway prefix (${shown:-unset}); give the full path under it, or \$SDLC_TMP_WORKTREES/<name>, with no variable, ~, or .. in it." >&2
     exit 2
     ;;
   allow)

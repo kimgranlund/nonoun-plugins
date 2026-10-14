@@ -34,12 +34,14 @@
 # runs.jsonl (a solo ticket, T-0356): a Sonnet solo moves it to Opus, an Opus solo moves it to Sonnet.
 # scripts/codex_roles.py resolve applies the same rule on Codex.
 # Throwaway worktrees: a real run (never a dry run) passes the role
-# SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
+# SDLC_TMP_WORKTREES=<main checkout>/.claude/worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns (T-0550:
+# the main checkout is the parent of git rev-parse --git-common-dir, as scripts/wtroot.py, so a run inside a lane
+# never nests its prefix in the lane). run.sh
 # does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
 # HEAD makes the parents). On every exit, success or failure (exit 1, exit 3, INT, TERM, HUP), cleanup
 # runs git worktree remove --force on each registered worktree under that prefix (paths compared by
 # realpath, since macOS reports /private/var for /var), rm -rf of the prefix, git worktree prune, then
-# rmdir of .worktrees/tmp and .worktrees only when empty. It touches only this run's prefix, never other
+# rmdir of .claude/worktrees/tmp only when empty. It touches only this run's prefix, never other
 # worktrees that appeared during the run (concurrent fanout lanes run other role runs), and never
 # changes the exit code; INT, TERM, and HUP exit 130, 143, and 129 after it.
 # Prompt TERM: the role runs in the background and run.sh waits on it, since bash defers a trap until
@@ -47,13 +49,14 @@
 # still-running role TERM, waits up to 2 s, sends KILL, and only then cleans up, so a dying role cannot
 # recreate files and the handler ends well inside run_lifecycle.py's 5 s grace before its SIGKILL.
 # Reaper: a run SIGKILLed anyway skips that cleanup, so a real run also calls
-# scripts/reap-tmp-worktrees.sh on <toplevel> at the start (before the stray snapshot) and again
-# after removing its own prefix. It removes prefixes under .worktrees/tmp whose <pid> names no live
+# scripts/reap-tmp-worktrees.sh on <main checkout> at the start (before the stray snapshot) and again
+# after removing its own prefix. It removes prefixes under .claude/worktrees/tmp (and the legacy .worktrees/tmp)
+# whose <pid> names no live
 # process, never this run's own, and never changes the exit code.
 # Stray report: a real run (never a dry run) snapshots `git worktree list --porcelain` and the local
 # branches (refs/heads) before the role starts. Worktrees and branches that appeared during this run
 # (from a script, make target, or other program the hooks cannot see) are reported when they belong to
-# this role (under .worktrees/tmp, or on a branch named with this run's prefix $role-$$; sibling lanes
+# this role (under .claude/worktrees/tmp, or on a branch named with this run's prefix $role-$$; sibling lanes
 # elsewhere are not, as in dispatch.py record), leaving out this run's own prefix (compared by realpath). This run's runs.jsonl line always holds stray_worktrees
 # (array of worktree paths) and stray_branches (array of branch names), empty arrays when none
 # appeared. At exit, on success or failure (exit 1, exit 3, INT, TERM, HUP), after the cleanup, stderr
@@ -547,7 +550,11 @@ fi
 
 # Throwaway worktree prefix owned by this run (see the header). Not created here.
 toplevel="$(git rev-parse --show-toplevel)"
-wt_tmp="$toplevel/.worktrees/tmp/$role-$$"
+# T-0550: the worktree root is under the main checkout (the parent of the common .git dir), never the current lane.
+main_top=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || main_top=""
+if [[ "${main_top##*/}" == .git ]]; then main_top="${main_top%/.git}"; else main_top="$toplevel"; fi
+wt_root="$main_top/.claude/worktrees"
+wt_tmp="$wt_root/tmp/$role-$$"
 # phys <path>: physical path, resolving the deepest existing ancestor, so a missing path still compares.
 phys() {
   local p="$1" rest="" r
@@ -555,9 +562,9 @@ phys() {
   r=$(cd "${p:-/}" 2>/dev/null && pwd -P) || { printf '%s\n' "$1"; return 0; }
   printf '%s%s\n' "${r%/}" "$rest"
 }
-# Reaps dead-owner prefixes under .worktrees/tmp, never this run's own (see the header). Never fails.
+# Reaps dead-owner prefixes under .claude/worktrees/tmp, never this run's own (see the header). Never fails.
 reap_tmp() {
-  bash "$plugin_root/scripts/reap-tmp-worktrees.sh" "$toplevel" "$wt_tmp" >/dev/null 2>&1 || :
+  bash "$plugin_root/scripts/reap-tmp-worktrees.sh" "$main_top" "$wt_tmp" >/dev/null 2>&1 || :
 }
 # Removes every worktree under this run's prefix only. Runs without errexit; never fails.
 cleanup_worktrees() {
@@ -573,8 +580,7 @@ cleanup_worktrees() {
   rm -rf "$wt_tmp"
   reap_tmp
   git -C "$toplevel" worktree prune >/dev/null 2>&1
-  rmdir "$toplevel/.worktrees/tmp" >/dev/null 2>&1
-  rmdir "$toplevel/.worktrees" >/dev/null 2>&1
+  rmdir "$wt_root/tmp" >/dev/null 2>&1
   return 0
 }
 reap_tmp
@@ -591,7 +597,7 @@ in_list() {
 }
 # Fills stray_wt (paths), stray_wt_br (branch or "" per path), and stray_br once per run.
 # Scope rule, the same as dispatch.py strays (T-0371, T-0391): a stray belongs to this role only when it
-# is a worktree under <toplevel>/.worktrees/tmp (this run's own prefix left out) or on a branch whose name
+# is a worktree under <main checkout>/.claude/worktrees/tmp (this run's own prefix left out) or on a branch whose name
 # starts with this run's prefix name ($role-$$), or a branch with that name as prefix. Sibling lanes and
 # peers elsewhere are not reported. Keep the two in step.
 # Called in an || list, so it runs without errexit; never fails.
@@ -600,7 +606,7 @@ detect_strays() {
   stray_done=1
   local wt_real line p="" b="" pr br now_wt now_br mine tmp_root
   wt_real=$(phys "$wt_tmp")
-  mine="${wt_tmp##*/}"; tmp_root=$(phys "$toplevel/.worktrees/tmp")
+  mine="${wt_tmp##*/}"; tmp_root=$(phys "$wt_root/tmp")
   now_wt=$(git -C "$toplevel" worktree list --porcelain 2>/dev/null)
   # Porcelain records end at a blank line; $(...) strips the last one, so the input adds it back.
   while IFS= read -r line; do

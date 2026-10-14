@@ -187,7 +187,8 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
              attempt_id=attempt, base_sha=head_sha(tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
     d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {dispatch.handoff_locator(d["artifacts_dir"])}\n{brief}'
-    if tree and not worktree:
+    tree = worktree or tree  # T-0550: a --worktree lane gets the same Tree line dispatch.py prepare writes; the lane wins
+    if tree:
         d['tree'] = os.path.realpath(str(tree))
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nTree: {d["tree"]} (run every Bash call as cd {shlex.quote(d["tree"])} && ...; '
                                           'the shell keeps no working directory between calls)\nArtifacts dir:', 1)
@@ -196,6 +197,8 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
     else:
         mark_live(task_dir, attempt)
+    if d['verifier']:  # T-0550: a sub-agent cannot spawn the verifier; the parent runs this command after the report
+        d['prompt'] += (f'\nVerifier: do not start one (a sub-agent cannot spawn agents); the parent runs {d["verifier"]} after your report.')
     (records(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
     rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
     rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
@@ -543,7 +546,7 @@ def ensure_worktree(name, base=None, task_dir=None):
     """Return the worktree path for --worktree <name>, creating it when missing. The role cannot do this itself:
     block-stray-worktree.sh denies a role creating worktrees or branches, so the launcher does. When the task's
     handoff.md front matter has an id, the tree is a lanes.py solo lane, <lanes root>/<id>-<slug> on lane/<id>-<slug>
-    (spec section 17.9 B); else <repo>/.worktrees/<name> on a new branch <name>."""
+    (spec section 17.9 B); else <main checkout>/.claude/worktrees/<name> on a new branch <name> (T-0550, wtroot.py)."""
     sys.path.insert(0, str(SCRIPTS))
     import lanes
     import tickets
@@ -565,10 +568,11 @@ def ensure_worktree(name, base=None, task_dir=None):
 
     def git(*a):
         return subprocess.run(['git', *a], cwd=str(base or '.'), capture_output=True, text=True)
-    top = git('rev-parse', '--show-toplevel')
-    if top.returncode:
+    import wtroot
+    root = wtroot.root(base or '.')
+    if root is None:
         raise Refuse('--worktree needs a git repository')
-    wt = pathlib.Path(top.stdout.strip()) / '.worktrees' / name
+    wt = root / name
     if wt.is_dir():
         return str(wt)
     exists = git('rev-parse', '--verify', '-q', f'refs/heads/{name}').returncode == 0
@@ -887,7 +891,7 @@ def selftest():
             expect('subagent: level L2 dispatch names solo-L2, opus medium, the brief, and the verifier command',
                    rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == '0001-solo-L2' and dd['tier'] == 'L2'
                    and (dd['model'], dd['effort']) == ('opus', 'medium')
-                   and dd['prompt'].endswith('the brief') and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (order.records_dir(dsub) / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
+                   and dd['prompt'].endswith('the brief\nVerifier: do not start one (a sub-agent cannot spawn agents); the parent runs %s after your report.' % dd['verifier']) and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (order.records_dir(dsub) / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
             dmark = ticket('subagent-mark', budget_usd=10)
             (dmark / 'handoff.md').write_text((dmark / 'handoff.md').read_text(encoding='utf-8') + '\nverifier: L3\n', encoding='utf-8')
             rcv, dv = pj(dmark, 'L2', 'the brief')
@@ -898,8 +902,11 @@ def selftest():
                    and recs[1]['cost_usd'] is None and not mark.exists())
             expect('subagent: level L1 has no verifier command', pj(dsub, 'L1', 'b')[1]['verifier'] is None)
             _, dw = dispatch_json(str(dsub), 'L2', 'b', 'lane-x')
-            expect('subagent: with a worktree the title is line 1, Handoff line 2, Worktree line 3 (T-0363)',
-                   [ln.split(':')[0] for ln in dw['prompt'].splitlines()[1:4]] == ['Handoff', 'Worktree', 'Artifacts dir'] and len(dw['prompt'].splitlines()[0]) <= 50)
+            expect('subagent: with a worktree the title is line 1, Handoff line 2, Tree line 3 (T-0550), Worktree line 4 (T-0363)',
+                   [ln.split(':')[0] for ln in dw['prompt'].splitlines()[1:5]] == ['Handoff', 'Tree', 'Worktree', 'Artifacts dir'] and len(dw['prompt'].splitlines()[0]) <= 50
+                   and 'Tree: %s (run every Bash call as cd ' % os.path.realpath('lane-x') in dw['prompt'])
+            expect('subagent: level L1 carries no Verifier line; L2 says the parent runs the verifier (T-0550)',
+                   '\nVerifier:' not in pj(dsub, 'L1', 'b')[1]['prompt'] and '\nVerifier: do not start one' in dw['prompt'])
             # The deprecated 0.21.x tier names are aliases: each dispatches as its level (same model and effort).
             for alias, level, me in (('S', 'L1', ('sonnet', 'high')), ('M', 'L2', ('opus', 'medium')), ('L', 'L3', ('opus', 'high'))):
                 _, da = pj(dsub, alias, 'b')
@@ -1130,14 +1137,14 @@ def selftest():
             wrepo.mkdir()
             for c in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i']):
                 subprocess.run(['git', *c], cwd=str(wrepo), check=True)
-            dw = wrepo / 'wt'  # no id in the front matter: today's .worktrees/<name> on branch <name>
+            dw = wrepo / 'wt'  # no id in the front matter: .claude/worktrees/<name> on branch <name>
             dw.mkdir()
             (dw / 'handoff.md').write_text('## Goal\ng\n')
             pwdf = tmp / 'pwd.out'
             shim(f"pwd -P > {pwdf}\nprintf '%s' '{{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}}'\n")
             cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'L1', '--brief', 'b',
                                  '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
-            want = (wrepo / '.worktrees' / 'lane-x').resolve()
+            want = (wrepo / '.claude' / 'worktrees' / 'lane-x').resolve()
             br = subprocess.run(['git', 'branch', '--list', 'lane-x'], cwd=str(wrepo), capture_output=True, text=True).stdout
             expect('--worktree: run succeeds', cp.returncode == 0)
             expect('--worktree: worktree on a new branch', want.is_dir() and 'lane-x' in br)
@@ -1149,7 +1156,7 @@ def selftest():
             pwdf.unlink(missing_ok=True)
             cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dl), '--tier', 'L1', '--brief', 'b',
                                  '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
-            want = (wrepo / '.worktrees' / 'T-0001-lane-x').resolve()
+            want = (wrepo / '.claude' / 'worktrees' / 'T-0001-lane-x').resolve()
             head = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=str(want), capture_output=True, text=True).stdout.strip() \
                 if want.is_dir() else ''
             try:
@@ -1157,7 +1164,7 @@ def selftest():
             except (OSError, ValueError):
                 lrec = {}
             expect('--worktree lanes: run succeeds', cp.returncode == 0)
-            expect('--worktree lanes: the tree is .worktrees/T-0001-lane-x on lane/T-0001-lane-x', head == 'lane/T-0001-lane-x')
+            expect('--worktree lanes: the tree is .claude/worktrees/T-0001-lane-x on lane/T-0001-lane-x', head == 'lane/T-0001-lane-x')
             expect('--worktree lanes: a .lane.json of kind solo lists the ticket',
                    lrec.get('kind') == 'solo' and lrec.get('tickets') == ['T-0001'] and lrec.get('branch') == 'lane/T-0001-lane-x')
             expect('--worktree lanes: session cwd is the lane tree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
@@ -1180,6 +1187,8 @@ def selftest():
             c2, j2 = disp('par2')
             expect('default worktree: the second live solo gets a worktree', c2.returncode == 0 and j2.get('worktree')
                    and pathlib.Path(j2['worktree']).is_dir() and 'solo-par2' in c2.stderr)
+            expect('default worktree: the Tree line names the worktree, not the --cwd checkout (T-0550)',
+                   f"\nTree: {os.path.realpath(j2['worktree'])} " in j2.get('prompt', '') and f"\nTree: {os.path.realpath(str(wr2))} " not in j2.get('prompt', ''))
             c3, j3 = disp('par3', '--no-worktree')
             expect('default worktree: --no-worktree wins', c3.returncode == 0 and 'worktree' not in j3)
             unmark_live(wr2, j1['attempt_id'])
@@ -1193,7 +1202,7 @@ def selftest():
             rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(wr2 / 'par4') / f'{j4["name"]}.dispatch.json')],
                                 capture_output=True, text=True, timeout=60)
             c6, j6 = disp('par6')
-            expect('recorded solo: record exits 0 and clears the marker, the next solo keeps the checkout',
+            expect(f'recorded solo: record exits 0 and clears the marker, the next solo keeps the checkout (record rc {rp.returncode} {rp.stderr[-300:]!r}, next {c6.returncode} {j6.get("worktree")})',
                    rp.returncode == 0 and c6.returncode == 0 and 'worktree' not in j6)
             # T-0490: an open integration lane in the repo defaults the next solo to a worktree; --no-worktree wins.
             for f in (wr2 / '.git' / 'solo_live').glob('*'):
@@ -1201,12 +1210,12 @@ def selftest():
             lanes_py = str(SCRIPTS / 'lanes.py')
             subprocess.run(['git', 'config', 'user.name', 't'], cwd=str(wr2), check=True)
             subprocess.run(['git', 'config', 'user.email', 't@t'], cwd=str(wr2), check=True)
-            (wr2 / '.gitignore').write_text('.worktrees/\n.sdlc/\n', encoding='utf-8')
+            (wr2 / '.gitignore').write_text('.claude/worktrees/\n.sdlc/\n', encoding='utf-8')
             subprocess.run(['git', 'add', '.gitignore'], cwd=str(wr2), check=True)
             subprocess.run(['git', 'commit', '-q', '-m', 'ignore'], cwd=str(wr2), check=True)
             op = subprocess.run([sys.executable, lanes_py, 'open', 'wave/1', '--kind', 'integration'], cwd=str(wr2),
                                 capture_output=True, text=True, timeout=60)
-            itree = wr2 / '.worktrees' / 'wave-1'
+            itree = wr2 / '.claude' / 'worktrees' / 'wave-1'
             expect('integration lane: lanes.py opens the integration lane', op.returncode == 0 and (itree / '.lane.json').is_file())
             c7, j7 = disp('par7')
             expect('integration lane: a closable lane (no unlanded work) keeps the checkout', c7.returncode == 0 and 'worktree' not in j7)
@@ -1294,7 +1303,7 @@ def selftest():
                rc == 0 and disp and rec and 'Checks:' not in disp['prompt'])
         rc, disp, err, rec = il_run(il('local', cfg, 'python3 check.py'))
         expect('profile control: a local-gate criterion dispatches with Checks: python3 check.py in the prompt',
-               rc == 0 and disp and rec and disp['prompt'].endswith('the brief\nChecks: python3 check.py'))
+               rc == 0 and disp and rec and 'the brief\nChecks: python3 check.py' in disp['prompt'])
         rc, disp, err, rec = il_run(il('dflt', cfg, 'python3 suite.py', 'profile: default\n'))
         expect('profile control: profile: default in the handoff dispatches', rc == 0 and disp and rec)
     with tempfile.TemporaryDirectory() as tmp:  # T-0546: run --cwd <tree> takes base_sha and Tree from <tree>, not the session checkout
@@ -1404,6 +1413,8 @@ def main():
             rc, d = dispatch_json(task_dir, a.tier, brief, path, a.cwd)
             if d:
                 print(json.dumps(d, indent=2))
+                if d.get('verifier'):
+                    print(f'solo_run.py: after the solo reports, the parent runs: {d["verifier"]}', file=sys.stderr)
             return rc
         cwd = ensure_worktree(wt, a.cwd, task_dir) if wt else a.cwd
         return run(task_dir, a.tier, brief, a.backend, cwd, a.timeout, a.raw_out)

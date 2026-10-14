@@ -13,8 +13,9 @@
 # on a remote becomes a new tracking branch, no commit makes one named after the path) or check
 # out an existing branch; with --detach it skips all branch DWIM whatever refs exist, so the
 # rule stays textual and the hook never queries the repo.
-# For a sub-agent role (no SDLC_ROLE) with no prefix variable, the prefix is the git toplevel of the
-# hook JSON's cwd plus /.worktrees/tmp, the parent of every dispatch tmp prefix.
+# For a sub-agent role (no SDLC_ROLE) with no prefix variable, the prefix is the main checkout of the
+# hook JSON's cwd (the parent of the common .git dir, never a lane, T-0550) plus /.claude/worktrees/tmp, the parent
+# of every dispatch tmp prefix.
 # Allowed: git worktree add --detach "$SDLC_TMP_WORKTREES/<name>" <commit>, every other git
 # worktree subcommand (list, remove, prune), a mention inside a quoted argument
 # (grep -n "git worktree add" f), and anything outside a role run.
@@ -41,9 +42,11 @@ cwd=$(jq -r '.cwd // ""' <<<"$json")
 [[ -n $cwd ]] || cwd=$PWD
 prefix=${SDLC_TMP_WORKTREES:-}
 # A sub-agent has no per-run prefix in its environment: its dispatch brief names
-# <repo>/.worktrees/tmp/<name>, so any path under <repo>/.worktrees/tmp passes for it.
+# <main checkout>/.claude/worktrees/tmp/<name>, so any path under that tmp dir passes for it.
 if [[ -z $prefix && -z "${SDLC_ROLE:-}" ]]; then
-  top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) && prefix="$top/.worktrees/tmp"
+  top=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || top=""
+  if [[ "${top##*/}" == .git ]]; then top="${top%/.git}"; else top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null); fi
+  [[ -n $top ]] && prefix="$top/.claude/worktrees/tmp"
 fi
 
 block() {

@@ -31,7 +31,7 @@ prep
   The preflight of `run` (the same refusals, the same messages, exit 2, nothing created: an unknown, done or twice-
   listed id, an uncommitted handoff, more lanes than --max-lanes, a planned-scope overlap unless --allow-overlap, a
   lanes dir inside the tree that is not gitignored) plus one more: `.claude/worktrees/` must be gitignored, because the
-  host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers, as for `.worktrees/`).
+  host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers). Since 0.23.0 (T-0550) every lane lives under it.
   After the refusals it sweeps landed lanes as `run` does (lanes.sweep --apply, unless `lane_sweep: off`).
   Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
   for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
@@ -167,10 +167,11 @@ run
   regular lanes only (an external ticket's handoff was read from its branch).
   The integration branch is --integration or fanout/<YYYY-MM-DD>; lane branches
   are <integration>-<lane> (a slash form would collide with the integration ref). --lanes-dir
-  (relative to the cwd) defaults to <toplevel>/.worktrees/fanout. The lanes dir is never the
+  (relative to the cwd) defaults to <main checkout>/.claude/worktrees/fanout (T-0550; the main checkout, not a lane,
+  so a fanout started in a lane never nests). The lanes dir is never the
   toplevel itself; inside the toplevel it must be gitignored: for the default,
-  `git check-ignore -q .worktrees/x` run from the toplevel must pass (else it refuses, naming
-  `.worktrees/` to add to .gitignore); for an explicit --lanes-dir inside the toplevel, the same
+  `git check-ignore -q .claude/worktrees/x` run from the main checkout must pass (else it refuses, naming
+  `.claude/worktrees/` to add to .gitignore); for an explicit --lanes-dir inside the toplevel, the same
   check runs on <its path relative to the toplevel>/x and a refusal names that path. An explicit
   --lanes-dir outside the toplevel needs no ignore check. It refuses when a lane branch,
   <lanes-dir>/<lane> or <lanes-dir>/integration exists, or when the integration branch is
@@ -207,8 +208,8 @@ run
        medium) told to run /sdlc-lite:chain on the handoff unattended, skip the file stage (no
        filer, no ticket close), and never commit, push, or publish. --driver replaces it (stubs,
        tests). After the driver returns, whatever its rc and before step 3 or any lane commit,
-       `bash reap-tmp-worktrees.sh <lane worktree>` runs (exit code ignored): it removes each
-       <lane>/.worktrees/tmp/<role>-<pid> prefix whose owner pid is dead, which the lane's last
+       `bash reap-tmp-worktrees.sh` runs on the main checkout and on the lane worktree (exit code ignored): it removes
+       each <main checkout>/.claude/worktrees/tmp/<role>-<pid> prefix (and a legacy <lane>/.worktrees/tmp one) whose owner pid is dead, which the lane's last
        role run leaves when SIGKILLed, since no later run.sh in the lane would reap it. Non-zero exit: the lane's step dirs are checked for an inherited-red step as in
        step 3, giving `inherited red: step-<n>: <tests> (driver rc=<n>)`; with none, the outcome
        stays `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
@@ -311,7 +312,7 @@ run
   that refuses, stays (tree and WIP commit kept) with `- lane still open: <path> (<outcome>)`, the lane's first
   non-`merged` outcome or the close outcome. The integration tree stays: `- lane still open: <integ dir>
   (integration: stays until main contains <integration>)`. These lines follow the Overlap lines and print with the
-  report. lanes.open_lane takes its flock at <lanes root>/lanes.lock (default <toplevel>/.worktrees), so that dir
+  report. lanes.open_lane takes its flock at <lanes root>/lanes.lock (default <main checkout>/.claude/worktrees), so that dir
   must be gitignored even with an outside --lanes-dir.
 
 selftest
@@ -329,7 +330,7 @@ selftest
   a builder Status `done`, gives `merged`. A variant with builder Status `done` and a newer
   verifier Verdict `inherited red: test_v` proves the outcome names the verifier's tests,
   `inherited red: step-1: test_v`, not `done`.
-  A full stub-driver run in the default lanes dir under .worktrees/fanout (case 6) proves lane
+  A full stub-driver run in the default lanes dir under .claude/worktrees/fanout (case 6) proves lane
   commits `<id>: <title>`, merges and closes, with `git status` in the main tree left clean.
   A one-lane case (case 7) with a driver that writes a file and exits 3
   proves the stopped lane is WIP-committed: a clean lane tree, a `wip(T-0001): driver failed
@@ -439,6 +440,7 @@ import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
 import results  # same scripts/ dir: the verifier Notes section
 import order  # same scripts/ dir: newest result file of a role
+import wtroot  # same scripts/ dir: the worktree root under the main checkout (T-0550)
 import lanes  # same scripts/ dir: the lane lifecycle (open, close, sweep)
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
@@ -703,14 +705,16 @@ def norm_tid(x):
 
 
 def resolve_lanes_dir(a, cwd, top):
-    """The lanes dir (--lanes-dir, else <toplevel>/.worktrees/fanout); inside the work tree it must be gitignored."""
-    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else top / '.worktrees' / 'fanout'
+    """The lanes dir (--lanes-dir, else <main checkout>/.claude/worktrees/fanout, T-0550); inside the work tree it must be gitignored."""
+    if not a.lanes_dir:
+        top = pathlib.Path(wtroot.main_top(top) or top).resolve()
+    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else top / '.claude' / 'worktrees' / 'fanout'
     if lanes_dir == top:
         raise Refuse(f'--lanes-dir {lanes_dir} is the work tree toplevel; lanes need their own dir')
     if top in lanes_dir.parents:
         # lanes inside the work tree must be gitignored, or every lane shows up as untracked files
         inner = lanes_dir.relative_to(top).as_posix()
-        probe, want = ('.worktrees/x', '.worktrees/') if not a.lanes_dir else (f'{inner}/x', f'{inner}/')
+        probe, want = ('.claude/worktrees/x', '.claude/worktrees/') if not a.lanes_dir else (f'{inner}/x', f'{inner}/')
         p = git(top, 'check-ignore', '-q', probe)
         if p.returncode == 1:
             what = 'the default lanes dir' if not a.lanes_dir else '--lanes-dir'
@@ -1431,8 +1435,9 @@ def run_ticket(ctx, lane, t, lock):
     rc = run_logged(['bash', '-c', driver_for(ctx, t, kind)], str(wt), env, log, ctx['run_id'])
     # The lane's last role run has no successor run.sh to reap a SIGKILLed run's prefix; reap it here,
     # before any lane commit. Only dead-owner prefixes go; the exit code is ignored.
-    subprocess.run(['bash', str(SCRIPTS / 'reap-tmp-worktrees.sh'), str(wt)], stdin=subprocess.DEVNULL,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=ENV)
+    for reap_top in dict.fromkeys([wtroot.main_top(wt) or str(wt), str(wt)]):  # T-0550: the main checkout's prefixes, then a legacy lane one
+        subprocess.run(['bash', str(SCRIPTS / 'reap-tmp-worktrees.sh'), reap_top], stdin=subprocess.DEVNULL,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=ENV)
     inherited = inherited_red(wt / ctx['trel'] / t.slug)
     if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
         if not inherited and rc == 4:  # solo_run.py's budget gate (T-0229): the ticket is at 80 percent with no ack
@@ -2019,7 +2024,7 @@ def cmd_prep(a):
         probe = git(ctx['top'], 'check-ignore', '-q', f'{HOST_WORKTREES}/x')
         if probe.returncode == 1:
             raise Refuse(f'{HOST_WORKTREES}/ is not gitignored: the host puts each sub-agent worktree there; add '
-                         f'{HOST_WORKTREES}/ to .gitignore (and exclude it from watchers, as .worktrees/)')
+                         f'{HOST_WORKTREES}/ to .gitignore (and exclude it from watchers)')
         if probe.returncode:
             raise Refuse(f'git check-ignore {HOST_WORKTREES}/x failed: {probe.stderr.strip() or probe.returncode}')
         refuse_overlap(ctx)
@@ -2336,7 +2341,7 @@ def land_lanes(ctx, t, outcome):
     top, wt = ctx['top'], pathlib.Path(wt)
     hosts = top / HOST_WORKTREES
     rec = lanes.read_json(wt / lanes.RECORD) or {}
-    if lanes.under(wt, hosts) and not lanes.samepath(wt, hosts):
+    if not rec and lanes.under(wt, hosts) and not lanes.samepath(wt, hosts):  # T-0550: plugin lanes live there too
         name = subagent_name(t.id)
         if outcome != 'merged' or wt.name == name:
             return []
@@ -2972,8 +2977,8 @@ def selftest():
 
         # 1. Two lanes, a stub driver, a gate that goes red on T-0003.
         repo, lanes = tmp / 'repo', tmp / 'lanes'
-        # .worktrees/ is ignored: lanes.py open takes its flock at <toplevel>/.worktrees/lanes.lock
-        make_repo(repo, [(s, f'T-000{i}', 'ready') for i, s in enumerate('abcde', 1)], {'.gitignore': '.worktrees/\n'})
+        # .claude/worktrees/ is ignored: lanes.py open takes its flock at <toplevel>/.claude/worktrees/lanes.lock
+        make_repo(repo, [(s, f'T-000{i}', 'ready') for i, s in enumerate('abcde', 1)], {'.gitignore': '.claude/worktrees/\n'})
         stub = tmp / 'stub.sh'
         stub.write_text(STUB)
         stub.chmod(0o755)
@@ -3036,10 +3041,10 @@ def selftest():
 
         # 2. --dry-run and refusals create nothing.
         rr, rl = tmp / 'refuse', tmp / 'rlanes'
-        make_repo(rr, [('x', 'T-0001', 'ready'), ('y', 'T-0002', 'done')], {'.gitignore': '.worktrees/\n'})
-        default_lanes = rr / '.worktrees' / 'fanout'
+        make_repo(rr, [('x', 'T-0001', 'ready'), ('y', 'T-0002', 'done')], {'.gitignore': '.claude/worktrees/\n'})
+        default_lanes = rr / '.claude' / 'worktrees' / 'fanout'
         proc = fanout(rr, '--dry-run', '--integration', 'fanout/dry', 'alpha=T-0001')
-        expect(f'--dry-run exits 0 naming the lane branch and the default lanes dir under .worktrees/fanout, '
+        expect(f'--dry-run exits 0 naming the lane branch and the default lanes dir under .claude/worktrees/fanout, '
                f'got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
                proc.returncode == 0 and 'fanout/dry-alpha' in proc.stdout
                and f'integration worktree: {default_lanes / "integration"}' in proc.stdout
@@ -3069,17 +3074,17 @@ def selftest():
         expect('dry run and refusals create no lanes dir', not rl.exists() and not default_lanes.exists())
         expect('dry run and refusals leave the status clean', sh(rr, 'status', '--porcelain').stdout == '')
 
-        # 3. A repo that does not ignore .worktrees/ refuses the default lanes dir, creating nothing.
+        # 3. A repo that does not ignore .claude/worktrees/ refuses the default lanes dir, creating nothing.
         ru = tmp / 'unignored'
         make_repo(ru, [('x', 'T-0001', 'ready')])
         proc = fanout(ru, '--dry-run', 'alpha=T-0001')
-        expect(f'unignored .worktrees/: default-dir --dry-run exits 2 naming .gitignore and .worktrees/, '
+        expect(f'unignored .claude/worktrees/: default-dir --dry-run exits 2 naming .gitignore and .claude/worktrees/, '
                f'got {proc.returncode} stderr={proc.stderr!r}',
-               proc.returncode == 2 and '.gitignore' in proc.stderr and '.worktrees/' in proc.stderr
+               proc.returncode == 2 and '.gitignore' in proc.stderr and '.claude/worktrees/' in proc.stderr
                and 'Traceback' not in proc.stderr)
-        expect('unignored .worktrees/: no .worktrees dir created', not (ru / '.worktrees').exists())
-        expect('unignored .worktrees/: no fanout/* branch', sh(ru, 'branch', '--list', 'fanout/*').stdout.strip() == '')
-        expect('unignored .worktrees/: no worktree added',
+        expect('unignored .claude/worktrees/: no .claude/worktrees dir created', not (ru / '.claude/worktrees').exists())
+        expect('unignored .claude/worktrees/: no fanout/* branch', sh(ru, 'branch', '--list', 'fanout/*').stdout.strip() == '')
+        expect('unignored .claude/worktrees/: no worktree added',
                len([ln for ln in sh(ru, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
 
         # 4. Numbered mode, a file outside the ticket root citing the ticket folder: without
@@ -3095,7 +3100,7 @@ def selftest():
                 '---\nid: T-0001\ntitle: "x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
                 'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
             (repo / 'docs' / 'spec.md').write_text('see .sdlc/0001-x/handoff.md\n', encoding='utf-8')
-            (repo / '.gitignore').write_text('.worktrees/\n', encoding='utf-8')
+            (repo / '.gitignore').write_text('.claude/worktrees/\n', encoding='utf-8')
             for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
                          ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
                          ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
@@ -3103,14 +3108,14 @@ def selftest():
                 expect(f'numbered fixture git {args} exited 0, got {q.returncode}', q.returncode == 0)
 
         def outcome(repo):
-            rep = repo / '.worktrees' / 'fanout' / 'report.md'
+            rep = repo / '.claude' / 'worktrees' / 'fanout' / 'report.md'
             for line in (rep.read_text() if rep.is_file() else '').splitlines():
                 c = [x.strip() for x in line.strip('|').split('|')]
                 if line.startswith('| ') and len(c) == 4 and c[1] == 'T-0001':
                     return c[2]
             return None
 
-        integ_clean = lambda repo: sh(repo / '.worktrees' / 'fanout' / 'integration', 'status', '--porcelain').stdout == ''
+        integ_clean = lambda repo: sh(repo / '.claude' / 'worktrees' / 'fanout' / 'integration', 'status', '--porcelain').stdout == ''
         nr = tmp / 'numbered-off'
         make_numbered(nr)
         proc = fanout(nr, '--dry-run', 'a=T-0001')
@@ -3265,16 +3270,16 @@ def selftest():
         merges = sh(xr, 'rev-list', '--merges', '--count', 'fanout/xr').stdout.strip()
         expect(f'integration dirty: fanout/xr has no merge commits, got {merges!r}', merges == '0')
 
-        # 6. A full stub-driver run in the default lanes dir (<toplevel>/.worktrees/fanout, no
+        # 6. A full stub-driver run in the default lanes dir (<toplevel>/.claude/worktrees/fanout, no
         # --lanes-dir): lane commits, merges and closes, with the main tree's status left clean.
         fr = tmp / 'default-dir'
-        make_repo(fr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')], {'.gitignore': '.worktrees/\n'})
+        make_repo(fr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')], {'.gitignore': '.claude/worktrees/\n'})
         fmain0 = sh(fr, 'rev-parse', 'main').stdout.strip()
         proc = fanout(fr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/dd',
                       '--driver', shlex.quote(str(stub)), '--gate', 'true')
         expect(f'default lanes dir: run exits 0, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
                proc.returncode == 0)
-        flanes = fr / '.worktrees' / 'fanout'
+        flanes = fr / '.claude' / 'worktrees' / 'fanout'
         expect(f'default lanes dir: {flanes / "report.md"} exists', (flanes / 'report.md').is_file())
         got = report_rows(flanes)
         for tid in ('T-0001', 'T-0002'):
@@ -3298,8 +3303,8 @@ def selftest():
         expect(f'default lanes dir: git status --porcelain --untracked-files=all empty in the main tree, '
                f'got {status.stdout!r}', status.returncode == 0 and status.stdout == '')
         ignored = sh(fr, 'status', '--porcelain', '--ignored').stdout
-        expect(f'default lanes dir: git status --ignored lists .worktrees/ (non-vacuity), got {ignored!r}',
-               '!! .worktrees/' in ignored.splitlines())
+        expect(f'default lanes dir: git status --ignored lists .claude/worktrees/ (non-vacuity), got {ignored!r}',
+               {'!! .claude/', '!! .claude/worktrees/'} & set(ignored.splitlines()))
         wts = sh(fr, 'worktree', 'list').stdout
         for name, want in (('alpha', False), ('beta', False), ('integration', True)):
             expect(f'default lanes dir: git worktree list shows {flanes / name} is {want} (merged lanes closed), got {wts!r}',
@@ -3494,8 +3499,8 @@ def selftest():
 
         er, el = tmp / 'external', tmp / 'elanes'
         make_ext(er, 'external_branch: ext\nexternal_branch: gone\n')
-        with open(er / '.git' / 'info' / 'exclude', 'a') as f_:  # lanes.py open takes its flock at <toplevel>/.worktrees/lanes.lock
-            f_.write('.worktrees/\n')
+        with open(er / '.git' / 'info' / 'exclude', 'a') as f_:  # lanes.py open takes its flock at <toplevel>/.claude/worktrees/lanes.lock
+            f_.write('.claude/worktrees/\n')
         e0, em0 = sh(er, 'rev-parse', 'ext').stdout.strip(), sh(er, 'rev-parse', 'main').stdout.strip()
         eargs = ('--integration', 'fanout/ext', '--lanes-dir', str(el))
         proc = fanout(er, '--dry-run', *eargs, 'alpha@ext=T-0002,T-0003', 'beta=T-0001')
@@ -3628,7 +3633,7 @@ def selftest():
         nt, ntl = tmp / 'ntroot', tmp / 'ntlanes'
         (nt / '.sdlc' / 'tickets' / '0001-x').mkdir(parents=True)
         (nt / '.sdlc' / 'config').write_text('ticket_folders: numbered\nticket_root: tickets\n', encoding='utf-8')
-        (nt / '.gitignore').write_text('.sdlc/config\n.worktrees/\n', encoding='utf-8')
+        (nt / '.gitignore').write_text('.sdlc/config\n.claude/worktrees/\n', encoding='utf-8')
         (nt / '.sdlc' / 'tickets' / '0001-x' / 'handoff.md').write_text(
             '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
             'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
@@ -4118,7 +4123,7 @@ def selftest():
         # case 20b (T-0477): a gitignored, uncommitted ticket folder is copied into each fanout-owned lane worktree;
         # the same ticket in a repo that does not ignore .sdlc/ is still refused (case 20 above); case 22 checks prep still refuses
         gx, gxl = tmp / 'gitignored-sdlc', tmp / 'gxlanes'
-        make_repo(gx, [], {'.gitignore': '.sdlc/\n.worktrees/\n'})
+        make_repo(gx, [], {'.gitignore': '.sdlc/\n.claude/worktrees/\n'})
         (gx / '.sdlc' / 'a').mkdir()
         (gx / '.sdlc' / 'a' / 'handoff.md').write_text(
             '---\nid: T-0001\ntitle: "Ticket a"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\n'
@@ -4337,14 +4342,14 @@ def selftest():
                all(f'land worktree-{x}-solo --ticket {x}' in pp.stdout for x in ('T-0001', 'T-0002', 'T-0003'))
                and f'--base {main_p1}' in pp.stdout and '--gate true' in pp.stdout)
         p1_files = [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all', '--ignored').stdout.splitlines()
-                    if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl', '.worktrees/lanes.lock'))
+                    if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl', '.claude/worktrees/lanes.lock'))
                     and ln != '!! .sdlc/runtime/.gitignore'  # the records dir's ignore file (order.records_dir)
-                    and not re.fullmatch(r'!! \.worktrees/host/T-000[123]-solo\.lane\.json', ln)]
+                    and not re.fullmatch(r'!! \.claude/worktrees/host/T-000[123]-solo\.lane\.json', ln)]
         expect(f'case 22 prep: creates no branch, worktree, lanes dir or file in the repo but the dispatch records and the host '
                f'lane records (T-0452), got {p1_files}',
                sh(p1, 'branch', '--list', 'fanout/*', 'worktree-*').stdout.strip() == ''
                and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists() and p1_files == []
-               and all((p1 / '.worktrees' / 'host' / f'{x}-solo.lane.json').is_file() for x in ('T-0001', 'T-0002', 'T-0003')))
+               and all((p1 / '.claude' / 'worktrees' / 'host' / f'{x}-solo.lane.json').is_file() for x in ('T-0001', 'T-0002', 'T-0003')))
         # T-0363: the list title is line 1 (ticket id first, at most 50 characters), Handoff is line 2, the description 3 to 5 words.
         for dd_ in (d1, d2):
             pl_ = dd_.get('prompt', '').splitlines()
@@ -4390,7 +4395,7 @@ def selftest():
 
         # prep refuses what run refuses: the same message and exit 2, nothing created (dry-run parity)
         pu = tmp / 'prep-unignored'
-        sized_repo(pu, ['S'], {'.gitignore': '.worktrees/\n'})
+        sized_repo(pu, ['S'], {'.gitignore': '.worktrees/\n'})  # the pre-0.23.0 ignore only
         puo = verb(pu, 'prep', 'alpha=T-0001', '--lanes-dir', str(tmp / 'pul'), '--stagger', '0')
         expect(f'case 22 prep: .claude/worktrees/ not ignored exits 2 naming it and .gitignore, got rc={puo.returncode} '
                f'err={puo.stderr!r}', puo.returncode == 2 and '.claude/worktrees/' in puo.stderr and '.gitignore' in puo.stderr)
@@ -4896,11 +4901,11 @@ def selftest():
             opened with lanes.py open before the run, one commit, merged into main."""
             r_ = tmp / name
             make_repo(r_, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready'), ('c', 'T-0003', 'ready')],
-                      {'.gitignore': '.worktrees/\n',
+                      {'.gitignore': '.claude/worktrees/\n',
                        '.sdlc/config': 'lane_ports: 47400-47499\nlane_min_age_hours: 0\n' + extra_cfg})
             op = subprocess.run([sys.executable, str(SCRIPTS / 'lanes.py'), 'open', 'pre', '--ticket', 'T-0003', '--no-claim'],
                                 cwd=str(r_), env=ENV, capture_output=True, text=True)
-            pre_ = r_ / '.worktrees' / 'T-0003-pre'
+            pre_ = r_ / '.claude' / 'worktrees' / 'T-0003-pre'
             if pre_.is_dir():
                 (pre_ / 'pre.txt').write_text('pre\n', encoding='utf-8')
                 sh(pre_, 'add', 'pre.txt')
@@ -4917,7 +4922,7 @@ def selftest():
         proc = fanout(lr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/lc', '--driver', shlex.quote(str(lstub)),
                       '--gate', 'echo "${SDLC_LANE_PORT:-none}" >"$PORT_LOG/gate"', PORT_LOG=str(plog))
         ran = f'rc={proc.returncode} stdout={proc.stdout[-1500:]!r} stderr={proc.stderr[-500:]!r}'
-        llanes = lr / '.worktrees' / 'fanout'
+        llanes = lr / '.claude' / 'worktrees' / 'fanout'
         rep = llanes / 'report.md'
         text = rep.read_text() if rep.is_file() else ''
         got = report_rows(llanes)
@@ -4978,7 +4983,7 @@ def selftest():
         sized_repo(hr, ['L1'], {'.gitignore': gi})
         hr_pin = ('--integration', 'fanout/h', '--lanes-dir', str(tmp / 'host-record-lanes'))
         hpp = verb(hr, 'prep', 'alpha=T-0001', *hr_pin, '--stagger', '0')
-        prov = hr / '.worktrees' / 'host' / 'T-0001-solo.lane.json'
+        prov = hr / '.claude' / 'worktrees' / 'host' / 'T-0001-solo.lane.json'
         prec = json.loads(prov.read_text()) if prov.is_file() else {}
         expect(f'case 30 host record: prep writes {prov} with kind host, ticket T-0001, branch worktree-T-0001-solo and into '
                f'fanout/h, and prints its path, got rc={hpp.returncode} rec={prec} out={hpp.stdout[-600:]!r} err={hpp.stderr!r}',
@@ -4991,7 +4996,7 @@ def selftest():
         sh(agent, 'add', '-A')
         sh(agent, 'commit', '-q', '-m', 'T-0001: Ticket t1')
         hl = verb(hr, 'land', 'worktree-agent-x', '--ticket', 'T-0001', *hr_pin, '--base', 'main', '--gate', 'test -e x.txt')
-        rebound = hr / '.worktrees' / 'host' / 'agent-x.lane.json'
+        rebound = hr / '.claude' / 'worktrees' / 'host' / 'agent-x.lane.json'
         rrec = json.loads(rebound.read_text()) if rebound.is_file() else {}
         expect(f'case 30 host record: a land from .claude/worktrees/agent-x rebinds the record to agent-x.lane.json (kind '
                f'host, branch worktree-agent-x, ticket T-0001, the prep base) and removes T-0001-solo.lane.json; the host '
@@ -5207,7 +5212,7 @@ def main(argv):
         rp.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc)')
         rp.add_argument('--main', metavar='BRANCH', help='the branch to land on (default: the main worktree\'s branch)')
         rp.add_argument('--lanes-dir', help='where the rolling scratch worktree and the logs go '
-                        '(default <toplevel>/.worktrees/fanout)')
+                        '(default <main checkout>/.claude/worktrees/fanout)')
         rp.add_argument('--gate', action='append', metavar='CMD', help='run in the scratch worktree after the merge; '
                         'red resets the merge and main stays (repeatable, in order)')
         rp.add_argument('--rewrite-refs', action='store_true', help='as for run')
@@ -5229,7 +5234,7 @@ def main(argv):
         lp.add_argument('--base', help='commit for a new integration branch (default HEAD)')
         lp.add_argument('--integration', help='integration branch (default fanout/<YYYY-MM-DD>)')
         lp.add_argument('--lanes-dir', help='where the integration worktree, logs and report go '
-                        '(default <toplevel>/.worktrees/fanout)')
+                        '(default <main checkout>/.claude/worktrees/fanout)')
         lp.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after the '
                         'merge; red resets the merge (repeatable, in order)')
         lp.add_argument('--light-gate', action='append', metavar='CMD', help='the light set, run instead of --gate when '
@@ -5252,8 +5257,8 @@ def main(argv):
     ap.add_argument('--base', help='commit for a new integration branch (default HEAD)')
     ap.add_argument('--integration', help='integration branch (default fanout/<YYYY-MM-DD>)')
     ap.add_argument('--lanes-dir', help='where the worktrees, logs and report go '
-                    '(default <toplevel>/.worktrees/fanout); inside the repo it must be gitignored '
-                    '(add .worktrees/ or the dir to .gitignore) or run refuses with exit 2')
+                    '(default <main checkout>/.claude/worktrees/fanout); inside the repo it must be gitignored '
+                    '(add .claude/worktrees/ or the dir to .gitignore) or run refuses with exit 2')
     ap.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after each merge; '
                     'red resets the merge (repeatable, in order)')
     ap.add_argument('--light-gate', action='append', metavar='CMD', help='the light set, run instead of --gate for a '

@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# Usage: reap-tmp-worktrees.sh <toplevel> [<own prefix>]
+# Usage: reap-tmp-worktrees.sh <main checkout> [<own prefix>]
 # Reaps throwaway worktree prefixes left by run.sh runs that died without their exit cleanup (a
 # SIGKILL, or a role that outlived run_lifecycle.py's grace period). run.sh calls it at the start
 # and at the end of every real run; fanout calls it for a lane after each driver.
-# A prefix is a directory directly under <toplevel>/.worktrees/tmp/ named <role>-<pid> (matching
+# A prefix is a directory directly under <main checkout>/.claude/worktrees/tmp/ (T-0550), or for one release the
+# legacy <main checkout>/.worktrees/tmp/, named <role>-<pid> (matching
 # ^[a-z]+-[0-9]+$), the SDLC_TMP_WORKTREES of the run.sh whose pid it names. A prefix is skipped when
 # that pid names a live process (ps -p, so a process owned by another user counts as alive) or when
 # it is <own prefix> (compared by physical path). Every other prefix has a dead owner: each
 # registered worktree under it (paths compared by physical path, since macOS reports /private/var
 # for /var) gets git worktree remove --force --force, then the prefix is removed with rm -rf.
-# Finally git worktree prune runs, then .worktrees/tmp and .worktrees are removed only when empty.
+# Finally git worktree prune runs, then each tmp dir, and the legacy .worktrees, are removed only when empty.
 # Without ps on PATH liveness cannot be told, so it reaps nothing and exits 0.
-# Contract: it always exits 0. It deletes files only under <toplevel>/.worktrees/tmp (plus the empty
-# .worktrees/tmp and .worktrees dirs themselves); git worktree remove and prune also drop the matching
+# Contract: it always exits 0. It deletes files only under the two tmp dirs (plus the empty tmp dirs and the
+# empty legacy .worktrees dir themselves); git worktree remove and prune also drop the matching
 # entries in git's own worktree records. It never removes a worktree outside a dead owner's prefix,
 # never deletes a branch, and never changes the caller's exit code (callers ignore its status).
 set -u
@@ -21,7 +22,6 @@ top="${1:-}"
 own="${2:-}"
 [[ -n "$top" && -d "$top" ]] || exit 0
 command -v ps >/dev/null 2>&1 || exit 0
-base="$top/.worktrees/tmp"
 
 # phys <path>: physical path, resolving the deepest existing ancestor, so a missing path still compares.
 phys() {
@@ -31,7 +31,8 @@ phys() {
   printf '%s%s\n' "${r%/}" "$rest"
 }
 
-if [[ -d "$base" ]]; then
+for base in "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp"; do
+  [[ -d "$base" ]] || continue
   own_real=""
   [[ -n "$own" ]] && own_real=$(phys "$own")
   wts=$(git -C "$top" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p') || wts=""
@@ -52,8 +53,8 @@ if [[ -d "$base" ]]; then
     done <<<"$wts"
     rm -rf "$d"
   done
-fi
+done
 git -C "$top" worktree prune >/dev/null 2>&1
-rmdir "$base" >/dev/null 2>&1
+rmdir "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" >/dev/null 2>&1
 rmdir "$top/.worktrees" >/dev/null 2>&1
 exit 0

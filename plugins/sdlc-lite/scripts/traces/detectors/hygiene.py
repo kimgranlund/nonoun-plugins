@@ -15,8 +15,8 @@ the lanes dir whose integration worktree git.read took the reflog from) a `wip(<
 in aux["git"]["commits"].
 
 Detectors (cause_hint files are plugin-relative):
-  stray-worktree       a worktree whose path holds `.worktrees/` twice or lies under
-                       `.worktrees/tmp/`; evidence the path. Cause scripts/run.sh.
+  stray-worktree       a worktree whose path holds a worktree root (`.claude/worktrees/` or `.worktrees/`)
+                       twice or lies under its `tmp/`; evidence the path. Cause scripts/run.sh.
   tracked-runtime-file each git tracked_runtime path; evidence the path. Cause
                        skills/handoff-format/SKILL.md.
   integration-reset    per `reset: moving to` reflog entry, when the first lanes dir whose report

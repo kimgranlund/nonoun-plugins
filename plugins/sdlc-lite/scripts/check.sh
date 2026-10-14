@@ -5,7 +5,9 @@
 # (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, block-role-write.sh, block-role-rm.sh, close-role-stdin.sh, and block-role-spawn.sh on fixture JSON, with the _role.sh resolver), the
 # hook live probe selftest
 # (hook-live-probe.sh --selftest: offline, a stub claude; the live probe spends a model call and
-# never runs here), the check_pool.py selftest, a shellcheck pass, plugin manifest validation.
+# never runs here), the check_pool.py selftest, the wtroot.py selftest (worktree root, owner markers, crash sweep) and the
+# migrate-0.23.sh selftest (the .worktrees/ to .claude/worktrees/ migration on a fixture repo), a shellcheck pass,
+# plugin manifest validation.
 # Usage: check.sh [--fast] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
 # else the core count), each job's output printed whole in list order, then the failed jobs with the first one named.
 # --fast runs only the jobs tagged fast (structure, generated-file parity, the quick selftests): the builder and CI tier.
@@ -83,6 +85,8 @@ job fast claude_roles-generate python3 "$root/scripts/claude_roles.py" generate 
 job fast cite_check python3 "$root/scripts/cite_check.py" selftest
 job fast budget python3 "$root/scripts/budget.py" selftest
 job fast check_pool python3 "$root/scripts/check_pool.py" selftest
+job fast wtroot python3 "$root/scripts/wtroot.py" selftest
+job fast migrate-0.23 bash "$root/scripts/migrate-0.23.sh" --selftest
 # The repository gate: docs/ conforms to docs/layout.md (this repository only; a consumer install has no docs/layout.md beside it).
 if [ -f "$root/../../docs/layout.md" ] && [ -e "$root/../../.git" ]; then job fast docs-repo python3 "$root/scripts/docs_check.py" --root "$root/../.."; fi
 if command -v shellcheck >/dev/null; then

@@ -42,7 +42,7 @@ Other facts the design leans on:
 | rolling scratch | fanout.py `roll` | `<lanes-dir>/rolling`, detached | none | none | `roll` itself, at its end |
 | solo worktree | solo_run.py `--worktree`, or its second-live-solo default | `<lanes root>/<name>` | `<name>` | main, or `lane_into` | `lanes.py sweep` |
 | host lane | the Claude host, `isolation: worktree` | `.claude/worktrees/<name>` | `worktree-<name>` | the integration branch it landed in | `dispatch.py prune --done <name>`, else `sweep` |
-| runner tmp | run.sh, dispatch.py | `.worktrees/tmp/<role>-<pid>`, detached | none | none | unchanged: run.sh EXIT, `remove_tmp`, `reap-tmp-worktrees.sh` |
+| runner tmp | run.sh, dispatch.py | `.claude/worktrees/tmp/<name>` under the main checkout (T-0550; `.worktrees/tmp/` before 0.23.0), detached | none | none | unchanged: run.sh EXIT, `remove_tmp`, `reap-tmp-worktrees.sh`, the `wtroot.py` sweep |
 | manual | a person | anywhere | any | none | the person; listed, never touched |
 
 The first five kinds are plugin lanes. Ownership is what lets `close` and `sweep` act on a tree: a `.lane.json` in it (written by `open`), a host record under `<lanes root>/host/` (written by `prep`, section 6), or, for trees made before this build, membership in a fanout lanes dir (a directory holding `merge.lock` and `logs/`), or a host tree whose branch `fanout.py land` resolved to a ticket. Everything else is manual, which keeps the root invariant that unrelated worktrees, branches and stashes are preserved [D]. After the build this table lives in the `lanes.py` docstring, and this section points there.
@@ -58,7 +58,7 @@ Decision [D]: lanes stay inside the checkout by default, under one lanes root, a
 
 What changes:
 
-- Lanes root: `lanes_root:` defaults to `.worktrees`. fanout's default `--lanes-dir` becomes `<lanes root>/fanout` (the same path as today for a repo without the line), and solo_run's `--worktree` tree goes to `<lanes root>/<name>`. Runner tmp stays at `<toplevel>/.worktrees/tmp`, because `SDLC_TMP_WORKTREES` and the hook's sub-agent prefix depend on that path.
+- Lanes root: `lanes_root:` defaults to `.claude/worktrees` since 0.23.0 (T-0550; `.worktrees` before, still read for one release and moved by `scripts/migrate-0.23.sh`). fanout's default `--lanes-dir` becomes `<lanes root>/fanout` (the same path as today for a repo without the line), and solo_run's `--worktree` tree goes to `<lanes root>/<name>`. Runner tmp stays at `<toplevel>/.worktrees/tmp`, because `SDLC_TMP_WORKTREES` and the hook's sub-agent prefix depend on that path.
 - Ignore rules: unchanged. `.worktrees/` and `.claude/worktrees/` stay gitignored, and fanout preflight and `prep` already refuse otherwise. A lanes root outside the toplevel needs no ignore entry, as for `--lanes-dir` today. `open` adds `.lane.json` to `<git common dir>/info/exclude`, as the spec does, so no tracked file changes and a lane's `git add -A` never stages it.
 - Watcher exclusions: unchanged for `.worktrees/` and `.claude/worktrees/`, and not needed for an outside lanes root. The fanout skill's caveat that Node resolution walks up into the main tree's `node_modules` stays true for in-tree lanes; an outside root removes it and needs `lane_setup:` (section 11).
 - Hook: block-stray-worktree.sh keeps its logic, because lanes are made by scripts and the hook governs role Bash text. Its deny message adds that a lane comes from `lanes.py open`. fanout `prep` prints a `lanes.py open` command for a `full` lane instead of the raw `git worktree add -b`, so a headless conductor can make that lane. The hook reference gets one sentence.
@@ -303,7 +303,7 @@ Steps:
 ## 16. Decisions for the maintainer
 
 - Version: 0.22.4, as the ticket targets, not 0.22.3.
-- Lanes root default: `.worktrees`, inside (recommended), or outside the checkout.
+- Lanes root default: `.claude/worktrees` (T-0550; `.worktrees` before 0.23.0), inside (recommended), or outside the checkout.
 - `sweep` at `prep` and `run` start: on by default with `lane_sweep: off` (recommended), or opt-in.
 - Auto-merge in `wait`: off, written opt-in only (recommended; the authorization rule requires it).
 - Where `closed-lanes.txt` and the archive live: under the lanes root (this design), or outside the repository as the 2026-10-10 cleanup did (`~/.claude/lane/`), which survives deleting the lanes root.

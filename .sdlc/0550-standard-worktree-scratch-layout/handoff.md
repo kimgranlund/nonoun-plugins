@@ -29,5 +29,21 @@ A session with no SDLC Lite context finds every worktree SDLC Lite creates in Cl
 ## Context
 Maintainer decision 2026-10-14: "a new session that does not use SDLC or has context should not have to figure out that in this project the worktrees go somewhere unusual"; chose `.claude/worktrees/` (Claude Code's default for `claude --worktree`, EnterWorktree, and Agent `isolation: worktree`) for both hosts. Today: lanes in `.worktrees/fanoutNN/`, role scratch in `.worktrees/tmp/<agent>` (`dispatch.py` :906, `run.sh` :37, builder/verifier/planner contracts), lane archive in `.git/sdlc-lane-archive/`. Maison holds many unowned `.worktrees/` folders (`batchA`, `b-0152-s3`, `acc-*`).
 
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/wtroot.py selftest` exits 0: the root from a lane is the main checkout's `.claude/worktrees` (control: `--show-toplevel` from the lane is the lane); scratch sits under the system temp dir; the sweep removes a dead-owner folder past the limit with its worktree, keeps a live pid, a live running marker and a recent one, and reports an unmarked one without deleting it.
+- `bash plugins/sdlc-lite/scripts/migrate-0.23.sh --selftest` exits 0: a dry run changes nothing; a clean landed worktree moves with `git worktree move` and `git worktree list` shows the new path; a dirty, a live (`.running`) and an unlanded one are skipped and reported (negative controls); an unregistered folder is listed and kept; a second `--apply` changes nothing; with the blockers gone `.worktrees/` is removed.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0: the tmp prefix of a dispatch from a lane is under the main checkout's `.claude/worktrees/tmp/`, not the lane (negative control); the prefix and the `$TMPDIR` scratch dir carry owner markers; the brief names the scratch dir.
+- `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0: `open --kind solo` and `open --kind fanout` write `branch:` and `worktree: .claude/worktrees/<leaf>` on the ticket, and close removes both.
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0: `check` is quiet for a registered `worktree:` and warns on an unregistered one and on one on another branch (negative controls); `tickets.py branch <id>` removes both lines.
+- `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0: the default lanes dir is `<main checkout>/.claude/worktrees/fanout` and must be gitignored.
+- `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0: `--worktree` creates `.claude/worktrees/<name>`, the brief carries the `Tree:` line, and a level L2 or L3 brief says the parent runs the verifier.
+- `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0: a sub-agent in a lane may add a worktree under the main checkout's prefix and not under one nested in the lane (negative control); rm under the scratch root is allowed.
+- `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0.
+- `python3 plugins/sdlc-lite/scripts/traces.py selftest` exits 0.
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `python3 scripts/check-packaging.py` exits 0.
+- `bash plugins/sdlc-lite/scripts/check.sh --fast` exits 0.
+
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14: "we need a migration shell script that each repo can run as part of installing 0.23.0"); depends on T-0544 for `tidy`. Do not move worktrees a running lane is using. The failing selftests land before or with the change.
