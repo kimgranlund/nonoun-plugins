@@ -2,13 +2,12 @@
 id: T-0550
 title: "Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0543, T-0544]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 claimed_by: claude 2026-10-14
-branch: lane/T-0550-w73-0550
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -47,3 +46,25 @@ Maintainer decision 2026-10-14: "a new session that does not use SDLC or has con
 
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14: "we need a migration shell script that each repo can run as part of installing 0.23.0"); depends on T-0544 for `tidy`. Do not move worktrees a running lane is using. The failing selftests land before or with the change.
+
+## Outcome
+
+2026-10-14 · lane: solo L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: none
+- Changed: see commits
+- Commits: none
+- Check: 1 `wtroot.py selftest`: pass
+- Check: 2 `migrate-0.23.sh --selftest`: pass
+- Check: 3 `dispatch.py selftest`: pass
+- Check: 4 `lanes.py selftest`: pass
+- Check: 5 `tickets.py selftest`: pass
+- Check: 6 `fanout.py selftest`: pass
+- Check: 7 `solo_run.py selftest`: pass
+- Check: 8 `hook-selftest.sh`: pass
+- Check: 9 `run-selftest.sh`: pass
+- Check: 10 `traces.py selftest`: pass
+- Check: 11 `claude_roles.py generate --check` and `codex_roles.py generate --check`: pass
+- Check: 12 `check.py`: pass
+- Check: 13 `scripts/check-packaging.py`: pass
+- Check: 14 `check.sh --fast`: pass
+- Follow-up: decide: I could not remove my scratch copy under... -> notes.md
+- Follow-up: decide: I did not run the full check.sh, per the maintainer's note; only... -> notes.md

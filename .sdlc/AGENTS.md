@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:11f26387bd90 -->
+<!-- sdlc-lite:managed:start v1 sha256:6d95de39d1b6 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,11 +13,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0545 Lean records F: Docs and release 0.23.0 (0.23.0) (0545-lean-records-docs-release)
   - T-0555 Wall-clock budgets per role and per ticket, enforced by dispatch.py (0555-role-ticket-time-budgets)
 - ready: 0
-- claimed: 1
-  - T-0550 Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep (0550-standard-worktree-scratch-layout), claimed by claude 2026-10-14, branch lane/T-0550-w73-0550
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 518
+- done: 519
 - dropped: 29
 
 ## Procedures

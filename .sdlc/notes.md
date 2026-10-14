@@ -524,3 +524,8 @@
 
 - decide: `.github/workflows/release-check.yml`: `actions/checkout@v4` defaults to a shallow clone. If any fast-tier selftest reads git history (log or merge-base), it could pass locally and fail on the hosted runner. Only the manual dispatch run (criterion 6) can show this. Adding `fetch-depth: 0` is one way to rule it out.
 - decide: `.github/workflows/release-check.yml`: the runner installs `@anthropic-ai/claude-code` unpinned. A pinned version would keep the release check reproducible.
+
+## T-0550: Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep (2026-10-14)
+
+- decide: I could not remove my scratch copy under /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0550-verifier-L2 (the rm was denied); it holds only a copy of the scripts dir and is safe to delete.
+- decide: I did not run the full check.sh, per the maintainer's note; only --fast.
