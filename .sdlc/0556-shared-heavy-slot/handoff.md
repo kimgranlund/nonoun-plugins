@@ -1,6 +1,6 @@
 ---
 id: T-0556
-title: "Plugin-level machine-wide slot limit for heavy commands across repos"
+title: "Heavy checks a role runs inside its lane go through gate_lock.py"
 type: feature        # feature | bug | chore | spike | idea
 status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
@@ -13,16 +13,23 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-Heavy commands (browser tests, full suites, builds) from every repo on the machine share one plugin-provided slot limit, so parallel lanes across repos cannot overload the machine.
+Heavy checks a role runs inside its lane (heavy suites, browser tests, the full `check.sh`) go through the plugin's machine-wide queue `scripts/gate_lock.py`, as fanout `--gate` commands already do, so parallel lanes across repos cannot overload the machine.
 
 ## Intent
-- Do: `scripts/slot.sh` (or `slot.py`) wraps a command in a machine-wide counting lock under the user's cache dir (`~/Library/Caches/sdlc-lite/slots` on macOS, `$XDG_CACHE_HOME/sdlc-lite/slots` elsewhere): `slot.sh run [--slots N] -- <cmd>`, default N from `heavy_slots:` in `.sdlc/config` or 2, released on exit or crash (pid-checked).
-- Do: document it in the conductor contract and `/fanout` so lanes route heavy checks through it; a repo's existing `gate_lock` or `browser-slot.sh` can delegate to it.
-- Non-goals: replacing a repo's own test runner; scheduling across machines.
-- Done when: selftest runs 3 commands with N=2 and observes at most 2 concurrent, and a crashed holder's slot is reclaimed (negative control: without the wrapper, 3 run at once); `check.sh` passes.
+- Do: one short rule in `agents/builder.md`, `agents/solo.md` and `agents/verifier.md`: heavy suites, browser tests and the full `check.sh` run as `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/gate_lock.py" run -- <cmd>`; the same line in `skills/fanout/SKILL.md`.
+- Do: regenerate the agents with `claude_roles.py generate` and `codex_roles.py generate`.
+- Non-goals: a second limiter (no `slot.sh`, no `heavy_slots:` key; `gate_lock.py` already caps, queues and reclaims crashed holders); replacing a repo's own test runner; scheduling across machines.
+- Done when: both `generate --check` and `check.py` pass, `gate_lock.py selftest` passes, and the rule greps in each of the four files.
 
 ## Context
-2026-10-14: load average 54 on 20 cores; gen-ui-kit (`gate_lock`) and maison (`.sdlc/browser-slot.sh`) each built their own limiter; `adia/ui-kit` had none and drove a second spike.
+2026-10-14: load average 54 on 20 cores. gen-ui-kit's `gate_lock` is this plugin's `scripts/gate_lock.py`; maison's `.sdlc/browser-slot.sh` is a separate repo-local limiter that can delegate to it. The gap: only fanout `--gate` commands were wrapped, so heavy checks a solo, builder or verifier ran inside a lane (as in `adia/ui-kit`) bypassed the queue.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
+- [ ] `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- [ ] `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0.
+- [ ] `grep -c 'gate_lock.py" run -- <cmd>' plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/solo.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/skills/fanout/SKILL.md` prints 1 for each file.
 
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or with the change.
