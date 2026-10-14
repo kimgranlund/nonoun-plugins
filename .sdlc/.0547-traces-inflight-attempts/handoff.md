@@ -2,7 +2,7 @@
 id: T-0547
 title: "traces selftest corpus case counts in-flight runtime attempts, so check.sh is red inside a role run"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,9 @@ The case `corpus: this repo's .sdlc traces ingest whole` fails, listing the in-f
 
 ## Constraints
 The failing test lands before or with the fix, never after. Do not weaken the check for finished attempts that truly have no row.
+
+## Outcome
+
+2026-10-14 · lane: solo L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 678d28c3b050
+- Changed: see commits
+- Commits: 15ade65 T-0547: traces selftest corpus case counts in-flight runtime attempts, so check.sh is red inside a role run

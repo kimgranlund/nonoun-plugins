@@ -2,7 +2,7 @@
 id: T-0543
 title: "Lean records D: Close writes the Outcome (0.23.0)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0541, T-0542]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,49 @@ plan review: replan: step 2: notes-fix: `outside_refs` leaves out `runtime/` und
 plan review: replan: step 2: acceptance criteria: the `(T-0543 no side files)` case cannot go red inside `tickets.py selftest`: nothing tickets.py runs writes `process-deviations.md` or `refusals.jsonl` (the writers are redck.py:302 and steps.py:1761, exercised only by their own selftests, which step 1 covers). Cosmetic; it mirrors the handoff's Done-when wording. Evidence: `grep -n "process-deviations\|refusals.jsonl" plugins/sdlc-lite/scripts/tickets.py` prints nothing.
 plan review: replan: step 2: acceptance criteria: the label criterion greps the nine `(T-0543 ...)` strings in tickets.py source, which a label in a comment also satisfies; `tickets.py selftest` prints only `tickets selftest: PASS` with no per-case `ok:` lines, so the guard's exit 0 is the only bite. Cosmetic. Evidence: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` prints `tickets selftest: PASS`; `plugins/sdlc-lite/scripts/tickets.py:2981` `def expect(label, cond)`.
 plan review: replan: plan: scope: step 2 edits `plugins/sdlc-lite/scripts/fanout.py`, which neither the handoff's Intent file list nor design row D names; the plan justifies it as a `## Closed` dependent and the `close_reason` docstring already defers to T-0543. Noted, not a replan on its own. Evidence: `plugins/sdlc-lite/scripts/fanout.py:940-949,5061-5062`.
+
+## Outcome
+
+2026-10-14 · lane: full L3 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 678d28c3b050
+- Changed: see commits
+- Commits: 42e9d83 T-0543: Lean records D: Close writes the Outcome (0.23.0)
+- Check: step-1#1 `redck.py deviations <missing dir>` prints nothing: pass
+- Check: step-1#2 (guard) `redck.py selftest`: pass
+- Check: step-1#3 redck selftest prints both T-0543 labels: pass
+- Check: step-1#4 `record_refusals` gone, `record_plan_review` present: pass
+- Check: step-1#5 (guard) `steps.py selftest`: pass
+- Check: step-1#6 steps selftest prints both T-0543 labels: pass
+- Check: step-1#7 no `process-deviations.md` in verifier.md, filer.md, builder.md: pass
+- Check: step-1#8 `redck.py" deviations` in all three role files: pass
+- Check: step-1#9 check.py and redck.py pins: pass
+- Check: step-1#10 (guard) generate --check for claude_roles and codex_roles: pass
+- Check: step-1#11 (guard) `check.py`: pass
+- Check: step-1#12 (guard) scope: pass
+- Check: step-2#1 (guard) `python3 plugins/sdlc-lite/scripts/tickets.py selftest`: pass
+- Check: step-2#2 label loop over the eight `(T-0543 ...)`, `(T-0529)`, `(T-0535)` tags: pass
+- Check: step-2#3 `'## Closed' in inspect.getsource(tickets.cmd_close)` exits 0: pass
+- Check: step-2#4 `tickets.py --help` names `--filer` and `--changed`: pass
+- Check: step-2#5 `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`: pass
+- Check: step-2#6 `grep -qF "close <folder> --filer" .sdlc/AGENTS.md`: pass
+- Check: step-2#7 `grep -qF "'--filer'" plugins/sdlc-lite/scripts/fanout.py`: pass
+- Check: step-2#8 `! grep -qF "## Closed" plugins/sdlc-lite/scripts/fanout.py`: pass
+- Check: step-2#9 (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`: pass
+- Check: step-2#10 (guard) scope: pass
+- Check: step-3#1 no `Dispatch filer L1` and no `always runs the filer` in chain/SKILL.md: pass
+- Check: step-3#2 `reason: loose end not finished` in chain, and the `'writes the Outcome': ('skills/chain/SKILL.md...: pass
+- Check: step-3#3 `order.py records-dir` in chain and fix, and `steps.py lint <records-dir>/step-1/handoff.md` in fix: pass
+- Check: step-3#4 no `skip: filer` in fix, and `--changed` in fix: pass
+- Check: step-3#5 ticket/SKILL.md has `--filer`, `--changed`, `citation_skip:` and `## Outcome`, and file/SKILL.md ...: pass
+- Check: step-3#6 no `## Closed` in ticket or handoff-format, no `The newest filer result` in open-questions, no fi...: pass
+- Check: step-3#7 (guard) `claude_roles.py generate --check && codex_roles.py generate --check`: pass
+- Check: step-3#8 (guard) `python3 plugins/sdlc-lite/scripts/check.py`: pass
+- Check: step-3#9 (guard) `python3 scripts/check-packaging.py`: pass
+- Check: step-3#10 (guard) `git diff --check "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'`: pass
+- Check: step-3#11 (guard) fresh-clone `check.sh` with TMPDIR unset: pass
+- Check: step-3#12 (guard) scope and untracked check against base: pass
+- Follow-up: decide: The throwaway-worktree hook blocked git worktree add here... -> notes.md
+- Follow-up: decide: Observed runs under the tmp prefix removed afterwards: a... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/tickets.py:1001: a citation_skip: glob... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/tickets.py:2606-2612: on a ticket whose... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/agents/verifier.md Notes section: the line before... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/skills/chain/SKILL.md sections 5 and 6: removing... -> notes.md

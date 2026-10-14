@@ -2,7 +2,7 @@
 id: T-0530
 title: "Lane record on the ticket (maison T-0546)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0541, T-0542]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,18 @@ Preserve reference-safe closure, cross-worktree id uniqueness and explicit follo
 2. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with the `branch:` cases: `record_branch` writes the line after `claimed_by:`, the router active line ends `, branch <b>`, the roadmap Status cell ends `(branch <b>)`, and the removal restores both byte for byte.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap` leaves `.sdlc/AGENTS.md` unchanged (the committed router carries the new "Open a lane" procedure).
+
+## Outcome
+
+2026-10-14 · lane: solo L2 · verdict: pass · verifier: verifier-L3 (fable) · base: 678d28c3b050
+- Changed: see commits
+- Commits: f0a07a6 T-0530: Lane record on the ticket (maison T-0546)
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with `ok: branch list:` and `ok: br...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with the `branch:` cases: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap` leaves `.sdlc/AGENTS.md` unch...: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/board.py: listed under the handoff's... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/solo_run.py:561 and... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:719 and :1013: close and list... -> notes.md
+- Follow-up: decide: .sdlc/.0541-records-readers/skips.md and... -> notes.md
+- Follow-up: decide: .worktrees/tmp/0530-verifier-L3/: the throwaway git clone --shared... -> notes.md
