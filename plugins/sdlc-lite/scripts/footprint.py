@@ -8,9 +8,11 @@ Usage: footprint.py <ticket dir> [--session <transcript.jsonl>]      print the f
 Output of a measure, one `key: value` per line, in this order:
   ticket, files, bytes, md_bytes, steps, planner_bytes, role_runs,
   then `role_runs <role> <level>: N` per group, sorted by role then level.
-files/bytes/md_bytes cover every regular file under the dir (symlinked dirs are not followed).
-steps counts immediate subdirs named exactly step-<n>; superseded dirs do not count.
-planner_bytes sums top-level planner-L<n>[-<k>].md files.
+Every count covers the ticket dir and, when it differs, its records dir (order.records_dir:
+.sdlc/runtime/tasks/<folder name without leading dots>/); the ticket line stays the ticket dir's basename.
+files/bytes/md_bytes cover every regular file under those dirs (symlinked dirs are not followed).
+steps counts their immediate subdirs named exactly step-<n>; superseded dirs do not count.
+planner_bytes sums their top-level planner-L<n>[-<k>].md files.
 role_runs counts non-blank lines across every runs.jsonl; a line that is not a JSON object with
 string role and level counts in group `unknown ?`.
 With --session, four lines follow: role_cost_usd (sum of runs.jsonl cost_usd, `none` when no record
@@ -22,6 +24,8 @@ Read-only: nothing under the measured dir is written. Exit codes: 0 ok, 1 limit 
 """
 import json, os, re, shutil, subprocess, sys, tempfile
 
+import order  # same scripts/ dir: records_dir, where a ticket's runs.jsonl, results and step dirs live
+
 STEP = re.compile(r'^step-\d+$')
 PLANNER = re.compile(r'^planner-L\d+(-\d+)?\.md$')
 USAGE = ('usage: footprint.py <ticket dir> [--session <transcript.jsonl>]\n'
@@ -29,12 +33,25 @@ USAGE = ('usage: footprint.py <ticket dir> [--session <transcript.jsonl>]\n'
          '       footprint.py selftest')
 
 
+def dirs_of(d):
+    """The ticket dir, then its records dir when that differs."""
+    d = str(d)
+    rd = str(order.records_dir(d))
+    return [d] if os.path.abspath(rd) == os.path.abspath(d) else [d, rd]
+
+
+def walk(d):
+    """os.walk over the ticket dir and its records dir."""
+    for x in dirs_of(d):
+        yield from os.walk(x, followlinks=False)
+
+
 def measure(d):
-    """Footprint of d as an ordered list of (key, value)."""
+    """Footprint of d (and its records dir) as an ordered list of (key, value)."""
     d = str(d)
     files = size = md = runs = 0
     groups = {}
-    for root, _dirs, names in os.walk(d, followlinks=False):
+    for root, _dirs, names in walk(d):
         for n in names:
             p = os.path.join(root, n)
             if os.path.islink(p) or not os.path.isfile(p):
@@ -60,7 +77,7 @@ def measure(d):
                             key = (rec['role'], rec['level'])
                         groups[key] = groups.get(key, 0) + 1
     steps = planner = 0
-    for e in os.scandir(d):
+    for e in (e for x in dirs_of(d) if os.path.isdir(x) for e in os.scandir(x)):
         if e.is_dir(follow_symlinks=False) and STEP.fullmatch(e.name):
             steps += 1
         elif e.is_file(follow_symlinks=False) and PLANNER.fullmatch(e.name):
@@ -73,9 +90,9 @@ def measure(d):
 
 
 def role_cost(d):
-    """Sum of cost_usd over every runs.jsonl record under d, or None when no record has one."""
+    """Sum of cost_usd over every runs.jsonl record under d and its records dir, or None when no record has one."""
     total = None
-    for root, _dirs, names in os.walk(str(d), followlinks=False):
+    for root, _dirs, names in walk(d):
         if 'runs.jsonl' not in names:
             continue
         with open(os.path.join(root, 'runs.jsonl'), encoding='utf-8', errors='replace') as f:
@@ -301,6 +318,22 @@ def selftest():
         ok('missing transcript exits 2', rc == 2 and 'usage' in err)
 
         ok('measuring writes nothing', snap(fix) == before_fix and snap(ch) == before_ch)
+
+        # records dir (T-0541): a closed .NNNN ticket whose records sit in .sdlc/runtime/tasks/<key>/, and the same
+        # records in place (legacy), count the same; the ticket line stays the ticket dir's name
+        for label, runtime in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+            sd = os.path.join(tmp, 'rt' if runtime else 'lg', '.sdlc')
+            td = os.path.join(sd, '.0001-a')
+            rd = os.path.join(sd, 'runtime', 'tasks', '0001-a') if runtime else td
+            write(os.path.join(td, 'handoff.md'), '## Goal\na\n')
+            write(os.path.join(rd, 'planner-L2.md'), '## Plan\n')
+            write(os.path.join(rd, 'runs.jsonl'), '{"role": "solo", "level": "L2", "cost_usd": 2.5}\n')
+            write(os.path.join(rd, 'step-1', 'handoff.md'), 's1\n')
+            m = dict(measure(td))
+            ok(f'{label}: steps, planner_bytes, role_runs and cost under ticket .0001-a',
+               m['ticket'] == '.0001-a' and m['files'] == 4 and m['steps'] == 1 and m['planner_bytes'] == 8
+               and m['role_runs'] == 1 and m.get('role_runs solo L2') == 1 and role_cost(td) == 2.5
+               and os.path.exists(os.path.join(td, 'runs.jsonl')) != runtime)
 
     if misses:
         print('footprint selftest: FAIL, these did not hold:', file=sys.stderr)

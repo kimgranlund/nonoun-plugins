@@ -7,7 +7,8 @@ Usage: solo_stats.py stats <repo> [<repo> ...] [--since DATE] [--until DATE] [--
 Prints one table (or with --json one object) for the repos together plus a line per repo. Only each repo's own
 main checkout `.sdlc` is read: a ticket folder copied into a linked worktree is not counted. Closed `.NNNN-*`
 folders (a leading dot) are read like any other. The ticket-folder layout is the repo's (`ticket_root: tickets` in
-its `.sdlc/config`), as fleet_collect.py reads it. Rows are deduplicated by attempt_id (a row with none, on its whole line).
+its `.sdlc/config`), as fleet_collect.py reads it. A runs.jsonl under `.sdlc/runtime/tasks/<key>/` (the records dir)
+counts for its task folder (fleet_collect.ticket_of). Rows are deduplicated by attempt_id (a row with none, on its whole line).
 
 A solo ticket is a ticket folder whose `runs.jsonl` files hold at least one `solo` role row inside the window:
 at or after --since and up to --until (a bare YYYY-MM-DD is that UTC midnight, and a bare --until date includes the
@@ -37,6 +38,7 @@ import json, os, re, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import fleet_collect as fc  # noqa: E402
+import order  # noqa: E402
 
 VERIFIER_RE = re.compile(r'verifier-L([1-5])(?:-(\d+))?\.md')
 CLOSED_STATUS = ('done', 'dropped')
@@ -63,7 +65,9 @@ def verdict_of(text):
 def round_verdicts(folder, round_key=None):
     """[(round number, verdict)] of the verifier result files in one ticket folder, one per file, ordered by
     round number then verifier level (`verifier-L2.md`, `verifier-L3.md`, `verifier-L3-2.md`). round_key is the
-    negative control: when given, the files are ordered by it applied to the file name instead."""
+    negative control: when given, the files are ordered by it applied to the file name instead. The files are read
+    from the folder's records dir (order.records_dir: `runtime/tasks/<key>/`, or the folder itself for a legacy one)."""
+    folder = str(order.records_dir(folder))
     files = []
     try:
         names = os.listdir(folder)
@@ -346,6 +350,21 @@ def selftest():
         case('cli no arguments', main([]), 2)
         case('cli missing repo', main(['stats', os.path.join(tmp, 'nope')]), 2)
         case('cli bad date', main(['stats', repo, '--since', 'soon']), 2)
+        # records dir: a solo row under runtime/tasks/<key>/ counts for its closed folder; legacy reads in place.
+        for name, rt in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+            r2 = os.path.join(tmp, 'rr-' + str(rt))
+            s2 = os.path.join(r2, '.sdlc')
+            write(os.path.join(s2, '.0001-a', 'handoff.md'), '---\nid: T-0001\nstatus: done\n---\n')
+            rec_dir = os.path.join(s2, 'runtime', 'tasks', '0001-a') if rt else os.path.join(s2, '.0001-a')
+            write(os.path.join(rec_dir, 'runs.jsonl'), row('r1', '2026-10-10T10:00:00Z', 2.5, 60000))
+            write(os.path.join(rec_dir, 'verifier-L2.md'), verdict('pass'))
+            got2 = repo_stats(r2, window)
+            want2 = (1, 1, 0, 1, 1, 2.5)
+            have2 = (got2['tickets'], got2['closed'], got2['open'], got2['verified'], got2['first_pass'],
+                     got2['cost']['cost_usd'])
+            case(name, have2, want2)
+            if have2 == want2:
+                print('ok: ' + name)
     if misses:
         print('solo_stats selftest: %d failed: %s' % (len(misses), '; '.join(misses)), file=sys.stderr)
         return 1

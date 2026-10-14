@@ -19,9 +19,10 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   blocked counts those whose result file (the row's `file`, beside its runs.jsonl) has a `## Status`
                   section whose first non-blank line starts with the word `blocked`
   plan_defects    {late, early}: late counts builder and verifier rows whose result file holds a line starting
-                  `plan defect:` (after an optional list marker); early counts lines of `refusals.jsonl` files in any
-                  scanned `.sdlc` dir with a `ts` in the window, deduplicated by (plan, text); it reads 0 until
-                  steps.py writes them (plan step 5)
+                  `plan defect:` (after an optional list marker); early counts the lines of each scanned
+                  `handoff.md` `## Plan review` section that match `- <YYYY-MM-DD> plan defect at split: ` with
+                  that date (as <date>T00:00:00Z) in the window, deduplicated by (handoff path, line), plus the
+                  lines of legacy `refusals.jsonl` files with a `ts` in the window, deduplicated by (plan, text)
   attempts        {by_role: {role: {count, median_min, max_min}}}: completed `*.attempt.json` records in the window,
                   minutes from started_at to finished_at
   plan_review_share   (plan-reviewer + planner cost_usd) / total cost_usd, null with no cost
@@ -43,10 +44,14 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
 Runs. Every `.sdlc/**/runs.jsonl` under the repo and each worktree (`git worktree list`, plus `.worktrees/*`
 and `.claude/worktrees/*`) is read and deduplicated by attempt_id (a row with none is deduplicated on its
 whole line), the way budget.py dedupes. A worktree's `.sdlc` carries the ticket's runs, so the totals cover
-the repo's whole history, not one checkout. The lane of a run is the effective lane of the nearest ancestor
-`skips.md`: the last `Lane: <lane> ...` prose line (a conductor override) wins over the last `- lane: <lane>;`
-line under `## Lane` (the steps.py record); `lean` counts as `full`; role `solo` is always `solo`; no skips.md
-means `full` unless the role is solo. interrupted counts `*.attempt.json` files whose status is `interrupted`,
+the repo's whole history, not one checkout. A record under `.sdlc/runtime/tasks/<key>/` (the records dir,
+order.py) belongs to its task folder (order.task_dir), keyed by that folder's path under `.sdlc` (`.0001-a`,
+`tickets/0001-a`), else by `<key>` when no task folder exists. The lane of a run is the effective lane of the
+nearest ancestor `skips.md`, searched from the task folder for a records-dir record: the last `Lane: <lane> ...`
+prose line (a conductor override) wins over the last `- lane: <lane>;` line under `## Lane` (the steps.py
+record). With no skips.md the lane is read from the task folder handoff's `## Outcome` header (`lane: solo|full|fix`
+on its first non-blank line). `lean` and `fix` count as `full`; role `solo` is always `solo`; with neither the
+lane is `full` unless the role is solo. interrupted counts `*.attempt.json` files whose status is `interrupted`,
 deduplicated by attempt_id; one whose result file (<stem>.md beside <stem>.attempt.json) already holds a verdict
 is not counted (T-0445). lost_min of an interrupted attempt is the minutes from its started_at to the started_at
 of the next attempt record of the same role in the same directory, else to its own finished_at (null with neither);
@@ -65,6 +70,7 @@ import collections, datetime, json, math, os, re, shutil, signal, statistics, su
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import order  # noqa: E402
 import results  # noqa: E402
 PLUGIN_ROOT = os.path.dirname(HERE)
 UTC = datetime.timezone.utc
@@ -201,8 +207,9 @@ def worktree_roots(repo):
 
 
 def scan_sdlc(roots):
-    """(runs files, attempt files, limit files, skips files, refusals files) under each root's `.sdlc`, in root order."""
-    runs, attempts, limits, skips, refusals = [], [], [], [], []
+    """(runs files, attempt files, limit files, skips files, refusals files, handoff files) under each root's
+    `.sdlc`, in root order."""
+    runs, attempts, limits, skips, refusals, handoffs = [], [], [], [], [], []
     seen_dirs = set()
     for root in roots:
         sd = os.path.join(root, '.sdlc')
@@ -223,7 +230,9 @@ def scan_sdlc(roots):
                     skips.append((sd, p))
                 elif n == 'refusals.jsonl':
                     refusals.append((sd, p))
-    return runs, attempts, limits, skips, refusals
+                elif n == 'handoff.md':
+                    handoffs.append((sd, p))
+    return runs, attempts, limits, skips, refusals, handoffs
 
 
 def read_text(path):
@@ -253,14 +262,59 @@ def parse_skips(text):
     return recorded, override, note
 
 
+OUTCOME_LANE_RE = re.compile(r'lane:\s*(solo|full|fix)\b')
+
+
+def outcome_lane(text):
+    """The lane on the first non-blank line after `## Outcome` in a handoff, else None."""
+    inside = False
+    for line in text.splitlines():
+        if line.startswith('## '):
+            if inside:
+                return None
+            inside = line.strip() == '## Outcome'
+            continue
+        if inside and line.strip():
+            m = OUTCOME_LANE_RE.search(line)
+            return m.group(1) if m else None
+    return None
+
+
+def runtime_task(sdlc, d):
+    """(True, task folder or None) when d is under `<sdlc>/runtime/tasks/<key>`, else (False, None)."""
+    tasks = os.path.join(sdlc, 'runtime', 'tasks')
+    if not d.startswith(tasks + os.sep):
+        return False, None
+    tf = order.task_dir(d)
+    return True, (str(tf) if tf is not None else None)
+
+
 class Lanes(object):
-    """Effective lane per runs.jsonl dir: the nearest ancestor skips.md up to its `.sdlc`."""
+    """Effective lane per runs.jsonl dir: the nearest ancestor skips.md up to its `.sdlc` (from the task folder
+    for a records dir under `runtime/tasks/`), else the task folder handoff's `## Outcome` lane."""
     def __init__(self):
         self.cache = {}
+        self.outcomes = {}
         self.overrides = {}
 
     def of_file(self, sdlc, path):
         d = os.path.dirname(path)
+        runtime, tf = runtime_task(sdlc, d)
+        if runtime:
+            if tf is None:
+                return None
+            d = tf
+        lane = self._walk(sdlc, d)
+        if lane is None:
+            folder = order.task_dir(d)
+            if folder is not None:
+                folder = str(folder)
+                if folder not in self.outcomes:
+                    self.outcomes[folder] = outcome_lane(read_text(os.path.join(folder, 'handoff.md')))
+                lane = self.outcomes[folder]
+        return lane
+
+    def _walk(self, sdlc, d):
         chain = []
         while True:
             if d in self.cache:
@@ -314,7 +368,14 @@ def repo_nested(roots):
 
 def ticket_of(sdlc, path, nested=False):
     """The ticket folder a runs.jsonl belongs to, as a path under `.sdlc`: its first component, or
-    `tickets/<folder>` with `ticket_root: tickets`."""
+    `tickets/<folder>` with `ticket_root: tickets`. A record under `runtime/tasks/<key>/` belongs to its task
+    folder (order.task_dir: `.0001-a`, `tickets/0001-a`), else to `<key>` when no task folder exists."""
+    runtime, tf = runtime_task(sdlc, os.path.dirname(path))
+    if runtime:
+        if tf is not None:
+            return os.path.relpath(tf, sdlc).replace(os.sep, '/')
+        tasks = os.path.join(sdlc, 'runtime', 'tasks')
+        return os.path.relpath(os.path.dirname(path), tasks).split(os.sep)[0]
     rel = os.path.relpath(os.path.dirname(path), sdlc)
     if rel == '.':
         return '.sdlc'
@@ -371,6 +432,21 @@ STATUS_RE = re.compile(r'^##[ \t]+Status[ \t]*$', re.M)
 PLAN_DEFECT_RE = re.compile(r'^[ \t]*(?:(?:[-*+]|\d+[.)])[ \t]+)?plan defect:', re.M)
 
 
+SPLIT_DEFECT_RE = re.compile(r'^- (\d{4}-\d{2}-\d{2}) plan defect at split: ')
+
+
+def plan_review_lines(text):
+    """The lines of a handoff's `## Plan review` section."""
+    out, inside = [], False
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside = line.strip() == '## Plan review'
+            continue
+        if inside:
+            out.append(line)
+    return out
+
+
 def result_blocked(text):
     """True when the line after `## Status` (the next non-blank one) starts with the word `blocked`."""
     m = STATUS_RE.search(text)
@@ -388,7 +464,7 @@ def collect_runs(repo, window, dedupe=True, extra=None):
     negative control: every row counts, so duplicates change the totals. extra, when a dict, receives the keys
     `results`, `plan_defects` and `attempts` that `collect` adds beside `runs`."""
     roots, _linked = worktree_roots(repo)
-    runs_files, attempt_files, limit_files, skips_files, refusal_files = scan_sdlc(roots)
+    runs_files, attempt_files, limit_files, skips_files, refusal_files, handoff_files = scan_sdlc(roots)
     if not runs_files and not attempt_files and not limit_files and not skips_files:
         return 'none'
     result_rows = []                      # (role, runs.jsonl path, row) of builder and verifier rows in the window
@@ -534,6 +610,17 @@ def collect_runs(repo, window, dedupe=True, extra=None):
                 if not isinstance(r, dict) or not window.has(r.get('ts')):
                     continue
                 key = (r.get('plan'), r.get('text'))
+                if dedupe:
+                    if key in early_seen:
+                        continue
+                    early_seen.add(key)
+                early += 1
+        for _sdlc, hp in handoff_files:
+            for line in plan_review_lines(read_text(hp)):
+                m = SPLIT_DEFECT_RE.match(line)
+                if not m or not window.has(m.group(1) + 'T00:00:00Z'):
+                    continue
+                key = (hp, line)
                 if dedupe:
                     if key in early_seen:
                         continue
@@ -1190,6 +1277,55 @@ def selftest():
            and ke['results'] == {'builder': {'total': 0, 'blocked': 0}} and ke['attempts'] == {'by_role': {}}
            and ke['plan_defects'] == {'late': 0, 'early': 0})
         shutil.rmtree(kpi_tmp, ignore_errors=True)
+
+        # --- records dir (order.py): runtime/tasks/<key> rows belong to the task folder; legacy reads in place
+        fm = '---\nid: T-0001\ntitle: "a"\nstatus: done\n---\n\n## Goal\na\n'
+        outcome = '\n## Outcome\n\n2026-10-13 \u00b7 lane: solo L2\n- Changed: see commits\n'
+        review = ('\n## Plan review\n\n- 2026-10-05 plan defect at split: step 2: no criterion\n'
+                  '- 2026-10-05 plan defect at split: step 2: no criterion\n'
+                  '- 2026-09-01 plan defect at split: step 1: before the window\n'
+                  '- plan defect at split: no date\n')
+        rt = tempfile.mkdtemp()             # outside tmp: the read-only snapshot of tmp is taken earlier
+        rs = os.path.join(rt, '.sdlc')
+        write(os.path.join(rs, '.0001-a', 'handoff.md'), fm + outcome + review)
+        write(os.path.join(rs, 'runtime', 'tasks', '0001-a', 'runs.jsonl'),
+              rows(rec('builder', 'RB', 1.5, 1000, '2026-10-05T12:00:00Z')))
+        write(os.path.join(rs, 'runtime', 'tasks', '0001-a', 'step-1', 'runs.jsonl'),
+              rows(rec('verifier', 'RV', 0.5, 1000, '2026-10-05T13:00:00Z')))
+        write(os.path.join(rs, 'runtime', 'tasks', '0009-z', 'runs.jsonl'),
+              rows(rec('solo', 'RZ', 2.0, 1000, '2026-10-05T14:00:00Z')))
+        rx = {}
+        rr = collect_runs(rt, Window(since='2026-10-01'), extra=rx)
+        ok('records dir: runtime-only fixture keys rows by the task folder, else by the bare key',
+           rr['by_ticket'] == {'.0001-a': {'builder': 1, 'verifier': 1}, '0009-z': {'solo': 1}}
+           and rr['cost_usd'] == 4.0)
+        ok('records dir: runtime-only fixture reads the lane from the Outcome header with no skips.md',
+           rr['by_lane']['solo']['count'] == 3 and rr['by_lane']['full']['count'] == 0)
+        ok('plan_defects: a dated plan defect at split line in a handoff Plan review is counted early once',
+           rx['plan_defects']['early'] == 1)
+        rd = {}
+        collect_runs(rt, Window(since='2026-10-01'), dedupe=False, extra=rd)
+        ok('negative control: dedupe off counts the repeated plan defect at split line twice',
+           rd['plan_defects']['early'] == 2)
+        write(os.path.join(rs, '.0001-a', 'handoff.md'), fm + review)
+        rn = collect_runs(rt, Window(since='2026-10-01'))
+        ok('negative control: records dir: runtime-only fixture with no Outcome and no skips.md reads full',
+           rn['by_lane']['solo']['count'] == 1 and rn['by_lane']['full']['count'] == 2)
+        write(os.path.join(rs, '.0001-a', 'handoff.md'), fm + outcome)
+        write(os.path.join(rs, '.0001-a', 'skips.md'), '# Skips\n\n## Lane\n- lane: full; point: before planning\n')
+        rk = collect_runs(rt, Window(since='2026-10-01'))
+        ok('records dir: runtime-only fixture: the task folder skips.md wins over the Outcome lane',
+           rk['by_lane']['solo']['count'] == 1 and rk['by_lane']['full']['count'] == 2)
+        shutil.rmtree(os.path.join(rs, 'runtime'))
+        os.remove(os.path.join(rs, '.0001-a', 'skips.md'))
+        write(os.path.join(rs, '.0001-a', 'runs.jsonl'), rows(rec('builder', 'RB', 1.5, 1000, '2026-10-05T12:00:00Z')))
+        write(os.path.join(rs, '.0001-a', 'step-1', 'runs.jsonl'),
+              rows(rec('verifier', 'RV', 0.5, 1000, '2026-10-05T13:00:00Z')))
+        rl = collect_runs(rt, Window(since='2026-10-01'))
+        ok('records dir: legacy fixture reads in-folder records under the same key and Outcome lane',
+           rl['by_ticket'] == {'.0001-a': {'builder': 1, 'verifier': 1}} and rl['cost_usd'] == 2.0
+           and rl['by_lane']['solo']['count'] == 2)
+        shutil.rmtree(rt, ignore_errors=True)
 
         # cli: json out, summary on stderr, repo untouched
         rc, out, err = cli('collect', repo, '--until', '2026-10-06T12:00:00Z', '--du-timeout', '5')

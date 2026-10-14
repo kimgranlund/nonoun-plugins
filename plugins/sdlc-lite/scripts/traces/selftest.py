@@ -2043,7 +2043,7 @@ def _corpus():
         for n in files:
             if n.endswith('.attempt.json') and f'{rel}/{n}' not in sources:
                 missing.append(f'{rel}/{n}')
-        walked = {f'.sdlc/{t}' for t in ingest.task_dirs(sdlc)}
+        walked = {rec for _t, rec, _f in ingest.records_tasks(top)}   # the records dirs ingest reads
         walked |= {f'{w}/{s}' for w in list(walked)
                    for s in ingest.step_dirs(os.path.join(top, w))}
         if 'runs.jsonl' in files and rel in walked:  # the handoff dirs ingest reads
@@ -2078,6 +2078,68 @@ def _corpus():
         else:
             ok = has(det, **ev)
         assert ok, f'no {det} finding with evidence {ev}'
+
+
+def _records_rows(repo, out):
+    from . import ingest, store
+    ingest.run(repo, out=out, bench_dir=os.path.join(out, 'nb'))
+    with open(os.path.join(out, store.EVENTS), encoding='utf-8') as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def _records_step(repo, d, aid, cost):
+    _write(repo, f'{d}/builder-L2.attempt.json', json.dumps(_attempt('builder-L2', aid)))
+    _write(repo, f'{d}/runs.jsonl', json.dumps({'attempt_id': aid, 'role': 'builder', 'level': 'L2',
+                                                'cost_usd': cost, 'file': 'builder-L2.md'}) + '\n')
+    _write(repo, f'{d}/builder-L2.md', '## Status\ndone\n')
+
+
+@case('records dir: runtime-only fixture: a task folder with records only in runtime/tasks ingests '
+      'priced rows under the folder ticket')
+def _():
+    from .sources import bench
+    with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as out:
+        _write(repo, '.sdlc/.0001-a/handoff.md', _TICKET_FM)
+        _records_step(repo, '.sdlc/runtime/tasks/0001-a/step-1', 'r1', 1.5)
+        _write(repo, '.sdlc/runtime/tasks/0009-z/runs.jsonl',
+               json.dumps({'role': 'solo', 'level': 'L2', 'cost_usd': 2.0}) + '\n')
+        rows = _records_rows(repo, out)
+        got = [r for r in rows if r['attempt_id'] == 'r1']
+        assert len(got) == 1, rows
+        r = got[0]
+        assert r['ticket'] == 'T-0001' and r['cost_usd'] == 1.5 and r['step'] == 1, r
+        assert r['task_dir'] == '.sdlc/.0001-a', r['task_dir']
+        assert r['sources'] and all(s.startswith('.sdlc/runtime/tasks/0001-a/step-1/') for s in r['sources']), r
+        orphan = [r for r in rows if r['role'] == 'solo']
+        assert len(orphan) == 1 and orphan[0]['ticket'] is None \
+            and orphan[0]['task_dir'] == '.sdlc/runtime/tasks/0009-z', orphan
+        # a new runtime record invalidates the cursor: the task fingerprint covers the records dir
+        _write(repo, '.sdlc/runtime/tasks/0001-a/runs.jsonl',
+               json.dumps({'role': 'planner', 'level': 'L3', 'cost_usd': 0.5}) + '\n')
+        again = _records_rows(repo, out)
+        assert any(r['role'] == 'planner' and r['ticket'] == 'T-0001' for r in again), again
+        # bench: a result dir's step dirs come from results/runtime/tasks/<run>
+        _write(repo, 'bench/results/run1/grade.md', '# grade\nhidden_check: pass\n')
+        _bench_step(repo, 'bench/results/runtime/tasks/run1/step-1', 'pass', 4.0)
+        b = bench.baseline(os.path.join(repo, 'bench'))
+        assert b['steps'] == [(os.path.join(repo, 'bench', 'results', 'run1'), 1, 4.0)], b
+
+
+@case('records dir: legacy fixture: a closed folder holding its records in place ingests as before')
+def _():
+    from .sources import bench
+    with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as out:
+        _write(repo, '.sdlc/.0001-a/handoff.md', _TICKET_FM)
+        _records_step(repo, '.sdlc/.0001-a/step-1', 'r1', 1.5)
+        rows = _records_rows(repo, out)
+        assert [r['attempt_id'] for r in rows] == ['r1'], rows
+        r = rows[0]
+        assert r['ticket'] == 'T-0001' and r['cost_usd'] == 1.5 and r['task_dir'] == '.sdlc/.0001-a', r
+        assert all(s.startswith('.sdlc/.0001-a/step-1/') for s in r['sources']), r
+        assert not os.path.exists(os.path.join(repo, '.sdlc', 'runtime')), 'ingest created a records dir'
+        _bench_step(repo, 'bench/results/run1/step-1', 'pass', 4.0)
+        b = bench.baseline(os.path.join(repo, 'bench'))
+        assert b['steps'] == [(os.path.join(repo, 'bench', 'results', 'run1'), 1, 4.0)], b
 
 
 _TICKET_FM = ('---\nid: T-0001\ntitle: "A"\ntype: feature\nstatus: ready\nsize: S\npriority: P2\n'

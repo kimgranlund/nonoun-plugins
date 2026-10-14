@@ -27,6 +27,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import order  # same scripts/ dir: records_dir finds a task's runs, attempts and step dirs
+
 HERE = Path(__file__).resolve().parent
 SCHEMA = 'session-status/1'
 VERBS = ('built', 'verified', 'merged', 'closed', 'filed', 'released', 'blocked', 'deferred', 'stopped', 'queued', 'waiting')
@@ -636,8 +638,9 @@ def task_dirs(sdlc):
 
 
 def step_dirs(task):
+    """The step-<n> dirs of the task's records dir (order.records_dir), in step order."""
     try:
-        ds = [d for d in task.iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)]
+        ds = [d for d in order.records_dir(task).iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)]
     except OSError:
         return []
     return sorted(ds, key=lambda d: int(d.name.split('-')[1]))
@@ -654,7 +657,7 @@ def attempts(d):
 
 
 def all_attempts(task):
-    out = attempts(task)
+    out = attempts(order.records_dir(task))
     for s in step_dirs(task):
         for a in attempts(s):
             a['_step'] = s
@@ -796,7 +799,7 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
     ev['work'] = rel(root, task / 'handoff.md') if task else 'no running attempt with parent_pid %s' % (pid or '?')
 
     # checks for late failure, rework, retries, trivial last failure
-    scope_dirs = ([task] + steps) if task else []
+    scope_dirs = ([order.records_dir(task)] + steps) if task else []
     checks, rounds, retries_n, last_fail = [], 0, 0, None
     starts = [parse_ts(a.get('started_at')) for a in task_attempts]
     starts = [s for s in starts if s]
@@ -905,7 +908,7 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
         times = [parse_ts(a.get('finished_at')) for a in all_attempts(d)]
         times = [t for t in times if t]
         if not times:
-            rs = RULES['read_runs'](d / 'runs.jsonl') or []
+            rs = RULES['read_runs'](order.records_dir(d) / 'runs.jsonl') or []
             times = [t for t in (parse_ts(r.get('ts')) for r in rs) if t]
         if not times or max(times) < since_t:
             continue
@@ -913,8 +916,9 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
     for d in tasks if not task else [task]:
         dfm = front_matter((read_text(d / 'handoff.md') or '')[:2000])
         did = dfm.get('id') or d.name
-        for s in step_dirs(d) or [d]:
-            label = s.name.replace('-', ' ') if s != d else 'task'
+        drd = order.records_dir(d)
+        for s in step_dirs(d) or [drd]:
+            label = s.name.replace('-', ' ') if s != drd else 'task'
             for r in results_in(s, 'builder'):
                 if r['status'] == 'done' and r['when'] and r['when'] >= since_t:
                     recent.append(entry('built', 'recent', label, did, 'done', r['when'], rel(root, r['path'])))
@@ -1033,7 +1037,8 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
             'budget': None, 'budget_percent': None, 'evidence': ''}
     if task:
         runs, readable = [], True
-        for p in sorted([task / 'runs.jsonl'] + [s / 'runs.jsonl' for s in steps]):
+        trd = order.records_dir(task)
+        for p in sorted([trd / 'runs.jsonl'] + [s / 'runs.jsonl' for s in steps]):
             if not p.exists():
                 continue
             rs = RULES['read_runs'](p)
@@ -1041,7 +1046,7 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
                 readable = False
                 break
             runs.extend(rs)
-        cost['evidence'] = rel(root, task) + '/**/runs.jsonl'
+        cost['evidence'] = rel(root, trd) + '/**/runs.jsonl'
         if readable:
             priced = [r for r in runs if isinstance(r.get('cost_usd'), (int, float)) and not isinstance(r.get('cost_usd'), bool)]
             unpriced = len(runs) - len(priced)
@@ -1780,6 +1785,27 @@ def _fake_runner(cmd, cwd, timeout=15):
     return run(cmd, cwd, timeout)
 
 
+def _records_fixture(base, now, pid, runtime):
+    """T-0541: one open ticket whose task folder holds only handoff.md and skips.md, with a running
+    attempt (parent_pid pid) and priced runs.jsonl in .sdlc/runtime/tasks/<key>/ (runtime) or in
+    the task folder (legacy)."""
+    root = Path(base)
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(['git', 'init', '-q', str(root)], check=True)
+    sdlc = root / '.sdlc'
+    t = _w(sdlc / '0001-a' / 'handoff.md', '---\nid: T-0001\ntitle: "a"\ntype: chore\nstatus: claimed\nsize: L2\ndepends: []\n---\n\n'
+           '## Goal\nRecords dir.\n').parent
+    _w(t / 'skips.md', '## Lane\n- lane: full\n')
+    r = sdlc / 'runtime' / 'tasks' / '0001-a' if runtime else t
+    ago = iso(now - dt.timedelta(minutes=5))
+    _w(r / 'step-1' / 'handoff.md', '## Step 1: one\n')
+    _w(r / 'step-1' / 'builder-L2.attempt.json', json.dumps({'name': 'builder-L2', 'role': 'builder', 'level': 'L2',
+                                                            'status': 'running', 'started_at': ago, 'parent_pid': pid}))
+    _w(r / 'runs.jsonl', json.dumps({'ts': ago, 'role': 'planner', 'cost_usd': 1.25}) + '\n')
+    _w(r / 'step-1' / 'runs.jsonl', json.dumps({'ts': ago, 'role': 'builder', 'cost_usd': 2.0}) + '\n')
+    return root
+
+
 def selftest():
     global RUNNER
     failures = []
@@ -1840,6 +1866,15 @@ def selftest():
         return name in rec['health']['flags']
 
     try:
+        # records dir (T-0541): runtime-only records and legacy in-folder records report the same ticket and cost
+        for label, runtime in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+            counter[0] += 1
+            rroot = _records_fixture(base / ('r%d' % counter[0]), now, live, runtime)
+            r = collect(rroot, env_for(rroot), now, th)
+            moved = not (rroot / '.sdlc' / '0001-a' / 'runs.jsonl').exists() == runtime
+            case('%s: ticket T-0001 and cost.dollars > 0, got %s %s' % (label, r['work']['ticket'], r['cost']['dollars']),
+                 moved and r['work']['ticket'] == 'T-0001' and (r['cost']['dollars'] or 0) > 0)
+
         root = fresh()
 
         # dead pid

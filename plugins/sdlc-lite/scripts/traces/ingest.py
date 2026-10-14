@@ -17,12 +17,19 @@ run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresho
                 result, used by table.join only when the run record has none), then table.join
                 with the ticket id from the task dir's handoff.md front matter (tickets.parse).
                 Record paths are repo-relative, so row sources and legacy ids are too.
+                The records (attempts, runs.jsonl, results, logs, step-<n> dirs) are read from the
+                task dir's records dir (order.records_dir: <repo>/.sdlc/runtime/tasks/<key>/, or the
+                task dir itself for a legacy folder that holds its records in place); row sources name
+                the records-dir paths and a row's task_dir stays the task dir. Each
+                runtime/tasks/<key> dir no listed task dir reads is ingested as its own task dir, with
+                the ticket of its order.task_dir folder, else None.
   lanes dirs    the fanout reader on every given lanes dir plus each <repo>/.worktrees/*/ that
                 holds a report.md or a logs/ dir (deduplicated by real path, in sorted order).
   aux           the git reader on repo (integration = the first report's integration worktree
                 that exists), the ticket reader on <repo>/.sdlc, and the bench baseline of
                 bench_dir or bench.default_bench_dir().
-Each handoff dir and lanes dir is a cursor key: when its store.fingerprint equals the cursor's
+Each handoff dir and lanes dir is a cursor key (a task dir's fingerprint covers the task dir and its
+records dir): when its store.fingerprint equals the cursor's
 (and, for a handoff dir, the ticket id it was joined with is unchanged), its rows come from the
 cursor and none of its files is opened. Nothing is written outside the out dir.
 With rerun_criteria, aux also gets `criteria_reruns`: rerun.run(repo, rows, thresholds), which
@@ -32,9 +39,10 @@ With load_series (a path to a JSON list of [iso timestamp, load1] pairs, the CLI
 --load-series), aux also gets `load_series`: those pairs (a pair that is not a two-item list
 with a string timestamp and a numeric load is dropped; an unreadable file gives []).
 """
-import json, os, pathlib
+import contextlib, json, os, pathlib
 
-import tickets  # same scripts/ dir
+import order  # same scripts/ dir
+import tickets
 
 from . import rerun, store, table
 from .sources import attempts, bench, context, fanout, git, results, runs, transcripts
@@ -85,6 +93,33 @@ def task_dirs(sdlc):
     topics = (tdir.name, lp.work.name, lp.notes.parent.name)
     return ([n for n in out if n not in topics] + ['tickets/' + n for n in _names(tdir)]
             + ['work/' + n for n in _names(lp.work)])
+
+
+def records_tasks(repo):
+    """[(task dir rel, records dir rel, task dir abs or None)] of every handoff root ingest reads: each listed task
+    dir with its records dir (order.records_dir, no create), then each <repo>/.sdlc/runtime/tasks/<key> dir that no
+    listed task dir reads, with its order.task_dir folder (else None) for the ticket."""
+    sdlc = os.path.join(repo, '.sdlc')
+    out, claimed = [], set()
+    for tname in task_dirs(sdlc):
+        task_abs = os.path.join(sdlc, tname)
+        rec_abs = str(order.records_dir(task_abs))
+        if not os.path.isdir(rec_abs):
+            rec_abs = task_abs   # no records dir yet: a legacy folder whose records sit only in a subdir such as verify/
+        claimed.add(os.path.realpath(rec_abs))
+        out.append((_rel(task_abs, repo), _rel(rec_abs, repo), task_abs))
+    tasks = os.path.join(sdlc, 'runtime', 'tasks')
+    try:
+        keys = sorted(os.listdir(tasks))
+    except OSError:
+        keys = []
+    for key in keys:
+        p = os.path.join(tasks, key)
+        if not os.path.isdir(p) or os.path.realpath(p) in claimed:
+            continue
+        tf = order.task_dir(p)
+        out.append((_rel(p, repo), _rel(p, repo), str(tf) if tf is not None else None))
+    return out
 
 
 def step_dirs(task):
@@ -203,31 +238,39 @@ def run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thr
     old = store.load_cursor(out)
     cursor, rows = {}, []
     sdlc = os.path.join(repo, '.sdlc')
-    for tname in task_dirs(sdlc):
-        task_rel = _rel(os.path.join(sdlc, tname), repo)
-        task_abs = os.path.join(repo, task_rel)
-        fp = store.fingerprint(task_abs)
+
+    def owned(found, task_rel):
+        for row in found:
+            row['task_dir'] = task_rel   # sources name the records dir; the task dir stays the task folder
+        return found
+
+    for task_rel, rec_rel, folder in records_tasks(repo):
+        rec_abs = os.path.join(repo, rec_rel)
+        fp = store.fingerprint(rec_abs)
+        apart = folder is not None and os.path.realpath(folder) != os.path.realpath(rec_abs)
+        if apart:
+            fp = store.fingerprint(folder) + ':' + fp
         prev = old.get(task_rel)
         if isinstance(prev, dict) and prev.get('fingerprint') == fp:
             ticket, task_rows = prev.get('ticket'), prev.get('rows') or []
         else:
-            with store.reading(task_abs):
-                ticket = _ticket(task_abs)
-                task_rows = read_dir(repo, task_rel, ticket)
+            with store.reading(rec_abs), (store.reading(folder) if apart else contextlib.nullcontext()):
+                ticket = _ticket(folder) if folder is not None else None
+                task_rows = owned(read_dir(repo, rec_rel, ticket), task_rel)
         cursor[task_rel] = {'fingerprint': fp, 'ticket': ticket, 'rows': task_rows}
         rows.extend(task_rows)
-        for sname in (*step_dirs(task_abs), *other_dirs(task_abs)):
-            rel = f'{task_rel}/{sname}'
+        for sname in (*step_dirs(rec_abs), *other_dirs(rec_abs)):
+            rel = f'{rec_rel}/{sname}'
             d = os.path.join(repo, rel)
             fp = store.fingerprint(d)
             prev = old.get(rel)
             if (isinstance(prev, dict) and prev.get('fingerprint') == fp
-                    and prev.get('ticket') == ticket):
+                    and prev.get('ticket') == ticket and prev.get('task_dir', task_rel) == task_rel):
                 step_rows = prev.get('rows') or []
             else:
                 with store.reading(d):
-                    step_rows = read_dir(repo, rel, ticket)
-            cursor[rel] = {'fingerprint': fp, 'ticket': ticket, 'rows': step_rows}
+                    step_rows = owned(read_dir(repo, rel, ticket), task_rel)
+            cursor[rel] = {'fingerprint': fp, 'ticket': ticket, 'task_dir': task_rel, 'rows': step_rows}
             rows.extend(step_rows)
     lanes = []
     for ld in _lanes_dirs(repo, lanes_dirs):
