@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""wtroot.py: where SDLC Lite puts worktrees and scratch, who owns each run folder, and the crash sweep (T-0550).
+
+Usage: wtroot.py main [--cwd D]                          print the main checkout of the repository holding D
+       wtroot.py root [--cwd D]                          print the worktree root, <main checkout>/.claude/worktrees
+       wtroot.py scratch NAME [--cwd D]                  print (and create, with no marker) the scratch dir for NAME
+       wtroot.py mark DIR --pid N [--role R] [--ticket T] [--running F]
+                                                         write DIR/.owner.json (creating DIR)
+       wtroot.py sweep [--cwd D] [--hours H] [--apply]   a dry run by default; --apply removes dead-owner folders
+       wtroot.py selftest
+
+Root. Every worktree SDLC Lite makes lives under <main checkout>/.claude/worktrees/, Claude Code's own default for
+claude --worktree, EnterWorktree and Agent isolation: worktree, on both hosts: lanes (<root>/<lane>), fanout lanes
+(<root>/fanout/<lane>) and role throwaway trees (<root>/tmp/<agent name>/). The main checkout is the parent of
+git rev-parse --git-common-dir, never the current tree's toplevel, so a role started inside a lane gets a prefix
+under the main checkout and never nests (<lane>/.worktrees/tmp/... was seen in maison, 2026-10-14). A bare or
+non-.git common dir falls back to --show-toplevel. LEGACY (.worktrees) is still read for one release.
+
+Scratch. Files that are not worktrees (probe files, mutated copies) go to <system temp dir>/sdlc-lite/<repo key>/<name>,
+the system temp dir being $TMPDIR (tempfile.gettempdir()), as Claude Code's session scratchpad; never into the repo.
+
+Owner marker. Each run folder holds .owner.json: pid, started (epoch seconds), started_at, role, ticket, and an
+optional running path (a *.running marker). An owner is live while its pid runs or its running file exists.
+
+Sweep. For each folder directly under <root>/tmp and under every repo's scratch dir (<system temp dir>/sdlc-lite/*,
+so a throwaway repo's scratch is swept too; an emptied scratch dir of a repo goes with --apply): no .owner.json prints
+`unmarked: <path>` and is never deleted (legacy or hand-made); a live owner prints `kept <path>: owner live`; a dead
+owner younger than the limit (default 2 hours, lanes.py passes lane_min_age_hours) prints `kept <path>: recent`;
+else `would remove <path>` (dry run) or, with --apply, its registered worktrees are removed with git worktree remove
+--force, the folder is deleted, and it prints `removed <path>`. An unmarked run.sh prefix (<role>-<pid>) is left to
+reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
+
+Importable: main_top, root, tmp_root, scratch_root, scratch_dir, mark, owner, live, sweep.
+"""
+import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
+
+Path = pathlib.Path
+ROOT = ('.claude', 'worktrees')
+LEGACY = '.worktrees'
+MARKER = '.owner.json'
+SWEEP_HOURS = 2.0
+RUNNER = re.compile(r'^[a-z]+-[0-9]+$')
+
+
+def _git(cwd, *args):
+    try:
+        r = subprocess.run(['git', '-C', str(cwd), *args], capture_output=True, text=True)
+    except OSError:
+        return ''
+    return r.stdout.strip() if r.returncode == 0 else ''
+
+
+def main_top(cwd='.'):
+    """The main checkout of the repository holding cwd (the parent of the common .git dir), else its toplevel, else None."""
+    cwd = os.path.abspath(str(cwd))
+    common = _git(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir') or _git(cwd, 'rev-parse', '--git-common-dir')
+    if common:
+        common = os.path.normpath(os.path.join(cwd, common))
+        if os.path.basename(common) == '.git':
+            return os.path.dirname(common)
+    top = _git(cwd, 'rev-parse', '--show-toplevel')
+    return top or None
+
+
+def root(cwd='.'):
+    """<main checkout>/.claude/worktrees, or None outside a repository."""
+    top = main_top(cwd)
+    return Path(top, *ROOT) if top else None
+
+
+def tmp_root(cwd='.'):
+    r = root(cwd)
+    return r / 'tmp' if r else None
+
+
+def scratch_root(cwd='.'):
+    """<system temp dir>/sdlc-lite/<main checkout name>-<8 hex of its path>."""
+    top = main_top(cwd) or os.path.abspath(str(cwd))
+    key = '%s-%s' % (os.path.basename(top) or 'repo', hashlib.sha1(top.encode()).hexdigest()[:8])
+    return Path(tempfile.gettempdir(), 'sdlc-lite', key)
+
+
+def scratch_dir(name, cwd='.'):
+    return scratch_root(cwd) / name
+
+
+def mark(d, pid, role=None, ticket=None, running=None, now=None):
+    """Write d/.owner.json (creating d) and return the record."""
+    now = time.time() if now is None else now
+    rec = dict(pid=int(pid), started=int(now), started_at=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now)),
+               role=role, ticket=ticket, running=str(running) if running else None)
+    d = Path(d)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / MARKER).write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
+    return rec
+
+
+def owner(d):
+    try:
+        rec = json.loads((Path(d) / MARKER).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    return rec if isinstance(rec, dict) else None
+
+
+def pid_alive(pid):
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def live(rec):
+    return pid_alive(rec.get('pid')) or bool(rec.get('running') and os.path.exists(rec['running']))
+
+
+def _under(p, d):
+    p, d = os.path.realpath(p), os.path.realpath(d)
+    return p == d or p.startswith(d.rstrip(os.sep) + os.sep)
+
+
+def sweep(cwd='.', hours=None, apply=False, now=None, parents=None):
+    """[(verdict, path)] for each folder directly under <root>/tmp and the scratch dir; verdict is one of unmarked, live,
+    recent, would remove, removed, failed. Only a dead owner past the limit is removed, and only with apply."""
+    hours = SWEEP_HOURS if hours is None else float(hours)
+    now = time.time() if now is None else now
+    top = main_top(cwd)
+    if parents is None:  # this repo's tmp dir, and every repo's scratch dir (a throwaway repo's scratch outlives the repo)
+        base = scratch_root(cwd).parent
+        keys = sorted(k for k in base.iterdir() if k.is_dir() and not k.is_symlink()) if base.is_dir() else []
+        parents = [p for p in [tmp_root(cwd)] + keys if p is not None]
+    out = []
+    for parent in parents:
+        if not Path(parent).is_dir():
+            continue
+        for d in sorted(Path(parent).iterdir()):
+            if not d.is_dir() or d.is_symlink():
+                continue
+            rec = owner(d)
+            if rec is None and RUNNER.match(d.name):
+                continue  # a run.sh prefix <role>-<pid>: reap-tmp-worktrees.sh owns it
+            if rec is None:
+                out.append(('unmarked', str(d)))
+            elif live(rec):
+                out.append(('live', str(d)))
+            elif now - float(rec.get('started') or 0) < hours * 3600:
+                out.append(('recent', str(d)))
+            elif not apply:
+                out.append(('would remove', str(d)))
+            else:
+                ok = True
+                if top:
+                    for line in _git(top, 'worktree', 'list', '--porcelain').splitlines():
+                        if line.startswith('worktree ') and _under(line[9:], d):
+                            ok = subprocess.run(['git', '-C', top, 'worktree', 'remove', '--force', '--force', line[9:]],
+                                                capture_output=True).returncode == 0 and ok
+                shutil.rmtree(d, ignore_errors=True)
+                if top:
+                    _git(top, 'worktree', 'prune')
+                out.append(('removed' if ok and not d.exists() else 'failed', str(d)))
+        if apply and Path(parent).parent == scratch_root(cwd).parent:
+            try:
+                Path(parent).rmdir()  # an emptied scratch dir of a repo
+            except OSError:
+                pass
+    return out
+
+
+def lines(res):
+    word = {'unmarked': 'unmarked: %s', 'live': 'kept %s: owner live', 'recent': 'kept %s: recent',
+            'would remove': 'would remove %s', 'removed': 'removed %s', 'failed': 'could not remove %s'}
+    return [word[v] % p for v, p in res]
+
+
+def selftest():
+    fails = []
+
+    def expect(label, ok):
+        print(('ok: ' if ok else 'FAIL: ') + label)
+        if not ok:
+            fails.append(label)
+
+    def g(cwd, *a):
+        subprocess.run(['git', '-C', str(cwd), *a], check=True, capture_output=True)
+
+    with tempfile.TemporaryDirectory() as t:
+        base = Path(os.path.realpath(t))
+        repo = base / 'repo'
+        repo.mkdir()
+        g(repo, 'init', '-q', '-b', 'main')
+        g(repo, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'init')
+        lane = base / 'repo' / '.claude' / 'worktrees' / 'lane-a'
+        g(repo, 'worktree', 'add', '-q', '--detach', str(lane), 'HEAD')
+        expect('root from the main checkout is <main>/.claude/worktrees', root(repo) == repo / '.claude' / 'worktrees')
+        expect('root from a lane is the main checkout root, not nested in the lane',
+               root(lane) == repo / '.claude' / 'worktrees' and not str(root(lane)).startswith(str(lane)))
+        # negative control: the toplevel of the lane (the old rule) does nest
+        expect('control: --show-toplevel from the lane is the lane itself (the nesting the rule avoids)',
+               _git(lane, 'rev-parse', '--show-toplevel') == str(lane))
+        expect('root outside a repository is None', root(base) is None)
+        expect('scratch dir sits under the system temp dir, not the repo',
+               _under(str(scratch_dir('x', repo)), tempfile.gettempdir()) and not _under(str(scratch_dir('x', repo)), str(repo)))
+        expect('scratch root is the same from the lane and the main checkout', scratch_root(lane) == scratch_root(repo))
+
+        tmp = base / 'tmpparent'
+        dead = subprocess.Popen([sys.executable, '-c', 'pass'])
+        dead.wait()
+        now = time.time()
+        mark(tmp / 'dead-old', dead.pid, role='verifier', ticket='T-1', now=now - 3 * 3600)
+        g(repo, 'worktree', 'add', '-q', '--detach', str(tmp / 'dead-old' / 'w'), 'HEAD')
+        mark(tmp / 'dead-young', dead.pid, role='verifier', now=now - 60)
+        mark(tmp / 'live-old', os.getpid(), role='builder', now=now - 3 * 3600)
+        run_file = base / 'x.running'
+        run_file.write_text('1\n')
+        mark(tmp / 'running-old', dead.pid, role='builder', running=run_file, now=now - 3 * 3600)
+        (tmp / 'unmarked').mkdir()
+        (tmp / ('builder-%d' % dead.pid)).mkdir()
+        dry = dict((Path(p).name, v) for v, p in sweep(repo, hours=2, now=now, parents=[tmp]))
+        expect('dry run changes nothing', all((tmp / n).is_dir() for n in ('dead-old', 'dead-young', 'live-old', 'unmarked')))
+        expect('dry run reports the dead old folder as would remove', dry.get('dead-old') == 'would remove')
+        res = dict((Path(p).name, v) for v, p in sweep(repo, hours=2, now=now, apply=True, parents=[tmp]))
+        expect('sweep removes a dead-owner folder past the limit, and its worktree',
+               res.get('dead-old') == 'removed' and not (tmp / 'dead-old').exists()
+               and str(tmp / 'dead-old' / 'w') not in _git(repo, 'worktree', 'list'))
+        expect('sweep keeps a dead owner younger than the limit', res.get('dead-young') == 'recent' and (tmp / 'dead-young').is_dir())
+        expect('sweep keeps a live pid owner', res.get('live-old') == 'live' and (tmp / 'live-old').is_dir())
+        expect('sweep keeps an owner whose running file exists', res.get('running-old') == 'live' and (tmp / 'running-old').is_dir())
+        expect('sweep reports an unmarked folder and keeps it', res.get('unmarked') == 'unmarked' and (tmp / 'unmarked').is_dir())
+        run_file.unlink()
+        res = dict((Path(p).name, v) for v, p in sweep(repo, hours=2, now=now, apply=True, parents=[tmp]))
+        expect('a running file gone and the pid dead: removed', res.get('running-old') == 'removed')
+        expect('an unmarked run.sh prefix is left to reap-tmp-worktrees.sh, not listed or removed',
+               'builder-%d' % dead.pid not in res and (tmp / ('builder-%d' % dead.pid)).is_dir())
+        expect('lines() words the verdicts', lines([('unmarked', '/x')]) == ['unmarked: /x'])
+    print('wtroot.py selftest: %s' % ('FAIL' if fails else 'ok'))
+    return 1 if fails else 0
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog='wtroot.py', description=__doc__.split('\n')[0])
+    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,scratch,mark,sweep,selftest}')
+    for n in ('main', 'root'):
+        sub.add_parser(n).add_argument('--cwd', default='.')
+    p = sub.add_parser('scratch')
+    p.add_argument('name')
+    p.add_argument('--cwd', default='.')
+    p = sub.add_parser('mark')
+    p.add_argument('dir')
+    p.add_argument('--pid', type=int, required=True)
+    p.add_argument('--role')
+    p.add_argument('--ticket')
+    p.add_argument('--running')
+    p = sub.add_parser('sweep')
+    p.add_argument('--cwd', default='.')
+    p.add_argument('--hours', type=float)
+    p.add_argument('--apply', action='store_true')
+    sub.add_parser('selftest')
+    a = ap.parse_args(argv)
+    if a.cmd == 'selftest':
+        return selftest()
+    if a.cmd == 'main':
+        top = main_top(a.cwd)
+        print(top or '')
+        return 0 if top else 1
+    if a.cmd == 'root':
+        r = root(a.cwd)
+        print(r or '')
+        return 0 if r else 1
+    if a.cmd == 'scratch':
+        d = scratch_dir(a.name, a.cwd)
+        d.mkdir(parents=True, exist_ok=True)
+        print(d)
+        return 0
+    if a.cmd == 'mark':
+        mark(a.dir, a.pid, a.role, a.ticket, a.running)
+        return 0
+    if a.cmd == 'sweep':
+        for line in lines(sweep(a.cwd, a.hours, a.apply)):
+            print(line)
+        return 0
+    ap.print_help()
+    return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())

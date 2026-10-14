@@ -30,7 +30,7 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   rolling scratch  fanout.py roll                      <lanes-dir>/rolling, detached       none                  none                       roll itself, at its end
   solo worktree    lanes.py open --kind solo           <lanes root>/<ticket>-<slug>        lane/<ticket>-<slug>  lane_into:, else main      sweep
   host lane        the Claude host, isolation:worktree .claude/worktrees/<name>            worktree-<name>       the integration branch     dispatch.py prune --done, else sweep
-  runner tmp       run.sh, dispatch.py                 .worktrees/tmp/<role>-<pid>, detached none                none                       run.sh EXIT, remove_tmp, reap-tmp-worktrees.sh
+  runner tmp       run.sh, dispatch.py                 .claude/worktrees/tmp/<name>, detached none               none                       run.sh EXIT, remove_tmp, reap-tmp-worktrees.sh, wtroot sweep
   manual           a person                            anywhere                            any                   none                       the person; listed, never touched
 
   Names (17.1): kinds fanout and solo need --ticket; the slug is <name> lowercased with every run of characters
@@ -47,9 +47,10 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   ticket of the record whose status is neither done nor dropped.
 
   Ticket branch (T-0530): the CLI open writes `branch: <lane branch>` after each local ticket's `claimed_by:` (through
-  tickets.record_branch, which regenerates the roadmap and router) and prints `ticket <id>: branch: <b>`; the Python
-  open_lane does so only with record_branch=True. Every close removes a record ticket's `branch:` line whose value is
-  the lane branch. list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
+  tickets.record_branch, which regenerates the roadmap and router) and prints `ticket <id>: branch: <b>`; with it goes
+  `worktree: <tree relative to the main checkout>` (T-0550, printed as `ticket <id>: worktree: <path>`; none for a
+  tree outside the checkout); the Python open_lane does so only with record_branch=True. Every close removes a record
+  ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it. list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
   first local ticket, else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
   manual worktree with verified, unmerged work shows its ticket.
 
@@ -92,7 +93,10 @@ Truth table for close and sweep; the first matching row wins.
   Rows 1 to 5 and locked refuse even with --discard. In sweep a refusing row prints `kept <lane>: <outcome>` and the
   sweep goes on; its exit is 0 unless a close step failed. Sweep keeps any branch in lane_keep:, acts only on plugin
   lanes, deletes no branch that has no lane, and never touches the main worktree or the current checkout. A bare
-  sweep is a dry run that prints `would close <lane> (<how>)`; --apply closes.
+  sweep is a dry run that prints `would close <lane> (<how>)`; --apply closes. It then runs the wtroot.py crash sweep
+  over <main checkout>/.claude/worktrees/tmp and the scratch dirs with lane_min_age_hours as the limit: `would remove
+  <path>` or `removed <path>` for a dead owner past the limit, `unmarked: <path>` for a folder with no owner marker
+  (never deleted); a live or recent owner is kept silently.
 
 Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a rerun closes:
   1. Write an annotated tag object (git mktag, never a ref under refs/tags) whose message holds the branch
@@ -117,7 +121,7 @@ Record fields. .lane.json at the tree root, written by open, added to <git commo
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
 
 Config (.sdlc/config of the main worktree; blank and # lines ignored):
-  lanes_root: <path>        default .worktrees, relative to the main worktree's toplevel
+  lanes_root: <path>        default .claude/worktrees (T-0550; .worktrees before 0.23.0), relative to the main worktree's toplevel
   lane_into: <ref>          default none (main)
   lane_setup: <cmd>         run in a new tree; a failure records setup: failed rc=<n> and keeps the lane
   lane_ports: <lo>-<hi>     off when absent; open picks the lowest free port under a flock on <lanes root>/lanes.lock
@@ -132,6 +136,7 @@ import tickets  # same scripts/ dir: the only front matter parser
 TICKETS = tickets  # open_lane's tickets= parameter shadows the module name
 import order  # same scripts/ dir: newest-result ordering
 import results  # same scripts/ dir: the verifier verdict
+import wtroot  # same scripts/ dir: the worktree root, owner markers and the crash sweep (T-0550)
 
 Path = pathlib.Path
 RECORD = '.lane.json'
@@ -249,7 +254,7 @@ def config(toplevel):
             return float(vals[k])
         except (KeyError, ValueError):
             return d
-    root = os.path.expanduser(vals.get('lanes_root') or '.worktrees')
+    root = os.path.expanduser(vals.get('lanes_root') or os.path.join(*wtroot.ROOT))
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
                 lane_setup=vals.get('lane_setup') or None, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
@@ -335,7 +340,8 @@ def lane_of(ctx, w):
     d = blank(p, os.path.isdir(p), w['branch'], w['head'], w['locked'])
     d['tree_branch'] = w['branch']
     rec = read_json(os.path.join(p, RECORD))
-    hp = ctx.root / 'host' / (os.path.basename(p) + '.lane.json')
+    hp = next((h / (os.path.basename(p) + '.lane.json') for h in host_dirs(ctx) if (h / (os.path.basename(p) + '.lane.json')).is_file()),
+              ctx.root / 'host' / (os.path.basename(p) + '.lane.json'))
     hrec = read_json(hp) if hp.is_file() else None
     parent = os.path.dirname(p)
     if rec is not None:
@@ -355,9 +361,19 @@ def lane_of(ctx, w):
             d['kind'] = 'rolling scratch' if (base == 'rolling' and not w['branch']) else 'fanout'
             integ = next((x for x in ctx.wts if samepath(x['path'], os.path.join(parent, 'integration'))), None)
             d['into'] = (integ and integ['branch']) or ctx.main
-    elif plain_under(p, Path(ctx.top) / '.worktrees' / 'tmp'):
+    elif any(plain_under(p, t) for t in tmp_dirs(ctx.top)):
         d['kind'] = 'runner tmp'
     return d
+
+
+def tmp_dirs(top):
+    """The runner tmp dirs: <top>/.claude/worktrees/tmp, and the legacy <top>/.worktrees/tmp read for one release (T-0550)."""
+    return [Path(top, *wtroot.ROOT, 'tmp'), Path(top, wtroot.LEGACY, 'tmp')]
+
+
+def host_dirs(ctx):
+    """Where host records live: <lanes root>/host, and the legacy <top>/.worktrees/host read for one release (T-0550)."""
+    return [h for h in dict.fromkeys([ctx.root / 'host', Path(ctx.top, wtroot.LEGACY, 'host')]) if h.is_dir()]
 
 
 def discover(ctx):
@@ -368,12 +384,12 @@ def discover(ctx):
             continue
         seen.add(os.path.realpath(w['path']))
         lanes.append(lane_of(ctx, w))
-    hd = ctx.root / 'host'
-    for hp in sorted(hd.glob('*.lane.json')) if hd.is_dir() else []:
+    for hp in sorted(hp for hd in host_dirs(ctx) for hp in hd.glob('*.lane.json')):
         name = hp.name[:-len('.lane.json')]
         tp = Path(ctx.top) / '.claude' / 'worktrees' / name
         if os.path.realpath(str(tp)) in seen:
             continue
+        seen.add(os.path.realpath(str(tp)))
         rec = read_json(hp)
         if rec is None:
             continue
@@ -785,6 +801,13 @@ def sweep(apply=False, cwd='.'):
         elif apply:
             ctx.refresh()
             lanes = discover(ctx)
+    # T-0550: the crash sweep of run folders (<root>/tmp, the scratch dir): a dead owner past lane_min_age_hours goes,
+    # a live or recent one stays, an unmarked one is reported and never deleted
+    for v, p in wtroot.sweep(ctx.top, hours=ctx.cfg['lane_min_age_hours'], apply=apply):
+        if v in ('live', 'recent'):
+            continue
+        res.append(result(1 if v == 'failed' else 0, wtroot.lines([(v, p)])[0], path=p, row='run folder'))
+        rc = 1 if v == 'failed' else rc
     if not apply:
         res.append(result(0, 'dry run; pass --apply to close'))
     return res, rc
@@ -933,8 +956,11 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     for t in ids if record_branch and rootp.is_dir() else ():
         if LOCAL_ID.fullmatch(t):
             try:
-                if TICKETS.record_branch(rootp, t, branch):
+                rel = os.path.relpath(os.path.realpath(str(tree)), os.path.realpath(str(top)))
+                if TICKETS.record_branch(rootp, t, branch, worktree=None if rel.startswith('..') else rel):
                     lines.append(f'ticket {t}: branch: {branch}')
+                    if not rel.startswith('..'):
+                        lines.append(f'ticket {t}: worktree: {rel}')
             except (TICKETS.Fail, OSError) as e:
                 lines.append(f'ticket {t}: branch: not written: {e}')
     if rec['port']:
@@ -1062,10 +1088,10 @@ def check(warn=False, cwd='.'):
     top = ctx.top
     lanes = discover(ctx)
     tops = [w['path'] for w in ctx.wts if not w['bare']]
-    tmp, hostdir = Path(top) / '.worktrees' / 'tmp', Path(top) / '.claude' / 'worktrees'
+    tmps, hostdir = tmp_dirs(top), Path(top) / '.claude' / 'worktrees'
     found = []
     for d in lanes:
-        if not d['exists'] or d['owner'] or under(d['path'], tmp) or under(d['path'], hostdir):
+        if not d['exists'] or d['owner'] or any(under(d['path'], t) for t in tmps) or under(d['path'], hostdir):
             continue
         for t in tops:
             if not samepath(t, d['path']) and under(d['path'], t):
@@ -1075,7 +1101,7 @@ def check(warn=False, cwd='.'):
     for d in lanes:
         if d['owner'] != 'record' or not d['exists']:
             continue
-        if not under(d['path'], ctx.root):
+        if not under(d['path'], ctx.root) and not under(d['path'], Path(top, wtroot.LEGACY)):  # legacy root read for one release
             found.append(f'C1: {d["lane"]} lies outside the lanes root {ctx.root}: {d["path"]}')
             continue
         if outside:
@@ -1307,7 +1333,7 @@ class Fixture:
         return r.returncode, (r.stdout + r.stderr).strip()
 
     def tree(self, leaf):
-        return self.top / '.worktrees' / leaf
+        return self.top / '.claude' / 'worktrees' / leaf
 
     def open(self, name, ticket=None, *extra):
         args = ['open', name] + (['--ticket', ticket] if ticket else []) + list(extra)
@@ -1854,11 +1880,25 @@ def case_branch_record(script, base):
     text = h.read_text()
     if b != 'lane/T-0001-one' or 'claimed_by: claude 2026-10-11\nbranch: lane/T-0001-one\n' not in text:
         fails.append(f'branch record: open did not write branch: {b} after claimed_by: {text!r}')
+    if 'branch: lane/T-0001-one\nworktree: .claude/worktrees/T-0001-one\n' not in text:
+        fails.append(f'branch record: open did not write worktree: .claude/worktrees/T-0001-one after branch: (T-0550): {text!r}')
     t.work(tree)
     t.merge(b)
     rc, o = t.lanes('close', leaf)
-    if rc or 'branch:' in h.read_text():
-        fails.append(f'branch record: close did not remove branch: {rc}: {o} {h.read_text()!r}')
+    if rc or 'branch:' in h.read_text() or 'worktree:' in h.read_text():
+        fails.append(f'branch record: close did not remove branch: and worktree: {rc}: {o} {h.read_text()!r}')
+    # T-0550: a fanout lane writes both lines too, and its close removes both
+    h2 = t.top / '.sdlc' / '0002-two' / 'handoff.md'
+    t.write({'.sdlc/0002-two/handoff.md': ticket_file('T-0002', claimed=True)})
+    leaf2, tree2, b2 = t.open('two', 'T-0002', '--kind', 'fanout')
+    text = h2.read_text()
+    if f'branch: {b2}\nworktree: .claude/worktrees/{leaf2}\n' not in text:
+        fails.append(f'branch record: a fanout lane did not write branch: and worktree: {text!r}')
+    t.work(tree2)
+    t.merge(b2)
+    rc, o = t.lanes('close', leaf2)
+    if rc or 'branch:' in h2.read_text() or 'worktree:' in h2.read_text():
+        fails.append(f'branch record: a fanout close did not remove branch: and worktree: {rc}: {o} {h2.read_text()!r}')
     return fails
 
 
@@ -1920,7 +1960,7 @@ def case_host_record(script, base):
         rec = host_record('h1', 'worktree-h1', 'wave/2', ['T-9'], cwd=str(t.top))
     finally:
         os.environ.pop('SDLC_RUN_ID', None)
-    hp = t.top / '.worktrees' / 'host' / 'h1.lane.json'
+    hp = t.top / '.claude' / 'worktrees' / 'host' / 'h1.lane.json'
     disk = read_json(hp) or {}
     want = dict(lane='h1', kind='host', branch='worktree-h1', base='main', base_sha=t.g('rev-parse', 'main'), into='wave/2',
                 tickets=['T-9'], run_id='run-h1', setup=None)

@@ -23,7 +23,7 @@ run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresho
                 the records-dir paths and a row's task_dir stays the task dir. Each
                 runtime/tasks/<key> dir no listed task dir reads is ingested as its own task dir, with
                 the ticket of its order.task_dir folder, else None.
-  lanes dirs    the fanout reader on every given lanes dir plus each <repo>/.worktrees/*/ that
+  lanes dirs    the fanout reader on every given lanes dir plus each <repo>/.claude/worktrees/*/ and <repo>/.worktrees/*/ that
                 holds a report.md or a logs/ dir (deduplicated by real path, in sorted order).
   aux           the git reader on repo (integration = the first report's integration worktree
                 that exists), the ticket reader on <repo>/.sdlc, and the bench baseline of
@@ -185,13 +185,13 @@ def read_dir(repo, rel, ticket):
 
 def _lanes_dirs(repo, given):
     cands = [os.path.abspath(p) for p in given]
-    wt = os.path.join(repo, '.worktrees')
-    try:
-        names = sorted(os.listdir(wt))
-    except OSError:
-        names = []
-    for n in names:
-        p = os.path.join(wt, n)
+    names = []
+    for wt in (os.path.join(repo, '.claude', 'worktrees'), os.path.join(repo, '.worktrees')):  # T-0550: new root, then the legacy one
+        try:
+            names += [os.path.join(wt, n) for n in sorted(os.listdir(wt))]
+        except OSError:
+            pass
+    for p in names:
         if os.path.isdir(p) and (os.path.isfile(os.path.join(p, 'report.md'))
                                  or os.path.isdir(os.path.join(p, 'logs'))):
             cands.append(p)

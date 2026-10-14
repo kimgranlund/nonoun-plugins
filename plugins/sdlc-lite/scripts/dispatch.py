@@ -83,7 +83,8 @@ clears it when it marks the attempt interrupted (T-0505). --dry-run prints the J
 either), takes no lock, and skips recovery.
 
 Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format sentence) plus a Tree line, a
-throwaway-worktree prefix line (.worktrees/tmp/<Agent name>), and for builder and verifier a Base sha line,
+throwaway-worktree prefix line (<main checkout>/.claude/worktrees/tmp/<Agent name>, wtroot.py), a scratch line
+($TMPDIR/sdlc-lite/<repo key>/<Agent name>), and for builder and verifier a Base sha line,
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier brief also carries a Report file line:
 the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.
 The line also says the file carries no header (record adds it, T-0538) and names `results.py validate <file> --role verifier --headerless`.
@@ -99,8 +100,10 @@ it then does the following.
   header       writes <!-- role= level= model= effort= --> from the dispatch over any header the role wrote, then
                the body, to the result path.
   cleanup      removes the worktrees and directory under the dispatch's tmp prefix (only a path under
-               <tree>/.worktrees/tmp/), then reports strays: worktrees and local branches that appeared since
-               prepare (its snapshot sits in the attempt record) under <tree>/.worktrees/tmp/ or on a branch named with the
+               the tmp root, <main checkout>/.claude/worktrees/tmp/, or the legacy <tree>/.worktrees/tmp/), removes the
+               scratch dir, runs the wtroot.py crash sweep (a dead owner past the limit goes, an unmarked folder is
+               reported), then reports strays: worktrees and local branches that appeared since
+               prepare (its snapshot sits in the attempt record) under a tmp root or on a branch named with the
                role's agent name, the own prefix left out; peers' worktrees and branches are not reported. Report only.
   stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
                while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
@@ -167,6 +170,7 @@ import order  # noqa: E402
 import results  # noqa: E402
 import tickets  # noqa: E402
 import run_lifecycle  # noqa: E402
+import wtroot  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
@@ -924,7 +928,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         result = records / (stem + '.md')
         # the execution tree's toplevel: a lane worktree handoff, a --tree lane, or a main-checkout handoff run from a lane all get the lane as Tree
         toplevel = git('rev-parse', '--show-toplevel', cwd=run_tree).stdout.strip() or git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()
-        tmp_prefix = str(Path(toplevel) / '.worktrees' / 'tmp' / name)
+        # T-0550: the prefix sits under the main checkout's .claude/worktrees/tmp, never nested in a lane; scratch goes to $TMPDIR
+        tmp_prefix = str((wtroot.tmp_root(toplevel) or Path(toplevel, *wtroot.ROOT, 'tmp')) / name)
+        scratch = str(wtroot.scratch_dir(name, toplevel))
 
         base = None
         if role in ('builder', 'verifier'):
@@ -936,8 +942,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                   'instructions define: start with its first heading, with nothing before it and nothing after the last section.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
-                  'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.'
-                  % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix))
+                  'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.\n'
+                  'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).'
+                  % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix, scratch))
         if role == 'verifier':
             prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
                        'as your final message, with no <!-- role=... --> header line: dispatch.py record adds it, so check the file with '
@@ -953,7 +960,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         model=model, effort=effort, prompt=prompt,
                         run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
                         prune=role in PRUNE_ROLES if prune is None else bool(prune),
-                        role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix,
+                        role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix, scratch=scratch,
                         base_sha=base, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
                         handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate,
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
@@ -979,7 +986,12 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         run_lifecycle.write(Path(dispatch['attempt_file']), attempt)
         run_lifecycle.write(Path(dispatch['dispatch_file']), dispatch)
         # T-0505: the running marker warn-handoff-edit.sh, board.py and fleet_status.py read; keyed by role and level, as record and recover unlink it
-        (records / ('%s-%s.running' % (role, level))).write_text('%d\n' % int(time.time()), encoding='utf-8')
+        running = records / ('%s-%s.running' % (role, level))
+        running.write_text('%d\n' % int(time.time()), encoding='utf-8')
+        # T-0550: owner markers; the session pid or the running marker keeps a folder live for the sweep
+        ticket = budget.ticket_of(handoff)
+        for d in (tmp_prefix, scratch):
+            wtroot.mark(d, pid or 0, role='%s-%s' % (role, level), ticket=ticket and Path(ticket).name, running=running)
         return dispatch
     finally:
         if lock is not None:
@@ -1002,10 +1014,30 @@ def validate_result(role, path):
     return (msg[len(prefix):] if msg.startswith(prefix) else msg) or 'failed the result check'
 
 
+def tmp_roots(tree):
+    """The roots a dispatch tmp prefix may sit under: <main checkout>/.claude/worktrees/tmp (T-0550), and for one release
+    the legacy <tree>/.worktrees/tmp of an attempt prepared before 0.23.0."""
+    new = wtroot.tmp_root(tree)
+    return ([os.path.realpath(str(new))] if new else []) + [os.path.realpath(os.path.join(tree, wtroot.LEGACY, 'tmp'))]
+
+
+def sweep_tmp(tree, scratch):
+    """Remove this dispatch's scratch dir (only one under the repo's scratch root), then run the crash sweep (wtroot.sweep:
+    a dead owner past the limit goes, a folder with no owner marker is reported, never deleted). Never raises."""
+    try:
+        if scratch and not os.path.islink(scratch) and under(scratch, str(wtroot.scratch_root(tree))) \
+                and os.path.realpath(scratch) != os.path.realpath(str(wtroot.scratch_root(tree))):
+            shutil.rmtree(scratch, ignore_errors=True)
+        for v, p in wtroot.sweep(tree, apply=True):
+            if v in ('removed', 'unmarked', 'failed'):
+                say(wtroot.lines([(v, p)])[0])
+    except OSError as e:
+        say('could not sweep: %s' % e)
+
+
 def remove_tmp(tree, prefix):
     """Remove the worktrees and directory under the dispatch's tmp prefix, then the empty parents, and say how many worktrees
-    went (T-0426). The prefix must sit strictly under <tree>/.worktrees/tmp, hold no . or .. component, and not be a symlink, else nothing is removed. Never raises."""
-    root = os.path.realpath(os.path.join(tree, '.worktrees', 'tmp'))
+    went (T-0426). The prefix must sit strictly under a tmp root (tmp_roots), hold no . or .. component, and not be a symlink, else nothing is removed. Never raises."""
     bare = prefix.rstrip('/')
     if not bare or any(part in ('.', '..') for part in bare.split(os.sep)):
         say('refusing to remove %s: it has a . or .. component' % prefix)
@@ -1014,8 +1046,10 @@ def remove_tmp(tree, prefix):
         say('refusing to remove %s: it is a symlink' % prefix)
         return
     real = os.path.join(os.path.realpath(os.path.dirname(bare)), os.path.basename(bare))
-    if not real.startswith(root + os.sep):
-        say('refusing to remove %s: not under %s' % (prefix, root))
+    roots = tmp_roots(tree)
+    root = next((r for r in roots if real.startswith(r + os.sep)), None)
+    if root is None:
+        say('refusing to remove %s: not under %s' % (prefix, ' or '.join(roots)))
         return
     removed = 0
     try:
@@ -1042,9 +1076,9 @@ def strays(tree, prefix, attempt):
     if 'worktrees_before' not in attempt:
         return [], []
     seen, known = set(attempt['worktrees_before']), set(attempt.get('branches_before', []))
-    root, mine = os.path.join(tree, '.worktrees', 'tmp'), os.path.basename(prefix.rstrip('/'))
+    roots, mine = tmp_roots(tree), os.path.basename(prefix.rstrip('/'))
     own_br = lambda b: bool(b) and b.startswith(mine)
-    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix) and (under(p, root) or own_br(b))]
+    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix) and (any(under(p, r) for r in roots) or own_br(b))]
     return wts, [b for b in branches(tree) if b not in known and own_br(b)]
 
 
@@ -1296,6 +1330,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         log = result.with_suffix('.log')
         log.write_text(error + '\n', encoding='utf-8')
         remove_tmp(tree, prefix)
+        sweep_tmp(tree, d.get('scratch'))
         found = strays(tree, prefix, attempt)
         say('%s returned no result; see %s' % (role, log))
         limit_marker(d, error)
@@ -1312,6 +1347,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     result.write_text(header + '\n' + body + '\n', encoding='utf-8')
     result_sha = hashlib.sha256(result.read_bytes()).hexdigest()  # T-0388: the accepted bytes, after the header write
     remove_tmp(tree, prefix)
+    sweep_tmp(tree, d.get('scratch'))
     found = strays(tree, prefix, attempt)
     stray_wt, stray_br = [p for p, _ in found[0]], found[1]
     handoff = Path(d['handoff'])
@@ -2054,7 +2090,7 @@ def selftest():
         for key in ('subagent_type', 'model', 'effort', 'name', 'result', 'tmp_prefix', 'base_sha', 'prompt'):
             case('dispatch JSON has %s' % key, key in got and got[key] is not None)
         case('subagent type, Agent name, and result path', got['subagent_type'] == 'sdlc-lite:builder-L1' and got['name'] == 'w-builder-L1'
-             and got['result'] == str(R(w) / 'builder-L1.md') and got['tmp_prefix'] == str(rr / '.worktrees' / 'tmp' / 'w-builder-L1'))
+             and got['result'] == str(R(w) / 'builder-L1.md') and os.path.realpath(got['tmp_prefix']) == os.path.realpath(str(rr / '.claude' / 'worktrees' / 'tmp' / 'w-builder-L1')))
         head = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
         case('a builder gets its base sha, in the dispatch, base-sha, and the brief',
              got['base_sha'] == head and (R(w) / 'base-sha').read_text() == head + '\n' and 'Base sha: ' + head in got['prompt'])
@@ -2062,6 +2098,13 @@ def selftest():
              got['prompt'].startswith('w | builder L1\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
                                       'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', R(w), R(w) / 'builder-L1.md'))
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
+        own = json.loads((Path(got['tmp_prefix']) / '.owner.json').read_text())
+        case('T-0550 the tmp prefix and the scratch dir hold an owner marker: the session pid, the running marker, the role',
+             own['pid'] == live and own['running'] == str(R(w) / 'builder-L1.running') and own['role'] == 'builder-L1'
+             and (Path(got['scratch']) / '.owner.json').is_file())
+        case('T-0550 scratch sits under the system temp dir, not the repo, and the brief names it',
+             got['scratch'].startswith(tempfile.gettempdir()) and not under(got['scratch'], str(rr))
+             and 'Scratch files that are not worktrees (probe files, mutated copies) only under %s' % got['scratch'] in got['prompt'])
         # T-0504: a repository and task path with spaces still passes the actual spawn hook; a missing record is still denied.
         if shutil.which('jq') and shutil.which('bash'):
             sp = tmp / 'with spaces' / 'repo sp'
@@ -2102,9 +2145,9 @@ def selftest():
         (lw / '.sdlc' / 'w').mkdir(parents=True, exist_ok=True)
         shutil.copy(rr / '.sdlc' / 'w' / 'handoff.md', lw / '.sdlc' / 'w' / 'handoff.md')
         rcl, dl, _ = prep(rr, 'verifier', 'L1', str(lw / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
-        case('a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree',
+        case('a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree; its tmp prefix is under the main checkout (T-0550)',
              rcl == 0 and dl['tree'] == os.path.realpath(str(lw)) and 'Tree: %s ' % dl['tree'] in dl['prompt']
-             and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(dl['tree'] + '/.worktrees/tmp/'))
+             and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '/.claude/worktrees/tmp/'))
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
         # T-0376: a lane forked from a commit newer than a stale stored base records its fork point, so a scope guard lists only the lane.
         def gt(where, *a):
@@ -2178,7 +2221,8 @@ def selftest():
 
         def names_lane(d, want=lane_tip2, avoid=main_head):
             return (d['tree'] == real_lane and 'Tree: %s ' % real_lane in d['prompt'] and 'Tree: %s ' % rr not in d['prompt']
-                    and d['tmp_prefix'].startswith(real_lane + '/.worktrees/tmp/')
+                    and d['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '/.claude/worktrees/tmp/')
+                    and not d['tmp_prefix'].startswith(real_lane + '/')  # T-0550: never nested in the lane
                     and d['base_sha'] == want != avoid and 'Base sha: ' + want in d['prompt'])
         with clean_env(), cwd(lw2), contextlib.redirect_stderr(io.StringIO()):
             from_lane = prepare('verifier', 'L1', str(mhand), dry_run=True)

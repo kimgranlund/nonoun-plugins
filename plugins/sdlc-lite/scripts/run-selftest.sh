@@ -23,17 +23,17 @@
 # "task dir: <reason>".
 # Throwaway worktrees: with a stub that adds a worktree under $SDLC_TMP_WORKTREES, a successful run,
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
-# main tree in `git worktree list` and no .worktrees/tmp, and the stub saw a non-empty
-# SDLC_TMP_WORKTREES under <toplevel>/.worktrees/tmp/. A dry run creates no .worktrees, and a dry run
+# main tree in `git worktree list` and no .claude/worktrees/tmp, and the stub saw a non-empty
+# SDLC_TMP_WORKTREES under <toplevel>/.claude/worktrees/tmp/. A dry run creates no .claude/worktrees, and a dry run
 # of a role that declares skills leaves no mktemp skill file behind.
-# Stale prefix: before a real run, detached worktrees are registered under .worktrees/tmp/builder-<pid
-# of an exited subshell>/w and .worktrees/tmp/builder-<pid of this selftest>/w; after the run the dead
+# Stale prefix: before a real run, detached worktrees are registered under .claude/worktrees/tmp/builder-<pid
+# of an exited subshell>/w and .claude/worktrees/tmp/builder-<pid of this selftest>/w; after the run the dead
 # owner's prefix is gone from disk and from git worktree list, and the live owner's worktree is still
 # on disk and listed (then removed by the case). Its failures read "stale prefix: <reason>".
 # Term cleanup: a stub claude adds a worktree under $SDLC_TMP_WORKTREES, ignores TERM (trap ''), writes
 # a ready marker holding its pid, and execs sleep 30 (which inherits the ignore). run.sh runs in the
 # background; once the marker appears, the run.sh pid (the run_lifecycle.py process) gets TERM and
-# must exit 143 with no worktree under .worktrees/tmp registered, no .worktrees/tmp, and the stub no
+# must exit 143 with no worktree under .claude/worktrees/tmp registered, no .claude/worktrees/tmp, and the stub no
 # longer alive. Its failures read "term cleanup: <reason>". Both cases drive run.sh only.
 # Bash timeouts: the stub records BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS; unset or an
 # inherited 120000 must reach it as 3600000, an inherited 7200000 as 7200000 (T-0105).
@@ -61,7 +61,7 @@
 # primary's .sdlc/t and no result file appears under the temporary worktree; after removal its path
 # is gone from git worktree list and from disk, the user worktree is still listed, refs/heads is
 # unchanged, the primary's porcelain status and tracked-file bytes are byte-identical to the
-# snapshot, and the primary has no .worktrees dir.
+# snapshot, and the primary has no .claude/worktrees dir.
 # Self-edit: a copy of the plugin runs a real planner run whose stub claude truncates the copy's
 # scripts/run.sh in place (same inode) before printing its result; the run must still exit 0, print
 # the result path, save the stub's text, write its runs.jsonl line, and mark the attempt completed.
@@ -451,13 +451,13 @@ want_to 120000 3600000
 want_to 7200000 7200000
 
 # Throwaway worktrees: a second stub records SDLC_TMP_WORKTREES and adds a worktree under it
-# (under .worktrees/tmp/unset when it is unset), then succeeds, fails, or returns a result
+# (under .claude/worktrees/tmp/unset when it is unset), then succeeds, fails, or returns a result
 # lacking its section (STUB_MODE ok|fail|nosect). Every case must leave only the main tree.
 mkdir -p "$tmp/wbin"
 cat >"$tmp/wbin/claude" <<EOF
 #!/usr/bin/env bash
 printf '%s\n' "\${SDLC_TMP_WORKTREES:-}" >"$tmp/wtenv"
-git worktree add -q --detach "\${SDLC_TMP_WORKTREES:-\$PWD/.worktrees/tmp/unset}/w" HEAD >/dev/null 2>&1 \\
+git worktree add -q --detach "\${SDLC_TMP_WORKTREES:-\$PWD/.claude/worktrees/tmp/unset}/w" HEAD >/dev/null 2>&1 \\
   || { echo "stub: git worktree add failed" >&2; exit 9; }
 case "\${STUB_MODE:-ok}" in
   fail) exit 1 ;;
@@ -477,7 +477,7 @@ git -C "$wrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c 
 wtop=$(git -C "$wrepo" rev-parse --show-toplevel)
 (cd "$wrepo" && SDLC_DRY_RUN=1 PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) \
   || fail "worktree dry run: run.sh exited non-zero"
-[[ ! -e "$wrepo/.worktrees" ]] || fail "worktree dry run: created $wrepo/.worktrees"
+[[ ! -e "$wrepo/.claude/worktrees" ]] || fail "worktree dry run: created $wrepo/.claude/worktrees"
 # want_wt <mode> <rc>: one real run with that stub mode, then the worktree assertions.
 want_wt() {
   local rc=0 env_seen wts
@@ -488,11 +488,11 @@ want_wt() {
   wts=$(git -C "$wrepo" worktree list)
   [[ "$(printf '%s\n' "$wts" | wc -l | tr -d ' ')" == 1 ]] \
     || fail "worktree $1 run: leftover worktree: $(printf '%s\n' "$wts" | sed 1d | tr '\n' ' ')"
-  [[ ! -e "$wrepo/.worktrees/tmp" ]] || fail "worktree $1 run: $wrepo/.worktrees/tmp is left over"
+  [[ ! -e "$wrepo/.claude/worktrees/tmp" ]] || fail "worktree $1 run: $wrepo/.claude/worktrees/tmp is left over"
   env_seen=$(cat "$tmp/wtenv" 2>/dev/null || true)
   [[ -n "$env_seen" ]] || fail "worktree $1 run: claude saw no SDLC_TMP_WORKTREES (missing or empty)"
-  [[ "$env_seen" == "$wtop/.worktrees/tmp/"?* ]] \
-    || fail "worktree $1 run: SDLC_TMP_WORKTREES is '$env_seen', want it under $wtop/.worktrees/tmp/"
+  [[ "$env_seen" == "$wtop/.claude/worktrees/tmp/"?* ]] \
+    || fail "worktree $1 run: SDLC_TMP_WORKTREES is '$env_seen', want it under $wtop/.claude/worktrees/tmp/"
   ! grep -q stray "$tmp/werr" || fail "worktree $1 run: printed a stray line: $(cat "$tmp/werr")"
 }
 want_wt ok 0
@@ -502,23 +502,23 @@ want_wt nosect 3
 # Stale prefix: a prefix whose owner pid is dead is reaped by the next real run; a live owner's stays.
 dead=$(bash -c 'echo $$')
 ! ps -p "$dead" >/dev/null 2>&1 || fail "stale prefix: fixture pid $dead is still alive"
-git -C "$wrepo" worktree add -q --detach "$wrepo/.worktrees/tmp/builder-$dead/w" HEAD >/dev/null 2>&1 \
+git -C "$wrepo" worktree add -q --detach "$wrepo/.claude/worktrees/tmp/builder-$dead/w" HEAD >/dev/null 2>&1 \
   || fail "stale prefix: could not add the dead-owner worktree"
-git -C "$wrepo" worktree add -q --detach "$wrepo/.worktrees/tmp/builder-$$/w" HEAD >/dev/null 2>&1 \
+git -C "$wrepo" worktree add -q --detach "$wrepo/.claude/worktrees/tmp/builder-$$/w" HEAD >/dev/null 2>&1 \
   || fail "stale prefix: could not add the live-owner worktree"
 rm -f "$wrec"/*-L*.md "$wrec"/*.log "$wrec"/*.attempt.json "$wrec/runs.jsonl"
 src=0
 (cd "$wrepo" && STUB_MODE=ok PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>"$tmp/werr") || src=$?
 [[ "$src" == 0 ]] || fail "stale prefix: run.sh exited $src, want 0 ($(cat "$tmp/werr"))"
-[[ ! -e "$wrepo/.worktrees/tmp/builder-$dead" ]] || fail "stale prefix: dead-owner prefix builder-$dead is still on disk"
+[[ ! -e "$wrepo/.claude/worktrees/tmp/builder-$dead" ]] || fail "stale prefix: dead-owner prefix builder-$dead is still on disk"
 swl=$(git -C "$wrepo" worktree list --porcelain)
 ! grep -qF "/builder-$dead/w" <<<"$swl" \
   || fail "stale prefix: dead-owner worktree builder-$dead/w is still in git worktree list"
-[[ -d "$wrepo/.worktrees/tmp/builder-$$/w" ]] || fail "stale prefix: live-owner worktree builder-$$/w was removed from disk"
+[[ -d "$wrepo/.claude/worktrees/tmp/builder-$$/w" ]] || fail "stale prefix: live-owner worktree builder-$$/w was removed from disk"
 grep -qF "/builder-$$/w" <<<"$swl" \
   || fail "stale prefix: live-owner worktree builder-$$/w is no longer in git worktree list"
-git -C "$wrepo" worktree remove --force --force "$wrepo/.worktrees/tmp/builder-$$/w" >/dev/null 2>&1 || true
-rm -rf "$wrepo/.worktrees"
+git -C "$wrepo" worktree remove --force --force "$wrepo/.claude/worktrees/tmp/builder-$$/w" >/dev/null 2>&1 || true
+rm -rf "$wrepo/.claude/worktrees"
 git -C "$wrepo" worktree prune >/dev/null 2>&1 || true
 [[ "$(git -C "$wrepo" worktree list | wc -l | tr -d ' ')" == 1 ]] || fail "stale prefix: cleanup left a worktree"
 
@@ -553,9 +553,9 @@ kill -TERM "$tpid"
 trc=0
 wait "$tpid" || trc=$?
 [[ "$trc" == 143 ]] || fail "term cleanup: run.sh exited $trc after TERM, want 143 ($(cat "$tmp/terr"))"
-left=$(git -C "$wrepo" worktree list --porcelain | sed -n 's/^worktree //p' | grep -F '/.worktrees/tmp/' || true)
-[[ -z "$left" ]] || fail "term cleanup: a worktree under .worktrees/tmp is still registered: $(tr '\n' ' ' <<<"$left")"
-[[ ! -e "$wrepo/.worktrees/tmp" ]] || fail "term cleanup: $wrepo/.worktrees/tmp is left over"
+left=$(git -C "$wrepo" worktree list --porcelain | sed -n 's/^worktree //p' | grep -F '/.claude/worktrees/tmp/' || true)
+[[ -z "$left" ]] || fail "term cleanup: a worktree under .claude/worktrees/tmp is still registered: $(tr '\n' ' ' <<<"$left")"
+[[ ! -e "$wrepo/.claude/worktrees/tmp" ]] || fail "term cleanup: $wrepo/.claude/worktrees/tmp is left over"
 if ps -p "$stub_pid" >/dev/null 2>&1; then
   kill -KILL "$stub_pid" 2>/dev/null || true
   fail "term cleanup: the stub claude (pid $stub_pid) is still alive"
@@ -745,7 +745,7 @@ stray_run() {
 }
 # stray_clean: removes the strays a stray run made (inside the temp repo only).
 stray_clean() {
-  git -C "$srepo" worktree remove --force "$srepo/.worktrees/tmp/stray-det" >/dev/null 2>&1 || true
+  git -C "$srepo" worktree remove --force "$srepo/.claude/worktrees/tmp/stray-det" >/dev/null 2>&1 || true
   git -C "$srepo" worktree remove --force "$srepo-sibling" >/dev/null 2>&1 || true
   git -C "$srepo" worktree remove --force "$srepo-stray-br" >/dev/null 2>&1 || true
   # shellcheck disable=SC2046  # branch names hold no spaces; the split is intended
@@ -768,7 +768,7 @@ want_strays() {
   grep -q '^run.sh: stray branch appeared during this run: builder-[0-9]*-wt-br$' "$tmp/serr" \
     || fail "$1: no stray branch line for the role's own worktree branch: $(cat "$tmp/serr")"
   ! grep -q 'sibling' "$tmp/serr" || fail "$1: reported a sibling lane worktree or branch: $(cat "$tmp/serr")"
-  ! grep -q '/.worktrees/tmp/builder-' "$tmp/serr" || fail "$1: reported a worktree under the prefix: $(cat "$tmp/serr")"
+  ! grep -q '/.claude/worktrees/tmp/builder-' "$tmp/serr" || fail "$1: reported a worktree under the prefix: $(cat "$tmp/serr")"
 }
 stray_run stray 0
 want_strays "stray ok run"
@@ -845,7 +845,7 @@ grep -qx "worktree $userwt" <<<"$now_wts" || fail "temporary worktree recipe: th
 [[ "$(git -C "$primary" status --porcelain)" == "$snap_status" ]] \
   || fail "temporary worktree recipe: the primary's porcelain status changed: $(git -C "$primary" status --porcelain | tr '\n' ' ')"
 cmp -s "$primary/file.txt" "$rtmp/file.snap" || fail "temporary worktree recipe: the primary's tracked file bytes changed"
-[[ ! -e "$primary/.worktrees" ]] || fail "temporary worktree recipe: the primary has a .worktrees dir"
+[[ ! -e "$primary/.claude/worktrees" ]] || fail "temporary worktree recipe: the primary has a .claude/worktrees dir"
 
 # Self-edit: a role that rewrites run.sh in place while it runs must still get its result saved.
 # Runs a copy of the plugin, so the real run.sh is never touched.
