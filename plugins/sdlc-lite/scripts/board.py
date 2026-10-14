@@ -100,15 +100,17 @@ def by_level(d: pathlib.Path, role: str, ext: str):
 
 
 def live_step_dirs(task: pathlib.Path):
-    """step-<n>/ dirs only; superseded dirs (step-<n>.superseded-<k>/) are left out."""
-    return [d for d in task.glob('step-*') if d.is_dir() and re.fullmatch(r'step-\d+', d.name)]
+    """step-<n>/ dirs of the task's records dir only; superseded dirs (step-<n>.superseded-<k>/) are left out."""
+    rd = order.records_dir(task)
+    return [d for d in rd.glob('step-*') if d.is_dir() and re.fullmatch(r'step-\d+', d.name)]
 
 
 def cost(d: pathlib.Path, est=None) -> float:
-    """Total cost_usd under a task; when est is a list, the cost_estimated part is appended to it."""
+    """Total cost_usd under a task's records dir; when est is a list, the cost_estimated part is appended to it."""
     total = 0.0
+    rd = order.records_dir(d)
     # step-* on purpose: superseded dirs still count toward cost.
-    for f in [d / 'runs.jsonl', *d.glob('step-*/runs.jsonl')]:
+    for f in [rd / 'runs.jsonl', *rd.glob('step-*/runs.jsonl')]:
         if f.exists():
             for line in f.read_text().splitlines():
                 try:
@@ -196,7 +198,7 @@ def plan_steps(task: pathlib.Path):
             n = int(d.name.split('-')[1])
             steps.append((n, m.group(2).strip() if m else d.name, lvl.group(1) if lvl else '?'))
         return steps
-    plans = by_level(task, 'planner', 'md')
+    plans = by_level(order.records_dir(task), 'planner', 'md')
     if not plans:
         return []
     text = plans[-1].read_text()
@@ -208,29 +210,50 @@ def plan_steps(task: pathlib.Path):
     return steps
 
 
+def outcome_lane(task: pathlib.Path) -> str:
+    """The lane on the first non-blank line after `## Outcome` in the task handoff, else ''."""
+    try:
+        lines = (task / 'handoff.md').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return ''
+    for i, line in enumerate(lines):
+        if line.strip() == '## Outcome':
+            for nxt in lines[i + 1:]:
+                if nxt.strip():
+                    m = re.search(r'lane:\s*(solo|full|fix)\b', nxt)
+                    return m.group(1) if m else ''
+            return ''
+    return ''
+
+
 def solo_lane(task: pathlib.Path) -> bool:
-    """True when the last `- lane:` line in the task's skips.md is solo."""
+    """True when the task's lane is solo: the last `- lane:` line in the task folder's skips.md,
+    else the `## Outcome` header lane."""
     try:
         lanes = re.findall(r'^- lane:\s*(\S+)', (task / 'skips.md').read_text(encoding='utf-8'), re.M)
     except OSError:
-        return False
-    return bool(lanes) and lanes[-1] == 'solo'
+        lanes = []
+    if lanes:
+        return lanes[-1] == 'solo'
+    return outcome_lane(task) == 'solo'
 
 
 def orphaned_attempts(task: pathlib.Path):
     """Attempts of a running dispatch whose parent died (dispatch.py status --orphans); display-only, never fails."""
-    if not any(task.glob('*.attempt.json')):
+    rd = order.records_dir(task)
+    if not any(rd.glob('*.attempt.json')):
         return []
     try:
         import dispatch
-        return dispatch.status(task, True)
+        return dispatch.status(rd, True)
     except Exception:
         return []
 
 
 def task_rows(task: pathlib.Path):
     rows = []
-    running = [p for p in task.glob('*.running')]
+    rd = order.records_dir(task)
+    running = [p for p in rd.glob('*.running')]
     steps = plan_steps(task)
     front = ticket_of(task)
     if not running and front is not None and front[1] == 'done' and solo_lane(task):
@@ -248,7 +271,7 @@ def task_rows(task: pathlib.Path):
         else:
             rows.append((task.name, 'task', '⏳', 'not planned', 0))
     for n, title, lvl in steps:
-        glyph, status, pct = step_row(task / f'step-{n}', title, lvl)
+        glyph, status, pct = step_row(rd / f'step-{n}', title, lvl)
         rows.append((task.name, f'{n}. {title}', glyph, status, pct))
     grade = task / 'grade.md'
     if grade.exists():
@@ -289,11 +312,14 @@ def summary(root: pathlib.Path) -> str:
     tasks = task_dirs(root)
     if not tasks:
         return ''
-    t = max(tasks, key=lambda d: max((p.stat().st_mtime for p in d.rglob('*')), default=0))
+    def newest(d):
+        dirs = [d, order.records_dir(d)]
+        return max((p.stat().st_mtime for x in dirs if x.is_dir() for p in x.rglob('*')), default=0)
+    t = max(tasks, key=newest)
     rows, steps = task_rows(t)
     step_rows = [r for r in rows if r[1] not in ('task', 'hidden check')]
     if not step_rows:
-        if any(t.glob('*.running')):
+        if any(order.records_dir(t).glob('*.running')):
             return f'{t.name} planning'
         front = ticket_of(t)
         return f'{t.name} closed' if front is not None and front[1] == 'done' else f'{t.name} not planned'
@@ -345,8 +371,9 @@ def budget_cell(task: pathlib.Path) -> str:
 def has_step_work(task: pathlib.Path) -> bool:
     """True when the task has any recorded step work: a planner-L*.md, a step-*/handoff.md,
     or a *.running file. The step-* glob is on purpose: a superseded dir's handoff still counts."""
-    return bool(list(task.glob('planner-L*.md')) or list(task.glob('step-*/handoff.md'))
-                or list(task.glob('*.running')))
+    rd = order.records_dir(task)
+    return bool(list(rd.glob('planner-L*.md')) or list(rd.glob('step-*/handoff.md'))
+                or list(rd.glob('*.running')))
 
 
 # Board visibility per ticket status. A new status in tickets.ENUMS['status'] must be
@@ -496,14 +523,21 @@ def lane_ledger(root: pathlib.Path, main_root, main_head: str, git) -> list:
     lane with no record shows `-` for Base, Stale and Owner, and its base is its fork point."""
     def own(d, name):
         f = d / name
-        return f.is_file() and not (main_root / d.relative_to(root) / name).is_file()
+        try:
+            rel = d.relative_to(root)
+        except ValueError:
+            return f.is_file()
+        return f.is_file() and not (main_root / rel / name).is_file()
 
-    mine = [d for d in sorted(task_dirs(root))
-            if own(d, 'base-sha') or own(d, 'runs.jsonl') or any(own(d, f.name) for f in d.glob('*.dispatch.json'))]
+    def owns(d):
+        return own(d, 'base-sha') or own(d, 'runs.jsonl') or any(own(d, f.name) for f in d.glob('*.dispatch.json'))
+
+    rds = {t: order.records_dir(t) for t in task_dirs(root)}
+    mine = [t for t in sorted(rds) if owns(rds[t])]
     base = owner = '-'
     verdict, held = 'none', ''
     if mine:
-        d = mine[-1]
+        d = rds[mine[-1]]
         sha = ''
         f = d / 'base-sha'
         if f.is_file():
@@ -768,8 +802,8 @@ def selftest() -> int:
         done_with_plan = task_dir(gate, 'done-with-plan', front_with('done'))
         (done_with_plan / 'planner-L1.md').write_text('## Plan\n')
         done_with_step = task_dir(gate, 'done-with-step', front_with('done'))
-        (done_with_step / 'step-1').mkdir()
-        (done_with_step / 'step-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
+        (order.records_dir(done_with_step) / 'step-1').mkdir(parents=True)
+        (order.records_dir(done_with_step) / 'step-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
         proposed_no_steps = task_dir(gate, 'proposed-no-steps', front_with('proposed'))
 
         expect('dropped ticket with no steps is hidden', not belongs_on_board(dropped_no_steps))
@@ -828,6 +862,41 @@ def selftest() -> int:
             got = [r[3] for r in srows]
             expect(f'solo lane {status} ticket reads {want!r}, got {got!r}', got == want)
 
+        # 5e. Records dir (T-0541): an open ticket whose plan, step dir and priced runs.jsonl sit only
+        # in <.sdlc>/runtime/tasks/<key>/ renders its step row and cost; the legacy fixture keeps the
+        # same records in the task folder and reads the same.
+        for label, runtime in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+            rroot = tmp / ('rt' if runtime else 'lg') / '.sdlc'
+            rt = task_dir(rroot, '0001-a', front.replace('status: ready', 'status: claimed'))
+            r = rroot / 'runtime' / 'tasks' / '0001-a' if runtime else rt
+            (r / 'step-1').mkdir(parents=True)
+            (r / 'planner-L2.md').write_text('## Goal\ng\n\n## Step 1: Do it\nlevel: L2\n')
+            (r / 'runs.jsonl').write_text('{"role":"planner","level":"L2","file":"planner-L2.md","cost_usd":1.5}\n')
+            (r / 'step-1' / 'handoff.md').write_text('## Step 1: Do it\nlevel: L2\n')
+            (r / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n')
+            (r / 'step-1' / 'runs.jsonl').write_text('{"role":"builder","level":"L2","file":"builder-L2.md","cost_usd":2.25}\n')
+            clear_state()
+            out = render(rroot, [rt])
+            ok = ('| 1. Do it | 🟡 built · builder L2, awaiting verify | 50 |' in out
+                  and '$3.75 spent' in out and not (rt / 'runs.jsonl').exists() == runtime)
+            expect(f'{label}: step row and $3.75 spent, got {out!r}', ok)
+            if ok:
+                print(f'ok: {label}: step row and $3.75 spent')
+
+        # 5f. No skips.md: a done ticket whose Outcome header names lane solo reads closed with a
+        # step folder; the same fixture with lane full is the control that still reads built.
+        for lane, want in (('solo', ['closed']), ('full', ['built · builder L2, awaiting verify'])):
+            oroot = tmp / f'outcome-lane-{lane}'
+            ot = task_dir(oroot, 'outcomed', front.replace('status: ready', 'status: done')
+                          + f'\n## Outcome\n\n2026-10-13 · lane: {lane} L2 · verdict: pass\n')
+            (ot / 'runs.jsonl').write_text('{"role": "solo"}\n')
+            (ot / 'step-1').mkdir()
+            (ot / 'step-1' / 'handoff.md').write_text('## Step 1: do it\nlevel: L2\n')
+            (ot / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n')
+            orows, _ = task_rows(ot)
+            got = [r[3] for r in orows]
+            expect(f'Outcome lane {lane} done ticket reads {want!r}, got {got!r}', got == want)
+
         # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
         # name is alphabetical. With no flag, a root with tickets sorts by id with
         # unticketed tasks after by mtime; a root without tickets equals --sort recent.
@@ -841,7 +910,7 @@ def selftest() -> int:
                    proc.returncode == 0)
             return proc.stdout
 
-        def order(out, names):
+        def row_order(out, names):
             return sorted((n for n in names if f'| {n} |' in out), key=lambda n: out.index(f'| {n} |'))
 
         srt = tmp / 'sort'
@@ -852,18 +921,18 @@ def selftest() -> int:
         for i, d in enumerate(made):
             os.utime(d, (1_000_000 + i * 100, 1_000_000 + i * 100))
         names = [d.name for d in made]
-        got = order(run_main(srt, '--sort', 'id'), names)
+        got = row_order(run_main(srt, '--sort', 'id'), names)
         expect(f'--sort id puts T-0002 before T-0003, then unticketed by name, got {got}',
                got == ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
-        got = order(run_main(srt, '--sort', 'name'), names)
+        got = row_order(run_main(srt, '--sort', 'name'), names)
         expect(f'--sort name is alphabetical, got {got}', got == sorted(names))
-        got = order(run_main(srt, '--sort', 'recent'), names)
+        got = row_order(run_main(srt, '--sort', 'recent'), names)
         expect(f'--sort recent is mtime order, got {got}', got == names)
         # Unticketed tasks follow by mtime: derive the expected order from the utime values.
         unticketed = sorted((d for d in made if d.name in ('alpha', 'bravo')),
                             key=lambda d: d.stat().st_mtime)
         want = ['yankee-two', 'zulu-three'] + [d.name for d in unticketed]
-        got = order(run_main(srt), names)
+        got = row_order(run_main(srt), names)
         expect(f'no --sort with tickets is id then unticketed by mtime, want {want}, got {got}',
                got == want and want != ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
 
@@ -874,7 +943,7 @@ def selftest() -> int:
         for i, d in enumerate(pmade):
             os.utime(d, (1_000_000 + i * 100, 1_000_000 + i * 100))
         pnames = [d.name for d in pmade]
-        got = order(run_main(plain), pnames)
+        got = row_order(run_main(plain), pnames)
         expect(f'no --sort without tickets is mtime order, got {got}', got == pnames)
         # The state file adds ' · changed' markers between runs; compare with it removed.
         clear_state()
@@ -886,9 +955,10 @@ def selftest() -> int:
         # 5b. Renders write nothing under the root, and "· changed" still works.
         clean = tmp / 'clean'
         ct = task_dir(clean, 'clean-task', '## Goal\nx\n')
+        crd = order.records_dir(ct, create=True)
         before = sorted(p for p in clean.rglob('*'))
         first = render(clean, [ct])
-        (ct / 'planner-L1.running').touch()
+        (crd / 'planner-L1.running').touch()
         second = render(clean, [ct])
         after = sorted(p for p in clean.rglob('*') if p.name != 'planner-L1.running')
         expect('render writes no .board-state.json under the root',
@@ -902,7 +972,7 @@ def selftest() -> int:
                state_path(clean) != state_path(plain) and state_path(clean).parent == state_dir)
 
         # 5c. A legacy <root>/.board-state.json gets a hint, is never touched, and --summary ignores it.
-        (ct / 'planner-L1.running').unlink()
+        (crd / 'planner-L1.running').unlink()
         ot = task_dir(clean, 'orph', '# o\n')
         dead = subprocess.Popen([sys.executable, '-c', 'pass'])
         dead.wait()
@@ -969,8 +1039,8 @@ def selftest() -> int:
         expect(f'summary ignores builder-L5 in a superseded dir, got {got!r}', '⚠ L5' not in got)
         expect(f'cost includes the superseded dir, got {cost(sp)}', abs(cost(sp) - 1.25) < 1e-9)
         only_old = task_dir(sup_root, 'only-superseded', '## Goal\nx\n')
-        (only_old / 'step-1.superseded-1').mkdir()
-        (only_old / 'step-1.superseded-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
+        (order.records_dir(only_old) / 'step-1.superseded-1').mkdir(parents=True)
+        (order.records_dir(only_old) / 'step-1.superseded-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
         expect('has_step_work counts a handoff in a superseded dir', has_step_work(only_old))
 
         # 5f. Dot-prefixed closed ticket folders (.NNNN-slug) are ordinary tasks to the board.
@@ -993,7 +1063,7 @@ def selftest() -> int:
         rows = [ln for ln in out.splitlines() if ln.startswith('| T-')]
         expect(f'.board-state.json produces no row, got {rows}',
                not any('board-state' in ln for ln in rows))
-        got = order(out, ['0002-open', '.0003-closed-work', '0006-later'])
+        got = row_order(out, ['0002-open', '.0003-closed-work', '0006-later'])
         expect(f'default sort puts the dot folder by its id, got {got}',
                got == ['0002-open', '.0003-closed-work', '0006-later'])
         one = run_main(dot, '--task', '.0003-closed-work')
@@ -1151,7 +1221,8 @@ def selftest() -> int:
         lanes_dir = ltmp / 'lanes'
         git('worktree', 'add', '-q', '-b', 'alpha', str(lanes_dir / 'alpha'))
         git('worktree', 'add', '-q', '-b', 'beta', str(lanes_dir / 'beta'))
-        (lanes_dir / 'alpha' / '.sdlc' / 't' / 'planner-L1.running').touch()
+        (lanes_dir / 'alpha' / '.sdlc' / 'runtime' / 'tasks' / 't').mkdir(parents=True)
+        (lanes_dir / 'alpha' / '.sdlc' / 'runtime' / 'tasks' / 't' / 'planner-L1.running').touch()
         head = subprocess.run(['git', '-C', str(repo), 'branch', '--show-current'], env=env,
                               capture_output=True, text=True).stdout.strip()
 
@@ -1224,7 +1295,8 @@ def selftest() -> int:
         # T-0374: the declared hash-bound list lives in the main worktree's config
         (repo / '.sdlc' / 'config').write_text('hash_bound: gen/*.json  # generated\n')
         # stale: its dispatch file recorded a base that main does not contain
-        (lanes_dir / 'stale' / '.sdlc' / 't' / 'solo-L2-t.dispatch.json').write_text(
+        (lanes_dir / 'stale' / '.sdlc' / 'runtime' / 'tasks' / 't').mkdir(parents=True)
+        (lanes_dir / 'stale' / '.sdlc' / 'runtime' / 'tasks' / 't' / 'solo-L2-t.dispatch.json').write_text(
             json.dumps({'role': 'solo', 'base_sha': orphan}))
         # verified: a base-sha file at main's head and a passing task-dir verifier result
         (lanes_dir / 'verified' / '.sdlc' / 't' / 'base-sha').write_text(base + '\n')

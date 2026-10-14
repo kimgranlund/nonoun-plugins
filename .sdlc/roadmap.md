@@ -543,4 +543,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0536 | [0536-plan-defect-order-and-amend](0536-plan-defect-order-and-amend/handoff.md) | Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) | feature | L3 | P2 | T-0543 | ⏳ proposed |
 | T-0544 | [0544-sdlc-layout-tidy](0544-sdlc-layout-tidy/handoff.md) | Lean records E: Layout rule and tidy (0.23.0) | feature | L2 | P1 | T-0543 | ⏳ proposed |
 | T-0545 | [0545-lean-records-docs-release](0545-lean-records-docs-release/handoff.md) | Lean records F: Docs and release 0.23.0 (0.23.0) | chore | L2 | P1 | T-0544 | ⏳ proposed |
-| T-0546 | [0546-build-base-wrong-tree](0546-build-base-wrong-tree/handoff.md) | Build base taken from the wrong tree: solo_run --cwd and resumed lanes record a base that is not the build's start | bug | L2 | P2 | T-0540 | ⏳ proposed |
+| T-0546 | [.0546-build-base-wrong-tree](.0546-build-base-wrong-tree/handoff.md) | Build base taken from the wrong tree: solo_run --cwd and resumed lanes record a base that is not the build's start | bug | L2 | P2 | T-0540 | 🟢 done |

@@ -381,14 +381,27 @@ def fork_floor(directory):
 NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
 
 
-def build_base(directory, records=None, tree=None):
+def lane_start(tree, floor=''):
+    """The commit a lane worktree started from: base_sha of its fanout record (.lane.json at its top), else the fork floor."""
+    top = git('rev-parse', '--show-toplevel', cwd=tree).stdout.strip()
+    try:
+        rec = json.loads((Path(top) / '.lane.json').read_text(encoding='utf-8')) if top else {}
+    except (OSError, ValueError):
+        rec = {}
+    sha = str(rec.get('base_sha') or '').strip() if isinstance(rec, dict) else ''
+    return sha or floor
+
+
+def build_base(directory, records=None, tree=None, role=None):
     """The build-start commit run.sh stores in base-sha (T-0381), in this order: (1) a base the handoff names (a line
     `base: <sha>`), else (2) the sha recorded at the step's first dispatch, kept valid, else (3) HEAD of the execution
     tree, never the main checkout's HEAD. A supplied SDLC_BASE_SHA that resolves to another commit is refused and the
     pick kept; a named base that is not an ancestor of HEAD raises Refuse. Git runs in the execution tree (tree when
     given, as prepare --tree settles it, else the handoff's own tree, or the lane worktree a main-checkout handoff is
     run from), and in a lane worktree a recorded sha older than the lane's fork point is stale (T-0376). Returns
-    (stored, base). base-sha and the dispatch records are read in records (the records dir, default directory's)."""
+    (stored, base). base-sha and the dispatch records are read in records (the records dir, default directory's). A verifier
+    with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD, which after a resumed
+    driver is its own WIP commit (T-0546)."""
     records = Path(records) if records is not None else order.records_dir(directory)
     stored = ''
     f = records / 'base-sha'
@@ -434,6 +447,11 @@ def build_base(directory, records=None, tree=None):
             base, why = merges[0], 'newest resync merge since the recorded base-sha'
     if not base:
         base, why = git('rev-parse', 'HEAD', cwd=cwd).stdout.strip(), 'HEAD of the execution tree (nothing named or recorded)'
+        start = lane_start(cwd, floor) if role == 'verifier' and not stored else ''
+        if start and start != base and ancestor(start):  # a lane resumed after its driver died: HEAD is its WIP commit (T-0546)
+            say('nothing recorded for this step: Base sha is the lane start %s, not its HEAD %s; name another with a line \'base: <sha>\''
+                % (start[:12], base[:12]))
+            base, why = commit(start), 'the lane start (nothing named or recorded)'
     supplied = re.sub(r'\s', '', os.environ.get('SDLC_BASE_SHA', ''))
     if supplied and commit(supplied) != base:
         say("SDLC_BASE_SHA refused: %s (supplied) differs from the step base %s (%s); name it in the handoff with a line 'base: <sha>' to use it"
@@ -889,7 +907,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
 
         base = None
         if role in ('builder', 'verifier'):
-            stored, base = build_base(directory, records, run_tree)
+            stored, base = build_base(directory, records, run_tree, role)
             if not dry_run and base != stored:
                 (records / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
@@ -2108,13 +2126,28 @@ def selftest():
         # T-0413: prepare settles the execution tree once (--tree, else exec_tree), and Tree, the tmp prefix and Base sha all name it.
         real_lane = os.path.realpath(str(lw2))
 
-        def names_lane(d):
+        def names_lane(d, want=lane_tip2, avoid=main_head):
             return (d['tree'] == real_lane and 'Tree: %s ' % real_lane in d['prompt'] and 'Tree: %s ' % rr not in d['prompt']
                     and d['tmp_prefix'].startswith(real_lane + '/.worktrees/tmp/')
-                    and d['base_sha'] == lane_tip2 != main_head and 'Base sha: ' + lane_tip2 in d['prompt'])
+                    and d['base_sha'] == want != avoid and 'Base sha: ' + want in d['prompt'])
         with clean_env(), cwd(lw2), contextlib.redirect_stderr(io.StringIO()):
             from_lane = prepare('verifier', 'L1', str(mhand), dry_run=True)
-        case('prepare from a lane worktree for a main-checkout handoff: Tree names the lane, as Base sha does', names_lane(from_lane))
+        case('prepare from a lane worktree for a main-checkout handoff: Tree names the lane, Base sha its start (T-0546)',
+             names_lane(from_lane, fork, lane_tip2))
+        # T-0546: a lane resumed after its driver died has no base recorded and its HEAD is the driver's WIP commit; a verifier
+        # gets the lane start (its .lane.json base_sha, else the fork point), never that HEAD, so its diff is not empty.
+        verr = io.StringIO()
+        with clean_env(), cwd(lw2), contextlib.redirect_stderr(verr):
+            vres = prepare('verifier', 'L1', str(mhand), dry_run=True)['base_sha']
+        case('a resumed lane with nothing recorded: the verifier base is the lane fork point, not its WIP HEAD, and it says so',
+             vres == fork != lane_tip2 and 'lane start %s' % fork[:12] in verr.getvalue())
+        (lw2 / '.lane.json').write_text(json.dumps({'lane': 'lane2', 'base_sha': lane_head}))
+        with clean_env(), cwd(lw2), contextlib.redirect_stderr(io.StringIO()):
+            vrec = prepare('verifier', 'L1', str(mhand), dry_run=True)['base_sha']
+            bres = prepare('builder', 'L1', str(mhand), dry_run=True)['base_sha']
+        (lw2 / '.lane.json').unlink()
+        case('a resumed lane with a fanout record: the verifier base is the record base_sha', vrec == lane_head != fork)
+        case('negative control: a builder with nothing recorded starts at the lane HEAD (the WIP commit)', bres == lane_tip2 != vrec)
         rct, dtree, _ = prep(rr, 'builder', 'L1', str(mhand), '--dry-run', '--tree', str(lw2))
         case('prepare --tree: Tree, Base sha and the tmp prefix name the given lane worktree', rct == 0 and names_lane(dtree))
         rcm, dmain, _ = prep(rr, 'builder', 'L1', str(mhand), '--dry-run')

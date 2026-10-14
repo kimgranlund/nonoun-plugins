@@ -1,6 +1,8 @@
 """Bench baseline reader: the passed-step cost baseline of a bench dir's results.
 
-baseline(bench_dir) returns a dict over <bench_dir>/results/*/step-<n>/ (never a .superseded- dir):
+baseline(bench_dir) returns a dict over <bench_dir>/results/*/step-<n>/ (never a .superseded- dir),
+the step dirs read from each result dir's records dir (order.records_dir: results/runtime/tasks/<run>/,
+or the result dir itself when it holds its records in place; the `runtime` name is no result dir):
   median_cost_per_passed_step  the median step cost over counted steps, or None when no step
                                counts or the results dir is missing;
   steps   the (result dir, step n, cost) tuples that counted: a step counts when its newest
@@ -51,13 +53,18 @@ def baseline(bench_dir):
         return out
     for name in names:
         rdir = os.path.join(results, name)
-        if not os.path.isdir(rdir):
+        if name == 'runtime' or not os.path.isdir(rdir):
             continue
-        out['hidden'][rdir] = _hidden(rdir)
+        out['hidden'][rdir] = _hidden(rdir)   # grade.md stays in the result dir
+        rec = str(order.records_dir(rdir))
+        try:
+            snames = os.listdir(rec)
+        except OSError:
+            snames = []
         found = []
-        for sname in os.listdir(rdir):
+        for sname in snames:
             m = STEP_RE.match(sname)  # anchored: step-<n>.superseded-<k> never matches
-            sdir = os.path.join(rdir, sname)
+            sdir = os.path.join(rec, sname)
             if m and os.path.isdir(sdir):
                 found.append((int(m.group(1)), sdir))
         for n, sdir in sorted(found):

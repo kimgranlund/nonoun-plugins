@@ -63,8 +63,11 @@ land
   `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
   nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
-  and, after committing any record left in the sub-agent worktree's ticket folder onto the branch (T-0439), for a solo level L2 or L3, `no verifier result` or `verifier <verdict>` read from the verifier results committed on
-  the branch that the integration branch does not hold (git objects, newest by order.py). Exit 0 only for `merged`.
+  and, after copying the sub-agent worktree's records dir (order.records_dir) into the integration worktree's runtime
+  records dir (copy_lane_records; no commit on the branch), for a solo level L2 or L3, `no verifier result` or
+  `verifier <verdict>` read from that copy, else from the verifier results committed on the branch that the
+  integration branch does not hold (git objects, newest by order.py: a branch with no worktree commits its verifier
+  result into the ticket folder with `git add -f`, and the close commit untracks it). Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
   (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
   Lanes (T-0452), after the merge lock is released: a `merged` branch checked out under .claude/worktrees/<leaf> whose
@@ -120,7 +123,7 @@ cover (T-0481)
   `git bisect start <to> <from> --first-parent` and exits 1; green exits 0.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
-  the lane and appends its record to the task's skips.md (committed with the lane): `solo` (ticket level L1 and
+  the lane and appends its record to the task's skips.md (committed with the lane, untracked by the close commit): `solo` (ticket level L1 and
   L2 by default) starts the solo agent (agents/solo.md) from a typed brief at the level's model and effort (Claude:
   `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at L1 Sonnet high, L2 Opus medium; Codex: `codex_exec.py solo
   L1|L2|L3`, honoring SDLC_BACKEND), both started through `solo_run.py` so each lane's solo session cost lands in
@@ -201,8 +204,8 @@ run
        SDLC_ROLE=conductor (hooks/block-publish.sh blocks git push, gh writes, and package publishing
        in the Claude sessions the driver launches),
        and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (on Claude needs SDLC_CLAUDE_EXEC=1; claude -p --agent sdlc-lite:conductor, Opus
-       medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
-       close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
+       medium) told to run /sdlc-lite:chain on the handoff unattended, skip the file stage (no
+       filer, no ticket close), and never commit, push, or publish. --driver replaces it (stubs,
        tests). After the driver returns, whatever its rc and before step 3 or any lane commit,
        `bash reap-tmp-worktrees.sh <lane worktree>` runs (exit code ignored): it removes each
        <lane>/.worktrees/tmp/<role>-<pid> prefix whose owner pid is dead, which the lane's last
@@ -256,11 +259,14 @@ run
        logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
        the highest attempt already logged for that gate, so it grows on each rerun); the first red one runs `git reset --hard <pre-merge HEAD>`
        (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
-       copy has no filer-L*.md, run `tickets.py --root <rel> close <slug>` there (with
+       tree tracks nothing there (a gitignored trail), copy the lane's records dir into the
+       integration runtime records dir (copy_lane_records), run `tickets.py --root <rel> close <slug>` there (with
        --rewrite-refs when given: in numbered mode, files outside the ticket folder that cite
        <rel>/NNNN-<slug> are rewritten to <rel>/.NNNN-<slug>), and commit `close <id>`
        (`merged`), staging <rel> plus every path outside it that the close changed (a
-       `git status --porcelain` snapshot before and after; never the whole worktree); a close
+       `git status --porcelain` snapshot before and after; never the whole worktree); the closed
+       folder's files other than handoff.md and what it tracked before the merge are copied into
+       its runtime records dir and untracked by that commit, then mirrored into the main checkout; a close
        refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
        naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
   Per ticket of an external lane: no pre-sync wip, no sync, no driver (so no driver log), and no
@@ -445,8 +451,8 @@ GIT_CFG = ('-c', 'gc.auto=0', '-c', 'maintenance.auto=false')
 TIMEOUT_MS = '3600000'
 PROMPT = ('Run /sdlc-lite:chain {handoff} unattended. No person is present: never ask the user and '
           'never use AskUserQuestion; where a step would ask, take its recommended option and go on. '
-          'In the file stage run the filer only and do not close the ticket (no tickets.py close), '
-          'because /fanout closes it on the integration branch after the merge. '
+          'Skip the file stage: run no filer and no tickets.py close, because /fanout closes the ticket on the '
+          'integration branch after the merge. '
           'Never commit, push, or publish: fanout.py commits this lane when you finish.')
 
 
@@ -931,15 +937,19 @@ def driver_for(ctx, t, kind='full'):
     return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
 
 
-def close_reason(ctx, t, gate=None, notes=None):
+def close_reason(ctx, t, gate=None, notes=None, has_filer=True):
     """The `tickets.py close --reason` text for a ticket a solo agent delivered (a solo lane writes no filer
-    file, which close needs otherwise), or None for every other lane. gate, the merge's gate class (T-0481), adds
-    `; gate: <class>`. notes, the verifier's `## Notes` lines, add `; verifier notes: ...`."""
+    file, which close needs otherwise), or, until the verdict gate (T-0543) replaces it, for any other lane with
+    has_filer False (the full chain lane runs no filer by default, lean records); else None. gate, the merge's gate
+    class (T-0481), adds `; gate: <class>`. notes, the verifier's `## Notes` lines, add `; verifier notes: ...`."""
     kind, tier = ctx['kinds'].get(t.id, ('', None))
     if kind != 'solo':
-        return None
-    why = (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
-           if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
+        if has_filer:
+            return None
+        why = 'delivered by the full chain lane; no filer by default (lean records)'
+    else:
+        why = (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
+               if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
     why += f'; gate: {gate}' if gate else ''
     if notes:
         why += '; verifier notes: ' + ' | '.join(n.lstrip('-* ').strip() for n in notes)
@@ -1203,6 +1213,18 @@ def setup(ctx):
                     dst_dir.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copytree(str(src_dir), str(dst_dir),
                                     ignore=shutil.ignore_patterns('*.log', '.run.lock', '*.running'))
+        # lean records: each ticket's runtime records dir (never committed) is copied in too, so a role in a lane
+        # finds its earlier results; an existing destination is left alone
+        for lane in regular:
+            for t in lane.tickets:
+                src_rec = runtime_records(ctx['top'] / ctx['trel'] / t.slug)
+                if not src_rec.is_dir():
+                    continue
+                for wt in [ctx['integ_dir']] + [ln.dir for ln in regular]:
+                    dst_rec = runtime_records(wt / ctx['trel'] / t.slug)
+                    if not dst_rec.exists():
+                        shutil.copytree(str(src_rec), str(dst_rec), ignore=RECORDS_IGNORE)
+                        order.records_dir(dst_rec, create=True)
         # .sdlc/config is often untracked (the trail is gitignored): without it a fresh worktree reads the
         # default ticket root and numbering, so tickets.py close would look for <root>/<slug>, not <root>/tickets/<slug>
         src_cfg = ctx['root'] / 'config'
@@ -1500,6 +1522,37 @@ def wait_for_overlap(ctx, lane, t, ref):
             cond.wait(2)
 
 
+def closed_folder(tdir, slug):
+    """The ticket folder after `tickets.py close`: <tdir>/<slug> or <tdir>/.<slug>, else the one ^\\.?\\d+-<slug>$
+    dir holding handoff.md (numbered mode); None when none or several match."""
+    for c in (tdir / slug, tdir / f'.{slug}'):
+        if c.is_dir():
+            return c
+    pat = re.compile(r'^\.?\d+-' + re.escape(slug) + r'$')
+    hits = [d for d in tdir.iterdir() if pat.match(d.name) and (d / 'handoff.md').is_file()] if tdir.is_dir() else []
+    return hits[0] if len(hits) == 1 else None
+
+
+def move_closed_records(cf, folder, kept):
+    """Copy every file under the closed folder cf into its runtime records dir, except handoff.md and the paths in
+    kept (tracked before the merge), never overwriting a file already there. A rename that changed the key (numbered
+    mode) first merges the records dir of the pre-close folder into the new one."""
+    new = runtime_records(cf)
+    old = runtime_records(folder)
+    if new != old and old.is_dir():
+        shutil.copytree(str(old), str(new), dirs_exist_ok=True)
+        shutil.rmtree(str(old), ignore_errors=True)
+    order.records_dir(new, create=True)
+    for f in sorted(cf.rglob('*')):
+        r = f.relative_to(cf).as_posix()
+        if not f.is_file() or r == 'handoff.md' or r in kept:
+            continue
+        dst = new / r
+        if not dst.exists():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(f), str(dst))
+
+
 def merge_gate_close(ctx, lane, t, lock, ref, cell):
     """Step 5 for both lane kinds: first, outside the lock, wait_for_overlap; then under the merge lock in
     the integration worktree: refuse a dirty tree, record the paths ref brings in lane.files, merge ref
@@ -1570,16 +1623,22 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 if (integ / 'package.json').is_file() and not (integ / 'node_modules').exists():
                     hint = ' (no node_modules in the gate worktree: start the gate with `npm ci && ...`)'
                 return f'red: {gate} rc={rc}{hint}', cell
-        if lane.dir is not None:  # an external lane has no lane dir: its ticket folder came in with the merge
-            src, dst = lane.dir / trel / t.slug, integ / trel / t.slug
-            if not any(dst.glob('filer-L*.md')) and src.is_dir():
-                shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
+        folder = integ / trel / t.slug
+        src_tree = lane.dir if lane.dir is not None else ctx.get('lane_wt')  # an external lane has no lane dir
+        if src_tree is not None and pathlib.Path(src_tree).is_dir():
+            src = pathlib.Path(src_tree) / trel / t.slug
+            # a gitignored trail (T-0477) is not tracked in the integration tree: the lane's folder is copied in
+            if src.is_dir() and not git_out(integ, 'ls-files', '--', (trel / t.slug).as_posix()).strip():
+                shutil.copytree(str(src), str(folder), dirs_exist_ok=True)
+            copy_lane_records(src, folder)
         if ctx.get('land') and ctx['kinds'].get(t.id, ('', None))[0] == 'solo':
-            record_solo_lane(integ / trel / t.slug, ctx['kinds'][t.id][1])
+            record_solo_lane(folder, ctx['kinds'][t.id][1])
+        rec = order.records_dir(folder)
+        has_filer = any(rec.glob('filer-L*.md')) or any(folder.glob('filer-L*.md'))
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
-        if close_reason(ctx, t):
-            vf = sorted((integ / trel / t.slug).glob('verifier-L*.md'))
-            argv += ['--reason', close_reason(ctx, t, cls, results.notes_lines(vf[-1]) if vf else None)]
+        if close_reason(ctx, t, has_filer=has_filer):
+            vf = sorted(rec.glob('verifier-L*.md')) or sorted(folder.glob('verifier-L*.md'))
+            argv += ['--reason', close_reason(ctx, t, cls, results.notes_lines(vf[-1]) if vf else None, has_filer)]
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
         pre = porcelain(integ)
@@ -1595,13 +1654,31 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         changed = {path for _, path in porcelain(integ) - pre}
         extra = sorted(path for path in changed
                        if relp != '.' and path != relp and not path.startswith(relp + '/'))
+        # lean records: the closed folder's records move to its runtime records dir; only the handoff and what the
+        # folder tracked before the merge (legacy records, no migration) stay in git
+        cf = closed_folder(integ / trel, t.slug)
+        kept = {pathlib.PurePosixPath(x).relative_to((trel / t.slug).as_posix()).as_posix()
+                for x in git_out(integ, 'ls-tree', '-r', '--name-only', before, '--', (trel / t.slug).as_posix()).splitlines() if x}
+        if cf is not None:
+            move_closed_records(cf, folder, kept)
         ad = git(integ, 'add', '-A', '--', relp, *extra)
         # T-0477: a gitignored trail (copied into the worktrees, never committed) leaves nothing to stage, and git
         # exits 1 for it after staging the rest
         if ad.returncode and 'ignored by one of your .gitignore' not in ad.stderr:
             raise RuntimeError(f'git add -A -- {relp} failed: {ad.stderr.strip()}')
+        if cf is not None:
+            crel = cf.relative_to(integ).as_posix()
+            drop = [x for x in git_out(integ, 'ls-files', '--', crel).splitlines()
+                    if x and (r := pathlib.PurePosixPath(x).relative_to(crel).as_posix()) != 'handoff.md' and r not in kept]
+            if drop:
+                git_out(integ, 'rm', '-q', '-f', '--', *drop)
         if git(integ, 'diff', '--cached', '--quiet').returncode:
             git_out(integ, 'commit', '-q', '-m', f'close {t.id}')
+        if cf is not None:  # mirror the closed ticket's records into the main checkout
+            src_rec = runtime_records(cf)
+            if src_rec.is_dir():
+                dst_rec = order.records_dir(runtime_records(ctx['top'] / cf.relative_to(integ)), create=True)
+                shutil.copytree(str(src_rec), str(dst_rec), dirs_exist_ok=True)
         return 'merged', merge_sha[:7]
 
 
@@ -1957,10 +2034,20 @@ def branch_names(cwd, ref, prefix):
 
 
 def branch_verdict(ctx, ref, t, with_held=False):
-    """'pass', 'fail', ... or None: the newest task-dir verifier result committed on ref that the integration branch
-    does not hold yet (read from git objects into a temp dir, never from a tree). With with_held, the pair
-    (verdict, held): held is the subjects or owners of a `fail` result's `deferred:` or `unmet-dependency:` note
-    (steps.held_note, T-0408), else ''."""
+    """'pass', 'fail', ... or None: the newest verifier result in the integration worktree's runtime records dir for
+    the ticket (runtime_records, the copy land_ticket made from the lane worktree's records dir); when it holds none,
+    the newest task-dir verifier result committed on ref that the integration branch does not hold yet (read from git
+    objects into a temp dir, never from a tree). With with_held, the pair (verdict, held): held is the subjects or
+    owners of a `fail` result's `deferred:` or `unmet-dependency:` note (steps.held_note, T-0408), else ''."""
+    rd = runtime_records(ctx['integ_dir'] / ctx['trel'] / t.slug)
+    try:
+        local = {f.name for f in rd.iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
+    except OSError:
+        local = set()
+    if local:
+        newest = newest_verifier(rd, local)
+        v = steps.verdict_or_none(newest) if newest else None
+        return (v, steps.held_note(newest) if newest and v == 'fail' else '') if with_held else v
     prefix = (ctx['trel'] / t.slug).as_posix()
     on_ref = branch_names(ctx['cwd'], ref, prefix)
     new = sorted(n for n in on_ref - branch_names(ctx['cwd'], ctx['integration'], prefix)
@@ -1988,14 +2075,24 @@ def record_solo_lane(taskdir, tier):
 
 def host_branch_ticket(root, branch, m):
     """(ticket id, role) of the lane a host branch `worktree-agent-<agent_id>` belongs to, found through the agent_id
-    in a runs.jsonl line of a ticket folder on the branch or in the tree; ('', '') when no record names that agent."""
+    in a runs.jsonl line of the ticket's records dir in this tree, in the branch's own worktree, or of a ticket folder
+    on the branch (git objects); ('', '') when no record names that agent."""
     aid = m.group(1)
+    rel = git_out(root, 'rev-parse', '--show-prefix').strip()
+    wt, cur = None, None
+    for line in git_out(root, 'worktree', 'list', '--porcelain').splitlines():
+        if line.startswith('worktree '):
+            cur = pathlib.Path(line[len('worktree '):])
+        elif line == f'branch refs/heads/{branch}':
+            wt = cur
     for slug, meta in tickets.branch_tickets(root, branch):
         texts = []
-        p = root / slug / 'runs.jsonl'
-        if p.is_file():
-            texts.append(p.read_text(encoding='utf-8', errors='replace'))
-        rel = git_out(root, 'rev-parse', '--show-prefix').strip()
+        paths = [order.records_dir(root / slug) / 'runs.jsonl']
+        if wt is not None and wt.is_dir():
+            paths.append(order.records_dir(wt / f'{rel}{slug}') / 'runs.jsonl')
+        for p in paths:
+            if p.is_file():
+                texts.append(p.read_text(encoding='utf-8', errors='replace'))
         q = git(root, 'show', f'refs/heads/{branch}:{rel}{slug}/runs.jsonl')
         if q.returncode == 0:
             texts.append(q.stdout)
@@ -2153,17 +2250,28 @@ def land_setup(ctx):
         raise
 
 
-def commit_lane_records(ctx, t):
-    """T-0439: the verifier result and run records a driver left in the sub-agent worktree's ticket folder (ignored or
-    untracked there) go onto the lane branch, so the merge carries them in: git add -f of the ticket folder without
-    logs or lock files, then one commit of that folder only. Nothing when the branch has no worktree or no change."""
-    wt = ctx.get('lane_wt')
-    if not wt or not pathlib.Path(wt).is_dir():
-        return
-    folder = (ctx['trel'] / t.slug).as_posix()
-    git(wt, 'add', '-f', '--', folder, ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock', ':(exclude,glob)**/*.running')
-    if git(wt, 'diff', '--cached', '--quiet', '--', folder).returncode:
-        git(wt, 'commit', '-q', '-m', f'{t.id}: run records', '--', folder)
+RECORDS_IGNORE = shutil.ignore_patterns('*.log', '.run.lock', '*.running')
+
+
+def runtime_records(task_dir):
+    """The runtime records dir of a ticket folder, <nearest .sdlc>/runtime/tasks/<name without leading dots>, whatever
+    order.records_dir's legacy rule says for it (order._base finds the base)."""
+    p = os.path.abspath(os.fspath(task_dir))
+    return pathlib.Path(order._base(p)) / 'runtime' / 'tasks' / os.path.basename(p).lstrip('.')
+
+
+def copy_lane_records(src_folder, dst_folder):
+    """Copy a ticket's records dir (order.records_dir) from src_folder's tree into dst_folder's runtime records dir,
+    without logs or lock files; no git command, no commit. False when nothing was copied: no records dir, a legacy
+    ticket whose records travel in the folder itself, or SDLC_SELFTEST_NO_RECORDS_COPY=1 (the negative-control knob)."""
+    if os.environ.get('SDLC_SELFTEST_NO_RECORDS_COPY') == '1':
+        return False
+    src = order.records_dir(src_folder)
+    if not src.is_dir() or src.resolve() == pathlib.Path(src_folder).resolve():
+        return False
+    dst = order.records_dir(runtime_records(dst_folder), create=True)
+    shutil.copytree(str(src), str(dst), dirs_exist_ok=True, ignore=RECORDS_IGNORE)
+    return True
 
 
 def land_ticket(ctx, lock):
@@ -2175,13 +2283,15 @@ def land_ticket(ctx, lock):
     p = git(ctx['cwd'], 'rev-list', '--count', f"{ctx['integration']}..{ref}")
     if p.returncode == 0 and p.stdout.strip() == '0':
         return 'no changes', tip[:7]
-    commit_lane_records(ctx, t)
-    tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'{ref}^{{commit}}')
+    wt = ctx.get('lane_wt')
+    if wt and pathlib.Path(wt).is_dir():
+        copy_lane_records(pathlib.Path(wt) / ctx['trel'] / t.slug, ctx['integ_dir'] / ctx['trel'] / t.slug)
     kind, tier = ctx['kinds'][t.id]
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict, held = branch_verdict(ctx, ref, t, with_held=True)
         if verdict is None:
-            return 'no verifier result (commit the verifier result on the branch, then land again)', tip[:7]
+            return ('no verifier result (the lane worktree\'s records dir holds none; a branch with no worktree commits it '
+                    'into the ticket folder with git add -f, then lands again)'), tip[:7]
         if verdict != 'pass':
             return f'verifier {verdict}' + (f' (held {held}: not a defect, settle it in the owner stage)' if held else ''), tip[:7]
     return merge_gate_close(ctx, lane, t, lock, ref, tip[:7])
@@ -3723,6 +3833,9 @@ def selftest():
                'solo agent (level L1)' in (close_reason(fake, Ticket('T-2', 'x', 't')) or ''))
         expect('case 15 close negative control: a chain or driver ticket closes through its filer, no --reason',
                close_reason(fake, Ticket('T-3', 'x', 't')) is None and close_reason(fake, Ticket('T-4', 'x', 't')) is None)
+        expect('case 15 close: a chain ticket with no filer closes with the lean-records reason (bridge until T-0543)',
+               (close_reason(fake, Ticket('T-3', 'x', 't'), 'full', None, False) or '').startswith(
+                   'delivered by the full chain lane; no filer by default (lean records); gate: full'))
         expect('case 15 close: verifier notes ride in the close reason',
                'verifier notes: a.py:3 em dash' in close_reason(fake, Ticket('T-2', 'x', 't'), None, ['- a.py:3 em dash']))
         # the solo verifier gate reads only a result that is new since the driver started
@@ -3846,7 +3959,8 @@ def selftest():
         expect(f'case 16 real lane: both solo tickets merge and close with the skips guard live, got rc={pr1.returncode} '
                f'done={done1} out={pr1.stdout[-400:]!r} err={pr1.stderr[-300:]!r}',
                pr1.returncode == 0 and done1 == ['T-0001', 'T-0002'])
-        sk = sh(rr1, 'show', 'fanout/real:.sdlc/.0001-one/skips.md').stdout or sh(rr1, 'show', 'fanout/real:.sdlc/one/skips.md').stdout
+        sk = next((q_.read_text(encoding='utf-8') for q_ in (rr1 / '.sdlc' / 'runtime' / 'tasks' / '0001-one' / 'skips.md',
+                                                          rr1 / '.sdlc' / 'runtime' / 'tasks' / 'one' / 'skips.md') if q_.is_file()), '')
         expect(f'case 16 real lane: skips.md records lane solo and a ## Skipped entry for planner and filer, got {sk!r}',
                '- lane: solo' in sk and '- skip: planner; step: all;' in sk and '- skip: filer; step: all;' in sk
                and 'decided: lane' in sk)
@@ -4349,8 +4463,10 @@ def selftest():
                'Merge worktree-T-0001-solo: T-0001' in subjects and 'close T-0001' in subjects)
         expect('case 23 land: the report carries the Lane line with the level and model',
                '- Lane for `T-0001`: solo (level L1: sonnet high)' in l1.stdout)
-        expect('case 23 land: the solo lane is recorded in the ticket skips.md on the integration branch',
-               '- lane: solo' in sh(ld, 'show', f'{integ}:.sdlc/t1/skips.md').stdout)
+        sk1 = ld / '.sdlc' / 'runtime' / 'tasks' / 't1' / 'skips.md'
+        expect('case 23 land: the solo lane is recorded in the runtime skips.md, and the integration tree no longer tracks it',
+               sk1.is_file() and '- lane: solo' in sk1.read_text(encoding='utf-8')
+               and sh(ld, 'cat-file', '-e', f'{integ}:.sdlc/t1/skips.md').returncode != 0)
         l3 = verb(ld, 'land', 'worktree-T-0003-solo', *pin, '--gate', 'test -e f1.txt && test -e f3.txt')
         rep_ld = (lanes_l / 'report.md').read_text() if (lanes_l / 'report.md').is_file() else ''
         expect(f'case 23 land: a second land reuses the integration worktree, gates against both, and the report lists both, '
@@ -4420,29 +4536,65 @@ def selftest():
                    want in lm.stdout and (lm.returncode == 0) == (want == 'merged'))
         expect('case 23 land level L2: the report names the L2 model',
                '- Lane for `T-0002`: solo (level L2: opus medium)' in lm.stdout)
-        # T-0439: a verifier result left uncommitted in the sub-agent worktree (the host's worktree, the record ignored by
-        # git) is committed onto the lane by land, so it reaches the integration branch with no hand step
-        lw = tmp / 'land-wt'
-        sized_repo(lw, ['L2', 'L2'], {'.gitignore': gi + '.sdlc/*/verifier-L*.md\n'})
-        lw_pin = ('--integration', 'fanout/w', '--lanes-dir', str(tmp / 'land-wt-lanes'), '--base', 'main')
-        for k in (1, 2):
-            wt_ = tmp / f'land-wt-agent{k}'
-            sh(lw, 'worktree', 'add', '-q', '-b', f'worktree-agent-w{k}', str(wt_), 'main')
-            (wt_ / f'w{k}.txt').write_text('w\n', encoding='utf-8')
-            sh(wt_, 'add', '-A')
-            sh(wt_, 'commit', '-q', '-m', f'T-000{k}: Ticket t{k}')
-        (tmp / 'land-wt-agent1' / '.sdlc' / 't1' / 'verifier-L3.md').write_text(vhead + '## Verdict\npass\n', encoding='utf-8')
-        (tmp / 'land-wt-agent1' / '.sdlc' / 't1' / 'runs.jsonl').write_text(
-            json.dumps({'role': 'verifier', 'level': 'L3', 'model': 'fable', 'file': 'verifier-L3.md'}) + '\n', encoding='utf-8')
+        expect(f'case 23 land git objects: a verifier committed with git add -f is untracked by the close and kept in the '
+               f'runtime records dir, got {sh(ld, "ls-tree", "-r", "--name-only", integ, "--", ".sdlc/t2").stdout.split()}',
+               sh(ld, 'ls-tree', '-r', '--name-only', integ, '--', '.sdlc/t2').stdout.split() == ['.sdlc/t2/handoff.md']
+               and (ld / '.sdlc' / 'runtime' / 'tasks' / 't2' / 'verifier-L3.md').is_file())
+        # lean records: a verifier result in the sub-agent worktree's runtime records dir (never committed) is copied
+        # into the integration worktree by land, which reads the verdict there; nothing is committed on the lane branch
+        def records_repo(name, n):
+            repo_ = tmp / name
+            sized_repo(repo_, ['L2'] * n, {'.gitignore': gi})
+            for k in range(1, n + 1):
+                wt_ = tmp / f'{name}-agent{k}'
+                sh(repo_, 'worktree', 'add', '-q', '-b', f'worktree-agent-w{k}', str(wt_), 'main')
+                (wt_ / f'w{k}.txt').write_text('w\n', encoding='utf-8')
+                sh(wt_, 'add', '-A')
+                sh(wt_, 'commit', '-q', '-m', f'T-000{k}: Ticket t{k}')
+            rd_ = records_dir_(tmp / f'{name}-agent1' / '.sdlc' / 't1', create=True)
+            (rd_ / 'verifier-L3.md').write_text(vhead + '## Verdict\npass\n', encoding='utf-8')
+            (rd_ / 'runs.jsonl').write_text(
+                json.dumps({'role': 'verifier', 'level': 'L3', 'model': 'fable', 'file': 'verifier-L3.md'}) + '\n', encoding='utf-8')
+            return repo_, ('--integration', 'fanout/w', '--lanes-dir', str(tmp / f'{name}-lanes'), '--base', 'main')
+
+        lw, lw_pin = records_repo('land-wt', 2)
+        lw_tip = sh(lw, 'rev-parse', 'worktree-agent-w1').stdout.strip()
         lw1 = verb(lw, 'land', 'worktree-agent-w1', '--ticket', 'T-0001', *lw_pin, '--gate', 'test -e w1.txt')
-        expect(f'case 23 land worktree record: an uncommitted verifier result in the lane worktree is carried in, got '
-               f'rc={lw1.returncode} out={lw1.stdout[-400:]!r} err={lw1.stderr!r}', lw1.returncode == 0 and 'T-0001 | merged |' in lw1.stdout
-               and sh(lw, 'cat-file', '-e', 'fanout/w:.sdlc/t1/verifier-L3.md').returncode == 0
-               and sh(lw, 'cat-file', '-e', 'fanout/w:.sdlc/t1/runs.jsonl').returncode == 0)
+        expect(f'case 23 land records copy: a verifier result in the lane worktree records dir is copied in and read, got '
+               f'rc={lw1.returncode} out={lw1.stdout[-400:]!r} err={lw1.stderr!r}', lw1.returncode == 0 and 'T-0001 | merged |' in lw1.stdout)
+        expect(f'case 23 land records copy: the integration branch tracks only handoff.md in the ticket folder, got '
+               f'{sh(lw, "ls-tree", "-r", "--name-only", "fanout/w", "--", ".sdlc/t1").stdout.split()}',
+               sh(lw, 'ls-tree', '-r', '--name-only', 'fanout/w', '--', '.sdlc/t1').stdout.split() == ['.sdlc/t1/handoff.md']
+               and sh(lw, 'cat-file', '-e', 'fanout/w:.sdlc/t1/verifier-L3.md').returncode != 0)
+        expect('case 23 land records copy: the records reach the main checkout runtime records dir',
+               (lw / '.sdlc' / 'runtime' / 'tasks' / 't1' / 'verifier-L3.md').is_file())
+        expect('case 23 land records copy: no records commit on the lane branch',
+               sh(lw, 'rev-parse', 'worktree-agent-w1').stdout.strip() == lw_tip)
         lw2 = verb(lw, 'land', 'worktree-agent-w2', '--ticket', 'T-0002', *lw_pin, '--gate', 'test -e w2.txt')
-        expect(f'case 23 land worktree record: control, a worktree with no verifier result is still refused, got '
+        expect(f'case 23 land records copy: control, a worktree with no verifier result is still refused, got '
                f'rc={lw2.returncode} out={lw2.stdout[-300:]!r}', lw2.returncode == 1 and 'no verifier result' in lw2.stdout
                and sh(lw, 'cat-file', '-e', 'fanout/w:w2.txt').returncode != 0)
+        lwn, lwn_pin = records_repo('land-wt-nc', 1)
+        lwn1 = verb(lwn, 'land', 'worktree-agent-w1', '--ticket', 'T-0001', *lwn_pin, '--gate', 'test -e w1.txt',
+                    SDLC_SELFTEST_NO_RECORDS_COPY='1')
+        expect(f'case 23 land records copy negative control: with the copy off the same land reports no verifier result, '
+               f'got rc={lwn1.returncode} out={lwn1.stdout[-300:]!r}', lwn1.returncode == 1 and 'no verifier result' in lwn1.stdout
+               and sh(lwn, 'cat-file', '-e', 'fanout/w:w1.txt').returncode != 0)
+        # a host branch checked out in its worktree, its agent_id record only in that worktree's runtime records dir
+        lhr = tmp / 'land-host-rec'
+        sized_repo(lhr, ['L1'], {'.gitignore': gi})
+        wth = tmp / 'land-host-rec-agent'
+        sh(lhr, 'worktree', 'add', '-q', '-b', 'worktree-agent-h1', str(wth), 'main')
+        (wth / 'h1.txt').write_text('h\n', encoding='utf-8')
+        sh(wth, 'add', '-A')
+        sh(wth, 'commit', '-q', '-m', 'T-0001: Ticket t1')
+        (records_dir_(wth / '.sdlc' / 't1', create=True) / 'runs.jsonl').write_text(
+            json.dumps({'role': 'solo', 'agent_id': 'h1'}) + '\n', encoding='utf-8')
+        lhr1 = verb(lhr, 'land', 'worktree-agent-h1', '--integration', 'fanout/h', '--lanes-dir', str(tmp / 'land-host-rec-lanes'),
+                    '--base', 'main', '--gate', 'test -e h1.txt')
+        expect(f'case 23 land host records: the agent_id in the worktree runtime records dir makes a solo lane, got '
+               f'rc={lhr1.returncode} out={lhr1.stdout[-400:]!r} err={lhr1.stderr!r}',
+               lhr1.returncode == 0 and 'T-0001 | merged |' in lhr1.stdout and '- Lane for `T-0001`: solo' in lhr1.stdout)
         # refusals, each exit 2 with nothing created
         sh(ld, 'branch', 'weird-branch', 'main')
         for label, args_, want in (('a branch that does not exist', ('no-such-branch',), 'not a local branch'),
@@ -4473,20 +4625,24 @@ def selftest():
         pa = fanout(ar, 'alpha=T-0001', '--integration', 'fanout/ar', '--lanes-dir', str(tmp / 'ar-lanes'), '--gate', 'true',
                     '--driver', 'echo k > keep.txt; echo l > verifier-L3.log; : > .run.lock; : > x.running; '
                                 'mkdir -p .sdlc/t1; echo l > .sdlc/t1/v.log; echo a > .sdlc/t1/a.attempt.json')
-        ls_ar = sh(ar, 'ls-tree', '-r', '--name-only', 'fanout/ar').stdout.split()
+        # the lane commit is the merge's second parent: the close commit moves the folder's records out of git
+        mg_ar = sh(ar, 'rev-list', '--merges', '-1', 'fanout/ar').stdout.strip()
+        ls_ar = sh(ar, 'ls-tree', '-r', '--name-only', f'{mg_ar}^2').stdout.split() if mg_ar else []
         expect(f'case 25 lane commit: artifacts excluded, keep.txt and attempt.json kept, got rc={pa.returncode} '
                f'out={pa.stdout[-300:]!r} tree={ls_ar}',
                'keep.txt' in ls_ar and '.sdlc/t1/a.attempt.json' in ls_ar
                and not [f for f in ls_ar if f.endswith(('.log', '.run.lock', '.running'))])
 
-        # case 26 (T-0341): the printed prep commit command and the skill's verifier commit leave artifacts unstaged
+        # case 26 (T-0341): the printed prep commit command leaves artifacts unstaged (the skill's verifier commit is gone:
+        # land copies the records dir, lean records)
         pr = tmp / 'prepcmd'
         sized_repo(pr, ['S'], {'.gitignore': gi})
         pp = verb(pr, 'prep', 'alpha=T-0001', '--lane', 'full', '--integration', 'fanout/pr', '--lanes-dir', str(tmp / 'pr-lanes'), '--stagger', '0')
         line = next((l for l in pp.stdout.splitlines() if l.strip().startswith('commit: git -C')), '')
         skill = (pathlib.Path(__file__).resolve().parent.parent / 'skills' / 'fanout' / 'SKILL.md').read_text()
-        sk = re.search(r'`(git -C <worktree> add [^`]*)`', skill)
-        for label, tmpl in (('prep', line.strip()[len('commit: '):]), ('skill', sk.group(1) if sk else '')):
+        expect('case 26 skill: no verifier commit command is left in the skill',
+               not re.search(r'`(git -C <worktree> add [^`]*)`', skill))
+        for label, tmpl in (('prep', line.strip()[len('commit: '):]),):
             for flag, cmdtxt in (('new', tmpl), ('old', 'git -C <worktree> add -A && git -C <worktree> commit -m x')):
                 lt = tmp / f'c26-{label}-{flag}'
                 sh(tmp, 'clone', '-q', str(pr), str(lt))
