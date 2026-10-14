@@ -38,6 +38,8 @@
 # role remove files only under its throwaway prefix: rm, rmdir, or unlink of a path under it passes (and
 # prints an allow decision when the command is only rm and cd), a path outside it, with .. or an expansion
 # the hook cannot read, is denied with a stderr naming the role, and every other role or no role passes.
+# close-role-stdin.sh (T-0548) rewrites a role's or SDLC_HEADLESS=1 Bash command onto a closed stdin
+# (updatedInput, other fields kept, no permission decision) and leaves no role and an empty command alone.
 # warn-handoff-edit.sh, for an Edit, Write, or NotebookEdit whose file is named handoff.md with a
 # <role>-<level>.running file beside it, allows the edit (exit 0), prints a freeze warning, and
 # appends one line to stale-edits.log beside the handoff; with SDLC_HANDOFF_EDIT_MODE=deny the same
@@ -64,6 +66,7 @@ rs="$hooks/block-role-spawn.sh"
 wh="$hooks/warn-handoff-edit.sh"
 wrh="$hooks/block-role-write.sh"
 rmh="$hooks/block-role-rm.sh"
+crs="$hooks/close-role-stdin.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -422,6 +425,8 @@ hooks_json="$hooks/../adapters/claude/hooks.json"
   fail "hooks.json registers block-role-spawn.sh under a matcher other than Agent"
 [[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher == "Edit|Write|NotebookEdit") | .hooks[].command | select(contains("block-role-write.sh"))] | length' "$hooks_json")" == 1 ]] ||
   fail "hooks.json does not register block-role-write.sh under the Edit|Write|NotebookEdit matcher"
+[[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command | select(contains("close-role-stdin.sh"))] | length' "$hooks_json")" == 1 ]] ||
+  fail "hooks.json does not register close-role-stdin.sh under the Bash matcher"
 [[ "$(jq -r '[.hooks.PreToolUse[].hooks[].command | select(contains("_role.sh"))] | length' "$hooks_json")" == 0 ]] ||
   fail "hooks.json registers _role.sh, which is sourced by the hooks and never run"
 
@@ -955,5 +960,33 @@ print("; ".join(bad))
 PYEOF
 )
 [[ -z "$perf" ]] || fail "large 20 KB command: $perf"
+
+# close-role-stdin.sh (T-0548): for a role or SDLC_HEADLESS=1 it prints updatedInput with the
+# command in a brace group on a closed stdin and every other tool_input field kept; the
+# rewritten command runs a bare cat to its end while the caller's stdin stays open. No role:
+# no output. An empty command: no output.
+crs_out() { local json="$1"; shift; env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$crs" 2>/dev/null < <(printf '%s' "$json"); }
+cj='{"tool_name":"Bash","tool_input":{"command":"cat > /dev/null; echo crs-ok","timeout":600000,"description":"d"}}'
+for env_ in SDLC_ROLE=builder SDLC_HEADLESS=1; do
+  o=$(crs_out "$cj" "$env_"); rc=$?
+  [[ $rc -eq 0 ]] || fail "close-role-stdin $env_: exit $rc, want 0"
+  jq -e '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.updatedInput.timeout == 600000
+    and .hookSpecificOutput.updatedInput.description == "d" and (.hookSpecificOutput | has("permissionDecision") | not)' <<<"$o" >/dev/null 2>&1 ||
+    fail "close-role-stdin $env_: bad output '$o'"
+done
+o=$(crs_out '{"tool_name":"Bash","agent_type":"sdlc-lite:builder-L4","tool_input":{"command":"cat > /dev/null; echo crs-ok"}}')
+c=$(jq -r '.hookSpecificOutput.updatedInput.command // ""' <<<"$o" 2>/dev/null)
+[[ -n "$c" ]] || fail "close-role-stdin: a builder sub-agent got no rewrite: '$o'"
+got=$(python3 -c '
+import os, subprocess, sys
+r, w = os.pipe()
+p = subprocess.Popen(["bash", "-c", sys.argv[1]], stdin=r, stdout=subprocess.PIPE, text=True)
+try:
+    print(p.communicate(timeout=10)[0].strip())
+except subprocess.TimeoutExpired:
+    p.kill(); print("timeout")' "$c")
+[[ "$got" == crs-ok ]] || fail "close-role-stdin: rewritten cat did not finish on an open stdin: '$got'"
+o=$(crs_out "$cj"); [[ -z "$o" ]] || fail "close-role-stdin no role: printed '$o', want nothing"
+o=$(crs_out '{"tool_name":"Bash","tool_input":{"command":"  "}}' SDLC_ROLE=builder); [[ -z "$o" ]] || fail "close-role-stdin empty command: printed '$o'"
 
 echo "hook selftest: PASS"

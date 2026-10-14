@@ -13,6 +13,7 @@
 - [Parked tickets review](reports/parked-tickets-review-2026-10-06.md): dated review of nine tickets parked since 2026-10-04 against the pillars, with the verdict and code evidence for each.
 - [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the 12 allowlisted links, and the check.py baseline guard.
 - [Sub-agent probes](reports/2026-10-06-subagent-probes.md): dated record of the eight sub-agent mechanics probes (T-0275) with raw evidence and the design fallback each triggers.
+- [Role Bash stdin probe](reports/2026-10-14-role-bash-stdin-probe.md): dated live runs (T-0548) showing Claude Code drops its own `< /dev/null` when a Bash command holds a heredoc, so a bare `cat` hangs, and `close-role-stdin.sh` fixing it.
 - [Sub-agent live evidence](reports/2026-10-07-subagent-mode-live.md): dated live runs of sub-agent mode (T-0287): solo S, chain, two-lane fanout, with raw records, the defects found, and what stays unverified.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
 - [Reorganization apply live run](reports/reorg-apply-live-run.md): dated record of `reorg.py` moving four documents in a clone of this repository in two batches, the listing, the digest and approval refusals, the link counts, and the limits.
