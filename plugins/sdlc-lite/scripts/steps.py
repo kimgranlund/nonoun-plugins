@@ -2,7 +2,7 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--tree PATH] [--override-review REASON] [--supersede] |
-                 lint <planner.md | task dir> [--tree PATH] | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
+                 lint <planner.md | task dir> [--tree PATH] [--approved "<who: why>"] | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
                  next <step dir> |
                  resume <task dir> |
                  open <task dir> [--explain] |
@@ -181,8 +181,17 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             path, then text), "(parity) criterion names no property list"; the plan defect last line follows.
             Never executes a span and needs no handoff.md. Prints "steps lint: ok", or the split
             refusal on stderr and exits 1. Lint writes nothing, clean or refused (T-0543: the planner
-            lints its own drafts); the same findings under split are recorded under ## Plan review (see
-            split).
+            lints its own drafts), except the --approved line below; the same findings under split are
+            recorded under ## Plan review (see split).
+            Step cap (T-0553): before those checks, lint and split refuse a plan with more steps than the
+            ticket's size allows (the task handoff.md front matter size: L1 and L2 3, L3 6, L4 10, L5 15; no
+            size, no cap): "steps: <plan>: <k> steps exceed the step cap of <cap> for size <size>" and a last
+            line "step cap: split the ticket, or ask the person and rerun steps.py lint <target> --approved
+            "<who: why>"" (never a plan defect line: a replan would loop). lint --approved "<who: why>" lets an
+            over-cap plan through and appends "step cap approved: <plan file name>: <who: why>" once to the
+            task folder's skips.md; that line lets the same plan file through later lint and split runs
+            without the flag, and a newer plan file needs its own approval. A plan within its cap ignores
+            --approved and writes nothing.
             After a clean lint it also prints coarse-step warnings on stderr (stdout and exit 0
             unchanged; split, swap, and widen print none) when the plan meets the lean plan
             conditions: the plan file name level is L1 or L2 (a name with no level, such as
@@ -2057,6 +2066,44 @@ def lint_or_fail(plan, steps, tree=None, tool='steps.py lint'):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
+STEP_CAPS = {'L1': 3, 'L2': 3, 'L3': 6, 'L4': 10, 'L5': 15}  # T-0553: the most steps a plan may hold per ticket size
+APPROVAL_RE = re.compile(r'[^:]*[^\s:][^:]*:\s*\S')  # "<who: why>": a name, a colon, a reason
+
+
+def step_cap_approved(task_dir, plan):
+    """True when the task folder's skips.md holds `step cap approved: <plan file name>: ...`."""
+    f = pathlib.Path(task_dir) / 'skips.md'
+    head = f'step cap approved: {os.path.basename(plan)}: '
+    try:
+        return any(x.startswith(head) for x in f.read_text(encoding='utf-8').splitlines())
+    except OSError:
+        return False
+
+
+def step_cap_or_fail(plan, task_dir, steps, target, approved=None):
+    """Raise Fail when the plan holds more steps than its ticket size allows (STEP_CAPS) and neither approved
+    ("<who: why>", the person's call) nor a recorded approval for this plan file lets it through. An approved
+    over-cap plan records `step cap approved: <plan file name>: <approved>` once in the task folder's skips.md.
+    The last line is never a plan defect: a replan of an oversized ticket is the loop the cap stops."""
+    import tickets  # here, not at the top, as lane_action does
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    try:
+        size = (tickets.parse(h.read_text(encoding='utf-8')) or {}).get('size')
+    except OSError:
+        return
+    cap = STEP_CAPS.get(size)
+    if cap is None or len(steps) <= cap or step_cap_approved(task_dir, plan):
+        return
+    if approved:
+        with (pathlib.Path(task_dir) / 'skips.md').open('a', encoding='utf-8') as f:
+            f.write(f'step cap approved: {os.path.basename(plan)}: {approved}\n')
+        print(f'steps: step cap approved: {len(steps)} steps for size {size} (cap {cap}): {approved}', file=sys.stderr)
+        return
+    raise Fail(f'steps: {plan}: {len(steps)} steps exceed the step cap of {cap} for size {size}\n'
+               f'step cap: split the ticket, or ask the person and rerun '
+               f'steps.py lint {target} --approved "<who: why>"')
+
+
 def next_superseded(d):
     """The next free step-<n>.superseded-<k> path beside step dir d (k from 1)."""
     ks = [int(m.group(2)) for c in d.parent.iterdir()
@@ -2092,6 +2139,7 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
                    f'plan defect: plan review: {v}; run steps.py review (/chain 3)')
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
+    step_cap_or_fail(plan, task_dir, steps, target)
     lint_or_fail(plan, steps, tree, 'steps.py split')
     folded =review_findings(after[-1])[0] if after and review_verdict(after[-1]) == 'pass' else None
     if only:
@@ -2254,7 +2302,7 @@ def step_handoff_of(target):
     return t if t.is_file() and t.name == 'handoff.md' and STEP_DIR_RE.match(t.resolve().parent.name) else None
 
 
-def cmd_lint(target, tree=None):
+def cmd_lint(target, tree=None, approved=None):
     h = step_handoff_of(target)
     if h is not None:
         findings = link_findings(h)
@@ -2266,6 +2314,7 @@ def cmd_lint(target, tree=None):
     try:
         plan, task_dir = find_plan(target)
         steps = parse_steps(plan)
+        step_cap_or_fail(plan, task_dir, steps, target, approved)
         lint_or_fail(plan, steps, tree)
     except Fail as e:
         print(e, file=sys.stderr)
@@ -4414,6 +4463,47 @@ def selftest():
         d = task(plan=order_plan.replace('- `test -f tools/', '- (guard) `test -f tools/'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(order) negative: a (guard) line names the path', rc == 0 and 'a later step creates' not in err)
+
+        # (step cap) T-0553: a plan with more steps than its ticket size allows stops for the person, never a replan
+        def cap_plan(k):
+            return '# Plan\n## Goal\nx\n\n' + '\n'.join(f'## Step {i}: Part {i}\nlevel: L2\n### Do\nd\n### Acceptance criteria\n'
+                                            f'- `test -f part{i}`\n- `test -s part{i}`\n' for i in range(1, k + 1))
+
+        def cap_handoff(size):
+            return HANDOFF.replace('title: "x"\n', f'title: "x"\nsize: {size}\n')
+
+        d = task(plan=cap_plan(7), handoff=cap_handoff('L3'))
+        refused('(step cap) lint refuses a 7-step L3 plan and writes nothing', ['lint', str(d)], d,
+                needles=('7 steps exceed the step cap of 6 for size L3', '--approved'))
+        rc, _, err = run_main(['lint', str(d)])
+        check('(step cap) the refusal ends with a step cap line, never a plan defect line',
+              err.strip().splitlines()[-1].startswith('step cap: split the ticket') and 'plan defect' not in err)
+        refused('(step cap) split refuses the same plan and writes nothing', ['split', str(d)], d,
+                needle='7 steps exceed the step cap of 6')
+        d = task(plan=cap_plan(6), handoff=cap_handoff('L3'))
+        rc, out, err = run_main(['lint', str(d)])
+        check('(step cap) a 6-step L3 plan passes lint', rc == 0 and out.strip() == 'steps lint: ok' and 'step cap' not in err)
+        d = task(plan=cap_plan(4), handoff=cap_handoff('L2'))
+        refused('(step cap) a 4-step L2 plan is over the cap of 3', ['lint', str(d)], d, needle='cap of 3 for size L2')
+        d = task(plan=cap_plan(7))
+        rc, _, err = run_main(['lint', str(d)])
+        check('(step cap) negative: a handoff with no size has no cap', rc == 0 and 'step cap' not in err)
+        d = task(plan=cap_plan(7), handoff=cap_handoff('L3'))
+        refused('(step cap) --approved needs "<who: why>"', ['lint', str(d), '--approved', 'yes'], d, needle='<who: why>')
+        rc, out, err = run_main(['lint', str(d), '--approved', 'maintainer: one ticket on purpose'])
+        skips = (d / 'skips.md').read_text(encoding='utf-8') if (d / 'skips.md').is_file() else ''
+        check('(step cap) --approved lets a 7-step L3 plan through and records it in skips.md',
+              rc == 0 and out.strip() == 'steps lint: ok'
+              and skips == 'step cap approved: planner-L2.md: maintainer: one ticket on purpose\n')
+        rc, out, err = run_main(['split', str(d)])
+        check('(step cap) the recorded approval lets split write all 7 steps without the flag',
+              rc == 0 and len(out.split()) == 7 and 'step cap' not in err)
+        (d / 'planner-L3.md').write_text(hdr('planner-L3.md', cap_plan(7)), encoding='utf-8')
+        refused('(step cap) a newer plan file needs its own approval', ['lint', str(d / 'planner-L3.md')], d,
+                needle='step cap of 6')
+        d = task(plan=cap_plan(6), handoff=cap_handoff('L3'))
+        run_main(['lint', str(d), '--approved', 'maintainer: not needed'])
+        check('(step cap) a plan within its cap ignores --approved and writes nothing', not (d / 'skips.md').exists())
 
         # (lean) coarse-step warnings after a clean lint
         def lean_plan(levels, n_crit=2, title='Thing', assume=''):
@@ -6945,6 +7035,9 @@ def main(argv):
     p.add_argument('--tree', default=None, metavar='PATH',
                    help='the work tree the ### Read first paths resolve against (default: the git toplevel of the '
                         'plan folder, or the current work tree when that is another worktree of the same repository)')
+    p.add_argument('--approved', default=None, metavar='"WHO: WHY"',
+                   help='the person\'s approval of a plan over the step cap for its ticket size (T-0553); recorded as '
+                        '"step cap approved: <plan file>: <who: why>" in the task folder\'s skips.md')
     p = sub.add_parser('precheck', help='fail fast when a task dir handoff has no ## Goal section; writes nothing')
     p.add_argument('task', help='a task dir holding handoff.md')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
@@ -7026,7 +7119,11 @@ def main(argv):
         if a.tree is not None and not os.path.isdir(a.tree):
             print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
             return 1
-        return cmd_lint(a.target, a.tree)
+        approved = None if a.approved is None else ' '.join(a.approved.split())
+        if approved is not None and not APPROVAL_RE.match(approved):
+            print('steps: --approved takes "<who: why>": who approved, a colon, and why', file=sys.stderr)
+            return 1
+        return cmd_lint(a.target, a.tree, approved)
     if a.guard_timeout is not None and not 0 < a.guard_timeout < float('inf'):
         print('steps: --guard-timeout must be a finite number of seconds greater than 0', file=sys.stderr)
         return 1
