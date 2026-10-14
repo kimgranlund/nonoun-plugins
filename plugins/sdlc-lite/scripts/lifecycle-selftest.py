@@ -11,6 +11,7 @@ import time
 import unittest
 from unittest.mock import patch
 
+import order
 import readiness
 import run_lifecycle
 import codex_exchange
@@ -49,32 +50,33 @@ class LifecycleTests(fixture.CodexTests):
             directory.mkdir()
             handoff = directory/'handoff.md'
             handoff.write_text('## Goal\nMap seed.txt\n')
+            records = order.records_dir(directory)  # where run.sh and run_lifecycle.py write
             env = dict(self.env, SDLC_BACKEND=backend, MODE='timeout', SDLC_ROUTING_REASON='Small repository lookup; scout L1 suffices.')
             cmd = ['bash',str(fixture.ROOT/'scripts/run.sh'),'scout','L1',str(handoff)]
             proc = subprocess.Popen(cmd,cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
             try:
-                self.wait_for((directory/'scout-L1.running').exists, directory=directory, owner=proc)
-                self.assertTrue((directory/'scout-L1.running').exists())
+                self.wait_for((records/'scout-L1.running').exists, directory=records, owner=proc)
+                self.assertTrue((records/'scout-L1.running').exists())
                 duplicate = subprocess.run(cmd,cwd=self.repo,env=env,capture_output=True,text=True,timeout=fixture.DEADLINE)
                 self.assertEqual(duplicate.returncode,2,duplicate.stderr)
                 self.assertIn('still owns',duplicate.stderr)
                 with self.assertRaisesRegex(ValueError,'still owns'):
-                    run_lifecycle.recover(directory)
+                    run_lifecycle.recover(records)
                 proc.send_signal(signal.SIGTERM)
                 proc.communicate(timeout=fixture.DEADLINE)
-                record = json.loads((directory/'scout-L1.attempt.json').read_text())
+                record = json.loads((records/'scout-L1.attempt.json').read_text())
                 self.assertEqual(record['status'],'interrupted')
                 self.assertEqual(record['exit_code'],143)
                 env['MODE']='pass'
                 retry = subprocess.run(cmd,cwd=self.repo,env=env,capture_output=True,text=True,timeout=fixture.DEADLINE)
                 self.assertEqual(retry.returncode,0,retry.stderr)
-                latest = json.loads((directory/'scout-L1-2.attempt.json').read_text())
+                latest = json.loads((records/'scout-L1-2.attempt.json').read_text())
                 self.assertEqual(latest['status'],'completed')
-                row = json.loads((directory/'runs.jsonl').read_text().splitlines()[-1])
+                row = json.loads((records/'runs.jsonl').read_text().splitlines()[-1])
                 self.assertEqual(row['attempt_id'],latest['attempt_id'])
                 self.assertEqual(row['routing_reason'],env['SDLC_ROUTING_REASON'])
                 self.assertNotEqual(record['attempt_id'],latest['attempt_id'])
-                self.assertFalse(list(directory.glob('*.running')))
+                self.assertFalse(list(records.glob('*.running')))
             finally:
                 if proc.poll() is None:
                     proc.terminate();proc.communicate(timeout=fixture.DEADLINE)
@@ -99,12 +101,13 @@ class LifecycleTests(fixture.CodexTests):
         directory.mkdir()
         handoff = directory/'handoff.md'
         handoff.write_text('## Goal\nMap seed.txt\n')
+        records = order.records_dir(directory)  # where run.sh and run_lifecycle.py write
         command = ['bash', str(fixture.ROOT/'scripts/run.sh'), 'scout', 'L1', str(handoff)]
         env = dict(self.env, SDLC_BACKEND='claude', MODE='timeout')
         owner = subprocess.Popen(command, cwd=self.repo, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         child_pid = None
         try:
-            path = directory/'scout-L1.attempt.json'
+            path = records/'scout-L1.attempt.json'
             def started():
                 nonlocal child_pid
                 if path.exists():
@@ -112,8 +115,8 @@ class LifecycleTests(fixture.CodexTests):
                         child_pid = json.loads(path.read_text()).get('process_pid')
                     except ValueError:
                         return False
-                return bool(child_pid) and (directory/'scout-L1.running').exists()
-            self.wait_for(started, lambda: f'process_pid={child_pid}', directory=directory, owner=owner)
+                return bool(child_pid) and (records/'scout-L1.running').exists()
+            self.wait_for(started, lambda: f'process_pid={child_pid}', directory=records, owner=owner)
             self.assertIsNotNone(child_pid)
             os.kill(owner.pid, signal.SIGKILL)
             owner.wait(timeout=fixture.DEADLINE)
@@ -134,19 +137,19 @@ class LifecycleTests(fixture.CodexTests):
         # The killed child's inherited descriptor may close just after killpg returns.
         def released():
             try:
-                with run_lifecycle.lock(directory):
+                with run_lifecycle.lock(records):
                     return True
             except ValueError:
                 return False
-        self.wait_for(released, lambda: 'killed child did not release the handoff lock', directory=directory)
+        self.wait_for(released, lambda: 'killed child did not release the handoff lock', directory=records)
         retry = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=fixture.DEADLINE)
         self.assertEqual(retry.returncode, 0, retry.stderr)
         self.assertIn('Recovered stale Claude attempts', retry.stderr)
         recovered = json.loads(path.read_text())
         self.assertEqual((recovered['backend'], recovered['transport'], recovered['status']),
                          ('claude', 'exec', 'interrupted'))
-        self.assertEqual(json.loads((directory/'scout-L1-2.attempt.json').read_text())['status'], 'completed')
-        self.assertFalse((directory/'scout-L1.running').exists())
+        self.assertEqual(json.loads((records/'scout-L1-2.attempt.json').read_text())['status'], 'completed')
+        self.assertFalse((records/'scout-L1.running').exists())
 
         native = self.repo/'native-stale'
         native.mkdir()
@@ -221,7 +224,7 @@ class LifecycleTests(fixture.CodexTests):
                  contextlib.redirect_stderr(err):
                 rc = run_lifecycle.run('scout', 'L1', handoff, 'claude', 'm', 'e')
             self.assertEqual(rc, 1)
-            record = json.loads((directory/'scout-L1.attempt.json').read_text())
+            record = json.loads((order.records_dir(directory)/'scout-L1.attempt.json').read_text())
             self.assertEqual(record['status'], 'failed')
             self.assertEqual(record['exit_code'], 1)
             self.assertIn('wrote no result', err.getvalue())

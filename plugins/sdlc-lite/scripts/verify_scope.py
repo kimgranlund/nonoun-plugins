@@ -23,11 +23,11 @@ tests-gate (T-0496, a pilot): evaluated only when the diff holds a path that is 
 condition met it prints `tests-gate` and exits 0. Otherwise it prints `tests-gate: <label>: <detail>` for the first
 unmet condition and exits 1. The conditions, in the order checked:
   level           the handoff front matter `size:` is L2 (legacy M counts)
-  lane            the last `- lane:` line of <handoff dir>/skips.md is solo
+  lane            the last `- lane:` line of <task folder of the handoff dir>/skips.md is solo
   criteria        the criteria set (the bullets under `## Acceptance criteria` plus the `- Done when:` lines, outside
                   fences) is not empty and every bullet holds a command span (steps.line_spans)
   red-control     the handoff has a (red) criterion, and for each (red) span the newest `type: control` entry of
-                  <handoff dir>/red-checkpoint.jsonl with its criterion_sha256 has phase pre-edit and result red
+                  <records dir>/red-checkpoint.jsonl with its criterion_sha256 has phase pre-edit and result red
                   (redck.py record writes them; the attempt id is not checked)
   protected-path  no changed path outside .sdlc/ has a component agents, hooks or adapters, a basename levels.json,
                   models.json, run.sh, dispatch.py, results.py or gate_lock.py, or a component holding security,
@@ -238,7 +238,8 @@ def clip(s, n=80):
 def tests_gate(root, base, handoff, paths, report=None, need_report=False):
     """None when the diff qualifies for the tests-gate class (T-0496), else `<label>: <detail>` for the first unmet
     condition, in the order of the module docstring."""
-    import redck    # local: only a pilot diff needs them, and redck imports steps
+    import order    # local: only a pilot diff needs them, and redck imports steps
+    import redck
     import results
     import steps
     try:
@@ -252,7 +253,7 @@ def tests_gate(root, base, handoff, paths, report=None, need_report=False):
     if not size or size.group(1) not in ('L2', 'M'):
         return 'level: ' + (f'size is {size.group(1)}, not L2' if size else 'no size: line in the front matter')
     try:
-        with open(os.path.join(d, 'skips.md'), encoding='utf-8') as fh:
+        with open(os.path.join(order.task_dir(d) or d, 'skips.md'), encoding='utf-8') as fh:
             lanes = re.findall(r'(?m)^- lane:[ \t]*([^;\n]*)', fh.read())
     except OSError:
         lanes = []
@@ -267,7 +268,7 @@ def tests_gate(root, base, handoff, paths, report=None, need_report=False):
     reds = redck.red_items(handoff)
     if not reds:
         return 'red-control: no (red) criterion'
-    controls = [e for e in redck.entries(d) if e.get('type') == 'control']
+    controls = [e for e in redck.entries(order.records_dir(d)) if e.get('type') == 'control']
     for line, span in reds:
         key = redck.criterion_hash(line, span)
         last = next((e for e in reversed(controls) if e.get('criterion_sha256') == key), None)

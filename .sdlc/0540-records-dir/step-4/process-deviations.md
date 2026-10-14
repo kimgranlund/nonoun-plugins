@@ -1,0 +1,2 @@
+# Process deviations (written by redck.py audit; the verifier and filer read this file)
+process deviation: red-checkpoint: retrospective: attempt f9158105536b4335b1256a615ed4d778, handoff sha256 81d4c3ce5ece, 2 of 2 (red) criteria without a pre-edit red control: `! grep -qE "Keep the results .{1,2}\.md.{1,2} files, .{1,2}runs\.js...`; `sed -n '/^Resume packet/,/^$/p' plugins/sdlc-lite/adapters/codex/in...`

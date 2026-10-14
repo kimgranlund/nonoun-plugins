@@ -21,6 +21,11 @@ prepare runs every gate and decision run.sh makes before it launches a role and 
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
 goal precheck, unfilled-handoff gate, link check, lane gate, spec gate, budget gate, then the one write section.
+Records dir (T-0540): every record prepare and record write (result, attempt, dispatch record, .running, .limit,
+base-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <nearest .sdlc>/runtime/tasks/<task>/ (a legacy
+task dir that already holds records keeps them in place); the brief's Artifacts dir line names it. The handoff gates
+read the handoff dir, and skips.md stays in the task folder (order.task_dir). status and recover map a task or step
+dir to its records dir.
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
@@ -46,13 +51,13 @@ goal precheck, unfilled-handoff gate, link check, lane gate, spec gate, budget g
   specgate     plan-reviewer: specgate.py check, exit 2, unless SDLC_SPECGATE=off (carried as specgate).
   budget       budget.py report: warn or over with no ack, exit 4. No budget or no ticket proceeds.
   lock         replaces run_lifecycle.py's directory lock. Under a brief file lock, every running attempt
-               record in the handoff dir whose parent pid is dead is marked interrupted and recovered; one
+               record in the records dir whose parent pid is dead is marked interrupted and recovered; one
                whose parent is alive refuses, exit 2. A second prepare therefore cannot start while a
                dispatched role is unrecorded. A refusal writes no new file (a dead-parent recovery
                before the refusal still marks that old record interrupted).
 
 Names. The result stem is <role>-<level>, or <role>-<level>-<k> for the lowest free k >= 2, where a stem is
-taken when any file <stem>.* sits in the handoff dir (run_lifecycle.py's rule, a superset of run.sh's
+taken when any file <stem>.* sits in the records dir (run_lifecycle.py's rule, a superset of run.sh's
 .md and .request.json check, so an interrupted attempt's record bumps k and is never overwritten). The
 Agent name is <ticket number>[-s<n>]-<role>-<level>[-<k>] (T-0363: what differs comes first, the attempt last; a
 task with no ticket id uses its dir name, cut to fit 64 characters, in place of the number; s<n> marks a step dir).
@@ -194,9 +199,9 @@ def model_of(path):
 
 
 def step_build(directory):
-    """Newest builder result of the highest-numbered live step-<n>/ under directory that holds one."""
+    """Newest builder result of the highest-numbered live step-<n>/ under directory's records dir that holds one."""
     best, built = -1, None
-    for sd in Path(directory).glob('step-*'):
+    for sd in order.records_dir(directory).glob('step-*'):
         m = re.fullmatch(r'step-(\d+)', sd.name)
         if not m or not sd.is_dir() or int(m.group(1)) <= best:
             continue
@@ -283,6 +288,7 @@ def slug_of(directory):
     m = re.fullmatch(r'step-(\d+)', d.name)
     if m:
         step, d = '-s' + m.group(1), d.parent
+    d = order.task_dir(d) or d  # a records dir under runtime/tasks names its task folder
     return (re.sub(r'[^a-z0-9]+', '-', d.name.lower()).strip('-') or 'task'), step
 
 
@@ -375,21 +381,22 @@ def fork_floor(directory):
 NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
 
 
-def build_base(directory, tree=None):
+def build_base(directory, records=None, tree=None):
     """The build-start commit run.sh stores in base-sha (T-0381), in this order: (1) a base the handoff names (a line
     `base: <sha>`), else (2) the sha recorded at the step's first dispatch, kept valid, else (3) HEAD of the execution
     tree, never the main checkout's HEAD. A supplied SDLC_BASE_SHA that resolves to another commit is refused and the
     pick kept; a named base that is not an ancestor of HEAD raises Refuse. Git runs in the execution tree (tree when
     given, as prepare --tree settles it, else the handoff's own tree, or the lane worktree a main-checkout handoff is
     run from), and in a lane worktree a recorded sha older than the lane's fork point is stale (T-0376). Returns
-    (stored, base)."""
+    (stored, base). base-sha and the dispatch records are read in records (the records dir, default directory's)."""
+    records = Path(records) if records is not None else order.records_dir(directory)
     stored = ''
-    f = Path(directory) / 'base-sha'
+    f = records / 'base-sha'
     if f.is_file():
         lines = f.read_text(encoding='utf-8', errors='replace').splitlines()
         stored = re.sub(r'\s', '', lines[0]) if lines else ''
     if not stored:  # a solo lane has no run.sh: its dispatch file recorded the pre-build HEAD (T-0366)
-        for df in sorted(Path(directory).glob('*.dispatch.json')):  # <ticket>-solo-<level> now, solo-<level>-<slug> before T-0363
+        for df in sorted(records.glob('*.dispatch.json')):  # <ticket>-solo-<level> now, solo-<level>-<slug> before T-0363
             try:
                 rec = json.loads(df.read_text(encoding='utf-8'))
                 stored = str(rec.get('base_sha') or '').strip() if rec.get('role') == 'solo' else ''
@@ -409,6 +416,12 @@ def build_base(directory, tree=None):
     base, why = '', ''
     hf = Path(directory) / 'handoff.md'
     m = NAMED_BASE_RE.search(hf.read_text(encoding='utf-8', errors='replace')) if hf.is_file() else None
+    if not m:  # a step handoff in the records dir names none: the task handoff may
+        task = order.task_dir(records)
+        tf = task / 'handoff.md' if task is not None else None
+        if tf is not None and tf.is_file() and tf.resolve() != hf.resolve():
+            m = NAMED_BASE_RE.search(tf.read_text(encoding='utf-8', errors='replace'))
+            hf = tf if m else hf
     if m:
         if not ancestor(m.group(1)):
             raise Refuse(2, 'dispatch.py: SDLC_BASE_SHA refused: %s names base %s, which is not a commit that is an ancestor of HEAD in %s'
@@ -431,9 +444,9 @@ def build_base(directory, tree=None):
 def lane_gate(role, directory, plugin):
     """None to proceed, else the (lane_dir, level) of a solo-lane ticket that needs the solo agent: its size as a
     level (tickets.parse reads a deprecated alias size as its level), L2 when unreadable."""
-    lane_dir = Path(directory).parent if Path(directory).name.startswith('step-') else Path(directory)
-    handoff = lane_dir / 'handoff.md'
-    if not handoff.is_file() or not re.search(r'^id: *T-[0-9]+', handoff.read_text(encoding='utf-8', errors='replace'), re.M):
+    lane_dir = order.task_dir(directory)
+    handoff = lane_dir / 'handoff.md' if lane_dir is not None else None
+    if handoff is None or not handoff.is_file() or not re.search(r'^id: *T-[0-9]+', handoff.read_text(encoding='utf-8', errors='replace'), re.M):
         return None
     skips = lane_dir / 'skips.md'
     if skips.is_file():
@@ -540,6 +553,11 @@ def attempt_dirs(root, open_only=False):
         if open_only and 'handoff.md' in files and ticket_closed(here):
             dirs[:] = []
             continue
+        if open_only and 'handoff.md' not in files:  # a records dir under runtime/tasks: its task folder decides
+            task = order.task_dir(here)
+            if task is not None and Path(task).resolve() != Path(here).resolve() and ticket_closed(task):
+                dirs[:] = []
+                continue
         if any(f.endswith('.attempt.json') for f in files):
             found.append(here)
     return found
@@ -569,6 +587,15 @@ def running_attempt(root, name):
             if name in (data.get('agent_name'), data.get('name')) and attempt_state(data) == 'running':
                 return path
     return None
+
+
+def handoff_records(directory):
+    """The records dir for a status or recover argument that holds handoff.md or is a step-<n> dir; any other dir as given,
+    so a dir with no .sdlc ancestor never maps outside the project."""
+    d = Path(directory)
+    if (d / 'handoff.md').is_file() or re.fullmatch(r'step-\d+(\.superseded-\d+)?', d.name):
+        return str(order.records_dir(d))
+    return directory
 
 
 def settle(directory, dry_run):
@@ -724,16 +751,8 @@ def under(path, prefix):
 
 
 def row_before(directory, role, level):
-    """(model, effort) of the last runs.jsonl line for role and level in directory, else None (T-0537)."""
-    try:
-        lines = (Path(directory) / 'runs.jsonl').read_text(encoding='utf-8').splitlines()
-    except OSError:
-        return None
-    for line in reversed(lines):
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
+    """(model, effort) of the last runs.jsonl line for role and level in directory's records dir, else None (T-0537)."""
+    for _, row in reversed(order.records(directory)):
         if isinstance(row, dict) and row.get('role') == role and row.get('level') == level and row.get('model'):
             return row.get('model'), row.get('effort')
     return None
@@ -785,8 +804,11 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
     except claude_roles.TableError as e:
         raise Refuse(2, 'dispatch.py: ' + str(e))
 
+    # The records dir (order.records_dir): results, attempts, dispatch records, markers, base-sha and runs.jsonl. The
+    # handoff gates above and below keep the handoff dir; skips.md stays in the task folder (order.task_dir).
+    records = order.records_dir(directory)  # made (create=True) only once every gate has passed, just before the lock
     model = agent_alias(family(role, model, directory, solo))
-    prev = row_before(directory, role, level)
+    prev = row_before(records, role, level)
     if prev and prev != (model, effort):
         say('row changed: %s %s was %s/%s on the previous attempt, now %s/%s' % (role, level, prev[0], prev[1], model, effort))
     if not dry_run:
@@ -849,33 +871,34 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
     lock = None
     try:
         if not dry_run:
+            records = order.records_dir(directory, create=True)
             try:
-                lock = run_lifecycle.lock(directory)
+                lock = run_lifecycle.lock(records)
             except ValueError as e:
                 raise Refuse(2, 'dispatch.py: ' + str(e))
             if 'lock' not in skip:
-                recovered = settle(directory, dry_run)
+                recovered = settle(records, dry_run)
                 if recovered:
                     say('recovered stale attempt(s) before this dispatch: ' + ', '.join(recovered))
-        stem, k = next_stem(directory, role, level)
+        stem, k = next_stem(records, role, level)
         name = agent_name(role, level, directory, k)
-        result = directory / (stem + '.md')
+        result = records / (stem + '.md')
         # the execution tree's toplevel: a lane worktree handoff, a --tree lane, or a main-checkout handoff run from a lane all get the lane as Tree
         toplevel = git('rev-parse', '--show-toplevel', cwd=run_tree).stdout.strip() or git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()
         tmp_prefix = str(Path(toplevel) / '.worktrees' / 'tmp' / name)
 
         base = None
         if role in ('builder', 'verifier'):
-            stored, base = build_base(directory, run_tree)
+            stored, base = build_base(directory, records, run_tree)
             if not dry_run and base != stored:
-                (directory / 'base-sha').write_text(base + '\n', encoding='utf-8')
+                (records / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
         prompt = ('%s\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your '
                   'instructions define: start with its first heading, with nothing before it and nothing after the last section.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
                   'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.'
-                  % (list_title(directory, role, level, k), handoff_locator(handoff), directory, result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix))
+                  % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix))
         if role == 'verifier':
             prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
                        'as your final message, with no <!-- role=... --> header line: dispatch.py record adds it, so check the file with '
@@ -892,11 +915,11 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
                         prune=role in PRUNE_ROLES if prune is None else bool(prune),
                         role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix,
-                        base_sha=base, tree=toplevel, handoff=str(handoff), artifacts_dir=str(directory),
+                        base_sha=base, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
                         handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate,
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
-                        attempt_file=str(directory / (stem + '.attempt.json')),
-                        dispatch_file=str(directory / (stem + '.dispatch.json')), dry_run=dry_run)
+                        attempt_file=str(records / (stem + '.attempt.json')),
+                        dispatch_file=str(records / (stem + '.dispatch.json')), dry_run=dry_run)
         if notify:
             dispatch.update(notify=notify, notify_re=notify_re)
         if dry_run:
@@ -904,8 +927,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         if notify:
             unregistered_receiver(notify, toplevel)
         if lane_override:
-            skips, line = directory.parent if directory.name.startswith('step-') else directory, 'lane override: ' + lane_override
-            skips = skips / 'skips.md'
+            skips, line = order.task_dir(directory) or directory, 'lane override: ' + lane_override
+            skips = Path(skips) / 'skips.md'
             if line not in (skips.read_text(encoding='utf-8').splitlines() if skips.is_file() else []):
                 with skips.open('a', encoding='utf-8') as f:
                     f.write(line + '\n')
@@ -918,7 +941,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         run_lifecycle.write(Path(dispatch['attempt_file']), attempt)
         run_lifecycle.write(Path(dispatch['dispatch_file']), dispatch)
         # T-0505: the running marker warn-handoff-edit.sh, board.py and fleet_status.py read; keyed by role and level, as record and recover unlink it
-        (directory / ('%s-%s.running' % (role, level))).write_text('%d\n' % int(time.time()), encoding='utf-8')
+        (records / ('%s-%s.running' % (role, level))).write_text('%d\n' % int(time.time()), encoding='utf-8')
         return dispatch
     finally:
         if lock is not None:
@@ -1497,6 +1520,8 @@ def main(argv):
             return 2
     if args.cmd in ('status', 'recover', 'resume'):
         try:
+            if args.cmd in ('status', 'recover') and getattr(args, 'directory', None):
+                args.directory = handoff_records(args.directory)
             if args.cmd == 'status':
                 out = status(args.directory, args.orphans)
             elif args.cmd == 'resume':
@@ -1591,6 +1616,8 @@ def cwd(path):
 
 
 def selftest():
+    # where prepare, record and run.sh write a task's records; made when missing, which never changes the answer
+    R = lambda p: order.records_dir(p, create=True)
     failures = []
 
     def case(label, ok):
@@ -1661,17 +1688,17 @@ def selftest():
             put(sw / ('builder-%s.md' % lvl), '<!-- role=builder level=%s model=%s effort=x -->\n' % (lvl, mod))
         for newest in ('L5', 'L1', 'L3'):
             others = [l for l in ('L5', 'L1', 'L3') if l != newest]
-            (sw / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in others + [newest]))
+            (R(sw) / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in others + [newest]))
             for vlevel in ('L1', 'L2', 'L3'):
                 same('verifier after builder %s' % newest, repo, 'verifier', vlevel, '.sdlc/t/step-1/handoff.md')
         rc, got = same('verifier swap value', repo, 'verifier', 'L2', '.sdlc/t/step-1/handoff.md')
         case('verifier L2 after an opus build keeps sonnet', got['model'] == 'sonnet')
-        (sw / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in ('L3', 'L1')))
+        (R(sw) / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in ('L3', 'L1')))
         rc, got = same('verifier swap value', repo, 'verifier', 'L2', '.sdlc/t/step-1/handoff.md')
         case('verifier L2 after a sonnet build moves to opus, same effort', (got['model'], got['effort']) == ('opus', 'high'))
         rc, got = same('verifier swap value', repo, 'verifier', 'L3', '.sdlc/t/step-1/handoff.md')
         case('verifier L3 after a sonnet build keeps fable', got['model'] == 'fable')
-        (sw / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in ('L1', 'L5')))
+        (R(sw) / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'builder', 'level': l, 'file': 'builder-%s.md' % l}) + '\n' for l in ('L1', 'L5')))
         rc, got = same('verifier swap value', repo, 'verifier', 'L3', '.sdlc/t/step-1/handoff.md')
         case('verifier L3 after a fable build moves to opus xhigh', (got['model'], got['effort']) == ('opus', 'xhigh'))
         # T-0519: verifier L1 is opus low, so an opus build moves it to sonnet at the same effort; no other row moves.
@@ -1684,7 +1711,7 @@ def selftest():
             for old in sw.glob('builder-*.md'):
                 old.unlink()
             put(sw / ('builder-%s.md' % blvl), '<!-- role=builder level=%s model=%s effort=x -->\n' % (blvl, bmod))
-            (sw / 'runs.jsonl').write_text(json.dumps({'role': 'builder', 'level': blvl, 'file': 'builder-%s.md' % blvl}) + '\n')
+            (R(sw) / 'runs.jsonl').write_text(json.dumps({'role': 'builder', 'level': blvl, 'file': 'builder-%s.md' % blvl}) + '\n')
             rc, got = same('T-0519 %s builder %s' % (bmod, blvl), repo, 'verifier', vlevel, '.sdlc/t/step-1/handoff.md')
             case('T-0519: ' + label, rc == 0 and (got['model'], got['effort']) == want)
         shutil.rmtree(sw)
@@ -1693,10 +1720,10 @@ def selftest():
         so = sdlc / 'so'
         put(so / 'handoff.md')
         for smodel, level, want in (('sonnet', 'L2', 'opus'), ('sonnet', 'L1', 'opus'), ('opus', 'L2', 'sonnet'), ('sonnet', 'L3', 'fable')):
-            (so / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L2', 'model': smodel}) + '\n')
+            (R(so) / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L2', 'model': smodel}) + '\n')
             rc, got, _ = prep(repo, 'verifier', level, '.sdlc/so/handoff.md', '--dry-run')
             case('verifier %s after a %s solo gets %s' % (level, smodel, want), rc == 0 and got['model'] == want)
-        (so / 'runs.jsonl').unlink()
+        (R(so) / 'runs.jsonl').unlink()
         rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run')
         case('verifier L2 with no solo record keeps sonnet', rc == 0 and got['model'] == 'sonnet')
         # T-0356: a sub-agent lane worktree holds no solo record, so fanout prep passes --solo-model
@@ -1704,16 +1731,16 @@ def selftest():
         case('verifier L2 with --solo-model sonnet and no record moves to opus, same effort', rc == 0 and (got['model'], got['effort']) == ('opus', 'high'))
         rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run', '--solo-model', 'opus')
         case('negative control: verifier L2 with --solo-model opus keeps sonnet', rc == 0 and got['model'] == 'sonnet')
-        (so / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L3', 'model': 'opus'}) + '\n')
+        (R(so) / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L3', 'model': 'opus'}) + '\n')
         rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run', '--solo-model', 'sonnet')
         case('the runs.jsonl solo record wins over --solo-model: an opus record keeps verifier L2 on sonnet', rc == 0 and got['model'] == 'sonnet')
-        (so / 'runs.jsonl').unlink()
+        (R(so) / 'runs.jsonl').unlink()
         # T-0516: the solo L2 row is Opus medium (the builder ladder shifted down one), so its record keeps verifier L2 on sonnet
         l2m, l2e = json.loads((PLUGIN / 'adapters' / 'claude' / 'levels.json').read_text())['solo']['L2']
-        (so / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L2', 'model': l2m}) + '\n')
+        (R(so) / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L2', 'model': l2m}) + '\n')
         rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run')
         case('solo L2 is opus medium and its record keeps verifier L2 on sonnet', (l2m, l2e) == ('opus', 'medium') and rc == 0 and got['model'] == 'sonnet')
-        (so / 'runs.jsonl').unlink()
+        (R(so) / 'runs.jsonl').unlink()
 
         # 3. Verifier at a task dir: the highest live step holds the build; superseded dirs are left out.
         td = sdlc / 'td'
@@ -1727,7 +1754,7 @@ def selftest():
                              ('superseded sonnet ignored', lambda: (build('step-1', 'L3', 'opus'), build('step-2.superseded-1', 'L1', 'sonnet'))),
                              ('step-10 sonnet beats step-2 opus', lambda: (build('step-2', 'L3', 'opus'), build('step-10', 'L1', 'sonnet'))),
                              ('step-10 opus beats step-2 sonnet', lambda: (build('step-2', 'L1', 'sonnet'), build('step-10', 'L3', 'opus'))),
-                             ('task dir build wins over step dirs', lambda: (put(td / 'builder-L3.md', '<!-- role=builder level=L3 model=opus effort=x -->\n'), build('step-1', 'L1', 'sonnet'))),
+                             ('task dir build wins over step dirs', lambda: (put(R(td) / 'builder-L3.md', '<!-- role=builder level=L3 model=opus effort=x -->\n'), build('step-1', 'L1', 'sonnet'))),
                              ('no build anywhere', lambda: put(td / 'step-1' / 'handoff.md', '## Step 1\n'))):
             for child in list(td.iterdir()):
                 if child.name != 'handoff.md':
@@ -1742,12 +1769,12 @@ def selftest():
         put(pr / 'handoff.md')
 
         def planners(*pairs):
-            for child in list(pr.iterdir()):
-                if child.name != 'handoff.md':
+            for child in list(pr.iterdir()) + list(R(pr).iterdir()):
+                if child.name != 'handoff.md' and child.is_file():
                     child.unlink()
             for lvl, mod in pairs:
-                put(pr / ('planner-%s.md' % lvl), '<!-- role=planner level=%s model=%s effort=x -->\n' % (lvl, mod))
-            (pr / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'planner', 'level': l, 'file': 'planner-%s.md' % l}) + '\n' for l, _ in pairs))
+                put(R(pr) / ('planner-%s.md' % lvl), '<!-- role=planner level=%s model=%s effort=x -->\n' % (lvl, mod))
+            (R(pr) / 'runs.jsonl').write_text(''.join(json.dumps({'role': 'planner', 'level': l, 'file': 'planner-%s.md' % l}) + '\n' for l, _ in pairs))
         planners()
         _, got = same('plan-reviewer, no planner', repo, 'plan-reviewer', 'L1', '.sdlc/pr/handoff.md')
         case('plan-reviewer with no planner keeps fable high', (got['model'], got['effort']) == ('fable', 'high'))
@@ -1831,7 +1858,7 @@ def selftest():
         # link check (T-0379): a builder or verifier on a step handoff that cites a prior attempt's report at the live
         # step path, or a path that does not exist, is refused before any record; the superseded path passes
         lk = sdlc / 'lk'
-        put(lk / 'step-3.superseded-1' / 'builder-L3.md', '## Status\ndone\n')
+        put(lk / 'step-3.superseded-1' / 'builder-L3.md', '## Status\ndone\n')  # the cited path steps.py lint checks
         for role in ('builder', 'verifier'):
             put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nPrior attempt: .sdlc/lk/step-3/builder-L3.md\n')
             err = refused('link check ' + role, 2, role, 'L1', '.sdlc/lk/step-3/handoff.md', 'links')
@@ -1845,14 +1872,14 @@ def selftest():
         shutil.rmtree(lk)
 
         put(sdlc / 'sg' / 'handoff.md')  # spec gate
-        put(sdlc / 'sg' / 'planner-L1.md', SGPLAN)
+        put(R(sdlc / 'sg') / 'planner-L1.md', SGPLAN)
         err = refused('spec gate', 2, 'plan-reviewer', 'L1', '.sdlc/sg/handoff.md', 'specgate')
         case('spec gate names the finding and the way out', 'slow guard' in err and 'SDLC_SPECGATE=off' in err)
         rc, got, err = prep(repo, 'plan-reviewer', 'L1', '.sdlc/sg/handoff.md', '--dry-run', SDLC_SPECGATE='off')
         case('SDLC_SPECGATE=off lets it through and is carried', rc == 0 and got['specgate'] == 'off' and 'spec gate skipped' in err)
         rc, got, err = prep(repo, 'plan-reviewer', 'L1', '.sdlc/sg/handoff.md', '--dry-run')
         case('without the knob the spec gate still refuses', rc == 2)
-        put(sdlc / 'sg' / 'planner-L1.md', SGPLAN.replace('## Step 1: Gates', 'guard timeout: 900\n\n## Step 1: Gates'))
+        put(R(sdlc / 'sg') / 'planner-L1.md', SGPLAN.replace('## Step 1: Gates', 'guard timeout: 900\n\n## Step 1: Gates'))
         case('a plan with a guard timeout passes the spec gate', prep(repo, 'plan-reviewer', 'L1', '.sdlc/sg/handoff.md', '--dry-run')[0] == 0)
 
         ticket(sdlc / 'ls', 'L1')  # lane gate
@@ -1881,20 +1908,20 @@ def selftest():
         skips = sdlc / 'ls' / 'skips.md'
         case('the override is appended to skips.md', skips.read_text() == 'lane override: chain needs a merge step\n')
         for f in ('planner-L1.attempt.json', 'planner-L1.dispatch.json'):
-            (sdlc / 'ls' / f).unlink()
+            (R(sdlc / 'ls') / f).unlink()
         prep(repo, 'planner', 'L1', '.sdlc/ls/handoff.md', SDLC_LANE_OVERRIDE='chain needs a merge step')
         case('the override line is appended once', skips.read_text().count('lane override:') == 1)
-        for f in list((sdlc / 'ls').glob('planner-L1*')):
+        for f in list((R(sdlc / 'ls')).glob('planner-L1*')):
             f.unlink()
 
         ticket(sdlc / 'bg', 'L2', budget_usd=10)  # budget gate (verifier: not lane gated)
-        put(sdlc / 'bg' / 'runs.jsonl', json.dumps({'role': 'builder', 'cost_usd': 9, 'attempt_id': 'a1'}) + '\n')
+        put(R(sdlc / 'bg') / 'runs.jsonl', json.dumps({'role': 'builder', 'cost_usd': 9, 'attempt_id': 'a1'}) + '\n')
         err = refused('budget gate', 4, 'verifier', 'L1', '.sdlc/bg/handoff.md', 'budget')
         case('budget gate names the percent and budget.py ack', '90%' in err and 'budget.py ack' in err)
         put(sdlc / 'bg' / 'budget-ack.md', '---\nusd: 30\nreason: selftest\n---\n')
         case('a budget ack raises the ceiling and it passes', prep(repo, 'verifier', 'L1', '.sdlc/bg/handoff.md', '--dry-run')[0] == 0)
         (sdlc / 'bg' / 'budget-ack.md').unlink()
-        put(sdlc / 'bg' / 'runs.jsonl', json.dumps({'role': 'builder', 'cost_usd': 1, 'attempt_id': 'a1'}) + '\n')
+        put(R(sdlc / 'bg') / 'runs.jsonl', json.dumps({'role': 'builder', 'cost_usd': 1, 'attempt_id': 'a1'}) + '\n')
         case('under 80 percent passes', prep(repo, 'verifier', 'L1', '.sdlc/bg/handoff.md', '--dry-run')[0] == 0)
         ticket(sdlc / 'bn', 'L2')
         case('a ticket with no budget passes', prep(repo, 'verifier', 'L1', '.sdlc/bn/handoff.md', '--dry-run')[0] == 0)
@@ -1945,27 +1972,27 @@ def selftest():
         dead = sub.pid
         rc, got, err = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live), SDLC_ROUTING_REASON='selftest reason')
         w = rr / '.sdlc' / 'w'
-        case('prepare exits 0 and writes both records', rc == 0 and (w / 'builder-L1.attempt.json').is_file() and (w / 'builder-L1.dispatch.json').is_file())
-        stamp = (w / 'builder-L1.running').read_text() if (w / 'builder-L1.running').is_file() else ''
+        case('prepare exits 0 and writes both records', rc == 0 and (R(w) / 'builder-L1.attempt.json').is_file() and (R(w) / 'builder-L1.dispatch.json').is_file())
+        stamp = (R(w) / 'builder-L1.running').read_text() if (R(w) / 'builder-L1.running').is_file() else ''
         case('prepare writes the running marker with an epoch start (T-0505)',
              rc == 0 and re.fullmatch(r'[0-9]+\n', stamp) is not None and abs(int(stamp) - time.time()) < 600)
-        att = json.loads((w / 'builder-L1.attempt.json').read_text())
+        att = json.loads((R(w) / 'builder-L1.attempt.json').read_text())
         case('attempt record: running, subagent transport, parent pid',(att['status'], att['transport'], att['parent_pid'], att['backend']) == ('running', 'subagent', live, 'claude'))
         case('attempt record carries the model, effort, handoff hash, and reason',
              (att['model'], att['effort'], att['routing_reason']) == ('opus', 'low', 'selftest reason')
              and att['handoff_sha256'] == hashlib.sha256((w / 'handoff.md').read_bytes()).hexdigest())
-        disk = json.loads((w / 'builder-L1.dispatch.json').read_text())
+        disk = json.loads((R(w) / 'builder-L1.dispatch.json').read_text())
         case('dispatch file equals the printed JSON apart from dry_run', disk == got and got['dry_run'] is False)
         for key in ('subagent_type', 'model', 'effort', 'name', 'result', 'tmp_prefix', 'base_sha', 'prompt'):
             case('dispatch JSON has %s' % key, key in got and got[key] is not None)
         case('subagent type, Agent name, and result path', got['subagent_type'] == 'sdlc-lite:builder-L1' and got['name'] == 'w-builder-L1'
-             and got['result'] == str(w / 'builder-L1.md') and got['tmp_prefix'] == str(rr / '.worktrees' / 'tmp' / 'w-builder-L1'))
+             and got['result'] == str(R(w) / 'builder-L1.md') and got['tmp_prefix'] == str(rr / '.worktrees' / 'tmp' / 'w-builder-L1'))
         head = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
         case('a builder gets its base sha, in the dispatch, base-sha, and the brief',
-             got['base_sha'] == head and (w / 'base-sha').read_text() == head + '\n' and 'Base sha: ' + head in got['prompt'])
+             got['base_sha'] == head and (R(w) / 'base-sha').read_text() == head + '\n' and 'Base sha: ' + head in got['prompt'])
         case('the brief is the run.sh prompt plus the tree and tmp prefix lines',
              got['prompt'].startswith('w | builder L1\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
-                                      'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', w, w / 'builder-L1.md'))
+                                      'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', R(w), R(w) / 'builder-L1.md'))
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
         # T-0504: a repository and task path with spaces still passes the actual spawn hook; a missing record is still denied.
         if shutil.which('jq') and shutil.which('bash'):
@@ -1986,7 +2013,7 @@ def selftest():
             case('trailing explanation after the quoted locator is ignored',
                  rcp == 0 and spawn(gp, gp['prompt'].replace('"%s"' % gp['handoff'], '"%s" (frozen, see docs/a b.md)' % gp['handoff'], 1))[0] == 0)
             case('the execution-tree command quotes a path with spaces', rcp == 0 and 'cd %s && ' % shlex.quote(gp['tree']) in gp['prompt'] and "cd '" in gp['prompt'])
-            (sp / '.sdlc' / 'a task' / 'builder-L1.dispatch.json').unlink()
+            (R(sp / '.sdlc' / 'a task') / 'builder-L1.dispatch.json').unlink()
             mrc, merr = spawn(gp) if rcp == 0 else (None, '')
             case('a spaced path with no dispatch record is denied with the missing-record diagnostic',
                  mrc == 2 and 'no dispatch record for' in merr and gp['handoff'] in merr)
@@ -1995,7 +2022,7 @@ def selftest():
         # T-0366: a solo dispatch's recorded base sha, not the later HEAD, is the verifier's Base sha.
         put(rr / '.sdlc' / 'sb' / 'handoff.md')
         pre = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
-        (rr / '.sdlc' / 'sb' / 'solo-L1-sb.dispatch.json').write_text(json.dumps({'role': 'solo', 'base_sha': pre}))
+        (R(rr / '.sdlc' / 'sb') / 'solo-L1-sb.dispatch.json').write_text(json.dumps({'role': 'solo', 'base_sha': pre}))
         (rr / 'later.txt').write_text('x')
         subprocess.run(['git', '-C', str(rr), 'add', '-A'], capture_output=True)
         subprocess.run(['git', '-C', str(rr), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'later'], capture_output=True)
@@ -2027,7 +2054,7 @@ def selftest():
         gt(lw2, 'add', '-A')
         gt(lw2, 'commit', '-qm', 'lane work')
         lane_head = gt(lw2, 'rev-parse', 'HEAD')
-        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(stale + '\n')
+        (R(lw2 / '.sdlc' / 'w') / 'base-sha').write_text(stale + '\n')
         _, dstale, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
         case('a stale stored base older than the lane fork point is replaced by the lane HEAD (not the main checkout HEAD)',
              dstale['base_sha'] == lane_head != stale and lane_head != gt(rr, 'rev-parse', 'HEAD'))
@@ -2038,13 +2065,13 @@ def selftest():
         gt(lw2, 'commit', '-qm', 'more lane work')
         listed = gt(lw2, 'diff', '--name-only', dstale['base_sha'], '--', '.', ':(exclude).sdlc').split()
         case('after more lane work the guard diff lists the lane files and not main\'s', listed == ['later.txt'])
-        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(lane_head + '\n')
+        (R(lw2 / '.sdlc' / 'w') / 'base-sha').write_text(lane_head + '\n')
         _, dkeep, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
         case('a stored base at or after the fork point is kept', dkeep['base_sha'] == lane_head)
-        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(fork + '\n')
+        (R(lw2 / '.sdlc' / 'w') / 'base-sha').write_text(fork + '\n')
         _, dfork, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
         case('a stored base equal to the fork point is kept', dfork['base_sha'] == fork)
-        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(stale + '\n')
+        (R(lw2 / '.sdlc' / 'w') / 'base-sha').write_text(stale + '\n')
         with clean_env(), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
             os.environ['SDLC_BASE_REF'] = 'HEAD~5000'  # an unresolvable ref gives no floor: the old, ancestor-only rule
             try:
@@ -2059,7 +2086,7 @@ def selftest():
         # T-0381: the handoff in the MAIN checkout, the owned lane worktree as the cwd. The base of a step is, in order,
         # a base the handoff names (a `base: <sha>` line), else the sha recorded at its first dispatch, else the
         # execution tree's HEAD (the lane), never the main checkout's HEAD; a differing supplied SDLC_BASE_SHA is refused.
-        mhand, mbase = rr / '.sdlc' / 'w' / 'handoff.md', rr / '.sdlc' / 'w' / 'base-sha'
+        mhand, mbase = rr / '.sdlc' / 'w' / 'handoff.md', R(rr / '.sdlc' / 'w') / 'base-sha'
         mbase_was = mbase.read_text() if mbase.is_file() else None
         mhand_was = mhand.read_text()
         lane_tip2 = gt(lw2, 'rev-parse', 'HEAD')
@@ -2136,36 +2163,36 @@ def selftest():
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw2)], capture_output=True)
         rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(os.getppid()))
         case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2
-             and 'run_lifecycle.py recover "%s"' % w in err2)
-        case('the refused prepare wrote no second record', sorted(p.name for p in w.glob('*.attempt.json')) == ['builder-L1.attempt.json'])
+             and 'run_lifecycle.py recover "%s"' % R(w) in err2)
+        case('the refused prepare wrote no second record', sorted(p.name for p in R(w).glob('*.attempt.json')) == ['builder-L1.attempt.json'])
         rc3, d3, err3 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', '--dry-run', SDLC_DISPATCH_PARENT_PID=str(live))
         with clean_env(SDLC_DISPATCH_PARENT_PID=str(live)), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
             own_next = prepare('verifier', 'L1', '.sdlc/w/handoff.md')
         case('an attempt carrying the caller pid does not block the next prepare (T-0371)',
-             own_next['result_name'] == 'verifier-L1' and len(list(w.glob('*.attempt.json'))) == 2)
-        for f in list(w.glob('verifier-L1*')):
+             own_next['result_name'] == 'verifier-L1' and len(list(R(w).glob('*.attempt.json'))) == 2)
+        for f in list(R(w).glob('verifier-L1*')):
             f.unlink()
         with clean_env(SDLC_DISPATCH_PARENT_PID=str(live)), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
             doubled = prepare('verifier', 'L1', '.sdlc/w/handoff.md', skip=('lock',))
         case('negative control: without the lock gate a second running attempt starts', doubled['result_name'] == 'verifier-L1'
-             and len(list(w.glob('*.attempt.json'))) == 2)
-        for f in list(w.glob('verifier-L1*')):
+             and len(list(R(w).glob('*.attempt.json'))) == 2)
+        for f in list(R(w).glob('verifier-L1*')):
             f.unlink()
-        a = json.loads((w / 'builder-L1.attempt.json').read_text())
+        a = json.loads((R(w) / 'builder-L1.attempt.json').read_text())
         a['parent_pid'] = dead
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
-        (w / 'builder-L1.running').write_text('1\n')
-        st_dead = status(w)
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (R(w) / 'builder-L1.running').write_text('1\n')
+        st_dead = status(R(w))
         case('status: running attempt with a dead parent prints orphaned', st_dead == ['builder-L1 orphaned builder-L1 parent_pid=%d' % dead])
-        case('status --orphans lists the orphan', status(w, True) == st_dead)
+        case('status --orphans lists the orphan', status(R(w), True) == st_dead)
         a['parent_pid'] = live
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
-        case('negative control: status --orphans lists none for a live parent', status(w, True) == [])
-        case('negative control: a live parent prints running', 'running' in status(w)[0] and 'orphaned' not in status(w)[0])
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        case('negative control: status --orphans lists none for a live parent', status(R(w), True) == [])
+        case('negative control: a live parent prints running', 'running' in status(R(w))[0] and 'orphaned' not in status(R(w))[0])
         a['parent_pid'] = dead
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
         a['agent_id'] = 'ag-7'
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
         ladder = resume('builder-L1', str(rr))
         case('resume prints SendMessage by name, by id, then the new attempt with the addendum',
              len(ladder) == 3 and 'SendMessage' in ladder[0] and 'w-builder-L1' in ladder[0] and 'SendMessage' in ladder[1] and 'ag-7' in ladder[1]
@@ -2173,7 +2200,7 @@ def selftest():
         case('resume replays no old report', 'builder-L1.md' not in ' '.join(ladder))
         a.pop('agent_id')
         a['parent_pid'] = live
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
         try:
             resume('builder-L1', str(rr))
             refused = False
@@ -2188,7 +2215,7 @@ def selftest():
         tfile.write_text('{}\n')
         os.utime(tfile, (time.time() - 7200, time.time() - 7200))
         a['agent_id'] = 'ag-7'
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
         cfgdir = rr / '.sdlc'
         cfgdir.mkdir(exist_ok=True)
         cfgfile = cfgdir / 'config'
@@ -2221,32 +2248,32 @@ def selftest():
             shutil.rmtree(proj, ignore_errors=True)
         a.pop('agent_id')
         a['parent_pid'] = dead
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
-        (w / 'builder-L1.md').write_text('<!-- role=builder level=L1 model=sonnet effort=low -->\n## Status\ndone\n')
-        rec_rep, _ = recover_orphans(w)
-        rep_r = json.loads((w / 'builder-L1.attempt.json').read_text())
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (R(w) / 'builder-L1.md').write_text('<!-- role=builder level=L1 model=sonnet effort=low -->\n## Status\ndone\n')
+        rec_rep, _ = recover_orphans(R(w))
+        rep_r = json.loads((R(w) / 'builder-L1.attempt.json').read_text())
         case('recover leaves a dead-parent attempt whose result holds a verdict alone (T-0445)',
              rec_rep == [] and rep_r['status'] == 'running' and 'recovery' not in rep_r)
-        (w / 'builder-L1.md').unlink()
-        rec, _ = recover_orphans(w)
-        old_r = json.loads((w / 'builder-L1.attempt.json').read_text())
+        (R(w) / 'builder-L1.md').unlink()
+        rec, _ = recover_orphans(R(w))
+        old_r = json.loads((R(w) / 'builder-L1.attempt.json').read_text())
         case('recover marks it interrupted with run_lifecycle.py text', rec == ['builder-L1.attempt.json'] and old_r['status'] == 'interrupted'
              and old_r['recovery'] == RECOVERY and 'finished_at' in old_r)
         old_r['status'] = 'running'
-        (w / 'builder-L1.attempt.json').write_text(json.dumps(old_r))
-        (w / 'builder-L1.running').write_text('1\n')
+        (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(old_r))
+        (R(w) / 'builder-L1.running').write_text('1\n')
         rc3, got3, err3 = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
-        old = json.loads((w / 'builder-L1.attempt.json').read_text())
+        old = json.loads((R(w) / 'builder-L1.attempt.json').read_text())
         # T-0505: the new attempt (builder-L1-2) writes builder-L1.running again, so the hand-written '1' is gone and an epoch start is there
-        remade = (w / 'builder-L1.running').read_text() if (w / 'builder-L1.running').is_file() else ''
+        remade = (R(w) / 'builder-L1.running').read_text() if (R(w) / 'builder-L1.running').is_file() else ''
         case('a dead-parent attempt is recovered first', rc3 == 0 and old['status'] == 'interrupted' and 'finished_at' in old and 'recovered' in err3
              and remade != '1\n' and re.fullmatch(r'[0-9]+\n', remade) is not None)
         case('the new attempt gets the next result name and Agent name', got3['result_name'] == 'builder-L1-2'
-             and got3['result'] == str(w / 'builder-L1-2.md') and got3['name'] == 'w-builder-L1-2'
-             and (w / 'builder-L1-2.attempt.json').is_file())
+             and got3['result'] == str(R(w) / 'builder-L1-2.md') and got3['name'] == 'w-builder-L1-2'
+             and (R(w) / 'builder-L1-2.attempt.json').is_file())
         case('the interrupted attempt was not overwritten', old['attempt_id'] == att['attempt_id'])
         dryrc, drygot, _ = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', '--dry-run')
-        case('a dry run writes nothing and takes no lock', dryrc == 0 and drygot['dry_run'] is True and len(list(w.glob('*.attempt.json'))) == 2)
+        case('a dry run writes nothing and takes no lock', dryrc == 0 and drygot['dry_run'] is True and len(list(R(w).glob('*.attempt.json'))) == 2)
         case('a planner dispatch has no base sha', prep(rr, 'planner', 'L1', '.sdlc/w/handoff.md', '--dry-run')[1]['base_sha'] is None)
         # T-0505: the running marker follows the attempt. A dry run writes none; recover clears a dead-parent attempt's marker and
         # keeps the marker of an attempt another live session owns (recover_orphans, and settle inside a second prepare).
@@ -2256,24 +2283,24 @@ def selftest():
         md_before = sorted(p.name for p in md.iterdir())
         rcd, gd, _ = prep(rr, 'builder', 'L1', '.sdlc/md/handoff.md', '--dry-run', SDLC_DISPATCH_PARENT_PID=str(live))
         case('prepare --dry-run writes no running marker (T-0505)',
-             rcd == 0 and gd['dry_run'] is True and list(md.glob('*.running')) == [] and sorted(p.name for p in md.iterdir()) == md_before)
+             rcd == 0 and gd['dry_run'] is True and list(R(md).glob('*.running')) == [] and sorted(p.name for p in md.iterdir()) == md_before)
         rcr, _, _ = prep(rr, 'builder', 'L1', '.sdlc/mr/handoff.md', SDLC_DISPATCH_PARENT_PID=str(dead))
-        mr_had = (mr / 'builder-L1.running').is_file()
-        mr_rec, _ = recover_orphans(mr)
+        mr_had = (R(mr) / 'builder-L1.running').is_file()
+        mr_rec, _ = recover_orphans(R(mr))
         case('recover removes the running marker of a dead-parent attempt (T-0505)',
-             rcr == 0 and mr_had and mr_rec == ['builder-L1.attempt.json'] and not (mr / 'builder-L1.running').exists()
-             and json.loads((mr / 'builder-L1.attempt.json').read_text())['status'] == 'interrupted')
+             rcr == 0 and mr_had and mr_rec == ['builder-L1.attempt.json'] and not (R(mr) / 'builder-L1.running').exists()
+             and json.loads((R(mr) / 'builder-L1.attempt.json').read_text())['status'] == 'interrupted')
         other = os.getppid()  # alive and older than the attempt, and not this process: another run's session
         rcl, _, _ = prep(rr, 'builder', 'L1', '.sdlc/ml/handoff.md', SDLC_DISPATCH_PARENT_PID=str(other))
-        ml_stamp = (ml / 'builder-L1.running').read_text() if (ml / 'builder-L1.running').is_file() else None
-        ml_rec, ml_live = recover_orphans(ml)
+        ml_stamp = (R(ml) / 'builder-L1.running').read_text() if (R(ml) / 'builder-L1.running').is_file() else None
+        ml_rec, ml_live = recover_orphans(R(ml))
         rcl2, _, errl2 = prep(rr, 'verifier', 'L1', '.sdlc/ml/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
-        ml_att = json.loads((ml / 'builder-L1.attempt.json').read_text())
+        ml_att = json.loads((R(ml) / 'builder-L1.attempt.json').read_text())
         case('recover keeps a live attempt of another run and its running marker (T-0505)',
              rcl == 0 and ml_stamp is not None and ml_rec == [] and len(ml_live) == 1 and rcl2 == 2 and 'still running' in errl2
              and (ml_att['status'], ml_att['parent_pid']) == ('running', other) and 'recovery' not in ml_att
-             and sorted(p.name for p in ml.glob('*.running')) == ['builder-L1.running'] and (ml / 'builder-L1.running').read_text() == ml_stamp
-             and sorted(p.name for p in ml.glob('*.attempt.json')) == ['builder-L1.attempt.json'])
+             and sorted(p.name for p in R(ml).glob('*.running')) == ['builder-L1.running'] and (R(ml) / 'builder-L1.running').read_text() == ml_stamp
+             and sorted(p.name for p in R(ml).glob('*.attempt.json')) == ['builder-L1.attempt.json'])
         pid, _ = parent_pid()
         case('parent_pid finds a live ancestor process', pid_alive(pid))
         long_dir = rr / '.sdlc' / ('x' * 100) / 'step-12'
@@ -2389,7 +2416,8 @@ def selftest():
             return out, got, e.getvalue(), o.getvalue()
 
         def lines_of(directory):
-            return [json.loads(l) for l in (Path(directory) / 'runs.jsonl').read_text().splitlines()] if (Path(directory) / 'runs.jsonl').is_file() else []
+            f = R(directory) / 'runs.jsonl'
+            return [json.loads(l) for l in f.read_text().splitlines()] if f.is_file() else []
 
         def attempt_of(got):
             return json.loads(Path(got['attempt_file']).read_text())
@@ -2397,6 +2425,28 @@ def selftest():
         def next_out(repo, rel):
             p = script('steps.py', 'next', repo / rel)
             return p.returncode, p.stdout.replace(str(repo), '<repo>')
+
+        # records dir (T-0540): prepare plus record write the result, attempt, dispatch record and runs.jsonl under
+        # .sdlc/runtime/tasks/<name>/, so git sees only handoff.md in the task folder; a legacy task dir (runs.jsonl beside
+        # its handoff) keeps recording in place and gets no runtime dir.
+        scout_body = '## Map\nNone\n\n## Entry points\nNone\n\n## Not found\nNone\n\n## Carry forward\nNone\n'
+        rdr = tmp / 'records-dir'
+        init_repo(rdr)
+        put(rdr / '.sdlc' / 'task' / 'handoff.md', '## Goal\nMap seed.\n\n## Context\nseed\n\n## Question\nWhere is seed?\n')
+        rrc, rgot, _, _ = go(rdr, 'scout', 'L1', '.sdlc/task/handoff.md', body=scout_body)
+        rtd = rdr / '.sdlc' / 'runtime' / 'tasks' / 'task'
+        seen = git('status', '--porcelain', '-uall', '--', '.sdlc/task', cwd=rdr).stdout.splitlines()
+        case('records dir: prepare plus record leaves only handoff.md in the task dir',
+             rrc == 0 and seen == ['?? .sdlc/task/handoff.md'] and rgot['artifacts_dir'] == str(rtd)
+             and all((rtd / n).is_file() for n in ('scout-L1.md', 'scout-L1.attempt.json', 'scout-L1.dispatch.json', 'runs.jsonl'))
+             and git('check-ignore', '-q', '.sdlc/runtime/tasks/task/runs.jsonl', cwd=rdr).returncode == 0)
+        put(rdr / '.sdlc' / 'old' / 'handoff.md', '## Goal\nMap seed.\n\n## Context\nseed\n\n## Question\nWhere is seed?\n')
+        put(rdr / '.sdlc' / 'old' / 'runs.jsonl', '{}\n')
+        lrc, lgot, _, _ = go(rdr, 'scout', 'L1', '.sdlc/old/handoff.md', body=scout_body)
+        old = rdr / '.sdlc' / 'old'
+        case('records dir: a legacy task dir with runs.jsonl keeps recording in place',
+             lrc == 0 and lgot['artifacts_dir'] == str(old) and (old / 'scout-L1.md').is_file() and (old / 'scout-L1.attempt.json').is_file()
+             and len((old / 'runs.jsonl').read_text().splitlines()) == 2 and not (rdr / '.sdlc' / 'runtime' / 'tasks' / 'old').exists())
 
         ra, rb = mk(tmp / 'A'), mk(tmp / 'B')
         step = '.sdlc/t/step-1'
@@ -2470,13 +2520,13 @@ def selftest():
         case('a failed sub-agent exits 1 and records status failed with its text', rc == 1 and att['status'] == 'failed' and att['exit_code'] == 1
              and 'connection reset' in att['error'] and 'returned no result' in err)
         case('a failed sub-agent writes no result, no runs.jsonl line, and no limit marker, and keeps the error as a log',
-             not Path(got['result']).exists() and lines_of(f1) == [] and not (f1 / 'builder-L1.limit').exists()
-             and 'connection reset' in (f1 / 'builder-L1.log').read_text())
+             not Path(got['result']).exists() and lines_of(f1) == [] and not (R(f1) / 'builder-L1.limit').exists()
+             and 'connection reset' in (R(f1) / 'builder-L1.log').read_text())
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f2/handoff.md', no_result=True)
         case('no result file and no stdin text is a failed sub-agent too', rc == 1 and 'no result file' in attempt_of(got)['error'])
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', said='API Error: 429 rate limit exceeded: session limit reached')
         f3 = rb / '.sdlc' / 'f3'
-        marker = json.loads((f3 / 'builder-L1.limit').read_text()) if (f3 / 'builder-L1.limit').is_file() else {}
+        marker = json.loads((R(f3) / 'builder-L1.limit').read_text()) if (R(f3) / 'builder-L1.limit').is_file() else {}
         case('a 429 or session-limit text exits 1 and writes <role>-<level>.limit with the resume command',
              rc == 1 and sorted(marker) == ['evidence', 'handoff', 'level', 'resume', 'role', 'ts'] and '429' in marker['evidence']
              and marker['resume'] == 'python3 %s prepare builder L1 %s' % (HERE / 'dispatch.py', got['handoff'])
@@ -2498,16 +2548,16 @@ def selftest():
         rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/r1/handoff.md')
         case('record with no result file and empty stdin exits 2 and leaves the attempt running',
              rc == 2 and 'no result yet at %s; the attempt stays running' % got['result'] in err and '--no-result' in err
-             and attempt_of(got)['status'] == 'running' and not (r1 / 'verifier-L1.log').exists() and lines_of(r1) == []
-             and not (r1 / 'verifier-L1.limit').exists() and not (r1 / 'verifier-L1.delivery.json').exists())
+             and attempt_of(got)['status'] == 'running' and not (R(r1) / 'verifier-L1.log').exists() and lines_of(r1) == []
+             and not (R(r1) / 'verifier-L1.limit').exists() and not (R(r1) / 'verifier-L1.delivery.json').exists())
         case('a no-result record keeps the running marker (T-0505)',
-             rc == 2 and attempt_of(got)['status'] == 'running' and (r1 / 'verifier-L1.running').is_file())
+             rc == 2 and attempt_of(got)['status'] == 'running' and (R(r1) / 'verifier-L1.running').is_file())
         # T-0505: a record that closes the attempt (completed, or failed on error text) clears the marker prepare wrote.
         cleared = []
         for name, body, said, want in (('m1', BODY['builder'], None, ('completed', 0)), ('m2', None, 'API Error: connection reset by peer', ('failed', 1))):
             put(rb / '.sdlc' / name / 'handoff.md')
             _, gm, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % name, SDLC_DISPATCH_PARENT_PID=live_pid)
-            mark = rb / '.sdlc' / name / 'builder-L1.running'
+            mark = R(rb / '.sdlc' / name) / 'builder-L1.running'
             had = mark.is_file()
             if body is not None:
                 Path(gm['result']).write_text(body, encoding='utf-8')
@@ -2532,7 +2582,7 @@ def selftest():
         rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md', body=BODY['verifier'])
         case('a verifier with its report on disk is accepted', rc == 0 and attempt_of(got)['status'] == 'completed')
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', body=BODY['builder'])
-        case('a later success in the same dir removes the limit marker', rc == 0 and not (f3 / 'builder-L1.limit').exists())
+        case('a later success in the same dir removes the limit marker', rc == 0 and not (R(f3) / 'builder-L1.limit').exists())
 
         # T-0537: a sub-agent stopped by a spend limit with no record: resume --limit marks it limit-stopped and names the resume call.
         def cli(*argv):
@@ -2545,31 +2595,31 @@ def selftest():
         lm1 = rb / '.sdlc' / 'lm1'
         _, gl, _ = prep(rb, 'builder', 'L1', '.sdlc/lm1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
         rc, out, err = cli('resume', '--limit', gl['name'], '--root', str(rb))
-        lmark = json.loads((lm1 / 'builder-L1.limit').read_text()) if (lm1 / 'builder-L1.limit').is_file() else {}
+        lmark = json.loads((R(lm1) / 'builder-L1.limit').read_text()) if (R(lm1) / 'builder-L1.limit').is_file() else {}
         case('resume --limit marks a running attempt limit-stopped, clears its running marker, and writes the .limit marker with SendMessage by name',
-             rc == 0 and attempt_of(gl)['status'] == 'limit-stopped' and not (lm1 / 'builder-L1.running').exists()
+             rc == 0 and attempt_of(gl)['status'] == 'limit-stopped' and not (R(lm1) / 'builder-L1.running').exists()
              and lmark.get('resume', '').startswith('SendMessage({to: "%s"' % gl['name']) and 'prepare builder L1' in lmark.get('prepare', '')
              and 'SendMessage({to: "%s"' % gl['name'] in out)
         case('status shows limit-stopped and resume prints the ladder for it',
-             status(lm1)[0].split()[1] == 'limit-stopped' and 'SendMessage' in resume(gl['name'], str(rb))[0])
+             status(R(lm1))[0].split()[1] == 'limit-stopped' and 'SendMessage' in resume(gl['name'], str(rb))[0])
         Path(gl['result']).write_text(BODY['builder'], encoding='utf-8')
         with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
             rc = record(gl['dispatch_file'])
         case('a limit-stopped attempt resumed by SendMessage records as usual and the success removes the marker',
-             rc == 0 and attempt_of(gl)['status'] == 'completed' and not (lm1 / 'builder-L1.limit').exists())
+             rc == 0 and attempt_of(gl)['status'] == 'completed' and not (R(lm1) / 'builder-L1.limit').exists())
         rc, out, err = cli('resume', '--limit', gl['name'], '--root', str(rb))
         case('negative control: resume --limit refuses a completed attempt', rc == 2 and 'completed, not running' in err)
         _, gl2, _ = prep(rb, 'builder', 'L1', '.sdlc/lm2/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
         Path(gl2['result']).write_text(BODY['builder'], encoding='utf-8')
         rc, out, err = cli('resume', '--limit', gl2['name'], '--root', str(rb))
         case('negative control: resume --limit refuses a running attempt that has a result, writes no marker, and keeps it running',
-             rc == 2 and 'has a result' in err and attempt_of(gl2)['status'] == 'running' and not (rb / '.sdlc' / 'lm2' / 'builder-L1.limit').exists())
+             rc == 2 and 'has a result' in err and attempt_of(gl2)['status'] == 'running' and not (R(rb / '.sdlc' / 'lm2') / 'builder-L1.limit').exists())
         with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
             record(gl2['dispatch_file'])
         # T-0537: prepare notes a model or effort that differs from the last recorded attempt of the same role and level.
         rc, gr, err = prep(rb, 'builder', 'L1', '.sdlc/lm2/handoff.md', '--dry-run')
         case('negative control: prepare is silent when the row matches the previous attempt', rc == 0 and 'row changed' not in err)
-        with (rb / '.sdlc' / 'lm2' / 'runs.jsonl').open('a') as f:
+        with (R(rb / '.sdlc' / 'lm2') / 'runs.jsonl').open('a') as f:
             f.write(json.dumps(dict(role='builder', level='L1', model='fable', effort='max')) + '\n')
         rc, gr, err = prep(rb, 'builder', 'L1', '.sdlc/lm2/handoff.md', '--dry-run')
         case('prepare prints one row-changed line when the model or effort differs from the previous attempt',
@@ -2582,7 +2632,7 @@ def selftest():
         rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/c1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', got['dispatch_file']], input='Error: session limit reached',
                            capture_output=True, text=True, env=env_cli)
-        case('CLI record reads error text from stdin: exit 1 and the limit marker', p.returncode == 1 and (rb / '.sdlc' / 'c1' / 'builder-L1.limit').is_file())
+        case('CLI record reads error text from stdin: exit 1 and the limit marker', p.returncode == 1 and (R(rb / '.sdlc' / 'c1') / 'builder-L1.limit').is_file())
         rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
         Path(got['result']).write_text(BODY['builder'])
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--agent-id', 'ag-9', '--tokens', '1234', '--tool-uses', '7',
@@ -2655,7 +2705,7 @@ def selftest():
             was = os.environ.get('SDLC_CLAUDE_PROJECTS')
             os.environ['SDLC_CLAUDE_PROJECTS'] = str(proj)
             try:
-                return status(art)[0]
+                return status(R(art))[0]
             finally:
                 if was is None:
                     os.environ.pop('SDLC_CLAUDE_PROJECTS', None)
@@ -2726,14 +2776,14 @@ def selftest():
             else:
                 if nm == 't2':
                     case('record t2: error stdin stays a failure with the limit marker despite an interim heading',
-                         q.returncode == 1 and not Path(got['result']).exists() and (rb / '.sdlc' / nm / 'builder-L1.limit').is_file())
+                         q.returncode == 1 and not Path(got['result']).exists() and (R(rb / '.sdlc' / nm) / 'builder-L1.limit').is_file())
                 else:
                     case('record %s: unmatched error stdin is a failure despite a complete transcript' % nm,
                          q.returncode == 1 and not Path(got['result']).exists())
         case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', body=BODY['builder'])
         case('a second attempt in a dir whose first was recorded is allowed and takes the next name', rc == 0 and got['result_name'] == 'builder-L1-2')
-        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(rb / '.sdlc' / 'c2' / 'builder-L1.dispatch.json')],
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(R(rb / '.sdlc' / 'c2') / 'builder-L1.dispatch.json')],
                            capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
         case('recording a closed attempt again exits 2 and changes nothing', p.returncode == 2 and 'not running' in p.stderr
              and len(lines_of(rb / '.sdlc' / 'c2')) == 2)
@@ -3052,7 +3102,7 @@ def selftest():
         with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
             record(got0['dispatch_file'])
         case('control: a dispatch with no --notify sends no message and writes no delivery record', len(msgs('codex')) == 1 and 'notify' not in got0
-             and not (vr / '.sdlc' / 'n0' / 'verifier-L1.delivery.json').exists())
+             and not (R(vr / '.sdlc' / 'n0') / 'verifier-L1.delivery.json').exists())
 
         # Duplicate delivery: a rerun after sent sends nothing; a crash between send and mark finds the earlier send by attempt id.
         e = io.StringIO()

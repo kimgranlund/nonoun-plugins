@@ -5,7 +5,7 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
   record    run before the first edit of a build. Every (red) criterion of the handoff (a list item whose
             leading tags hold (red), outside ``` fences, the spans specgate.py red would run) runs once in the
             current tree (steps.red_first: the tree is snapshotted and restored, a timeout is a refusal) and one
-            JSON line per span is appended to <handoff dir>/red-checkpoint.jsonl: type control, ts, attempt_id,
+            JSON line per span is appended to <records dir>/red-checkpoint.jsonl: type control, ts, attempt_id,
             handoff_sha256 (provenance), criterion_sha256 (sha256 of the criterion line, a newline, and the span: the
             key an audit matches on, T-0425), base_sha (the dir's base-sha, else HEAD), criterion (the exact line), span, exit,
             result (red, green, or timeout), phase, dirty, at_sha (HEAD at record time, None outside git). phase is
@@ -42,7 +42,7 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
               missing           no control bound to this attempt (or the attempt id is empty)
             The run status is the worst span (missing, prelude-changed, retrospective, green-baseline, preserved, ok); none
             when the handoff has no (red) criterion. Missing, prelude-changed, retrospective, and green-baseline append one
-            line "process deviation: red-checkpoint: <status>: ..." (once) to <handoff dir>/process-deviations.md
+            line "process deviation: red-checkpoint: <status>: ..." (once) to <records dir>/process-deviations.md
             and an audit line to red-checkpoint.jsonl. Exit 0 always: a deviation is recorded, it does not fail
             the run. agents/verifier.md and agents/filer.md read process-deviations.md.
 Three records stay apart: runner acceptance (results.py validate and the runs.jsonl completed status say the
@@ -57,6 +57,7 @@ control exists; no such hook is registered, and Codex has no hook to register. L
 """
 import argparse, contextlib, hashlib, io, json, os, pathlib, subprocess, sys, tempfile, time
 
+import order  # same scripts/ dir: the records dir rule (records_dir)
 import steps
 
 CHECKPOINT = 'red-checkpoint.jsonl'
@@ -66,12 +67,20 @@ RANK = {'ok': 0, 'preserved': 1, 'green-baseline': 2, 'retrospective': 3, 'prelu
 DEVIATING = ('missing', 'retrospective', 'green-baseline', 'prelude-changed')
 
 
-def resolve(target):
+def resolve(target, create=False):
+    """(handoff, records dir): the dir argument goes through order.records_dir, which holds red-checkpoint.jsonl,
+    process-deviations.md and the *.attempt.json files; a task-side step dir reads its records-side handoff.
+    create makes a runtime records dir (a writer: record, audit)."""
     t = pathlib.Path(target)
-    handoff = t / 'handoff.md' if t.is_dir() else t
+    if t.is_dir() or (not t.exists() and t.name != 'handoff.md'):
+        handoff = t / 'handoff.md'
+        if not handoff.is_file():
+            handoff = order.records_dir(t) / 'handoff.md'
+    else:
+        handoff = t if t.exists() else order.records_dir(t.parent) / 'handoff.md'
     if not handoff.is_file():
         raise steps.Fail(f'redck: no handoff at {handoff}')
-    return handoff, handoff.parent
+    return handoff, order.records_dir(handoff.parent, create)
 
 
 def red_items(handoff):
@@ -171,7 +180,7 @@ def now():
 
 def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
     try:
-        handoff, d = resolve(target)
+        handoff, d = resolve(target, create=True)
     except steps.Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -180,8 +189,8 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
         print(f'redck: no (red) criteria in {handoff}')
         return 0
     top = steps.exec_toplevel(d)
-    base = steps.base_sha(top, d)
-    dirty, prelude = split_prelude(top, handoff, dirty_paths(top, d))
+    base = steps.base_sha(top, handoff.parent)
+    dirty, prelude = split_prelude(top, handoff, dirty_paths(top, handoff.parent))
     phase = 'pre-edit' if dirty == [] else 'retrospective'
     at = (git_lines(top, 'rev-parse', 'HEAD') or [None])[0] if top else None
     aid, sha = attempt_of(d, attempt_id), sha256(handoff)
@@ -262,7 +271,7 @@ def clip(s, n=70):
 
 def cmd_audit(target, attempt_id=''):
     try:
-        handoff, d = resolve(target)
+        handoff, d = resolve(target, create=True)
     except steps.Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -271,7 +280,7 @@ def cmd_audit(target, attempt_id=''):
         print(f'redck: audit: none: no (red) criteria in {handoff}')
         return 0
     top = steps.exec_toplevel(d)
-    base, sha = steps.base_sha(top, d), sha256(handoff)
+    base, sha = steps.base_sha(top, handoff.parent), sha256(handoff)
     aid = attempt_of(d, attempt_id)
     es = entries(d)
     cache = {}
@@ -336,7 +345,7 @@ def selftest():
 
         def task(*crit):
             count[0] += 1
-            d = repo / '.sdlc' / f't{count[0]}'
+            d = repo / '.sdlc' / 'runtime' / 'tasks' / f't{count[0]}' / 'step-1'  # a records-side step dir is its own records dir
             d.mkdir(parents=True)
             (d / 'handoff.md').write_text(ticket(*crit), encoding='utf-8')
             return d
@@ -349,6 +358,14 @@ def selftest():
             return [l for l in lines(d) if l.startswith('process deviation: red-checkpoint: ')]
 
         red = '- (red) `test -f out.txt`'
+        # records dir: a task folder holding only handoff.md records its checkpoint in order.records_dir, not beside it
+        tf = repo / '.sdlc' / 'tf'
+        tf.mkdir(parents=True)
+        (tf / 'handoff.md').write_text(ticket(red), encoding='utf-8')
+        rc, _, _ = run_main(['record', str(tf), '--attempt-id', 'A1'])
+        check('(records dir) record writes red-checkpoint.jsonl in order.records_dir, not in the task folder',
+              rc == 0 and len(entries(order.records_dir(tf))) == 1 and not (tf / CHECKPOINT).exists()
+              and order.records_dir(tf) == repo / '.sdlc' / 'runtime' / 'tasks' / 'tf')
         # no tagged criteria
         d = task('- `test -d .sdlc`', '- (guard) `test -d .sdlc`')
         rc, out, _ = run_main(['record', str(d), '--attempt-id', 'A1'])
@@ -587,7 +604,7 @@ def selftest():
 
         def task2(*crit):
             count[0] += 1
-            d = r2 / '.sdlc' / f't{count[0]}'
+            d = r2 / '.sdlc' / 'runtime' / 'tasks' / f't{count[0]}' / 'step-1'
             d.mkdir(parents=True)
             (d / 'handoff.md').write_text(ticket(*crit), encoding='utf-8')
             return d

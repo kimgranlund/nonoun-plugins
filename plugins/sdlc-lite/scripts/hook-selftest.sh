@@ -482,6 +482,24 @@ rm -f "$sp/verifier-L3.dispatch.json"
 out=$(run "$rs" "$(gj $vt $vn opus "\"$sp/handoff.md\"")"); rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate denies a quoted spaced path with no record (T-0504): exit $rc, want 2"
 grep -q "no dispatch record for '$vn' beside $sp/handoff.md" <<<"$out" || fail "spawn gate names the whole spaced path in the missing-record denial (T-0504)"
+# Records dir (T-0540): prepare writes the record into the prompt's Artifacts dir, not beside the handoff. A record
+# there allows (absolute or relative to .cwd); neither place holding one denies and the message names both.
+ah="$gate/art-h"; ad="$gate/art-r"; mkdir -p "$ah" "$ad"; : >"$ah/handoff.md"
+printf '%s' '{"model":"opus","name":"gate-task-verifier-L3"}' >"$ad/verifier-L3.dispatch.json"
+gja() {
+  jq -n --arg h "$1" --arg r "$2" --arg cwd "$gate" '{tool_name:"Agent",agent_type:"sdlc-lite:conductor",cwd:$cwd,
+    tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:"gate-task-verifier-L3",model:"opus",
+    prompt:("Handoff: " + $h + "\nArtifacts dir: " + $r + "\nYour final message is saved verbatim as y.")}}'
+}
+run "$rs" "$(gja "$ah/handoff.md" "$ad")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a record in the Artifacts dir (T-0540): exit $rc, want 0"
+run "$rs" "$(gja "$ah/handoff.md" art-r)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate reads a relative Artifacts dir against .cwd (T-0540): exit $rc, want 0"
+rm -f "$ad/verifier-L3.dispatch.json"
+out=$(run "$rs" "$(gja "$ah/handoff.md" "$ad")"); rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies when neither the Artifacts dir nor the handoff dir holds a record (T-0540): exit $rc, want 2"
+grep -qF "no dispatch record for '$vn' in the Artifacts dir $ad or beside $ah/handoff.md" <<<"$out" \
+  || fail "spawn gate's missing-record denial names both places (T-0540): $out"
 run "$rs" "$(jq -n --arg cwd "$gate" '{tool_name:"Agent",cwd:$cwd,agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:"gate-task-verifier-L3",model:"opus",prompt:"no line here"}}')" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate denies a prompt with no Handoff line (T-0344): exit $rc, want 2"
 # A solo dispatch (sdlc-lite:solo-L1|L2|L3, solo_run.py) is gated by its record and model only (T-0287 live defect).
@@ -655,7 +673,7 @@ out=$(run "$wh" "$(wj "$pt/handoff.md")" -u SDLC_HANDOFF_EDIT_MODE); rc=$?
 [[ $rc -eq 0 ]] || fail "$pa warn: exit $rc, want 0"
 grep -qF "handoff freeze (warning)" <<<"$out" || fail "$pa warn: stderr lacks the freeze warning (prepare left no running marker)"
 grep -q "scout-L1" <<<"$out" || fail "$pa warn: stderr does not name scout-L1"
-[[ "$(grep -c "edited while scout-L1 ran" "$pt/stale-edits.log" 2>/dev/null)" == 1 ]] || fail "$pa warn: stale-edits.log does not hold exactly one line"
+[[ "$(grep -c "edited while scout-L1 ran" "$pr/.sdlc/runtime/tasks/task/stale-edits.log" 2>/dev/null)" == 1 && ! -e "$pt/stale-edits.log" ]] || fail "$pa warn: stale-edits.log does not hold exactly one line"
 
 prepared deny
 frozen; rc=$?
@@ -664,17 +682,17 @@ frozen; rc=$?
 prepared completed
 frozen; rc=$?
 [[ $rc -eq 2 ]] || fail "$pa completed: exit $rc before record, want 2"
-pd "$pr" "" record .sdlc/task/scout-L1.dispatch.json >/dev/null 2>&1 \
+pd "$pr" "" record .sdlc/runtime/tasks/task/scout-L1.dispatch.json >/dev/null 2>&1 \
   < <(printf '## Map\nNone\n\n## Entry points\nNone\n\n## Not found\nNone\n\n## Carry forward\nNone\n'); rc=$?
-[[ $rc -eq 0 && "$(jq -r .status "$pt/scout-L1.attempt.json")" == completed ]] || fail "$pa completed: dispatch.py record exit $rc, want 0 and a completed attempt"
+[[ $rc -eq 0 && "$(jq -r .status "$pr/.sdlc/runtime/tasks/task/scout-L1.attempt.json")" == completed ]] || fail "$pa completed: dispatch.py record exit $rc, want 0 and a completed attempt"
 frozen; rc=$?
 [[ $rc -eq 0 && -z "$out" ]] || fail "$pa completed: the handoff stayed frozen after record (rc=$rc)"
 
 prepared failed
 frozen; rc=$?
 [[ $rc -eq 2 ]] || fail "$pa failed: exit $rc before record, want 2"
-pd "$pr" "" record .sdlc/task/scout-L1.dispatch.json >/dev/null 2>&1 < <(printf 'API Error: connection reset by peer\n'); rc=$?
-[[ $rc -eq 1 && "$(jq -r .status "$pt/scout-L1.attempt.json")" == failed ]] || fail "$pa failed: dispatch.py record exit $rc, want 1 and a failed attempt"
+pd "$pr" "" record .sdlc/runtime/tasks/task/scout-L1.dispatch.json >/dev/null 2>&1 < <(printf 'API Error: connection reset by peer\n'); rc=$?
+[[ $rc -eq 1 && "$(jq -r .status "$pr/.sdlc/runtime/tasks/task/scout-L1.attempt.json")" == failed ]] || fail "$pa failed: dispatch.py record exit $rc, want 1 and a failed attempt"
 frozen; rc=$?
 [[ $rc -eq 0 && -z "$out" ]] || fail "$pa failed: the handoff stayed frozen after a failed record (rc=$rc)"
 
@@ -691,7 +709,7 @@ frozen; rc=$?
 prepared live "$$"
 rec=$(pd "$pr" "" recover "$pt" 2>&1)
 grep -qF "no orphaned attempts" <<<"$rec" || fail "$pa live: dispatch.py recover touched an attempt whose owner is alive: $rec"
-[[ "$(jq -r '"\(.status) \(.parent_pid)"' "$pt/scout-L1.attempt.json")" == "running $$" ]] || fail "$pa live: the attempt is no longer running under pid $$"
+[[ "$(jq -r '"\(.status) \(.parent_pid)"' "$pr/.sdlc/runtime/tasks/task/scout-L1.attempt.json")" == "running $$" ]] || fail "$pa live: the attempt is no longer running under pid $$"
 frozen; rc=$?
 [[ $rc -eq 2 ]] || fail "$pa live: exit $rc after recover, want 2 (a live attempt keeps the freeze)"
 
