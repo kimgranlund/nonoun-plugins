@@ -26,3 +26,9 @@ Every prepared role records the base sha and Tree of the tree it actually builds
 
 ## Constraints
 Preserve the recorded build baseline (`SDLC_BASE_SHA`). A check must be able to fail.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0, with the case `run --cwd: base_sha is the --cwd HEAD and the prompt names that tree as Tree (T-0546)` and its `negative control: without --cwd ...` case.
+- [ ] `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, with the case `a resumed lane with nothing recorded: the verifier base is the lane fork point, not its WIP HEAD, and it says so`, the `.lane.json` record case, and `negative control: a builder with nothing recorded starts at the lane HEAD (the WIP commit)`.
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- [ ] `git diff --check` exits 0.

@@ -160,8 +160,9 @@ def refuse_template(task_dir):
         raise Refuse(f'{handoff}: still the unfilled {kind.group(1)} template; write its Goal, Intent and Context first')
 
 
-def dispatch_json(task_dir, tier, brief, worktree=None):
-    """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
+def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
+    """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284). tree (run --cwd)
+    is the tree the solo builds in: base_sha is its HEAD and the prompt carries its Tree line, not the session checkout's (T-0546)."""
     tier = tier_of(tier)
     if tier not in TIERS:
         raise Refuse(f'no solo level {tier!r}: want L1, L2, or L3')
@@ -183,9 +184,13 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=dispatch.agent_name('solo', tier, tdir, 1), description=dispatch.list_description(tdir, 'solo', tier),
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
              role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(records(tdir)),
-             attempt_id=attempt, base_sha=head_sha(task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
+             attempt_id=attempt, base_sha=head_sha(tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
     d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {dispatch.handoff_locator(d["artifacts_dir"])}\n{brief}'
+    if tree and not worktree:
+        d['tree'] = os.path.realpath(str(tree))
+        d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nTree: {d["tree"]} (run every Bash call as cd {shlex.quote(d["tree"])} && ...; '
+                                          'the shell keeps no working directory between calls)\nArtifacts dir:', 1)
     if worktree:
         d['worktree'] = worktree
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
@@ -1292,6 +1297,40 @@ def selftest():
                rc == 0 and disp and rec and disp['prompt'].endswith('the brief\nChecks: python3 check.py'))
         rc, disp, err, rec = il_run(il('dflt', cfg, 'python3 suite.py', 'profile: default\n'))
         expect('profile control: profile: default in the handoff dispatches', rc == 0 and disp and rec)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0546: run --cwd <tree> takes base_sha and Tree from <tree>, not the session checkout
+        tmp = pathlib.Path(tmp)
+
+        def mkrepo(name, n):
+            r = tmp / name
+            r.mkdir()
+            for c in (['init', '-q'], ['config', 'user.name', 't'], ['config', 'user.email', 't@t']):
+                subprocess.run(['git', *c], cwd=str(r), check=True)
+            for i in range(n):
+                (r / 'f.txt').write_text(str(i))
+                subprocess.run(['git', 'add', '-A'], cwd=str(r), check=True)
+                subprocess.run(['git', 'commit', '-qm', 'c%d' % i], cwd=str(r), check=True)
+            return r
+        sess, other = mkrepo('session', 1), mkrepo('other', 2)
+        td = sess / '.sdlc' / '0001-x'
+        td.mkdir(parents=True)
+        (td / 'handoff.md').write_text('x\n')
+        env_c = {**os.environ, 'SDLC_HEADLESS': '1'}
+
+        def cli(*extra):
+            r = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--task-dir', str(td), '--tier', 'L1',
+                                '--brief', 'b', '--no-worktree', *extra], cwd=str(sess), capture_output=True, text=True, env=env_c, timeout=60)
+            try:
+                return json.loads(r.stdout)
+            except ValueError:
+                return {'err': r.stderr}
+        sess_head, other_head = head_sha(sess), head_sha(other)
+        real = os.path.realpath(str(other))
+        dc = cli('--cwd', str(other))
+        expect('run --cwd: base_sha is the --cwd HEAD and the prompt names that tree as Tree (T-0546)',
+               dc.get('base_sha') == other_head != sess_head and dc.get('tree') == real and f'\nTree: {real} ' in dc.get('prompt', ''))
+        dn = cli()
+        expect('negative control: without --cwd the base is the session checkout HEAD and the prompt has no Tree line',
+               dn.get('base_sha') == sess_head != other_head and '\nTree: ' not in dn.get('prompt', '') and 'tree' not in dn)
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
@@ -1362,7 +1401,7 @@ def main():
                 print(f'solo_run.py: another solo is live or an integration lane is open; using worktree {wt} (--no-worktree to stay)', file=sys.stderr)
         if a.backend == 'claude' and not a.exec:
             path = ensure_worktree(wt, a.cwd, task_dir) if wt else None
-            rc, d = dispatch_json(task_dir, a.tier, brief, path)
+            rc, d = dispatch_json(task_dir, a.tier, brief, path, a.cwd)
             if d:
                 print(json.dumps(d, indent=2))
             return rc
