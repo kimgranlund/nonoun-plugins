@@ -16,6 +16,9 @@
    (whole-suite gate guards go on one final step, never on every step) appears in agents/planner.md, and the one-criterion swap (`swap old:` and `swap new:` lines on a plan-defect
    fail, applied by `steps.py swap`) appears in agents/verifier.md and scripts/steps.py, and the
    `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills,
+   the builder's one-criterion amend (`amend old:` and `amend new:` lines under a blocked build's
+   `plan defect:` note, applied by `steps.py amend`) appears in agents/builder.md and scripts/steps.py, and the
+   `steps.py amend` route appears wherever `steps.py swap` does,
    and the build-start base `SDLC_BASE_SHA` appears in the planner, builder, verifier, run.sh, and steps.py.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
@@ -419,6 +422,10 @@ PLAN_DEFECT_DOCS = {
     'swap new:': ('agents/verifier.md', 'scripts/steps.py'),
     'steps.py swap': ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md',
                       'skills/level-rubric/SKILL.md', 'scripts/steps.py'),
+    'amend old:': ('agents/builder.md', 'scripts/steps.py'),
+    'amend new:': ('agents/builder.md', 'scripts/steps.py'),
+    'steps.py amend': ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md',
+                       'skills/level-rubric/SKILL.md', 'scripts/steps.py'),
     # Plan-review route (docstring item 11): a plan the rubric names is reviewed before any split.
     'plan-reviewer': ('scripts/run.sh', 'skills/level-rubric/SKILL.md', 'skills/chain/SKILL.md', 'agents/conductor.md',
                       'skills/plan/SKILL.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py'),
