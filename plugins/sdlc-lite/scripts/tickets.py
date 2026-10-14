@@ -199,8 +199,9 @@ worktree stays unseen; check catches a clash after merge (duplicate id, naming b
 Router: write_roadmap also keeps a managed router block current, so an agent reads one short file and opens only
 the tickets in the stage it needs. The managed files are <root>/AGENTS.md (the router: stage counts, one line
 per proposed, ready, claimed, paused or blocked ticket as `  - <id> <title> (<folder>)`, plus `, claimed by <value>`
-when the ticket's front matter has a non-empty `claimed_by:` and then `, paused: <reason>` for a paused ticket's
-`paused_reason:`, the ticket fields, and the create, claim and close procedures) and
+when the ticket's front matter has a non-empty `claimed_by:`, then `, paused: <reason>` for a paused ticket's
+`paused_reason:` and `, branch <b>` for a `branch:` line, the ticket fields, and the create, claim, open a lane and
+close procedures) and
 <root>/CLAUDE.md, and with `ticket_root: tickets` also <root>/tickets/AGENTS.md (the same procedures) and
 <root>/tickets/CLAUDE.md, and with `layout: topics` also work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and
 notes/CLAUDE.md (short entry blocks); the topics router opens with a topic-folder paragraph and both procedures
@@ -223,7 +224,9 @@ non-empty `claimed_by:` and `status: paused` a non-empty `paused_reason:`; on an
 validated, so a `claimed_by:` on a ready ticket stays valid. An optional `area:` is the ticket's domain and must
 be one of the `areas: a, b, c` names in <root>/config (config_areas); it is never a lane or branch name. When some
 ticket has an area, the roadmap gains an Area column after Type; a paused Status cell reads
-`<glyph> paused (<paused_reason>)`. No migration: an absent `area` is valid and every existing status stays valid.
+`<glyph> paused (<paused_reason>)`, and an active ticket's Status cell ends ` (branch <b>)` for a `branch:` line.
+`branch: <lane branch>` is written after `claimed_by:` by `lanes.py open --ticket` and removed by its close
+(record_branch, set_branch); it is never validated. No migration: an absent `area` is valid and every existing status stays valid.
 check fails, after the ticket problems and the stale-roadmap check, with one line per cause:
 `<label>: router block missing`, `router block stale`, `router block malformed: <reason>`, or
 `no @AGENTS.md import`, where <label> is AGENTS.md, CLAUDE.md, tickets/AGENTS.md, tickets/CLAUDE.md, or under
@@ -1318,6 +1321,7 @@ def problems(ts, numbered=False, areas=None):
 # ---------- claims ----------
 
 CLAIM_KEY_RE = re.compile(r'claimed_by[ \t]*:')
+BRANCH_KEY_RE = re.compile(r'branch[ \t]*:')
 FM_RE = re.compile(r'---\r?\n(.*?)^---[ \t]*\r?$', re.S | re.M)
 
 
@@ -1464,6 +1468,43 @@ def set_claim(text, status, value):
         if not n:
             raise Fail('front matter has no created: line to put claimed_by: after; nothing written')
     return text[:fm.start(1)] + head + text[fm.end(1):]
+
+
+def set_branch(text, value):
+    """text with every front matter `branch:` line removed; value, when given, goes on a `branch: <value>` line
+    directly after `claimed_by:`, else directly after `created:`."""
+    fm = FM_RE.match(text)
+    if not fm:
+        raise Fail('no front matter; nothing written')
+    head = ''.join(line for line in fm.group(1).splitlines(True) if not BRANCH_KEY_RE.match(line))
+    if value is not None:
+        for key in ('claimed_by', 'created'):
+            head, n = re.subn(rf'^({key}[ \t]*:.*)$', lambda x: f'{x.group(1)}\nbranch: {value}', head, count=1,
+                              flags=re.M)
+            if n:
+                break
+        else:
+            raise Fail('front matter has no created: line to put branch: after; nothing written')
+    return text[:fm.start(1)] + head + text[fm.end(1):]
+
+
+def record_branch(root, tid, branch, only=None):
+    """Set (branch given) or remove (branch None) the `branch:` line of local ticket tid under root, then regenerate
+    the roadmap and router. A removal with only= acts only while the line's value is only. Returns the folder
+    written, or None when there is no such ticket or nothing to change. lanes.py open and close call it."""
+    td = layout_paths(root).tickets
+    ts = load(td)
+    hit = next(((s, m) for s, m in ts if m.get('id') == tid), None)
+    if hit is None:
+        return None
+    slug, m = hit
+    cur = m.get('branch')
+    cur = cur.strip() if isinstance(cur, str) else ''
+    if (branch is None and (not cur or (only is not None and cur != only))) or (branch is not None and cur == branch):
+        return None
+    text = set_branch((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), branch)
+    write_claim(root, td, ts, slug, text, config_numbered(root))
+    return slug
 
 
 def write_claim(root, td, ts, slug, text, numbered):
@@ -1833,6 +1874,8 @@ def render(ts, root):
             status += f" ({m['paused_reason'].strip()})".replace('|', '\\|')
         if isinstance(m.get('successor'), str) and m['successor'].strip():
             status += f" (successor {m['successor'].strip()})".replace('|', '\\|')
+        if m['status'] in ACTIVE and isinstance(m.get('branch'), str) and m['branch'].strip():
+            status += f" (branch {m['branch'].strip()})".replace('|', '\\|')
         area = ' ' + area_of(m).replace('|', '\\|') + ' |' if with_area else ''
         rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} |{area} {m['size']} | "
                     f"{m['priority']} | {deps} | {status} |")
@@ -1889,6 +1932,13 @@ To take over a stale claim, add `--handover --reason "<why>"`.
 Progress shows on `/board`.
 4. Release: `<CMD> release <id>`. Pause: set `status: paused` and \
 add a one-line `paused_reason:`, then rerun `roadmap`.
+
+Open a lane:
+1. Claim the ticket first: `<plugin-root>/scripts/lanes.py open` refuses an unclaimed local ticket.
+2. Run `python3 <plugin-root>/scripts/lanes.py open <name> --kind solo --ticket <id>`. It makes the worktree \
+and branch and writes `branch: <lane branch>` after `claimed_by:`, so verified, unmerged work stays visible on \
+the roadmap and in `lanes.py list --all`. A worktree made by hand: add the `branch:` line yourself.
+3. `lanes.py close <name>` removes the `branch:` line once the lane closes.
 
 Close a ticket:
 1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 <T>/<folder>/handoff.md`.
@@ -1993,7 +2043,7 @@ def stage_lines(ts):
     """One `- <stage>: <count>` line per status in ENUMS order; under each ACTIVE status (proposed, ready,
     claimed, paused, blocked) one `  - <id> <title> (<folder>)` line per ticket in id order, with
     `, claimed by <value>` for a non-empty string claimed_by, then `, paused: <reason>` for a paused ticket's
-    non-empty string paused_reason. The folder is the bare folder name, never a path."""
+    non-empty string paused_reason, then `, branch <b>` for a non-empty string branch. The folder is the bare folder name, never a path."""
     out = []
     for st in ENUMS['status']:
         group = sorted(((m.get('id') if isinstance(m.get('id'), str) else '', slug, m)
@@ -2009,6 +2059,9 @@ def stage_lines(ts):
                 r = m.get('paused_reason')
                 if st == 'paused' and isinstance(r, str) and r.strip():
                     line += f', paused: {r.strip()}'
+                b = m.get('branch')
+                if isinstance(b, str) and b.strip():
+                    line += f', branch {b.strip()}'
                 out.append(line)
     return out
 
@@ -5012,6 +5065,24 @@ def selftest():
         run(r5, 'roadmap')
         expect(f'router: claimed_by shows on the active line: {stage_text(r5)!r}',
                '  - T-0002 B (0002-b), claimed by claude 2026-09-30\n' in stage_text(r5) and run(r5, 'check')[0] == 0)
+        # branch: (T-0530) record_branch writes it after claimed_by:, the router line and the roadmap Status cell
+        # show it, and the removal brings both back byte for byte (the negative control: no branch:, no mention)
+        rm_before, st_before = tr_text(r5 / 'roadmap.md'), stage_text(r5)
+        got = record_branch(r5, 'T-0002', 'lane/T-0002-b')
+        h = (r5 / '0002-b' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'branch: record_branch writes branch: directly after claimed_by: and the router line shows it: '
+               f'{got!r} {stage_text(r5)!r}',
+               got == '0002-b' and 'claimed_by: claude 2026-09-30\nbranch: lane/T-0002-b\n' in h
+               and '  - T-0002 B (0002-b), claimed by claude 2026-09-30, branch lane/T-0002-b\n' in stage_text(r5)
+               and '(branch lane/T-0002-b) |' in tr_text(r5 / 'roadmap.md') and run(r5, 'check')[0] == 0)
+        expect('branch: a removal guarded by another value leaves the line',
+               record_branch(r5, 'T-0002', None, only='lane/other') is None and 'branch: lane/T-0002-b' in
+               (r5 / '0002-b' / 'handoff.md').read_text(encoding='utf-8'))
+        got = record_branch(r5, 'T-0002', None, only='lane/T-0002-b')
+        expect(f'branch: removal drops the line and restores the roadmap and router: {got!r}',
+               got == '0002-b' and 'branch:' not in (r5 / '0002-b' / 'handoff.md').read_text(encoding='utf-8')
+               and tr_text(r5 / 'roadmap.md') == rm_before and stage_text(r5) == st_before
+               and 'branch' not in st_before and run(r5, 'check')[0] == 0)
 
         # area, claimed and paused: validation runs one way; the Area column shows only when an area exists
         ra = pathlib.Path(tmp) / 'rt-area' / '.sdlc'

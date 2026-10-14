@@ -46,6 +46,13 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   checked here`. After a close by row 9, row 10 or pr merged, close prints `ticket still open: <id>` for each local
   ticket of the record whose status is neither done nor dropped.
 
+  Ticket branch (T-0530): the CLI open writes `branch: <lane branch>` after each local ticket's `claimed_by:` (through
+  tickets.record_branch, which regenerates the roadmap and router) and prints `ticket <id>: branch: <b>`; the Python
+  open_lane does so only with record_branch=True. Every close removes a record ticket's `branch:` line whose value is
+  the lane branch. list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
+  first local ticket, else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
+  manual worktree with verified, unmerged work shows its ticket.
+
 Landed test. Every ref is named in full (refs/heads/<b>, refs/remotes/<r>/<b>), so a local pr/1 beside
 refs/remotes/pr/1 is never ambiguous.
   1. into must resolve to a commit, else `cannot decide`. A remote-tracking into is fetched first; a failed fetch
@@ -122,6 +129,9 @@ import argparse, contextlib, datetime, fcntl, io, json, os, pathlib, re, shutil,
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import tickets  # same scripts/ dir: the only front matter parser
+TICKETS = tickets  # open_lane's tickets= parameter shadows the module name
+import order  # same scripts/ dir: newest-result ordering
+import results  # same scripts/ dir: the verifier verdict
 
 Path = pathlib.Path
 RECORD = '.lane.json'
@@ -703,6 +713,10 @@ def do_close(ctx, d, outcome, info, dry):
     if d['owner'] == 'host' and d['record_path']:
         with contextlib.suppress(OSError):
             os.unlink(d['record_path'])
+    for t in d['tickets']:
+        if LOCAL_ID.fullmatch(str(t)):
+            with contextlib.suppress(tickets.Fail, OSError):
+                tickets.record_branch(Path(top) / '.sdlc', t, None, only=b)
     lines = pre + [outcome]
     pl = port_line(d['port'])
     if pl:
@@ -845,7 +859,7 @@ def ticket_title(rootp, tid):
 
 
 def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None, root='.sdlc', dry_run=False, cwd='.', *,
-              path=None, branch=None, check_claim=True):
+              path=None, branch=None, check_claim=True, record_branch=False):
     ctx = Ctx(cwd)
     top = ctx.top
     ids = list(tickets or ())
@@ -916,6 +930,13 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     if desc:
         git(top, 'config', f'branch.{branch}.description', desc)
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
+    for t in ids if record_branch and rootp.is_dir() else ():
+        if LOCAL_ID.fullmatch(t):
+            try:
+                if TICKETS.record_branch(rootp, t, branch):
+                    lines.append(f'ticket {t}: branch: {branch}')
+            except (TICKETS.Fail, OSError) as e:
+                lines.append(f'ticket {t}: branch: not written: {e}')
     if rec['port']:
         lines.append(f'port {rec["port"]}')
     if ctx.cfg['lane_setup']:
@@ -978,9 +999,27 @@ def lane_states(ctx, d):
     return states
 
 
+def ticket_verdict(top, metas, d):
+    """(ticket id, verdict) for lane d: the local ticket whose `branch:` is the lane branch, else the record's first
+    local ticket; verdict is the newest verifier result's (pass, fail, inherited) in its folder, else None."""
+    b = d['branch']
+    hit = next((m for _, m in metas if b and isinstance(m.get('branch'), str) and m['branch'].strip() == b), None)
+    if hit is None:
+        hit = next((m for t in d['tickets'] for _, m in metas if m.get('id') == t), None)
+    if hit is None:
+        return None, None
+    slug = next(s for s, m in metas if m is hit)
+    try:
+        newest = order.newest(str(tickets.ticket_dir(Path(top) / '.sdlc') / slug), 'verifier')
+    except (OSError, tickets.Fail):
+        newest = None
+    return hit.get('id'), (results.key_value(newest, 'verifier') if newest else None)
+
+
 def list_lanes(all_=False, stale=False, cwd='.'):
     ctx = Ctx(cwd)
     rows = []
+    metas = local_tickets(ctx.top)
     for d in discover(ctx):
         if not d['owner'] and not all_:
             continue
@@ -988,9 +1027,10 @@ def list_lanes(all_=False, stale=False, cwd='.'):
         if stale and not ({'closable', 'stale'} & set(st)):
             continue
         desc = (out(ctx.top, 'config', '--get', f'branch.{d["branch"]}.description') or '') if d['branch'] else ''
+        tid, verdict = ticket_verdict(ctx.top, metas, d)
         rows.append(dict(lane=d['lane'], path=d['path'], branch=d['branch'], kind=d['kind'], owner=d['owner'] or 'manual',
                          state=', '.join(st), states=st, description=desc, into=d['into'], tickets=d['tickets'],
-                         port=d['port'], locked=d['locked'], exists=d['exists']))
+                         port=d['port'], locked=d['locked'], exists=d['exists'], ticket=tid, verdict=verdict))
     return rows
 
 
@@ -1166,7 +1206,8 @@ def main(argv=None):
     try:
         if a.cmd == 'open':
             r = open_lane(a.name, base=a.base, into=a.into, tickets=a.ticket, kind=a.kind, title=a.title, root=a.root,
-                          dry_run=a.dry_run, path=a.path, branch=a.branch, check_claim=not a.no_claim)
+                          dry_run=a.dry_run, path=a.path, branch=a.branch, check_claim=not a.no_claim,
+                          record_branch=True)
             print(r['message'])
             return r['rc']
         if a.cmd == 'close':
@@ -1185,7 +1226,8 @@ def main(argv=None):
             else:
                 for r in rows:
                     print(f'{r["state"]:<16} {r["lane"]}  {r["branch"] or "(detached)"}  {r["path"]}' +
-                          (f'  {r["description"]}' if r['description'] else ''))
+                          (f'  {r["description"]}' if r['description'] else '') +
+                          (f'  {r["ticket"]} verifier {r["verdict"] or "none"}' if r['ticket'] else ''))
             return 1 if (a.stale and a.fail and rows) else 0
         if a.cmd == 'check':
             found, rc = check(warn=a.warn)
@@ -1775,6 +1817,51 @@ def case_claim_still_open(script, base):
     return fails
 
 
+def ticket_file(tid, branch=None, claimed=False):
+    cb = 'claimed_by: claude 2026-10-11\n' if claimed else ''
+    br = f'branch: {branch}\n' if branch else ''
+    return (f'---\nid: {tid}\ntitle: "Ticket {tid}"\ntype: feature\nstatus: {"claimed" if claimed else "ready"}\n'
+            f'size: L1\npriority: P2\ndepends: []\ncreated: 2026-10-11\n{cb}{br}---\n\nbody\n')
+
+
+def case_branch_list(script, base):
+    """T-0530: a manual worktree joins its ticket by `branch:`, with the newest verifier verdict; no line, no join."""
+    fails = []
+    for with_line in (True, False):
+        t = Fixture(base, script, 'brlist')
+        t.write({'.sdlc/0520-fix/handoff.md': ticket_file('T-0520', 'fix-0520' if with_line else None),
+                 '.sdlc/0520-fix/verifier-L2.md': '# verifier\n\n## Verdict\n\npass\n'})
+        t.g('worktree', 'add', '-q', '-b', 'fix-0520', str(t.top / '.worktrees' / 'fix-0520'))
+        rc, o = t.lanes('list', '--all', '--json')
+        try:
+            rows = [r for r in json.loads(o) if r['branch'] == 'fix-0520']
+        except ValueError:
+            rows = []
+        got = [(r['owner'], r.get('ticket'), r.get('verdict')) for r in rows]
+        want = [('manual', 'T-0520', 'pass')] if with_line else [('manual', None, None)]
+        if rc or got != want:
+            fails.append(f'branch list ({"with" if with_line else "without"} branch:): want {want}, got {rc}: {got} {o[:300]}')
+    return fails
+
+
+def case_branch_record(script, base):
+    """T-0530: open --kind solo --ticket writes `branch: lane/...` on the ticket, close removes it."""
+    t = Fixture(base, script, 'brrec')
+    h = t.top / '.sdlc' / '0001-one' / 'handoff.md'
+    t.write({'.sdlc/0001-one/handoff.md': ticket_file('T-0001', claimed=True)})
+    fails = []
+    leaf, tree, b = t.open('one', 'T-0001', '--kind', 'solo')
+    text = h.read_text()
+    if b != 'lane/T-0001-one' or 'claimed_by: claude 2026-10-11\nbranch: lane/T-0001-one\n' not in text:
+        fails.append(f'branch record: open did not write branch: {b} after claimed_by: {text!r}')
+    t.work(tree)
+    t.merge(b)
+    rc, o = t.lanes('close', leaf)
+    if rc or 'branch:' in h.read_text():
+        fails.append(f'branch record: close did not remove branch: {rc}: {o} {h.read_text()!r}')
+    return fails
+
+
 def case_pr_ref(script, base):
     t = Fixture(base, script, 'prref')
     leaf, tree, b = t.open('pr/1', None, '--kind', 'integration')
@@ -1999,6 +2086,9 @@ def run_selftest(script, src, base):
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),
              'restore returns the tip, two closes leave two refs, a failed write keeps the branch')
         need('C13', case_c13(script, base), 'the description is set at open and copied into the archive tag')
+        need('branch list', case_branch_list(script, base),
+             'list --all joins a manual worktree to its ticket by branch: with verdict pass; no branch:, no ticket')
+        need('branch record', case_branch_record(script, base), 'open --kind solo --ticket writes branch:, close removes it')
         need('claim unclaimed', case_claim_unclaimed(script, base), 'an unclaimed or unknown local ticket refuses')
         need('claim external', case_claim_external(script, base), 'an external id prints the directive and opens')
         cs = case_claim_still_open(script, base)
