@@ -1,0 +1,3 @@
+# Process deviations (written by redck.py audit; the verifier and filer read this file)
+process deviation: red-checkpoint: retrospective: attempt 73db2d8f0bfc4e51bc59daa02023a918, handoff sha256 77cfac694242, 2 of 2 (red) criteria without a pre-edit red control: `t=$(printf %s "${SDLC_TMP_WORKTREES:-${TMPDIR:-/tmp}}") && t="${t%/...`; `t=$(printf %s "${SDLC_TMP_WORKTREES:-${TMPDIR:-/tmp}}") && t="${t%/...`
+process deviation: red-checkpoint: retrospective: attempt 54ed83b3c2ed475fb02b8dd12cc9ac17, handoff sha256 7bb8803589ad, 2 of 2 (red) criteria without a pre-edit red control: `t=$(printf %s "${SDLC_TMP_WORKTREES:-${TMPDIR:-/tmp}}") && t="${t%/...`; `t=$(printf %s "${SDLC_TMP_WORKTREES:-${TMPDIR:-/tmp}}") && t="${t%/...`

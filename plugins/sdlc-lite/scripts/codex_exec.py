@@ -29,8 +29,10 @@ def run(role, level, prompt, model=None, effort=None, request_file=None):
     if transport == 'subagent':
         if not request_file and role in ('conductor', 'solo'):
             import uuid
-            exchange_dir = Path.cwd() / '.sdlc'
-            exchange_dir.mkdir(exist_ok=True)
+            exchange_dir = Path.cwd() / '.sdlc' / 'runtime'  # ignored runtime state, never a committed record
+            exchange_dir.mkdir(parents=True, exist_ok=True)
+            if not (exchange_dir / '.gitignore').exists():
+                (exchange_dir / '.gitignore').write_text('*\n', encoding='utf-8')
             request_file = str(exchange_dir / ('native-' + role + '-' + uuid.uuid4().hex + '.request.json'))
         if not request_file:raise ValueError('subagent transport requires --request-file')
         from codex_exchange import wait_for_agent

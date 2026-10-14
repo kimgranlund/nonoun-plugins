@@ -9,21 +9,24 @@ user-invocable: false
 ## Layout
 
 ```
-.sdlc/<task-slug>/
+.sdlc/<task-slug>/       the task folder, committed
   handoff.md            task brief (goal, intent, context, constraints)
   design.md             /grill ratified design (optional)
   decompose/            /decompose manifest-v<n>.json + report.md (optional)
-  scout-L1.md           outputs of task-level roles: <role>-<level>.md
-  planner-L2.md
-  planner-L3-2.md       a replan; the latest runs.jsonl record is current
-  plan-reviewer-L1.md   plan review (only for a plan with a step at L4 or L5)
-  runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
                         and, under ## Skipped, one entry per full-chain role (planner, verifier
                         per step, filer) a solo, lean, or fix lane skipped (a full lane
                         needs the results instead), in the form
                         "- skip: <role>; step: <n or all>; reason: <why>; decided: <who>"
                         (reason and decided non-empty); tickets.py check and close enforce it
+.sdlc/runtime/tasks/<task-slug>/  the records dir (folder name without a leading dot); local, ignored through runtime/.gitignore
+  scout-L1.md           outputs of task-level roles: <role>-<level>.md
+  planner-L2.md
+  planner-L3-2.md       a replan; the latest runs.jsonl record is current
+  plan-reviewer-L1.md   plan review (only for a plan with a step at L4 or L5)
+  runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
+  *.attempt.json, *.dispatch.json, *.running, *.log, *.limit   run state per role run
+  base-sha, budget-ack.md
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md
@@ -39,23 +42,22 @@ user-invocable: false
 .sdlc/config            optional lines: ticket_folders: numbered, external_branch: <branch>, ticket_root: tickets, layout: topics|flat
 .sdlc/tickets/          the ticket folders when config has ticket_root: tickets, with its own AGENTS.md and CLAUDE.md; roadmap.md, notes.md, config, and _templates/ stay in .sdlc/ unless `layout: topics` moves them
 .sdlc/work/             `layout: topics` only (with `ticket_root: tickets`): task folders with no ticket, each laid out as a task above; with its own AGENTS.md and CLAUDE.md; tickets/roadmap.md and notes/notes.md hold the roadmap and the notes
-.sdlc/runtime/          traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/); never committed
+.sdlc/runtime/          local and ignored: the records dirs (runtime/tasks/), and traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/)
 .sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
 .sdlc/evals/            the plugin repository's dated model and effort evals (NNNN-<slug>.md) and table-lock.json, written by scripts/evals.py add and lock; check.py fails a model-table change that cites no newer eval; its AGENTS.md documents the format
 .sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
 .sdlc/supervisor/       written by `supervisor.py init` in the main checkout: AGENTS.md, CLAUDE.md, .gitignore, limits.json; hosts.local.json, state.json, status.json, lock, STOP, and wakes/ stay local
 ```
 
-A role dispatched as a sub-agent on Claude (`dispatch.py prepare <role> <level> <handoff.md>`, an `Agent` spawn with the printed `name`, `model`, and `run_in_background`, then `dispatch.py record <dispatch_file>`) writes `<role>-<level>.md` next to the handoff it is given; on Codex, `scripts/run.sh <role> <level> <handoff.md>` writes the same `<role>-<level>.md` and `.log`. `prepare` also writes `<role>-<level>.attempt.json` and `<role>-<level>.dispatch.json` (the brief and paths the spawn gate matches), and `record` writes the header line, validates the result, and appends the `runs.jsonl` line with `transport: subagent`. A rerun of the same role and level writes `<role>-<level>-<k>.md` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (both writers record `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
+A task folder that already holds records (runs.jsonl, an attempt, a role result, or a step dir with one) keeps them in place; `${CLAUDE_PLUGIN_ROOT}/scripts/order.py records-dir <task dir>` prints the records dir for any task.
+
+A role dispatched as a sub-agent on Claude (`dispatch.py prepare <role> <level> <handoff.md>`, an `Agent` spawn with the printed `name`, `model`, and `run_in_background`, then `dispatch.py record <dispatch_file>`) writes `<role>-<level>.md` in the records dir of the handoff it is given; on Codex, `scripts/run.sh <role> <level> <handoff.md>` writes the same `<role>-<level>.md` and `.log`. `prepare` also writes `<role>-<level>.attempt.json` and `<role>-<level>.dispatch.json` (the brief and paths the spawn gate matches), and `record` writes the header line, validates the result, and appends the `runs.jsonl` line with `transport: subagent`. A rerun of the same role and level writes `<role>-<level>-<k>.md` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (both writers record `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
 A live step dir is exactly `step-<digits>`; a replan renames replaced dirs to `step-<n>.superseded-<k>/` (k is the first free number); the board and scripts do not count these as steps.
 
 If the project commits the `.sdlc/` trail, ignore these instead so `/board` and role runs don't dirty the tree:
 
 ```
-.sdlc/**/*.running
-.sdlc/**/*.log
-.sdlc/**/*.dispatch.json
 .sdlc/**/.run.lock
 .sdlc/runtime/
 .sdlc/messages/
@@ -68,14 +70,9 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 ```
 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
-- `.sdlc/**/*.running`: marker for a role run in progress
-- `.sdlc/**/*.log`: raw role transcript (stream-json: one JSON event per line, stderr mixed in)
-- `.sdlc/**/*.dispatch.json`: the dispatch a sub-agent role was spawned from, local to the machine (absolute paths, the brief); `dispatch.py record` and the spawn gate read it between `prepare` and the result
-- `.sdlc/**/.run.lock`: local lock state used to prevent overlapping runs
-- `.sdlc/runtime/`: `traces.py` analysis outputs and ingest cursor, regenerated on each run
 - `.sdlc/messages/`: the local mailbox written by `scripts/messages.py`; never committed, even when the trail is.
 
-Keep the results `.md` files, `runs.jsonl`, and `*.attempt.json` committed. Attempt records preserve failed and interrupted runs even when no normal run row was written.
+The task folder (`handoff.md`, `skips.md`) is committed; records are local and ignored. `skips.md` moves to the records dir in a later release (T-0542 or T-0543).
 
 ## Ticket front matter (optional)
 

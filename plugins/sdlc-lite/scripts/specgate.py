@@ -146,8 +146,8 @@ def red_target(target, step):
     blocks = steps.parse_steps(plan)
     if step not in blocks:
         raise steps.Fail(f'specgate: step {step} is not in {plan} (steps: {", ".join(map(str, blocks))})')
-    d = task_dir / f'step-{step}'
-    return plan, step, d if d.is_dir() else task_dir, steps.red_spans(blocks[step])
+    d = steps.step_dirs(task_dir).get(step)
+    return plan, step, d if d else task_dir, steps.red_spans(blocks[step])
 
 
 def cmd_red(target, step=None, timeout=steps.DEFAULT_GUARD_TIMEOUT):

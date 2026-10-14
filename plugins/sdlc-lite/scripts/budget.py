@@ -14,10 +14,11 @@ user). --tier takes the level; the deprecated 0.21.x size names are read as thei
           state (ok, warn at 80 percent or more, over at 100 or more), and unmetered_runs.
           Exit 0 ok, 3 warn or over, 2 no budget or no ticket.
   set     writes or replaces one `budget_usd:` line in the front matter; refuses (exit 2) with none.
-  ack     writes budget-ack.md (front matter usd, reason, ts) in the ticket folder; its usd must be
+  ack     writes budget-ack.md (front matter usd, reason, ts) in the ticket's records dir (order.py records_dir;
+          read there first, then the ticket folder); its usd must be
           greater than the current ceiling and becomes the ceiling. A second ack replaces the first.
 
-Spend is cost_usd summed over every runs.jsonl under the ticket folder, recursively (superseded step
+Spend is cost_usd summed over every runs.jsonl under the ticket's records dir and the ticket folder, recursively (superseded step
 dirs included), deduplicated by attempt_id; a record with no (or an empty) attempt_id counts every
 time. A null or missing cost_usd counts 0 and is reported in unmetered_runs. A record with
 cost_estimated true (cost_estimate.py, sub-agent runs) counts like any cost; status prints `estimated`, its percent of spend.
@@ -29,6 +30,7 @@ import argparse, datetime, json, math, os, pathlib, re, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import tickets  # same scripts/ dir: the only front matter parser
+import order  # same scripts/ dir: the records dir rule (records_dir, task_dir)
 
 TIERS = {'L1': 5, 'L2': 30, 'L3': 60}  # budget_usd by ticket level
 
@@ -66,6 +68,12 @@ def ticket_of(path):
     """The ticket folder for a ticket dir, step dir, superseded step dir, or handoff.md; None when none."""
     p = pathlib.Path(path).resolve()
     d = p.parent if p.is_file() else p
+    parts = d.parts
+    if any(parts[i:i + 3] == ('.sdlc', 'runtime', 'tasks') for i in range(len(parts) - 2)):
+        t = order.task_dir(d)  # a records dir under runtime/tasks: walk from its task folder
+        if t is None:
+            return None
+        d = pathlib.Path(t).resolve()
     while True:
         if d.name == '.sdlc':
             return None
@@ -78,9 +86,11 @@ def ticket_of(path):
 
 
 def spend(ticket):
-    """(spend, unmetered_runs, estimated_spend) over every runs.jsonl under the ticket folder, deduplicated by attempt_id."""
+    """(spend, unmetered_runs, estimated_spend) over every runs.jsonl under the ticket's records dir and the ticket folder,
+    each file read once, deduplicated by attempt_id."""
     total, unmetered, est, seen = 0.0, 0, 0.0, set()
-    for f in sorted(pathlib.Path(ticket).rglob('runs.jsonl')):
+    files = {f.resolve() for root in (order.records_dir(ticket), pathlib.Path(ticket)) for f in root.rglob('runs.jsonl')}
+    for f in sorted(files):
         try:
             lines = f.read_text(encoding='utf-8').splitlines()
         except OSError:
@@ -113,7 +123,7 @@ def ceiling(ticket):
     budget = number(meta.get('budget_usd'))
     if budget is None:
         return None, None
-    ack = front(pathlib.Path(ticket) / ACK) or {}
+    ack = front(order.records_dir(ticket) / ACK) or front(pathlib.Path(ticket) / ACK) or {}
     acked = number(ack.get('usd'))
     return budget, acked if acked is not None and acked > budget else budget
 
@@ -190,8 +200,9 @@ def cmd_ack(path, usd, reason):
         return 2
     reason = ' '.join(reason.split()).replace('"', "'")
     ts = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    (t / ACK).write_text(f'---\nusd: {fmt(usd)}\nreason: "{reason}"\nts: {ts}\n---\n', encoding='utf-8')
-    print(f'{t / ACK}: ceiling {fmt(usd)}')
+    out = order.records_dir(t, create=True) / ACK
+    out.write_text(f'---\nusd: {fmt(usd)}\nreason: "{reason}"\nts: {ts}\n---\n', encoding='utf-8')
+    print(f'{out}: ceiling {fmt(usd)}')
     return 0
 
 
