@@ -2,7 +2,7 @@
 id: T-0540
 title: "Lean records A: Records dir (0.23.0)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L4             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,16 @@ plan review: replan: step 2: run_lifecycle.run derives its dir from the handoff 
 plan review: replan: step 2: hook-selftest.sh prepared cases record .sdlc/task/scout-L1.dispatch.json and read $pt/scout-L1.attempt.json (hook-selftest.sh:667-677, :691); update those with stale-edits.log.
 plan review: replan: plan: drop the claim that step 3 does not need step 2's code.
 plan defect: dispatch.py prepare builder L3 step-1 refused: steps.py lint link check: "cited path does not exist" for fixture paths written as "$d/.sdlc/<name>" in criteria and Do text (step 1: 30, step 2: 19, step 3: 10 findings; e.g. .sdlc/0001-a, .sdlc/.0002-b/step-2, .sdlc/runtime/tasks/0001-a, .sdlc/task). The lint treats a "$d/" prefixed .sdlc path as a repo-relative citation unless it sits in a (red) criterion code span or a [creates: ...] marker (steps.py declared_future_paths, cited_sdlc_paths). Fix: keep the plan from planner-L3-2.md (it passed review plan-reviewer-L1-2.md) and declare every fixture path in each step with one [creates: <path>, ...] marker (or another form the lint accepts); run `steps.py lint` on each step handoff text before returning. Carry the plan-reviewer-L1-2 notes-fix lines into step 2 Notes.
+
+## Closed
+
+2026-10-14: warnings acknowledged: process deviations only: every red control was run by the step verifiers on base copies; decide item is owned by T-0541 and T-0543, notes by T-0545
+
+> - Step 3's first verifier (verifier-L3) failed. `steps.py` could not read a task-side step handoff once its records twin existed and was empty, which broke `dispatch.py selftest`. The retry (builder-L4-2, then verifier-L3-2) passed. The first attempt's second finding, `fanout.py` `planned_scope` ignoring records-dir step folders, is shown by the artifacts as handled in the retry. I did not read builder-L4-2's text for that.
+> - process deviation: red-checkpoint, step 2: retrospective, attempt 2669785dc90a4be2a582e2c5bd66760c. All 6 of 6 (red) criteria had no pre-edit red control. Step 1's uncommitted `order.py` and `records.sh` already differed from HEAD when `redck.py record` ran. The verifier ran each red control itself on a base copy and saw red.
+> - process deviation: red-checkpoint, step 3: retrospective, attempts 73db2d8f0bfc4e51bc59daa02023a918 and 54ed83b3c2ed475fb02b8dd12cc9ac17. Both (red) criteria in each attempt had no pre-edit red control, because the 14 step-1/2 paths were already dirty. The verifier ran the controls itself and saw red at base and green on the built tree.
+> - process deviation: red-checkpoint, step 4: retrospective, attempt f9158105536b4335b1256a615ed4d778. 2 of 2 recorded (red) criteria had no pre-edit red control. The step has 3 (red) criteria and `redck.py` recorded only 2 controls, and nobody traced why. The verifier ran the base-sha controls for all three.
+> - process deviation: red-checkpoint, step 5 (Loose ends): retrospective, attempt 7c67b11d67344d09a2509bd915e33915. Both (red) criteria had no pre-edit red control, because 49 paths already differed from HEAD. The verifier ran the red controls itself on mutated scratch copies.
+> - Passing verdicts do not clear the deviations above.
+> - Unverified: `fanout.py selftest` was not usable in steps 2 and 3, because step 2's handoff declared it red until step 3. Step 1's verifier saw no output from `fanout.py selftest` or `tickets.py selftest`. Step 4's verifier ran `check.sh`, which exited 0 after 18m17s.
+> - Step 5's second (red) criterion does not fail through the new case's own assertion. With `step_dirs` mutated to read only the records side, an earlier selftest case crashes first. The criterion goes red, but the new case is never reached under that mutation.

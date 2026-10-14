@@ -450,3 +450,10 @@
 - 2026-10-13: maintainer: objective is to complete the task, update the ticket, and hand off a clean merge-ready worktree, with minimal documentation. A closed ticket keeps `handoff.md` plus an Outcome section (what changed, checks run, verdict). Attempt and dispatch JSON, `runs.jsonl`, `base-sha` and `skips.md` move to a gitignored runtime folder; cost reports read it locally.
 - 2026-10-13: maintainer: stop by default: filer drafts (PR body, changelog), dated `docs/reports` files per ticket, side files in task folders (`process-deviations.md`, `refusals.jsonl`, `red-checkpoint.jsonl`, `hints.md`), and any file a role or skill writes at the top of `.sdlc/` or the project root (fleet-retro answers go in a message). `docs/reports` stays for releases and retros.
 - 2026-10-13: maintainer: design first (architect), build in waves, ship as 0.23.0. Queued T-0529, T-0530, T-0534 wait for the design, which says whether each is kept, merged or dropped.
+
+## T-0540: Lean records A: Records dir (0.23.0) (2026-10-14)
+
+- decide: `tickets.py:1583`, `board.py:104` and `report.py:640` still read `step-*` under the task folder, and `board.py:226` passes the task dir to `dispatch.status`, so orphaned attempts of a runtime-recorded task will not show on the board. T-0541 and T-0543 own these readers; confirm that coverage.
+- note: `dispatch.py` selftest (around :2456) and `specgate.py` selftest fail when `TMPDIR` sits inside a git worktree, because their "outside git" fixtures break there. They pass with the system `TMPDIR`.
+- note: `handoff-format/SKILL.md` still says "Add `.sdlc/` to `.gitignore` unless the user wants the trail committed", which sits loosely against "records are local and ignored". T-0545 owns the docs specs.
+- note: `redck.py` recorded 2 controls for 3 (red) criteria in step 4, and nobody investigated why.

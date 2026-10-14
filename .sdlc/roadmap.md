@@ -533,7 +533,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0537 | [.0537-dispatch-limit-stop-and-row-change](.0537-dispatch-limit-stop-and-row-change/handoff.md) | dispatch.py: a sub-agent stopped by the spend limit is resumable, and prepare notes a changed model or effort (maison T-0546) | bug | L2 | P2 | none | 🟢 done |
 | T-0538 | [.0538-verifier-brief-header-and-tmp-cleanup](.0538-verifier-brief-header-and-tmp-cleanup/handoff.md) | Role brief: the result header is added at record time, and cleanup under the tmp prefix is allowed (maison T-0546) | bug | L1 | P2 | none | 🟢 done |
 | T-0539 | [.0539-lean-work-records](.0539-lean-work-records/handoff.md) | Lean work records: a ticket leaves its handoff plus one Outcome; no ceremony files (0.23.0 design) | spike | L4 | P1 | none | 🟢 done |
-| T-0540 | [0540-records-dir](0540-records-dir/handoff.md) | Lean records A: Records dir (0.23.0) | feature | L4 | P1 | none | ⏳ proposed |
+| T-0540 | [.0540-records-dir](.0540-records-dir/handoff.md) | Lean records A: Records dir (0.23.0) | feature | L4 | P1 | none | 🟢 done |
 | T-0541 | [0541-records-readers](0541-records-readers/handoff.md) | Lean records B: Cost, board and fleet readers (0.23.0) | feature | L3 | P1 | T-0540 | ⏳ proposed |
 | T-0542 | [0542-fanout-records-copy](0542-fanout-records-copy/handoff.md) | Lean records C: Fanout carries records by copy (0.23.0) | feature | L3 | P1 | T-0540 | ⏳ proposed |
 | T-0530 | [0530-lane-record-on-ticket](0530-lane-record-on-ticket/handoff.md) | Lane record on the ticket (maison T-0546) | feature | L2 | P2 | T-0541, T-0542 | ⏳ proposed |

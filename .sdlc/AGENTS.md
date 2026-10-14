@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:7639ce070a93 -->
+<!-- sdlc-lite:managed:start v1 sha256:5ab166dfd885 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,10 +9,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 8
   - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
   - T-0536 Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) (0536-plan-defect-order-and-amend)
-  - T-0540 Lean records A: Records dir (0.23.0) (0540-records-dir)
   - T-0541 Lean records B: Cost, board and fleet readers (0.23.0) (0541-records-readers)
   - T-0542 Lean records C: Fanout carries records by copy (0.23.0) (0542-fanout-records-copy)
   - T-0543 Lean records D: Close writes the Outcome (0.23.0) (0543-close-writes-outcome)
@@ -23,7 +22,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - claimed: 0
 - paused: 0
 - blocked: 0
-- done: 501
+- done: 502
 - dropped: 29
 
 ## Procedures
