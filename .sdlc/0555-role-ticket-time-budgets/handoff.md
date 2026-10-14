@@ -25,3 +25,11 @@ No role or ticket runs far past its expected time unnoticed: a role over its wal
 
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or with the change.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, and its T-0555 cases cover: a ticket past its size budget refused (exit 2, nothing written), refused again without a gate skip only (negative control), `--approved` without `<who: why>` refused, `--approved "<who: why>"` let through and recorded once in the ticket's `skips.md`, one more budget allowed then refused again; the brief and attempt carry the role budget; `status` and `recover` (dir and `--root`) flag a running attempt past its role budget and not one inside it.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exit 0.
+- `bash plugins/sdlc-lite/scripts/check.sh --fast` exits 0; the full `check.sh` is the land gate's.
+- `git diff --check` exits 0.
+- `plugins/sdlc-lite/agents/conductor.md` tells the conductor to check an over-budget role (stdin wait, stall) and ask the person, and a headless or unattended lane to stop the ticket as `blocked`; `.claude/agents/sdlc-lite-author.md` sends both flags to the user; no role is killed automatically.

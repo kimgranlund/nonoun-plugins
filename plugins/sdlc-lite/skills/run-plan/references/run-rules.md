@@ -19,7 +19,7 @@ The driver's procedure. Every pass starts from the files, never from memory; not
 
 1. `python3 SCRIPTS/plan_check.py plan --file PD --run` exits 0. A non-zero exit is a stop.
 2. `python3 SCRIPTS/tickets.py --root .sdlc check` exits 0.
-3. For each step folder that already exists: `python3 SCRIPTS/dispatch.py recover <folder>` then `dispatch.py status <folder>`. An attempt marked interrupted is re-dispatched with a fresh `prepare`; a live agent is resumed with `SendMessage` by name first, then `prepare`. When `dispatch.py recover --root .` exists in this plugin version, run it once instead of the per-folder form, always as `dispatch.py recover --root . --open`: the bare form also rewrites the attempt files of every closed ticket and dirties the checkout.
+3. For each step folder that already exists: `python3 SCRIPTS/dispatch.py recover <folder>` then `dispatch.py status <folder>`. An attempt marked interrupted is re-dispatched with a fresh `prepare`; a live agent is resumed with `SendMessage` by name first, then `prepare`. When `dispatch.py recover --root .` exists in this plugin version, run it once instead of the per-folder form, always as `dispatch.py recover --root . --open`: the bare form also rewrites the attempt files of every closed ticket and dirties the checkout. An `over-budget:` line, or a `prepare` refusal starting `dispatch.py: time budget:`, stops the run with state written: the person decides.
 4. Print the front matter `driver:` and the model you are running; warn when they differ. Say the plan's Authorization in one line.
 5. Run `git rev-parse --show-toplevel`. If it is not the repository that holds the plan doc, stop with state written: the host makes sub-agent worktrees from the session's repository.
 
