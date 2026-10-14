@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ca0336ad7752 -->
+<!-- sdlc-lite:managed:start v1 sha256:ce4f9b41b7db -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -20,7 +20,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0549 Role Bash calls avoid bash -c on built strings, so the host stops asking for approval under bypass (0549-role-permission-mode)
   - T-0550 Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep (0550-standard-worktree-scratch-layout)
   - T-0551 Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway (0551-builder-scoped-checks)
-  - T-0552 sdlc-doctor skill: diagnose slow or stuck runs and offer resolutions (0552-sdlc-doctor-skill)
+  - T-0552 fleet-doctor skill: diagnose slow or stuck runs and offer resolutions (0552-fleet-doctor-skill)
 - ready: 0
 - claimed: 0
 - paused: 0
