@@ -469,3 +469,9 @@
 - note: `check.sh` is red when run inside a role run on a ticket, because the traces selftest case `corpus: this repo's .sdlc traces ingest whole` (`plugins/sdlc-lite/scripts/traces/selftest.py` lines 2024-2054) lists in-flight `.attempt.json` files as "attempts in no row". The fix belongs to the 0539 wave (parts D or E).
 - note: `fanout.py` `merge_gate_close` runs `copy_lane_records` a second time per land. The copy is idempotent, so this is harmless.
 - note: `SDLC_TMP_WORKTREES` was unset in the session, so `hooks/block-stray-worktree.sh` refused role-created throwaway worktrees. Verifiers used plain copies under the tmp prefix.
+
+## Decisions (maintainer, 2026-10-14, /ask)
+- Main is held unpushed until 0.23.0 ships.
+- Codex live named-agent exchange (line 414; T-0507, T-0316): deferred past 0.23.0, stays UNVERIFIED in release notes.
+- ui-designer per-mode write gate (line 443): declined; the role contract and check.py guard are enough until a mis-edit is observed.
+- `/compact` `--write-handoff` live check (line 420): left off for now.
