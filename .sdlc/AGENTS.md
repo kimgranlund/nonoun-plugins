@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:8483f0b9bf51 -->
+<!-- sdlc-lite:managed:start v1 sha256:ea64c9296835 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 10
   - T-0530 Lane record on the ticket (maison T-0546) (0530-lane-record-on-ticket)
   - T-0536 Catch a criterion that needs a later step, and a narrow amend route for a builder-reported plan defect (maison T-0546) (0536-plan-defect-order-and-amend)
   - T-0537 dispatch.py: a sub-agent stopped by the spend limit is resumable, and prepare notes a changed model or effort (maison T-0546) (0537-dispatch-limit-stop-and-row-change)
@@ -19,6 +19,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0543 Lean records D: Close writes the Outcome (0.23.0) (0543-close-writes-outcome)
   - T-0544 Lean records E: Layout rule and tidy (0.23.0) (0544-sdlc-layout-tidy)
   - T-0545 Lean records F: Docs and release 0.23.0 (0.23.0) (0545-lean-records-docs-release)
+  - T-0546 Build base taken from the wrong tree: solo_run --cwd and resumed lanes record a base that is not the build's start (0546-build-base-wrong-tree)
 - ready: 0
 - claimed: 0
 - paused: 0
