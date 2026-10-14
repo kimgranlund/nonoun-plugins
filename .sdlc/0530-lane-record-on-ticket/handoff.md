@@ -10,6 +10,8 @@ created: 2026-10-13
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
+verifier: L3
+
 ## Goal
 Lane record on the ticket, closing maison T-0546 observations 15, 30, and 31.
 
@@ -34,3 +36,9 @@ Lane record on the ticket, closing maison T-0546 observations 15, 30, and 31.
 
 ## Constraints
 Preserve reference-safe closure, cross-worktree id uniqueness and explicit follow-up selection. A new or changed check needs a positive case and an observed negative control.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 and prints `ok: branch list:` (a manual worktree on `fix-0520` with a ticket `branch: fix-0520` and a passing `verifier-L2.md` gives a `list --all --json` row with ticket `T-0520` and verdict `pass`; the same setup without the `branch:` line gives a row with ticket null) and `ok: branch record:` (`open --kind solo --ticket T-0001` writes `branch: lane/T-0001-one` after `claimed_by:`, close removes it).
+2. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with the `branch:` cases: `record_branch` writes the line after `claimed_by:`, the router active line ends `, branch <b>`, the roadmap Status cell ends `(branch <b>)`, and the removal restores both byte for byte.
+3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+4. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap` leaves `.sdlc/AGENTS.md` unchanged (the committed router carries the new "Open a lane" procedure).
