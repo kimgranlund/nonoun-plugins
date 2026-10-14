@@ -57,6 +57,29 @@ def check(root):
         for target in re.findall(r'\]\(([^)]+)\)', text):
             if '://' not in target and not target.startswith('#'):
                 require((path.parent / target.split('#')[0]).exists(), f'{path}: broken link {target}')
+    errors += check_workflows(root)
+    return errors
+
+
+def check_workflows(root):
+    """Hosted CI costs money (T-0554): one release workflow, triggered only by v* tags and manual dispatch."""
+    errors = []
+    workflows = sorted((root / '.github/workflows').glob('*.y*ml'))
+    if [w.name for w in workflows] != ['release-check.yml']:
+        return [f'.github/workflows must hold only release-check.yml, found {[w.name for w in workflows]}']
+    text = workflows[0].read_text()
+    block = re.search(r'^on:\n((?:[ \t]+.*\n|\n)*)', text, flags=re.M)
+    if not block:
+        return ['release-check.yml: no on: block']
+    triggers = re.findall(r'^  (\w[\w-]*):', block.group(1), flags=re.M)
+    if sorted(triggers) != ['push', 'workflow_dispatch']:
+        errors.append(f'release-check.yml: triggers must be push and workflow_dispatch, found {triggers}')
+    push = re.search(r'^  push:\n((?:    .*\n)*)', block.group(1), flags=re.M)
+    keys = re.findall(r'^    (\w[\w-]*):', push.group(1), flags=re.M) if push else []
+    if keys != ['tags'] or not re.search(r"^      - ['\"]?v\*['\"]?$", push.group(1), flags=re.M):
+        errors.append(f'release-check.yml: push must filter on v* tags only, found keys {keys}')
+    if 'timeout-minutes:' not in text:
+        errors.append('release-check.yml: missing timeout-minutes')
     return errors
 
 
@@ -72,4 +95,4 @@ if __name__ == '__main__':
         print('FAIL:', error, file=sys.stderr)
     if errors:
         sys.exit(1)
-    print('PASS: catalog parity, identity, skill routes, hook isolation and context links')
+    print('PASS: catalog parity, identity, skill routes, hook isolation, context links and CI triggers')

@@ -22,7 +22,7 @@ You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `
 4. Run at most 4 lanes at once, fewer when the load average passes the core count.
 5. Treat a role as stalled only when its transcript and its child processes both stop changing; a `cat` or `read` child idle for minutes is a stdin hang (kill that one pid).
 6. A third planner run or a plan over its level's step cap goes to the user first (T-0553).
-7. Keep main local until the release; ask before any tag or push, then notify the fleet conductors in one line each.
+7. Keep main local until the release; ask before any tag or push, then notify the fleet conductors in one line each. The one standing push: after each wave lands, back main up with `git push origin main:wip/main --force-with-lease` (private backup; CI ignores it and runs only on `v*` tags and manual dispatch, T-0554).
 8. Status replies use the wave table: Wave, Tickets, Progress, Δ.
 
 ## Low ceremony, ship fast

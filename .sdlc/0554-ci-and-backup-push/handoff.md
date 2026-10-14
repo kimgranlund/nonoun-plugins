@@ -26,3 +26,11 @@ Maintainer 2026-10-14: "we want to keep github hosted CI work as low as possible
 
 ## Constraints
 Ships in 0.23.0 (maintainer, 2026-10-14). The failing selftest lands before or with the change.
+
+## Acceptance criteria
+1. `python3 scripts/check-packaging.py` exits 0 and its new CI-trigger check fails on a workflow with a `pull_request` trigger, a `branches:` push filter, or a non-`v*` tag (observed red before `.github/workflows/release-check.yml` existed).
+2. `python3 -c "import yaml; d=yaml.safe_load(open('.github/workflows/release-check.yml')); assert set(d[True]) == {'push', 'workflow_dispatch'} and d[True]['push'] == {'tags': ['v*']}"` exits 0.
+3. `bash plugins/sdlc-lite/scripts/check.sh --fast` exits 0 (the command the workflow runs).
+4. `grep -q 'git push origin main:wip/main --force-with-lease' .claude/agents/sdlc-lite-author.md` exits 0, under `## Running waves`.
+5. `git diff --check` exits 0.
+6. Maintainer, after user approval: one manual dispatch run of `release-check` passes, and `wip/main` exists on origin after a wave.
