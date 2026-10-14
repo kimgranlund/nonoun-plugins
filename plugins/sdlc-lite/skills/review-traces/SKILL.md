@@ -19,7 +19,7 @@ Arguments: `$ARGUMENTS`
 
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery. To dispatch a role, follow the three steps of `${CLAUDE_PLUGIN_ROOT}/agents/conductor.md` ("How you run roles"): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prepare <role> <level> <handoff.md>` runs the gates and prints the dispatch JSON; an `Agent` call passes its `subagent_type`, `name`, `description`, `model`, `prompt`, and `run_in_background` unchanged; `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n> --transcript <sub-agent transcript jsonl> --tool-uses <n> --duration-ms <ms>`, with the sub-agent's final message on stdin, validates and records the result at `<role>-<level>.md` next to the handoff. On Codex a role runs through `SDLC_BACKEND=codex ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh <role> <level> <handoff.md>`. Claude: after `record`, run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prune`, make each `TaskStop task_id=<name>` call it lists, then `prune --done <name>`; a finished sub-agent stays an idle teammate until stopped.
 
-Create a review task dir `.sdlc/<review task>/` from the arguments per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`, with a `handoff.md` naming the repo, every `--lanes-dir`, and `--max`. All stage outputs below go under it.
+Create a review task dir `.sdlc/<review task>/` from the arguments per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`, with a `handoff.md` naming the repo, every `--lanes-dir`, and `--max`. All stage outputs below go under its records dir `R`, the path `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/order.py records-dir .sdlc/<review task>` prints (git ignores it); only the handoff stays in `.sdlc/<review task>/`.
 
 ## 1. Ingest and detect
 
@@ -33,7 +33,7 @@ If no clusters come back, report that and stop.
 
 ## 2. Diagnose
 
-For each cluster k, write `.sdlc/<review task>/cluster-<k>/handoff.md` from this template:
+For each cluster k, write `R/cluster-<k>/handoff.md` from this template:
 
 ```cluster-question
 ## Goal
@@ -55,7 +55,7 @@ Dispatch the archaeologist at L1 on `<cluster handoff.md>`, or the scout at L1 w
 
 A finding whose evidence cannot be rendered as commands is dropped before any run.
 
-For each finding kept by stage 2, write `.sdlc/<review task>/finding-<id>/handoff.md` from this template, a step handoff per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`. Write one criterion line per evidence entry, replacing `<evidence command>` with that entry rendered as a runnable check:
+For each finding kept by stage 2, write `R/finding-<id>/handoff.md` from this template, a step handoff per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`. Write one criterion line per evidence entry, replacing `<evidence command>` with that entry rendered as a runnable check:
 
 - a `{path, line}` entry becomes `sed -n '<line>p' <path> | grep -qF '<quoted text>'`
 - an `{attempt_id}` entry becomes `grep -q '<attempt_id>' <attempt.json path>`
@@ -82,7 +82,7 @@ Dropped findings go to the stage 5 report with the reason.
 
 ## 4. Propose
 
-Write `.sdlc/<review task>/propose/handoff.md` from this template, with one Context entry per finding kept by stage 3. Fill `Actual:` with text quoted verbatim from the finding summary and its evidence, never paraphrased. Fill `Red check:` with one command that fails today and passes once the defect is fixed: a `traces.py selftest` case, a script selftest case, or a fixture.
+Write `R/propose/handoff.md` from this template, with one Context entry per finding kept by stage 3. Fill `Actual:` with text quoted verbatim from the finding summary and its evidence, never paraphrased. Fill `Red check:` with one command that fails today and passes once the defect is fixed: a `traces.py selftest` case, a script selftest case, or a fixture.
 
 ```propose-handoff
 ## Goal
@@ -113,7 +113,7 @@ Dispatch the planner at L2 on `<propose handoff.md>` once. Each `## Step` of the
 
 Model-call cap: at most `clusters + findings + 1` role runs per review (one archaeologist or scout per cluster, one verifier per finding, one planner), bounded by `--max N`. The ingest and detect stages spend none.
 
-Findings whose layer is not sdlc-lite, and findings dropped in stage 3, go to `.sdlc/<review task>/report.md`, one section per finding: layer, evidence, diagnose summary (and the drop reason, if any). They are never filed.
+Findings whose layer is not sdlc-lite, and findings dropped in stage 3, go to `R/report.md`, one section per finding: layer, evidence, diagnose summary (and the drop reason, if any). They are never filed.
 
 A session with no person present (`SDLC_HEADLESS=1`, a fanout lane, or `claude -p`) writes every draft to `report.md` and files nothing.
 
@@ -134,4 +134,4 @@ Drafts not approved go to `report.md`.
 - Findings path: the file written by `traces.py detect`.
 - Clusters: each cluster id with its findings and diagnosed layer.
 - Drafts filed: each title with its ticket id.
-- Report path: `.sdlc/<review task>/report.md`.
+- Report path: `R/report.md`.

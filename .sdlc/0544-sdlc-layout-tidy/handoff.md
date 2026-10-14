@@ -23,3 +23,10 @@ Maintainer decisions: `.sdlc/notes.md` "Lean work records (maintainer decisions 
 
 ## Constraints
 Preserve independent verification, the recorded build base, reference-safe closure and restart recovery. Legacy task folders stay readable with no migration.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0; its T-0544 cases cover the `check` warning on a stray top-level file with an allowed name and a `top_level_allow:` glob silent (negative control), `tidy` without `--apply` leaving the tree identical, `tidy --apply` moving the stray into `archive/`, refusing while a `*.running` marker exists and when the destination exists, and `claim --by astra` accepted.
+2. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 (the regenerated `.sdlc/AGENTS.md` router with the Folder layout and Ticket lifecycle sections is current).
+3. `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0 with the updated Work records block.
+4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+5. The grill, review-traces, bench and fleet-retro skills write their work files in the records dir that `order.py records-dir` prints and the fleet-retro interview answer goes by `messages.py send`: `git grep -n -F -e ".sdlc/fleet-retro-<date>.md" -e "<review task>/cluster" -e "<slug>/design.md" -- plugins/sdlc-lite/skills` exits 1.
