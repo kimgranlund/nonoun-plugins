@@ -92,8 +92,8 @@ Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a 
      description `<ticket> <title>`, the reason (ancestor, pr merged, content in <into>, discarded), into, the tip
      sha and the UTC time; point refs/archive/<UTC date>/<branch> at it with update-ref and a zero old value. If that
      fails, retry once with the leaf <branch>.<sha7>; a second failure stops the close with the branch intact.
-  2. Copy the tree's untracked and ignored .sdlc/ files to <git common dir>/sdlc-lane-archive/<lane>/; a failed
-     write stops the close here.
+  2. Copy the tree's untracked and ignored .sdlc/ files, and the ignored .sdlc/runtime/tasks/ records (minus *.log,
+     *.running, *.run.lock), to <git common dir>/sdlc-lane-archive/<lane>/; a failed write stops the close here.
   3. git worktree remove --force <path>; a missing tree skips this step.
   4. git update-ref -d refs/heads/<b> <sha>: by full name, and only while the branch is at the sha the test read.
   5. git worktree prune; remove a host record; print `port <n> still listening (pid <p>)` when a listener holds
@@ -631,8 +631,11 @@ def copy_sdlc(path, dest):
     r = git(path, 'ls-files', '--others', '-z', '--', '.sdlc')
     if r.returncode:
         return f'git ls-files failed: {err(r)}'
+    skip = ('.log', '.running', '.run.lock')
+    rels = [x for x in r.stdout.split('\0')
+            if x and not (x.startswith('.sdlc/runtime/tasks/') and x.endswith(skip))]
     try:
-        for rel in [x for x in r.stdout.split('\0') if x]:
+        for rel in rels:
             src, dst = Path(path) / rel, Path(dest) / rel
             if src.is_file():
                 dst.parent.mkdir(parents=True, exist_ok=True)
@@ -1364,7 +1367,7 @@ def case_row9(script, base):
     leaf, tree, b = t.open('a', 'T-9')
     t.work(tree)
     t.merge(b)
-    t.write({'.sdlc/note.md': 'kept\n'}, cwd=tree)
+    t.write({'.sdlc/note.md': 'kept\n', '.sdlc/runtime/.gitignore': '*\n', '.sdlc/runtime/tasks/x/verifier-L1.md': 'kept\n', '.sdlc/runtime/tasks/x/run.log': 'noise\n'}, cwd=tree)
     rc, o = t.lanes('close', leaf)
     fails = [] if rc == 0 and o == f'closed {leaf} (ancestor)' else [f'row 9: got {rc}: {o}']
     if tree.exists() or t.ok('rev-parse', '--verify', f'refs/heads/{b}'):
@@ -1373,6 +1376,10 @@ def case_row9(script, base):
         fails.append(f'row 9: no archive ref, have {t.archive_refs()}')
     if not (t.top / '.git' / 'sdlc-lane-archive' / leaf / '.sdlc' / 'note.md').is_file():
         fails.append('row 9: the .sdlc file was not archived')
+    if not (t.top / '.git' / 'sdlc-lane-archive' / leaf / '.sdlc' / 'runtime' / 'tasks' / 'x' / 'verifier-L1.md').is_file():
+        fails.append('row 9: the runtime records were not archived')
+    if (t.top / '.git' / 'sdlc-lane-archive' / leaf / '.sdlc' / 'runtime' / 'tasks' / 'x' / 'run.log').exists():
+        fails.append('row 9: a runtime log was archived')
     if t.g('for-each-ref', 'refs/tags'):
         fails.append('row 9: a ref under refs/tags was created')
     return fails
