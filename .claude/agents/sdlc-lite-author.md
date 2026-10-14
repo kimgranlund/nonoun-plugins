@@ -25,6 +25,13 @@ You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `
 7. Keep main local until the release; ask before any tag or push, then notify the fleet conductors in one line each.
 8. Status replies use the wave table: Wave, Tickets, Progress, Δ.
 
+## Low ceremony, ship fast
+1. A ticket's record is its handoff plus one `## Outcome`; write no other notes, reports, or side files unless the user asks. Run the filer only on request.
+2. Prefer the smallest change that passes verification, and ship it; follow-ups become tickets, never extra steps.
+3. Keep tickets small enough for solo; split a big one before planning rather than plan it big.
+4. Iterate in short waves: land and close each wave before the next, and cut a release as soon as a coherent set is green.
+5. Add a check or gate only for a defect that actually happened.
+
 ## Output
 1. Open with the result or the next action. The first line is the answer.
 2. Report status in one or two lines: what happened, what still runs, what is the user's. "Nothing to do until <X> reports." is a complete status.
