@@ -550,7 +550,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0550 | [0550-standard-worktree-scratch-layout](0550-standard-worktree-scratch-layout/handoff.md) | Worktrees and scratch follow host defaults: .claude/worktrees, session scratch, owner markers and a crash sweep | chore | L2 | P2 | T-0543, T-0544 | ⏳ proposed |
 | T-0551 | [.0551-builder-scoped-checks](.0551-builder-scoped-checks/handoff.md) | Builders run the step's own checks, not the full check.sh, when the land gate runs it anyway | chore | L2 | P2 | none | 🟢 done |
 | T-0552 | [.0552-fleet-doctor-skill](.0552-fleet-doctor-skill/handoff.md) | fleet-doctor skill: diagnose slow or stuck runs and offer resolutions | feature | L2 | P2 | none | 🟢 done |
-| T-0553 | [0553-replan-and-step-caps](0553-replan-and-step-caps/handoff.md) | Hard gates: a third planner run and an oversized plan stop for the person | feature | L2 | P1 | none | 🟡 claimed (branch lane/T-0553-w72-0553) |
+| T-0553 | [.0553-replan-and-step-caps](.0553-replan-and-step-caps/handoff.md) | Hard gates: a third planner run and an oversized plan stop for the person | feature | L2 | P1 | none | 🟢 done |
 | T-0554 | [0554-ci-and-backup-push](0554-ci-and-backup-push/handoff.md) | Minimal low-cost CI on release tags, and a private backup push of main each wave | chore | L2 | P2 | none | ⏳ proposed |
 | T-0555 | [0555-role-ticket-time-budgets](0555-role-ticket-time-budgets/handoff.md) | Wall-clock budgets per role and per ticket, enforced by dispatch.py | feature | L3 | P2 | none | ⏳ proposed |
 | T-0556 | [.0556-shared-heavy-slot](.0556-shared-heavy-slot/handoff.md) | Heavy checks a role runs inside its lane go through gate_lock.py | feature | L2 | P2 | none | 🟢 done |

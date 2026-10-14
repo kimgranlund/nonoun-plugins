@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:6c920c63d19d -->
+<!-- sdlc-lite:managed:start v1 sha256:ed206f4aa53a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,11 +15,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0554 Minimal low-cost CI on release tags, and a private backup push of main each wave (0554-ci-and-backup-push)
   - T-0555 Wall-clock budgets per role and per ticket, enforced by dispatch.py (0555-role-ticket-time-budgets)
 - ready: 0
-- claimed: 1
-  - T-0553 Hard gates: a third planner run and an oversized plan stop for the person (0553-replan-and-step-caps), claimed by claude 2026-10-14, branch lane/T-0553-w72-0553
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 516
+- done: 517
 - dropped: 29
 
 ## Procedures

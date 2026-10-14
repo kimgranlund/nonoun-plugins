@@ -513,3 +513,9 @@
 ## T-0557: check.sh runs selftests in parallel and offers a fast tier (2026-10-14)
 
 - decide: The planted-failure copy lacked repo context (docs and .claude), so check.py, fanout and other jobs also failed there. Not a defect in the build; the plant control stands on the named planted jobs and exit 1.
+
+## T-0553: Hard gates: a third planner run and an oversized plan stop for the person (2026-10-14)
+
+- decide: plugins/sdlc-lite/skills/ticket/templates/feature.md:19: the sizing line went into feature.md and chore.md only; bug.md, idea.md and spike.md have none, though the ticket's Do says "the ticket templates" (criterion #5 names feature and chore only).
+- decide: plugins/sdlc-lite/agents/planner.md:25: the planner lints its own drafts (T-0543), but planner.md and the generated planner-L*.md say nothing about the step cap; an over-cap draft's refusal tells the planner to ask the person, which a planner cannot do, and nothing tells it to write at most the cap's steps.
+- decide: plugins/sdlc-lite/scripts/steps.py:2083: the cap fires only when the lint target resolves to a task folder holding handoff.md with `size:` (an OSError on the handoff returns silently); a draft linted from a scratch path outside the task folder passes lint and is caught at split.

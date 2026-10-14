@@ -2,13 +2,12 @@
 id: T-0553
 title: "Hard gates: a third planner run and an oversized plan stop for the person"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 claimed_by: claude 2026-10-14
-branch: lane/T-0553-w72-0553
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -41,3 +40,22 @@ verifier: L3
 - [ ] `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - [ ] `python3 scripts/check-packaging.py`
 - [ ] `bash plugins/sdlc-lite/scripts/check.sh`
+
+## Outcome
+
+2026-10-14 · lane: full L2 · verdict: pass · verifier: verifier-L3 (fable) · base: none
+- Changed: see commits
+- Commits: none
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | grep -q "ok: replan cap: a third planne...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | grep -q "ok: replan cap: --approved let...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -q "ok: (step cap) lint refuses a 7-s...: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -q "ok: (step cap) a 6-step L3 plan p...: pass
+- Check: 5 `grep -q "file two tickets" plugins/sdlc-lite/skills/ticket/templates/feature.md && grep -q "file...: pass
+- Check: 6 `grep -q "replan cap" plugins/sdlc-lite/agents/conductor.md && grep -q "replan cap" plugins/sdlc-...: pass
+- Check: 7 `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`: pass
+- Check: 8 `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`: pass
+- Check: 9 `python3 scripts/check-packaging.py`: pass
+- Check: 10 `bash plugins/sdlc-lite/scripts/check.sh`: pass
+- Follow-up: decide: plugins/sdlc-lite/skills/ticket/templates/feature.md:19: the sizing... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/agents/planner.md:25: the planner lints its own... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:2083: the cap fires only when... -> notes.md
