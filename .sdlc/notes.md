@@ -612,3 +612,7 @@
 ## T-0576: Root AGENTS.md managed block names flat-layout paths after layout: topics (2026-10-15)
 
 - note: plugins/sdlc-lite/scripts/onboard.py:393 and the generated block still tell topics repos that `tickets.py tidy` archives to `.sdlc/work/archive/`, while tidy itself archives to `.sdlc/archive/` under topics; this is filed as T-0585, out of scope here.
+
+## T-0585: tickets.py tidy archives into .sdlc/archive under layout: topics (2026-10-15)
+
+- note: plugins/sdlc-lite/scripts/tickets.py:2233 the router Procedures block still says `tidy lists its move into archive/` with no topics qualifier. It is rendered for every layout, so under topics it names the wrong folder. Out of this ticket's criteria.
