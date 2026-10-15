@@ -148,6 +148,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             (wtroot.py evidence <ticket>) and cite the path` (exit stays 0, at most 5 lines, then `<N> more`) for
             each tracked file under <root> ending .png, .jpg, .jpeg, .gif, .webp, .mp4, .mov, .webm, .zip or .pdf
             (T-0568)
+            It prints `warning: plugin_min: ...` (exit stays 0) when a `plugin_min:` line in <root>/config is
+            above the running plugin's manifest version, or malformed (scripts/plugin_min.py, T-0593)
             Last, it fails each done ticket whose skips.md records lane solo, lean, fix, or full (the last
             `- lane:` line under ## Lane) but has neither the result nor a ## Skipped entry (format:
             skills/handoff-format) for a missing planner, verifier step <n> or filer result (a solo ticket has
@@ -317,6 +319,7 @@ import tempfile
 
 import onboard  # same scripts/ dir: the managed-block format and helpers the router block reuses
 import order as run_order
+import plugin_min  # same scripts/ dir: the repo's minimum plugin version (T-0593)
 
 PLUGIN = pathlib.Path(__file__).resolve().parent.parent
 REQUIRED = ('id', 'title', 'type', 'status', 'size', 'priority', 'depends', 'created')
@@ -3312,6 +3315,9 @@ def cmd_check(root, numbered=False):
     out += worktree_warnings(root, ts)
     out += binary_warnings(root)
     out += successor_lines(root, ts)
+    pm = plugin_min.refusal(root)  # T-0593: a warning here; dispatch.py prepare, run.sh and lanes.py open refuse
+    if pm:
+        out.append('warning: ' + pm)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
                    f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")

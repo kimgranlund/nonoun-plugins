@@ -10,7 +10,8 @@
 # (for /board and the status line), and appends one line to <records dir>/runs.jsonl for /bench;
 # its "file" field names the result, and scripts/order.py orders results by those lines.
 # Claude backend runs with --dangerously-skip-permissions; hooks/block-publish.sh still blocks publishing (via SDLC_ROLE). Every role except builder gets Edit/Write/NotebookEdit disallowed.
-# Preflight: exits 2 unless the current directory is in a git work tree with at least one commit.
+# Preflight: exits 2 unless the current directory is in a git work tree with at least one commit, and exits 2 when
+# .sdlc/config has a plugin_min: line above this plugin's manifest version (scripts/plugin_min.py, T-0593).
 # Node: a .nvmrc at the git toplevel is resolved against ${NVM_DIR:-$HOME/.nvm}/versions/node
 # (nvm is never sourced or run). An exact version (v20.11.0) matches that dir only; a partial one
 # (20, v20.11) matches whole components and takes the highest installed. A match prepends its bin
@@ -247,6 +248,9 @@ hdir="$(dirname "$handoff")"
 . "$plugin_root/scripts/records.sh"
 # A dry run only names it; a real run makes it (records_dir_make) once every gate has passed, before the lifecycle owner.
 dir="$(records_dir "$hdir")"
+# T-0593: a plugin_min: line in .sdlc/config above this plugin's own manifest version stops the run (exit 2, one line
+# naming both versions and the host's update command); no line, no check.
+python3 "$plugin_root/scripts/plugin_min.py" check "$hdir" --host "$backend" || exit 2
 # Never overwrite an earlier result: the first run is <role>-<level>, later ones <role>-<level>-<k>.
 name="${SDLC_ATTEMPT_NAME:-$role-$level}"
 if [[ -z "${SDLC_ATTEMPT_NAME:-}" && ( -e "$dir/$name.md" || -e "$dir/$name.request.json" ) ]]; then

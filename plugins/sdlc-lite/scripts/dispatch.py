@@ -182,6 +182,7 @@ import budget  # noqa: E402
 import claude_roles  # noqa: E402
 import cost_estimate  # noqa: E402
 import order  # noqa: E402
+import plugin_min  # noqa: E402
 import results  # noqa: E402
 import tickets  # noqa: E402
 import run_lifecycle  # noqa: E402
@@ -189,7 +190,7 @@ import wtroot  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
-GATES = ('preflight', 'goal', 'replan', 'links', 'lane', 'specgate', 'budget', 'time', 'lock')
+GATES = ('preflight', 'plugin_min', 'goal', 'replan', 'links', 'lane', 'specgate', 'budget', 'time', 'lock')
 APPROVAL_RE = re.compile(r'[^:]*[^\s:][^:]*:\s*\S')  # "<who: why>", the rule steps.py lint --approved checks
 NAME_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 ID_RE = re.compile(r'[0-9]{8}T[0-9]{12}Z-[a-z0-9]+(-[a-z0-9]+)*')
@@ -936,6 +937,10 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             raise Refuse(2, 'not a git repo: run git init and commit first')
         if git('rev-parse', '--verify', '-q', 'HEAD').returncode != 0:
             raise Refuse(2, 'git repo has no commit: commit first')
+    if 'plugin_min' not in skip:  # T-0593: the repo's plugin_min: line against this plugin's own manifest
+        msg = plugin_min.refusal(directory, plugin, 'claude')
+        if msg:
+            raise Refuse(2, msg)
     if tree:  # T-0413: refused before the lock, so no record is written
         known = {os.path.realpath(p) for p, _ in worktrees(git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip() or os.getcwd())}
         if os.path.realpath(tree) not in known:
@@ -3525,6 +3530,30 @@ def selftest():
         case('a failed sub-agent and an invalid report each deliver failed and invalid', rc == 1 and rc6 == 3 and sorted(words) == ['failed', 'invalid'])
         rcx, _, errx = prep(vr, 'verifier', 'L1', '.sdlc/n1/handoff.md', '--notify', 'Bad Name', SDLC_DISPATCH_PARENT_PID=live_pid)
         case('prepare refuses a malformed receiver name', rcx == 2 and '--notify' in errx)
+
+        # T-0593: a plugin_min: line above the running manifest refuses with exit 2 naming both versions and the update
+        # command; an equal version passes; no line means no check; the comparison is numeric per part.
+        pm = tmp / 'pmin'
+        init_repo(pm)
+        put(pm / '.sdlc' / 't' / 'handoff.md')
+        have = json.loads((PLUGIN / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
+        parts = have.split('.')
+        need = '.'.join(parts[:-1] + [str(int(parts[-1]) + 1)])
+        (pm / '.sdlc' / 'config').write_text('plugin_min: %s  # the repo needs this\n' % need, encoding='utf-8')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        case('plugin_min above the manifest version: exit 2 naming %s, %s and claude plugin update' % (need, have),
+             rc == 2 and need in err and have in err and 'claude plugin update' in err)
+        (pm / '.sdlc' / 'config').write_text('plugin_min: %s\n' % have, encoding='utf-8')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        case('plugin_min equal to the manifest version passes', rc == 0 and 'plugin_min' not in err)
+        (pm / '.sdlc' / 'config').write_text('plugin_min: 0.x\n', encoding='utf-8')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        case('a malformed plugin_min refuses with exit 2 naming it', rc == 2 and '0.x' in err)
+        (pm / '.sdlc' / 'config').unlink()
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        case('no plugin_min line: no check', rc == 0 and 'plugin_min' not in err)
+        case('plugin_min compares numerically per part', plugin_min.below('0.9.0', '0.10.0') and not plugin_min.below('0.10.0', '0.9.0')
+             and plugin_min.below('0.23.1', '0.24') and not plugin_min.below('1.0', '1.0.0'))
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))
     return 1 if failures else 0
 
