@@ -3534,24 +3534,46 @@ def selftest():
         # T-0593: a plugin_min: line above the running manifest refuses with exit 2 naming both versions and the update
         # command; an equal version passes; no line means no check; the comparison is numeric per part.
         pm = tmp / 'pmin'
+        nohooks = dict(CLAUDE_PLUGIN_ROOT='', SDLC_PLUGIN_CACHE=str(tmp / 'no-cache'))  # T-0596: no installed plugin in these cases
         init_repo(pm)
         put(pm / '.sdlc' / 't' / 'handoff.md')
         have = json.loads((PLUGIN / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
         parts = have.split('.')
         need = '.'.join(parts[:-1] + [str(int(parts[-1]) + 1)])
         (pm / '.sdlc' / 'config').write_text('plugin_min: %s  # the repo needs this\n' % need, encoding='utf-8')
-        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **nohooks)
         case('plugin_min above the manifest version: exit 2 naming %s, %s and claude plugin update' % (need, have),
              rc == 2 and need in err and have in err and 'claude plugin update' in err)
         (pm / '.sdlc' / 'config').write_text('plugin_min: %s\n' % have, encoding='utf-8')
-        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **nohooks)
         case('plugin_min equal to the manifest version passes', rc == 0 and 'plugin_min' not in err)
         (pm / '.sdlc' / 'config').write_text('plugin_min: 0.x\n', encoding='utf-8')
-        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **nohooks)
         case('a malformed plugin_min refuses with exit 2 naming it', rc == 2 and '0.x' in err)
         (pm / '.sdlc' / 'config').unlink()
-        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **nohooks)
         case('no plugin_min line: no check', rc == 0 and 'plugin_min' not in err)
+        # T-0596: the hook plugin (CLAUDE_PLUGIN_ROOT, what the session's hooks run) below plugin_min refuses even when
+        # this plugin's own manifest meets it, and the line names the hook plugin; the newest plugin cache folder stands
+        # in when CLAUDE_PLUGIN_ROOT is unset.
+        old = '.'.join(parts[:-1] + [str(int(parts[-1]) - 1)]) if int(parts[-1]) else '0.0.1'
+        hooks = tmp / 'hooks-plugin'
+        (hooks / '.claude-plugin').mkdir(parents=True)
+        (hooks / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'name': 'sdlc-lite', 'version': old}), encoding='utf-8')
+        (pm / '.sdlc' / 'config').write_text('plugin_min: %s\n' % have, encoding='utf-8')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, CLAUDE_PLUGIN_ROOT=str(hooks)))
+        case('plugin_min: CLAUDE_PLUGIN_ROOT at %s below plugin_min %s refuses naming the hook plugin' % (old, have),
+             rc == 2 and 'hook plugin (CLAUDE_PLUGIN_ROOT)' in err and old in err and have in err and 'claude plugin update' in err)
+        cache = tmp / 'cache'
+        for v in (old, '0.0.1'):
+            (cache / v / '.claude-plugin').mkdir(parents=True, exist_ok=True)
+            (cache / v / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': v}), encoding='utf-8')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, SDLC_PLUGIN_CACHE=str(cache)))
+        case('plugin_min: with no CLAUDE_PLUGIN_ROOT the newest plugin cache folder below plugin_min refuses naming it',
+             rc == 2 and 'hook plugin (plugin cache)' in err and old in err)
+        (hooks / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': have}), encoding='utf-8')
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, CLAUDE_PLUGIN_ROOT=str(hooks)))
+        case('plugin_min: a hook plugin that meets plugin_min passes', rc == 0 and 'plugin_min' not in err)
         case('plugin_min compares numerically per part', plugin_min.below('0.9.0', '0.10.0') and not plugin_min.below('0.10.0', '0.9.0')
              and plugin_min.below('0.23.1', '0.24') and not plugin_min.below('1.0', '1.0.0'))
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))

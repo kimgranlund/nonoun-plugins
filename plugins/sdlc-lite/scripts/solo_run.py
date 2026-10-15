@@ -1341,6 +1341,22 @@ def selftest():
         dn = cli()
         expect('negative control: without --cwd the base is the session checkout HEAD and the prompt has no Tree line',
                dn.get('base_sha') == sess_head != other_head and '\nTree: ' not in dn.get('prompt', '') and 'tree' not in dn)
+        # T-0596: run (the maintainer's --no-worktree path included) refuses with exit 2 when plugin_min: is above the
+        # running plugin's version, before any record; an equal version dispatches.
+        have = json.loads((PLUGIN / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
+        vp = have.split('.')
+        need = '.'.join(vp[:-1] + [str(int(vp[-1]) + 1)])
+        env_c.update(CLAUDE_PLUGIN_ROOT='', SDLC_PLUGIN_CACHE=str(tmp / 'no-cache'))
+        (sess / '.sdlc' / 'config').write_text(f'plugin_min: {need}\n')
+        runs = order.records_dir(td) / 'runs.jsonl'
+        before = runs.read_text() if runs.is_file() else ''
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--task-dir', str(td), '--tier', 'L1',
+                            '--brief', 'b', '--no-worktree'], cwd=str(sess), capture_output=True, text=True, env=env_c, timeout=60)
+        expect('plugin_min: run --no-worktree with plugin_min above the version exits 2 naming both, no dispatch, no record (T-0596)',
+               r.returncode == 2 and need in r.stderr and have in r.stderr and not r.stdout.strip()
+               and (runs.read_text() if runs.is_file() else '') == before)
+        (sess / '.sdlc' / 'config').write_text(f'plugin_min: {have}\n')
+        expect('plugin_min control: run --no-worktree with plugin_min equal to the version dispatches', cli().get('attempt_id'))
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
@@ -1400,6 +1416,11 @@ def main():
         return 2
     if a.backend == 'claude' and a.exec and os.environ.get('SDLC_CLAUDE_EXEC') != '1':
         print('solo_run.py: the Claude headless start is retired: use fanout.py prep and land or dispatch.py prepare (sub-agent), or SDLC_CLAUDE_EXEC=1', file=sys.stderr)
+        return 2
+    import plugin_min  # same scripts/ dir: the repo's minimum plugin version, before any folder, worktree or record (T-0596)
+    refused = plugin_min.refusal(a.task_dir or a.cwd or '.', PLUGIN, a.backend if a.backend in plugin_min.MANIFEST else None)
+    if refused:
+        print(refused, file=sys.stderr)
         return 2
     try:
         task_dir = a.task_dir if a.task_dir else new_task(a.new_task, brief)
