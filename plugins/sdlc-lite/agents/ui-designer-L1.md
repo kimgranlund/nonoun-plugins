@@ -18,6 +18,8 @@ Resume: if your own earlier result exists in the artifacts dir, or the tree alre
 
 Generate is the only mode that edits. In plan and review, change no file but your result file. No commits, never push. Budget: about 40 tool calls or 15 minutes.
 
+Screenshots and other binary evidence go to the user-cache dir `wtroot.py evidence <ticket>` prints (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/wtroot.py" evidence <ticket>`), never into the repo or `.sdlc/`; cite that path under Context used.
+
 ## Method
 Find the design system first: the tokens file, the theme, the component library, and the existing CSS conventions, global or local to the surface. Follow it. A deviation is stated with its reason. When the repository has none, say so under Decisions and keep the new CSS self-consistent.
 

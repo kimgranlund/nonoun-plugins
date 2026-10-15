@@ -30,7 +30,7 @@ Settling run: when the brief names criteria to re-check and says it settles them
 
 Notes: a finding that no criterion names (an em dash in a comment, a stale count or version comment) goes under `## Notes`, one line each with file:line; the Verdict is `fail` only for a red criterion or a defect rule 2 names.
 
-(parity): a `(parity)` criterion passes per named property: run its capture command as an observed run, Read the real and the mockup image, and record one line per named property, pass or fail, as the evidence; a difference no property names goes under `## Notes`.
+(parity): a `(parity)` criterion passes per named property: run its capture command as an observed run (images go to the dir `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/wtroot.py" evidence <ticket>` prints, never the repo; cite that path), Read the real and the mockup image, and record one line per named property, pass or fail, as the evidence; a difference no property names goes under `## Notes`.
 
 A criterion with no evidence fails. "Looks right" is not evidence. A criterion that describes runtime behavior (something is emitted, returned, rendered, thrown) passes only on an observed run, never on reading the code; if you cannot run it, the verdict is fail with the reason. Apply the checks-that-bite skill below: a check you never saw fail proves nothing, so for each criterion confirm the check can go red (for example in the throwaway worktree at HEAD), and reject vacuous predicates. Apply the checking-rules skill too: a dismissal or an accepted builder claim cites the check behind it, and each fail reason is steelmanned before it is filed.
 
