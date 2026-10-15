@@ -567,7 +567,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0567 | [.0567-sdlc-scratch-untrack](.0567-sdlc-scratch-untrack/handoff.md) | Tracked scratch under .sdlc moves to reports or runtime | chore | L1 | P3 | none | 🟢 done |
 | T-0568 | [.0568-evidence-user-cache](.0568-evidence-user-cache/handoff.md) | Binary evidence lives in a user-scope cache, not in the repo | chore | L2 | P2 | T-0563 | 🟢 done |
 | T-0569 | [.0569-migrate-main-branch](.0569-migrate-main-branch/handoff.md) | migrate script takes main from the first worktree's branch | bug | L1 | P2 | T-0563 | 🟢 done |
-| T-0570 | [0570-codex-live-lane-smoke](0570-codex-live-lane-smoke/handoff.md) | Live Codex smoke run of one lane under the sibling worktree root | chore | L2 | P1 | T-0563, T-0564 | 🟡 claimed |
+| T-0570 | [0570-codex-live-lane-smoke](0570-codex-live-lane-smoke/handoff.md) | Live Codex smoke run of one lane under the sibling worktree root | chore | L2 | P1 | T-0563, T-0564 | 🟡 claimed (branch lane/T-0570-t0570) |
 | T-0571 | [0571-trim-closed-tickets](0571-trim-closed-tickets/handoff.md) | Closed tickets keep only handoff.md and their Outcome | chore | L2 | P2 | T-0567 | ⏳ proposed |
 | T-0572 | [0572-lean-roadmap](0572-lean-roadmap/handoff.md) | roadmap.md lists open tickets plus a closed count | chore | L2 | P2 | T-0565 | ⏳ proposed |
 | T-0573 | [0573-prune-notes](0573-prune-notes/handoff.md) | notes.md keeps only live notes | chore | L1 | P3 | none | ⏳ proposed |

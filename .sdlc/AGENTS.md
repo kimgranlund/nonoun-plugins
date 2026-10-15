@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:7fa22ee618a4 -->
+<!-- sdlc-lite:managed:start v1 sha256:d08755d2d8fa -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -27,7 +27,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
 - ready: 0
 - claimed: 1
-  - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke), claimed by claude 2026-10-15
+  - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke), claimed by claude 2026-10-15, branch lane/T-0570-t0570
 - paused: 0
 - blocked: 0
 - done: 545
