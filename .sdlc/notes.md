@@ -597,3 +597,9 @@
 
 - note: there is no builder-*.md in the artifacts dir (solo lane), and `redck.py deviations` printed no deviation lines. The pre-fix failure was proven by the red control above, not taken from any builder claim.
 - note: plugins/sdlc-lite/scripts/migrate-worktrees.sh:48 the selftest covers only the case where there is no origin/HEAD and `main` exists. The origin/HEAD branch and the `master` fallback have no test of their own.
+
+## T-0568: Binary evidence lives in a user-scope cache, not in the repo (2026-10-15)
+
+- note: `redck.py deviations` printed no `process deviation:` lines; the handoff has no `(red)` criteria.
+- note: the 6 em dashes on added lines are all in regenerated `plugins/sdlc-lite/adapters/codex/agents/*.toml` and replace 6 removed lines that already had them; none are in hand-written text.
+- note: could not delete scratch under /var/folders/.../0568-verifier-L2 (rm denied by the permission system); the throwaway worktree is removed and `git worktree list` shows no 0568-verifier entry.

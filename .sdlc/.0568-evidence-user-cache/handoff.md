@@ -2,14 +2,12 @@
 id: T-0568
 title: "Binary evidence lives in a user-scope cache, not in the repo"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0563]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0568-t0568
-worktree: ../sdlc-lite.worktrees/T-0568-t0568
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +33,16 @@ No binary is written into the repo by a plugin role. Scratch sweep rules stay as
 2. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0. Its new case shows `check` warning on a tracked `.sdlc/x/shot.png` and staying silent on `.md`; the case failed before the change.
 3. `grep -rn 'evidence' plugins/sdlc-lite/agents/ui-designer.md plugins/sdlc-lite/skills/handoff-format/SKILL.md` names `wtroot.py evidence`.
 4. `bash plugins/sdlc-lite/scripts/run-selftest.sh` and `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: ba2daeddeeb4
+- Changed: wtroot.py evidence <ticket> gives a user-cache evidence dir; tickets.py check warns on tracked binaries under .sdlc
+- Commits: 76cee53 T-0568: wtroot.py evidence puts binary evidence in the user cache; check warns on tracked binaries in .sdlc
+- Check: 1 wtroot.py selftest exits 0 with new `ok:` cases: pass
+- Check: 2 tickets.py selftest exits 0; new case warns on tracked `.sdlc/x/shot.png`, silent on `.md`; faile...: pass
+- Check: 3 grep names `wtroot.py evidence`: pass
+- Check: 4 run-selftest.sh and git diff --check exit 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines; the... -> notes.md
+- Follow-up: note: the 6 em dashes on added lines are all in regenerated... -> notes.md
+- Follow-up: note: could not delete scratch under /var/folders/.../0568-verifier-L2 rm... -> notes.md

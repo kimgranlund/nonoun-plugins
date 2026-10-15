@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:01062d535afc -->
+<!-- sdlc-lite:managed:start v1 sha256:96a8910d10bc -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,12 +18,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0576 Root AGENTS.md managed block names flat-layout paths after layout: topics (0576-onboard-block-reads-layout)
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
 - ready: 0
-- claimed: 2
+- claimed: 1
   - T-0566 fanout.py land carries the lane's run records to main (0566-land-copies-runtime), claimed by claude 2026-10-15, branch lane/T-0566-t0566
-  - T-0568 Binary evidence lives in a user-scope cache, not in the repo (0568-evidence-user-cache), claimed by claude 2026-10-15, branch lane/T-0568-t0568
 - paused: 0
 - blocked: 0
-- done: 532
+- done: 533
 - dropped: 29
 
 ## Procedures
