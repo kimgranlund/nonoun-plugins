@@ -564,7 +564,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0564 | [0564-worktree-root-guidance](0564-worktree-root-guidance/handoff.md) | Worktree root guidance for Claude Code and Codex | chore | L2 | P1 | T-0563 | ⏳ proposed |
 | T-0565 | [0565-generated-files-merge](0565-generated-files-merge/handoff.md) | Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md | chore | L2 | P2 | T-0564 | ⏳ proposed |
 | T-0566 | [0566-land-copies-runtime](0566-land-copies-runtime/handoff.md) | fanout.py land carries the lane's run records to main | chore | L2 | P2 | T-0564 | ⏳ proposed |
-| T-0567 | [0567-sdlc-scratch-untrack](0567-sdlc-scratch-untrack/handoff.md) | Tracked scratch under .sdlc moves to reports or runtime | chore | L1 | P3 | none | ⏳ proposed |
+| T-0567 | [0567-sdlc-scratch-untrack](0567-sdlc-scratch-untrack/handoff.md) | Tracked scratch under .sdlc moves to reports or runtime | chore | L1 | P3 | none | 🟡 claimed |
 | T-0568 | [0568-evidence-user-cache](0568-evidence-user-cache/handoff.md) | Binary evidence lives in a user-scope cache, not in the repo | chore | L2 | P2 | T-0563 | ⏳ proposed |
 | T-0569 | [0569-migrate-main-branch](0569-migrate-main-branch/handoff.md) | migrate script takes main from the first worktree's branch | bug | L1 | P2 | T-0563 | ⏳ proposed |
 | T-0570 | [0570-codex-live-lane-smoke](0570-codex-live-lane-smoke/handoff.md) | Live Codex smoke run of one lane under the sibling worktree root | chore | L2 | P1 | T-0563, T-0564 | ⏳ proposed |
