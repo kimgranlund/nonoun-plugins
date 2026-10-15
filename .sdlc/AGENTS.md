@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4057f8937ba3 -->
+<!-- sdlc-lite:managed:start v1 sha256:4ce70e6ea53f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 17
+- proposed: 19
   - T-0565 Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md (0565-generated-files-merge)
   - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke)
   - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
@@ -27,6 +27,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0590 lanes.py ready pins the review sha and tells the conductor (0590-lanes-ready-signal)
   - T-0591 Conductor, worker and verifier rules for Claude, Codex and Pi in one repo (0591-multi-host-roles-doc)
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
+  - T-0593 A repo pins the minimum plugin version every host must run (0593-plugin-min-version)
+  - T-0594 One plugin command records, lands, closes and backs up a lane (0594-land-close-command)
 - ready: 0
 - claimed: 2
   - T-0579 close --reason accepts a 'landed on main' claim that is false (0579-close-reason-landed-guard), claimed by claude 2026-10-15, branch lane/T-0579-t0579
