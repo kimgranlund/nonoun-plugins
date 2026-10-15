@@ -3,7 +3,7 @@ id: T-0558
 title: "dispatch.py selftest accept-all controls fail when an unmarked folder sits under TMPDIR/sdlc-lite"
 type: bug             # feature | bug | chore | spike | idea
 status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
-size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
@@ -29,3 +29,8 @@ T-0550 made the sweep cover every repo's scratch under `$TMPDIR/sdlc-lite/`. Gue
 
 ## Constraints
 The failing test lands before or with the fix. Target 0.23.1.
+
+## Acceptance criteria
+- (red) `python3 -c "import os,sys,tempfile; sys.path.insert(0,'plugins/sdlc-lite/scripts'); import dispatch, wtroot; b=os.path.realpath(tempfile.mkdtemp()); old=tempfile.gettempdir(); c=dispatch.private_tmpdir(b); t=c.__enter__(); ok=wtroot._under(str(wtroot.scratch_root('.')), b) and os.environ['TMPDIR'].startswith(b); c.__exit__(None,None,None); sys.exit(0 if ok and tempfile.gettempdir()==old else 1)"`
+- `d=$(mktemp -d) && mkdir -p "$d/sdlc-lite/foreign-0000/leftover" && TMPDIR="$d" python3 plugins/sdlc-lite/scripts/dispatch.py selftest`
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`

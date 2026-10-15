@@ -1826,6 +1826,24 @@ def cwd(path):
         os.chdir(old)
 
 
+@contextlib.contextmanager
+def private_tmpdir(base):
+    """Point the system temp dir (tempfile and $TMPDIR, for child processes too) at <base>/tmp, so the scratch root and
+    its crash sweep see only this run's folders, never another run's under the real $TMPDIR/sdlc-lite (T-0558)."""
+    d = Path(base) / 'tmp'
+    d.mkdir(parents=True, exist_ok=True)
+    saved = tempfile.tempdir, os.environ.get('TMPDIR')
+    tempfile.tempdir, os.environ['TMPDIR'] = str(d), str(d)
+    try:
+        yield d
+    finally:
+        tempfile.tempdir = saved[0]
+        if saved[1] is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = saved[1]
+
+
 def selftest():
     # where prepare, record and run.sh write a task's records; made when missing, which never changes the answer
     R = lambda p: order.records_dir(p, create=True)
@@ -1880,7 +1898,7 @@ def selftest():
         case('parity %s: %s %s -> %s' % (label, role, level, ('exit %d' % rc) if rc else '%s %s %s' % (got['model'], got['effort'], os.path.basename(got['result']))), ok)
         return rc, got
 
-    with tempfile.TemporaryDirectory(prefix='dispatch-selftest.') as tmp:
+    with tempfile.TemporaryDirectory(prefix='dispatch-selftest.') as tmp, private_tmpdir(os.path.realpath(tmp)):
         tmp = Path(os.path.realpath(tmp))
         repo = tmp / 'repo'
         init_repo(repo)
