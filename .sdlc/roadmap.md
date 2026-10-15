@@ -573,11 +573,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0573 | [0573-prune-notes](0573-prune-notes/handoff.md) | notes.md keeps only live notes | chore | L1 | P3 | none | ⏳ proposed |
 | T-0574 | [.0574-sdlc-config-board](.0574-sdlc-config-board/handoff.md) | Silence the flat-layout warning and drop the stale board.md | chore | L1 | P3 | T-0567 | 🟢 done |
 | T-0575 | [.0575-lane-readers-sibling-root](.0575-lane-readers-sibling-root/handoff.md) | Trace, fleet and migrate readers miss lanes under the sibling root | bug | L2 | P1 | T-0563 | 🟢 done |
-| T-0576 | [0576-onboard-block-reads-layout](0576-onboard-block-reads-layout/handoff.md) | Root AGENTS.md managed block names flat-layout paths after layout: topics | bug | L2 | P2 | none | ⏳ proposed |
+| T-0576 | [0576-onboard-block-reads-layout](0576-onboard-block-reads-layout/handoff.md) | Root AGENTS.md managed block names flat-layout paths after layout: topics | bug | L2 | P2 | none | 🟡 claimed |
 | T-0577 | [0577-rewrite-refs-frozen-paths](0577-rewrite-refs-frozen-paths/handoff.md) | --rewrite-refs rewrites citations inside frozen records | bug | L2 | P2 | none | ⏳ proposed |
-| T-0578 | [0578-prepare-tree-base](0578-prepare-tree-base/handoff.md) | dispatch.py prepare --tree records a stale base for lane trees | bug | L2 | P1 | none | ⏳ proposed |
-| T-0579 | [0579-close-reason-landed-guard](0579-close-reason-landed-guard/handoff.md) | close --reason accepts a 'landed on main' claim that is false | bug | L1 | P1 | none | ⏳ proposed |
-| T-0580 | [0580-handover-orphan-work](0580-handover-orphan-work/handoff.md) | Handover and cleanup can strand unique work on snapshot refs or dangling commits | bug | L2 | P1 | none | ⏳ proposed |
+| T-0578 | [0578-prepare-tree-base](0578-prepare-tree-base/handoff.md) | dispatch.py prepare --tree records a stale base for lane trees | bug | L2 | P1 | none | 🟡 claimed |
+| T-0579 | [0579-close-reason-landed-guard](0579-close-reason-landed-guard/handoff.md) | close --reason accepts a 'landed on main' claim that is false | bug | L1 | P1 | none | 🟡 claimed |
+| T-0580 | [0580-handover-orphan-work](0580-handover-orphan-work/handoff.md) | Handover and cleanup can strand unique work on snapshot refs or dangling commits | bug | L2 | P1 | none | 🟡 claimed |
 | T-0581 | [0581-close-preflight](0581-close-preflight/handoff.md) | close --preflight at merge-ready, --reason skip lines, serialized closes | chore | L2 | P2 | none | ⏳ proposed |
 | T-0582 | [0582-criteria-replay-amend](0582-criteria-replay-amend/handoff.md) | Plan criteria replayed on main; criterion-only fixes amend without spending the replan | feature | L3 | P2 | none | ⏳ proposed |
 | T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L3 | P3 | none | ⏳ proposed |
