@@ -2,7 +2,7 @@
 id: T-0598
 title: "Codex verifier in a fresh lane refuses: the lane has no .codex/agents"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,13 @@ Found by the T-0570 live run (codex-cli 0.162.1, full access), report `docs/repo
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Outcome
+
+2026-10-15 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/lanes.py:1327 installs the agents only when the opening checkout has `.codex/agents/.sdlc-managed.json`. A repo whose agents were installed some other way, with no receipt, still gets no agents in its lanes. This matches the ticket's Repro, which uses `codex_roles.py install`. | note: the builder wrote no builder-*.md report to the artifacts dir, so I verified only against the tree.) · verifier: verifier-L2 (opus) · base: 75fdb679a2ab
+- Changed: see commits
+- Commits: 43e3998 T-0598: Codex verifier in a fresh lane refuses: the lane has no .codex/agents
+- Check: 1 Goal: a Codex verifier step runs in a lane that `lanes.py open` just made, with no hand-run `code...: pass
+- Check: 2 Goal: a test that failed before the fix passes after it: pass
+- Check: 3 Constraint: the failing test lands before or with the fix, never after: pass
+- Check: 4 `git diff --check`: pass
