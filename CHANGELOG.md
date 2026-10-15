@@ -2,6 +2,19 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.23.1] - 2026-10-15
+
+Report: [docs/reports/2026-10-15-release-0-23-1.md](docs/reports/2026-10-15-release-0-23-1.md).
+
+### Fixed
+
+- Bare-clone repos (lanes beside a bare git dir, as in gen-ui-kit): the worktree root is `<bare parent>/lanes`, or a `worktree_root:` line in `.sdlc/config`, for `wtroot.py`, `lanes.py`, `fanout.py`, the tmp reaper and both role hooks, so nothing nests inside a lane; `migrate-0.23.sh` prints the root and "nothing to move" there (T-0561).
+- Role sub-agents can no longer run Bash in the background or use Monitor, so they cannot go idle waiting for a notification that never reaches them; the main session and the conductor are unaffected (T-0562).
+- A fanout close writes the real `base:` and `Commits:` into `## Outcome` for solo lanes, from the solo dispatch's `base_sha` (T-0559).
+- `tickets.py close` moves `skips.md` into the records dir, so a closed ticket tracks only `handoff.md` (T-0560).
+- `dispatch.py selftest` uses a private `TMPDIR`, so another run's scratch under `$TMPDIR/sdlc-lite/` cannot fail it (T-0558).
+- Release CI uses actions/checkout and setup-node v7 (Node 24) and pins `ubuntu-24.04`.
+
 ## [0.23.0] - 2026-10-14
 
 Report: [docs/reports/2026-10-14-release-0-23-0.md](docs/reports/2026-10-14-release-0-23-0.md).
