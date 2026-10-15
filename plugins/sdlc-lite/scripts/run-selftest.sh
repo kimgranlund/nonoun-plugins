@@ -132,6 +132,23 @@ refuse_out=$(cd "$repo" && env -u SDLC_CLAUDE_EXEC PATH="$tmp/bin:$PATH" SDLC_BA
 [[ "$refuse_rc" == 2 ]] || fail "claude retirement: want exit 2 without SDLC_CLAUDE_EXEC, got $refuse_rc"
 [[ "$(printf '%s\n' "$refuse_out" | wc -l | tr -d ' ')" == 1 && "$refuse_out" == *"dispatch.py prepare"* ]] || fail "claude retirement: want one line naming dispatch.py prepare, got: $refuse_out"
 
+# T-0593: a plugin_min: line above the running manifest stops run.sh with exit 2 naming both versions and the host's
+# update command, on either backend; an equal version passes; the line is removed before the cases below.
+pm_have=$(jq -r .version "$here/../.claude-plugin/plugin.json")
+pm_need="${pm_have%.*}.$(( ${pm_have##*.} + 1 ))"
+mkdir -p "$repo/.sdlc/pmin"; echo '## Goal' >"$repo/.sdlc/pmin/handoff.md"
+echo "plugin_min: $pm_need" >"$repo/.sdlc/config"
+for pm_host in claude codex; do
+  pm_cmd="claude plugin update"; [[ "$pm_host" == codex ]] && pm_cmd="codex plugin marketplace upgrade"
+  pm_rc=0; pm_out=$(cd "$repo" && SDLC_BACKEND=$pm_host SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" scout L1 .sdlc/pmin/handoff.md 2>&1) || pm_rc=$?
+  [[ "$pm_rc" == 2 && "$pm_out" == *"$pm_need"* && "$pm_out" == *"$pm_have"* && "$pm_out" == *"$pm_cmd"* ]] \
+    || fail "plugin_min: $pm_need above $pm_have on $pm_host: want exit 2 naming both and $pm_cmd, got $pm_rc: $pm_out"
+done
+echo "plugin_min: $pm_have" >"$repo/.sdlc/config"
+pm_rc=0; pm_out=$(cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" scout L1 .sdlc/pmin/handoff.md 2>&1) || pm_rc=$?
+[[ "$pm_rc" == 0 && "$pm_out" != *plugin_min* ]] || fail "plugin_min: equal to $pm_have: want exit 0, got $pm_rc: $pm_out"
+rm -rf "$repo/.sdlc/config" "$repo/.sdlc/pmin"
+
 dir="$(rd "$(cd "$repo/.sdlc/t" && pwd)")"
 names=(planner-L3 planner-L3-2 planner-L3-3)
 outs=()

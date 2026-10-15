@@ -168,6 +168,7 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
   lane_ports: <lo>-<hi>     off when absent; open picks the lowest free port under a flock on <lanes root>/lanes.lock
   lane_stale_days: <n>      default 10        lane_min_age_hours: <n>  default 2
   lane_keep: <branch>...    sweep keeps these  lane_names:, lane_sweep:  read and returned only (fanout owns them)
+  plugin_min: <X.Y.Z>       open refuses (exit 2) when the running plugin ($SDLC_BACKEND's manifest) is older (T-0593)
   land_gate: <cmd>          the gate finish passes to fanout.py land and settle; default none
 """
 import argparse, contextlib, datetime, fcntl, io, json, os, pathlib, re, shutil, socket, subprocess, sys, tempfile, time
@@ -179,6 +180,7 @@ TICKETS = tickets  # open_lane's tickets= parameter shadows the module name
 import order  # same scripts/ dir: newest-result ordering
 import results  # same scripts/ dir: the verifier verdict
 import wtroot  # same scripts/ dir: the worktree root, owner markers and the crash sweep (T-0550)
+import plugin_min  # same scripts/ dir: the repo's minimum plugin version (T-0593)
 
 Path = pathlib.Path
 RECORD = '.lane.json'
@@ -1221,6 +1223,9 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         return result(2, f'unknown kind {kind}: use fanout, integration or solo')
     if kind in ('fanout', 'solo') and not ids:
         return result(1, f'kind {kind} needs --ticket: no ticket, no lane')
+    refused = plugin_min.refusal(top)  # T-0593: before any claim, branch or tree
+    if refused:
+        return result(2, refused)
     rootp = Path(cwd, root)
     titles = {}
     for t in ids:
@@ -2140,6 +2145,29 @@ def case_c9(script, base):
     return fails
 
 
+def case_plugin_min(script, base):
+    """T-0593: a plugin_min: line above the running manifest refuses open with exit 2 naming both versions and the
+    host's update command, leaving no tree and no branch; an equal version opens."""
+    t = Fixture(base, script, 'pmin')
+    fails = []
+    have = json.loads((HERE.parent / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
+    parts = have.split('.')
+    need = '.'.join(parts[:-1] + [str(int(parts[-1]) + 1)])
+    t.write({'.sdlc/0070-pmin/handoff.md': ticket_file('T-0070', claimed=True)})
+    t.write({'.sdlc/config': f'plugin_min: {need}\n'})
+    for host, cmd in (('claude', 'claude plugin update'), ('codex', 'codex plugin marketplace upgrade')):
+        rc, o = t.lanes('open', 'a', '--ticket', 'T-0070', env={'SDLC_BACKEND': host})
+        if rc != 2 or need not in o or have not in o or cmd not in o:
+            fails.append(f'plugin_min {need} above {have} on {host}: want exit 2 naming both and {cmd}: {rc}: {o}')
+    if t.tree('T-0070-a').exists() or t.ok('rev-parse', '--verify', 'refs/heads/lane/T-0070-a'):
+        fails.append('plugin_min: a refusal left a tree or a branch')
+    t.write({'.sdlc/config': f'plugin_min: {have}\n'})
+    rc, o = t.lanes('open', 'a', '--ticket', 'T-0070', env={'SDLC_BACKEND': 'claude'})
+    if rc != 0 or not (t.tree('T-0070-a') / RECORD).is_file():
+        fails.append(f'plugin_min equal to {have}: open did not pass: {rc}: {o}')
+    return fails
+
+
 def case_c10(script, base):
     t = Fixture(base, script, 'c10')
     fails = []
@@ -2737,6 +2765,8 @@ def run_selftest(script, src, base):
         need('bare root', case_bare_root(script, base), 'a bare clone lane gets <bare parent>/lanes and its tmp dir, outside the lane')
         need('C4', case_c4(script, base), 'stale at 11 days, not at 9, closable when landed, stale, locked kept by sweep')
         need('C9', case_c9(script, base), 'clashing names and a missing ticket refuse with nothing left; lane/T-1-a opens')
+        need('plugin_min', case_plugin_min(script, base),
+             'plugin_min above the manifest refuses open with exit 2 and the host command, nothing left; equal opens')
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),
              'restore returns the tip, two closes leave two refs, a failed write keeps the branch')
         need('orphans', case_orphans(script, base),
