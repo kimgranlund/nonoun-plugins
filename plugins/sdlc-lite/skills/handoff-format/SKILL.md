@@ -178,6 +178,8 @@ Keys: `stage` (the stage that normally checks it, informational), `owner` (a low
 
 A styling approval is a `(parity)` criterion: ``- (parity) `<capture command>` writes `<real.png>`; against `<mock.png>`: <property>, <property>`` (the project's own capture command and mockup; at most five named properties such as column count, gutter, a filled primary button, the heading order, never "matches"). `steps.py lint` refuses a `(parity)` line with fewer than two image paths or no property list. The verifier runs the capture as an observed run, reads both images, and records pass or fail per property; a difference no property names is a note. A styling ticket writes `verifier: L3` when the owner wants it.
 
+Evidence. Screenshots, captures and other binary evidence (png, jpg, jpeg, gif, webp, mp4, mov, webm, zip, pdf), a `(parity)` capture included, go to the user-cache dir `wtroot.py evidence <ticket>` prints (`<user cache>/sdlc-lite/<repo key>/evidence/<ticket>/`, kept across reboots and never swept), never into the repo or `.sdlc/`; the Outcome or the notes cite the path. Traces are kept only when the ticket asks for them or a failure needs them, as text under the records dir. `tickets.py check` warns on each tracked binary under `.sdlc/`.
+
 Never write `grep -P` in a criterion or guard: BSD grep on macOS has no -P, so a negated pipeline passes vacuously and `steps.py lint` refuses it; use `python3 -c` or `grep -E` with a literal byte sequence.
 
 The step's `### Do` states its validation scope (see `agents/planner.md`): the affected behavior and named dependents, tests named by stable title and file rather than by source line, and the integration gate that owns broad coverage when the handoff assigns one.

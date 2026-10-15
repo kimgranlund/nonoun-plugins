@@ -5,6 +5,7 @@ Usage: wtroot.py main [--cwd D]                          print the main checkout
        wtroot.py root [--cwd D]                          print the worktree root (see Root)
        wtroot.py legacy [--cwd D]                        print each legacy root, one per line (none for a bare clone)
        wtroot.py scratch NAME [--cwd D]                  print (and create, with no marker) the scratch dir for NAME
+       wtroot.py evidence TICKET [--cwd D]               print (and create) the evidence dir for TICKET
        wtroot.py mark DIR --pid N [--role R] [--ticket T] [--running F]
                                                          write DIR/.owner.json (creating DIR)
        wtroot.py sweep [--cwd D] [--hours H] [--apply]   a dry run by default; --apply removes dead-owner folders
@@ -30,6 +31,11 @@ it; dispatch.py never reports one as a stray (T-0564).
 Scratch. Files that are not worktrees (probe files, mutated copies) go to <system temp dir>/sdlc-lite/<repo key>/<name>,
 the system temp dir being $TMPDIR (tempfile.gettempdir()), as Claude Code's session scratchpad; never into the repo.
 
+Evidence. Screenshots, videos and other binary run evidence go to <user cache>/sdlc-lite/<repo key>/evidence/<ticket>/
+(T-0568), the user cache being $XDG_CACHE_HOME, else ~/Library/Caches on macOS, else ~/.cache, with the repo key
+scratch uses. Unlike scratch it survives a reboot and the sweep never reads it; a record cites the path, the repo holds
+only text.
+
 Owner marker. Each run folder holds .owner.json: pid, started (epoch seconds), started_at, role, ticket, and an
 optional running path (a *.running marker). An owner is live while its pid runs or its running file exists.
 
@@ -42,7 +48,7 @@ else `would remove <path>` (dry run) or, with --apply, its registered worktrees 
 reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
 
 Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, host_owned, tmp_root, tmp_roots,
-scratch_root, scratch_dir, mark, owner, live, sweep.
+scratch_root, scratch_dir, cache_root, evidence_dir, mark, owner, live, sweep.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
@@ -152,15 +158,31 @@ def tmp_roots(cwd='.'):
     return list(dict.fromkeys([t for t in [tmp_root(cwd)] + [r / 'tmp' for r in legacy_roots(cwd)] if t is not None]))
 
 
-def scratch_root(cwd='.'):
-    """<system temp dir>/sdlc-lite/<main checkout name>-<8 hex of its path>."""
+def repo_key(cwd='.'):
+    """<main checkout name>-<8 hex of its path>, the same from every lane."""
     top = main_top(cwd) or os.path.abspath(str(cwd))
-    key = '%s-%s' % (os.path.basename(top) or 'repo', hashlib.sha1(top.encode()).hexdigest()[:8])
-    return Path(tempfile.gettempdir(), 'sdlc-lite', key)
+    return '%s-%s' % (os.path.basename(top) or 'repo', hashlib.sha1(top.encode()).hexdigest()[:8])
+
+
+def scratch_root(cwd='.'):
+    """<system temp dir>/sdlc-lite/<repo key>."""
+    return Path(tempfile.gettempdir(), 'sdlc-lite', repo_key(cwd))
 
 
 def scratch_dir(name, cwd='.'):
     return scratch_root(cwd) / name
+
+
+def cache_root():
+    """The user cache: $XDG_CACHE_HOME, else ~/Library/Caches on macOS, else ~/.cache."""
+    if os.environ.get('XDG_CACHE_HOME'):
+        return Path(os.environ['XDG_CACHE_HOME'])
+    return Path(os.path.expanduser('~/Library/Caches' if sys.platform == 'darwin' else '~/.cache'))
+
+
+def evidence_dir(ticket, cwd='.'):
+    """<user cache>/sdlc-lite/<repo key>/evidence/<ticket>: binary evidence, outside the repo and the sweep (T-0568)."""
+    return cache_root() / 'sdlc-lite' / repo_key(cwd) / 'evidence' / ticket
 
 
 def mark(d, pid, role=None, ticket=None, running=None, now=None):
@@ -306,6 +328,26 @@ def selftest():
         expect('scratch dir sits under the system temp dir, not the repo',
                _under(str(scratch_dir('x', repo)), tempfile.gettempdir()) and not _under(str(scratch_dir('x', repo)), str(repo)))
         expect('scratch root is the same from the lane and the main checkout', scratch_root(lane) == scratch_root(repo))
+        saved = os.environ.pop('XDG_CACHE_HOME', None)
+        try:
+            ev = evidence_dir('T-1', repo)
+            expect('evidence dir sits under the user cache, keyed like scratch (T-0568)',
+                   _under(str(ev), str(cache_root())) and ev.parent.parent.name == scratch_root(repo).name
+                   and str(ev).endswith(os.path.join('sdlc-lite', ev.parent.parent.name, 'evidence', 'T-1')))
+            expect('evidence dir is outside the repo and the system temp dir', not _under(str(ev), str(repo))
+                   and not _under(str(ev), tempfile.gettempdir()))
+            expect('evidence dir is the same from the lane and the main checkout', evidence_dir('T-1', lane) == ev)
+            os.environ['XDG_CACHE_HOME'] = str(base / 'xdg')
+            expect('evidence dir honors XDG_CACHE_HOME', evidence_dir('T-1', lane) == base / 'xdg' / 'sdlc-lite'
+                   / scratch_root(repo).name / 'evidence' / 'T-1')
+            out = subprocess.run([sys.executable, os.path.abspath(__file__), 'evidence', 'T-2', '--cwd', str(lane)],
+                                 capture_output=True, text=True).stdout.strip()
+            expect('wtroot.py evidence prints and creates the dir', out == str(base / 'xdg' / 'sdlc-lite'
+                   / scratch_root(repo).name / 'evidence' / 'T-2') and Path(out).is_dir())
+        finally:
+            os.environ.pop('XDG_CACHE_HOME', None)
+            if saved is not None:
+                os.environ['XDG_CACHE_HOME'] = saved
 
         # T-0561: a bare clone with lanes beside it (gen-ui-kit: <dir>/.bare, <dir>/lanes/<lane>, <dir>/main)
         kit = base / 'ui-kit'
@@ -368,11 +410,14 @@ def selftest():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='wtroot.py', description=__doc__.split('\n')[0])
-    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,legacy,scratch,mark,sweep,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,legacy,scratch,evidence,mark,sweep,selftest}')
     for n in ('main', 'root', 'legacy'):
         sub.add_parser(n).add_argument('--cwd', default='.')
     p = sub.add_parser('scratch')
     p.add_argument('name')
+    p.add_argument('--cwd', default='.')
+    p = sub.add_parser('evidence')
+    p.add_argument('ticket')
     p.add_argument('--cwd', default='.')
     p = sub.add_parser('mark')
     p.add_argument('dir')
@@ -402,6 +447,11 @@ def main(argv=None):
         return 0
     if a.cmd == 'scratch':
         d = scratch_dir(a.name, a.cwd)
+        d.mkdir(parents=True, exist_ok=True)
+        print(d)
+        return 0
+    if a.cmd == 'evidence':
+        d = evidence_dir(a.ticket, a.cwd)
         d.mkdir(parents=True, exist_ok=True)
         print(d)
         return 0

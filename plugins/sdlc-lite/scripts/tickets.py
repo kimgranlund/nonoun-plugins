@@ -142,6 +142,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Outside `layout: topics` it prints `warning: <name>: loose entry at the top of <root>; ...tidy...`
             (exit stays 0, at most 5 lines, then `<N> more loose entries`) for each entry directly under <root>
             that the layout rule does not allow (see tidy)
+            Inside git it prints `warning: <path>: tracked binary under <root>; keep evidence in the user cache
+            (wtroot.py evidence <ticket>) and cite the path` (exit stays 0, at most 5 lines, then `<N> more`) for
+            each tracked file under <root> ending .png, .jpg, .jpeg, .gif, .webp, .mp4, .mov, .webm, .zip or .pdf
+            (T-0568)
             Last, it fails each done ticket whose skips.md records lane solo, lean, fix, or full (the last
             `- lane:` line under ## Lane) but has neither the result nor a ## Skipped entry (format:
             skills/handoff-format) for a missing planner, verifier step <n> or filer result (a solo ticket has
@@ -1624,6 +1628,29 @@ def delivered_warnings(root, ts):
     return [f'warning: {open_ids[i]}: {i} is open but commit {sha} on {branch} starts with "{i}:"; fix: '
             f'{cmd} close {open_ids[i]} --reason "delivered in {sha}"'
             for i, sha in sorted(seen.items())]
+
+
+BINARY_EXTS = ('png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'webm', 'zip', 'pdf')  # T-0568
+
+
+def binary_warnings(root):
+    """T-0568: one `warning:` line per git-tracked binary file under root (BINARY_EXTS), naming the user-cache
+    evidence command; at most PLACEHOLDER_SHOWN lines, then one count line. Nothing outside git."""
+    base = file_base(root)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    try:
+        p = subprocess.run(['git', '-C', str(base), 'ls-files', '-z', '--', str(root.resolve())], env=env,
+                           capture_output=True, text=True)
+    except OSError:
+        return []
+    if p.returncode:
+        return []
+    hits = [f for f in p.stdout.split('\0') if os.path.splitext(f)[1][1:].lower() in BINARY_EXTS]
+    out = [f'warning: {f}: tracked binary under {root.name}; keep evidence in the user cache '
+           f'(wtroot.py evidence <ticket>) and cite the path' for f in hits]
+    if len(out) > PLACEHOLDER_SHOWN:
+        out[PLACEHOLDER_SHOWN:] = [f'warning: {len(out) - PLACEHOLDER_SHOWN} more tracked binaries under {root.name}']
+    return out
 
 
 def successor_lines(root, ts):
@@ -3209,6 +3236,7 @@ def cmd_check(root, numbered=False):
     out += top_level_warnings(root)
     out += delivered_warnings(root, ts)
     out += worktree_warnings(root, ts)
+    out += binary_warnings(root)
     out += successor_lines(root, ts)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
@@ -6862,6 +6890,20 @@ def selftest():
         rc, out, err = run(dr, 'check')
         expect(f'(T-0528) successor banana is rejected: rc={rc} {err!r}',
                rc == 1 and "alpha: successor 'banana' is not T-NNNN or <repo>:T-NNNN" in err)
+        edit(dr, 'alpha', r'^successor:.*$', 'successor: T-0003')
+        run(dr, 'roadmap')
+
+        # T-0568: a tracked binary under .sdlc warns (exit 0) and names the evidence command; text stays silent
+        (dr / 'x').mkdir()
+        (dr / 'x' / 'shot.png').write_bytes(b'\x89PNG\r\n')
+        (dr / 'x' / 'note.md').write_text('# n\n', encoding='utf-8')
+        dgit('add', '-A')
+        dgit('commit', '-q', '-m', 'evidence')
+        rc, out, err = run(dr, 'check')
+        rows = [ln for ln in out.splitlines() if 'tracked binary' in ln]
+        expect(f'(T-0568) check warns on a tracked .sdlc/x/shot.png, naming wtroot.py evidence, and not on .md: '
+               f'rc={rc} {out!r} {err!r}', rc == 0 and len(rows) == 1 and 'x/shot.png' in rows[0]
+               and 'wtroot.py evidence' in rows[0] and 'note.md' not in out)
 
     # T-0544 layout rule: check warns on a loose top-level entry, tidy lists and moves it; claim --by any word
     with tempfile.TemporaryDirectory() as tmp:
