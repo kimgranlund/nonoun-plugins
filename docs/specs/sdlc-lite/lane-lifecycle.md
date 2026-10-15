@@ -49,7 +49,7 @@ The first five kinds are plugin lanes. Ownership is what lets `close` and `sweep
 
 ## 4. Where lanes live (item 1)
 
-Decision [D]: lanes stay inside the checkout by default, under one lanes root, and a repo moves the root outside with `lanes_root: <path>` in `.sdlc/config` (relative to the toplevel; `../lanes` for gen-ui-kit's bare-repo layout, where the toplevel is `<root>/main`). Reasons:
+Decision [D]: lanes stay inside the checkout by default, under one lanes root, and a repo moves the root outside with `lanes_root: <path>` in `.sdlc/config` (relative to the toplevel; a bare clone such as gen-ui-kit's needs no line since T-0561: the default resolves to `<bare parent>/lanes`, outside every lane). Reasons:
 
 - The pile is a closing problem. With close and sweep, a run keeps at most `--max-lanes` lane copies (default 4, hard cap 16) plus one integration tree, so the 440-copy walk the spec describes does not recur.
 - A session sandbox may not write outside its workspace. Codex headless conductors run inside their workspace sandbox [V, Codex execution]; making `../<repo>-lanes` from there is expected to fail [I]. Inside is the setting that works on both hosts.
@@ -58,7 +58,7 @@ Decision [D]: lanes stay inside the checkout by default, under one lanes root, a
 
 What changes:
 
-- Lanes root: `lanes_root:` defaults to `.claude/worktrees` since 0.23.0 (T-0550; `.worktrees` before, still read for one release and moved by `scripts/migrate-0.23.sh`). fanout's default `--lanes-dir` becomes `<lanes root>/fanout` (the same path as today for a repo without the line), and solo_run's `--worktree` tree goes to `<lanes root>/<name>`. Runner tmp stays at `<toplevel>/.worktrees/tmp`, because `SDLC_TMP_WORKTREES` and the hook's sub-agent prefix depend on that path.
+- Lanes root: `lanes_root:` defaults to `.claude/worktrees` since 0.23.0 (T-0550; `.worktrees` before, still read for one release and moved by `scripts/migrate-0.23.sh`). With no line the default is `wtroot.py root`: a `worktree_root:` line, else the main checkout's `.claude/worktrees`, else for a bare clone `<bare parent>/lanes` (T-0561). fanout's default `--lanes-dir` becomes `<lanes root>/fanout` (the same path as today for a repo without the line), and solo_run's `--worktree` tree goes to `<lanes root>/<name>`. Runner tmp is `<wtroot.py root>/tmp`: `run.sh` sets `SDLC_TMP_WORKTREES` under it, and both role hooks derive the sub-agent prefix from the same `wtroot.py root` (T-0561).
 - Ignore rules: unchanged. `.worktrees/` and `.claude/worktrees/` stay gitignored, and fanout preflight and `prep` already refuse otherwise. A lanes root outside the toplevel needs no ignore entry, as for `--lanes-dir` today. `open` adds `.lane.json` to `<git common dir>/info/exclude`, as the spec does, so no tracked file changes and a lane's `git add -A` never stages it.
 - Watcher exclusions: unchanged for `.worktrees/` and `.claude/worktrees/`, and not needed for an outside lanes root. The fanout skill's caveat that Node resolution walks up into the main tree's `node_modules` stays true for in-tree lanes; an outside root removes it and needs `lane_setup:` (section 11).
 - Hook: block-stray-worktree.sh keeps its logic, because lanes are made by scripts and the hook governs role Bash text. Its deny message adds that a lane comes from `lanes.py open`. fanout `prep` prints a `lanes.py open` command for a `full` lane instead of the raw `git worktree add -b`, so a headless conductor can make that lane. The hook reference gets one sentence.
@@ -222,7 +222,7 @@ Optional, each one `.sdlc/config` line:
 - `lane_stale_days: <n>` and `lane_sweep: off`.
 - No config line for auto-merge: it is a per-PR `--auto-merge <method>` flag (section 9, 17.8).
 
-The plugin pins no Node binary: `lane_setup` is the repo's own command and selects Node through the repo's version manager (`fnm exec --using .nvmrc`, `mise exec`, or a `.nvmrc`-aware script). For gen-ui-kit the lines would be `lanes_root: ../lanes`, `lane_ports: 7400-7699`, `lane_into: origin/main`, and `lane_setup:` running `pnpm install` then `node scripts/dev/bootstrap-worktree.mjs` under their Node 22 lookup, which replaces `~/.claude/lane/`.
+The plugin pins no Node binary: `lane_setup` is the repo's own command and selects Node through the repo's version manager (`fnm exec --using .nvmrc`, `mise exec`, or a `.nvmrc`-aware script). For gen-ui-kit the lines would be `lane_ports: 7400-7699`, `lane_into: origin/main`, and `lane_setup:` running `pnpm install` then `node scripts/dev/bootstrap-worktree.mjs` under their Node 22 lookup, which replaces `~/.claude/lane/`; its lanes root is the bare-clone default (T-0561), so it sets no `lanes_root:`.
 
 ## 12. Risks and known gaps (item 8)
 

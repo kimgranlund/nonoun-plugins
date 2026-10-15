@@ -705,16 +705,18 @@ def norm_tid(x):
 
 
 def resolve_lanes_dir(a, cwd, top):
-    """The lanes dir (--lanes-dir, else <main checkout>/.claude/worktrees/fanout, T-0550); inside the work tree it must be gitignored."""
+    """The lanes dir (--lanes-dir, else <worktree root>/fanout, the root from wtroot.py: <main checkout>/.claude/worktrees,
+    T-0550, or a worktree_root: line or a bare clone's <bare parent>/lanes, T-0561); inside the work tree it must be gitignored."""
     if not a.lanes_dir:
         top = pathlib.Path(wtroot.main_top(top) or top).resolve()
-    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else top / '.claude' / 'worktrees' / 'fanout'
+        wt_root = pathlib.Path(wtroot.root(top) or top / '.claude' / 'worktrees').resolve()
+    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else wt_root / 'fanout'
     if lanes_dir == top:
         raise Refuse(f'--lanes-dir {lanes_dir} is the work tree toplevel; lanes need their own dir')
     if top in lanes_dir.parents:
         # lanes inside the work tree must be gitignored, or every lane shows up as untracked files
-        inner = lanes_dir.relative_to(top).as_posix()
-        probe, want = ('.claude/worktrees/x', '.claude/worktrees/') if not a.lanes_dir else (f'{inner}/x', f'{inner}/')
+        inner = (wt_root if not a.lanes_dir and top in wt_root.parents else lanes_dir).relative_to(top).as_posix()
+        probe, want = f'{inner}/x', f'{inner}/'
         p = git(top, 'check-ignore', '-q', probe)
         if p.returncode == 1:
             what = 'the default lanes dir' if not a.lanes_dir else '--lanes-dir'
@@ -3052,6 +3054,16 @@ def selftest():
         proc = fanout(rr, '--dry-run', '--lanes-dir', str(rl), 'alpha=T-0001')
         expect(f'--dry-run with --lanes-dir exits 0, got {proc.returncode} stderr={proc.stderr!r}',
                proc.returncode == 0 and str(rl) in proc.stdout)
+        # T-0561: a bare clone with a lane beside it: the default lanes dir is <bare parent>/lanes/fanout, outside the lane
+        kit = tmp / 'kit'
+        sh(tmp, 'clone', '-q', '--bare', str(rr), str(kit / '.bare'))
+        blane = kit / 'lanes' / 'a'
+        sh(kit / '.bare', 'worktree', 'add', '-q', '-b', 'work', str(blane), 'main')
+        proc = fanout(blane, '--dry-run', '--integration', 'fanout/dry', 'alpha=T-0001')
+        expect(f'bare clone: --dry-run from a lane puts lanes under <bare parent>/lanes/fanout, not in the lane, '
+               f'got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and f'worktree {kit / "lanes" / "fanout" / "alpha"}' in proc.stdout
+               and str(blane / '.claude') not in proc.stdout)
         for label, args in (('the same id in two lanes', ('alpha=T-0001', 'beta=T-0001')),
                             ('the same id bare and prefixed', ('alpha=0001', 'beta=T-0001')),
                             ('an unknown id', ('alpha=T-0009',)),

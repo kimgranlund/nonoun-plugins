@@ -15,12 +15,19 @@
 #   4. Unregistered folders under .worktrees/ stay where they are and are listed (`left in place: <path>`).
 #   5. With --apply, empty folders under .worktrees/ go and .worktrees/ itself is removed only when it ends empty.
 # Read paths keep accepting .worktrees/ for one release, so a skipped lane still lands; rerun after it lands.
+# A bare clone (core.bare, lanes beside the bare dir, T-0561) has no main checkout: run from the bare dir or any lane,
+# it prints `bare clone: worktree root <path>` (wtroot.py root) and `nothing to move`, changes nothing, and exits 0.
 # Exit 0 when the run finished (skips included), 2 on a usage error or when not run from the main checkout root.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 migrate() {
   local apply=0 top cwd main common line p b locked rel dest why moved=0 planned=0
   [[ "${1:-}" == --apply ]] && apply=1
+  if git rev-parse --git-dir >/dev/null 2>&1 && [[ "$(git config --bool core.bare 2>/dev/null)" == true ]]; then
+    echo "bare clone: worktree root $(python3 "$here/wtroot.py" root)"
+    echo "nothing to move"
+    return 0
+  fi
   top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "migrate-0.23.sh: not a git repository" >&2; return 2; }
   cwd=$(pwd -P)
   common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
@@ -219,6 +226,17 @@ selftest() {
     && ok "with the blockers gone every worktree moves and the empty .worktrees/ is removed" || bad "with the blockers gone every worktree moves and the empty .worktrees/ is removed"
   out=$(cd "$r" && bash "$me" 2>&1)
   [[ "$out" == 'nothing to migrate' ]] && ok "a dry run of a migrated repo says nothing to migrate: $out" || bad "a dry run of a migrated repo says nothing to migrate: $out"
+
+  # T-0561: a bare clone with a lane beside it reports the root and exits 0, from the lane and from the bare dir
+  git clone -q --bare "$r" "$t/kit/.bare" && git -C "$t/kit/.bare" worktree add -q --detach "$t/kit/lanes/a" HEAD >/dev/null 2>&1
+  snap1=$(git -C "$t/kit/.bare" worktree list --porcelain; find "$t/kit" -maxdepth 3 | sort)
+  out=$(cd "$t/kit/lanes/a" && bash "$me" 2>&1); rc=$?
+  [[ $rc -eq 0 && "$out" == *"bare clone: worktree root $t/kit/lanes"* && "$out" == *'nothing to move'* ]] \
+    && ok "bare clone: from a lane it prints the root and nothing to move, exit 0" || bad "bare clone: from a lane it prints the root and nothing to move, exit 0: rc $rc $out"
+  out=$(cd "$t/kit/.bare" && bash "$me" --apply 2>&1); rc=$?
+  snap2=$(git -C "$t/kit/.bare" worktree list --porcelain; find "$t/kit" -maxdepth 3 | sort)
+  [[ $rc -eq 0 && "$out" == *"bare clone: worktree root $t/kit/lanes"* && "$snap1" == "$snap2" ]] \
+    && ok "bare clone: from the bare dir --apply prints the root and changes nothing" || bad "bare clone: from the bare dir --apply prints the root and changes nothing: rc $rc $out"
   if (( fails )); then echo "migrate-0.23.sh selftest: FAIL ($fails)"; return 1; fi
   echo "migrate-0.23.sh selftest: ok"
 }

@@ -11,9 +11,9 @@
 #   any path operand outside the prefix, relative after a cd to an unknown place, holding an
 #   expansion the hook cannot read (a variable other than $SDLC_TMP_WORKTREES), or a .. segment:
 #     denied (exit 2).
-# The prefix is $SDLC_TMP_WORKTREES when set, else <main checkout of the hook cwd>/.claude/worktrees/tmp, the
-# parent of every dispatch tmp prefix (as block-stray-worktree.sh; the main checkout is the parent of the common
-# .git dir, so a role inside a lane gets the main checkout's prefix, T-0550), plus the dispatch scratch root
+# The prefix is $SDLC_TMP_WORKTREES when set, else `wtroot.py root --cwd <hook cwd>` plus /tmp, the parent of every
+# dispatch tmp prefix (as block-stray-worktree.sh: <main checkout>/.claude/worktrees/tmp, never a lane, T-0550, or
+# under a worktree_root: line or a bare clone's <bare parent>/lanes, T-0561), plus the dispatch scratch root
 # ${TMPDIR:-/tmp}/sdlc-lite (scripts/wtroot.py). With no prefix every rm is denied.
 # The builder, solo, the conductor, any other agent, and a session with no role pass untouched.
 # Fails open when python3 is missing or the command cannot be tokenized (an unterminated quote).
@@ -33,10 +33,10 @@ cwd=$(jq -r '.cwd // ""' <<<"$input" 2>/dev/null)
 [[ -n $cwd ]] || cwd=$PWD
 prefix=${SDLC_TMP_WORKTREES:-}
 if [[ -z $prefix && -z "${SDLC_ROLE:-}" ]]; then
-  top=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || top=""
-  if [[ "${top##*/}" == .git ]]; then top="${top%/.git}"; else top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null); fi
+  # the worktree root from wtroot.py, as block-stray-worktree.sh (T-0561)
+  top=$(python3 "$(dirname "${BASH_SOURCE[0]}")/../scripts/wtroot.py" root --cwd "$cwd" 2>/dev/null) || top=""
   scratch="${TMPDIR:-/tmp}"
-  [[ -n $top ]] && prefix="$top/.claude/worktrees/tmp"$'\n'"${scratch%/}/sdlc-lite"
+  [[ -n $top ]] && prefix="$top/tmp"$'\n'"${scratch%/}/sdlc-lite"
 fi
 
 read -r -d '' checker <<'PY' || true
