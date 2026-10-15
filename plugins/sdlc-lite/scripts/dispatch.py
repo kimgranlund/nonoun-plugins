@@ -427,23 +427,29 @@ def build_base(directory, records=None, tree=None, role=None):
     run from), and in a lane worktree a recorded sha older than the lane's fork point is stale (T-0376). Returns
     (stored, base). base-sha and the dispatch records are read in records (the records dir, default directory's). A verifier
     with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD, which after a resumed
-    driver is its own WIP commit (T-0546)."""
+    driver is its own WIP commit (T-0546). A solo dispatch's base_sha counts only in the tree it was recorded in (its
+    tree, else the handoff's checkout): one recorded in the main checkout is not a lane tree's base (T-0578)."""
     records = Path(records) if records is not None else order.records_dir(directory)
+    cwd = tree if tree else exec_tree(directory)
     stored = ''
     f = records / 'base-sha'
     if f.is_file():
         lines = f.read_text(encoding='utf-8', errors='replace').splitlines()
         stored = re.sub(r'\s', '', lines[0]) if lines else ''
     if not stored:  # a solo lane has no run.sh: its dispatch file recorded the pre-build HEAD (T-0366)
+        here = os.path.realpath(git('rev-parse', '--show-toplevel', cwd=cwd).stdout.strip() or cwd)
         for df in sorted(records.glob('*.dispatch.json')):  # <ticket>-solo-<level> now, solo-<level>-<slug> before T-0363
             try:
                 rec = json.loads(df.read_text(encoding='utf-8'))
                 stored = str(rec.get('base_sha') or '').strip() if rec.get('role') == 'solo' else ''
+                where = rec.get('tree') or git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip() if stored else ''
             except (OSError, ValueError, AttributeError):
+                stored = ''
+            if stored and where and os.path.realpath(where) != here:
+                say('solo base %s was recorded in %s, not this tree %s: not used as its base' % (stored[:12], where, here))
                 stored = ''
             if stored:
                 break
-    cwd = tree if tree else exec_tree(directory)
     floor = fork_floor(cwd)
 
     def commit(sha):
@@ -2465,6 +2471,23 @@ def selftest():
         rcm, dmain, _ = prep(rr, 'builder', 'L1', str(mhand), '--dry-run')
         case('negative control: the same prepare from the main checkout without --tree names the main checkout as Tree',
              rcm == 0 and dmain['tree'] == os.path.realpath(str(rr)) and dmain['base_sha'] == main_head and not names_lane(dmain))
+        # T-0578: a solo dispatch recorded in the main checkout holds main's HEAD; for a lane tree whose HEAD is ahead of it,
+        # prepare --tree takes the lane's base (its HEAD for a builder, its .lane.json start for a verifier), not main's.
+        solo_rec = R(rr / '.sdlc' / 'w') / 'solo-L2-w.dispatch.json'
+        solo_rec.write_text(json.dumps({'role': 'solo', 'base_sha': main_head}))
+        (lw2 / '.lane.json').write_text(json.dumps({'lane': 'lane2', 'base_sha': lane_head}))
+        _, dsb, _ = prep(rr, 'builder', 'L1', str(mhand), '--dry-run', '--tree', str(lw2))
+        _, dsv, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw2))
+        _, dsm, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run')
+        solo_rec.write_text(json.dumps({'role': 'solo', 'base_sha': lane_head, 'tree': real_lane}))
+        _, dst, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw2))
+        solo_rec.unlink()
+        (lw2 / '.lane.json').unlink()
+        case('prepare --tree for a lane ahead of main: a solo base recorded in the main checkout is not the lane base',
+             subprocess.run(['git', '-C', str(rr), 'merge-base', '--is-ancestor', main_head, lane_tip2]).returncode == 0 and dsb.get('base_sha') == lane_tip2 != main_head
+             and dsv.get('base_sha') == lane_head != main_head and 'Base sha: ' + lane_head in dsv.get('prompt', ''))
+        case('negative control: from the main checkout the same solo record is the verifier base', dsm.get('base_sha') == main_head)
+        case('a solo base recorded in the lane tree is kept for prepare --tree', dst.get('base_sha') == lane_head)
         sbd = rr / '.sdlc' / 'sb'
         sb_before = sorted(p.name for p in sbd.iterdir())
         refusals = [(bad,) + prep(rr, 'verifier', 'L1', '.sdlc/sb/handoff.md', '--tree', str(bad)) for bad in (repo, lw2 / '.sdlc')]
