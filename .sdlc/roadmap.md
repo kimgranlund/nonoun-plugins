@@ -560,3 +560,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0560 | [.0560-plain-close-tracks-skips](.0560-plain-close-tracks-skips/handoff.md) | A plain tickets.py close leaves skips.md tracked in the closed folder | bug | L2 | P2 | none | 🟢 done |
 | T-0561 | [.0561-bare-clone-worktree-root](.0561-bare-clone-worktree-root/handoff.md) | Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again | bug | L2 | P1 | none | 🟢 done |
 | T-0562 | [.0562-role-background-bash-stall](.0562-role-background-bash-stall/handoff.md) | Role sub-agents that background a Bash call go idle and never wake when it finishes | bug | L2 | P1 | none | 🟢 done |
+| T-0563 | [0563-sibling-worktree-root](0563-sibling-worktree-root/handoff.md) | Worktree root moves to a sibling folder outside the repo | feature | L3 | P1 | none | ⏳ proposed |
+| T-0564 | [0564-worktree-root-guidance](0564-worktree-root-guidance/handoff.md) | Worktree root guidance for Claude Code and Codex | chore | L2 | P1 | T-0563 | ⏳ proposed |

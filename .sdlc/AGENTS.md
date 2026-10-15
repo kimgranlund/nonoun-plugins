@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d101a4fba8c8 -->
+<!-- sdlc-lite:managed:start v1 sha256:b7f9be0bde18 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 0
+- proposed: 2
+  - T-0563 Worktree root moves to a sibling folder outside the repo (0563-sibling-worktree-root)
+  - T-0564 Worktree root guidance for Claude Code and Codex (0564-worktree-root-guidance)
 - ready: 0
 - claimed: 0
 - paused: 0
