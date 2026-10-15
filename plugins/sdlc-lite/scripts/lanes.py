@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""lanes.py: the one home of the lane lifecycle. Open, close, sweep, list, check, port and archive a lane.
+"""lanes.py: the one home of the lane lifecycle. Open, close, finish, sweep, list, check, port and archive a lane.
 
   lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--kind fanout|integration|solo] [--title TEXT]
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
+  lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
   lanes.py check [--warn]                  C1 placement, C2 ports, C3 record drift; --warn prints and exits 0
@@ -14,8 +15,9 @@
   lanes.py selftest
 
 Design: docs/specs/sdlc-lite/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
-open_lane, close_lane, sweep, list_lanes, still_open(root, ticket), landed, config, host_record. open_lane and close_lane
-return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc). open_lane takes
+open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, config, host_record. open_lane and close_lane
+return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc); finish returns the exit code
+and prints through its say= callable. open_lane takes
 keyword-only path= (the tree; the leaf is its basename), branch= (used verbatim) and check_claim=False (skip the claim
 rule for local ids; the ids are still recorded); the CLI spells them --path, --branch and --no-claim.
 host_record(name, branch, into, tickets, base=None, cwd='.') writes <lanes root>/host/<name>.lane.json with every
@@ -124,6 +126,31 @@ Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a 
   line each: `<sha> <ref|dangling> <subject> (<n> files)`, n the files the tip commit changes against its first parent. It changes
   nothing, deletes nothing, restores nothing, and exits 0.
 
+Finish (T-0594): `finish <lane>` runs, from the main checkout, the whole end of a lane whose record names one local
+ticket and whose into is the main checkout's branch, composing the existing commands. It prints one `<step>: ...` line
+per step and stops at the first failure with `<step>: stopped: <why>; fix it, then rerun lanes.py finish <lane>: done
+steps are skipped` (exit 1). Each step skips itself when its effect is already there, so a rerun goes on from the stop.
+  1. record   dispatch.py record each *.dispatch.json in the ticket's records dir in the lane tree: a verifier whose
+              attempt is still running (--verifier-transcript prices it), and the solo (--transcript prices its row
+              once; it is idempotent); `nothing pending` when neither is due.
+  2. verdict  the newest verifier result there must say pass; anything else (fail, none) stops before any commit or
+              merge: finish never closes without a pass verdict.
+  3. commit   a dirty lane tree is committed as `<id>: <title>` (logs and lock files left out); else `commit: clean`.
+  4. land     fanout.py land <branch> --ticket <id> --integration finish/<lane> --lanes-dir <lanes root>/finish/<lane>
+              --base <into> --rewrite-refs (--lane solo for a solo lane, --gate <land_gate:> when .sdlc/config sets it,
+              default none): the merge with its conflict rules, the record carry, the gate and the ticket close stay
+              fanout's. Skipped when the branch is already in into or in finish/<lane>.
+  5. settle   fanout.py settle finish/<lane> (--forward --gate <land_gate:> with a gate): into fast-forwards and the
+              integration tree closes; the per-lane lanes dir goes. Skipped when finish/<lane> does not exist.
+  6. close    when the ticket in main is not done or dropped (a merge made by hand, a land stopped after its merge):
+              carry the lane's records into main (carry_records), tickets.py close <slug> --rewrite-refs (the verdict
+              gate), and commit what it changed as `close <id>`.
+  7. lane     close_lane (landed by ancestry), then commit what that close wrote in main as `<id>: lane <lane> closed`.
+  8. backup   only with --backup REMOTE/REF: git push REMOTE refs/heads/<into>:REF (refs/heads/ added to a bare REF).
+              Without it nothing is pushed.
+  A lane already gone with a landed archive ref prints `finish: <lane> is already finished (archive <ref>)` and exits 0,
+  after the backup step when --backup is given.
+
 Record fields. .lane.json at the tree root, written by open, added to <git common dir>/info/exclude; a host record
 <lanes root>/host/<name>.lane.json has the same fields.
   lane      the lane name (the tree leaf)          kind      fanout, integration or solo (host for a host record)
@@ -142,6 +169,7 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
   lane_stale_days: <n>      default 10        lane_min_age_hours: <n>  default 2
   lane_keep: <branch>...    sweep keeps these  lane_names:, lane_sweep:  read and returned only (fanout owns them)
   plugin_min: <X.Y.Z>       open refuses (exit 2) when the running plugin ($SDLC_BACKEND's manifest) is older (T-0593)
+  land_gate: <cmd>          the gate finish passes to fanout.py land and settle; default none
 """
 import argparse, contextlib, datetime, fcntl, io, json, os, pathlib, re, shutil, socket, subprocess, sys, tempfile, time
 
@@ -163,7 +191,7 @@ PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'  # dispatch.py PRUNE_REL
 PRUNE_TTL = 6 * 3600
 NAMESPACES = ('lane/', 'wave/', 'release/')
 CONFIG_KEYS = ('lanes_root', 'lane_into', 'lane_setup', 'lane_ports', 'lane_stale_days', 'lane_min_age_hours',
-               'lane_keep', 'lane_names', 'lane_sweep')
+               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate')
 
 
 class LaneError(Exception):
@@ -276,7 +304,7 @@ def config(toplevel):
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
                 lane_setup=vals.get('lane_setup') or None, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
-                lane_sweep=vals.get('lane_sweep'))
+                lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None)
 
 
 def worktrees(cwd):
@@ -907,6 +935,216 @@ def sweep(apply=False, cwd='.'):
     return res, rc
 
 
+# ---- finish (T-0594) --------------------------------------------------------------------------------------
+
+def porcelain(cwd):
+    r = git(cwd, 'status', '--porcelain', '--untracked-files=all')
+    return set(r.stdout.splitlines()) if r.returncode == 0 else set()
+
+
+def commit_new(top, pre, msg):
+    """Stage the paths whose `git status --porcelain` line is new since pre (as fanout's close commit does) and commit
+    them as msg. Returns the commit sha7, '' when nothing changed, or None when git refused."""
+    paths = sorted({l[3:].split(' -> ')[-1].strip('"') for l in porcelain(top) - pre})
+    if not paths:
+        return ''
+    if git(top, 'add', '-A', '--', *paths).returncode or git(top, 'commit', '-q', '-m', msg, '--', *paths).returncode:
+        return None
+    return out(top, 'rev-parse', '--short=7', 'HEAD')
+
+
+def script_run(argv, cwd):
+    """Run a sibling script with no time limit (a land runs the gates) and return the CompletedProcess."""
+    return subprocess.run([sys.executable, *argv], cwd=str(cwd), capture_output=True, text=True, stdin=subprocess.DEVNULL)
+
+
+def script_why(r):
+    """The outcome of a fanout.py run that failed: its refusal on stderr, else its last `[<run>] [<lane>] <id> <event>`
+    line, else its last output line."""
+    errs = [l.strip() for l in (r.stderr or '').splitlines() if l.strip()]
+    events = re.findall(r'(?m)^\[fanout-[0-9a-f]+\] \[[^\]]*\] \S+ (.*)$', r.stdout or '')
+    if errs and (r.returncode == 2 or not events):
+        return errs[-1]
+    if events:
+        return events[-1]
+    lines = [l.strip() for l in (r.stdout or '').splitlines() if l.strip()]
+    return lines[-1] if lines else f'exit {r.returncode}'
+
+
+def finished(top, target):
+    """The archive ref of a lane that finish (or any landed close) already removed, else None."""
+    for e in archive_entries(top):
+        b = e['branch']
+        if (b == target or b.endswith('/' + target)) and not b.startswith('finish/') and e['reason'] != 'discarded':
+            return e['ref']
+    return None
+
+
+def push_backup(top, branch, backup, say):
+    """The backup step: push refs/heads/<branch> to <remote>/<ref> only when backup names one. Returns 1 when it
+    stopped, else 0."""
+    if not backup:
+        say('backup: none (no --backup)')
+        return 0
+    remote, _, ref = backup.partition('/')
+    dst = ref if ref.startswith('refs/') else f'refs/heads/{ref}'
+    r = git(top, 'push', '-q', remote, f'refs/heads/{branch}:{dst}') if remote and ref else None
+    if r is None or r.returncode:
+        why = err(r) if r is not None else f'--backup {backup}: give <remote>/<ref>, as origin/backup-main'
+        say(f'backup: stopped: {why}; fix it, then rerun lanes.py finish: done steps are skipped')
+        return 1
+    say(f'backup: pushed {branch} to {remote} {dst}')
+    return 0
+
+
+def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='.', say=print):
+    """Finish one lane end to end (see the docstring, finish); say prints each step's line. Returns the exit code."""
+    ctx = Ctx(cwd)
+    top = ctx.top
+    d, refusal = find(ctx, discover(ctx), str(target))
+    if refusal:
+        ref = finished(top, str(target))
+        if not ref:
+            say(refusal['message'])
+            return refusal['rc']
+        if push_backup(top, ctx.main, backup, say):  # a rerun after the lane step still owes the backup
+            return 1
+        say(f'finish: {target} is already finished (archive {ref})')
+        return 0
+    name = d['lane']
+
+    def stop(step, why):
+        say(f'{step}: stopped: {why}; fix it, then rerun lanes.py finish {name}: done steps are skipped')
+        return 1
+
+    if not d['owner']:
+        say(f'not a plugin lane: {d["path"]}')
+        return 2
+    if not d['exists']:
+        return stop('lane', f'no tree at {d["path"]}')
+    tree, b, into = Path(d['path']), d['branch'], d['into']
+    if ctx.current and samepath(tree, ctx.current):
+        return stop('lane', f'run finish from the main checkout {top}, not from the lane it removes')
+    if into != ctx.main:
+        return stop('lane', f'the lane lands into {into}, not {ctx.main} (the branch of the main checkout {top})')
+    ids = [str(t) for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))]
+    if len(ids) != 1:
+        return stop('lane', f'finish takes a lane with one local ticket; the record lists {ids or "none"}')
+    tid = ids[0]
+    try:
+        ltdir = tickets.ticket_dir(tree / '.sdlc')
+        slug, meta = next((s, m) for s, m in tickets.load(ltdir) if m.get('id') == tid)
+    except (tickets.Fail, StopIteration):
+        return stop('lane', f'no ticket {tid} under {tree / ".sdlc"}')
+    folder, title = ltdir / slug, str(meta.get('title') or '')
+    trel = ltdir.relative_to(tree)
+
+    # 1. record: each pending verifier dispatch, then the solo (dispatch.py record prices its row once, T-0350)
+    done = []
+    rdir = order.records_dir(folder)
+    for df in sorted(rdir.glob('*.dispatch.json')) if rdir.is_dir() else ():
+        rec = read_json(df) or {}
+        if rec.get('role') == 'verifier':
+            att = read_json(rec.get('attempt_file') or '') or {}
+            if att.get('status') not in ('running', 'limit-stopped'):
+                continue
+            extra = ['--transcript', verifier_transcript] if verifier_transcript else []
+        elif rec.get('role') == 'solo':
+            extra = ['--transcript', transcript] if transcript else []
+        else:
+            continue
+        r = script_run([str(HERE / 'dispatch.py'), 'record', *extra, str(df)], tree)
+        if r.returncode:
+            return stop('record', f'{df.name}: {script_why(r)}')
+        done.append(f'{df.name} ({script_why(r)})')
+    say('record: ' + ('; '.join(done) or 'nothing pending'))
+
+    # 2. verdict: the newest verifier result of the lane's records dir must pass, before anything is committed or merged
+    newest = order.newest(str(folder), 'verifier')
+    verdict = results.key_value(newest, 'verifier') if newest else None
+    if verdict != 'pass':
+        return stop('verdict', f'{verdict or "no verifier result"}' + (f' ({os.path.basename(newest)})' if newest else '') +
+                    '; nothing merged')
+    say(f'verdict: pass ({os.path.basename(newest)})')
+
+    # 3. commit: the lane's uncommitted work as `<id>: <title>`
+    if porcelain(tree):
+        r = git(tree, 'add', '-A', '--', '.', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock',
+                ':(exclude,glob)**/*.running')
+        if r.returncode or git(tree, 'commit', '-q', '-m', f'{tid}: {title}').returncode:
+            return stop('commit', err(r) if r.returncode else 'git commit failed')
+        say(f'commit: {out(tree, "rev-parse", "--short=7", "HEAD")} {tid}: {title}')
+    else:
+        say('commit: clean')
+
+    # 4. land: fanout.py land into a per-lane integration branch (the merge, the generated-file handling, the record
+    #    carry, the land_gate, the close), skipped when the branch is already in it or in main
+    tip = out(top, 'rev-parse', '--verify', f'refs/heads/{b}^{{commit}}')
+    if not tip:
+        return stop('land', f'no branch {b}')
+    integ = f'finish/{name}'
+    ldir = ctx.root / 'finish' / name
+    gate = ctx.cfg['land_gate']
+    if git(top, 'merge-base', '--is-ancestor', tip, f'refs/heads/{into}').returncode == 0:
+        say(f'land: skipped ({b} is in {into})')
+    elif has_ref(top, f'refs/heads/{integ}') and git(top, 'merge-base', '--is-ancestor', tip, f'refs/heads/{integ}').returncode == 0:
+        say(f'land: skipped ({b} is in {integ})')
+    else:
+        argv = [str(HERE / 'fanout.py'), 'land', b, '--ticket', tid, '--integration', integ, '--lanes-dir', str(ldir),
+                '--base', f'refs/heads/{into}', '--rewrite-refs']
+        argv += ['--lane', 'solo'] if d['kind'] == 'solo' else []
+        argv += ['--gate', gate] if gate else []
+        r = script_run(argv, top)
+        if r.returncode:
+            return stop('land', script_why(r))
+        say(f'land: merged {b} into {integ}' + (f' (gate: {gate})' if gate else ' (no land_gate)'))
+
+    # 5. settle: fast-forward main to the integration branch, then close its tree (fanout.py settle)
+    if has_ref(top, f'refs/heads/{integ}'):
+        argv = [str(HERE / 'fanout.py'), 'settle', integ] + (['--forward', '--gate', gate] if gate else [])
+        r = script_run(argv, top)
+        if r.returncode:
+            return stop('settle', script_why(r))
+        if ldir.is_dir() and not any(under(w['path'], ldir) for w in worktrees(top)):
+            shutil.rmtree(str(ldir), ignore_errors=True)
+        say(f'settle: {into} at {out(top, "rev-parse", "--short=7", "HEAD")}')
+    else:
+        say(f'settle: skipped (no {integ})')
+
+    # 6. close: the ticket in main, when the land did not (a merge made by hand, or a land stopped after its merge)
+    mtdir = Path(top) / trel
+    m = next((m for _, m in tickets.load(mtdir) if m.get('id') == tid), None) if mtdir.is_dir() else None
+    if m is not None and m.get('status') in ('done', 'dropped'):
+        say(f'close: skipped ({tid} is {m["status"]} in {into})')
+    else:
+        try:
+            carry_records(folder, mtdir / slug)
+        except OSError as e:
+            return stop('close', f'cannot carry the records of {tid} into {top}: {e}')
+        pre = porcelain(top)
+        r = script_run([str(HERE / 'tickets.py'), '--root', '.sdlc', 'close', slug, '--rewrite-refs'], top)
+        if r.returncode:
+            return stop('close', script_why(r))
+        sha = commit_new(top, pre, f'close {tid}')
+        if sha is None:
+            return stop('close', f'{tid} closed but the close commit failed: commit it as `close {tid}`')
+        say(f'close: {tid} done' + (f' ({sha} close {tid})' if sha else ''))
+
+    # 7. lane: close_lane (landed by ancestry), then commit what its close wrote in main (the ticket's branch: line)
+    pre = porcelain(top)
+    r = close_lane(str(tree), cwd=top)
+    if r['rc']:
+        return stop('lane', r['message'].splitlines()[-1] if r['message'] else f'rc={r["rc"]}')
+    sha = commit_new(top, pre, f'{tid}: lane {name} closed')
+    say('lane: ' + '; '.join(l for l in r['message'].splitlines() if l) + (f' ({sha} {tid}: lane {name} closed)' if sha else ''))
+
+    # 8. backup: only with --backup, the one push, of main as it now stands
+    if push_backup(top, into, backup, say):
+        return 1
+    say(f'finish: {name} done')
+    return 0
+
+
 # ---- open -------------------------------------------------------------------------------------------------
 
 def claim(rootp, tid):
@@ -1323,7 +1561,7 @@ def orphans(cwd='.'):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,sweep,list,check,port,archive,orphans,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,sweep,list,check,port,archive,orphans,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -1342,6 +1580,11 @@ def main(argv=None):
     p.add_argument('--into')
     p.add_argument('--discard', action='store_true')
     p.add_argument('--dry-run', action='store_true')
+    p = sub.add_parser('finish')
+    p.add_argument('target')
+    p.add_argument('--backup', metavar='REMOTE/REF')
+    p.add_argument('--transcript', metavar='JSONL')
+    p.add_argument('--verifier-transcript', metavar='JSONL')
     p = sub.add_parser('sweep')
     p.add_argument('--apply', action='store_true')
     p = sub.add_parser('list')
@@ -1378,6 +1621,8 @@ def main(argv=None):
             r = close_lane(a.target, into=a.into, discard=a.discard, dry_run=a.dry_run)
             print(r['message'])
             return r['rc']
+        if a.cmd == 'finish':
+            return finish(a.target, backup=a.backup, transcript=a.transcript, verifier_transcript=a.verifier_transcript)
         if a.cmd == 'sweep':
             res, rc = sweep(apply=a.apply)
             for r in res:
@@ -2324,6 +2569,102 @@ MUTANTS = (
 )
 
 
+FIN_ENV = {'SDLC_GATE_SLOTS': '0'}  # the land gate runs bare: no machine-wide gate queue in a selftest
+FIN_VERDICT = '<!-- role=verifier level=L2 model=opus effort=high -->\n## Verdict\n{}\n\n## Evidence\nran\n'
+
+
+def finish_fixture(script, base, label, verdict='pass', gate=None):
+    """A repo tracking .sdlc/ (not .sdlc/runtime/) with claimed ticket T-0001 (size L2) and a solo lane on it: one
+    commit, one uncommitted file and a verifier result with the given verdict in the lane's records dir."""
+    t = Fixture(base, script, label)
+    files = {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+             '.sdlc/0001-fin/handoff.md': '---\nid: T-0001\ntitle: "Finish me"\ntype: feature\nstatus: claimed\nsize: L2\n'
+                                          'priority: P2\ndepends: []\ncreated: 2026-10-15\nclaimed_by: claude 2026-10-15\n---\n\n'
+                                          '## Goal\nfinish\n'}
+    if gate:
+        files['.sdlc/config'] = f'land_gate: {gate}\n'
+    t.commit('track .sdlc', files)
+    leaf, tree, b = t.open('fin', 'T-0001', '--kind', 'solo')
+    t.g('add', '-A')
+    t.commit('claim T-0001')  # open wrote branch: and worktree: into the ticket in main
+    t.work(tree, {'fin.txt': 'work\n'})
+    t.write({'fin2.txt': 'more\n'}, cwd=tree)
+    rd = order.records_dir(tree / '.sdlc' / '0001-fin', create=True)
+    (rd / 'verifier-L2.md').write_text(FIN_VERDICT.format(verdict))
+    return t, leaf, tree, b
+
+
+def finish_state(t, b, leaf):
+    """(ticket status in main, lane tree exists, lane branch exists, finish branch exists)."""
+    meta = next((m for _, m in tickets.load(t.top / '.sdlc') if m.get('id') == 'T-0001'), {})
+    return (meta.get('status'), t.tree(leaf).exists(), t.ok('rev-parse', '--verify', '-q', f'refs/heads/{b}'),
+            t.ok('rev-parse', '--verify', '-q', f'refs/heads/finish/{leaf}'))
+
+
+def origin_has(t, ref):
+    return subprocess.run(['git', '--git-dir', str(t.dir / 'origin.git'), 'rev-parse', '--verify', '-q', ref],
+                          capture_output=True, text=True).stdout.strip()
+
+
+def case_finish_pass(script, base):
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-pass', gate='test -e fin2.txt')
+    rc, o = t.lanes('finish', leaf, '--backup', 'origin/backup-main', env=FIN_ENV)
+    fails = [] if rc == 0 else [f'finish pass: want exit 0, got {rc}: {o}']
+    for want in ('record: nothing pending', 'verdict: pass (verifier-L2.md)', 'commit: ', 'land: merged ', '(gate: test -e fin2.txt)',
+                 'settle: main at ', 'close: skipped (T-0001 is done in main)', 'backup: pushed main to origin refs/heads/backup-main',
+                 f'lane: closed {leaf} (ancestor)', f'finish: {leaf} done'):
+        if want not in o:
+            fails.append(f'finish pass: no {want!r} line: {o}')
+    if finish_state(t, b, leaf) != ('done', False, False, False):
+        fails.append(f'finish pass: want (done, no tree, no branch, no finish branch), got {finish_state(t, b, leaf)}')
+    if not (t.ok('cat-file', '-e', 'main:fin.txt') and t.ok('cat-file', '-e', 'main:fin2.txt')):
+        fails.append('finish pass: main lacks the lane work (fin.txt and the committed fin2.txt)')
+    if origin_has(t, 'refs/heads/backup-main') != t.g('rev-parse', 'main'):
+        fails.append('finish pass: --backup did not push main to origin backup-main')
+    if t.g('status', '--porcelain'):
+        fails.append(f'finish pass: main is left dirty: {t.g("status", "--porcelain")}')
+    rc2, o2 = t.lanes('finish', leaf, env=FIN_ENV)
+    if rc2 or 'already finished' not in o2:
+        fails.append(f'finish pass: a rerun after the finish wants exit 0 and already finished, got {rc2}: {o2}')
+    return fails
+
+
+def case_finish_resume(script, base):
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-resume')
+    t.commit('rest', {'fin2.txt': 'more\n'}, cwd=tree)
+    tip = t.g('rev-parse', f'refs/heads/{b}')
+    t.merge(b)  # the simulated stop: the lane is merged into main, the ticket is not closed, the lane is not removed
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    fails = [] if rc == 0 else [f'finish resume: want exit 0, got {rc}: {o}']
+    for want in ('commit: clean', f'land: skipped ({b} is in main)', f'settle: skipped (no finish/{leaf})', 'close: T-0001 done',
+                 'backup: none (no --backup)', f'lane: closed {leaf} (ancestor)'):
+        if want not in o:
+            fails.append(f'finish resume: no {want!r} line: {o}')
+    merges = [l for l in t.g('log', '--merges', '--format=%P', 'main').splitlines() if tip in l.split()[1:]]
+    if len(merges) != 1:
+        fails.append(f'finish resume: want one merge of the lane tip in main, got {len(merges)}')
+    if finish_state(t, b, leaf) != ('done', False, False, False):
+        fails.append(f'finish resume: want (done, no tree, no branch, no finish branch), got {finish_state(t, b, leaf)}')
+    if origin_has(t, 'refs/heads/backup-main'):
+        fails.append('finish resume: pushed with no --backup')
+    return fails
+
+
+def case_finish_fail(script, base):
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-fail', verdict='fail')
+    main0, tip0 = t.g('rev-parse', 'main'), t.g('rev-parse', f'refs/heads/{b}')
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    fails = [] if rc == 1 and 'verdict: stopped: fail (verifier-L2.md); nothing merged' in o else \
+        [f'finish fail: want exit 1 and verdict: stopped: fail, got {rc}: {o}']
+    if any(f'{s}:' in o for s in ('commit', 'land', 'settle', 'close', 'backup')):
+        fails.append(f'finish fail: a step after the verdict ran: {o}')
+    if (t.g('rev-parse', 'main'), t.g('rev-parse', f'refs/heads/{b}')) != (main0, tip0):
+        fails.append('finish fail: main or the lane branch moved')
+    if finish_state(t, b, leaf) != ('claimed', True, True, False) or not (tree / 'fin2.txt').is_file():
+        fails.append(f'finish fail: want the ticket claimed and the lane whole, got {finish_state(t, b, leaf)}')
+    return fails
+
+
 def selftest():
     script = Path(__file__).resolve()
     src = script.read_text()
@@ -2450,6 +2791,11 @@ def run_selftest(script, src, base):
              'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
+        need('finish pass', case_finish_pass(script, base),
+             'a pass verdict commits, lands through the gate, settles, closes, backs up and removes the lane; a rerun is done')
+        need('finish resume', case_finish_resume(script, base),
+             'after a stop between merge and close a rerun closes and removes the lane with no second merge')
+        need('finish fail', case_finish_fail(script, base), 'a fail verdict stops before any commit or merge')
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')

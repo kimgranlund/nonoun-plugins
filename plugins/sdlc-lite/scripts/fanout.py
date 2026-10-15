@@ -58,8 +58,9 @@ land
   objects on the branch (so the branch needs no `external_branch:` registration), and refuses (exit 2, nothing
   created) a branch that is not a local branch, the integration branch, a ticket that is done or absent on the branch,
   or an integration worktree path that is something else. It then follows the external-lane path of `run` unchanged:
-  the overlap wait, the integration-dirty refusal, `git merge --no-ff` as `Merge <branch>: <id>` (a conflict is
-  aborted as `merge conflict`: the parent asks the sub-agent, by name, to merge the integration branch on its side,
+  the overlap wait, the integration-dirty refusal, `git merge --no-ff` as `Merge <branch>: <id>` (merge_generated:
+  a conflict only in the generated roadmap, router and mailbox files or notes.md is resolved and `tickets.py roadmap`
+  regenerates them inside the merge commit, T-0565; any other conflict is aborted as `merge conflict`: the parent asks the sub-agent, by name, to merge the integration branch on its side,
   then lands again), each --gate through gate_lock.py (a vacuous gate is `gate vacuous`, a red one resets the merge:
   `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
@@ -245,8 +246,10 @@ run
        no merge, reset, or gate runs, so the edit survives); else the paths of
        `git diff --name-only HEAD...<ref>` join the lane's merged paths (the report's Overlap
        lines), then
-       `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
-       is aborted: `merge conflict`); each --gate in order via bash -c, run through
+       `git merge --no-ff -m "Merge <lane branch>: <id>" <lane branch>` through merge_generated (a
+       conflict only in the generated roadmap, router and mailbox files or notes.md is resolved, and
+       `tickets.py roadmap` regenerates them in the merge commit; any other conflict is aborted:
+       `merge conflict`); each --gate in order via bash -c, run through
        `gate_lock.py run --name <lane>/<id> --` (T-0303, T-0409: the machine-wide weighted
        FIFO admission, built-in capacity 6 compute units and 3 browser jobs, two undeclared gates at once;
        `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
@@ -274,8 +277,8 @@ run
   Per ticket of an external lane: no pre-sync wip, no sync, no driver (so no driver log), and no
   lane commit; straight to step 5, sharing its code: the overlap wait, then under the lock the
   integration-dirty refusal and the merged-paths record, then
-  `git merge --no-ff --no-edit -m "Merge <branch>: <id>" refs/heads/<branch>` (a
-  conflict is aborted: `merge conflict`, and the outside agent merges the integration branch on
+  `git merge --no-ff -m "Merge <branch>: <id>" refs/heads/<branch>` through merge_generated (a
+  conflict outside the generated files is aborted: `merge conflict`, and the outside agent merges the integration branch on
   their side before a rerun). When HEAD is unchanged after the merge (the branch was already
   merged, as for the second ticket on one branch or a resume) the gates are skipped; else they run
   as above, the first red one resetting to the pre-merge commit. There is no lane dir, so nothing
@@ -1563,6 +1566,66 @@ def move_closed_records(cf, folder, kept):
             shutil.copy2(str(f), str(dst))
 
 
+def generated_files(wt, root):
+    """{repo-relative path: path} of the files `tickets.py roadmap` regenerates under root (the roadmap, the router
+    files and the mailbox entry files) plus notes.md, and notes.md's repo-relative path. Raises tickets.Fail."""
+    import messages  # same scripts/ dir: the mailbox entry files roadmap writes
+    lp = tickets.layout_paths(root)
+    mbox = root / 'messages'
+    files = [lp.roadmap, lp.notes] + [p for _label, p, _kind in tickets.router_files(root)]
+    files += [mbox / rel for rel, _data in messages.entry_files(str(mbox))]
+    return {p.relative_to(wt).as_posix(): p for p in files}, lp.notes.relative_to(wt).as_posix()
+
+
+def merge_generated(wt, ref, root):
+    """`git merge --no-ff --no-commit <ref>` in wt, resolving conflicts only in the generated files (notes.md by a
+    union of its three stages, the roadmap, router and mailbox files by --ours), then `tickets.py roadmap` regenerates
+    them for the merged tree and they are staged for the caller's commit (T-0489, T-0565). Returns None with the merge
+    staged; 'up to date' when ref brought nothing (no MERGE_HEAD, nothing staged); else (kind, detail) with the merge
+    still in progress for the caller to abort: 'failed' (git merge failed with no conflicted path), 'conflict' (the
+    conflicted paths outside the generated files), 'merge-file' or 'roadmap' (the failing command's output)."""
+    try:
+        gen, notes_rel = generated_files(wt, root)
+    except tickets.Fail as e:
+        return 'roadmap', str(e)
+    p = git(wt, 'merge', '--no-ff', '--no-commit', ref)
+    if p.returncode:
+        conflicted = [x for x in git(wt, 'diff', '--name-only', '--diff-filter=U').stdout.splitlines() if x]
+        if not conflicted:
+            return 'failed', first_line((p.stderr or p.stdout).strip(), str(p.returncode))
+        outside = [x for x in conflicted if x not in gen]
+        if outside:
+            return 'conflict', ' '.join(outside)
+        for path in conflicted:
+            if path == notes_rel:
+                with tempfile.TemporaryDirectory() as td:
+                    names = []
+                    for n in (2, 1, 3):  # git merge-file <current> <base> <other>
+                        stage = git(wt, 'show', f':{n}:{path}')
+                        f = pathlib.Path(td) / f'stage{n}'
+                        f.write_text(stage.stdout if stage.returncode == 0 else '', encoding='utf-8')
+                        names.append(str(f))
+                    u = git(wt, 'merge-file', '-p', '--union', *names)
+                if u.returncode < 0 or u.returncode > 127:
+                    return 'merge-file', f'{path}: {u.stderr.strip()}'
+                gen[path].write_text(u.stdout, encoding='utf-8')
+            elif git(wt, 'checkout', '--ours', '--', path).returncode:
+                git(wt, 'checkout', '--theirs', '--', path)  # deleted on ours: the regeneration rewrites it anyway
+            git(wt, 'add', '--', path)
+    elif not in_merge(wt):
+        return 'up to date'
+    r = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', str(root), 'roadmap'], cwd=str(wt),
+                       env=ENV, stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    if r.returncode:
+        return 'roadmap', (r.stderr or r.stdout).strip() or str(r.returncode)
+    present = [x for x, path_ in gen.items() if path_.exists()]
+    ignored = set(git(wt, 'check-ignore', '--', *present).stdout.splitlines()) if present else set()
+    present = [x for x in present if x not in ignored]  # a git-ignored mailbox is not a record (tracked ones stay)
+    if present:
+        git_out(wt, 'add', '--', *present)
+    return None
+
+
 def merge_gate_close(ctx, lane, t, lock, ref, cell):
     """Step 5 for both lane kinds: first, outside the lock, wait_for_overlap; then under the merge lock in
     the integration worktree: refuse a dirty tree, record the paths ref brings in lane.files, merge ref
@@ -1587,14 +1650,22 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         lane.gate = cls
         say(ctx, lane, t.id, 'gate: light' if cls == 'light' else f'gate: full ({why})')
         before = git_out(integ, 'rev-parse', 'HEAD')
-        p = git(integ, 'merge', '--no-ff', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}', ref)
-        if p.returncode:
-            conflict = in_merge(integ)
-            if not conflict or git(integ, 'merge', '--abort').returncode:
+        # a conflict only in the generated roadmap, router and mailbox files or notes.md is resolved and they are
+        # regenerated for the merged tree (T-0565); one anywhere else still stops the merge
+        m = merge_generated(integ, ref, integ / rel)
+        if m not in (None, 'up to date'):
+            if not in_merge(integ) or git(integ, 'merge', '--abort').returncode:
                 git(integ, 'reset', '-q', '--hard', before)
-            if conflict:
+            kind, detail = m
+            if kind == 'conflict':
                 return 'merge conflict', cell
-            return f'merge failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', cell
+            return f'merge failed: {first_line(detail, kind)}', cell
+        if m is None:
+            c = git(integ, 'commit', '-q', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}')
+            if c.returncode:
+                git(integ, 'merge', '--abort')
+                git(integ, 'reset', '-q', '--hard', before)
+                return f'merge failed: {first_line(c.stderr or c.stdout, f"rc={c.returncode}")}', cell
         merge_sha = git_out(integ, 'rev-parse', 'HEAD')
         gates = ctx['light_gates'] if cls == 'light' else ctx['gates']
         if merge_sha == before:  # nothing new came in, so there is nothing to gate
@@ -2601,7 +2672,7 @@ def cmd_settle(a):
 def settle_forward(a, cwd, head):
     """settle --forward (T-0489): merge the current branch into the diverged integration branch in its worktree under
     <lanes dir>/merge.lock, resolve conflicts only in the generated files (notes.md by a union of its three stages, the
-    roadmap and router files by --ours, then `tickets.py roadmap` regenerates them), commit
+    roadmap, router and mailbox files by --ours, then `tickets.py roadmap` regenerates them; merge_generated), commit
     `settle --forward: <head> <sha7> into <integration>` and run cover_at at the new tip in the same lock. Returns 0
     green (the caller fast-forwards) or 1 red (cover's lines printed, the current branch unmoved, the merge and the red
     ledger entry kept on the integration branch). Raises Refuse (exit 2): no or dirty integration worktree, a conflict
@@ -2620,13 +2691,6 @@ def settle_forward(a, cwd, head):
     if git_out(wt, 'status', '--porcelain', '--untracked-files=no'):
         raise Refuse(f'settle --forward: {wt} has uncommitted tracked changes: commit or discard them first; nothing merged')
     root = wt / rel
-    try:
-        lp = tickets.layout_paths(root)
-        generated = [lp.roadmap, lp.notes] + [p for _label, p, _kind in tickets.router_files(root)]
-    except tickets.Fail as e:
-        raise Refuse(f'settle --forward: {e}')
-    gen_rel = {p.relative_to(wt).as_posix(): p for p in generated}
-    notes_rel = lp.notes.relative_to(wt).as_posix()
     lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else wt.parent
     ctx = {'gate_needs': gate_needs_of(a), 'gate_lock': not a.no_gate_lock and not gate_slots_off(),
            'run_id': 'fanout-' + uuid.uuid4().hex[:12]}
@@ -2643,41 +2707,17 @@ def settle_forward(a, cwd, head):
 
     with MergeLock(lanes_dir / 'merge.lock'):
         sha = git_out(cwd, 'rev-parse', f'refs/heads/{head}' if head else 'HEAD')
-        p = git(wt, 'merge', '--no-ff', '--no-commit', sha)
-        if p.returncode:
-            conflicted = [x for x in git(wt, 'diff', '--name-only', '--diff-filter=U').stdout.splitlines() if x]
-            if not conflicted:
-                abort(f'settle --forward: git merge {sha[:7]} failed in {wt}: '
-                      f'{first_line((p.stderr or p.stdout).strip(), str(p.returncode))}; {src}, {a.integration} and the '
-                      f'tree are unchanged')
-            outside = [x for x in conflicted if x not in gen_rel]
-            if outside:
-                abort(f'settle --forward: conflict outside the generated files: {" ".join(outside)}; {src}, '
-                      f'{a.integration} and the tree are unchanged')
-            for path in conflicted:
-                if path == notes_rel:
-                    with tempfile.TemporaryDirectory() as td:
-                        names = []
-                        for n in (2, 1, 3):  # git merge-file <current> <base> <other>
-                            stage = git(wt, 'show', f':{n}:{path}')
-                            f = pathlib.Path(td) / f'stage{n}'
-                            f.write_text(stage.stdout if stage.returncode == 0 else '', encoding='utf-8')
-                            names.append(str(f))
-                        u = git(wt, 'merge-file', '-p', '--union', *names)
-                    if u.returncode < 0 or u.returncode > 127:
-                        abort(f'settle --forward: git merge-file --union {path} failed: {u.stderr.strip()}')
-                    gen_rel[path].write_text(u.stdout, encoding='utf-8')
-                elif git(wt, 'checkout', '--ours', '--', path).returncode:
-                    git(wt, 'checkout', '--theirs', '--', path)  # deleted on ours: the regeneration rewrites it anyway
-                git(wt, 'add', '--', path)
-        r = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', str(root), 'roadmap'], cwd=str(wt),
-                           env=ENV, stdin=subprocess.DEVNULL, capture_output=True, text=True)
-        if r.returncode:
-            abort(f'settle --forward: tickets.py roadmap failed in {wt}, the merge is aborted: '
-                  f'{(r.stderr or r.stdout).strip() or r.returncode}')
-        present = [x for x, path_ in gen_rel.items() if path_.exists()]
-        if present:
-            git_out(wt, 'add', '--', *present)
+        m = merge_generated(wt, sha, root)
+        if m == 'up to date':
+            abort(f'settle --forward: {src} {sha[:7]} is already in {a.integration}: nothing to merge')
+        if m:
+            kind, detail = m
+            abort({'failed': f'settle --forward: git merge {sha[:7]} failed in {wt}: {detail}; {src}, {a.integration} '
+                             f'and the tree are unchanged',
+                   'conflict': f'settle --forward: conflict outside the generated files: {detail}; {src}, '
+                               f'{a.integration} and the tree are unchanged',
+                   'merge-file': f'settle --forward: git merge-file --union {detail}',
+                   'roadmap': f'settle --forward: tickets.py roadmap failed in {wt}, the merge is aborted: {detail}'}[kind])
         c = git(wt, 'commit', '-q', '-m', f'settle --forward: {src} {sha[:7]} into {a.integration}')
         if c.returncode:
             abort(f'settle --forward: the merge commit failed in {wt}: {(c.stderr or c.stdout).strip() or c.returncode}')
@@ -4843,6 +4883,78 @@ def selftest():
         st = verb(sv, 'settle', 'fanout/none')
         expect(f'case 28 settle: an absent branch is nothing to settle (exit 0), got rc={st.returncode}', st.returncode == 0 and 'nothing to settle' in st.stdout)
 
+        def tree_of(repo_, branch):
+            wt_, cur_ = None, None
+            for line in sh(repo_, 'worktree', 'list', '--porcelain').stdout.splitlines():
+                if line.startswith('worktree '):
+                    cur_ = line[len('worktree '):]
+                elif line == f'branch refs/heads/{branch}':
+                    wt_ = pathlib.Path(cur_)
+            return wt_
+
+        # T-0565: two lanes from the same main each file a ticket (T-0003, T-0004), so both regenerate the roadmap and
+        # the router; the second land resolves that conflict and regenerates them for the merged tree, and settle moves
+        # main there. Negative control: README.md edited on both lanes still stops the second land as a merge conflict.
+        def gen_fixture(name, readme=False):
+            r_, lanes_ = tmp / name, tmp / f'{name}-lanes'
+            sized_repo(r_, ['L1', 'L1'], {'.gitignore': gi, 'README.md': 'base\n'})
+            for k, tid, slug_ in ((1, 'T-0003', 'third'), (2, 'T-0004', 'fourth')):
+                sh(r_, 'checkout', '-q', '-b', f'worktree-T-000{k}-solo', 'main')
+                tn = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'new', 'chore', slug_,
+                                     f'Ticket {slug_}'], cwd=str(r_), env=ENV, capture_output=True, text=True)
+                hp = r_ / '.sdlc' / slug_ / 'handoff.md'
+                if tn.returncode == 0 and hp.is_file():
+                    hp.write_text(hp.read_text(encoding='utf-8').replace('id: T-0003', f'id: {tid}'), encoding='utf-8')
+                rr = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'roadmap'], cwd=str(r_),
+                                    env=ENV, capture_output=True, text=True)
+                expect(f'T-0565 fixture {name}: lane {k} files {tid}, got new rc={tn.returncode} err={tn.stderr!r} '
+                       f'roadmap rc={rr.returncode} err={rr.stderr!r}',
+                       tn.returncode == 0 and rr.returncode == 0 and f'| {tid} |' in
+                       (r_ / '.sdlc' / 'roadmap.md').read_text(encoding='utf-8'))
+                (r_ / f'f{k}.txt').write_text(f'{k}\n', encoding='utf-8')
+                if readme:
+                    (r_ / 'README.md').write_text(f'lane {k}\n', encoding='utf-8')
+                sh(r_, 'add', '-A')
+                sh(r_, 'commit', '-q', '-m', f'T-000{k}: Ticket t{k} files {tid}')
+                sh(r_, 'checkout', '-q', 'main')
+            lands = [verb(r_, 'land', f'worktree-T-000{k}-solo', '--integration', 'fanout/g', '--lanes-dir', str(lanes_),
+                          '--base', 'main', '--gate', 'true') for k in (1, 2)]
+            return r_, lands
+
+        gr, glands = gen_fixture('gen-merge')
+        expect(f'T-0565 lane merge: both lands exit 0 with no merge conflict, got '
+               f'{[(x.returncode, x.stdout[-300:], x.stderr[-300:]) for x in glands]!r}',
+               all(x.returncode == 0 and 'merge conflict' not in x.stdout for x in glands))
+        gmerge = sh(gr, 'log', '-1', '--format=%H', '--grep', '^Merge worktree-T-0002-solo: T-0002$', 'fanout/g').stdout.strip()
+        gst = verb(gr, 'settle', 'fanout/g')
+        expect(f'T-0565 lane merge: settle moves main to fanout/g, got rc={gst.returncode} out={gst.stdout!r} '
+               f'err={gst.stderr!r}', gst.returncode == 0 and sh(gr, 'status', '--porcelain').stdout == '')
+        grr = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'roadmap'], cwd=str(gr),
+                             env=ENV, capture_output=True, text=True)
+        g_rows = (gr / '.sdlc' / 'roadmap.md').read_text(encoding='utf-8')
+        g_router = (gr / '.sdlc' / 'AGENTS.md').read_text(encoding='utf-8')
+        expect(f'T-0565 lane merge: on main the router and roadmap equal a fresh tickets.py roadmap (porcelain empty) and '
+               f'list T-0003 and T-0004, got rc={grr.returncode} err={grr.stderr!r} '
+               f'porcelain={sh(gr, "status", "--porcelain").stdout!r}',
+               grr.returncode == 0 and sh(gr, 'status', '--porcelain').stdout == ''
+               and all(f'| {x} |' in g_rows and x in g_router for x in ('T-0003', 'T-0004')))
+        g_gen = [x for x in sh(gr, 'diff', '--name-only', f'{gmerge or "HEAD"}^1', gmerge or 'HEAD').stdout.split()
+                 if x in ('.sdlc/roadmap.md', '.sdlc/AGENTS.md')]
+        g_show = sh(gr, 'show', f'{gmerge or "HEAD"}:.sdlc/roadmap.md').stdout
+        expect(f'T-0565 lane merge: the merge commit itself carries the regenerated roadmap and router (both lanes\' '
+               f'tickets), got merge={gmerge!r} changed={g_gen!r}',
+               bool(gmerge) and len(g_gen) == 2 and '| T-0003 |' in g_show and '| T-0004 |' in g_show)
+        nr, nlands = gen_fixture('gen-merge-readme', readme=True)
+        n_tip = sh(nr, 'rev-parse', 'fanout/g').stdout.strip()
+        n_wt = tree_of(nr, 'fanout/g')
+        expect(f'T-0565 lane merge negative control: README.md edited on both lanes stops the second land as a merge '
+               f'conflict with the integration tree clean and no MERGE_HEAD, got first rc={nlands[0].returncode} second '
+               f'rc={nlands[1].returncode} out={nlands[1].stdout[-400:]!r}',
+               nlands[0].returncode == 0 and nlands[1].returncode != 0 and 'merge conflict' in nlands[1].stdout
+               and n_wt is not None and sh(n_wt, 'status', '--porcelain', '--untracked-files=no').stdout == ''
+               and sh(n_wt, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode != 0
+               and sh(nr, 'log', '-1', '--format=%s', n_tip).stdout.strip() == 'close T-0001')
+
         # T-0489: settle --forward merges main into a diverged integration branch under the merge lock, regenerates the
         # roadmap and router files (here an add/add conflict on both), runs cover at the new tip and fast-forwards main
         def forward_fixture(name, lane_files, main_files=None):
@@ -4863,15 +4975,6 @@ def selftest():
             sh(r_, 'add', '-A')
             sh(r_, 'commit', '-q', '-m', 'T-0003 filed on main')
             return r_
-
-        def tree_of(repo_, branch):
-            wt_, cur_ = None, None
-            for line in sh(repo_, 'worktree', 'list', '--porcelain').stdout.splitlines():
-                if line.startswith('worktree '):
-                    cur_ = line[len('worktree '):]
-                elif line == f'branch refs/heads/{branch}':
-                    wt_ = pathlib.Path(cur_)
-            return wt_
 
         sf = forward_fixture('settle-fwd', {'f1.txt': 'one\n'})
         fw = verb(sf, 'settle', 'fanout/x', '--forward', '--gate', 'true')
