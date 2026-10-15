@@ -253,7 +253,9 @@ included), roadmap, archive and number refuse, writing nothing, while a managed 
 block. new and close follow-ups stamp `router: <ticket dir>/AGENTS.md  # how to claim and close this ticket` as
 the last front matter line. `router` is never validated. `claim <id> --by <agent>` sets `status: claimed` and
 writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:` (refusing a held claim unless `--handover
---reason TEXT`, which replaces the value and appends one dated body line); `release <id>` removes it and sets
+--reason TEXT`, which replaces the value and appends one dated body line, after first pinning the tip of the
+ticket's `branch:` as `refs/archive/<UTC date>/<branch>` (T-0580; `.<sha7>` on a clash, nothing written when the
+branch is missing or the pin fails)); `release <id>` removes it and sets
 `status: ready`; both regenerate the roadmap. check warns (exit 0) on a claimed_by line with a trailing comment,
 one not directly after created:, and a claim older than `claim_days:` in <root>/config (default 7) with no
 `*.running` file under its folder. Other statuses are set by hand: `status: claimed` needs a
@@ -1784,6 +1786,7 @@ def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=
     if handover and not held:
         raise Fail(f'{slug}: not claimed, so there is nothing to hand over; claim it without --handover; '
                    f'nothing written')
+    pinned = pin_branch(root, m) if handover else None
     date = (today or datetime.date.today()).isoformat()
     value = f'{by} {date}'
     text = set_claim((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), 'claimed',
@@ -1791,7 +1794,34 @@ def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=
     if handover:
         text = text.rstrip('\n') + f'\n\nHandover {date}: from {held} to {by}: {" ".join(reason.split())}\n'
     write_claim(root, td, ts, slug, text, numbered)
-    return f'{slug}: claimed_by: {value}'
+    return f'{slug}: claimed_by: {value}' + (f'; pinned {pinned}' if pinned else '')
+
+
+def pin_branch(root, m):
+    """T-0580: before a handover, point refs/archive/<UTC date>/<branch> at the tip of the ticket's `branch:` (zero
+    old value; `.<sha7>` on a clash; an existing ref at the tip counts) so no later cleanup strands it. None with
+    no branch: line; raises Fail, nothing written, when the branch is missing or no ref can be written."""
+    br = m.get('branch').strip() if isinstance(m.get('branch'), str) else ''
+    if not br:
+        return None
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    top = str(file_base(root))
+
+    def git(*a):
+        return subprocess.run(['git', '-C', top, *a], capture_output=True, text=True, env=env)
+
+    p = git('rev-parse', '--verify', '-q', f'refs/heads/{br}^{{commit}}')
+    sha = p.stdout.strip()
+    if p.returncode or not sha:
+        raise Fail(f'branch: {br} is not a local branch, so its tip cannot be pinned before the handover; '
+                   f'fix: tickets.py branch {m.get("id")} (clear it) or restore the branch; nothing written')
+    ref = f'refs/archive/{datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")}/{br}'
+    for r in (ref, f'{ref}.{sha[:7]}'):
+        if git('rev-parse', '--verify', '-q', r + '^{commit}').stdout.strip() == sha:
+            return f'{br} at {sha[:7]} as {r}'
+        if git('update-ref', r, sha, '0' * len(sha)).returncode == 0:
+            return f'{br} at {sha[:7]} as {r}'
+    raise Fail(f'cannot write {ref} to pin branch {br} before the handover; nothing written')
 
 
 def cmd_release(root, ref, numbered=False):
@@ -5646,6 +5676,29 @@ def selftest():
         h = (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8')
         expect(f'worktree: tickets.py branch <id> with no branch removes branch: and worktree: together: {out!r}',
                rc == 0 and 'branch:' not in h and 'worktree:' not in h and 'worktree:' not in run(rw / '.sdlc', 'check')[1])
+        # handover pin (T-0580): claim --handover points refs/archive/<UTC date>/<branch> at the branch: tip first
+        lane_wt = rw.parent / 'rt-wt.worktrees' / 'T-0001-a'
+        (lane_wt / 'lane.txt').write_text('lane work\n', encoding='utf-8')
+        g('-C', str(lane_wt), 'add', 'lane.txt')
+        g('-C', str(lane_wt), 'commit', '-q', '-m', 'lane work')
+        tip = g('rev-parse', 'refs/heads/lane/T-0001-a').stdout.strip()
+        pin = f'refs/archive/{datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")}/lane/T-0001-a'
+        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a')
+        rc, out, err = run(rw / '.sdlc', 'claim', ('T-0001', 'codex'), handover=True, reason='claude session ended')
+        refs = g('for-each-ref', '--format=%(refname) %(objectname)', 'refs/archive').stdout.split('\n')
+        expect(f'claim --handover pins the branch: tip as refs/archive/<date>/<branch>: rc={rc} {out!r} {err!r} {refs!r}',
+               rc == 0 and f'{pin} {tip}' in refs and f'pinned lane/T-0001-a at {tip[:7]} as {pin}' in out)
+        rc, out, err = run(rw / '.sdlc', 'claim', ('T-0001', 'claude'), handover=True, reason='back again')
+        refs2 = g('for-each-ref', '--format=%(refname) %(objectname)', 'refs/archive').stdout.split('\n')
+        expect(f'claim --handover a second time the same day keeps the one pin: rc={rc} {err!r} {refs2!r}',
+               rc == 0 and refs2 == refs)
+        record_branch(rw / '.sdlc', 'T-0001', 'lane/gone')
+        before = (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8')
+        rc, _, err = run(rw / '.sdlc', 'claim', ('T-0001', 'codex'), handover=True, reason='no branch')
+        expect(f'claim --handover refuses, writing nothing, when the branch: is not a local branch: rc={rc} {err!r}',
+               rc == 1 and 'branch: lane/gone is not a local branch' in err
+               and (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8') == before)
+        record_branch(rw / '.sdlc', 'T-0001', None)
 
         # area, claimed and paused: validation runs one way; the Area column shows only when an area exists
         ra = pathlib.Path(tmp) / 'rt-area' / '.sdlc'
@@ -7057,8 +7110,8 @@ def main(argv):
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
     p.add_argument('--by', required=True, metavar='AGENT', help='the claiming agent: one lowercase word, e.g. claude, codex or astra')
     p.add_argument('--handover', action='store_true',
-                   help='take over a claimed ticket: replace the claimed_by value and append one dated body line; '
-                        'needs --reason')
+                   help='take over a claimed ticket: pin the branch: tip as refs/archive/<date>/<branch>, replace '
+                        'the claimed_by value and append one dated body line; needs --reason')
     p.add_argument('--reason', metavar='TEXT', help='with --handover: why the claim changes hands')
     p.add_argument('--numbered', action='store_true', help='also validate numbered folders (also on via config)')
     p = sub.add_parser('release', help='release a claim: remove claimed_by, set status ready, regenerate the roadmap')

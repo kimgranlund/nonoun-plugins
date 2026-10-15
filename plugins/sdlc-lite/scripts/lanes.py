@@ -10,6 +10,7 @@
   lanes.py port [<path>]                   the port of the lane holding <path> (default the cwd); exit 1 if none
   lanes.py archive list [<branch>]
   lanes.py archive restore <date>/<branch>
+  lanes.py orphans                         read-only: snapshot refs and dangling commits whose work is on no local branch
   lanes.py selftest
 
 Design: docs/specs/sdlc-lite/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
@@ -116,6 +117,12 @@ Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a 
      the lane's port.
   Restore with `lanes.py archive restore <date>/<branch>` (git branch <branch> <ref>; refuses an existing branch).
   archive list reads tag and plain commit targets alike.
+  orphans (T-0580) lists each commit that holds work no local branch has: every ref outside refs/heads/ and
+  refs/remotes/ that peels to a commit (refs/archive/*, refs/stash, ...) and every dangling commit from
+  `git fsck --no-reflogs --connectivity-only` (never --lost-found). A candidate is listed when one of its commits
+  is on no local branch (the default branch included) and git cherry finds no patch-equivalent commit there; one
+  line each: `<sha> <ref|dangling> <subject> (<n> files)`, n the files the tip commit changes against its first parent. It changes
+  nothing, deletes nothing, restores nothing, and exits 0.
 
 Record fields. .lane.json at the tree root, written by open, added to <git common dir>/info/exclude; a host record
 <lanes root>/host/<name>.lane.json has the same fields.
@@ -1270,11 +1277,48 @@ def archive_restore(spec, cwd='.'):
     return 0, f'restored {b} at {e["sha"]}'
 
 
+def orphans(cwd='.'):
+    """[(sha, ref or 'dangling', subject, changed-file count)] for each snapshot ref or dangling commit whose work
+    is on no local branch by reachability or patch (git cherry). Read-only."""
+    top = Ctx(cwd).top
+    branches = [l for l in (out(top, 'for-each-ref', '--format=%(refname)', 'refs/heads') or '').splitlines() if l]
+    cands = []
+    for line in (out(top, 'for-each-ref', '--format=%(refname)') or '').splitlines():
+        if not line or line.startswith(('refs/heads/', 'refs/remotes/')):
+            continue
+        sha = out(top, 'rev-parse', '--verify', '-q', line + '^{commit}')
+        if sha:
+            cands.append((sha, line))
+    r = git(top, 'fsck', '--no-reflogs', '--connectivity-only', '--no-progress')
+    for line in r.stdout.splitlines():
+        parts = line.split()
+        if len(parts) == 3 and parts[:2] == ['dangling', 'commit']:
+            cands.append((parts[2], 'dangling'))
+    rows = []
+    for sha, ref in cands:
+        unique = None
+        for b in branches:
+            mb = out(top, 'merge-base', b, sha)
+            c = git(top, 'cherry', b, sha, *([mb] if mb else []))
+            plus = {l[2:].strip() for l in c.stdout.splitlines() if l.startswith('+ ')} if c.returncode == 0 else set()
+            unique = plus if unique is None else unique & plus
+            if not unique:
+                break
+        if unique is None:  # no local branch at all: everything is unique
+            unique = {sha}
+        if not unique:
+            continue
+        subject = out(top, 'log', '-1', '--format=%s', sha) or ''
+        files = [f for f in (out(top, 'diff-tree', '--no-commit-id', '-r', '--name-only', '--root', '-m', '--first-parent', sha) or '').splitlines() if f]
+        rows.append((sha, ref, subject, len(files)))
+    return rows
+
+
 # ---- CLI --------------------------------------------------------------------------------------------------
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,sweep,list,check,port,archive,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,sweep,list,check,port,archive,orphans,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -1311,6 +1355,7 @@ def main(argv=None):
     q.add_argument('branch', nargs='?')
     q = asub.add_parser('restore')
     q.add_argument('spec', metavar='<date>/<branch>')
+    sub.add_parser('orphans')
     sub.add_parser('selftest')
     a = ap.parse_args(argv)
     if a.cmd == 'list' and a.fail and not a.stale:
@@ -1362,6 +1407,10 @@ def main(argv=None):
             rc, msg = archive_restore(a.spec)
             print(msg)
             return rc
+        if a.cmd == 'orphans':
+            for sha, ref, subject, n in orphans():
+                print(f'{sha} {ref} {subject} ({n} files)')
+            return 0
     except LaneError as e:
         print(f'lanes.py: {e}', file=sys.stderr)
         return 1
@@ -1898,6 +1947,36 @@ def case_archive_clash(script, base):
     return fails
 
 
+def case_orphans(script, base):
+    """T-0580: a dangling commit holding a unique change is listed; a snapshot ref whose change reached main by
+    squash is not; orphans writes no ref and no lost-found."""
+    t = Fixture(base, script, 'orphans')
+    leaf, tree, b = t.open('s', 'T-63')
+    t.work(tree, {'landed.txt': 'landed\n'})
+    t.merge(b, squash=True)
+    rc, o = t.lanes('close', leaf)
+    if rc:
+        return [f'orphans: the squash-landed lane did not close: {o}']
+    snap = [r for r in t.archive_refs() if r.endswith('/' + b)]
+    snap_sha = t.g('rev-parse', snap[0] + '^{commit}') if snap else ''
+    t.write({'unique.txt': 'only here\n'})
+    t.g('add', 'unique.txt')
+    tree_sha = t.g('write-tree')
+    t.g('reset', '-q')
+    (t.top / 'unique.txt').unlink()
+    dangling = t.g('commit-tree', tree_sha, '-p', 'HEAD', '-m', 'stranded work')
+    refs_before = t.g('for-each-ref')
+    rc, o = t.lanes('orphans')
+    fails = []
+    if rc != 0 or f'{dangling} dangling stranded work (1 files)' not in o.splitlines():
+        fails.append(f'orphans: the dangling commit with a unique change is not listed: {rc}: {o}')
+    if not snap_sha or snap_sha in o:
+        fails.append(f'orphans: the snapshot ref whose change is on main is listed (or missing: {snap}): {o}')
+    if t.g('for-each-ref') != refs_before or (t.top / '.git' / 'lost-found').exists():
+        fails.append('orphans: the repo changed')
+    return fails
+
+
 def case_c13(script, base):
     t = Fixture(base, script, 'c13')
     leaf, tree, b = t.open('a', 'T-70', '--title', 'Make the thing')
@@ -2319,6 +2398,8 @@ def run_selftest(script, src, base):
         need('C9', case_c9(script, base), 'clashing names and a missing ticket refuse with nothing left; lane/T-1-a opens')
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),
              'restore returns the tip, two closes leave two refs, a failed write keeps the branch')
+        need('orphans', case_orphans(script, base),
+             'a dangling commit with a unique change is listed, a squash-landed snapshot ref is not, nothing written')
         need('C13', case_c13(script, base), 'the description is set at open and copied into the archive tag')
         need('branch list', case_branch_list(script, base),
              'list --all joins a manual worktree to its ticket by branch: with verdict pass; no branch:, no ticket')
