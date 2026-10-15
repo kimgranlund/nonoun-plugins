@@ -12,6 +12,13 @@ $SDLC_BACKEND, else claude. The config is the nearest .sdlc/config at or above <
 lane worktree often has no copy, since the config is usually untracked). No `plugin_min:` line means no check. The
 comparison is numeric per part, missing parts read as 0 (0.10.0 is above 0.9.0; 1.0 equals 1.0.0). A malformed
 value refuses too, so a typo never silently disables the gate.
+
+T-0596: `solo_run.py run` refuses the same way, and on claude the check also reads the installed plugin whose hooks
+run in the session: $CLAUDE_PLUGIN_ROOT's manifest when set, else the newest version folder under the plugin cache
+($SDLC_PLUGIN_CACHE, default ~/.claude/plugins/cache/sdlc-lite/sdlc-lite). A conductor running a source checkout's
+scripts sees the checkout's version while the hooks come from that install, so either one below plugin_min refuses,
+and the line names which (the running plugin or the hook plugin). No install found means only the running plugin is
+checked.
 """
 import argparse
 import json
@@ -25,6 +32,7 @@ PLUGIN = Path(__file__).resolve().parent.parent
 LINE_RE = re.compile(r'\s*plugin_min\s*:\s*(\S*)\s*(?:#.*)?')
 VERSION_RE = re.compile(r'\d+(\.\d+)*')
 MANIFEST = {'claude': '.claude-plugin/plugin.json', 'codex': '.codex-plugin/plugin.json'}
+CACHE = Path.home() / '.claude' / 'plugins' / 'cache' / 'sdlc-lite' / 'sdlc-lite'
 UPDATE = {'claude': 'claude plugin marketplace update sdlc-lite && claude plugin update sdlc-lite@sdlc-lite, then start a fresh session',
           'codex': 'codex plugin marketplace upgrade sdlc-lite, then start a fresh Codex session'}
 
@@ -79,6 +87,20 @@ def running(plugin=PLUGIN, host='claude'):
     return (v if isinstance(v, str) and VERSION_RE.fullmatch(v) else None), path
 
 
+def hook_plugin():
+    """(dir, how) of the installed Claude plugin whose hooks run in the session, or (None, None) when none is found:
+    $CLAUDE_PLUGIN_ROOT, else the newest version folder under the plugin cache."""
+    root = os.environ.get('CLAUDE_PLUGIN_ROOT')
+    if root:
+        return Path(root), 'CLAUDE_PLUGIN_ROOT'
+    cache = Path(os.environ.get('SDLC_PLUGIN_CACHE') or CACHE)
+    try:
+        found = [d for d in cache.iterdir() if VERSION_RE.fullmatch(d.name) and (d / MANIFEST['claude']).is_file()]
+    except OSError:
+        return None, None
+    return (max(found, key=lambda d: parts(d.name)), 'plugin cache') if found else (None, None)
+
+
 def host_of(host=None):
     h = host or os.environ.get('SDLC_BACKEND') or 'claude'
     return h if h in MANIFEST else 'claude'
@@ -97,8 +119,19 @@ def refusal(start, plugin=PLUGIN, host=None):
     if have is None:
         return 'plugin_min: %s needs sdlc-lite %s, but the running %s plugin has no readable version in %s' % (cfg, need, host, manifest)
     if below(have, need):
-        return ('plugin_min: %s needs sdlc-lite %s or later; this %s host runs %s (%s). Update: %s'
+        return ('plugin_min: %s needs sdlc-lite %s or later; this %s host\'s running plugin is %s (%s). Update: %s'
                 % (cfg, need, host, have, manifest, UPDATE[host]))
+    if host != 'claude':
+        return None
+    hooks, how = hook_plugin()
+    if hooks is None or os.path.realpath(hooks) == os.path.realpath(plugin):
+        return None
+    hv, hm = running(hooks, 'claude')
+    if hv is None:
+        return 'plugin_min: %s needs sdlc-lite %s, but the hook plugin (%s) has no readable version in %s' % (cfg, need, how, hm)
+    if below(hv, need):
+        return ('plugin_min: %s needs sdlc-lite %s or later; the running plugin is %s but the hook plugin (%s) is %s (%s). Update: %s'
+                % (cfg, need, have, how, hv, hm, UPDATE[host]))
     return None
 
 

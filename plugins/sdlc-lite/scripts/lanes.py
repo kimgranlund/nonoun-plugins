@@ -2162,7 +2162,8 @@ def case_plugin_min(script, base):
     if t.tree('T-0070-a').exists() or t.ok('rev-parse', '--verify', 'refs/heads/lane/T-0070-a'):
         fails.append('plugin_min: a refusal left a tree or a branch')
     t.write({'.sdlc/config': f'plugin_min: {have}\n'})
-    rc, o = t.lanes('open', 'a', '--ticket', 'T-0070', env={'SDLC_BACKEND': 'claude'})
+    rc, o = t.lanes('open', 'a', '--ticket', 'T-0070', env={'SDLC_BACKEND': 'claude', 'CLAUDE_PLUGIN_ROOT': '',  # T-0596: no install
+                                                           'SDLC_PLUGIN_CACHE': str(base / 'no-cache')})
     if rc != 0 or not (t.tree('T-0070-a') / RECORD).is_file():
         fails.append(f'plugin_min equal to {have}: open did not pass: {rc}: {o}')
     return fails
