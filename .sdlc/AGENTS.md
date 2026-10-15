@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:48e633c836a1 -->
+<!-- sdlc-lite:managed:start v1 sha256:94d17c195db3 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 11
   - T-0564 Worktree root guidance for Claude Code and Codex (0564-worktree-root-guidance)
   - T-0565 Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md (0565-generated-files-merge)
   - T-0566 fanout.py land carries the lane's run records to main (0566-land-copies-runtime)
@@ -20,6 +20,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
   - T-0573 notes.md keeps only live notes (0573-prune-notes)
   - T-0574 Silence the flat-layout warning and drop the stale board.md (0574-sdlc-config-board)
+  - T-0575 Trace, fleet and migrate readers miss lanes under the sibling root (0575-lane-readers-sibling-root)
 - ready: 0
 - claimed: 1
   - T-0563 Worktree root moves to a sibling folder outside the repo (0563-sibling-worktree-root), claimed by claude 2026-10-15, branch lane/T-0563-t0563
