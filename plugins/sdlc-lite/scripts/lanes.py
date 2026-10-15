@@ -121,7 +121,8 @@ Record fields. .lane.json at the tree root, written by open, added to <git commo
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
 
 Config (.sdlc/config of the main worktree; blank and # lines ignored):
-  lanes_root: <path>        default .claude/worktrees (T-0550; .worktrees before 0.23.0), relative to the main worktree's toplevel
+  lanes_root: <path>        default wtroot.py root: .claude/worktrees (T-0550; .worktrees before 0.23.0), or a bare clone's
+                            <bare parent>/lanes or a worktree_root: line (T-0561); a set path is relative to the main worktree's toplevel
   lane_into: <ref>          default none (main)
   lane_setup: <cmd>         run in a new tree; a failure records setup: failed rc=<n> and keeps the lane
   lane_ports: <lo>-<hi>     off when absent; open picks the lowest free port under a flock on <lanes root>/lanes.lock
@@ -254,7 +255,9 @@ def config(toplevel):
             return float(vals[k])
         except (KeyError, ValueError):
             return d
-    root = os.path.expanduser(vals.get('lanes_root') or os.path.join(*wtroot.ROOT))
+    # T-0561: no lanes_root line takes wtroot.py root (a worktree_root: line, else the main checkout's .claude/worktrees,
+    # else a bare clone's <bare parent>/lanes), never a path under the current lane
+    root = os.path.expanduser(vals.get('lanes_root') or str(wtroot.root(top) or os.path.join(*wtroot.ROOT)))
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
                 lane_setup=vals.get('lane_setup') or None, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
@@ -367,8 +370,10 @@ def lane_of(ctx, w):
 
 
 def tmp_dirs(top):
-    """The runner tmp dirs: <top>/.claude/worktrees/tmp, and the legacy <top>/.worktrees/tmp read for one release (T-0550)."""
-    return [Path(top, *wtroot.ROOT, 'tmp'), Path(top, wtroot.LEGACY, 'tmp')]
+    """The runner tmp dirs: <top>/.claude/worktrees/tmp, wtroot.py's tmp root when it differs (a worktree_root: line or a
+    bare clone, T-0561), and the legacy <top>/.worktrees/tmp read for one release (T-0550)."""
+    return list(dict.fromkeys([Path(top, *wtroot.ROOT, 'tmp'), wtroot.tmp_root(top) or Path(top, *wtroot.ROOT, 'tmp'),
+                               Path(top, wtroot.LEGACY, 'tmp')]))
 
 
 def host_dirs(ctx):
@@ -1915,6 +1920,22 @@ def case_pr_ref(script, base):
     return fails
 
 
+def case_bare_root(script, base):
+    """T-0561: in a bare clone (lanes beside the bare dir) the default lanes root and the runner tmp dir sit outside the lane."""
+    t = Fixture(base, script, 'bare')
+    fails = []
+    kit = t.dir / 'kit'
+    t.sh(['git', 'clone', '-q', '--bare', str(t.top), str(kit / '.bare')], t.dir)
+    lane = Path(os.path.realpath(str(kit))) / 'lanes' / 'a'
+    t.sh(['git', 'worktree', 'add', '-q', '--detach', str(lane), 'HEAD'], kit / '.bare')
+    ctx = Ctx(lane)
+    if ctx.root != lane.parent or plain_under(ctx.root, lane):
+        fails.append(f'bare: the default lanes root from a lane is {ctx.root}, want {lane.parent}')
+    if not any(samepath(d, lane.parent / 'tmp') for d in tmp_dirs(ctx.top)):
+        fails.append(f'bare: the runner tmp dirs {tmp_dirs(ctx.top)} miss {lane.parent / "tmp"}')
+    return fails
+
+
 def case_open_path(script, base):
     t = Fixture(base, script, 'opath')
     t.ticket(5, 'Five')
@@ -2121,6 +2142,7 @@ def run_selftest(script, src, base):
              'a stray nested tree, a record outside the lanes root and a lane really under the checkout fail')
         need('C2', case_c2(script, base), 'two records on one port and a port outside lane_ports fail; open picks distinct ports')
         need('C3', case_c3(script, base), 'a record on another branch fails')
+        need('bare root', case_bare_root(script, base), 'a bare clone lane gets <bare parent>/lanes and its tmp dir, outside the lane')
         need('C4', case_c4(script, base), 'stale at 11 days, not at 9, closable when landed, stale, locked kept by sweep')
         need('C9', case_c9(script, base), 'clashing names and a missing ticket refuse with nothing left; lane/T-1-a opens')
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),

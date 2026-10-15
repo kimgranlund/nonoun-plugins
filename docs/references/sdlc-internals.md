@@ -134,7 +134,7 @@ The one home of the lane lifecycle (T-0451): `open`, `close`, `sweep`, `list`, `
 
 `.sdlc/config` keys, each `<key>: <value>`:
 
-- `lanes_root: <path>`, default `.claude/worktrees` (`.worktrees` before 0.23.0, T-0550), relative to the main worktree's toplevel.
+- `lanes_root: <path>`, default `wtroot.py root`: `.claude/worktrees` (`.worktrees` before 0.23.0, T-0550), or a `worktree_root:` line, or a bare clone's `<bare parent>/lanes` (T-0561); a set path is relative to the main worktree's toplevel.
 - `lane_into: <ref>`, default none (main).
 - `lane_setup: <cmd>`, default none; runs in a new tree.
 - `lane_ports: <lo>-<hi>`, default off.

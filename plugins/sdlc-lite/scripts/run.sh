@@ -36,7 +36,8 @@
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<main checkout>/.claude/worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns (T-0550:
 # the main checkout is the parent of git rev-parse --git-common-dir, as scripts/wtroot.py, so a run inside a lane
-# never nests its prefix in the lane). run.sh
+# never nests its prefix in the lane; wtroot.py root also applies a worktree_root: config line and a bare clone's
+# <bare parent>/lanes, T-0561). run.sh
 # does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
 # HEAD makes the parents). On every exit, success or failure (exit 1, exit 3, INT, TERM, HUP), cleanup
 # runs git worktree remove --force on each registered worktree under that prefix (paths compared by
@@ -553,7 +554,9 @@ toplevel="$(git rev-parse --show-toplevel)"
 # T-0550: the worktree root is under the main checkout (the parent of the common .git dir), never the current lane.
 main_top=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || main_top=""
 if [[ "${main_top##*/}" == .git ]]; then main_top="${main_top%/.git}"; else main_top="$toplevel"; fi
-wt_root="$main_top/.claude/worktrees"
+# T-0561: wtroot.py root also honors a worktree_root: config line and a bare clone's <bare parent>/lanes.
+wt_root=$(python3 "$plugin_root/scripts/wtroot.py" root 2>/dev/null) || wt_root=""
+[[ -n "$wt_root" ]] || wt_root="$main_top/.claude/worktrees"
 wt_tmp="$wt_root/tmp/$role-$$"
 # phys <path>: physical path, resolving the deepest existing ancestor, so a missing path still compares.
 phys() {

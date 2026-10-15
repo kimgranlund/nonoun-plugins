@@ -2,7 +2,7 @@
 """wtroot.py: where SDLC Lite puts worktrees and scratch, who owns each run folder, and the crash sweep (T-0550).
 
 Usage: wtroot.py main [--cwd D]                          print the main checkout of the repository holding D
-       wtroot.py root [--cwd D]                          print the worktree root, <main checkout>/.claude/worktrees
+       wtroot.py root [--cwd D]                          print the worktree root (see Root)
        wtroot.py scratch NAME [--cwd D]                  print (and create, with no marker) the scratch dir for NAME
        wtroot.py mark DIR --pid N [--role R] [--ticket T] [--running F]
                                                          write DIR/.owner.json (creating DIR)
@@ -13,8 +13,12 @@ Root. Every worktree SDLC Lite makes lives under <main checkout>/.claude/worktre
 claude --worktree, EnterWorktree and Agent isolation: worktree, on both hosts: lanes (<root>/<lane>), fanout lanes
 (<root>/fanout/<lane>) and role throwaway trees (<root>/tmp/<agent name>/). The main checkout is the parent of
 git rev-parse --git-common-dir, never the current tree's toplevel, so a role started inside a lane gets a prefix
-under the main checkout and never nests (<lane>/.worktrees/tmp/... was seen in maison, 2026-10-14). A bare or
-non-.git common dir falls back to --show-toplevel. LEGACY (.worktrees) is still read for one release.
+under the main checkout and never nests (<lane>/.worktrees/tmp/... was seen in maison, 2026-10-14). A non-bare,
+non-.git common dir falls back to --show-toplevel. A bare clone (core.bare, lanes beside the bare dir, T-0561) has no
+main checkout the agents may use: its root is <bare parent>/lanes, outside every lane. A `worktree_root: <path>` line
+in .sdlc/config overrides either default; a relative path resolves against the main checkout, or for a bare clone
+against the bare dir's parent (the config is read from the current lane). LEGACY (.worktrees) is still read for one
+release.
 
 Scratch. Files that are not worktrees (probe files, mutated copies) go to <system temp dir>/sdlc-lite/<repo key>/<name>,
 the system temp dir being $TMPDIR (tempfile.gettempdir()), as Claude Code's session scratchpad; never into the repo.
@@ -30,7 +34,7 @@ else `would remove <path>` (dry run) or, with --apply, its registered worktrees 
 --force, the folder is deleted, and it prints `removed <path>`. An unmarked run.sh prefix (<role>-<pid>) is left to
 reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
 
-Importable: main_top, root, tmp_root, scratch_root, scratch_dir, mark, owner, live, sweep.
+Importable: main_top, bare_parent, root, tmp_root, scratch_root, scratch_dir, mark, owner, live, sweep.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
@@ -62,10 +66,42 @@ def main_top(cwd='.'):
     return top or None
 
 
+def bare_parent(cwd='.'):
+    """The parent of the bare common dir when cwd is in a bare clone (or one of its lanes), else None (T-0561)."""
+    cwd = os.path.abspath(str(cwd))
+    common = _git(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir') or _git(cwd, 'rev-parse', '--git-common-dir')
+    if not common or _git(cwd, 'config', '--bool', 'core.bare') != 'true':
+        return None
+    return os.path.dirname(os.path.normpath(os.path.join(cwd, common)))
+
+
+def _config_root(top):
+    """The worktree_root: line of <top>/.sdlc/config, or None."""
+    try:
+        text = Path(top, '.sdlc', 'config').read_text(encoding='utf-8')
+    except (OSError, TypeError):
+        return None
+    for line in text.splitlines():
+        m = re.match(r'\s*worktree_root\s*:\s*(.*?)\s*$', line)
+        if m and m.group(1):
+            return os.path.expanduser(m.group(1))
+    return None
+
+
 def root(cwd='.'):
-    """<main checkout>/.claude/worktrees, or None outside a repository."""
+    """The worktree root, or None outside a repository: a worktree_root: line in .sdlc/config (relative to the main
+    checkout, or to a bare clone's parent dir), else <main checkout>/.claude/worktrees, else for a bare clone
+    <bare parent>/lanes (T-0561)."""
+    bare = bare_parent(cwd)
+    if bare:
+        top = _git(os.path.abspath(str(cwd)), 'rev-parse', '--show-toplevel')
+        conf = _config_root(top) if top else None
+        return Path(os.path.normpath(os.path.join(bare, conf))) if conf else Path(bare, 'lanes')
     top = main_top(cwd)
-    return Path(top, *ROOT) if top else None
+    if not top:
+        return None
+    conf = _config_root(top)
+    return Path(os.path.normpath(os.path.join(top, conf))) if conf else Path(top, *ROOT)
 
 
 def tmp_root(cwd='.'):
@@ -212,6 +248,29 @@ def selftest():
         expect('scratch dir sits under the system temp dir, not the repo',
                _under(str(scratch_dir('x', repo)), tempfile.gettempdir()) and not _under(str(scratch_dir('x', repo)), str(repo)))
         expect('scratch root is the same from the lane and the main checkout', scratch_root(lane) == scratch_root(repo))
+
+        # T-0561: a bare clone with lanes beside it (gen-ui-kit: <dir>/.bare, <dir>/lanes/<lane>, <dir>/main)
+        kit = base / 'ui-kit'
+        g(base, 'clone', '-q', '--bare', str(repo), str(kit / '.bare'))
+        blane = kit / 'lanes' / 'lane-b'
+        g(kit / '.bare', 'worktree', 'add', '-q', '--detach', str(blane), 'HEAD')
+        g(kit / '.bare', 'worktree', 'add', '-q', '--detach', str(kit / 'main'), 'HEAD')
+        expect('control: the old rule (--show-toplevel) from a bare-clone lane is the lane itself',
+               _git(blane, 'rev-parse', '--show-toplevel') == str(blane))
+        expect('bare clone: root from a lane is <bare parent>/lanes, outside the lane', root(blane) == kit / 'lanes'
+               and not _under(str(root(blane)), str(blane)))
+        expect('bare clone: the tmp prefix from a lane is outside every lane',
+               tmp_root(blane) == kit / 'lanes' / 'tmp' and not _under(str(tmp_root(blane)), str(blane)))
+        expect('bare clone: root from the bare dir itself is the same', root(kit / '.bare') == kit / 'lanes')
+        (blane / '.sdlc').mkdir()
+        (blane / '.sdlc' / 'config').write_text('# x\nworktree_root: ../trees\n', encoding='utf-8')
+        expect('bare clone: a relative worktree_root: line resolves against the bare parent, not the lane',
+               root(blane) == kit.parent / 'trees')
+        (repo / '.sdlc').mkdir()
+        (repo / '.sdlc' / 'config').write_text('worktree_root: %s\n' % (base / 'abs'), encoding='utf-8')
+        expect('an absolute worktree_root: line in the main checkout config wins, from a lane too',
+               root(repo) == base / 'abs' and root(lane) == base / 'abs')
+        (repo / '.sdlc' / 'config').unlink()
 
         tmp = base / 'tmpparent'
         dead = subprocess.Popen([sys.executable, '-c', 'pass'])

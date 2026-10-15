@@ -93,7 +93,7 @@ clears it when it marks the attempt interrupted (T-0505). --dry-run prints the J
 either), takes no lock, and skips recovery.
 
 Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format sentence) plus a Tree line, a
-throwaway-worktree prefix line (<main checkout>/.claude/worktrees/tmp/<Agent name>, wtroot.py), a scratch line
+throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root), a scratch line
 ($TMPDIR/sdlc-lite/<repo key>/<Agent name>), and for builder and verifier a Base sha line,
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier brief also carries a Report file line:
 the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.

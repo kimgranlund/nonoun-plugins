@@ -926,6 +926,24 @@ for c in "rm -rf $rmtop/src" "rm -rf $rmtop/.claude/worktrees/other/x" "rm -rf $
   run "$rmh" "$(rmsub "$c")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-role-rm denies a verifier sub-agent '$c': exit $rc, want 2"
 done
+# T-0561: both hooks take the sub-agent prefix from wtroot.py root plus /tmp. A bare clone lane gets
+# <bare parent>/lanes/tmp, a worktree_root: line its own root; the old nested <lane>/.claude/worktrees/tmp is denied.
+bkit="$wtmp/bkit"; git clone -q --bare "$srepo" "$bkit/.bare"; git -C "$bkit/.bare" worktree add -q --detach "$bkit/lanes/a" HEAD
+bkit=$(cd "$bkit" && pwd -P); blane="$bkit/lanes/a"
+wrr="$wtmp/wrr"; mkdir -p "$wrr/.sdlc"; git -C "$wrr" init -q; wrr=$(cd "$wrr" && pwd -P)
+printf 'worktree_root: ../wrr-root\n' >"$wrr/.sdlc/config"
+for spec in "$blane|$bkit/lanes/tmp|$blane/.claude/worktrees/tmp" "$wrr|${wrr%/wrr}/wrr-root/tmp|$wrr/.claude/worktrees/tmp"; do
+  IFS='|' read -r tcwd good old <<<"$spec"
+  tj() { jq -n --arg c "$1" --arg cwd "$tcwd" '{tool_name:"Bash",tool_input:{command:$c},agent_type:"sdlc-lite:verifier-L3",cwd:$cwd}'; }
+  run "$sw" "$(tj "git worktree add --detach \"$good/verifier-L3/base\" HEAD")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree allows a sub-agent in $tcwd the wtroot prefix $good: exit $rc, want 0"
+  run "$sw" "$(tj "git worktree add --detach \"$old/verifier-L3/base\" HEAD")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent in $tcwd the old prefix $old: exit $rc, want 2"
+  run "$rmh" "$(tj "rm -rf $good/verifier-L3/base")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-rm allows a sub-agent in $tcwd rm under the wtroot prefix $good: exit $rc, want 0"
+  run "$rmh" "$(tj "rm -rf $old/verifier-L3/base")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-rm denies a sub-agent in $tcwd rm under the old prefix $old: exit $rc, want 2"
+done
 # No prefix at all: every rm is denied. Other roles and no role pass.
 run "$rmh" "$(rmj "rm -rf /r/.worktrees/tmp/x/y" "")" SDLC_ROLE=verifier >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-role-rm with no prefix: exit $rc, want 2"
