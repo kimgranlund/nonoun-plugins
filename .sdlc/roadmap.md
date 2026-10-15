@@ -597,4 +597,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0597 | [.0597-land-add-ignored](.0597-land-add-ignored/handoff.md) | fanout land's generated-file staging fails on ignored mailbox paths | bug | L1 | P1 | none | 🟢 done |
 | T-0598 | [0598-codex-lane-agents-missing](0598-codex-lane-agents-missing/handoff.md) | Codex verifier in a fresh lane refuses: the lane has no .codex/agents | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0598-t0598) |
 | T-0599 | [0599-lane-open-leaves-main-dirty](0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0599-t0599) |
-| T-0600 | [0600-codex-request-path-docs](0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0600-t0600) |
+| T-0600 | [.0600-codex-request-path-docs](.0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟢 done |

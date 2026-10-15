@@ -2,7 +2,7 @@
 id: T-0600
 title: "Codex docs name the ticket folder for solo request files; they land in the records dir"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,10 @@ None.
 
 ## Acceptance criteria
 1. `git grep -n "ticket folder>/solo-" -- docs plugins` prints nothing.
+
+## Outcome
+
+2026-10-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `plugins/sdlc-lite/scripts/solo_run.py:44` still says `--request-file <task dir>/solo-<level>-<attempt>.request.json`. This is stale against `:252`, but it is a script docstring outside the criterion and the `docs plugins` grep pattern. | note: `docs/references/codex-role-execution.md:89` and `plugins/sdlc-lite/adapters/codex/instructions.md` now describe the `run.sh` request path (`<role>-<level>[-k].request.json`) as "in the handoff's records dir". That matches `run.sh:250` and `:486`. The verifier request file is covered by this role-step text rather than a separate line.) · verifier: verifier-L2 (sonnet) · base: 75fdb679a2ab
+- Changed: see commits
+- Commits: 35583c7 T-0600: Codex docs name the ticket folder for solo request files; they land in the records dir
+- Check: 1 `git grep -n "ticket folder>/solo-" -- docs plugins` prints nothing: pass
