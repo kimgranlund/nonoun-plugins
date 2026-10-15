@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Selftest for the PreToolUse hooks (Bash, Agent, Monitor): block-background.sh denies Bash
-# run_in_background, Agent unless run_in_background is false, and every Monitor call, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh,
+# run_in_background, Agent unless run_in_background is false, and every Monitor call, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1), denies
+# Bash run_in_background and Monitor for a role sub-agent (agent_type only), and passes everything else; block-publish.sh,
 # inside a role run, allows commands that only mention a publish phrase (heredoc body, quoted
 # argument, commit message) and blocks every real publish, including one fed to a shell or
 # evaluator, one in a $(...) or backtick substitution, one behind an unterminated quote, and
@@ -101,6 +102,29 @@ run "$bg" "$absent" SDLC_ROLE=builder >/dev/null; rc=$?
 
 run "$bg" "$on" SDLC_HEADLESS=0 >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "SDLC_HEADLESS=0 + background true: exit $rc, want 0"
+
+# A role sub-agent (agent_type, no SDLC_ROLE) that backgrounds Bash goes idle and is never woken
+# by the notification (T-0562): denied. The main session and non-role agents keep the option.
+for at in sdlc-lite:solo-L2 sdlc-lite:builder-L3 sdlc-lite:verifier-L2; do
+  sub_on=$(printf '{"agent_type":"%s","agent_id":"a1","tool_name":"Bash","tool_input":{"command":"sleep 1","run_in_background":true}}' "$at")
+  out=$(run "$bg" "$sub_on"); rc=$?
+  [[ $rc -eq 2 ]] || fail "sub-agent $at + background true: exit $rc, want 2"
+  grep -qi foreground <<<"$out" || fail "sub-agent $at + background true: stderr lacks foreground"
+  r="${at#sdlc-lite:}"; r="${r%-L*}"
+  grep -q "'$r'" <<<"$out" || fail "sub-agent $at + background true: stderr lacks the role '$r'"
+done
+sub_off='{"agent_type":"sdlc-lite:solo-L2","agent_id":"a1","tool_name":"Bash","tool_input":{"command":"sleep 1","run_in_background":false}}'
+run "$bg" "$sub_off" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "sub-agent solo + background false: exit $rc, want 0"
+run "$bg" '{"tool_name":"Bash","tool_input":{"command":"sleep 1","run_in_background":true}}' >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "main session + background true: exit $rc, want 0"
+for at in sdlc-lite:conductor Explore general-purpose; do
+  run "$bg" "$(printf '{"agent_type":"%s","tool_name":"Bash","tool_input":{"command":"sleep 1","run_in_background":true}}' "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "$at + background true: exit $rc, want 0"
+done
+sub_mon='{"agent_type":"sdlc-lite:solo-L2","agent_id":"a1","tool_name":"Monitor","tool_input":{"command":"x"}}'
+run "$bg" "$sub_mon" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "sub-agent solo + Monitor: exit $rc, want 2"
 
 push_json=$(printf '{"tool_input":{"command":"git %s origin main"}}' push)
 run "$pub" "$push_json" SDLC_ROLE=builder >/dev/null; rc=$?

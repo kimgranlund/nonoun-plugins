@@ -31,3 +31,9 @@ Brief wording did not hold twice, so a structural guard is needed. Candidate: a 
 
 ## Constraints
 The failing hook selftest (role + background denied; main session + background allowed) lands with the fix. Target 0.23.1.
+
+## Acceptance criteria
+1. `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0; its T-0562 cases deny Bash `run_in_background: true` and Monitor for a role sub-agent (`agent_type` `sdlc-lite:solo-L2`, `builder-L3`, `verifier-L2`, no `SDLC_ROLE`) with stderr naming the role and "foreground", and pass the main session, `sdlc-lite:conductor`, `Explore`, `general-purpose`, and a sub-agent with `run_in_background: false`. Negative control: the same selftest failed (`sub-agent sdlc-lite:solo-L2 + background true: exit 0, want 2`) against the unchanged hook.
+2. `agents/solo.md` Loop step 3 carries the foreground rule (never `run_in_background` or Monitor); `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `git diff --check` is clean.
+4. `docs/references/claude-hooks.md` describes the sub-agent role case under `hooks/block-background.sh`, lists `block-background` among `_role.sh` users, and notes Codex has no hook (text rule only).
