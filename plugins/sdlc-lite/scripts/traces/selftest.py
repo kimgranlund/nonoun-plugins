@@ -834,6 +834,44 @@ def _git_not_repo():
         assert r['resets'] == [] and r['branches'] and len(r['problems']) == 1, r
 
 
+@case('git: under the sibling root (wtroot.py root) a lane is not nested, its tmp/ tree and a lane-nested root are')
+def _git_sibling_root():
+    from .sources import git
+    _need_git()
+    with tempfile.TemporaryDirectory() as tmp:
+        root = os.path.realpath(tmp)
+        repo = _git_repo(root)
+        sib = os.path.join(root, 'repo.worktrees')  # T-0563: <parent>/<repo>.worktrees
+        lane = os.path.join(sib, 'lane')
+        tmpw = os.path.join(sib, 'tmp', 'builder-1', 'w')
+        nest = os.path.join(sib, 'lane2', '.claude', 'worktrees', 'x')
+        added = []
+        try:
+            for wt in (lane, tmpw, nest):
+                _g(repo, 'worktree', 'add', '-q', '--detach', wt, 'HEAD')
+                added.append(wt)
+            wts = {w['path']: w['nested'] for w in git.read(repo)['worktrees']}
+            assert wts == {repo: False, lane: False, tmpw: True, nest: True}, wts
+        finally:
+            for wt in reversed(added):
+                _g(repo, 'worktree', 'remove', '--force', wt)
+
+
+@case('ingest: lanes dirs come from the sibling root (wtroot.py root) and the legacy roots')
+def _ingest_lanes_sibling():
+    from . import ingest
+    _need_git()
+    with tempfile.TemporaryDirectory() as tmp:
+        root = os.path.realpath(tmp)
+        repo = _git_repo(root)
+        _write(root, 'repo.worktrees/fanout-a/report.md', '# report\n')
+        _write(root, 'repo.worktrees/plain/notes.txt', 'no report, no logs\n')
+        _write(repo, '.worktrees/fanout-old/report.md', '# report\n')
+        got = ingest._lanes_dirs(repo, [])
+        assert got == [os.path.join(root, 'repo.worktrees', 'fanout-a'),
+                       os.path.join(repo, '.worktrees', 'fanout-old')], got
+
+
 # --- tickets ------------------------------------------------------------------------------------
 
 def _ticket(tid, status):

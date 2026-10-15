@@ -47,6 +47,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import fleet_collect  # same scripts/ dir: run_bounded, parse_etime, classify_process
 import fleet_config   # same scripts/ dir: the repo registry
+import wtroot         # same scripts/ dir: the worktree root and the legacy roots
 
 PS_CMD = 'ps'
 LSOF_CMD = 'lsof'
@@ -133,18 +134,43 @@ def role_kind(cmd, cwd):
     toks = cmd.split()
     if '-p' in toks or '--print' in toks or (len(toks) > 1 and 'exec' in toks[1:3] and 'codex' in cmd):
         return 'headless'
-    if cwd and ('/.worktrees/' in cwd or '/.claude/worktrees/' in cwd):
+    if cwd and in_lane(cwd):
         return 'lane'
     return 'session'
 
 
+def lane_main(path):
+    """Outside git: the main checkout a lane path names by wtroot's folder rules (<main>/.worktrees/...,
+    <main>/.claude/worktrees/..., <parent>/<main>.worktrees/...), else None."""
+    parts = path.split(os.sep)
+    for i, s in enumerate(parts):
+        if s == wtroot.LEGACY or tuple(parts[i:i + 2]) == wtroot.CLAUDE:
+            return os.sep.join(parts[:i]) or None
+        if s.endswith(wtroot.SUFFIX):
+            return os.sep.join(parts[:i] + [s[:-len(wtroot.SUFFIX)]])
+    return None
+
+
+def in_lane(path):
+    """True when path lies under the worktree root or a legacy root of its repository (wtroot.py, T-0575); outside
+    git, when its folders name one (lane_main)."""
+    r = wtroot.root(path) if os.path.isdir(path) else None
+    if not r:
+        return lane_main(path) is not None
+    real = os.path.realpath(path)
+    return any(real.startswith(os.path.realpath(str(d)) + os.sep) for d in [r] + wtroot.legacy_roots(path))
+
+
 def repo_of(path):
-    """The main checkout a path belongs to: the part before a lane folder, else the nearest folder holding .git."""
+    """The main checkout a path belongs to (wtroot.main_top, so a lane under any root names its main checkout);
+    outside git the main checkout its lane folders name, else the nearest folder holding .git."""
     if not path:
         return None
-    for mark in ('/.worktrees/', '/.claude/worktrees/'):
-        if mark in path:
-            return path.split(mark)[0]
+    top = wtroot.main_top(path) if os.path.isdir(path) else None
+    if top:
+        return top
+    if lane_main(path):
+        return lane_main(path)
     p = path
     while p and p != os.sep:
         if os.path.exists(os.path.join(p, '.git')):
@@ -676,6 +702,17 @@ def selftest():
         snap = collect([repo], state)
         check('collect: finished check.sh runs give a median', snap['check_median_s'] == 1100
               and snap['check_samples'] == 3)
+        # T-0575: a role whose cwd is a lane under the sibling root (wtroot.py root, <parent>/<repo>.worktrees)
+        sib = os.path.realpath(os.path.join(d, 'sib'))
+        os.makedirs(sib)
+        sl = os.path.join(sib + '.worktrees', 'a')
+        for a in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i'],
+                  ['worktree', 'add', '-q', '--detach', sl, 'HEAD']):
+            subprocess.run(['git', '-C', sib] + a, check=True, capture_output=True)
+        check('sibling root: a role in a lane under <repo>.worktrees is a lane role of the main checkout',
+              role_kind('claude --agent x', sl) == 'lane' and repo_of(sl) == sib)
+        check('sibling root control: a role in the main checkout is a session role of it',
+              role_kind('claude --agent x', sib) == 'session' and repo_of(sib) == sib)
     finally:
         ps_rows, cwds, LOAD_FN, CORES_FN, PROJECTS_DIR = saved
 

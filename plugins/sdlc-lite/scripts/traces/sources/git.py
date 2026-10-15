@@ -2,9 +2,10 @@
 
 read(repo, integration=None, limit=2000) returns one dict:
   worktrees        one {path, branch, nested} per `git worktree list --porcelain` entry; branch
-                   is the short name, None when detached; nested is True when the path holds a
-                   worktree root (`.claude/worktrees/`, or the pre-0.23.0 `.worktrees/`) twice or lies
-                   under its `tmp/`;
+                   is the short name, None when detached; nested is True when the path lies under
+                   a worktree root of the repo (wtroot.py root, then the legacy roots) and below it
+                   holds another root (a `.worktrees` folder or `.claude/worktrees`) or lies under
+                   its `tmp/`;
   branches         `git for-each-ref --format=%(refname:short) refs/heads`, in its order;
   tracked_runtime  `git ls-files` paths ending in .log, .running, .run.lock, or .board-state.json;
   resets           one (sha, reflog subject) per `reset: moving to` entry of `git reflog show HEAD`,
@@ -16,6 +17,8 @@ A repo that is not a git work tree gives empty lists and a problems entry. Nothi
 every command is a read, and GIT_OPTIONAL_LOCKS=0 keeps git from refreshing the index.
 """
 import os, re, subprocess
+
+import wtroot  # same scripts/ dir as order and tickets, which ingest imports
 
 FIELDS = ('worktrees', 'branches', 'tracked_runtime', 'resets', 'commits', 'problems')
 RUNTIME_SUFFIXES = ('.log', '.running', '.run.lock', '.board-state.json')
@@ -52,10 +55,36 @@ def is_work_tree(path):
     return rc == 0 and out == ['true']
 
 
-def nested(path):
-    p = path.replace(os.sep, '/').rstrip('/') + '/'
-    roots = ('.worktrees/', '.claude/worktrees/')  # T-0550: the root moved in 0.23.0; the old one is still read
-    return (sum(p.count(r) for r in roots) >= 2 or any('/' + r + 'tmp/' in p or p.startswith(r + 'tmp/') for r in roots))
+def roots(repo):
+    """The worktree root of repo, then its legacy roots (wtroot.py, T-0575), as real paths; outside git, the same
+    folders by wtroot's default rule for repo as the main checkout."""
+    r = wtroot.root(repo)
+    found = ([r] + wtroot.legacy_roots(repo)) if r else [
+        wtroot.default_root(repo), os.path.join(repo, *wtroot.CLAUDE), os.path.join(repo, wtroot.LEGACY)]
+    return [os.path.realpath(str(p)) for p in found]
+
+
+def _root_parts(parts):
+    """Indexes of the parts that end a worktree root folder: a `<name>.worktrees` (sibling or pre-0.23.0) or
+    `.claude/worktrees`."""
+    return [i for i, s in enumerate(parts) if s.endswith(wtroot.SUFFIX)
+            or (i and tuple(parts[i - 1:i + 1]) == wtroot.CLAUDE)]
+
+
+def nested(path, under=None):
+    """True when path lies under a root (under: roots(repo); None reads the root folders from the path itself) and
+    holds another root below it, or lies directly under that root's tmp/."""
+    p = os.path.realpath(path) if under is not None else path
+    if under is None:
+        parts = [s for s in p.replace(os.sep, '/').split('/') if s]
+        idx = _root_parts(parts)
+        return len(idx) >= 2 or any(i + 1 < len(parts) and parts[i + 1] == 'tmp' for i in idx)
+    for r in under:
+        if p == r or not p.startswith(r.rstrip(os.sep) + os.sep):
+            continue
+        parts = os.path.relpath(p, r).split(os.sep)
+        return parts[0] == 'tmp' or bool(_root_parts(parts[1:]))
+    return False
 
 
 def _lines(repo, problems, *args):
@@ -66,7 +95,7 @@ def _lines(repo, problems, *args):
     return out
 
 
-def _worktrees(lines):
+def _worktrees(lines, under=None):
     out, cur = [], None
     for line in lines + ['']:
         if line.startswith('worktree '):
@@ -75,7 +104,7 @@ def _worktrees(lines):
             ref = line[len('branch '):]
             cur['branch'] = ref[len('refs/heads/'):] if ref.startswith('refs/heads/') else ref
         elif not line and cur is not None:
-            cur['nested'] = nested(cur['path'])
+            cur['nested'] = nested(cur['path'], under)
             out.append(cur)
             cur = None
     return out
@@ -92,7 +121,7 @@ def read(repo, integration=None, limit=2000):
     if not is_work_tree(repo):
         problems.append(f'{repo}: not a git work tree')
         return rec
-    rec['worktrees'] = _worktrees(_lines(repo, problems, 'worktree', 'list', '--porcelain'))
+    rec['worktrees'] = _worktrees(_lines(repo, problems, 'worktree', 'list', '--porcelain'), roots(repo))
     rec['branches'] = [b for b in _lines(repo, problems, 'for-each-ref',
                                          '--format=%(refname:short)', 'refs/heads') if b]
     rec['tracked_runtime'] = [p for p in _lines(repo, problems, 'ls-files')
