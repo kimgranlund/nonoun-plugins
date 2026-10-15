@@ -562,7 +562,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0562 | [.0562-role-background-bash-stall](.0562-role-background-bash-stall/handoff.md) | Role sub-agents that background a Bash call go idle and never wake when it finishes | bug | L2 | P1 | none | 🟢 done |
 | T-0563 | [.0563-sibling-worktree-root](.0563-sibling-worktree-root/handoff.md) | Worktree root moves to a sibling folder outside the repo | feature | L3 | P1 | none | 🟢 done |
 | T-0564 | [.0564-worktree-root-guidance](.0564-worktree-root-guidance/handoff.md) | Worktree root guidance for Claude Code and Codex | chore | L2 | P1 | T-0563 | 🟢 done |
-| T-0565 | [0565-generated-files-merge](0565-generated-files-merge/handoff.md) | Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md | chore | L2 | P2 | T-0564 | ⏳ proposed |
+| T-0565 | [0565-generated-files-merge](0565-generated-files-merge/handoff.md) | Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md | chore | L2 | P2 | T-0564 | 🟡 claimed |
 | T-0566 | [.0566-land-copies-runtime](.0566-land-copies-runtime/handoff.md) | fanout.py land carries the lane's run records to main | chore | L2 | P2 | T-0564 | 🟢 done |
 | T-0567 | [.0567-sdlc-scratch-untrack](.0567-sdlc-scratch-untrack/handoff.md) | Tracked scratch under .sdlc moves to reports or runtime | chore | L1 | P3 | none | 🟢 done |
 | T-0568 | [.0568-evidence-user-cache](.0568-evidence-user-cache/handoff.md) | Binary evidence lives in a user-scope cache, not in the repo | chore | L2 | P2 | T-0563 | 🟢 done |
@@ -590,5 +590,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0590 | [0590-lanes-ready-signal](0590-lanes-ready-signal/handoff.md) | lanes.py ready pins the review sha and tells the conductor | feature | L3 | P1 | T-0589 | ⏳ proposed |
 | T-0591 | [0591-multi-host-roles-doc](0591-multi-host-roles-doc/handoff.md) | Conductor, worker and verifier rules for Claude, Codex and Pi in one repo | chore | L2 | P2 | T-0590 | ⏳ proposed |
 | T-0592 | [0592-three-host-rehearsal](0592-three-host-rehearsal/handoff.md) | Live rehearsal: Claude, Codex and Pi working tickets in one repo | chore | L2 | P2 | T-0591, T-0570 | ⏳ proposed |
-| T-0593 | [0593-plugin-min-version](0593-plugin-min-version/handoff.md) | A repo pins the minimum plugin version every host must run | feature | L2 | P1 | none | ⏳ proposed |
-| T-0594 | [0594-land-close-command](0594-land-close-command/handoff.md) | One plugin command records, lands, closes and backs up a lane | feature | L3 | P1 | none | ⏳ proposed |
+| T-0593 | [0593-plugin-min-version](0593-plugin-min-version/handoff.md) | A repo pins the minimum plugin version every host must run | feature | L2 | P1 | none | 🟡 claimed |
+| T-0594 | [0594-land-close-command](0594-land-close-command/handoff.md) | One plugin command records, lands, closes and backs up a lane | feature | L3 | P1 | none | 🟡 claimed |
