@@ -91,7 +91,7 @@ Two gaps remain [V]. `dispatch.py status` and `recover` take one handoff dir (`d
 
 **Current behavior.** T-0408 (on main after v0.22.2, untagged: `git tag --contains ee59144b` is empty) lets a handoff end a criterion with a held clause (`CLAUSE_RE`, `steps.py:1794`, keys stage, owner, needs), so a verifier reports `deferred <owner>` instead of fail [V]. That is the designed answer for maison's case, whose dependency sits inside a project script and is invisible in the criterion text: no lint can see it, and this plan does not try. `lint_steps` checks parse, `||` joins, pinned shas, fixed counts, `grep -P`, clean status and clean diff, and never runs a span (`steps.py:1507-1581`) [V]. It has no rule for a span that reads the step's own verifier result, and no refusal is recorded anywhere (`cmd_lint`, `steps.py:1766-1785`, prints and exits).
 
-**Change.** Two parts in `steps.py`. (a) Lint refuses a criterion span in step n that names a verifier result (`verifier-L<d>`) and names no `step-<m>/` folder other than its own, unless the criterion line ends with a held clause; the message says to move the check to a later step or declare it held. (b) Each refusal from `lint` or `split` appends one JSON line `{ts, tool, plan, step, text}` to `refusals.jsonl` in the task dir, the record K-004's early count reads; the same refusal of the same plan file is written once.
+**Change.** Two parts in `steps.py`. (a) Lint refuses a criterion span in step n that names a verifier result (`verifier-L<d>`) and names no `step-<m>/` folder other than its own, unless the criterion line ends with a held clause; the message says to move the check to a later step or declare it held. (b) Each refusal from `lint` or `split` appends one JSON line `{ts, tool, plan, step, text}` to `refusals.jsonl` in the task dir, the record K-004's early count reads; the same refusal of the same plan file is written once. Since 0.23.0 a split refusal is instead one `- <YYYY-MM-DD> plan defect at split: step <n>: <why>` line under the task handoff's `## Plan review`, which `fleet_collect.py` counts; `refusals.jsonl` is no longer written.
 
 **KPI.** K-004.
 
@@ -99,7 +99,7 @@ Two gaps remain [V]. `dispatch.py status` and `recover` take one handoff dir (`d
 1. A criterion reading its own step's verifier result is refused | pass: selftest case.
 2. The same criterion with a held clause passes | pass: negative control case.
 3. A criterion reading an earlier step's verifier result passes | pass: selftest case.
-4. A refusal leaves one line in `refusals.jsonl` | pass: selftest case.
+4. A refusal leaves one line in `refusals.jsonl` (0.23.0: one `plan defect at split` line in `## Plan review`) | pass: selftest case.
 5. No regression | pass: `steps.py selftest` exits 0.
 
 **Negative control.** A criterion that greps `step-1/verifier-L2.md` from step 2 must pass lint; a rule that flags every `verifier-` path fails it.

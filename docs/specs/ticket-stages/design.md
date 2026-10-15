@@ -2,13 +2,15 @@
 
 Version 0.2, 2026-09-30. Built: Option A (the router), the opt-in `tickets/` root, and the message bus (T-0177, T-0178, T-0179). The rest is a proposal.
 
+Since 0.23.0 (lean work records, T-0540) a task's run artifacts (`step-N/`, `runs.jsonl`, role results) live in its ignored records dir `.sdlc/runtime/tasks/<folder>/`, keyed by the folder name without its leading dot; the task folder keeps `handoff.md` and `skips.md`. The Problem below describes the flat folder before that change.
+
 ## Problem
 
 `.sdlc/` holds tickets, task artifacts (`step-N/`, `runs.jsonl`, role results), `notes.md`, and a generated `roadmap.md` in one flat folder. At 174 tickets an agent that lists the folder pays for all of them. Closed tickets are already hidden by the dotted `.NNNN-slug` rename in numbered mode, so the open question is how to make the active set cheap to find and the procedures cheap to follow.
 
 ## Facts the design must respect
 
-- A ticket folder is also a task folder. `steps.py`, `board.py`, `run.sh`, `fanout.py`, hooks, and `runs.jsonl` address `.sdlc/<folder>/` by path.
+- A ticket folder is also a task folder. `steps.py`, `board.py`, `run.sh`, `fanout.py`, hooks, and `runs.jsonl` address `.sdlc/<folder>/` by path (since 0.23.0 through `order.py records_dir`, which maps it to `runtime/tasks/<folder>/`).
 - `tickets.py` owns ids (above the max across every git worktree's same-relative root), the roadmap, and reference-safe closure (a scan for citing files before the dot rename).
 - Front matter `status` is the one record of ticket state: proposed, ready, blocked, done, dropped. Build progress lives in `/board`.
 - Claude loads a nested `AGENTS.md` only through a `CLAUDE.md` import. Codex loads root-to-cwd `AGENTS.md` files. A router file is therefore read when it is imported or named in a handoff, not automatically for every role.

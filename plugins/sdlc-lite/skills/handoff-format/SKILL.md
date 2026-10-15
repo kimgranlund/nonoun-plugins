@@ -10,9 +10,7 @@ user-invocable: false
 
 ```
 .sdlc/<task-slug>/       the task folder, committed
-  handoff.md            task brief (goal, intent, context, constraints)
-  design.md             /grill ratified design (optional)
-  decompose/            /decompose manifest-v<n>.json + report.md (optional)
+  handoff.md            task brief (goal, intent, context, constraints); `tickets.py close` appends ## Outcome
   skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
                         and, under ## Skipped, one entry per full-chain role (planner, verifier
                         per step, filer) a solo, lean, or fix lane skipped (a full lane
@@ -20,6 +18,8 @@ user-invocable: false
                         "- skip: <role>; step: <n or all>; reason: <why>; decided: <who>"
                         (reason and decided non-empty); tickets.py check and close enforce it
 .sdlc/runtime/tasks/<task-slug>/  the records dir (folder name without a leading dot); local, ignored through runtime/.gitignore
+  design.md             /grill ratified design (optional)
+  decompose/            /decompose manifest-v<n>.json + report.md (optional)
   scout-L1.md           outputs of task-level roles: <role>-<level>.md
   planner-L2.md
   planner-L3-2.md       a replan; the latest runs.jsonl record is current
@@ -72,7 +72,7 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
 - `.sdlc/messages/`: the local mailbox written by `scripts/messages.py`; never committed, even when the trail is.
 
-The task folder (`handoff.md`, `skips.md`) is committed; records are local and ignored. `skips.md` moves to the records dir in a later release (T-0542 or T-0543).
+The task folder (`handoff.md`, `skips.md`) is committed; records are local and ignored. A `fanout.py land` close commit keeps only `handoff.md` (and what the folder tracked before the merge) in git and moves the closed folder's other files, `skips.md` included, into its records dir. A role result that must outlive the ticket is promoted to `docs/` before the close, because the records dir never reaches git. How to write the handoff and its `## Outcome`: [writing rules](references/writing-rules.md).
 
 ## Ticket front matter (optional)
 
@@ -134,9 +134,12 @@ Only for scout, archaeologist, or researcher runs: the exact question.
 
 ## Plan review
 Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. A criterion swap adds one line, `swap applied: step <n>: <steps.py swap stdout line>`, and a swap refusal adds the `steps.py swap` stderr (its last line starts `plan defect:`) before the replan. A scope widening (/chain 4.9) adds `scope widened: step <n>: <steps.py widen stdout line>`; a `steps.py widen` refusal adds `scope decision: step <n>: <paths>` and its stderr before the replan. A plan review whose Verdict is `replan` (`steps.py review` prints `replan`, /chain 3) adds `plan review: replan: <result path>` and one `plan review: <verdict>: <finding>` entry per item of the reviewer's `## Findings`, before the planner L3 replan. A review whose every finding is a `notes-fix:` item adds no entry and no replan: `steps.py split` writes those items under `### Notes` in the step handoff. Earlier entries stay. The planner fixes that step on the replan.
+
+## Outcome
+Written by `tickets.py close`, never by hand: one header line (`<date> · lane: <lane> <size> · verdict: <verdict> · verifier: <role-level> (<model>) · base: <sha12>`), then `- Changed:`, `- Commits:`, one `- Check:` line per verifier criterion, and any `- Deviation:` and `- Follow-up:` lines. It is the closed ticket's durable record.
 ```
 
-## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
+## Step handoff (`<records dir>/step-<n>/handoff.md`)
 
 `scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand, and it refuses a new text whose bracket clause differs from the old line's. `steps.py amend` rewrites one criterion line the same way from a blocked builder's `amend old:`/`amend new:` pair on an unbuilt step (/chain 4.10) and itself appends `amend applied: step <n>: ...` under `## Plan review`, the task's one replan. `steps.py widen` widens the scope criterion with conductor-allowed paths (/chain 4.9) and appends one item per path to a `## Scope widened` section at the end of the step handoff: ``- `<path>`: allowed by a conductor scope decision (steps.py widen)`` (with `--reason "<why>"`, `: <why>` follows; a step with no scope criterion takes the paths and reason as the recorded allow-list only with `--reason`).
 

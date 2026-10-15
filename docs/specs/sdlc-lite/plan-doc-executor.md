@@ -22,7 +22,7 @@ Facts the design leans on:
 
 ## 3. The plan-doc contract
 
-One Markdown file, normally `.sdlc/<plan-slug>/plan-doc.md`, beside the run records it will cause (attempt files, `plan-state.json`). Any path works; nothing reads the location. Goals and KPIs stay in `docs/goals/` and `docs/kpi/` and are cited by id, so durable intent keeps one home and the plan doc holds only execution. The file is a superset of the planner's plan: the H2 sections `## Goal` and `## Step <n>: <title>` keep their meaning and shape, so `steps.py lint` and `split` accept it.
+One Markdown file, normally `.sdlc/<plan-slug>/plan-doc.md`; the run records it causes (attempt files, `plan-state.json`) go to the plan folder's records dir (`.sdlc/runtime/tasks/<plan-slug>/`, since 0.23.0). Any path works; nothing reads the location. Goals and KPIs stay in `docs/goals/` and `docs/kpi/` and are cited by id, so durable intent keeps one home and the plan doc holds only execution. The file is a superset of the planner's plan: the H2 sections `## Goal` and `## Step <n>: <title>` keep their meaning and shape, so `steps.py lint` and `split` accept it.
 
 ### 3.1 Shape
 
@@ -128,11 +128,11 @@ Each FAIL row is a selftest case with the label `plan: <rule> ...`, and the buil
 
 1. The plan, through `plan_doc.py`, after running the `plan_check.py plan` shape rules (a failure is exit 2).
 2. Per step, the ticket through the `tickets.py` reader (live or archived `.NNNN-` folder): `status`, size, folder.
-3. Per step that needs a verifier (`verify: required`, or `auto` with size L2 or above): the newest verifier result in the ticket folder by `order.py`, validated with `results.py` (`Verdict: pass`); the worker's recorded model (the `runs.jsonl` solo record or the builder result header) against the verifier's header model, using the rule `dispatch.family` already applies; and that no solo or builder result is newer than the verifier pass.
+3. Per step that needs a verifier (`verify: required`, or `auto` with size L2 or above): the newest verifier result in the ticket's records dir (else the ticket folder, for legacy records) by `order.py`, validated with `results.py` (`Verdict: pass`); the worker's recorded model (the `runs.jsonl` solo record or the builder result header) against the verifier's header model, using the rule `dispatch.family` already applies; and that no solo or builder result is newer than the verifier pass.
 4. Per step, `steps.py open <ticket folder>`: held (`unmet-dependency`, `deferred`) criteria. The check spans all steps, because a later step's pass settles an earlier hold.
 5. Per `now` measure: the command, then the `read:` expression, then the comparison with `target` in the stated direction. A command that fails, prints no number, or times out reads as unreadable, never as green.
 6. Per Upserts row: `create` and `edit` paths exist, `retire` paths are gone from their home or sit in `archive/`.
-7. `plan-state.json` beside the plan: written only by `stop` and `replan`; it holds `replans`, `stopped` (reason, time, resume command) and nothing else. It never contributes to done.
+7. `plan-state.json` in the plan folder's records dir (a legacy copy beside the plan is still read): written only by `stop` and `replan`; it holds `replans`, `stopped` (reason, time, resume command) and nothing else. It never contributes to done.
 
 ### 4.2 Truth table
 

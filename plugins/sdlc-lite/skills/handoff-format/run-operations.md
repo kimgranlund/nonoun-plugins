@@ -11,7 +11,7 @@ Use `--transport exec` for standalone Codex execution. These read-only checks in
 
 Pass `dispatch.py prepare --routing-reason` (Codex `run.sh`: `SDLC_ROUTING_REASON`) per invocation to the reason for the selected role and level: user selection, task scope, or recorded escalation evidence. Keep the current model/effort mappings. Without a reason, the runner explicitly records that the caller supplied no task-specific rationale.
 
-Every actual runner invocation reserves a unique `<role>-<level>[-N].attempt.json` before launching the backend. It captures the attempt ID, selected role/level/model/effort, backend/transport, reason, timestamps, and terminal exit status. Normal `runs.jsonl` rows carry the same ID and reason. A `completed` attempt means the runner accepted the report format and exited successfully; inspect the role's Status/Verdict for the actual work outcome. A failed or blocked verification is not task completion.
+Every actual runner invocation reserves a unique `<role>-<level>[-N].attempt.json` in the task's records dir (`.sdlc/runtime/tasks/<folder>/`; `order.py records-dir <task dir>` prints it) before launching the backend. It captures the attempt ID, selected role/level/model/effort, backend/transport, reason, timestamps, and terminal exit status. Normal `runs.jsonl` rows carry the same ID and reason. A `completed` attempt means the runner accepted the report format and exited successfully; inspect the role's Status/Verdict for the actual work outcome. A failed or blocked verification is not task completion.
 
 A handoff directory permits only one active pipeline run. Put roles that must run in parallel in separate handoff directories. A duplicate launch fails instead of overlapping a build and verification against the same handoff. Failed attempts and logs are never overwritten by retries.
 
@@ -31,7 +31,7 @@ Use this when the project's checkout must not be touched, for example a bare-clo
 This is for interactive or headless conductors outside fanout. A fanout lane conductor already runs in a clean lane worktree and has `SDLC_ROLE=conductor`, so `hooks/block-stray-worktree.sh` denies this worktree add there.
 
 1. Create a detached worktree outside every existing worktree, so nothing is written into the dirty checkout. `--detach` creates no branch.
-2. Run the role from it, passing the absolute path of the handoff in the task's home `.sdlc/<task>/` (the `.sdlc/` the conductor already uses for `/board` and `steps.py`).
+2. Run the role from it, passing the absolute path of the step handoff in the task's records dir under the home `.sdlc/` (the `.sdlc/` the conductor already uses for `/board` and `steps.py`).
 3. Run the verifier for the same step in the same `$wt` before removal.
 4. To keep a builder's edits, commit them on a named branch. Otherwise they are discarded with the worktree.
 5. Remove only this recipe's worktree, without `--force`, then its `mktemp` parent.
@@ -40,8 +40,8 @@ This is for interactive or headless conductors outside fanout. A fanout lane con
 wt="$(mktemp -d)/wt"
 git -C <any worktree or the bare repo> worktree add --detach "$wt" <commit>
 cd "$wt"
-run.sh builder <level> /abs/path/.sdlc/<task>/step-N/handoff.md
-run.sh verifier <level> /abs/path/.sdlc/<task>/step-N/handoff.md
+run.sh builder <level> /abs/path/.sdlc/runtime/tasks/<task>/step-N/handoff.md
+run.sh verifier <level> /abs/path/.sdlc/runtime/tasks/<task>/step-N/handoff.md
 git -C "$wt" switch -c <branch>          # only to keep the work
 git -C "$wt" add -A -- . ':(exclude,glob)**/*.log' ':(exclude,glob)**/.run.lock' ':(exclude,glob)**/*.running' && git -C "$wt" commit -m "<message>"
 cd /
@@ -49,7 +49,7 @@ git -C <repo> worktree remove "$wt"      # no --force
 rmdir "$(dirname "$wt")"
 ```
 
-The result and `runs.jsonl` land next to the absolute handoff path in the task's home `.sdlc/<task>/`, with nothing to copy back: `run.sh` writes `<role>-<level>.md`, `.log`, `runs.jsonl`, `*.attempt.json`, and, for builder and verifier, `base-sha` beside the handoff it is given. If that home `.sdlc/` sits inside the checkout, it must be git-ignored there, as handoff-format already advises; otherwise the run dirties that checkout.
+The result and `runs.jsonl` land in the records dir of the absolute handoff path under the home `.sdlc/`, with nothing to copy back: `run.sh` writes `<role>-<level>.md`, `.log`, `runs.jsonl`, `*.attempt.json`, and, for builder and verifier, `base-sha` there. `.sdlc/runtime/` ignores itself (`runtime/.gitignore` holds `*`), so the run leaves the checkout clean.
 
 A builder's edits exist only in `$wt`. They must be committed on a named branch (`git -C "$wt" switch -c <branch>`, then commit) before removal, or they are lost.
 
@@ -64,7 +64,7 @@ The conductor runs merge operations through scripts, so no lane or tree waits fo
 1. Enqueue: in an interactive session, start `python3 <plugin-root>/scripts/fanout.py land <branch> --ticket <id> --gate "<cmd>"...` as a background Bash call (`run_in_background: true`) for each finished branch. The merge lock orders the lands; read the result at the completion notice and in `<lanes-dir>/logs/land.jsonl`, never by polling. A `merge conflict` goes back to the sub-agent by name once.
 2. Dequeue: after the user picks it through AskUserQuestion, run `python3 <plugin-root>/scripts/fanout.py settle <integration> --forward --gate "<cmd>"...`, then `python3 <plugin-root>/scripts/lanes.py sweep --apply`. A `lane still open` line or an exit 2 goes to the user with its path.
 3. Status: `python3 <plugin-root>/scripts/board.py --lanes` and `python3 <plugin-root>/scripts/lanes.py list --stale`. A `closable` row is a missed settle or sweep: run step 2's sweep. `lanes.py list --all` also shows hand-made worktrees; a row whose branch matches a ticket's `branch:` front matter line names that ticket and its newest verifier verdict, so verified, unmerged work stays visible.
-   `lanes.py open --ticket <id>` writes `branch: <lane branch>` after the ticket's `claimed_by:` and its close removes it; for a worktree made by hand, add the line yourself.
+   `lanes.py open --ticket <id>` writes `branch: <lane branch>` and `worktree: <path>` after the ticket's `claimed_by:` and `lanes.py close` removes both; for a worktree made by hand, run `tickets.py branch <id> <branch> --worktree <path>`.
 4. Priority: a gate that blocks an integration runs at `gate_lock.py run --priority 1`.
 5. PR merge: the plugin ships no PR merge script; a project's own must keep two invariants, and `settle --forward` keeps both for the local path. (a) The branch head contains the base tip before the merge (`git merge-base --is-ancestor origin/main HEAD`, by rebase or merge commit; never a squash of a branch cut before the last merge). (b) The gates ran at that head sha and none is pending (`gh pr checks <n> --watch --fail-fast` is the GitHub form; read-only).
 6. Release: the maintainer cuts the version, notes and tag, through AskUserQuestion.
