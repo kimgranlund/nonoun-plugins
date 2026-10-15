@@ -555,3 +555,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0555 | [.0555-role-ticket-time-budgets](.0555-role-ticket-time-budgets/handoff.md) | Wall-clock budgets per role and per ticket, enforced by dispatch.py | feature | L3 | P2 | none | 🟢 done |
 | T-0556 | [.0556-shared-heavy-slot](.0556-shared-heavy-slot/handoff.md) | Heavy checks a role runs inside its lane go through gate_lock.py | feature | L2 | P2 | none | 🟢 done |
 | T-0557 | [.0557-check-sh-speed](.0557-check-sh-speed/handoff.md) | check.sh runs selftests in parallel and offers a fast tier | chore | L3 | P2 | none | 🟢 done |
+| T-0558 | [0558-dispatch-selftest-tmpdir-leak](0558-dispatch-selftest-tmpdir-leak/handoff.md) | dispatch.py selftest accept-all controls fail when an unmarked folder sits under TMPDIR/sdlc-lite | bug | L1 | P2 | none | ⏳ proposed |
+| T-0559 | [0559-fanout-close-outcome-base](0559-fanout-close-outcome-base/handoff.md) | Fanout closes write base: none and Commits: none in the Outcome | bug | L1 | P2 | none | ⏳ proposed |
+| T-0560 | [0560-plain-close-tracks-skips](0560-plain-close-tracks-skips/handoff.md) | A plain tickets.py close leaves skips.md tracked in the closed folder | bug | L1 | P2 | none | ⏳ proposed |
