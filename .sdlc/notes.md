@@ -571,3 +571,8 @@
 - fix-now: docs/reports/2026-10-08-fleet-retro-06.md:38, docs/reports/2026-10-09-fleet-retro-00.md:31, docs/reports/2026-10-09-fleet-retro-12.md:34, docs/reports/2026-10-10-fleet-retro-12.md:29, docs/reports/reorg-inventory-live-run.md:51, docs/reports/broken-links-allowlist.md: these edits are unstaged while the renames and deletions are staged; a commit of the index alone would leave the moved verifier links broken and the allowlist stale. Stage them with the rest.
 - decide: docs/reports/release-0.20.6.md:19 (and about 60 more report lines, for example docs/reports/codex-tier-mirror-2026-09-30.md:22, docs/reports/release-0.20.7.md, docs/reports/2026-10-07-release-0-21-1.md) still cite removed folders as inline-code evidence paths such as `.sdlc/verify-0218`. They are not Markdown links, so check.py item 32 passes, but Do step 1's own grep test (`grep -rn '<name>' docs .sdlc/*.md plugins`) hits them. Those paths now resolve only in git history (base d438b220).
 - note: .sdlc/notes.md:186 and .sdlc/notes.md:233 mention `.sdlc/verify-t0202/step-1` and `.sdlc/pause-2026-10-06.md`, which this change removed; the 233 note's precondition ("move or remove that file") is now met.
+
+## T-0563: Worktree root moves to a sibling folder outside the repo (2026-10-15)
+
+- note: plugins/sdlc-lite/scripts/lanes.py:124 and fanout.py:33/:40/:492 still describe `.claude/worktrees/` as the host-isolation and gitignore path. That matches the host-owned rule, so it is not stale.
+- note: I could not remove my scratch copies (`mut/`, `base/`) under /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0563-verifier-L2: the rm was denied. No throwaway worktrees were created, and the repo is untouched.

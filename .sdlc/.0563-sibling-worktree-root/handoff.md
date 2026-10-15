@@ -2,7 +2,7 @@
 id: T-0563
 title: "Worktree root moves to a sibling folder outside the repo"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,17 @@ The `worktree_root:` override, the bare-clone default and the owner-marker sweep
 4. `bash plugins/sdlc-lite/scripts/migrate-worktrees.sh --selftest` exits 0. It covers: moving from both legacy roots; skipping locked, dirty, unlanded and Claude-owned `agent-*` trees; and a second run that reports nothing to move.
 5. `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0.
 6. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L3 · verdict: pass · verifier: verifier-L2 (sonnet) · base: cae6a6b05bf3
+- Changed: worktree root is now the sibling <parent>/<repo>.worktrees; migrate-worktrees.sh moves legacy lanes
+- Commits: efb7dac T-0563: worktree root moves to the sibling <parent>/<repo>.worktrees; migrate-worktrees.sh
+- Check: 1 wtroot.py selftest: pass
+- Check: 2 lanes.py and fanout.py selftests: pass
+- Check: 3 hook-selftest.sh: pass
+- Check: 4 migrate-worktrees.sh --selftest: pass
+- Check: 5 run-selftest.sh: pass
+- Check: 6 git diff --check: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:124 and fanout.py:33/:40/:492... -> notes.md
+- Follow-up: note: I could not remove my scratch copies mut/, base/ under... -> notes.md
