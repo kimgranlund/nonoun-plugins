@@ -1324,6 +1324,10 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
             shutil.copy2(str(local), str(Path(tree, '.claude', 'settings.local.json')))
         except OSError as e:
             lines.append(f'settings.local.json not copied: {e.strerror or "error"}')
+    if Path(top, '.codex', 'agents', '.sdlc-managed.json').is_file():  # T-0598: the generated agents are git-ignored, so a new tree lacks them
+        r = subprocess.run([sys.executable, str(HERE / 'codex_roles.py'), 'install', str(tree)], capture_output=True, text=True)
+        if r.returncode:
+            lines.append(f'.codex/agents not installed: {(r.stderr or r.stdout).strip()}')
     if desc:
         git(top, 'config', f'branch.{branch}.description', desc)
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
@@ -2208,6 +2212,26 @@ def case_plugin_min(script, base):
     return fails
 
 
+def case_codex_agents(script, base):
+    """T-0598: a lane opened in a repo onboarded with codex_roles.py install gets the generated .codex/agents too (they
+    are git-ignored, so a new tree never has them), and install --check passes there; a repo never onboarded gets none."""
+    roles = HERE / 'codex_roles.py'
+    fails = []
+    t = Fixture(base, script, 'cxag')
+    t.write({'.sdlc/0071-cxag/handoff.md': ticket_file('T-0071', claimed=True)})
+    t.sh([sys.executable, str(roles), 'install', str(t.top)], t.top)
+    leaf, tree, b = t.open('a', 'T-0071')
+    r = subprocess.run([sys.executable, str(roles), 'install', '--check', str(tree)], capture_output=True, text=True)
+    if r.returncode:
+        fails.append(f'onboarded repo: install --check in the new lane exit {r.returncode}: {(r.stdout + r.stderr).strip()}')
+    u = Fixture(base, script, 'cxno')
+    u.write({'.sdlc/0072-cxno/handoff.md': ticket_file('T-0072', claimed=True)})
+    leaf, tree, b = u.open('a', 'T-0072')
+    if (tree / '.codex').exists():
+        fails.append('repo never onboarded: the lane got a .codex directory')
+    return fails
+
+
 def case_c10(script, base):
     t = Fixture(base, script, 'c10')
     fails = []
@@ -2848,6 +2872,8 @@ def run_selftest(script, src, base):
         need('C9', case_c9(script, base), 'clashing names and a missing ticket refuse with nothing left; lane/T-1-a opens')
         need('plugin_min', case_plugin_min(script, base),
              'plugin_min above the manifest refuses open with exit 2 and the host command, nothing left; equal opens')
+        need('codex agents', case_codex_agents(script, base),
+             'a lane in an onboarded repo gets current .codex/agents; a repo never onboarded gets none')
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),
              'restore returns the tip, two closes leave two refs, a failed write keeps the branch')
         need('orphans', case_orphans(script, base),
