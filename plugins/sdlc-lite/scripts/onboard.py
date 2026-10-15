@@ -7,7 +7,8 @@ Usage: onboard.py setup [--dry-run] [--force]   create or update the managed fil
 
 Design: docs/specs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
 The .sdlc layout is read through a function-local import of the sibling tickets.py, and the root
-block names the resolved roadmap path (.sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`).
+block names the resolved roadmap, notes, and archive paths (.sdlc/roadmap.md, .sdlc/notes.md, .sdlc/archive/, or
+.sdlc/tickets/roadmap.md, .sdlc/notes/notes.md, .sdlc/work/archive/ with `layout: topics`).
 
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
@@ -536,13 +537,14 @@ NESTED_SIZE_TARGET = 30
 Template = collections.namedtuple('Template', 'before block after')
 Template.__doc__ = 'One entry file: starter text before the block, the block text, starter text after it.'
 
-Model = collections.namedtuple('Model', 'name topics homes loose readme nested roadmap',
-                               defaults=((), '.sdlc/roadmap.md'))
+Model = collections.namedtuple('Model', 'name topics homes loose readme nested roadmap notes archive',
+                               defaults=((), '.sdlc/roadmap.md', '.sdlc/notes.md', '.sdlc/archive/'))
 Model.__doc__ = ('name: repository folder name. topics: list of Topic with one or more documents. '
                  'homes: list of Home that exist. loose: documents directly in docs/. '
                  'readme: docs/README.md exists. nested: list of Topic for a home, or a topic folder '
                  'under a home, that holds two or more documents (name is the path under docs/). '
-                 'roadmap: the resolved roadmap path relative to the root, posix form.')
+                 'roadmap, notes: the resolved roadmap and notes paths relative to the root, posix form. '
+                 'archive: the resolved tidy archive folder, the same form with a trailing slash.')
 Topic = collections.namedtuple('Topic', 'name docs readme')
 Home = collections.namedtuple('Home', 'path readme entry', defaults=(False,))
 NESTED_LINK_CAP = 20
@@ -596,7 +598,9 @@ def render_templates(model):
     out = collections.OrderedDict()
     t = _split_template(ROOT_AGENTS_TEMPLATE)
     out['AGENTS.md'] = Template(t.before.replace('<repository folder name>', model.name),
-                                t.block.replace('<N>', n).replace('.sdlc/roadmap.md', model.roadmap), t.after)
+                                t.block.replace('<N>', n).replace('.sdlc/roadmap.md', model.roadmap)
+                                .replace('.sdlc/notes.md', model.notes).replace('.sdlc/archive/', model.archive),
+                                t.after)
     stub = _split_template(CLAUDE_TEMPLATE)
     out['CLAUDE.md'] = stub
     topic_lines, home_lines, loose_lines = [], [], []
@@ -708,18 +712,20 @@ def build_model(root, layout, documents):
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
     return Model(name, topic_list, home_list, sorted(loose),
-                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, _roadmap_path(root))
+                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, *_sdlc_paths(root))
 
 
-def _roadmap_path(root):
-    """The roadmap path from .sdlc/config, relative to root in posix form. A bad config is a SetupError."""
+def _sdlc_paths(root):
+    """(roadmap, notes, archive) from .sdlc/config, relative to root in posix form; archive is <work>/archive/.
+    A bad config is a SetupError."""
     import pathlib
     import tickets  # function-local: tickets.py imports this module at its top level
     try:
-        roadmap = tickets.layout_paths(pathlib.Path(root, '.sdlc')).roadmap
+        paths = tickets.layout_paths(pathlib.Path(root, '.sdlc'))
     except tickets.Fail as e:
         raise SetupError(str(e))
-    return pathlib.Path(os.path.relpath(str(roadmap), root)).as_posix()
+    rel = lambda p: pathlib.Path(os.path.relpath(str(p), root)).as_posix()
+    return rel(paths.roadmap), rel(paths.notes), rel(paths.work / 'archive') + '/'
 
 
 def _nested_topics(root, layout, documents):
@@ -1657,16 +1663,16 @@ def gate_lane_text(impl):
         expect('edited by hand' in _text(root, 'AGENTS.md'), 'a hand-edited block was overwritten without --force')
 
 
-def _render_roadmap(model, roadmap):
-    return render_templates(model._replace(roadmap=roadmap))
+def _render_layout(model, roadmap, notes, archive):
+    return render_templates(model._replace(roadmap=roadmap, notes=notes, archive=archive))
 
 
 def _render_topics_always(model):
-    return _render_roadmap(model, '.sdlc/tickets/roadmap.md')
+    return _render_layout(model, '.sdlc/tickets/roadmap.md', '.sdlc/notes/notes.md', '.sdlc/work/archive/')
 
 
 def _render_flat_always(model):
-    return _render_roadmap(model, '.sdlc/roadmap.md')
+    return _render_layout(model, '.sdlc/roadmap.md', '.sdlc/notes.md', '.sdlc/archive/')
 
 
 def gate_layout_variant(impl):
@@ -1682,6 +1688,9 @@ def gate_layout_variant(impl):
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and '.sdlc/tickets/roadmap.md' in block.text and '.sdlc/roadmap.md' not in block.text,
                'a topics repo block does not name .sdlc/tickets/roadmap.md only')
+        expect('.sdlc/notes/notes.md' in block.text and '.sdlc/work/archive/' in block.text
+               and '.sdlc/notes.md' not in block.text and '.sdlc/archive/' not in block.text,
+               'a topics repo block does not name .sdlc/notes/notes.md and .sdlc/work/archive/ only')
         expect(block.version == TEMPLATE_VERSION, 'topics block is v%d' % block.version)
         rc, out, err = _call(run_check, root, impl)
         expect('current AGENTS.md' in out.splitlines(), 'topics AGENTS.md is not current: %r' % (out + err))
