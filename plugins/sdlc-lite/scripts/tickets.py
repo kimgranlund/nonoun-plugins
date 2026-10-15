@@ -94,6 +94,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             close --reason TEXT is for a ticket whose work other tickets did: it skips the verdict gate
             and the filer (warnings and follow-ups ignored), sets the ticket done, appends ## Outcome
             with verdict `closed by reason (TEXT)`, and files no follow-ups
+            a TEXT matching `on main` or `landed` (case-insensitive) must name a commit sha that is an
+            ancestor of the default branch, else the close refuses
             close --filer --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
             longer apply: follow-ups, duplicates, --dry-run, --skip/--expect and the numbered rename work
             as for a plain close, and each Warnings line becomes an Outcome line `- Deviation:
@@ -1566,6 +1568,40 @@ def default_branch(base):
     return None
 
 
+LANDING_CLAIM_RE = re.compile(r'\b(?:on\s+main|landed)\b', re.I)
+SHA_TOKEN_RE = re.compile(r'\b(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b', re.I)
+
+
+def landing_claim_problem(root, reason):
+    """T-0579: for a --reason that says the work is `on main` or `landed`, the sentence naming what is missing or
+    false, else None. Only the text before fanout's `; verifier notes:` suffix counts. It needs a commit sha that is an ancestor of the default branch; with no default branch (outside
+    git) only the sha is required."""
+    reason = reason.split('; verifier notes:', 1)[0]  # fanout's close_reason appends the verifier's notes verbatim
+    if not LANDING_CLAIM_RE.search(reason):
+        return None
+    shas = SHA_TOKEN_RE.findall(reason)
+    base = file_base(root)
+    branch = default_branch(base)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+    def git_ok(*args):
+        try:
+            return subprocess.run(['git', '-C', str(base), *args], env=env, capture_output=True).returncode == 0
+        except OSError:
+            return False
+    if not shas:
+        return 'it claims the work is on main or landed but names no commit sha'
+    if not branch:
+        return None
+    found = [x for x in shas if git_ok('rev-parse', '--verify', '--quiet', f'{x}^{{commit}}')]
+    if not found:
+        return f'it claims the work is on main or landed but {shas[0]} is not a commit in this repo'
+    for x in found:
+        if not git_ok('merge-base', '--is-ancestor', x, branch):
+            return f'it claims the work is on main or landed but {x} is not an ancestor of {branch}'
+    return None
+
+
 def worktree_warnings(root, ts):
     """T-0550: one `warning:` line per ticket whose `worktree:` (relative to the main checkout) is not a registered
     git worktree on the ticket's `branch:`. Nothing outside git."""
@@ -2857,6 +2893,11 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip, '
                    f'--expect or --ticket; '
                    f'nothing written')
+    if reason is not None:
+        problem = landing_claim_problem(root, reason)
+        if problem:
+            raise Fail(f'{slug}: --reason: {problem}; merge it and name its sha, or reword the reason; '
+                       f'nothing written')
     td = layout_paths(root).tickets
     flag = numbered
     numbered = numbered or config_numbered(root)
@@ -4155,6 +4196,39 @@ def selftest():
                 rc, out, err = run(root, 'close', ('alpha',), reason='no repo')
                 expect(f'(k2) a root outside any repo closes with no lane line: rc={rc} {err!r} {out!r}',
                        rc == 0 and 'lane still open' not in out)
+                # (k3) T-0579: a --reason claiming the work is on main or landed needs a sha that is an ancestor of main
+                root = case(lambda r: None)
+                rc, out, err = run(root, 'close', ('alpha',), reason='landed on main')
+                expect(f'(k3) no repo, landed claim with no sha refuses: rc={rc} {err!r}',
+                       rc == 1 and 'names no commit sha' in err and status(root) != 'done')
+                root = lane_repo(claim=False)
+                lgit(root.parent, 'checkout', '-q', '-b', 'side')
+                (root.parent / 'side.txt').write_text('x\n', encoding='utf-8')
+                lgit(root.parent, 'add', '-A')
+                lgit(root.parent, 'commit', '-q', '-m', 'side')
+                off = subprocess.run(['git', '-C', str(root.parent), 'rev-parse', '--short=10', 'HEAD'], env=lenv,
+                                     capture_output=True, text=True).stdout.strip()
+                lgit(root.parent, 'checkout', '-q', 'main')
+                on = subprocess.run(['git', '-C', str(root.parent), 'rev-parse', '--short=10', 'HEAD'], env=lenv,
+                                    capture_output=True, text=True).stdout.strip()
+                before = snap(root)
+                for why, want in (('landed on main', 'names no commit sha'), (f'Landed on main in {off}', 'not an ancestor'),
+                                  ('on main in 0123456789', 'not a commit')):
+                    rc, out, err = run(root, 'close', ('alpha',), reason=why)
+                    expect(f'(k3) {why!r} refuses with {want!r}: rc={rc} {err!r}',
+                           rc == 1 and want in err and snap(root) == before and status(root) != 'done')
+                rc, out, err = run(root, 'close', ('alpha',), reason=f'landed on main in {on}')
+                expect(f'(k3) an ancestor sha is accepted: rc={rc} {err!r} {out!r}', rc == 0 and status(root) == 'done')
+                root = lane_repo(claim=False)
+                rc, out, err = run(root, 'close', ('alpha',), reason='landed on main in 0123456789; verifier notes: ok')
+                expect(f'(k3) a claim before the notes is still checked: rc={rc} {err!r}',
+                       rc == 1 and 'not a commit' in err and status(root) != 'done')
+                # fanout's close_reason appends the verifier's notes word for word: a note saying landed is not a claim
+                rc, out, err = run(root, 'close', ('alpha',),
+                                   reason='delivered by the solo agent (level L1); gate: full; verifier notes: '
+                                          'landed: ancestor | landed on main')
+                expect(f'(k3) a verifier note saying landed on main with no sha closes: rc={rc} {err!r} {out!r}',
+                       rc == 0 and status(root) == 'done')
             finally:
                 for k in ('GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'):
                     if saved_env.get(k) is None:
