@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:6935e0a563a1 -->
+<!-- sdlc-lite:managed:start v1 sha256:3c9a4e00f41d -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -27,13 +27,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0591 Conductor, worker and verifier rules for Claude, Codex and Pi in one repo (0591-multi-host-roles-doc)
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
 - ready: 0
-- claimed: 3
-  - T-0565 Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md (0565-generated-files-merge), claimed by claude 2026-10-15, branch lane/T-0565-t0565
+- claimed: 2
   - T-0593 A repo pins the minimum plugin version every host must run (0593-plugin-min-version), claimed by claude 2026-10-15, branch lane/T-0593-t0593
   - T-0594 One plugin command records, lands, closes and backs up a lane (0594-land-close-command), claimed by claude 2026-10-15, branch lane/T-0594-t0594
 - paused: 0
 - blocked: 0
-- done: 539
+- done: 540
 - dropped: 29
 
 ## Procedures

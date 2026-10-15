@@ -2,7 +2,7 @@
 id: T-0565
 title: "Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0564]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,12 @@ A conflict in any non-generated file still stops the merge.
 1. A selftest case (in `fanout.py selftest` or `tickets.py selftest`) builds two lanes that each file a ticket, merges both into main, and shows no conflict and a router and roadmap equal to a fresh `tickets.py roadmap`; it failed before the change.
 2. The same fixture with a real conflict in a non-generated file still stops the merge.
 3. `bash plugins/sdlc-lite/scripts/run-selftest.sh` and `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: the throwaway scratch dirs `/Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0565-verifier-L2` (empty after `git worktree remove`) and the scratch dir `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0565-verifier-L2` (d.patch, rs.log) could not be deleted: the rm was denied by permissions. The worktree itself is removed and the repo tree holds only the two builder changes. | note: plugins/sdlc-lite/scripts/fanout.py:61-63 the `land` docstring line for the new text is a single very long line (about 250 chars); cosmetic.) · verifier: verifier-L2 (sonnet) · base: 2c4bae57eee5
+- Changed: see commits
+- Commits: 27a0c8f T-0565: Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md
+- Check: 1 Selftest case: two lanes each file a ticket, merged, no conflict, router and roadmap equal a fres...: pass
+- Check: 2 Same fixture with a real conflict in a non-generated file still stops the merge: pass
+- Check: 3 `bash plugins/sdlc-lite/scripts/run-selftest.sh` and `git diff --check` exit 0: pass
