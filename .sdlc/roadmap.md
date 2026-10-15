@@ -582,4 +582,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0582 | [0582-criteria-replay-amend](0582-criteria-replay-amend/handoff.md) | Plan criteria replayed on main; criterion-only fixes amend without spending the replan | feature | L3 | P2 | none | ⏳ proposed |
 | T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L3 | P3 | none | ⏳ proposed |
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
-| T-0585 | [0585-tidy-topics-archive](0585-tidy-topics-archive/handoff.md) | tickets.py tidy archives into .sdlc/archive under layout: topics | bug | L1 | P2 | none | ⏳ proposed |
+| T-0585 | [0585-tidy-topics-archive](0585-tidy-topics-archive/handoff.md) | tickets.py tidy archives into .sdlc/archive under layout: topics | bug | L1 | P2 | none | 🟡 claimed |
