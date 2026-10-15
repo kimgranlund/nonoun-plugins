@@ -2,14 +2,12 @@
 id: T-0578
 title: "dispatch.py prepare --tree records a stale base for lane trees"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0578-t0578
-worktree: ../sdlc-lite.worktrees/T-0578-t0578
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -30,3 +28,11 @@ A recorded `base-sha` still wins when present.
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0. Its new case covers a lane tree whose HEAD is ahead of the main checkout's HEAD: `prepare --tree <lane>` records the lane's base, not main's. The case failed before the change.
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 5b5f37a91fc3
+- Changed: prepare ignores a solo base recorded in another tree; lane trees get the lane head or start
+- Commits: 04a9201 T-0578: prepare ignores a solo base recorded in another tree; lane base from the lane
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with a new lane-ahead-of-main ca...: pass
+- Check: 2 `git diff --check` exits 0: pass

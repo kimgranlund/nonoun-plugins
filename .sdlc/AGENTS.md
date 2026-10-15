@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:310ce429e3b5 -->
+<!-- sdlc-lite:managed:start v1 sha256:4769306bb69e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -23,13 +23,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0586 Under layout: topics, tidy, check and the router text disagree (0586-topics-tidy-check-agree)
   - T-0587 solo_run.py run --worktree without --cwd records the session checkout's base (0587-solo-worktree-base)
 - ready: 0
-- claimed: 3
-  - T-0578 dispatch.py prepare --tree records a stale base for lane trees (0578-prepare-tree-base), claimed by claude 2026-10-15, branch lane/T-0578-t0578
+- claimed: 2
   - T-0579 close --reason accepts a 'landed on main' claim that is false (0579-close-reason-landed-guard), claimed by claude 2026-10-15, branch lane/T-0579-t0579
   - T-0580 Handover and cleanup can strand unique work on snapshot refs or dangling commits (0580-handover-orphan-work), claimed by claude 2026-10-15, branch lane/T-0580-t0580
 - paused: 0
 - blocked: 0
-- done: 536
+- done: 537
 - dropped: 29
 
 ## Procedures
