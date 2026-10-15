@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:3c9a4e00f41d -->
+<!-- sdlc-lite:managed:start v1 sha256:f65a3ac1325b -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 16
+- proposed: 18
   - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke)
   - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
   - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
@@ -26,6 +26,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0590 lanes.py ready pins the review sha and tells the conductor (0590-lanes-ready-signal)
   - T-0591 Conductor, worker and verifier rules for Claude, Codex and Pi in one repo (0591-multi-host-roles-doc)
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
+  - T-0595 lanes.py finish leaves the lane-close edit staged and can stick on rerun (0595-finish-followups)
+  - T-0596 plugin_min misses solo --no-worktree runs and the installed hooks' version (0596-plugin-min-coverage)
 - ready: 0
 - claimed: 2
   - T-0593 A repo pins the minimum plugin version every host must run (0593-plugin-min-version), claimed by claude 2026-10-15, branch lane/T-0593-t0593

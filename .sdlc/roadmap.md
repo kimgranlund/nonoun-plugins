@@ -592,3 +592,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0592 | [0592-three-host-rehearsal](0592-three-host-rehearsal/handoff.md) | Live rehearsal: Claude, Codex and Pi working tickets in one repo | chore | L2 | P2 | T-0591, T-0570 | ⏳ proposed |
 | T-0593 | [0593-plugin-min-version](0593-plugin-min-version/handoff.md) | A repo pins the minimum plugin version every host must run | feature | L2 | P1 | none | 🟡 claimed (branch lane/T-0593-t0593) |
 | T-0594 | [0594-land-close-command](0594-land-close-command/handoff.md) | One plugin command records, lands, closes and backs up a lane | feature | L3 | P1 | none | 🟡 claimed (branch lane/T-0594-t0594) |
+| T-0595 | [0595-finish-followups](0595-finish-followups/handoff.md) | lanes.py finish leaves the lane-close edit staged and can stick on rerun | bug | L2 | P1 | none | ⏳ proposed |
+| T-0596 | [0596-plugin-min-coverage](0596-plugin-min-coverage/handoff.md) | plugin_min misses solo --no-worktree runs and the installed hooks' version | bug | L2 | P1 | none | ⏳ proposed |
