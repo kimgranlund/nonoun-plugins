@@ -2,14 +2,12 @@
 id: T-0559
 title: "Fanout closes write base: none and Commits: none in the Outcome"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 claimed_by: claude 2026-10-14
-branch: lane/T-0559-w77-0559
-worktree: .claude/worktrees/T-0559-w77-0559
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -37,3 +35,14 @@ The failing test lands before or with the fix. Target 0.23.1.
 2. The `(T-0559)` selftest case (records dir with only a solo dispatch file plus a decoy verifier dispatch file, one `T-0001:` commit) fails on the old `recorded_base` and passes now: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 4. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-14 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 98a82593254d
+- Changed: see commits
+- Commits: 907102b T-0559: Outcome base and commits from the solo dispatch base_sha
+- Check: 1 Root cause and `recorded_base` falls back to the first solo `*.dispatch.json` `base_sha`, non-sol...: pass
+- Check: 2 `(T-0559)` selftest case fails on the old `recorded_base` and passes now: pass
+- Check: 3 `fanout.py selftest` exits 0: pass
+- Check: 4 `git diff --check` exits 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines -> notes.md

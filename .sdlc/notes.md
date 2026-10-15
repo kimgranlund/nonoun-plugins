@@ -543,3 +543,17 @@
 - decide: docs/README.md:62: the 0.23.0 entry sits between the 0.22.6 and 0.22.7 entries; the list was unordered before this change.
 - decide: The throwaway worktree is removed (`git worktree list` shows none); its empty parent `.claude/worktrees/tmp/0545-verifier-L3/` may remain because the `rm -rf` of that prefix was denied by the permission system.
 - note (2026-10-15): the first release CI run (release-check, run 38659829875 on tag v0.23.0) passed, including `claude plugin validate` on a fresh runner; the 0.23.0 report's "first manual CI dispatch" UNVERIFIED line is resolved by it. Warnings to handle in 0.23.1: actions/checkout@v4 and setup-node@v4 run on forced Node 24 (bump to their Node-24 majors), and ubuntu-latest moves to Ubuntu 26 from 2026-10-19.
+
+## T-0558: dispatch.py selftest accept-all controls fail when an unmarked folder sits under TMPDIR/sdlc-lite (2026-10-14)
+
+- note: my first parallel batch showed FAIL (the 3 accept-all controls) for the built-foreign and plain runs. The plain output's `resume:` line names the T-0562 worktree's dispatch.py, so those two calls ran the unmodified script of another worktree (the tool's working directory moved mid-batch), not the built tree. Rerun from the correct tree, the same commands pass in every later run, and the unmodified script left B-/repo-/rr-/tr- folders under the foreign `$TMPDIR/sdlc-lite`, as base behaviour would. I count those two as a wrong-tree artifact, not a defect in the build.
+- note: the selftest takes minutes at load average ~18; one round of three concurrent selftests passed the 600 s foreground cap, so I killed its leftover selftest processes. Throwaway worktrees and scratch output are removed.
+
+## T-0559: Fanout closes write base: none and Commits: none in the Outcome (2026-10-14)
+
+- note: `redck.py deviations` printed no `process deviation:` lines. Criterion #2 has no `(red)` tag, and I observed the red control myself.
+
+## T-0562: Role sub-agents that background a Bash call go idle and never wake when it finishes (2026-10-14)
+
+- note: `redck.py deviations` printed nothing, and the handoff has no `(red)` criterion.
+- note: a main session started with `claude --agent sdlc-lite:solo-L2` and no SDLC_ROLE now resolves to the solo role and has background Bash denied, which is intended.

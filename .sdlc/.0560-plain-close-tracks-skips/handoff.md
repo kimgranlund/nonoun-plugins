@@ -2,14 +2,12 @@
 id: T-0560
 title: "A plain tickets.py close leaves skips.md tracked in the closed folder"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 claimed_by: claude 2026-10-14
-branch: lane/T-0560-w76-0560
-worktree: .claude/worktrees/T-0560-w76-0560
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -36,3 +34,12 @@ The failing test lands before or with the fix. Target 0.23.1.
 1. A plain or `--reason` close of a ticket whose committed task-folder `skips.md` has a runtime records dir moves it there; after `git add -A` the closed folder tracks only `handoff.md`, and the Outcome still reads the lane: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, including its `(T-0560 plain)` and `(T-0560 reason)` cases (red before the fix).
 2. A legacy in-place ticket keeps its `skips.md`: the `(T-0560) a legacy in-place fixture keeps its skips.md in the folder` case passes in the same selftest.
 3. fanout land still closes and untracks as before: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
+
+## Outcome
+
+2026-10-14 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 20104bf87b00
+- Changed: see commits
+- Commits: 6626b0d T-0560: close moves skips.md to the records dir
+- Check: 1 Plain and `--reason` close move a committed task-folder skips.md to the records dir; closed folde...: pass
+- Check: 2 Legacy in-place ticket keeps its skips.md: pass
+- Check: 3 fanout land still closes and untracks as before: pass
