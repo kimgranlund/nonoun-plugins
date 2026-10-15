@@ -152,7 +152,7 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             no steps, so it needs entries for planner and filer; a full ticket needs the results); no skips.md or
             no lane record (tickets closed before the guard) is exempt
   tidy      [--apply] list each entry directly under <root> the layout rule does not allow, as
-            `<name> -> archive/<name>`: allowed are AGENTS.md, CLAUDE.md, config, layout.md, roadmap.md, board.md,
+            `<name> -> archive/<name>` (`work/archive/<name>` under `layout: topics`): allowed are AGENTS.md, CLAUDE.md, config, layout.md, roadmap.md, board.md,
             notes.md, notes, fleet.json, gate-ledger.jsonl, messages, runtime, supervisor, evals, proposals, goals,
             tickets, work, archive, dogfood, a _- or .-prefixed name, a folder holding handoff.md or plan-doc.md,
             a name matching a `top_level_allow: a, b` glob of <root>/config, and a name git ignores. A dry run
@@ -866,32 +866,35 @@ def top_level_warnings(root):
 
 
 def cmd_tidy(root, apply=False):
-    """List, or with apply move, each top_level_strays name into <root>/archive/<name> (T-0544): git mv for a
-    tracked entry, a rename otherwise. apply refuses while any *.running marker exists under <root> or a
-    destination exists. Never touches the project root or a closed ticket folder."""
+    """List, or with apply move, each top_level_strays name into <root>/archive/<name> (T-0544), or into
+    <root>/work/archive/<name> under `layout: topics` (T-0585): git mv for a tracked entry, a rename otherwise.
+    apply refuses while any *.running marker exists under <root> or a destination exists. Never touches the
+    project root or a closed ticket folder."""
     names = top_level_strays(root)
     if not names:
         return 'nothing to tidy'
-    moves = [f'{n} -> archive/{n}' for n in names]
+    adir = layout_paths(root).work / 'archive'
+    arel = adir.relative_to(root).as_posix()
+    moves = [f'{n} -> {arel}/{n}' for n in names]
     if not apply:
         return '\n'.join(moves + ['dry run: nothing moved; rerun with --apply to move'])
     running = sorted(str(p.relative_to(root)) for p in root.rglob('*.running'))
     if running:
         raise Fail('tidy: a role is running (*.running markers): ' + ', '.join(running)
                    + '; rerun once they finish; nothing moved')
-    taken = [f'archive/{n}' for n in names if (root / 'archive' / n).exists() or (root / 'archive' / n).is_symlink()]
+    taken = [f'{arel}/{n}' for n in names if (adir / n).exists() or (adir / n).is_symlink()]
     if taken:
         raise Fail(f'tidy: {", ".join(taken)} already exist(s); nothing moved')
     _, tracked = git_ignored_tracked(root, names)
-    (root / 'archive').mkdir(exist_ok=True)
+    adir.mkdir(parents=True, exist_ok=True)
     env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
     for n in names:
         if n in tracked:
-            subprocess.run(['git', '-C', str(root), 'mv', '-k', '--', n, f'archive/{n}'], env=env,
+            subprocess.run(['git', '-C', str(root), 'mv', '-k', '--', n, f'{arel}/{n}'], env=env,
                            capture_output=True, text=True)
         if (root / n).exists() or (root / n).is_symlink():
-            (root / n).rename(root / 'archive' / n)
-    return f'moved {len(names)} entr{"y" if len(names) == 1 else "ies"} into archive/:\n' + '\n'.join(moves)
+            (root / n).rename(adir / n)
+    return f'moved {len(names)} entr{"y" if len(names) == 1 else "ies"} into {arel}/:\n' + '\n'.join(moves)
 
 
 GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
@@ -5919,6 +5922,20 @@ def selftest():
         (tp / 'board.md').write_text('', encoding='utf-8')
         rc, out, err = run(tp, 'check')
         expect(f'layout topics: _templates, .DS_Store and board.md at <root> are allowed: rc={rc} {err!r}', rc == 0)
+
+        # T-0585 tidy under topics archives into work/archive/, where check accepts it
+        (tp / 'loose-1.md').write_text('loose\n', encoding='utf-8')
+        rc, out, err = run(tp, 'tidy')
+        expect(f'(T-0585) topics tidy lists the move into work/archive/: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.splitlines()[0] == 'loose-1.md -> work/archive/loose-1.md'
+               and (tp / 'loose-1.md').is_file())
+        rc, out, err = run(tp, 'tidy', apply=True)
+        rc2, out2, err2 = run(tp, 'check')
+        expect(f'(T-0585) topics tidy --apply moves a loose file to work/archive/ and check reports no stray: '
+               f'rc={rc},{rc2} {out!r} {err!r} {out2!r} {err2!r}',
+               rc == 0 and (tp / 'work' / 'archive' / 'loose-1.md').is_file()
+               and not (tp / 'loose-1.md').exists() and not (tp / 'archive').exists()
+               and rc2 == 0 and 'stray' not in err2 + out2)
 
         tp = tp_root('tp-close')
         run(tp, 'new', ('feature', 'alpha', 'Alpha'))
