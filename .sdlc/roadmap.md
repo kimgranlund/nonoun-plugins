@@ -595,6 +595,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0595 | [.0595-finish-followups](.0595-finish-followups/handoff.md) | lanes.py finish leaves the lane-close edit staged and can stick on rerun | bug | L2 | P1 | none | 🟢 done |
 | T-0596 | [.0596-plugin-min-coverage](.0596-plugin-min-coverage/handoff.md) | plugin_min misses solo --no-worktree runs and the installed hooks' version | bug | L2 | P1 | none | 🟢 done |
 | T-0597 | [.0597-land-add-ignored](.0597-land-add-ignored/handoff.md) | fanout land's generated-file staging fails on ignored mailbox paths | bug | L1 | P1 | none | 🟢 done |
-| T-0598 | [0598-codex-lane-agents-missing](0598-codex-lane-agents-missing/handoff.md) | Codex verifier in a fresh lane refuses: the lane has no .codex/agents | bug | L1 | P2 | none | ⏳ proposed |
-| T-0599 | [0599-lane-open-leaves-main-dirty](0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | ⏳ proposed |
-| T-0600 | [0600-codex-request-path-docs](0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | ⏳ proposed |
+| T-0598 | [0598-codex-lane-agents-missing](0598-codex-lane-agents-missing/handoff.md) | Codex verifier in a fresh lane refuses: the lane has no .codex/agents | bug | L1 | P2 | none | 🟡 claimed |
+| T-0599 | [0599-lane-open-leaves-main-dirty](0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | 🟡 claimed |
+| T-0600 | [0600-codex-request-path-docs](0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟡 claimed |
