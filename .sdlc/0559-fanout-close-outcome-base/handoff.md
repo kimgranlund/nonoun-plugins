@@ -3,7 +3,7 @@ id: T-0559
 title: "Fanout closes write base: none and Commits: none in the Outcome"
 type: bug             # feature | bug | chore | spike | idea
 status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
-size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
@@ -29,3 +29,9 @@ T-0543 writes the Outcome at close; the fanout close runs in the integration wor
 
 ## Constraints
 The failing test lands before or with the fix. Target 0.23.1.
+
+## Acceptance criteria
+1. Root cause: a solo lane writes no `base-sha`, only `base_sha` in its `<id>-solo-L<n>.dispatch.json`, and `tickets.recorded_base` read `base-sha` files only. `recorded_base` falls back to the first solo `*.dispatch.json` `base_sha` in the records dir, the order `fanout.branch_base` already uses; a non-solo dispatch file is ignored.
+2. The `(T-0559)` selftest case (records dir with only a solo dispatch file plus a decoy verifier dispatch file, one `T-0001:` commit) fails on the old `recorded_base` and passes now: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0.
+3. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
+4. `git diff --check` exits 0.

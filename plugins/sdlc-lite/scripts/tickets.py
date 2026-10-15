@@ -1902,7 +1902,8 @@ def skip_missing(d, covered=()):
 
 def recorded_base(d):
     """The commit a ticket's build started from: the first line of base-sha in d's records dir, else of the lowest
-    live step-<n>/base-sha there; None when no role recorded one."""
+    live step-<n>/base-sha there, else the base_sha of a solo *.dispatch.json there (a solo lane writes no base-sha,
+    T-0559; fanout.branch_base reads the same order); None when no role recorded one."""
     r = records_of(d)
     for f in [r / 'base-sha'] + [p / 'base-sha' for _, p in live_steps(d)]:
         try:
@@ -1911,6 +1912,14 @@ def recorded_base(d):
             continue
         if first:
             return first
+    for f in sorted(r.glob('*.dispatch.json')):
+        try:
+            rec = json.loads(f.read_text(encoding='utf-8'))
+            sha = str(rec.get('base_sha') or '').strip() if rec.get('role') == 'solo' else ''
+        except (OSError, ValueError, AttributeError):
+            sha = ''
+        if sha:
+            return sha
     return None
 
 
@@ -6355,6 +6364,24 @@ def selftest():
         if have_git:
             expect(f'(T-0543 outcome) Commits keeps only the ticket\'s own subjects: {text!r}',
                    re.search(r'\n- Commits: [0-9a-f]{7} T-0001: add x\n', text) is not None and 'unrelated' not in text)
+        if have_git:
+            # (T-0559) a solo lane records no base-sha, only its *.dispatch.json base_sha: close reads that
+            r, d = oc_root('solo-base', git=True)
+            rec = r / 'runtime' / 'tasks' / 'tk'
+            sha = (rec / 'base-sha').read_text(encoding='utf-8').strip()
+            (rec / 'base-sha').unlink()
+            (rec / 'verifier-L2.dispatch.json').write_text(json.dumps({'role': 'verifier', 'base_sha': 'f' * 40}),
+                                                           encoding='utf-8')
+            (rec / '0001-solo-L2.dispatch.json').write_text(json.dumps({'role': 'solo', 'base_sha': sha}),
+                                                            encoding='utf-8')
+            (r.parent / 'x.txt').write_text('x\n', encoding='utf-8')
+            g(r.parent, 'add', 'x.txt')
+            g(r.parent, 'commit', '-qm', 'T-0001: add x')
+            rc, out, err = run(r, 'close', ('tk',), filer=False)
+            text = handoff(d)
+            expect(f'(T-0559) a solo dispatch base_sha gives the Outcome its base and Commits: rc={rc} {err!r} {text!r}',
+                   rc == 0 and f'· base: {sha[:12]}\n' in text
+                   and re.search(r'\n- Commits: [0-9a-f]{7} T-0001: add x\n', text) is not None)
 
         # (T-0543 verdict gate) a failing newest verifier refuses and writes nothing, --force included
         r, d = oc_root('fail', verdicts=('pass', 'fail'))
