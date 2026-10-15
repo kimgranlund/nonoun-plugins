@@ -114,7 +114,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             a skip entry, recorded process deviations, the waiver, acknowledged warnings, kept stale refs,
             deferred criteria) and one `- Follow-up: <tag>: <title> -> <T-NNNN | notes.md>` line per filed
             item. verdict is `closed by reason (<why>)`, pass, `skipped (<reason>)` (a skip entry or the
-            waiver covers a step), or `skipped (filer route)`
+            waiver covers a step), or `skipped (filer route)`. After the Outcome (before any rename) a
+            task-folder skips.md moves into the records dir (T-0560), so the closed folder tracks only
+            handoff.md; a legacy ticket whose records stay in place keeps it
             On every path (plain, --filer, --reason, --ack-warnings, --dry-run) close refuses, writing nothing,
             when the ticket's skips.md records lane solo, lean, fix, or full but lacks a result or a ## Skipped
             entry for the planner or a step verifier, as check does; no skips.md or no lane record is exempt
@@ -1817,6 +1819,24 @@ def skips_path(d):
     return r if r.is_file() else f
 
 
+def move_skips(d):
+    """Lean records (T-0560): move ticket dir d's skips.md into its runtime records dir at close, appending it to one
+    already there unless it holds the same text, so the closed folder tracks only handoff.md, as fanout land leaves
+    it. A legacy ticket whose records stay in place keeps it."""
+    src = d / 'skips.md'
+    if not src.is_file():
+        return
+    dst = run_order.records_dir(d, create=True)
+    if dst.resolve() == d.resolve():
+        return
+    dst /= 'skips.md'
+    text = src.read_text(encoding='utf-8')
+    old = dst.read_text(encoding='utf-8') if dst.is_file() else ''
+    if text not in old:
+        dst.write_text(old + ('\n' if old and not old.endswith('\n') else '') + text, encoding='utf-8')
+    src.unlink()
+
+
 def live_steps(d):
     """[(n, step-<n> dir)] of the live step dirs in d's records dir, by n."""
     r = records_of(d)
@@ -2764,6 +2784,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     ack_warnings (not None, filer route only): pass the open-warnings gate with a recorded reason instead of force;
     each Warnings line becomes a Deviation line `acknowledged warning (<why>): <line>`. It refuses with force, with
     reason, without filer, when empty, and when the filer's Warnings is None.
+    After writing the handoff, move_skips moves a task-folder skips.md into the records dir (T-0560).
     Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap.
     Before archiving, outside_refs lists files outside the folder that reference it, as the literal <rel>/<slug>
     (ending at `/`, the end of a token, or punctuation, never running on into a longer folder name) or as a path token resolving to it relative to the citing file, from the toplevel, or absolute: with hits,
@@ -2932,6 +2953,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         body += outcome(f'closed by reason ({why})')
         note_docs_waiver()
         h.write_bytes((head + body).encode('utf-8'))
+        move_skips(d)
         if archive:
             d.rename(dot)
         rewrote = rewrite_now()
@@ -3092,6 +3114,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     acked = warnings.splitlines() if ack_warnings is not None and warnings else []
     body += outcome(verdict, follow_lines, acked)
     h.write_bytes((head + body).encode('utf-8'))
+    move_skips(d)
     if archive:
         d.rename(dot)
     rewrote = rewrite_now()
@@ -6420,6 +6443,23 @@ def selftest():
         rc, out, err = run(r, 'close', ('tk',), filer=False)
         expect(f'(T-0543 runtime) a legacy in-place fixture still closes: rc={rc} {err!r}',
                rc == 0 and (d / 'step-1' / 'verifier-L2.md').is_file() and 'verdict: pass' in handoff(d))
+        expect('(T-0560) a legacy in-place fixture keeps its skips.md in the folder', (d / 'skips.md').is_file())
+        # (T-0560) a plain close moves a committed task-folder skips.md to the records dir: the closed folder tracks
+        # only handoff.md, and the Outcome still reads the lane from it
+        for label, kw in (('plain', {}), ('reason', {'reason': 'x'})):
+            r, d = oc_root(f'skmv-{label}', numbered=True, git=have_git)
+            rc, out, err = run(r, 'close', (d.name,), filer=False, **kw)
+            cd = r / ('.' + d.name)
+            sk = r / 'runtime' / 'tasks' / d.name / 'skips.md'
+            if have_git:
+                g(r.parent, 'add', '-A')
+                tracked = g(r.parent, 'ls-files', '--', cd.relative_to(r.parent).as_posix()).stdout.split()
+            else:
+                tracked = [f'.sdlc/{cd.name}/{p.name}' for p in sorted(cd.iterdir())]
+            expect(f'(T-0560 {label}) the closed folder tracks only handoff.md and skips.md moved to the records dir: '
+                   f'rc={rc} {err!r} {tracked}',
+                   rc == 0 and tracked == [f'.sdlc/{cd.name}/handoff.md'] and sk.is_file()
+                   and '- lane: full;' in sk.read_text(encoding='utf-8') and '· lane: full ' in handoff(d))
 
         if have_git:
             # (T-0543 runtime) a cite under runtime/ is no citation; the same cite outside runtime/ is one
