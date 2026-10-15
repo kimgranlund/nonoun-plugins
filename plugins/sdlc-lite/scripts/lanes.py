@@ -141,11 +141,14 @@ steps are skipped` (exit 1). Each step skips itself when its effect is already t
               default none): the merge with its conflict rules, the record carry, the gate and the ticket close stay
               fanout's. Skipped when the branch is already in into or in finish/<lane>.
   5. settle   fanout.py settle finish/<lane> (--forward --gate <land_gate:> with a gate): into fast-forwards and the
-              integration tree closes; the per-lane lanes dir goes. Skipped when finish/<lane> does not exist.
+              integration tree closes; the per-lane lanes dir goes. Skipped when finish/<lane> does not exist. With no
+              gate and into moved past finish/<lane> (a rerun after a stop), finish first merges into into it in its
+              tree, the generated files resolved as a land does (fanout.merge_generated), and commits (T-0595).
   6. close    when the ticket in main is not done or dropped (a merge made by hand, a land stopped after its merge):
               carry the lane's records into main (carry_records), tickets.py close <slug> --rewrite-refs (the verdict
               gate), and commit what it changed as `close <id>`.
-  7. lane     close_lane (landed by ancestry), then commit what that close wrote in main as `<id>: lane <lane> closed`.
+  7. lane     close_lane (landed by ancestry), then commit what that close wrote in main as `<id>: lane <lane> closed`,
+              a tracked path in an ignored directory included; a failed commit stops (T-0595).
   8. backup   only with --backup REMOTE/REF: git push REMOTE refs/heads/<into>:REF (refs/heads/ added to a bare REF).
               Without it nothing is pushed.
   A lane already gone with a landed archive ref prints `finish: <lane> is already finished (archive <ref>)` and exits 0,
@@ -948,9 +951,37 @@ def commit_new(top, pre, msg):
     paths = sorted({l[3:].split(' -> ')[-1].strip('"') for l in porcelain(top) - pre})
     if not paths:
         return ''
-    if git(top, 'add', '-A', '--', *paths).returncode or git(top, 'commit', '-q', '-m', msg, '--', *paths).returncode:
+    r = git(top, 'add', '-A', '--', *paths)
+    # T-0595: a tracked path in an ignored directory (the .sdlc/messages/ router files) is staged, and git exits 1 for it
+    if r.returncode and 'ignored by one of your .gitignore' not in r.stderr:
+        return None
+    if git(top, 'commit', '-q', '-m', msg, '--', *paths).returncode:
         return None
     return out(top, 'rev-parse', '--short=7', 'HEAD')
+
+
+def forward(top, integ, into, ldir):
+    """T-0595: merge into into the diverged integ in its worktree, under <ldir>/merge.lock, the generated files resolved
+    as a land does (fanout.merge_generated, T-0565), and commit it. Returns None, or why with the merge aborted."""
+    import fanout  # same scripts/ dir; local because fanout imports lanes
+    wt = next((Path(w['path']) for w in worktrees(top) if w['branch'] == integ), None)
+    if wt is None:
+        return f'no worktree has {integ} checked out; nothing merged'
+    if out(wt, 'status', '--porcelain', '--untracked-files=no'):
+        return f'{wt} has uncommitted tracked changes: commit or discard them first; nothing merged'
+    sha = out(top, 'rev-parse', f'refs/heads/{into}')
+    ldir.mkdir(parents=True, exist_ok=True)
+    with fanout.MergeLock(ldir / 'merge.lock'):
+        m = fanout.merge_generated(wt, sha, wt / '.sdlc')
+        if m in (None, 'up to date'):
+            c = git(wt, 'commit', '-q', '-m', f'finish: merge {into} {sha[:7]} into {integ}') if m is None else None
+            if c is None or c.returncode == 0:
+                return None
+            why = f'the merge commit failed: {err(c)}'
+        else:
+            why = f'{m[0]}: {m[1]}'
+        git(wt, 'merge', '--abort')
+    return f'merging {into} {sha[:7]} into {integ} in {wt}: {why}; the merge is aborted'
 
 
 def script_run(argv, cwd):
@@ -1101,6 +1132,12 @@ def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='
 
     # 5. settle: fast-forward main to the integration branch, then close its tree (fanout.py settle)
     if has_ref(top, f'refs/heads/{integ}'):
+        # a rerun after into moved past the land: with no gate, settle cannot --forward, so finish merges into first
+        if not gate and git(top, 'merge-base', '--is-ancestor', f'refs/heads/{into}', f'refs/heads/{integ}').returncode \
+                and git(top, 'merge-base', '--is-ancestor', f'refs/heads/{integ}', f'refs/heads/{into}').returncode:
+            why = forward(top, integ, into, ldir)
+            if why:
+                return stop('settle', why)
         argv = [str(HERE / 'fanout.py'), 'settle', integ] + (['--forward', '--gate', gate] if gate else [])
         r = script_run(argv, top)
         if r.returncode:
@@ -1136,6 +1173,8 @@ def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='
     if r['rc']:
         return stop('lane', r['message'].splitlines()[-1] if r['message'] else f'rc={r["rc"]}')
     sha = commit_new(top, pre, f'{tid}: lane {name} closed')
+    if sha is None:
+        return stop('lane', f'{name} closed but the commit failed: commit what it changed as `{tid}: lane {name} closed`')
     say('lane: ' + '; '.join(l for l in r['message'].splitlines() if l) + (f' ({sha} {tid}: lane {name} closed)' if sha else ''))
 
     # 8. backup: only with --backup, the one push, of main as it now stands
@@ -2665,6 +2704,47 @@ def case_finish_fail(script, base):
     return fails
 
 
+def case_finish_ignored(script, base):
+    """T-0595: the lane close rewrites a tracked file in an ignored directory (as the live .sdlc/messages/ is); git add
+    stages it and exits 1, and finish still commits it, leaving main clean."""
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-ignored')
+    with (t.top / '.git' / 'info' / 'exclude').open('a') as f:
+        f.write('.sdlc/0001-fin/\n')  # the ticket's handoff is tracked, its directory ignored
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    fails = [] if rc == 0 and 'close: skipped (T-0001 is done in main)' in o and f'{leaf} closed)' in o else \
+        [f'finish ignored: want exit 0, close skipped and the lane close committed, got {rc}: {o}']
+    if t.g('status', '--porcelain'):
+        fails.append(f'finish ignored: main is left dirty: {t.g("status", "--porcelain")}')
+    return fails
+
+
+def case_finish_moved(script, base):
+    """T-0595: land merged into finish/<lane>, then main moved (a new ticket, so the roadmap conflicts) before settle;
+    a finish with no land_gate merges main into finish/<lane> and settles."""
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-moved')
+    t.commit('rest', {'fin2.txt': 'more\n'}, cwd=tree)
+    r = subprocess.run([sys.executable, str(HERE / 'fanout.py'), 'land', b, '--ticket', 'T-0001', '--integration',
+                        f'finish/{leaf}', '--lanes-dir', str(t.tree(leaf).parent / 'finish' / leaf), '--base', 'refs/heads/main',
+                        '--rewrite-refs', '--lane', 'solo'], cwd=str(t.top), capture_output=True, text=True,
+                       env=dict(os.environ, **FIN_ENV))
+    if r.returncode:
+        return [f'finish moved: fixture land failed: {r.stdout} {r.stderr}']
+    t.write({'.sdlc/0002-t/handoff.md': '---\nid: T-0002\ntitle: "Moved on"\ntype: feature\nstatus: ready\nsize: L1\n'
+                                        'priority: P2\ndepends: []\ncreated: 2026-10-15\n---\n\nbody\n'})
+    t.sh([sys.executable, str(HERE / 'tickets.py'), '--root', '.sdlc', 'roadmap'], t.top)
+    t.g('add', '-A')
+    t.commit('file T-2')
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    fails = [] if rc == 0 and f'finish: {leaf} done' in o else [f'finish moved: want exit 0 and done, got {rc}: {o}']
+    if finish_state(t, b, leaf) != ('done', False, False, False):
+        fails.append(f'finish moved: want (done, no tree, no branch, no finish branch), got {finish_state(t, b, leaf)}')
+    if not (t.ok('cat-file', '-e', 'main:fin2.txt') and t.ok('cat-file', '-e', 'main:.sdlc/0002-t/handoff.md')):
+        fails.append('finish moved: main lacks the lane work or the ticket filed after the land')
+    if t.g('status', '--porcelain'):
+        fails.append(f'finish moved: main is left dirty: {t.g("status", "--porcelain")}')
+    return fails
+
+
 def selftest():
     script = Path(__file__).resolve()
     src = script.read_text()
@@ -2796,6 +2876,10 @@ def run_selftest(script, src, base):
         need('finish resume', case_finish_resume(script, base),
              'after a stop between merge and close a rerun closes and removes the lane with no second merge')
         need('finish fail', case_finish_fail(script, base), 'a fail verdict stops before any commit or merge')
+        need('finish ignored', case_finish_ignored(script, base),
+             'a skipped close still commits the lane close, an ignored tracked path included, and main is clean')
+        need('finish moved', case_finish_moved(script, base),
+             'main moved between land and settle: a rerun merges main into finish/<lane> and settles')
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')
