@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:89fb9fa91252 -->
+<!-- sdlc-lite:managed:start v1 sha256:740daf9da091 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -30,12 +30,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0596 plugin_min misses solo --no-worktree runs and the installed hooks' version (0596-plugin-min-coverage)
   - T-0597 fanout land's generated-file staging fails on ignored mailbox paths (0597-land-add-ignored)
 - ready: 0
-- claimed: 2
-  - T-0593 A repo pins the minimum plugin version every host must run (0593-plugin-min-version), claimed by claude 2026-10-15, branch lane/T-0593-t0593
-  - T-0594 One plugin command records, lands, closes and backs up a lane (0594-land-close-command), claimed by claude 2026-10-15, branch lane/T-0594-t0594
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 540
+- done: 542
 - dropped: 29
 
 ## Procedures

@@ -2,14 +2,12 @@
 id: T-0593
 title: "A repo pins the minimum plugin version every host must run"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0593-t0593
-worktree: ../sdlc-lite.worktrees/T-0593-t0593
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -31,3 +29,14 @@ No `plugin_min:` line means no check. The comparison is numeric per part (0.10.0
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0. Its new case shows `plugin_min:` above the manifest version refusing with exit 2 and both versions named, and an equal version passing. The case failed before the change.
 2. `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0 with the same refusal for `run.sh`, and `lanes.py selftest` exits 0 with it for `open`.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 2c4bae57eee5
+- Changed: plugin_min: in .sdlc/config makes prepare, run.sh and lanes.py open refuse an older plugin
+- Commits: 49a1536 T-0593: A repo pins the minimum plugin version every host must run
+- Check: 1 dispatch.py selftest exits 0 with the plugin_min case: pass
+- Check: 2 run-selftest.sh exits 0 with the run.sh refusal, lanes.py selftest exits 0 with the open refusal: pass
+- Check: 3 git diff --check exits 0: pass
+- Follow-up: note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0593-t0593... -> notes.md
+- Follow-up: note: The ticket Intent says onboard.py setup "can set the line"; the... -> notes.md

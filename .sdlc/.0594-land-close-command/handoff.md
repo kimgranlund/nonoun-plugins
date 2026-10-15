@@ -2,14 +2,12 @@
 id: T-0594
 title: "One plugin command records, lands, closes and backs up a lane"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0594-t0594
-worktree: ../sdlc-lite.worktrees/T-0594-t0594
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +33,13 @@ Never pushes without `--backup`. Never closes without a pass verdict. Stops on a
 
    The cases failed before (no command).
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L3 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 2c4bae57eee5
+- Changed: lanes.py finish records, lands, settles, closes and removes a lane in one rerunnable command
+- Commits: 6fd473e T-0594: lanes.py finish records, lands, settles, closes and removes a lane in one rerunnable command; b54808c T-0594: record planner skip for solo L3
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with new cases for a pass lane, a r...: pass
+- Check: 2 `git diff --check` exits 0: pass
+- Follow-up: note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0594-t0594... -> notes.md
+- Follow-up: note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0594-t0594... -> notes.md

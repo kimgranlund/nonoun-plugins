@@ -626,3 +626,13 @@
 ## T-0580: Handover and cleanup can strand unique work on snapshot refs or dangling commits (2026-10-15)
 
 - note: `plugins/sdlc-lite/scripts/lanes.py` (`orphans`) lists the second commit of a stash (dangling `WIP on main: ...`) and old `refs/stash` entries as orphans. This is consistent with the ticket ("dangling commits whose patch is not on main"), so I filed it as an observation and not a defect.
+
+## T-0594: One plugin command records, lands, closes and backs up a lane (2026-10-15)
+
+- note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0594-t0594/plugins/sdlc-lite/scripts/lanes.py:1118 Constraint "stops on any merge conflict outside generated files" is delegated to `fanout.py land` and was not exercised by a finish selftest case; the criteria do not require one. The `--lane solo`, gate and conflict paths depend on fanout's own selftests.
+- note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0594-t0594/plugins/sdlc-lite/scripts/lanes.py:1060 The record step (a pending verifier or solo dispatch, priced by transcript) is only exercised as `nothing pending` in the selftest; its `dispatch.py record` path was not observed.
+
+## T-0593: A repo pins the minimum plugin version every host must run (2026-10-15)
+
+- note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0593-t0593/docs/references/sdlc-internals.md:25 lists dispatch.py's gate order ("preflight ... mailbox notice, goal precheck, replan cap, lane gate...") without the new `plugin_min` gate; the new section at line 149 covers it, but the dispatch paragraph and the exit-code line at dispatch.py:106 do not name it.
+- note: The ticket Intent says `onboard.py setup` "can set the line"; the build documents that it does not (a maintainer sets it by hand). The acceptance criteria do not require it.
