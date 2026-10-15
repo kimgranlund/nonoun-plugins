@@ -145,7 +145,7 @@ for pm_host in claude codex; do
     || fail "plugin_min: $pm_need above $pm_have on $pm_host: want exit 2 naming both and $pm_cmd, got $pm_rc: $pm_out"
 done
 echo "plugin_min: $pm_have" >"$repo/.sdlc/config"
-pm_rc=0; pm_out=$(cd "$repo" && CLAUDE_PLUGIN_ROOT= SDLC_PLUGIN_CACHE="$tmp/no-cache" SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" scout L1 .sdlc/pmin/handoff.md 2>&1) || pm_rc=$?
+pm_rc=0; pm_out=$(cd "$repo" && CLAUDE_PLUGIN_ROOT='' SDLC_PLUGIN_CACHE="$tmp/no-cache" SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" scout L1 .sdlc/pmin/handoff.md 2>&1) || pm_rc=$?
 [[ "$pm_rc" == 0 && "$pm_out" != *plugin_min* ]] || fail "plugin_min: equal to $pm_have: want exit 0, got $pm_rc: $pm_out"
 rm -rf "$repo/.sdlc/config" "$repo/.sdlc/pmin"
 
