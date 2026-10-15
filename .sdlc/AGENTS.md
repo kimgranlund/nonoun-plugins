@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1016565c271d -->
+<!-- sdlc-lite:managed:start v1 sha256:31f6b4d2d449 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -25,11 +25,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0583 Driver loop wakes on role completion or state change, not timed polling (0583-event-driven-driver)
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
 - ready: 0
-- claimed: 1
-  - T-0566 fanout.py land carries the lane's run records to main (0566-land-copies-runtime), claimed by claude 2026-10-15, branch lane/T-0566-t0566
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 533
+- done: 534
 - dropped: 29
 
 ## Procedures

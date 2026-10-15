@@ -2,14 +2,12 @@
 id: T-0566
 title: "fanout.py land carries the lane's run records to main"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0564]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0566-t0566
-worktree: ../sdlc-lite.worktrees/T-0566-t0566
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -34,3 +32,15 @@ Never delete or overwrite a newer record in main. A lane under the sibling root 
 2. A main record newer than the lane's copy is kept.
 3. `grep -n 'copy the lane' .claude/agents/sdlc-lite-author.md` prints nothing.
 4. `bash plugins/sdlc-lite/scripts/run-selftest.sh` and `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: ba2daeddeeb4
+- Changed: fanout.py land and lanes.py close carry lane runtime records into main, never overwriting newer files
+- Commits: 7e44a04 T-0566: fanout.py land and lanes.py close carry the lane's runtime records into main
+- Check: 1 A `fanout.py selftest` case lands a lane with a verifier result under its runtime, then `tickets....: pass
+- Check: 2 A main record newer than the lane's copy is kept: pass
+- Check: 3 `grep -n 'copy the lane' .claude/agents/sdlc-lite-author.md` prints nothing: pass
+- Check: 4 `bash plugins/sdlc-lite/scripts/run-selftest.sh` and `git diff --check` exit 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py land_ticket carries records... -> notes.md
+- Follow-up: note: lanes.py close --discard carries nothing, by design and covered by... -> notes.md

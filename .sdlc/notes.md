@@ -603,3 +603,8 @@
 - note: `redck.py deviations` printed no `process deviation:` lines; the handoff has no `(red)` criteria.
 - note: the 6 em dashes on added lines are all in regenerated `plugins/sdlc-lite/adapters/codex/agents/*.toml` and replace 6 removed lines that already had them; none are in hand-written text.
 - note: could not delete scratch under /var/folders/.../0568-verifier-L2 (rm denied by the permission system); the throwaway worktree is removed and `git worktree list` shows no 0568-verifier entry.
+
+## T-0566: fanout.py land carries the lane's run records to main (2026-10-15)
+
+- note: plugins/sdlc-lite/scripts/fanout.py `land_ticket` carries records into main before the merge gate, so a red land also carries them (the new fanout case exercises exactly this with `--gate false`). Handoff criterion 1 does not forbid it, and `tickets.py close` still gates on the verdict, so it is harmless.
+- note: `lanes.py close --discard` carries nothing, by design and covered by `case_carry`.
