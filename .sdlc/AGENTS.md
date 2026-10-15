@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:6d709d8a570b -->
+<!-- sdlc-lite:managed:start v1 sha256:038a74468d0d -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -28,9 +28,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
 - ready: 0
 - claimed: 3
-  - T-0595 lanes.py finish leaves the lane-close edit staged and can stick on rerun (0595-finish-followups), claimed by claude 2026-10-15
-  - T-0596 plugin_min misses solo --no-worktree runs and the installed hooks' version (0596-plugin-min-coverage), claimed by claude 2026-10-15
-  - T-0597 fanout land's generated-file staging fails on ignored mailbox paths (0597-land-add-ignored), claimed by claude 2026-10-15
+  - T-0595 lanes.py finish leaves the lane-close edit staged and can stick on rerun (0595-finish-followups), claimed by claude 2026-10-15, branch lane/T-0595-t0595
+  - T-0596 plugin_min misses solo --no-worktree runs and the installed hooks' version (0596-plugin-min-coverage), claimed by claude 2026-10-15, branch lane/T-0596-t0596
+  - T-0597 fanout land's generated-file staging fails on ignored mailbox paths (0597-land-add-ignored), claimed by claude 2026-10-15, branch lane/T-0597-t0597
 - paused: 0
 - blocked: 0
 - done: 542
