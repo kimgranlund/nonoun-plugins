@@ -1,7 +1,0 @@
-Manifest: .sdlc/lean-sdlc-review/decompose/manifest-v1.json (technical-architecture · plan) · coverage_check: clean (strict clean)
-Quadrant: load-bearing
-Outside-in: 21 leaves across lane decision, lean text, plan record, layout, batching, measurement, release and live evidence. The design's own build order was not MECE: C1 and C2 both change `steps.py split`, D1 and D2 both change `tickets.py` ticket-root code, and "plan.md" as a planner output has no node because run.sh fixes result names; the manifest re-cuts those as plan-naming, split-merge, review-count and layout-resolver, migrate, check-layout. One pure-structure node was dropped (a "validation" grouping) because every negative control hosts on the leaf it guards.
-Inside-out: 30 actions. Two needs the design states but gives no home: "verify a whole ticket on a family none of its builders used" (run.sh's family rule only sees a builder in the verifier's own dir, so a task-dir verifier is unguarded) and "keep roadmap and notes readable after they move" (tickets.py hardcodes <root>/roadmap.md and <root>/notes.md at lines 842, 851, 1231, 1308, 1547, 1595). Both now host on batch-verify and layout-resolver. The design's "forced same-family run is refused by run.sh" names a solution that does not exist: run.sh remaps the model silently and never refuses.
-Hand-off: /plan
-
-Not done here: the handoff's Context line `Decomposition: decompose/report.md` was not added, because the review handoff forbids editing any file other than the result and the decompose output.
