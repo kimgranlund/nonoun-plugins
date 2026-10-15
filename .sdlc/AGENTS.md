@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e38f67a99f14 -->
+<!-- sdlc-lite:managed:start v1 sha256:e811e777d57c -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,7 +16,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0558 dispatch.py selftest accept-all controls fail when an unmarked folder sits under TMPDIR/sdlc-lite (0558-dispatch-selftest-tmpdir-leak), claimed by claude 2026-10-14, branch lane/T-0558-w76-0558
   - T-0560 A plain tickets.py close leaves skips.md tracked in the closed folder (0560-plain-close-tracks-skips), claimed by claude 2026-10-14, branch lane/T-0560-w76-0560
   - T-0561 Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again (0561-bare-clone-worktree-root), claimed by claude 2026-10-14, branch lane/T-0561-w76-0561
-  - T-0562 Role sub-agents that background a Bash call go idle and never wake when it finishes (0562-role-background-bash-stall), claimed by claude 2026-10-14
+  - T-0562 Role sub-agents that background a Bash call go idle and never wake when it finishes (0562-role-background-bash-stall), claimed by claude 2026-10-14, branch lane/T-0562-w77-0562
 - paused: 0
 - blocked: 0
 - done: 521
