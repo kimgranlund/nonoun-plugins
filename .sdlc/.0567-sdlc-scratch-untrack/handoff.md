@@ -2,14 +2,12 @@
 id: T-0567
 title: "Tracked scratch under .sdlc moves to reports or runtime"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0567-t0567
-worktree: .claude/worktrees/T-0567-t0567
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -34,3 +32,15 @@ Do not remove anything a tracked file links to; move it instead.
 1. `git ls-files .sdlc | grep -E '^\.sdlc/(fleet-retro-|verify-|merge-tickets-)'` prints nothing.
 2. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc tidy` lists nothing to move.
 3. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 and `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L1 · verdict: pass · verifier: verifier-L2 (opus) · base: d438b220edd8
+- Changed: untracked 82 one-off .sdlc scratch folders; 6 cited verifier files moved to docs/reports
+- Commits: 64409c6 T-0567: untrack one-off scratch under .sdlc, move cited verifier files to docs/reports
+- Check: 1 `git ls-files .sdlc | grep -E '^\.sdlc/(fleet-retro-|verify-|merge-tickets-)'` prints nothing: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc tidy` lists nothing to move: pass
+- Check: 3 `tickets.py --root .sdlc check` exits 0 and `git diff --check` exits 0: pass
+- Follow-up: fix-now: docs/reports/2026-10-08-fleet-retro-06.md:38... -> notes.md
+- Follow-up: decide: docs/reports/release-0.20.6.md:19 and about 60 more report lines... -> notes.md
+- Follow-up: note: .sdlc/notes.md:186 and .sdlc/notes.md:233 mention... -> notes.md
