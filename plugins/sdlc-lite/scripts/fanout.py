@@ -1619,10 +1619,17 @@ def merge_generated(wt, ref, root):
     if r.returncode:
         return 'roadmap', (r.stderr or r.stdout).strip() or str(r.returncode)
     present = [x for x, path_ in gen.items() if path_.exists()]
-    ignored = set(git(wt, 'check-ignore', '--', *present).stdout.splitlines()) if present else set()
-    present = [x for x in present if x not in ignored]  # a git-ignored mailbox is not a record (tracked ones stay)
     if present:
-        git_out(wt, 'add', '--', *present)
+        # `git add -- <path>` refuses a path under an ignored directory even when it is tracked (T-0597), so tracked
+        # files go through `add -u` and only untracked, non-ignored ones through a plain add
+        tracked = set(git_out(wt, 'ls-files', '--', *present).splitlines())
+        rest = [x for x in present if x not in tracked]
+        ignored = set(git(wt, 'check-ignore', '--', *rest).stdout.splitlines()) if rest else set()
+        rest = [x for x in rest if x not in ignored]  # a git-ignored untracked mailbox file is not a record
+        if tracked:
+            git_out(wt, 'add', '-u', '--', *sorted(tracked))
+        if rest:
+            git_out(wt, 'add', '--', *rest)
     return None
 
 
@@ -4895,9 +4902,14 @@ def selftest():
         # T-0565: two lanes from the same main each file a ticket (T-0003, T-0004), so both regenerate the roadmap and
         # the router; the second land resolves that conflict and regenerates them for the merged tree, and settle moves
         # main there. Negative control: README.md edited on both lanes still stops the second land as a merge conflict.
-        def gen_fixture(name, readme=False):
+        def gen_fixture(name, readme=False, mailbox=False):
             r_, lanes_ = tmp / name, tmp / f'{name}-lanes'
-            sized_repo(r_, ['L1', 'L1'], {'.gitignore': gi, 'README.md': 'base\n'})
+            sized_repo(r_, ['L1', 'L1'], {'.gitignore': gi + ('.sdlc/messages/\n' if mailbox else ''), 'README.md': 'base\n'})
+            if mailbox:  # T-0597: a git-ignored mailbox whose router files are partly tracked (the rest stay untracked)
+                subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'roadmap'], cwd=str(r_),
+                               env=ENV, capture_output=True, text=True)
+                sh(r_, 'add', '-f', '--', '.sdlc/messages/CLAUDE.md', '.sdlc/messages/done/CLAUDE.md')
+                sh(r_, 'commit', '-q', '-m', 'track some mailbox router files')
             for k, tid, slug_ in ((1, 'T-0003', 'third'), (2, 'T-0004', 'fourth')):
                 sh(r_, 'checkout', '-q', '-b', f'worktree-T-000{k}-solo', 'main')
                 tn = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'new', 'chore', slug_,
@@ -4944,6 +4956,13 @@ def selftest():
         expect(f'T-0565 lane merge: the merge commit itself carries the regenerated roadmap and router (both lanes\' '
                f'tickets), got merge={gmerge!r} changed={g_gen!r}',
                bool(gmerge) and len(g_gen) == 2 and '| T-0003 |' in g_show and '| T-0004 |' in g_show)
+        mr, mlands = gen_fixture('gen-merge-mailbox', mailbox=True)
+        m_tracked = sh(mr, 'ls-files', '.sdlc/messages').stdout.split()
+        expect(f'T-0597 lane merge: with .sdlc/messages/ git-ignored and some of its router files tracked, both lands exit 0, '
+               f'the tracked ones are staged and committed, the untracked ignored ones are skipped, got '
+               f'{[(x.returncode, x.stdout[-300:], x.stderr[-300:]) for x in mlands]!r} tracked={m_tracked!r}',
+               all(x.returncode == 0 for x in mlands)
+               and m_tracked == ['.sdlc/messages/CLAUDE.md', '.sdlc/messages/done/CLAUDE.md'])
         nr, nlands = gen_fixture('gen-merge-readme', readme=True)
         n_tip = sh(nr, 'rev-parse', 'fanout/g').stdout.strip()
         n_wt = tree_of(nr, 'fanout/g')
