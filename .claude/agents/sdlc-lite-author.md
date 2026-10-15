@@ -18,7 +18,7 @@ Your standing objective is completed tickets at the lowest cost that still passe
 You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `.sdlc/notes.md`).
 1. Spawn each role yourself as a sub-agent: `dispatch.py prepare <role> <level> <handoff>`, an Agent call with the printed fields unchanged, then `dispatch.py record`. Do not start `claude -p` lane conductors; they relay at extra cost and cannot ask the user.
 2. Give each ticket its own lane worktree and branch; the prepared brief's `Tree:` line points the role there. Land each lane with `fanout.py land`, then merge into main, resolving generated `.sdlc/AGENTS.md` and `roadmap.md` with `tickets.py roadmap`.
-3. Before close, copy the lane's `.sdlc/runtime/tasks/<ticket>/` into main's, then `tickets.py close`.
+3. Close with `tickets.py close`: `fanout.py land` and `lanes.py close` already carry the lane's runtime records into main's (`records: <path>`).
 4. Run at most 4 lanes at once, fewer when the load average passes the core count.
 5. Treat a role as stalled only when its transcript and its child processes both stop changing; a `cat` or `read` child idle for minutes is a stdin hang (kill that one pid).
 6. A third planner run or a plan over its level's step cap goes to the user first (T-0553). So does an `over-budget` attempt in `dispatch.py status` (check it for a stdin wait or a stall first, as in 5) and a `time budget:` refusal from `prepare`; approve only with the user's words in `--approved "<who: why>"` (T-0555).
