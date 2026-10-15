@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e3f2a8957754 -->
+<!-- sdlc-lite:managed:start v1 sha256:01062d535afc -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,12 +9,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 5
+- proposed: 7
   - T-0565 Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md (0565-generated-files-merge)
   - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke)
   - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
   - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
   - T-0573 notes.md keeps only live notes (0573-prune-notes)
+  - T-0576 Root AGENTS.md managed block names flat-layout paths after layout: topics (0576-onboard-block-reads-layout)
+  - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
 - ready: 0
 - claimed: 2
   - T-0566 fanout.py land carries the lane's run records to main (0566-land-copies-runtime), claimed by claude 2026-10-15, branch lane/T-0566-t0566
