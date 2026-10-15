@@ -36,19 +36,19 @@ The user decided these on 2026-10-05. They override any older sentence below tha
 
 | | `docs/` | `.sdlc/` |
 | --- | --- | --- |
-| Holds | Durable knowledge for readers: specs, plans for decisions, decisions, lookups, guides, dated evidence | Work records and runtime state: tickets, task folders, handoffs, plans, role results, step folders, `runs.jsonl`, `skips.md`, messages, notes, roadmap, evals, proposals, supervisor state, config |
+| Holds | Durable knowledge for readers: specs, plans for decisions, decisions, lookups, guides, dated evidence | Work records and runtime state: tickets, task folders, handoffs, `skips.md`, messages, notes, roadmap, evals, proposals, supervisor state, config; plans, role results, step folders and `runs.jsonl` in the ignored records dir `runtime/tasks/<folder>/` (0.23.0) |
 | Written by | A person or a role, deliberately, then reviewed | `tickets.py`, `run.sh`, `steps.py`, `messages.py`, `fanout.py`, `budget.py`, roles and the conductor, as a side effect of work |
-| Lifetime | Outlives the ticket that produced it | Lives with the ticket; closed ticket folders are renamed `.NNNN-slug` and hidden |
+| Lifetime | Outlives the ticket that produced it | Lives with the ticket; closed ticket folders are renamed `.NNNN-slug` and hidden, keeping `handoff.md` with its `## Outcome`; run records stay local |
 | Edited | In place, by a change that updates the doc | Appended or regenerated; a generated block is never hand-edited |
 | Read by default | Only the folder the task needs | Only the router and the stage the task needs |
 
 Rules (checks in the Enforcement section):
 
 - **B-1** Nothing generated per run lives in `docs/`. That includes a role result, a `runs.jsonl`, a verifier result, a `skips.md`, a message and a roadmap.
-- **B-2** A finished Markdown deliverable written for a reader does not live in `.sdlc/`, but a role result stays where `run.sh` wrote it: `run.sh` writes each role result into the handoff folder, and `steps.py` and `order.py` read it there. A design review or verifier result is therefore first a work record, and the reader deliverable is its promoted copy. A report, benchmark, audit or release record that is written for readers is written directly into `docs/reports/`.
+- **B-2** A finished Markdown deliverable written for a reader does not live in `.sdlc/`, but a role result stays where the runner wrote it: each role result goes into the task's records dir (`.sdlc/runtime/tasks/<folder>/`, local and ignored; `order.py records-dir <task dir>` prints it), and `steps.py` and `order.py` read it there. A design review or verifier result is therefore first a work record, and the reader deliverable is its promoted copy, made before the ticket closes because the record never reaches git. A release or retro record written for readers is written directly into `docs/reports/`. A ticket writes no dated report of its own: its durable record is the `## Outcome` that `tickets.py close` appends to its handoff.
 - **B-3** `docs/` cites a ticket by id (`T-0240`) as text, never by path. A closed ticket folder is renamed to `.NNNN-slug`, and `tickets.py close` already refuses when a file cites its path without `--rewrite-refs`. `.sdlc/` may link into `docs/` by path.
-- **B-4** A ticket's plan, handoff and step folders stay in `.sdlc/`. A plan is a work record even when it is long.
-- **B-5** State a script reads or writes (`evals/table-lock.json`, `config`, `supervisor/`) stays in `.sdlc/`. A person-readable summary of an eval, if wanted, is a report in `docs/reports/`.
+- **B-4** A ticket's handoff stays in `.sdlc/<folder>/` and is its one committed record; its plan, step folders and role results stay in its records dir under `.sdlc/runtime/tasks/`. A plan is a work record even when it is long.
+- **B-5** State a script reads or writes (`evals/table-lock.json`, `config`, `supervisor/`, `runtime/`) stays in `.sdlc/`; `runtime/` is never committed. A person-readable summary of an eval, if wanted, is a report in `docs/reports/`.
 
 ### Promotion
 
@@ -226,7 +226,7 @@ Both are first drafts for this repository, in the one schema, with the `row` pro
 
 | id | holds | not | why | form | read |
 | --- | --- | --- | --- | --- | --- |
-| `NNNN-slug/` | a ticket and its work: `handoff.md`, `step-N/`, role results, `runs.jsonl`, `skips.md` | reader docs -> `docs/` | one folder per unit of work | `handoff.md` front matter; results `<role>-L<n>.md` | when claiming or continuing it |
+| `NNNN-slug/` | a ticket: `handoff.md` (`## Outcome` at close), `skips.md` | reader docs -> `docs/` | one folder per unit of work | `handoff.md` front matter; results `<role>-L<n>.md` | when claiming or continuing it |
 | `<task>/` | work folders with no ticket: `verify-*`, `merge-*`, `release-*` | tickets -> `NNNN-slug/` | same shape as a ticket folder | handoff plus results | when told to |
 | `.NNNN-slug/` | a closed ticket | open work -> `NNNN-slug/` | finished work leaves the listing | renamed by `tickets.py close` | only when asked |
 | `messages/` | the git-ignored mailbox | anything that must last -> ticket or `notes.md` | hand work between harnesses | front matter `send_time`, `sender`, `receiver`, `topic` | when mail waits for you |

@@ -24,3 +24,18 @@ Maintainer decisions: `.sdlc/notes.md` "Lean work records (maintainer decisions 
 
 ## Constraints
 Preserve independent verification, the recorded build base, reference-safe closure and restart recovery. Legacy task folders stay readable with no migration.
+
+## Acceptance criteria
+verifier: L3
+- [ ] `bash plugins/sdlc-lite/scripts/check.sh` exits 0
+- [ ] `python3 scripts/check-packaging.py` exits 0
+- [ ] `git diff --check` exits 0
+- [ ] `git diff --quiet 0ee323daed22acdd49273097bc445da9de911efa -- plugins/sdlc-lite/adapters/claude/levels.json plugins/sdlc-lite/adapters/codex/models.json` exits 0 (the wave base from `.lane.json`)
+- [ ] `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0
+- [ ] `grep -q '"version": "0.23.0"' plugins/sdlc-lite/.claude-plugin/plugin.json` exits 0 and `grep -q '"version": "0.23.0"' plugins/sdlc-lite/.codex-plugin/plugin.json` exits 0
+- [ ] `grep -q '^## \[0.23.0\] - 2026-10-14' CHANGELOG.md` exits 0
+- [ ] `grep -q 'migrate-0.23.sh' docs/reports/2026-10-14-release-0-23-0.md` exits 0 and `grep -q 'reports/2026-10-14-release-0-23-0.md' docs/README.md` exits 0
+- [ ] `sed -n '/^## Still UNVERIFIED/,$p' docs/reports/2026-10-14-release-0-23-0.md | grep -c -E 'T-0507|Codex .run.sh. time budgets|T-0549 interactive|first manual CI dispatch'` prints 4
+- [ ] `test -f plugins/sdlc-lite/skills/handoff-format/references/writing-rules.md` exits 0 and `grep -q 'references/writing-rules.md' plugins/sdlc-lite/skills/handoff-format/SKILL.md` exits 0
+- [ ] `! grep -q 'moves to the records dir in a later release' plugins/sdlc-lite/skills/handoff-format/SKILL.md` exits 0
+- [ ] `grep -q 'printed only .*0001-subtract/handoff.md' docs/reports/2026-10-14-release-0-23-0.md` exits 0 (the live solo L2 lane on the release build left only `handoff.md` tracked in its closed folder)

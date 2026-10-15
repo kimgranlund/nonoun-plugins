@@ -2,6 +2,8 @@
 
 Version 0.4, 2026-10-04. Proposal. Nothing here is built. Tickets T-0189, T-0190, T-0191, T-0192.
 
+Superseded in part by 0.23.0 lean work records (T-0539 to T-0545): a ticket's committed record is its `handoff.md` (plus `skips.md` until a fanout close moves it), closed with a `## Outcome` that `tickets.py close` writes; role results, step folders, attempts and `runs.jsonl` live in the ignored records dir `.sdlc/runtime/tasks/<folder>/`; the filer runs only when asked (`/file`, `close --filer`). Statements below about where artifacts live and when the filer runs describe 0.22 and earlier.
+
 v0.4 applies the second review's eleven findings. v0.3 recorded the user's decisions (see Resolved decisions) and applies the second independent review (`../validation/lean-sdlc-design-review-2.md`). v0.2 applied the first independent review (`../validation/lean-sdlc-design-review.md`, verdict not ready at v0.1): the plan record keeps the existing planner result names, batched verification needs a runner change first, the layout move is re-scoped around a path resolver, and the build order is re-cut so each file has one writer.
 
 ## Problem
@@ -143,7 +145,7 @@ For a two-step ticket on the lean lane: at most 14 files and 60 KB of `.md`, aga
   AGENTS.md            router (entry file, as today)
   CLAUDE.md            @AGENTS.md
   config               layout and ticket settings
-  tickets/             NNNN-slug/ per ticket, with its artifacts inside; .NNNN-slug/ when closed
+  tickets/             NNNN-slug/ per ticket (handoff.md, skips.md); .NNNN-slug/ when closed
     AGENTS.md  CLAUDE.md  roadmap.md
   work/                <slug>/ for tasks with no ticket (release records, verification handoffs, dogfood runs)
     AGENTS.md  CLAUDE.md
@@ -151,12 +153,12 @@ For a two-step ticket on the lean lane: at most 14 files and 60 KB of `.md`, aga
   notes/               notes.md and its entry file
   evals/  proposals/  supervisor/    planned in T-0183 to T-0187 (still proposed); each gets its own entry file when built
   _templates/
-  runtime/  dogfood/   git-ignored today (`.gitignore`), unchanged
+  runtime/  dogfood/   git-ignored; runtime/tasks/<folder>/ holds each task's run records (0.23.0)
 ```
 
 Root holds only the router, its import, `config`, `_templates/`, and the git-ignored `runtime/` and `dogfood/`. The target moves `roadmap.md` to `tickets/roadmap.md` and `notes.md` to `notes/notes.md`. That move is a user decision (open question 3): `tickets.py` hardcodes the root paths (`tickets.py:842, 851, 1231, 1308, 1547, 1595`), `ticket_dir` documents that they "stay at <root> either way" (`tickets.py:304`), the citing-file scan skips `<rel>/roadmap.md` by that path (`tickets.py:535`), `onboard.py:252` prints `.sdlc/roadmap.md` inside the managed `AGENTS.md` block (a template version bump for every consumer), `tickets.py roadmap` also regenerates `messages/AGENTS.md`, and ten files outside the plugin, including the repository root `AGENTS.md`, cite `.sdlc/roadmap.md`. The alternative leaves both files at the root and removes all of that, at the cost of the "root holds only entry files" rule.
 
-A ticket's artifacts stay inside its own folder (`tickets/0181-messages-wait/step-1/...`). Step paths and `runs.jsonl` therefore stay relative to the ticket folder, and `steps.py`, `run.sh`, and the verifiers, which take a task directory as an argument, do not change. The layout change is in one resolver (below) that returns the ticket directory, the roadmap path, and the notes path; every caller that today builds `root / 'roadmap.md'` goes through it.
+A ticket's artifacts stay inside its own folder (`tickets/0181-messages-wait/step-1/...`); since 0.23.0 they stay in its records dir (`runtime/tasks/0181-messages-wait/step-1/...`), which `order.py records_dir` resolves from the task folder. Step paths and `runs.jsonl` therefore stay relative to the task, and `steps.py`, `run.sh`, and the verifiers, which take a task directory as an argument, do not change. The layout change is in one resolver (below) that returns the ticket directory, the roadmap path, and the notes path; every caller that today builds `root / 'roadmap.md'` goes through it.
 
 ### What changes
 
@@ -216,7 +218,7 @@ A role may be skipped only by an entry in the ticket's `skips.md` (one line: rol
 - The independent verifier on any step at builder L4 or L5, and on any merge step.
 - The plan review that `steps.py review` requires (steps at L4 or L5 only).
 - A focused live run for a role behavior change, and the checks in the root validation matrix.
-- The filer when the builder or verifier reported follow-ups or warnings.
+- The filer when the builder or verifier reported follow-ups or warnings (0.22; since 0.23.0 `tickets.py close` takes follow-ups from the verifier's `## Notes` and the filer runs only when asked).
 - The user's approval for any publish or external write, and any decision that is the user's to make.
 
 These are the invariants in the repository and plugin `AGENTS.md`. Nothing in this design edits them.

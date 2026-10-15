@@ -16,6 +16,6 @@ Runbooks, test plans, reports, research notes, postmortems, policies, and the gl
 
 1. A runbook step has one action. Put a warning before the step it applies to, never after.
 2. A test case traces to at least one requirement ID. A case that traces to nothing tests nothing anyone asked for.
-3. A report states its answer in the first paragraph. Dated evidence goes in `docs/reports/`, named `YYYY-MM-DD-slug.md`.
+3. A report states its answer in the first paragraph. Dated evidence goes in `docs/reports/`, named `YYYY-MM-DD-slug.md`. A release or a retro writes one; a single ticket does not, and its evidence is the `## Outcome` of its handoff.
 4. A postmortem names systems and decisions, not people. Each action item has an owner and a ticket.
 5. A glossary term has exactly one definition. A second sense is a second term.
