@@ -118,7 +118,8 @@ it then does the following.
                scratch dir, runs the wtroot.py crash sweep (a dead owner past the limit goes, an unmarked folder is
                reported), then reports strays: worktrees and local branches that appeared since
                prepare (its snapshot sits in the attempt record) under a tmp root or on a branch named with the
-               role's agent name, the own prefix left out; peers' worktrees and branches are not reported. Report only.
+               role's agent name, the own prefix left out; peers' worktrees and branches, and the
+               host-owned trees (~/.codex/worktrees/*, Claude Code's .claude/worktrees/agent-*), are not reported. Report only.
   stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
                while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
   result_sha256 (T-0388) the sha256 of the result file as accepted, after the header write, stored in the attempt
@@ -1149,8 +1150,8 @@ def validate_result(role, path):
 
 
 def tmp_roots(tree):
-    """The roots a dispatch tmp prefix may sit under: <worktree root>/tmp (T-0563), and for one release the legacy
-    <main checkout>/.claude/worktrees/tmp (T-0550) and .worktrees/tmp, and <tree>/.worktrees/tmp of an attempt prepared
+    """The roots a dispatch tmp prefix may sit under: <worktree root>/tmp (T-0563), and for one release
+    the legacy <main checkout>/.claude/worktrees/tmp (T-0550) and .worktrees/tmp, and <tree>/.worktrees/tmp of an attempt prepared
     before 0.23.0."""
     roots = [str(r) for r in wtroot.tmp_roots(tree)] + [os.path.join(tree, wtroot.LEGACY, 'tmp')]
     return list(dict.fromkeys(os.path.realpath(r) for r in roots))
@@ -1207,13 +1208,15 @@ def remove_tmp(tree, prefix):
 def strays(tree, prefix, attempt):
     """(worktree [path, branch] pairs, branch names) that appeared since prepare and belong to this role: a worktree under
     a tmp root (tmp_roots; its own prefix left out) or on a branch named with the role's agent name, a branch with that
-    name as prefix. Peers' worktrees and branches elsewhere are not this role's (T-0371)."""
+    name as prefix. Peers' worktrees and branches elsewhere are not this role's (T-0371), nor is a host-owned tree
+    (host-owned: ~/.codex/worktrees/*, .claude/worktrees/agent-*, wtroot.host_owned; T-0564)."""
     if 'worktrees_before' not in attempt:
         return [], []
     seen, known = set(attempt['worktrees_before']), set(attempt.get('branches_before', []))
     roots, mine = tmp_roots(tree), os.path.basename(prefix.rstrip('/'))
     own_br = lambda b: bool(b) and b.startswith(mine)
-    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix) and (any(under(p, r) for r in roots) or own_br(b))]
+    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix) and not wtroot.host_owned(p)
+           and (any(under(p, r) for r in roots) or own_br(b))]
     return wts, [b for b in branches(tree) if b not in known and own_br(b)]
 
 

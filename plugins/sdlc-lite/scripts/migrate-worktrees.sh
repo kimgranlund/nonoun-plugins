@@ -3,11 +3,11 @@
 #        migrate-worktrees.sh --selftest  prove it on a throwaway fixture repo
 # T-0563: SDLC Lite puts every worktree in the sibling root outside the repo, <main checkout parent>/<name>.worktrees/
 # (scripts/wtroot.py root; a worktree_root: line in .sdlc/config overrides it). Before it, lanes and role trees lived
-# under <main checkout>/.claude/worktrees/ (0.23.0 and 0.23.1, T-0550) or <main checkout>/.worktrees/ (before 0.23.0).
+# under the legacy <main checkout>/.claude/worktrees/ (0.23.0 and 0.23.1, T-0550) or <main checkout>/.worktrees/ (before 0.23.0).
 # A dry run (the default) prints each planned step and changes nothing; --apply acts. Idempotent: a second run finds
 # nothing to move and changes nothing.
-#   1. Each registered worktree under .worktrees/ or .claude/worktrees/ moves to the same relative path under the root
-#      with git worktree move (never mv): `move .claude/worktrees/<rel> -> <root>/<rel>`. It is skipped and reported
+#   1. Each registered worktree under a legacy root, .worktrees/ or .claude/worktrees/, moves to the same relative path under the root
+#      with git worktree move (never mv): `move <legacy>/<rel> -> <root>/<rel>`. It is skipped and reported
 #      (`skip <legacy>/<rel>: <why>`) when it is Claude Code's own tree (.claude/worktrees/agent-*), locked (a running
 #      lane), has uncommitted changes (git status --porcelain), has a live owner (a *.running marker under it, a
 #      .owner.json whose pid runs, or a run.sh prefix tmp/<role>-<pid> whose pid runs), is a lane whose branch has not
@@ -15,7 +15,7 @@
 #   2. tickets.py --root .sdlc tidy (T-0544) lists, or with --apply moves, loose .sdlc/ entries into .sdlc/archive/.
 #   3. Unregistered folders under a legacy root stay where they are and are listed (`left in place: <path>`).
 #   4. With --apply, empty folders under each legacy root go; .worktrees/ itself is removed only when it ends empty,
-#      .claude/worktrees/ itself stays (Claude Code's own folder).
+#      .claude/worktrees/ itself stays (Claude Code's own, host-owned folder).
 # The last line is `nothing to move` when no worktree is planned to move (skips included).
 # Read paths keep accepting both legacy roots for one release, so a skipped lane still lands; rerun after it lands.
 # A bare clone (core.bare, lanes beside the bare dir, T-0561) has no main checkout: run from the bare dir or any lane,
@@ -46,7 +46,7 @@ migrate() {
   main=$(git worktree list --porcelain | sed -n '1,/^$/s/^branch refs\/heads\///p' | head -n1)
   # the legacy roots this run reads; one that is the root itself (a worktree_root: line naming it) has nothing to move
   local -a legacy=()
-  for src in .claude/worktrees .worktrees; do
+  for src in .claude/worktrees .worktrees; do  # the legacy roots
     [[ "$top/$src" == "$root" || "$root" == "$top/$src/"* ]] || legacy+=("$src")
   done
   local -a paths=() srcs=() branches=() locks=()
@@ -70,7 +70,7 @@ migrate() {
   local i n=${#paths[@]}
   for (( i = 0; i < n; i++ )); do
     p=${paths[i]}; src=${srcs[i]}; b=${branches[i]}; rel=${p#"$top/$src/"}; dest="$root/$rel"; why=""
-    if [[ "$src" == .claude/worktrees && "$rel" == agent-* ]]; then why="Claude Code's own worktree"
+    if [[ "$src" == .claude/worktrees && "$rel" == agent-* ]]; then why="Claude Code's own worktree"  # host-owned
     elif [[ "${locks[i]}" == 1 ]]; then why="locked (a running lane)"
     elif [[ -n "$(git -C "$p" status --porcelain 2>/dev/null)" ]]; then why="uncommitted changes"
     elif why=$(live_owner "$p" "$rel"); [[ -n "$why" ]]; then :
@@ -189,23 +189,24 @@ selftest() {
     cat "$r/.gitignore"; git -C "$r" status --porcelain
   }
   mkdir -p "$r" && git -C "$r" init -q -b main
-  printf '.worktrees/\n.claude/worktrees/\n.sdlc/runtime/\n*.running\n' >"$r/.gitignore"
+  L=.claude/worktrees  # the legacy 0.23 root; Claude Code's agent-* trees in it are host-owned
+  printf '.worktrees/\n%s/\n.sdlc/runtime/\n*.running\n' "$L" >"$r/.gitignore"
   mkdir -p "$r/.sdlc" && echo x >"$r/.sdlc/stray-notes.txt" && : >"$r/.sdlc/config"
   g add -A && g commit -q -m init
-  # .worktrees/ (before 0.23.0): clean, dirty, live, ahead; .claude/worktrees/ (0.23): clean, locked, ahead, agent-x,
+  # .worktrees/ (before 0.23.0): clean, dirty, live, ahead; the legacy .claude/worktrees/ (0.23): clean, locked, ahead, agent-x,
   # a run.sh tmp prefix, and a lane whose destination already exists
   for name in clean dirty live ahead; do g worktree add -q -b "lane/$name" "$r/.worktrees/$name"; done
-  for name in c-clean c-locked c-ahead agent-x taken; do g worktree add -q -b "lane/$name" "$r/.claude/worktrees/$name"; done
+  for name in c-clean c-locked c-ahead agent-x taken; do g worktree add -q -b "lane/$name" "$r/$L/$name"; done
   dead=$(bash -c 'echo $$')
-  g worktree add -q --detach "$r/.claude/worktrees/tmp/builder-$dead/w" HEAD
-  g worktree lock "$r/.claude/worktrees/c-locked"
+  g worktree add -q --detach "$r/$L/tmp/builder-$dead/w" HEAD
+  g worktree lock "$r/$L/c-locked"
   mkdir -p "$s/taken" && echo occupied >"$s/taken/f.txt"
   echo new >"$r/.worktrees/ahead/ahead.txt" && g -C "$r/.worktrees/ahead" add ahead.txt && g -C "$r/.worktrees/ahead" commit -q -m "not landed"
-  echo new >"$r/.claude/worktrees/c-ahead/c.txt" && g -C "$r/.claude/worktrees/c-ahead" add c.txt && g -C "$r/.claude/worktrees/c-ahead" commit -q -m "not landed"
+  echo new >"$r/$L/c-ahead/c.txt" && g -C "$r/$L/c-ahead" add c.txt && g -C "$r/$L/c-ahead" commit -q -m "not landed"
   echo scratch >"$r/.worktrees/dirty/untracked.txt"
   mkdir -p "$r/.worktrees/live/.sdlc/runtime/tasks/x" && echo 1 >"$r/.worktrees/live/.sdlc/runtime/tasks/x/builder-L1.running"
   mkdir -p "$r/.worktrees/handmade" && echo keep >"$r/.worktrees/handmade/notes.txt"
-  mkdir -p "$r/.claude/worktrees/host" && echo '{}' >"$r/.claude/worktrees/host/h.lane.json"
+  mkdir -p "$r/$L/host" && echo '{}' >"$r/$L/host/h.lane.json"
 
   out=$(cd "$t" && bash "$me" 2>&1); rc=$?
   [[ $rc -eq 2 && "$out" == *'not a git repository'* ]] && ok "outside a repository it refuses with exit 2" || bad "outside a repository it refuses with exit 2"
@@ -216,7 +217,7 @@ selftest() {
   out=$(cd "$r" && bash "$me" 2>&1); rc=$?
   snap2=$(state)
   [[ $rc -eq 0 && "$snap1" == "$snap2" ]] && ok "dry run exits 0 and changes nothing" || bad "dry run exits 0 and changes nothing"
-  [[ "$out" == *"would move .worktrees/clean -> $s/clean"* && "$out" == *"would move .claude/worktrees/c-clean -> $s/c-clean"* ]] \
+  [[ "$out" == *"would move .worktrees/clean -> $s/clean"* && "$out" == *"would move $L/c-clean -> $s/c-clean"* ]] \
     && ok "dry run plans a move from each legacy root to the sibling root" || bad "dry run plans a move from each legacy root to the sibling root: $out"
   [[ "$out" == *'stray-notes.txt -> archive/stray-notes.txt'* ]] && ok "dry run lists the tidy move of a loose .sdlc file" || bad "dry run lists the tidy move of a loose .sdlc file"
 
@@ -225,27 +226,27 @@ selftest() {
   listed "$s/clean" && [[ ! -e "$r/.worktrees/clean" ]] \
     && ok "a clean landed .worktrees/ lane moves with git worktree move and git worktree list shows the sibling path" \
     || bad "a clean landed .worktrees/ lane moves with git worktree move and git worktree list shows the sibling path"
-  listed "$s/c-clean" && [[ ! -e "$r/.claude/worktrees/c-clean" ]] \
-    && ok "a clean landed .claude/worktrees/ lane moves to the sibling root" || bad "a clean landed .claude/worktrees/ lane moves to the sibling root"
+  listed "$s/c-clean" && [[ ! -e "$r/$L/c-clean" ]] \
+    && ok "a clean landed $L/ lane moves to the sibling root" || bad "a clean landed $L/ lane moves to the sibling root"
   listed "$s/tmp/builder-$dead/w" && ok "a dead run.sh prefix tree moves under the sibling tmp/" || bad "a dead run.sh prefix tree moves under the sibling tmp/"
-  [[ "$out" == *"skip .claude/worktrees/agent-x: Claude Code's own worktree"* ]] && listed "$r/.claude/worktrees/agent-x" \
+  [[ "$out" == *"skip $L/agent-x: Claude Code's own worktree"* ]] && listed "$r/$L/agent-x" \
     && ok "a Claude-owned agent-* tree is skipped and reported (negative control)" || bad "a Claude-owned agent-* tree is skipped and reported (negative control)"
-  [[ "$out" == *'skip .claude/worktrees/c-locked: locked (a running lane)'* ]] && listed "$r/.claude/worktrees/c-locked" \
+  [[ "$out" == *"skip $L/c-locked: locked (a running lane)"* ]] && listed "$r/$L/c-locked" \
     && ok "a locked tree is skipped and reported (negative control)" || bad "a locked tree is skipped and reported (negative control)"
   [[ "$out" == *'skip .worktrees/dirty: uncommitted changes'* && -d "$r/.worktrees/dirty" ]] \
     && ok "a dirty tree is skipped and reported (negative control)" || bad "a dirty tree is skipped and reported (negative control)"
   [[ "$out" == *'skip .worktrees/live: live owner'* && -d "$r/.worktrees/live" ]] \
     && ok "a live tree (a .running marker) is skipped and reported (negative control)" || bad "a live tree (a .running marker) is skipped and reported (negative control)"
-  [[ "$out" == *'skip .worktrees/ahead: branch lane/ahead has not landed on main'* && "$out" == *'skip .claude/worktrees/c-ahead: branch lane/c-ahead has not landed on main'* ]] \
+  [[ "$out" == *'skip .worktrees/ahead: branch lane/ahead has not landed on main'* && "$out" == *"skip $L/c-ahead: branch lane/c-ahead has not landed on main"* ]] \
     && ok "an unlanded lane is skipped and reported, from each legacy root (negative control)" || bad "an unlanded lane is skipped and reported, from each legacy root (negative control)"
-  [[ "$out" == *"skip .claude/worktrees/taken: destination $s/taken exists"* && -f "$s/taken/f.txt" ]] && listed "$r/.claude/worktrees/taken" \
+  [[ "$out" == *"skip $L/taken: destination $s/taken exists"* && -f "$s/taken/f.txt" ]] && listed "$r/$L/taken" \
     && ok "a lane whose destination exists is skipped and the destination kept" || bad "a lane whose destination exists is skipped and the destination kept"
-  [[ "$out" == *'left in place: .worktrees/handmade (not a registered worktree)'* && "$out" == *'left in place: .claude/worktrees/host (not a registered worktree)'* ]] \
+  [[ "$out" == *'left in place: .worktrees/handmade (not a registered worktree)'* && "$out" == *"left in place: $L/host (not a registered worktree)"* ]] \
     && ok "unregistered folders under each legacy root are left in place and listed" || bad "unregistered folders under each legacy root are left in place and listed"
   [[ "$out" != *'left in place: .worktrees/dirty'* && "$out" != *'left in place: .worktrees/live/'* ]] \
     && ok "a registered worktree and the folders inside one are not listed as left in place" || bad "a registered worktree and the folders inside one are not listed as left in place"
   [[ -f "$r/.sdlc/archive/stray-notes.txt" ]] && ok "tickets.py tidy moved the loose .sdlc file into archive/" || bad "tickets.py tidy moved the loose .sdlc file into archive/"
-  [[ -d "$r/.worktrees" && "$out" == *'kept .worktrees/'* && -d "$r/.claude/worktrees" ]] \
+  [[ -d "$r/.worktrees" && "$out" == *'kept .worktrees/'* && -d "$r/$L" ]] \
     && ok "the legacy roots are kept while they are not empty" || bad "the legacy roots are kept while they are not empty"
 
   snap1=$(state)
@@ -255,17 +256,17 @@ selftest() {
     && ok "a second apply moves nothing, changes nothing and says nothing to move (idempotent)" || bad "a second apply moves nothing, changes nothing and says nothing to move (idempotent): $out"
 
   rm "$r/.worktrees/dirty/untracked.txt" "$r/.worktrees/live/.sdlc/runtime/tasks/x/builder-L1.running"
-  rm -r "$r/.worktrees/handmade" "$r/.claude/worktrees/host" "$s/taken"
-  g worktree unlock "$r/.claude/worktrees/c-locked"
+  rm -r "$r/.worktrees/handmade" "$r/$L/host" "$s/taken"
+  g worktree unlock "$r/$L/c-locked"
   g add -A && g commit -q -m tidy  # the tidy move, so the non-fast-forward merge below has a clean index
   g merge -q --no-edit lane/ahead; g merge -q --no-edit lane/c-ahead
   out=$(cd "$r" && bash "$me" --apply 2>&1); rc=$?
   [[ $rc -eq 0 && ! -e "$r/.worktrees" && $(git -C "$r" worktree list --porcelain | grep -c "^worktree $s/") -eq 9 ]] \
     && ok "with the blockers gone every SDLC tree moves and the empty .worktrees/ is removed" || bad "with the blockers gone every SDLC tree moves and the empty .worktrees/ is removed: $out"
-  [[ -d "$r/.claude/worktrees" ]] && listed "$r/.claude/worktrees/agent-x" && [[ ! -e "$r/.claude/worktrees/tmp" ]] \
-    && ok ".claude/worktrees/ keeps Claude's agent-x tree and loses its emptied tmp/" || bad ".claude/worktrees/ keeps Claude's agent-x tree and loses its emptied tmp/"
+  [[ -d "$r/$L" ]] && listed "$r/$L/agent-x" && [[ ! -e "$r/$L/tmp" ]] \
+    && ok "$L/ keeps Claude's agent-x tree and loses its emptied tmp/" || bad "$L/ keeps Claude's agent-x tree and loses its emptied tmp/"
   out=$(cd "$r" && bash "$me" 2>&1)
-  [[ "$out" == "skip .claude/worktrees/agent-x: Claude Code's own worktree"$'\n''nothing to move' ]] \
+  [[ "$out" == "skip $L/agent-x: Claude Code's own worktree"$'\n''nothing to move' ]] \
     && ok "a dry run of a migrated repo says nothing to move: $(tr '\n' '|' <<<"$out")" || bad "a dry run of a migrated repo says nothing to move: $out"
   out=$(cd "$r" && bash "$here/migrate-0.23.sh" 2>&1)
   [[ "$out" == *'nothing to move' ]] && ok "migrate-0.23.sh runs this script" || bad "migrate-0.23.sh runs this script: $out"

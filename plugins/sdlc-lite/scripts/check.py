@@ -107,7 +107,7 @@
    `--stagger`, `--yes-many`, `--allow-overlap`, and the sub-agent lane entry points `def cmd_prep(`, `def cmd_land(`, and
    `SOLO_SUBAGENT_PROMPT`; its SOLO_TIERS agree with the levels in agents/solo.md (L1 `Sonnet
    low`, L2 `Sonnet high`, L3 `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
-   `--max-lanes`, `--stagger`, `fanout.py prep`, `fanout.py land`, the `Tree: <path>` line of a full-chain brief, and `.claude/worktrees/`. Negative controls: a changed level, and each phrase removed, must be flagged.
+   `--max-lanes`, `--stagger`, `fanout.py prep`, `fanout.py land`, the `Tree: <path>` line of a full-chain brief, and `wtroot.py root`. Negative controls: a changed level, and each phrase removed, must be flagged.
 25. Agent command: skills/agent/SKILL.md names every agents/*.md stem in backticks, its start table names only
    agents that exist and have a Codex entry in adapters/codex/models.json, and it names `block-role-spawn.sh`.
    Negative controls: a stem removed from the skill, a table row for a name with no agent file, and a table row
@@ -968,7 +968,7 @@ if not guard_numbers_bad(__doc__, _src + '\n# x (docstring ' + 'item 99)'): erro
 # Fanout solo first (docstring item 24): fanout.py picks the lane per ticket and starts solo at the solo.md levels.
 SOLO_ROW_RE = r"'(L[1-3])': \('(\w+)', '(\w+)', '(L\d)'\)"
 FANOUT_PHRASES = ('sdlc-lite:solo', 'solo_command(', 'SOLO_VERIFIER', '--max-lanes', '--stagger', '--yes-many', '--allow-overlap', 'def cmd_prep(', 'def cmd_land(', 'SOLO_SUBAGENT_PROMPT')
-FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger', 'fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/')
+FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger', 'fanout.py prep', 'fanout.py land', '`Tree: <path>`', 'wtroot.py root')
 def fanout_solo_bad(fan, solo, skill):
     bad = [f'fanout.py missing "{ph}"' for ph in FANOUT_PHRASES if ph not in fan]
     bad += [f'skills/fanout/SKILL.md missing "{ph}"' for ph in FANOUT_SKILL_PHRASES if ph not in skill]
@@ -983,7 +983,7 @@ errors.extend(fanout_solo_bad(_ff, _fs, _fk))
 for _mut in (lambda t: t.replace("'L2': ('opus', 'medium', 'L2')", "'L2': ('opus', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause'), lambda t: t.replace('def cmd_land(', 'def cmd_x(')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
-for _ph in ('fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/'):
+for _ph in ('fanout.py prep', 'fanout.py land', '`Tree: <path>`', 'wtroot.py root'):
     if not fanout_solo_bad(_ff, _fs, _fk.replace(_ph, '')): errors.append(f'check.py: fanout sub-agent lane negative control not flagged for the skill without {_ph}')
 # Agent command (docstring item 25): the /agent skill's names agree with agents/*.md and the Codex mapping.
 def agent_cmd_bad(skill, stems, codex_keys):

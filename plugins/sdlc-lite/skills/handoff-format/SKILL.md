@@ -96,7 +96,7 @@ successor: T-NNNN|<repo>:T-NNNN   # optional, the ticket that supersedes, delive
 claimed_by: <harness> <YYYY-MM-DD>   # optional, who works on it; shown in the router; a second claimant checks it first; required when status is claimed
 paused_reason: <one line>   # required when status is paused
 branch: <lane branch>   # optional, written by the lane opener (lanes.py open, tickets.py branch); removed when the lane closes
-worktree: <path>   # optional, beside branch: the lane worktree relative to the main checkout (.claude/worktrees/<lane>); check warns when it is not registered on that branch
+worktree: <path>   # optional, beside branch: the lane worktree relative to the main checkout (../<repo>.worktrees/<lane>); check warns when it is not registered on that branch
 area: <name>   # optional, one of the areas: line in .sdlc/config; a domain, never a lane
 router: .sdlc/AGENTS.md   # stamped by new: the folder rules (.sdlc/tickets/AGENTS.md with ticket_root: tickets)
 ---

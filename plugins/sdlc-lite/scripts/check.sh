@@ -6,7 +6,7 @@
 # hook live probe selftest
 # (hook-live-probe.sh --selftest: offline, a stub claude; the live probe spends a model call and
 # never runs here), the check_pool.py selftest, the wtroot.py selftest (worktree root, owner markers, crash sweep) and the
-# migrate-worktrees.sh selftest (the .worktrees/ and .claude/worktrees/ to sibling-root migration on a fixture repo), a shellcheck pass,
+# migrate-worktrees.sh selftest (the legacy .worktrees/ and .claude/worktrees/ to sibling-root migration on a fixture repo), a shellcheck pass,
 # plugin manifest validation.
 # Usage: check.sh [--fast] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
 # else the core count), each job's output printed whole in list order, then the failed jobs with the first one named.

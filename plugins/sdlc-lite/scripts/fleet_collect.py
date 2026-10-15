@@ -42,7 +42,7 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   also has a pull_request run of the same workflow).
 
 Runs. Every `.sdlc/**/runs.jsonl` under the repo and each worktree (`git worktree list`, plus `.worktrees/*`
-and `.claude/worktrees/*`) is read and deduplicated by attempt_id (a row with none is deduplicated on its
+and `.claude/worktrees/*`, the legacy roots) is read and deduplicated by attempt_id (a row with none is deduplicated on its
 whole line), the way budget.py dedupes. A worktree's `.sdlc` carries the ticket's runs, so the totals cover
 the repo's whole history, not one checkout. A record under `.sdlc/runtime/tasks/<key>/` (the records dir,
 order.py) belongs to its task folder (order.task_dir), keyed by that folder's path under `.sdlc` (`.0001-a`,
@@ -185,7 +185,7 @@ def worktree_roots(repo):
     """(main-first list of every checkout root, list of linked worktree roots), by realpath.
 
     Linked = registered with git (not the first entry) or a directory under `.worktrees` or
-    `.claude/worktrees` of the repo (covers a non-git repo and fanout lane dirs git forgot)."""
+    `.claude/worktrees` (legacy roots) of the repo (covers a non-git repo and fanout lane dirs git forgot)."""
     repo = os.path.realpath(repo)
     listed = []
     r = run_bounded(['git', '-C', repo, 'worktree', 'list', '--porcelain'], PROBE_TIMEOUT)

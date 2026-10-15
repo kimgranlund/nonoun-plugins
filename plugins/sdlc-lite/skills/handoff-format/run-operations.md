@@ -55,7 +55,7 @@ A builder's edits exist only in `$wt`. They must be committed on a named branch 
 
 Removal uses no `--force`, so a dirty worktree is refused instead of silently discarded. Only the recipe's own worktree is removed. Never prune or remove other worktrees, branches, or stashes.
 
-The recipe does not reuse `SDLC_TMP_WORKTREES`. `run.sh` sets that prefix only inside one role run, under `<main checkout>/.claude/worktrees/tmp/<role>-<pid>`, and deletes it when that run exits. It cannot hold a worktree that must outlive a builder run for the verifier, and it would sit inside the checkout that must not be touched. The run's own stray report does not flag `$wt`, because `$wt` exists before the run's snapshot.
+The recipe does not reuse `SDLC_TMP_WORKTREES`. `run.sh` sets that prefix only inside one role run, under `<worktree root>/tmp/<role>-<pid>` (`wtroot.py root`), and deletes it when that run exits. It cannot hold a worktree that must outlive a builder run for the verifier. The run's own stray report does not flag `$wt`, because `$wt` exists before the run's snapshot.
 
 ## Merge ops
 

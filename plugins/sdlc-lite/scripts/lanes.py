@@ -29,9 +29,11 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   integration      lanes.py open --kind integration    <lanes root>/<slug of name>         <name> (wave/<N>)     lane_into:, else main      sweep after the fast-forward
   rolling scratch  fanout.py roll                      <lanes-dir>/rolling, detached       none                  none                       roll itself, at its end
   solo worktree    lanes.py open --kind solo           <lanes root>/<ticket>-<slug>        lane/<ticket>-<slug>  lane_into:, else main      sweep
-  host lane        the Claude host, isolation:worktree .claude/worktrees/<name>            worktree-<name>       the integration branch     dispatch.py prune --done, else sweep
+  host lane        the Claude host, isolation:worktree .claude/worktrees/<name> (host-owned) worktree-<name>     the integration branch     dispatch.py prune --done, else sweep
   runner tmp       run.sh, dispatch.py                 <lanes root>/tmp/<name>, detached   none                  none                       run.sh EXIT, remove_tmp, reap-tmp-worktrees.sh, wtroot sweep
   manual           a person                            anywhere                            any                   none                       the person; listed, never touched
+  host-owned       Codex (~/.codex/worktrees/*) or Claude Code (.claude/worktrees/agent-*), wtroot.host_owned: sweep prints
+                   `kept <path>: host-owned (<host>)` and never closes it, even with a host record; prune --done may (T-0564)
 
   Names (17.1): kinds fanout and solo need --ticket; the slug is <name> lowercased with every run of characters
   outside [a-z0-9-] replaced by -, cut to 40 characters; a leading # is dropped from the ticket in the leaf.
@@ -69,6 +71,7 @@ refs/remotes/pr/1 is never ambiguous.
 Truth table for close and sweep; the first matching row wins.
 
   row        state                                                          outcome                                                    exit
+  host-owned sweep only, before row 1: wtroot.host_owned names the tree         kept <path>: host-owned (<host>)                           0
   1          not a plugin lane                                              not a plugin lane: <path>                                  2
   2          neither tree nor branch exists                                 no lane <name>                                             1
   3          the branch is checked out in another worktree                  branch <b> checked out at <path>                           1
@@ -121,7 +124,7 @@ Record fields. .lane.json at the tree root, written by open, added to <git commo
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
 
 Config (.sdlc/config of the main worktree; blank and # lines ignored):
-  lanes_root: <path>        default wtroot.py root: the sibling <main checkout parent>/<name>.worktrees (T-0563; .claude/worktrees
+  lanes_root: <path>        default wtroot.py root: the sibling <main checkout parent>/<name>.worktrees (T-0563; legacy .claude/worktrees
                             in 0.23 and .worktrees before, both still read for one release), or a bare clone's <bare parent>/lanes
                             or a worktree_root: line (T-0561); a set path is relative to the main worktree's toplevel
   lane_into: <ref>          default none (main)
@@ -770,6 +773,11 @@ def sweep(apply=False, cwd='.'):
     lanes = discover(ctx)
     order = sorted(lanes, key=lambda x: x['kind'] == 'integration')
     for d0 in order:
+        host = wtroot.host_owned(d0['path'])  # HOST-OWNED
+        if host and d0['exists']:  # T-0564: a tree the host made for itself is never closed, record or not
+            res.append(result(0, f"kept {d0['path']}: host-owned ({host})", lane=d0['lane'], path=d0['path'],
+                              branch=d0['branch'], row='host-owned'))
+            continue
         if not d0['owner'] or not d0['exists']:
             continue
         d = next((x for x in lanes if x['path'] == d0['path']), None)
@@ -1960,7 +1968,7 @@ def case_sibling_root(script, base):
         fails.append(f'sibling: the runner tmp dirs {tmp_dirs(t.top)} miss {sib / "tmp"} or the legacy .claude/worktrees/tmp')
     old = t.top / '.claude' / 'worktrees' / 'h9'
     t.g('worktree', 'add', '-q', '-b', 'worktree-h9', str(old))
-    t.write({'.claude/worktrees/host/h9.lane.json': json.dumps(dict(lane='h9', kind='host', branch='worktree-h9', into='main'))})
+    t.write({'.claude/worktrees/host/h9.lane.json': json.dumps(dict(lane='h9', kind='host', branch='worktree-h9', into='main'))})  # legacy
     d = next((x for x in discover(Ctx(t.top)) if x['lane'] == 'h9'), None)
     if not d or d['owner'] != 'host':
         fails.append(f'sibling: a legacy host record under .claude/worktrees/host was not read: {d}')
@@ -2028,6 +2036,31 @@ def case_host_record(script, base):
     return fails
 
 
+def case_host_owned(script, base):
+    """T-0564: a Codex tree under ~/.codex/worktrees and a host-owned .claude/worktrees/agent-x tree, both landed (agent-x
+    with a host record, which sweep closed before), are named host-owned and never closed by sweep."""
+    t = Fixture(base, script, 'hostown')
+    home = Path(os.path.realpath(str(t.dir))) / 'home'
+    codex = home / '.codex' / 'worktrees' / 'ab12' / 'repo'
+    agent = t.top / '.claude' / 'worktrees' / 'agent-x'
+    for tree, br in ((codex, 'codex-x'), (agent, 'worktree-agent-x')):
+        t.g('worktree', 'add', '-q', '-b', br, str(tree))
+        t.work(tree)
+        t.merge(br)
+    t.write({str(t.tree('host') / 'agent-x.lane.json'): json.dumps(dict(lane='agent-x', kind='host', branch='worktree-agent-x',
+                                                                       into='main'))})
+    rc, dry = t.lanes('sweep', env={'HOME': str(home)})
+    rc2, o = t.lanes('sweep', '--apply', env={'HOME': str(home)})
+    fails = []
+    for tree, host in ((codex, 'Codex'), (agent, 'Claude Code')):
+        line = f'kept {tree}: host-owned ({host})'
+        if line not in dry.splitlines() or line not in o.splitlines():
+            fails.append(f'host-owned tree listed without its host-owned line {line!r}: {dry} || {o}')
+    if 'agent-x (' in dry + o or not codex.is_dir() or not agent.is_dir() or rc or rc2:
+        fails.append(f'host-owned tree listed for removal or removed: rc {rc}/{rc2}: {dry} || {o}')
+    return fails
+
+
 def case_sweep_mergelock(script, base):
     t = Fixture(base, script, 'mlock')
     lanes_dir = t.top / '.worktrees' / 'fanout'
@@ -2055,6 +2088,8 @@ def case_sweep_mergelock(script, base):
 
 # markers the mutant copies edit; each is joined so the selftest's own text does not contain the marked line
 MUTANTS = (
+    ('HOST-OWNED', "host = wtroot.host_owned(d0['path'])" + '  # HOST-OWNED', 'host = None  # HOST-OWNED', case_host_owned,
+     'host-owned tree listed', 'without the host-owned test sweep lists a Codex or agent-x tree'),
     ('NO-RENAMES', "d = git(cwd, 'diff', '--no-renames', '--name-only', '-z', mb, ref)" + '  # NO-RENAMES',
      "d = git(cwd, 'diff', '--name-only', '-z', mb, ref)" + '  # NO-RENAMES', case_rename, 'rename case closed',
      'the rename case closes without --no-renames'),
@@ -2197,6 +2232,8 @@ def run_selftest(script, src, base):
              'an ignored .claude/settings.local.json is copied into the lane and no other ignored file'),
         need('sibling root', case_sibling_root(script, base), 'the default lanes root is <parent>/<name>.worktrees, outside the main checkout (T-0563)')
         need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
+        need('host-owned', case_host_owned(script, base),
+             'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
         for marker, line, repl, case, tell, why in MUTANTS:

@@ -1211,7 +1211,7 @@ def selftest():
             lanes_py = str(SCRIPTS / 'lanes.py')
             subprocess.run(['git', 'config', 'user.name', 't'], cwd=str(wr2), check=True)
             subprocess.run(['git', 'config', 'user.email', 't@t'], cwd=str(wr2), check=True)
-            (wr2 / '.gitignore').write_text('.claude/worktrees/\n.sdlc/\n', encoding='utf-8')
+            (wr2 / '.gitignore').write_text('.claude/worktrees/\n.sdlc/\n', encoding='utf-8')  # host-owned
             subprocess.run(['git', 'add', '.gitignore'], cwd=str(wr2), check=True)
             subprocess.run(['git', 'commit', '-q', '-m', 'ignore'], cwd=str(wr2), check=True)
             op = subprocess.run([sys.executable, lanes_py, 'open', 'wave/1', '--kind', 'integration'], cwd=str(wr2),

@@ -133,7 +133,7 @@ def role_kind(cmd, cwd):
     toks = cmd.split()
     if '-p' in toks or '--print' in toks or (len(toks) > 1 and 'exec' in toks[1:3] and 'codex' in cmd):
         return 'headless'
-    if cwd and ('/.worktrees/' in cwd or '/.claude/worktrees/' in cwd):
+    if cwd and ('/.worktrees/' in cwd or '/.claude/worktrees/' in cwd):  # legacy lane roots
         return 'lane'
     return 'session'
 
@@ -142,7 +142,7 @@ def repo_of(path):
     """The main checkout a path belongs to: the part before a lane folder, else the nearest folder holding .git."""
     if not path:
         return None
-    for mark in ('/.worktrees/', '/.claude/worktrees/'):
+    for mark in ('/.worktrees/', '/.claude/worktrees/'):  # legacy lane roots
         if mark in path:
             return path.split(mark)[0]
     p = path

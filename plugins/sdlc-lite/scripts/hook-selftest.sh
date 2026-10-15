@@ -833,14 +833,15 @@ swj() {
     '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$c}} | if $at != "" then .agent_type = $at else . end'
 }
 swroot=$(python3 "$scripts/wtroot.py" root --cwd "$stop")
+cw=.claude/worktrees  # the legacy 0.23 root; Claude Code also puts its host-owned agent-* trees there
 [[ "$swroot" == "$stop.worktrees" ]] || fail "wtroot.py root for $stop is '$swroot', want the sibling $stop.worktrees"
 wtp="$swroot/tmp/verifier-L1-t"
 for c in "git worktree add -b x \"$wtp/w\" HEAD" "git worktree add --detach /tmp/y HEAD" \
   "git worktree add --detach \"$swroot/other/w\" HEAD" "git worktree add --detach \"$swroot/tmp/../w\" HEAD" \
   "git worktree add \"$wtp/w\" HEAD" "git worktree add --detach \"$swroot/tmp\" HEAD" \
   "git worktree add --detach \"$stop/.worktrees/tmp/verifier-L1-t/w\" HEAD" \
-  "git worktree add --detach \"$stop/.claude/worktrees/tmp/verifier-L1-t/w\" HEAD" \
-  "git worktree add --detach .claude/worktrees/tmp/verifier-L1-t/w HEAD" \
+  "git worktree add --detach \"$stop/$cw/tmp/verifier-L1-t/w\" HEAD" \
+  "git worktree add --detach $cw/tmp/verifier-L1-t/w HEAD" \
   "bash -c \"git worktree add /tmp/y HEAD\""; do
   out=$(run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")"); rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for sub-agent sdlc-lite:verifier-L1: exit $rc, want 2"
@@ -853,14 +854,14 @@ for c in "git worktree add --detach \"$wtp/w\" HEAD" "git worktree add -d \"$wtp
 done
 run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$wtmp/nogit")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent outside a git work tree: exit $rc, want 2"
-# T-0550, T-0563: a sub-agent inside a lane (a sibling one, a legacy .claude/worktrees one, or a host-owned
-# .claude/worktrees/agent-* tree) gets the main checkout's sibling prefix, never one nested in the lane.
+# T-0550, T-0563: a sub-agent inside a lane (a sibling one, a legacy .claude/worktrees one, or a
+# host-owned .claude/worktrees/agent-* tree) gets the main checkout's sibling prefix, never one nested in the lane.
 git -C "$srepo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
-for slane in "$swroot/lane-a" "$stop/.claude/worktrees/lane-b" "$stop/.claude/worktrees/agent-y"; do
+for slane in "$swroot/lane-a" "$stop/$cw/lane-b" "$stop/$cw/agent-y"; do
   git -C "$srepo" worktree add -q --detach "$slane" HEAD
   run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$slane")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-stray-worktree allows a sub-agent in $slane the main checkout's sibling prefix: exit $rc, want 0"
-  run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$slane/.claude/worktrees/tmp/v/w\" HEAD" "$slane")" >/dev/null; rc=$?
+  run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$slane/$cw/tmp/v/w\" HEAD" "$slane")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent in $slane a prefix nested in the lane: exit $rc, want 2"
 done
 for at in "" sdlc-lite:conductor general-purpose; do
@@ -868,7 +869,7 @@ for at in "" sdlc-lite:conductor general-purpose; do
   [[ $rc -eq 0 ]] || fail "block-stray-worktree passes agent_type '${at:-none}' (negative control): exit $rc, want 0"
 done
 # A plain session (no role) may still make Claude Code's own worktree under .claude/worktrees (T-0563: host-owned).
-for c in "git worktree add .claude/worktrees/agent-x" "git worktree add -b worktree-agent-x \"$stop/.claude/worktrees/agent-x\" HEAD"; do
+for c in "git worktree add $cw/agent-x" "git worktree add -b worktree-agent-x \"$stop/$cw/agent-x\" HEAD"; do
   run "$sw" "$(swj "" "$c")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-stray-worktree passes a plain session '$c': exit $rc, want 0"
 done
@@ -959,19 +960,19 @@ rmscr="${TMPDIR:-/tmp}"; rmscr="${rmscr%/}/sdlc-lite/rmrepo-x/verifier-L1-x"
 run "$rmh" "$(rmsub "rm -rf $rmscr/probe.txt")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-role-rm allows a verifier sub-agent rm under its scratch root: exit $rc, want 0"
 for c in "rm -rf $rmtop/src" "rm -rf $rmtop.worktrees/other/x" "rm -rf $rmtop/.worktrees/tmp/verifier-L1-x/s" "rm -rf /tmp/x" \
-  "rm -rf $rmtop/.claude/worktrees/tmp/verifier-L1-x/s" \
+  "rm -rf $rmtop/$cw/tmp/verifier-L1-x/s" \
   "rm -rf ${rmscr%/sdlc-lite/*}/other/x"; do
   run "$rmh" "$(rmsub "$c")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-role-rm denies a verifier sub-agent '$c': exit $rc, want 2"
 done
 # T-0561: both hooks take the sub-agent prefix from wtroot.py root plus /tmp. A bare clone lane gets
-# <bare parent>/lanes/tmp, a worktree_root: line its own root; the old nested <lane>/.claude/worktrees/tmp is denied.
+# <bare parent>/lanes/tmp, a worktree_root: line its own root; the legacy nested <lane>/.claude/worktrees/tmp is denied.
 bkit="$wtmp/bkit"; git clone -q --bare "$srepo" "$bkit/.bare"; git -C "$bkit/.bare" worktree add -q --detach "$bkit/lanes/a" HEAD
 bkit=$(cd "$bkit" && pwd -P); blane="$bkit/lanes/a"
 wrr="$wtmp/wrr"; mkdir -p "$wrr/.sdlc"; git -C "$wrr" init -q; wrr=$(cd "$wrr" && pwd -P)
 printf 'worktree_root: ../wrr-root\n' >"$wrr/.sdlc/config"
-for spec in "$blane|$bkit/lanes/tmp|$blane/.claude/worktrees/tmp" "$wrr|${wrr%/wrr}/wrr-root/tmp|$wrr/.claude/worktrees/tmp" \
-  "$stop|$swroot/tmp|$stop/.claude/worktrees/tmp"; do
+for spec in "$blane|$bkit/lanes/tmp|$blane/$cw/tmp" "$wrr|${wrr%/wrr}/wrr-root/tmp|$wrr/$cw/tmp" \
+  "$stop|$swroot/tmp|$stop/$cw/tmp"; do
   IFS='|' read -r tcwd good old <<<"$spec"
   tj() { jq -n --arg c "$1" --arg cwd "$tcwd" '{tool_name:"Bash",tool_input:{command:$c},agent_type:"sdlc-lite:verifier-L3",cwd:$cwd}'; }
   run "$sw" "$(tj "git worktree add --detach \"$good/verifier-L3/base\" HEAD")" >/dev/null; rc=$?

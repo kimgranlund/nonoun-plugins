@@ -28,14 +28,17 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 - Checks must be able to fail. Preserve independent verification and the recorded build baseline (`SDLC_BASE_SHA`); scope criteria must account for relevant untracked work.
 - Ticket changes must preserve cross-worktree ID uniqueness, reference-safe closure, and explicit follow-up selection. Read the ticket/file skills and associated tests before editing these behaviors.
 - Preserve in-scope loose-end handling and the one-ticket follow-up cap; a new task is for work that is out of scope, large, or needs user input.
-- Runner-created temporary worktrees use `SDLC_TMP_WORKTREES`; preserve owned cleanup and stray-worktree reporting. Every worktree lives under `<main checkout>/.claude/worktrees/` (`scripts/wtroot.py` resolves it from the common git dir, never a lane; a `worktree_root:` line in `.sdlc/config` overrides it, and a bare clone defaults to `<bare parent>/lanes`), which requires project watcher/test exclusions as well as Git ignores; `.worktrees/` is read for one release and `scripts/migrate-0.23.sh` moves it.
+- Runner-created temporary worktrees use `SDLC_TMP_WORKTREES`; preserve owned cleanup and stray-worktree reporting. Where worktrees live is the Lanes section below.
 - `scripts/supervisor.py` never claims, moves, or reads a message body; a wake it starts follows unattended-run rules (`SDLC_HEADLESS=1`, never push or publish).
 
 ## Lanes
 
 Interim directive until the plugin ships its own sweep.
 
-- Where: lanes are `<main checkout>/.claude/worktrees/<lane>`, fanout lanes `.claude/worktrees/fanout/<lane>`, role temp trees `.claude/worktrees/tmp/<agent name>` (`$SDLC_TMP_WORKTREES` for run.sh), role scratch files under `$TMPDIR/sdlc-lite/`. Each run folder holds an `.owner.json`; `lanes.py sweep` removes only a dead owner's folder past `lane_min_age_hours` and lists an unmarked one.
+- Where: every worktree lives in the sibling root `<main checkout parent>/<repo>.worktrees/`, outside the repo on both hosts (`scripts/wtroot.py root`; its docstring is the rule). Lanes are `<root>/<lane>`, fanout lanes `<root>/fanout/<lane>`, role temp trees `<root>/tmp/<agent name>` (`$SDLC_TMP_WORKTREES` for run.sh), role scratch files under `$TMPDIR/sdlc-lite/`. A `worktree_root:` line in `.sdlc/config` overrides the root; a bare clone defaults to `<bare parent>/lanes`. No watcher or test exclusion is needed for it.
+- Legacy: `<main checkout>/.claude/worktrees/` (0.23) and `<main checkout>/.worktrees/` (before 0.23.0) are read for one release; `scripts/migrate-worktrees.sh` moves them.
+- Host-owned: Codex's `~/.codex/worktrees/*` and Claude Code's own `.claude/worktrees/agent-*` (`wtroot.host_owned`). `lanes.py sweep` and `dispatch.py` stray reports never list them for removal.
+- Codex: `lanes.py open`, land and close write `.git`, so run them with full access, not the `workspace-write` sandbox. Each run folder holds an `.owner.json`; `lanes.py sweep` removes only a dead owner's folder past `lane_min_age_hours` and lists an unmarked one.
 - Open: `fanout.py run` or `prep` opens a lane; the ticket is claimed with `status: claimed` and `claimed_by:`.
 - Close: after `fanout.py land` and `tickets.py close`, remove the lane worktree and branch once their content is on the default branch (ancestor, a MERGED PR whose head sha equals the tip, or every changed file equal).
 - Before removal keep the branch reachable as `refs/archive/<date>/<branch>` and archive its untracked records.

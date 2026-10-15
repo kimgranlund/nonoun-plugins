@@ -3,7 +3,7 @@
 read(repo, integration=None, limit=2000) returns one dict:
   worktrees        one {path, branch, nested} per `git worktree list --porcelain` entry; branch
                    is the short name, None when detached; nested is True when the path holds a
-                   worktree root (`.claude/worktrees/`, or the pre-0.23.0 `.worktrees/`) twice or lies
+                   worktree root (the legacy `.claude/worktrees/`, or the pre-0.23.0 `.worktrees/`) twice or lies
                    under its `tmp/`;
   branches         `git for-each-ref --format=%(refname:short) refs/heads`, in its order;
   tracked_runtime  `git ls-files` paths ending in .log, .running, .run.lock, or .board-state.json;
@@ -54,7 +54,7 @@ def is_work_tree(path):
 
 def nested(path):
     p = path.replace(os.sep, '/').rstrip('/') + '/'
-    roots = ('.worktrees/', '.claude/worktrees/')  # T-0550: the root moved in 0.23.0; the old one is still read
+    roots = ('.worktrees/', '.claude/worktrees/')  # T-0550, T-0563: legacy roots, still read for one release
     return (sum(p.count(r) for r in roots) >= 2 or any('/' + r + 'tmp/' in p or p.startswith(r + 'tmp/') for r in roots))
 
 

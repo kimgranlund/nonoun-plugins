@@ -25,7 +25,7 @@
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
 # main tree in `git worktree list` and no <toplevel>.worktrees/tmp, and the stub saw a non-empty
 # SDLC_TMP_WORKTREES under the sibling <toplevel>.worktrees/tmp/ (T-0563). A dry run creates no <toplevel>.worktrees
-# and no .claude/worktrees, and a dry run of a role that declares skills leaves no mktemp skill file behind.
+# and no legacy .claude/worktrees, and a dry run of a role that declares skills leaves no mktemp skill file behind.
 # Stale prefix: before a real run, detached worktrees are registered under <toplevel>.worktrees/tmp/builder-<pid
 # of an exited subshell>/w, under the legacy .claude/worktrees/tmp/builder-<that pid>/w, and under
 # <toplevel>.worktrees/tmp/builder-<pid of this selftest>/w; after the run both dead owner's prefixes are gone from
@@ -62,7 +62,7 @@
 # primary's .sdlc/t and no result file appears under the temporary worktree; after removal its path
 # is gone from git worktree list and from disk, the user worktree is still listed, refs/heads is
 # unchanged, the primary's porcelain status and tracked-file bytes are byte-identical to the
-# snapshot, and the primary has no .claude/worktrees dir and no sibling <primary>.worktrees dir.
+# snapshot, and the primary has no legacy .claude/worktrees dir and no sibling <primary>.worktrees dir.
 # Self-edit: a copy of the plugin runs a real planner run whose stub claude truncates the copy's
 # scripts/run.sh in place (same inode) before printing its result; the run must still exit 0, print
 # the result path, save the stub's text, write its runs.jsonl line, and mark the attempt completed.
@@ -452,7 +452,7 @@ want_to 120000 3600000
 want_to 7200000 7200000
 
 # Throwaway worktrees: a second stub records SDLC_TMP_WORKTREES and adds a worktree under it
-# (under .claude/worktrees/tmp/unset when it is unset), then succeeds, fails, or returns a result
+# (under <toplevel>.worktrees/tmp/unset when it is unset), then succeeds, fails, or returns a result
 # lacking its section (STUB_MODE ok|fail|nosect). Every case must leave only the main tree.
 mkdir -p "$tmp/wbin"
 cat >"$tmp/wbin/claude" <<EOF
@@ -478,7 +478,7 @@ git -C "$wrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c 
 wtop=$(git -C "$wrepo" rev-parse --show-toplevel)
 (cd "$wrepo" && SDLC_DRY_RUN=1 PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) \
   || fail "worktree dry run: run.sh exited non-zero"
-[[ ! -e "$wrepo/.claude/worktrees" && ! -e "$wrepo.worktrees" ]] || fail "worktree dry run: created $wrepo/.claude/worktrees or $wrepo.worktrees"
+[[ ! -e "$wrepo/.claude/worktrees" && ! -e "$wrepo.worktrees" ]] || fail "worktree dry run: created $wrepo/.claude/worktrees or $wrepo.worktrees"  # legacy root
 # want_wt <mode> <rc>: one real run with that stub mode, then the worktree assertions.
 want_wt() {
   local rc=0 env_seen wts
@@ -505,7 +505,8 @@ dead=$(bash -c 'echo $$')
 ! ps -p "$dead" >/dev/null 2>&1 || fail "stale prefix: fixture pid $dead is still alive"
 git -C "$wrepo" worktree add -q --detach "$wrepo.worktrees/tmp/builder-$dead/w" HEAD >/dev/null 2>&1 \
   || fail "stale prefix: could not add the dead-owner worktree"
-git -C "$wrepo" worktree add -q --detach "$wrepo/.claude/worktrees/tmp/builder-$dead/w" HEAD >/dev/null 2>&1 \
+legacy="$wrepo/.claude/worktrees"  # the legacy 0.23 root, still swept for one release
+git -C "$wrepo" worktree add -q --detach "$legacy/tmp/builder-$dead/w" HEAD >/dev/null 2>&1 \
   || fail "stale prefix: could not add the legacy dead-owner worktree"
 git -C "$wrepo" worktree add -q --detach "$wrepo.worktrees/tmp/builder-$$/w" HEAD >/dev/null 2>&1 \
   || fail "stale prefix: could not add the live-owner worktree"
@@ -514,7 +515,7 @@ src=0
 (cd "$wrepo" && STUB_MODE=ok PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>"$tmp/werr") || src=$?
 [[ "$src" == 0 ]] || fail "stale prefix: run.sh exited $src, want 0 ($(cat "$tmp/werr"))"
 [[ ! -e "$wrepo.worktrees/tmp/builder-$dead" ]] || fail "stale prefix: dead-owner prefix builder-$dead is still on disk"
-[[ ! -e "$wrepo/.claude/worktrees/tmp/builder-$dead" ]] || fail "stale prefix: legacy dead-owner prefix .claude/worktrees/tmp/builder-$dead is still on disk"
+[[ ! -e "$legacy/tmp/builder-$dead" ]] || fail "stale prefix: legacy dead-owner prefix .claude/worktrees/tmp/builder-$dead is still on disk"
 swl=$(git -C "$wrepo" worktree list --porcelain)
 ! grep -qF "/builder-$dead/w" <<<"$swl" \
   || fail "stale prefix: dead-owner worktree builder-$dead/w is still in git worktree list"
@@ -522,7 +523,7 @@ swl=$(git -C "$wrepo" worktree list --porcelain)
 grep -qF "/builder-$$/w" <<<"$swl" \
   || fail "stale prefix: live-owner worktree builder-$$/w is no longer in git worktree list"
 git -C "$wrepo" worktree remove --force --force "$wrepo.worktrees/tmp/builder-$$/w" >/dev/null 2>&1 || true
-rm -rf "$wrepo/.claude/worktrees" "$wrepo.worktrees"
+rm -rf "$legacy" "$wrepo.worktrees"
 git -C "$wrepo" worktree prune >/dev/null 2>&1 || true
 [[ "$(git -C "$wrepo" worktree list | wc -l | tr -d ' ')" == 1 ]] || fail "stale prefix: cleanup left a worktree"
 
@@ -849,7 +850,7 @@ grep -qx "worktree $userwt" <<<"$now_wts" || fail "temporary worktree recipe: th
 [[ "$(git -C "$primary" status --porcelain)" == "$snap_status" ]] \
   || fail "temporary worktree recipe: the primary's porcelain status changed: $(git -C "$primary" status --porcelain | tr '\n' ' ')"
 cmp -s "$primary/file.txt" "$rtmp/file.snap" || fail "temporary worktree recipe: the primary's tracked file bytes changed"
-[[ ! -e "$primary/.claude/worktrees" && ! -e "$primary.worktrees" ]] || fail "temporary worktree recipe: the primary has a .claude/worktrees dir or a sibling .worktrees dir"
+[[ ! -e "$primary/.claude/worktrees" && ! -e "$primary.worktrees" ]] || fail "temporary worktree recipe: the primary has a .claude/worktrees dir or a sibling .worktrees dir"  # legacy root
 
 # Self-edit: a role that rewrites run.sh in place while it runs must still get its result saved.
 # Runs a copy of the plugin, so the real run.sh is never touched.
