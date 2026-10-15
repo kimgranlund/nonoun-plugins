@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:9e8357e36601 -->
+<!-- sdlc-lite:managed:start v1 sha256:566a8842c244 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -29,11 +29,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0599 lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses (0599-lane-open-leaves-main-dirty)
   - T-0600 Codex docs name the ticket folder for solo request files; they land in the records dir (0600-codex-request-path-docs)
 - ready: 0
-- claimed: 1
-  - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke), claimed by claude 2026-10-15, branch lane/T-0570-t0570
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 545
+- done: 546
 - dropped: 29
 
 ## Procedures
