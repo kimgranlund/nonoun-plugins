@@ -557,3 +557,4 @@
 
 - note: `redck.py deviations` printed nothing, and the handoff has no `(red)` criterion.
 - note: a main session started with `claude --agent sdlc-lite:solo-L2` and no SDLC_ROLE now resolves to the solo role and has background Bash denied, which is intended.
+- note (2026-10-15, T-0561 verifier): a foreground Bash call past the 600 s cap is auto-moved to the background by Claude Code, and the role then idles waiting for it; T-0562's hook cannot see that path. Fix candidates for a follow-up: roles split long suites into one selftest per call, or the brief states "no single command over 9 minutes"; fleet-doctor's `stalled` rule catches it meanwhile.
