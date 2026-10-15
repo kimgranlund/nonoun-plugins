@@ -2,7 +2,7 @@
 id: T-0599
 title: "lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,14 @@ Found by the T-0570 live run (codex-cli 0.162.1, full access), report `docs/repo
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Outcome
+
+2026-10-15 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/lanes.py:1349 If the ticket handoff has an unstaged edit before open, its `branch:`/`worktree:` lines stay uncommitted. open still prints `committed: <sha>` for the generated router and roadmap files, so the caller gets no sign that the record is partial and that settle will still refuse. | note: plugins/sdlc-lite/skills/handoff-format/run-operations.md:67 This line says open writes `branch:`/`worktree:` but not that it now commits them in main. Callers that commit `T-NNNN: record lane` by hand would find nothing left to commit.) · verifier: verifier-L2 (opus) · base: 75fdb679a2ab
+- Changed: see commits
+- Commits: c42ccb1 T-0599: lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses
+- Check: 1 Goal and Repro: after `lanes.py open`, `fanout.py land` and `fanout.py settle --forward` bring th...: pass
+- Check: 2 Goal and Constraints: a test that failed before the fix passes after it, and it lands with the fix: pass
+- Check: 3 Conductor check: open never commits paths that were already dirty before it ran, staged or unstaged: pass
+- Check: 4 `git diff --check`: pass
+- Check: 5 `solo_run.py selftest`, which the conductor named because the builder did not rerun it: pass
