@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:eee7f1fa3ef4 -->
+<!-- sdlc-lite:managed:start v1 sha256:b1885e4a1f6e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,10 +9,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 3
+- proposed: 4
   - T-0558 dispatch.py selftest accept-all controls fail when an unmarked folder sits under TMPDIR/sdlc-lite (0558-dispatch-selftest-tmpdir-leak)
   - T-0559 Fanout closes write base: none and Commits: none in the Outcome (0559-fanout-close-outcome-base)
   - T-0560 A plain tickets.py close leaves skips.md tracked in the closed folder (0560-plain-close-tracks-skips)
+  - T-0561 Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again (0561-bare-clone-worktree-root)
 - ready: 0
 - claimed: 0
 - paused: 0

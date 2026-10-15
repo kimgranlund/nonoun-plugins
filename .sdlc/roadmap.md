@@ -558,3 +558,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0558 | [0558-dispatch-selftest-tmpdir-leak](0558-dispatch-selftest-tmpdir-leak/handoff.md) | dispatch.py selftest accept-all controls fail when an unmarked folder sits under TMPDIR/sdlc-lite | bug | L1 | P2 | none | ⏳ proposed |
 | T-0559 | [0559-fanout-close-outcome-base](0559-fanout-close-outcome-base/handoff.md) | Fanout closes write base: none and Commits: none in the Outcome | bug | L1 | P2 | none | ⏳ proposed |
 | T-0560 | [0560-plain-close-tracks-skips](0560-plain-close-tracks-skips/handoff.md) | A plain tickets.py close leaves skips.md tracked in the closed folder | bug | L1 | P2 | none | ⏳ proposed |
+| T-0561 | [0561-bare-clone-worktree-root](0561-bare-clone-worktree-root/handoff.md) | Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again | bug | L1 | P1 | none | ⏳ proposed |
