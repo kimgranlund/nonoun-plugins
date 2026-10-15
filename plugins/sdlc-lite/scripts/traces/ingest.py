@@ -23,8 +23,9 @@ run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresho
                 the records-dir paths and a row's task_dir stays the task dir. Each
                 runtime/tasks/<key> dir no listed task dir reads is ingested as its own task dir, with
                 the ticket of its order.task_dir folder, else None.
-  lanes dirs    the fanout reader on every given lanes dir plus each <repo>/.claude/worktrees/*/ and <repo>/.worktrees/*/ that
-                holds a report.md or a logs/ dir (deduplicated by real path, in sorted order).
+  lanes dirs    the fanout reader on every given lanes dir plus each <root>/*/ that holds a report.md or a logs/
+                dir, for the worktree root and then each legacy root (git.roots: wtroot.py root and legacy;
+                deduplicated by real path, in sorted order).
   aux           the git reader on repo (integration = the first report's integration worktree
                 that exists), the ticket reader on <repo>/.sdlc, and the bench baseline of
                 bench_dir or bench.default_bench_dir().
@@ -186,7 +187,7 @@ def read_dir(repo, rel, ticket):
 def _lanes_dirs(repo, given):
     cands = [os.path.abspath(p) for p in given]
     names = []
-    for wt in (os.path.join(repo, '.claude', 'worktrees'), os.path.join(repo, '.worktrees')):  # T-0550: new root, then the legacy one
+    for wt in git.roots(repo):  # T-0575: the worktree root, then the legacy ones
         try:
             names += [os.path.join(wt, n) for n in sorted(os.listdir(wt))]
         except OSError:

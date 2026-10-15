@@ -12,6 +12,8 @@
 #      lane), has uncommitted changes (git status --porcelain), has a live owner (a *.running marker under it, a
 #      .owner.json whose pid runs, or a run.sh prefix tmp/<role>-<pid> whose pid runs), is a lane whose branch has not
 #      landed on the main branch (lanes.py landed: ancestor or every changed file equal), or its destination exists.
+#      A moved lane whose ticket has a `worktree:` line naming the old path gets the new one, relative to the main
+#      checkout (`ticket <id>: worktree: ../<name>.worktrees/<rel>`, through tickets.py branch; T-0575).
 #   2. tickets.py --root .sdlc tidy (T-0544) lists, or with --apply moves, loose .sdlc/ entries into .sdlc/archive/.
 #   3. Unregistered folders under a legacy root stay where they are and are listed (`left in place: <path>`).
 #   4. With --apply, empty folders under each legacy root go; .worktrees/ itself is removed only when it ends empty,
@@ -82,8 +84,9 @@ migrate() {
     planned=1
     if (( apply )); then
       mkdir -p "$(dirname "$dest")"
-      if git worktree move "$p" "$dest" 2>/dev/null; then moved=$((moved + 1)); else echo "skip $src/$rel: git worktree move failed"; fi
+      if git worktree move "$p" "$dest" 2>/dev/null; then moved=$((moved + 1)); else echo "skip $src/$rel: git worktree move failed"; continue; fi
     fi
+    retarget "$top" "$p" "$dest"
   done
 
   if [[ -d .sdlc ]]; then
@@ -121,6 +124,38 @@ migrate() {
   (( planned )) || echo "nothing to move"
   (( apply )) && (( moved )) && git worktree prune
   return 0
+}
+
+# retarget <top> <old path> <new path>: each ticket under <top>/.sdlc whose worktree: line names the old path gets the
+# new one, relative to the main checkout as lanes.py open writes it, through tickets.py branch (T-0575), so tickets.py
+# check stays quiet. A dry run prints what it would set.
+retarget() {
+  [[ -d "$1/.sdlc" ]] || return 0
+  local id br rel res
+  while IFS=$'\t' read -r id br rel; do
+    [[ -n "$id" ]] || continue
+    if (( apply )); then
+      res=$(cd "$1" && python3 "$here/tickets.py" --root .sdlc branch "$id" "$br" --worktree "$rel" 2>&1) \
+        && echo "ticket $id: worktree: $rel" || echo "ticket $id: worktree: not rewritten: $res"
+    else
+      echo "would set ticket $id: worktree: $rel"
+    fi
+  done < <(python3 - "$here" "$1" "$2" "$3" <<'PY'
+import os, pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import tickets
+top, old, new = sys.argv[2:5]
+rel = os.path.relpath(new, top)
+try:
+    ts = tickets.load(tickets.layout_paths(pathlib.Path(top, '.sdlc')).tickets)
+except tickets.Fail as e:
+    sys.exit('tickets.py: %s' % e)
+for slug, m in ts:
+    wt, br = (m.get(k).strip() if isinstance(m.get(k), str) else '' for k in ('worktree', 'branch'))
+    if wt and br and m.get('id') and os.path.normpath(os.path.join(top, wt)) == os.path.normpath(old):
+        print('%s\t%s\t%s' % (m['id'], br, rel))
+PY
+)
 }
 
 # phys <path>: physical path, resolving the deepest existing ancestor, so a missing path still compares.
@@ -170,7 +205,7 @@ PY
 }
 
 selftest() {
-  local t r s fails=0 out snap1 snap2 me rc name dead
+  local t r s fails=0 out ck snap1 snap2 me rc name dead
   me="$here/migrate-worktrees.sh"
   t=$(mktemp -d "${TMPDIR:-/tmp}/migrate-selftest.XXXXXX") || return 1
   t=$(cd "$t" && pwd -P)
@@ -186,11 +221,13 @@ selftest() {
     git -C "$r" worktree list --porcelain
     (cd "$r" && find .worktrees .claude .sdlc -print 2>/dev/null | sort)
     (cd "$t" && find repo.worktrees -print 2>/dev/null | sort)
-    cat "$r/.gitignore"; git -C "$r" status --porcelain
+    cat "$r/.gitignore"; git -C "$r" status --porcelain; cat "$r"/.sdlc/c-clean/handoff.md
   }
   mkdir -p "$r" && git -C "$r" init -q -b main
   printf '.worktrees/\n.claude/worktrees/\n.sdlc/runtime/\n*.running\n' >"$r/.gitignore"
   mkdir -p "$r/.sdlc" && echo x >"$r/.sdlc/stray-notes.txt" && : >"$r/.sdlc/config"
+  tk() { (cd "$r" && python3 "$here/tickets.py" --root .sdlc "$@" 2>&1); }
+  tk new feature c-clean "C clean" >/dev/null && tk claim T-0001 --by claude >/dev/null
   g add -A && g commit -q -m init
   # .worktrees/ (before 0.23.0): clean, dirty, live, ahead; .claude/worktrees/ (0.23): clean, locked, ahead, agent-x,
   # a run.sh tmp prefix, and a lane whose destination already exists
@@ -199,6 +236,11 @@ selftest() {
   dead=$(bash -c 'echo $$')
   g worktree add -q --detach "$r/.claude/worktrees/tmp/builder-$dead/w" HEAD
   g worktree lock "$r/.claude/worktrees/c-locked"
+  # T-0575: the c-clean lane's ticket names its legacy path, as lanes.py open wrote it before T-0563
+  tk branch T-0001 lane/c-clean --worktree .claude/worktrees/c-clean >/dev/null && g add -A && g commit -q -m "lane c-clean"
+  ck=$(tk check)
+  [[ "$ck" == *'worktree:'* ]] && bad "control: check is quiet for the ticket of a registered legacy lane: $ck" \
+    || ok "control: check is quiet for the ticket of a registered legacy lane"
   mkdir -p "$s/taken" && echo occupied >"$s/taken/f.txt"
   echo new >"$r/.worktrees/ahead/ahead.txt" && g -C "$r/.worktrees/ahead" add ahead.txt && g -C "$r/.worktrees/ahead" commit -q -m "not landed"
   echo new >"$r/.claude/worktrees/c-ahead/c.txt" && g -C "$r/.claude/worktrees/c-ahead" add c.txt && g -C "$r/.claude/worktrees/c-ahead" commit -q -m "not landed"
@@ -227,6 +269,12 @@ selftest() {
     || bad "a clean landed .worktrees/ lane moves with git worktree move and git worktree list shows the sibling path"
   listed "$s/c-clean" && [[ ! -e "$r/.claude/worktrees/c-clean" ]] \
     && ok "a clean landed .claude/worktrees/ lane moves to the sibling root" || bad "a clean landed .claude/worktrees/ lane moves to the sibling root"
+  [[ "$out" == *'ticket T-0001: worktree: ../repo.worktrees/c-clean'* ]] && grep -qx 'worktree: ../repo.worktrees/c-clean' "$r/.sdlc/c-clean/handoff.md" \
+    && ok "a moved lane's ticket worktree: line names the new path, relative to the main checkout" \
+    || bad "a moved lane's ticket worktree: line names the new path, relative to the main checkout: $(grep '^worktree:' "$r/.sdlc/c-clean/handoff.md") $out"
+  ck=$(tk check)
+  [[ "$ck" != *'worktree:'* ]] && ok "tickets.py check prints no worktree warning for the moved lane" \
+    || bad "tickets.py check prints no worktree warning for the moved lane: $ck"
   listed "$s/tmp/builder-$dead/w" && ok "a dead run.sh prefix tree moves under the sibling tmp/" || bad "a dead run.sh prefix tree moves under the sibling tmp/"
   [[ "$out" == *"skip .claude/worktrees/agent-x: Claude Code's own worktree"* ]] && listed "$r/.claude/worktrees/agent-x" \
     && ok "a Claude-owned agent-* tree is skipped and reported (negative control)" || bad "a Claude-owned agent-* tree is skipped and reported (negative control)"

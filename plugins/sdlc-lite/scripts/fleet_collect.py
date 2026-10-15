@@ -41,8 +41,8 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   7 are counted) push_runs_7d, pull_request_runs_7d, and push_dup_7d (push runs whose head_sha
                   also has a pull_request run of the same workflow).
 
-Runs. Every `.sdlc/**/runs.jsonl` under the repo and each worktree (`git worktree list`, plus `.worktrees/*`
-and `.claude/worktrees/*`) is read and deduplicated by attempt_id (a row with none is deduplicated on its
+Runs. Every `.sdlc/**/runs.jsonl` under the repo and each worktree (`git worktree list`, plus each folder
+under the worktree root and the legacy roots, wtroot.py) is read and deduplicated by attempt_id (a row with none is deduplicated on its
 whole line), the way budget.py dedupes. A worktree's `.sdlc` carries the ticket's runs, so the totals cover
 the repo's whole history, not one checkout. A record under `.sdlc/runtime/tasks/<key>/` (the records dir,
 order.py) belongs to its task folder (order.task_dir), keyed by that folder's path under `.sdlc` (`.0001-a`,
@@ -72,6 +72,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import order  # noqa: E402
 import results  # noqa: E402
+import wtroot  # noqa: E402
 PLUGIN_ROOT = os.path.dirname(HERE)
 UTC = datetime.timezone.utc
 
@@ -181,19 +182,28 @@ def parse_worktree_porcelain(text):
     return [line[len('worktree '):].strip() for line in text.splitlines() if line.startswith('worktree ')]
 
 
+def lane_roots(repo):
+    """The worktree root of repo, then its legacy roots (wtroot.py, T-0575); outside git, the same folders by
+    wtroot's default rule for repo as the main checkout."""
+    r = wtroot.root(repo)
+    found = ([r] + wtroot.legacy_roots(repo)) if r else [
+        wtroot.default_root(repo), os.path.join(repo, *wtroot.CLAUDE), os.path.join(repo, wtroot.LEGACY)]
+    return [str(p) for p in found]
+
+
 def worktree_roots(repo):
     """(main-first list of every checkout root, list of linked worktree roots), by realpath.
 
-    Linked = registered with git (not the first entry) or a directory under `.worktrees` or
-    `.claude/worktrees` of the repo (covers a non-git repo and fanout lane dirs git forgot)."""
+    Linked = registered with git (not the first entry) or a directory directly under a worktree root of the repo
+    (wtroot.py root, then the legacy roots; outside git, the same folders by wtroot's default rule), which covers a
+    non-git repo and fanout lane dirs git forgot."""
     repo = os.path.realpath(repo)
     listed = []
     r = run_bounded(['git', '-C', repo, 'worktree', 'list', '--porcelain'], PROBE_TIMEOUT)
     if r.ok:
         listed = [os.path.realpath(p) for p in parse_worktree_porcelain(r.out)]
     linked = [p for p in listed[1:] if p != repo]
-    for sub in ('.worktrees', os.path.join('.claude', 'worktrees')):
-        base = os.path.join(repo, sub)
+    for base in lane_roots(repo):
         try:
             names = sorted(os.listdir(base))
         except OSError:
@@ -1352,6 +1362,22 @@ def selftest():
         ok('missing repo: exit 2', rc == 2)
         rc, _o, _e = cli('collect', bare, '--since', 'nope')
         ok('bad --since: exit 2', rc == 2)
+
+        # T-0575: lane dirs under the sibling root (wtroot.py root, <parent>/<repo>.worktrees) git does not register
+        sib = os.path.realpath(os.path.join(tmp, 'sibrepo'))
+        os.makedirs(sib)
+        subprocess.run(['git', '-C', sib, 'init', '-q'], check=True, capture_output=True)
+        write(os.path.join(sib + '.worktrees', 'fanout-a', '.sdlc', 't9', 'runs.jsonl'),
+              rows(rec('planner', 'S1', 1.0, 1000, '2026-10-05T10:00:00Z')))
+        _r, linked = worktree_roots(sib)
+        ok('sibling root: an unregistered lane dir under <repo>.worktrees is a linked root',
+           os.path.join(sib + '.worktrees', 'fanout-a') in linked)
+        sr = collect_runs(sib, Window())
+        ok('sibling root: its runs are read', isinstance(sr, dict) and sr['by_ticket'] == {'t9': {'planner': 1}})
+        plain = os.path.realpath(os.path.join(tmp, 'plainrepo'))
+        write(os.path.join(plain + '.worktrees', 'l', 'x.txt'), 'x\n')
+        ok('sibling root: a repo outside git reads <repo>.worktrees too',
+           worktree_roots(plain)[1] == [os.path.join(plain + '.worktrees', 'l')])
 
         # du timeout: a fake du that sleeps, killed cleanly
         fake = os.path.join(tmp, 'bin', 'slow-du')
