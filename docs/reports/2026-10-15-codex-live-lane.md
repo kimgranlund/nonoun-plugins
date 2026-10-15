@@ -45,7 +45,7 @@ So that the ws run could reach each step, the launcher repaired the state outsid
 
 ## Other findings
 
-- T-0600: the request files are not where the docs say. `codex-role-execution.md` and `adapters/codex/instructions.md` place them in the ticket folder (`<ticket folder>/solo-<level>-<attempt>.request.json`, "beside the handoff"). The run found both under `<lane>/.sdlc/runtime/tasks/greeting/`. Codex's glob on the documented path failed: `zsh:1: no matches found: .sdlc/greeting/solo-L1-*.request.json`.
+- T-0600: the request files are not where the docs say. `codex-role-execution.md` and `adapters/codex/instructions.md` place them in the ticket folder (`solo-<level>-<attempt>.request.json` in the ticket folder, "beside the handoff"). The run found both under `<lane>/.sdlc/runtime/tasks/greeting/`. Codex's glob on the documented path failed: `zsh:1: no matches found: .sdlc/greeting/solo-L1-*.request.json`.
 - `fanout.py land` printed `T-0001 land lane/T-0001-greeting (lane full)` for a lane that `lanes.py open --kind solo` made for an L1 ticket. Not filed.
 - The verifier's records dir kept `verifier-L1.request.lock`, `verifier-L1.request.owner.lock` and `verifier-L1.request.response.json` after the runner exited. Its `runs.jsonl` row has `exit_code` null. The solo wrapper removes its own lock and response files. Not filed.
 
