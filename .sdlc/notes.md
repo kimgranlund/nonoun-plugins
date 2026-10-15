@@ -581,3 +581,8 @@
 
 - note: redck.py deviations printed no `process deviation:` lines; the handoff has no `(red)` criteria, so there was no failing-first order to check.
 - note: dependents of the changed contract still pass: fleet_detect, fleet_status, fleet_config and solo_stats selftests all print ok. git.nested's old one-argument form still works when `under` is None. The full check.sh was not run, per the conductor notes.
+
+## T-0564: Worktree root guidance for Claude Code and Codex (2026-10-15)
+
+- note: the `redck.py deviations` run printed no `process deviation:` lines.
+- note: the worktree-line wording in `onboard.py:387` and `AGENTS.md:20` differs slightly, which is fine because the criterion only requires `wtroot.py` and the full-access note.

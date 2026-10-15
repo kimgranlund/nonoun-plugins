@@ -2,14 +2,12 @@
 id: T-0564
 title: "Worktree root guidance for Claude Code and Codex"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0563]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0564-t0564
-worktree: ../sdlc-lite.worktrees/T-0564-t0564
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +33,15 @@ One authoritative statement of the root: the `plugins/sdlc-lite/AGENTS.md` "Lane
 2. Root `AGENTS.md` and the onboarding managed-block template each contain the worktree line naming `wtroot.py` and the Codex full-access note.
 3. `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0. Its new case shows a `~/.codex/worktrees` worktree and a `.claude/worktrees/agent-x` worktree registered on the repo, absent from the sweep's removal list; that case failed before the change.
 4. `python3 scripts/check-packaging.py` and `python3 plugins/sdlc-lite/scripts/codex_roles.py --check` (or its parity check) exit 0, and `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: solo L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: f81c82776029
+- Changed: AGENTS.md and onboarding name the sibling root and the Codex full-access rule; sweep and stray reports skip host-owned trees
+- Commits: 52d8fe0 T-0564: worktree root guidance for Claude Code and Codex; sweep skips host-owned trees
+- Check: 1 grep of `claude/worktrees` prints only legacy or host-owned lines: pass
+- Check: 2 root `AGENTS.md` and the onboarding managed-block template each carry the worktree line: pass
+- Check: 3 `lanes.py selftest` exits 0 with the new host-owned case: pass
+- Check: 4 packaging, Codex parity and `git diff --check`: pass
+- Follow-up: note: the redck.py deviations run printed no process deviation: lines. -> notes.md
+- Follow-up: note: the worktree-line wording in onboard.py:387 and AGENTS.md:20... -> notes.md
