@@ -2,14 +2,12 @@
 id: T-0576
 title: "Root AGENTS.md managed block names flat-layout paths after layout: topics"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0576-t0576
-worktree: ../sdlc-lite.worktrees/T-0576-t0576
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -36,3 +34,13 @@ Flat-layout output stays byte-identical.
 1. `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0. Its new case shows a fixture with `layout: topics`: the root block names `.sdlc/notes/notes.md` and `.sdlc/work/archive/` and not `.sdlc/notes.md`. The case failed before the change.
 2. The existing flat-layout block cases pass unchanged.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 5b5f37a91fc3
+- Changed: onboard root block names .sdlc/notes/notes.md and .sdlc/work/archive/ under layout: topics
+- Commits: 5146a4f T-0576: onboard root block names the topics notes and archive paths
+- Check: 1 selftest exits 0 with a new topics case that failed before the change: pass
+- Check: 2 existing flat-layout block cases pass unchanged: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/onboard.py:393 and the generated block... -> notes.md

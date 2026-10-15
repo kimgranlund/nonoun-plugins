@@ -608,3 +608,7 @@
 
 - note: plugins/sdlc-lite/scripts/fanout.py `land_ticket` carries records into main before the merge gate, so a red land also carries them (the new fanout case exercises exactly this with `--gate false`). Handoff criterion 1 does not forbid it, and `tickets.py close` still gates on the verdict, so it is harmless.
 - note: `lanes.py close --discard` carries nothing, by design and covered by `case_carry`.
+
+## T-0576: Root AGENTS.md managed block names flat-layout paths after layout: topics (2026-10-15)
+
+- note: plugins/sdlc-lite/scripts/onboard.py:393 and the generated block still tell topics repos that `tickets.py tidy` archives to `.sdlc/work/archive/`, while tidy itself archives to `.sdlc/archive/` under topics; this is filed as T-0585, out of scope here.

@@ -573,7 +573,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0573 | [0573-prune-notes](0573-prune-notes/handoff.md) | notes.md keeps only live notes | chore | L1 | P3 | none | ⏳ proposed |
 | T-0574 | [.0574-sdlc-config-board](.0574-sdlc-config-board/handoff.md) | Silence the flat-layout warning and drop the stale board.md | chore | L1 | P3 | T-0567 | 🟢 done |
 | T-0575 | [.0575-lane-readers-sibling-root](.0575-lane-readers-sibling-root/handoff.md) | Trace, fleet and migrate readers miss lanes under the sibling root | bug | L2 | P1 | T-0563 | 🟢 done |
-| T-0576 | [0576-onboard-block-reads-layout](0576-onboard-block-reads-layout/handoff.md) | Root AGENTS.md managed block names flat-layout paths after layout: topics | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0576-t0576) |
+| T-0576 | [.0576-onboard-block-reads-layout](.0576-onboard-block-reads-layout/handoff.md) | Root AGENTS.md managed block names flat-layout paths after layout: topics | bug | L2 | P2 | none | 🟢 done |
 | T-0577 | [0577-rewrite-refs-frozen-paths](0577-rewrite-refs-frozen-paths/handoff.md) | --rewrite-refs rewrites citations inside frozen records | bug | L2 | P2 | none | ⏳ proposed |
 | T-0578 | [0578-prepare-tree-base](0578-prepare-tree-base/handoff.md) | dispatch.py prepare --tree records a stale base for lane trees | bug | L2 | P1 | none | 🟡 claimed (branch lane/T-0578-t0578) |
 | T-0579 | [0579-close-reason-landed-guard](0579-close-reason-landed-guard/handoff.md) | close --reason accepts a 'landed on main' claim that is false | bug | L1 | P1 | none | 🟡 claimed (branch lane/T-0579-t0579) |
