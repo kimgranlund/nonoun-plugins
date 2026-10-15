@@ -2,14 +2,12 @@
 id: T-0595
 title: "lanes.py finish leaves the lane-close edit staged and can stick on rerun"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0595-t0595
-worktree: ../sdlc-lite.worktrees/T-0595-t0595
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -36,3 +34,12 @@ No push without `--backup`.
 
    Both cases failed before the fix.
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 7873caf51047
+- Changed: finish commits through ignored tracked paths, stops if the lane-close commit fails, and forwards a stale finish branch
+- Commits: ee4dca1 T-0595: finish commits through ignored tracked paths and forwards a stale finish branch
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0, with new cases for a skipped-close...: pass
+- Check: 2 `git diff --check` exits 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines, and... -> notes.md

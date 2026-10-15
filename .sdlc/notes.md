@@ -636,3 +636,7 @@
 
 - note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0593-t0593/docs/references/sdlc-internals.md:25 lists dispatch.py's gate order ("preflight ... mailbox notice, goal precheck, replan cap, lane gate...") without the new `plugin_min` gate; the new section at line 149 covers it, but the dispatch paragraph and the exit-code line at dispatch.py:106 do not name it.
 - note: The ticket Intent says `onboard.py setup` "can set the line"; the build documents that it does not (a maintainer sets it by hand). The acceptance criteria do not require it.
+
+## T-0595: lanes.py finish leaves the lane-close edit staged and can stick on rerun (2026-10-15)
+
+- note: `redck.py deviations` printed no `process deviation:` lines, and neither criterion is `(red)`.
