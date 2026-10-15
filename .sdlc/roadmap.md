@@ -594,3 +594,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0594 | [0594-land-close-command](0594-land-close-command/handoff.md) | One plugin command records, lands, closes and backs up a lane | feature | L3 | P1 | none | 🟡 claimed (branch lane/T-0594-t0594) |
 | T-0595 | [0595-finish-followups](0595-finish-followups/handoff.md) | lanes.py finish leaves the lane-close edit staged and can stick on rerun | bug | L2 | P1 | none | ⏳ proposed |
 | T-0596 | [0596-plugin-min-coverage](0596-plugin-min-coverage/handoff.md) | plugin_min misses solo --no-worktree runs and the installed hooks' version | bug | L2 | P1 | none | ⏳ proposed |
+| T-0597 | [0597-land-add-ignored](0597-land-add-ignored/handoff.md) | fanout land's generated-file staging fails on ignored mailbox paths | bug | L1 | P1 | none | ⏳ proposed |
