@@ -54,7 +54,11 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   Ticket branch (T-0530): the CLI open writes `branch: <lane branch>` after each local ticket's `claimed_by:` (through
   tickets.record_branch, which regenerates the roadmap and router) and prints `ticket <id>: branch: <b>`; with it goes
   `worktree: <tree relative to the main checkout>` (T-0550, printed as `ticket <id>: worktree: <path>`; none for a
-  tree outside the checkout); the Python open_lane does so only with record_branch=True. Every close removes a record
+  tree outside the checkout); the Python open_lane does so only with record_branch=True. The same open then commits the
+  paths those writes changed in main as `<ids>: record lane <leaf>` (T-0599, printed as `committed: <sha> <message>`),
+  so main is clean and a fast-forward settle is not blocked. A path already dirty before the open (staged or not) is
+  never committed, compared by path: a ticket handoff left out this way prints `not committed: <path> (dirty before
+  open); commit it yourself`. Every close removes a record
   ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it. list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
   first local ticket, else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
   manual worktree with verified, unmerged work shows its ticket.
@@ -1327,6 +1331,8 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     if desc:
         git(top, 'config', f'branch.{branch}.description', desc)
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
+    pre = porcelain(top)
+    written, handoffs = [], []
     for t in ids if record_branch and rootp.is_dir() else ():
         if LOCAL_ID.fullmatch(t):
             try:
@@ -1334,12 +1340,29 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
                 rel = os.path.relpath(os.path.realpath(str(tree)), os.path.realpath(str(top)))
                 if rel.startswith('..') and not plain_under(os.path.realpath(str(tree)), os.path.realpath(str(wtroot.default_root(top)))):
                     rel = None
-                if TICKETS.record_branch(rootp, t, branch, worktree=rel):
+                slug_ = TICKETS.record_branch(rootp, t, branch, worktree=rel)
+                if slug_:
+                    written.append(t)
+                    handoffs.append(os.path.relpath(os.path.realpath(str(TICKETS.layout_paths(rootp).tickets / slug_ / 'handoff.md')),
+                                                    os.path.realpath(str(top))))
                     lines.append(f'ticket {t}: branch: {branch}')
                     if rel:
                         lines.append(f'ticket {t}: worktree: {rel}')
             except (TICKETS.Fail, OSError) as e:
                 lines.append(f'ticket {t}: branch: not written: {e}')
+    if written:  # T-0599: commit what the writes changed, or main stays dirty and a fast-forward settle refuses
+        msg = f'{", ".join(written)}: record lane {leaf}'
+        # compared by path: a staged edit turns `M ` into `MM`, a line commit_new would count as new
+        pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
+        held = {l for l in porcelain(top) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
+        sha = commit_new(top, pre | held, msg)
+        if sha:
+            lines.append(f'committed: {sha} {msg}')
+        elif sha is None:
+            lines.append(f'not committed: commit the ticket changes in main as `{msg}`')
+        for h in handoffs:
+            if h in pre_paths:
+                lines.append(f'not committed: {h} (dirty before open); commit it yourself')
     if rec['port']:
         lines.append(f'port {rec["port"]}')
     if ctx.cfg['lane_setup']:
@@ -2413,6 +2436,47 @@ def case_branch_record(script, base):
     return fails
 
 
+def case_open_commits_record(script, base):
+    """T-0599: open commits the ticket's branch:/worktree: lines (and the roadmap and router they regenerate) in main, so
+    main is clean and a fast-forward settle is not blocked; paths that were already dirty are left alone."""
+    t = Fixture(base, script, 'opencommit')
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             '.sdlc/0001-one/handoff.md': ticket_file('T-0001', claimed=True)})
+    t.write({'keep.txt': 'dirty\n'})  # an unrelated tracked change that open must not sweep in
+    head0 = t.g('rev-parse', 'HEAD')
+    leaf, tree, b = t.open('one', 'T-0001', '--kind', 'solo')
+    fails = []
+    dirty = [l for l in t.g('status', '--porcelain', '--untracked-files=all').splitlines() if l.strip() != 'M keep.txt']
+    if dirty:
+        fails.append(f'open commit: main is dirty after open: {dirty}')
+    if t.g('rev-parse', 'HEAD') == head0 or f'branch: {b}\nworktree:' not in t.g('show', 'HEAD:.sdlc/0001-one/handoff.md'):
+        fails.append('open commit: HEAD does not hold the branch: and worktree: lines')
+    if 'keep.txt' in t.g('show', '--name-only', '--format=', 'HEAD').splitlines():
+        fails.append('open commit: the unrelated dirty keep.txt was committed')
+    t.work(tree)
+    return fails
+
+
+def case_open_dirty_ticket(script, base):
+    """T-0599: a ticket handoff already dirty before open (here a staged edit) is not swept into the record commit."""
+    t = Fixture(base, script, 'opendirty')
+    h = '.sdlc/0001-one/handoff.md'
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n', h: ticket_file('T-0001', claimed=True)})
+    t.write({h: ticket_file('T-0001', claimed=True).replace('body\n', 'body\nSTAGED EDIT\n')})
+    t.g('add', '--', h)
+    rc, o = t.lanes('open', 'one', '--ticket', 'T-0001', '--kind', 'solo')
+    fails = []
+    if rc:
+        return [f'open dirty ticket: open failed: {rc}: {o}']
+    if 'STAGED EDIT' in t.g('show', f'HEAD:{h}'):
+        fails.append('open dirty ticket: the staged edit was committed by the record commit')
+    if f'not committed: {h} (dirty before open); commit it yourself' not in o:
+        fails.append(f'open dirty ticket: no not-committed line for the dirty handoff: {o}')
+    if 'STAGED EDIT' not in t.g('diff', '--cached', '--', h):
+        fails.append('open dirty ticket: the staged edit is no longer staged')
+    return fails
+
+
 def case_pr_ref(script, base):
     t = Fixture(base, script, 'prref')
     leaf, tree, b = t.open('pr/1', None, '--kind', 'integration')
@@ -2856,6 +2920,10 @@ def run_selftest(script, src, base):
         need('branch list', case_branch_list(script, base),
              'list --all joins a manual worktree to its ticket by branch: with verdict pass; no branch:, no ticket')
         need('branch record', case_branch_record(script, base), 'open --kind solo --ticket writes branch:, close removes it')
+        need('open commits record', case_open_commits_record(script, base),
+             'open commits the ticket branch: and worktree: lines in main and leaves other dirty paths alone (T-0599)')
+        need('open dirty ticket', case_open_dirty_ticket(script, base),
+             'a staged edit to the ticket handoff before open is not committed and is named in a not committed line (T-0599)')
         need('claim unclaimed', case_claim_unclaimed(script, base), 'an unclaimed or unknown local ticket refuses')
         need('claim external', case_claim_external(script, base), 'an external id prints the directive and opens')
         cs = case_claim_still_open(script, base)
