@@ -30,7 +30,7 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   rolling scratch  fanout.py roll                      <lanes-dir>/rolling, detached       none                  none                       roll itself, at its end
   solo worktree    lanes.py open --kind solo           <lanes root>/<ticket>-<slug>        lane/<ticket>-<slug>  lane_into:, else main      sweep
   host lane        the Claude host, isolation:worktree .claude/worktrees/<name>            worktree-<name>       the integration branch     dispatch.py prune --done, else sweep
-  runner tmp       run.sh, dispatch.py                 .claude/worktrees/tmp/<name>, detached none               none                       run.sh EXIT, remove_tmp, reap-tmp-worktrees.sh, wtroot sweep
+  runner tmp       run.sh, dispatch.py                 <lanes root>/tmp/<name>, detached   none                  none                       run.sh EXIT, remove_tmp, reap-tmp-worktrees.sh, wtroot sweep
   manual           a person                            anywhere                            any                   none                       the person; listed, never touched
 
   Names (17.1): kinds fanout and solo need --ticket; the slug is <name> lowercased with every run of characters
@@ -94,7 +94,7 @@ Truth table for close and sweep; the first matching row wins.
   sweep goes on; its exit is 0 unless a close step failed. Sweep keeps any branch in lane_keep:, acts only on plugin
   lanes, deletes no branch that has no lane, and never touches the main worktree or the current checkout. A bare
   sweep is a dry run that prints `would close <lane> (<how>)`; --apply closes. It then runs the wtroot.py crash sweep
-  over <main checkout>/.claude/worktrees/tmp and the scratch dirs with lane_min_age_hours as the limit: `would remove
+  over <worktree root>/tmp (and the legacy tmp dirs) and the scratch dirs with lane_min_age_hours as the limit: `would remove
   <path>` or `removed <path>` for a dead owner past the limit, `unmarked: <path>` for a folder with no owner marker
   (never deleted); a live or recent owner is kept silently.
 
@@ -121,8 +121,9 @@ Record fields. .lane.json at the tree root, written by open, added to <git commo
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
 
 Config (.sdlc/config of the main worktree; blank and # lines ignored):
-  lanes_root: <path>        default wtroot.py root: .claude/worktrees (T-0550; .worktrees before 0.23.0), or a bare clone's
-                            <bare parent>/lanes or a worktree_root: line (T-0561); a set path is relative to the main worktree's toplevel
+  lanes_root: <path>        default wtroot.py root: the sibling <main checkout parent>/<name>.worktrees (T-0563; .claude/worktrees
+                            in 0.23 and .worktrees before, both still read for one release), or a bare clone's <bare parent>/lanes
+                            or a worktree_root: line (T-0561); a set path is relative to the main worktree's toplevel
   lane_into: <ref>          default none (main)
   lane_setup: <cmd>         run in a new tree; a failure records setup: failed rc=<n> and keeps the lane
   lane_ports: <lo>-<hi>     off when absent; open picks the lowest free port under a flock on <lanes root>/lanes.lock
@@ -255,9 +256,9 @@ def config(toplevel):
             return float(vals[k])
         except (KeyError, ValueError):
             return d
-    # T-0561: no lanes_root line takes wtroot.py root (a worktree_root: line, else the main checkout's .claude/worktrees,
-    # else a bare clone's <bare parent>/lanes), never a path under the current lane
-    root = os.path.expanduser(vals.get('lanes_root') or str(wtroot.root(top) or os.path.join(*wtroot.ROOT)))
+    # T-0561: no lanes_root line takes wtroot.py root (a worktree_root: line, else the sibling <parent>/<name>.worktrees
+    # of the main checkout, T-0563, else a bare clone's <bare parent>/lanes), never a path under the current lane
+    root = os.path.expanduser(vals.get('lanes_root') or str(wtroot.root(top) or wtroot.default_root(top)))
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
                 lane_setup=vals.get('lane_setup') or None, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
@@ -370,15 +371,15 @@ def lane_of(ctx, w):
 
 
 def tmp_dirs(top):
-    """The runner tmp dirs: <top>/.claude/worktrees/tmp, wtroot.py's tmp root when it differs (a worktree_root: line or a
-    bare clone, T-0561), and the legacy <top>/.worktrees/tmp read for one release (T-0550)."""
-    return list(dict.fromkeys([Path(top, *wtroot.ROOT, 'tmp'), wtroot.tmp_root(top) or Path(top, *wtroot.ROOT, 'tmp'),
-                               Path(top, wtroot.LEGACY, 'tmp')]))
+    """The runner tmp dirs: wtroot.py's tmp root (the sibling root's, T-0563, or under a worktree_root: line or a bare
+    clone's root, T-0561), then the legacy <top>/.claude/worktrees/tmp and <top>/.worktrees/tmp read for one release."""
+    return wtroot.tmp_roots(top) or [wtroot.default_root(top) / 'tmp']
 
 
 def host_dirs(ctx):
-    """Where host records live: <lanes root>/host, and the legacy <top>/.worktrees/host read for one release (T-0550)."""
-    return [h for h in dict.fromkeys([ctx.root / 'host', Path(ctx.top, wtroot.LEGACY, 'host')]) if h.is_dir()]
+    """Where host records live: <lanes root>/host, and the legacy <top>/.claude/worktrees/host and <top>/.worktrees/host
+    read for one release (T-0563, T-0550)."""
+    return [h for h in dict.fromkeys([ctx.root / 'host'] + [r / 'host' for r in wtroot.legacy_roots(ctx.top)]) if h.is_dir()]
 
 
 def discover(ctx):
@@ -391,7 +392,7 @@ def discover(ctx):
         lanes.append(lane_of(ctx, w))
     for hp in sorted(hp for hd in host_dirs(ctx) for hp in hd.glob('*.lane.json')):
         name = hp.name[:-len('.lane.json')]
-        tp = Path(ctx.top) / '.claude' / 'worktrees' / name
+        tp = Path(ctx.top, *wtroot.CLAUDE, name)  # the host's own worktree dir, not the lanes root
         if os.path.realpath(str(tp)) in seen:
             continue
         seen.add(os.path.realpath(str(tp)))
@@ -961,10 +962,13 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     for t in ids if record_branch and rootp.is_dir() else ():
         if LOCAL_ID.fullmatch(t):
             try:
+                # relative to the main checkout: inside it, or under the sibling root (../<name>.worktrees/..., T-0563)
                 rel = os.path.relpath(os.path.realpath(str(tree)), os.path.realpath(str(top)))
-                if TICKETS.record_branch(rootp, t, branch, worktree=None if rel.startswith('..') else rel):
+                if rel.startswith('..') and not plain_under(os.path.realpath(str(tree)), os.path.realpath(str(wtroot.default_root(top)))):
+                    rel = None
+                if TICKETS.record_branch(rootp, t, branch, worktree=rel):
                     lines.append(f'ticket {t}: branch: {branch}')
-                    if not rel.startswith('..'):
+                    if rel:
                         lines.append(f'ticket {t}: worktree: {rel}')
             except (TICKETS.Fail, OSError) as e:
                 lines.append(f'ticket {t}: branch: not written: {e}')
@@ -1093,7 +1097,7 @@ def check(warn=False, cwd='.'):
     top = ctx.top
     lanes = discover(ctx)
     tops = [w['path'] for w in ctx.wts if not w['bare']]
-    tmps, hostdir = tmp_dirs(top), Path(top) / '.claude' / 'worktrees'
+    tmps, hostdir = tmp_dirs(top), Path(top, *wtroot.CLAUDE)
     found = []
     for d in lanes:
         if not d['exists'] or d['owner'] or any(under(d['path'], t) for t in tmps) or under(d['path'], hostdir):
@@ -1106,7 +1110,7 @@ def check(warn=False, cwd='.'):
     for d in lanes:
         if d['owner'] != 'record' or not d['exists']:
             continue
-        if not under(d['path'], ctx.root) and not under(d['path'], Path(top, wtroot.LEGACY)):  # legacy root read for one release
+        if not under(d['path'], ctx.root) and not wtroot.is_legacy(d['path'], top):  # legacy roots read for one release
             found.append(f'C1: {d["lane"]} lies outside the lanes root {ctx.root}: {d["path"]}')
             continue
         if outside:
@@ -1338,7 +1342,7 @@ class Fixture:
         return r.returncode, (r.stdout + r.stderr).strip()
 
     def tree(self, leaf):
-        return self.top / '.claude' / 'worktrees' / leaf
+        return wtroot.default_root(self.top) / leaf
 
     def open(self, name, ticket=None, *extra):
         args = ['open', name] + (['--ticket', ticket] if ticket else []) + list(extra)
@@ -1885,8 +1889,8 @@ def case_branch_record(script, base):
     text = h.read_text()
     if b != 'lane/T-0001-one' or 'claimed_by: claude 2026-10-11\nbranch: lane/T-0001-one\n' not in text:
         fails.append(f'branch record: open did not write branch: {b} after claimed_by: {text!r}')
-    if 'branch: lane/T-0001-one\nworktree: .claude/worktrees/T-0001-one\n' not in text:
-        fails.append(f'branch record: open did not write worktree: .claude/worktrees/T-0001-one after branch: (T-0550): {text!r}')
+    if 'branch: lane/T-0001-one\nworktree: ../repo.worktrees/T-0001-one\n' not in text:
+        fails.append(f'branch record: open did not write worktree: ../repo.worktrees/T-0001-one after branch: (T-0550, T-0563): {text!r}')
     t.work(tree)
     t.merge(b)
     rc, o = t.lanes('close', leaf)
@@ -1897,7 +1901,7 @@ def case_branch_record(script, base):
     t.write({'.sdlc/0002-two/handoff.md': ticket_file('T-0002', claimed=True)})
     leaf2, tree2, b2 = t.open('two', 'T-0002', '--kind', 'fanout')
     text = h2.read_text()
-    if f'branch: {b2}\nworktree: .claude/worktrees/{leaf2}\n' not in text:
+    if f'branch: {b2}\nworktree: ../repo.worktrees/{leaf2}\n' not in text:
         fails.append(f'branch record: a fanout lane did not write branch: and worktree: {text!r}')
     t.work(tree2)
     t.merge(b2)
@@ -1933,6 +1937,36 @@ def case_bare_root(script, base):
         fails.append(f'bare: the default lanes root from a lane is {ctx.root}, want {lane.parent}')
     if not any(samepath(d, lane.parent / 'tmp') for d in tmp_dirs(ctx.top)):
         fails.append(f'bare: the runner tmp dirs {tmp_dirs(ctx.top)} miss {lane.parent / "tmp"}')
+    return fails
+
+
+def case_sibling_root(script, base):
+    """T-0563: a normal repo's default lanes root is the sibling <parent>/<name>.worktrees, outside the main checkout,
+    from the main checkout and from a lane alike; a lane opens there; .claude/worktrees is read as legacy."""
+    t = Fixture(base, script, 'sib')
+    t.ticket(7, 'Seven', claimed=True)
+    sib = Path(os.path.realpath(str(t.dir))) / 'repo.worktrees'
+    fails = []
+    ctx = Ctx(t.top)
+    if ctx.root != sib or plain_under(ctx.root, t.top):
+        fails.append(f'sibling: the default lanes root is {ctx.root}, want {sib} outside {t.top}')
+    leaf, tree, _ = t.open('a', 'T-7')
+    if not samepath(tree.parent, sib):
+        fails.append(f'sibling: open made {tree}, want it directly under {sib}')
+    elif Ctx(tree).root != sib:
+        fails.append(f'sibling: the lanes root from the lane is {Ctx(tree).root}, want {sib}')
+    if not any(samepath(d, sib / 'tmp') for d in tmp_dirs(t.top)) or \
+            not any(samepath(d, t.top / '.claude' / 'worktrees' / 'tmp') for d in tmp_dirs(t.top)):
+        fails.append(f'sibling: the runner tmp dirs {tmp_dirs(t.top)} miss {sib / "tmp"} or the legacy .claude/worktrees/tmp')
+    old = t.top / '.claude' / 'worktrees' / 'h9'
+    t.g('worktree', 'add', '-q', '-b', 'worktree-h9', str(old))
+    t.write({'.claude/worktrees/host/h9.lane.json': json.dumps(dict(lane='h9', kind='host', branch='worktree-h9', into='main'))})
+    d = next((x for x in discover(Ctx(t.top)) if x['lane'] == 'h9'), None)
+    if not d or d['owner'] != 'host':
+        fails.append(f'sibling: a legacy host record under .claude/worktrees/host was not read: {d}')
+    rc, o = t.lanes('check')
+    if 'C1' in o:
+        fails.append(f'sibling: check flags a lane under the sibling root or a legacy one: {rc}: {o}')
     return fails
 
 
@@ -1981,7 +2015,7 @@ def case_host_record(script, base):
         rec = host_record('h1', 'worktree-h1', 'wave/2', ['T-9'], cwd=str(t.top))
     finally:
         os.environ.pop('SDLC_RUN_ID', None)
-    hp = t.top / '.claude' / 'worktrees' / 'host' / 'h1.lane.json'
+    hp = wtroot.default_root(t.top) / 'host' / 'h1.lane.json'
     disk = read_json(hp) or {}
     want = dict(lane='h1', kind='host', branch='worktree-h1', base='main', base_sha=t.g('rev-parse', 'main'), into='wave/2',
                 tickets=['T-9'], run_id='run-h1', setup=None)
@@ -2161,6 +2195,7 @@ def run_selftest(script, src, base):
              '--path, --branch and --no-claim open an unclaimed ticket there with a record; without --no-claim it refuses')
         need('local settings', case_local_settings(script, base),
              'an ignored .claude/settings.local.json is copied into the lane and no other ignored file'),
+        need('sibling root', case_sibling_root(script, base), 'the default lanes root is <parent>/<name>.worktrees, outside the main checkout (T-0563)')
         need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')

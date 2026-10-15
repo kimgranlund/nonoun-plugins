@@ -6,7 +6,7 @@
 # hook live probe selftest
 # (hook-live-probe.sh --selftest: offline, a stub claude; the live probe spends a model call and
 # never runs here), the check_pool.py selftest, the wtroot.py selftest (worktree root, owner markers, crash sweep) and the
-# migrate-0.23.sh selftest (the .worktrees/ to .claude/worktrees/ migration on a fixture repo), a shellcheck pass,
+# migrate-worktrees.sh selftest (the .worktrees/ and .claude/worktrees/ to sibling-root migration on a fixture repo), a shellcheck pass,
 # plugin manifest validation.
 # Usage: check.sh [--fast] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
 # else the core count), each job's output printed whole in list order, then the failed jobs with the first one named.
@@ -86,7 +86,7 @@ job fast cite_check python3 "$root/scripts/cite_check.py" selftest
 job fast budget python3 "$root/scripts/budget.py" selftest
 job fast check_pool python3 "$root/scripts/check_pool.py" selftest
 job fast wtroot python3 "$root/scripts/wtroot.py" selftest
-job fast migrate-0.23 bash "$root/scripts/migrate-0.23.sh" --selftest
+job fast migrate-worktrees bash "$root/scripts/migrate-worktrees.sh" --selftest
 # The repository gate: docs/ conforms to docs/layout.md (this repository only; a consumer install has no docs/layout.md beside it).
 if [ -f "$root/../../docs/layout.md" ] && [ -e "$root/../../.git" ]; then job fast docs-repo python3 "$root/scripts/docs_check.py" --root "$root/../.."; fi
 if command -v shellcheck >/dev/null; then

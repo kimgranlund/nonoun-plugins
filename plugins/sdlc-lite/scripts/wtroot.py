@@ -3,22 +3,25 @@
 
 Usage: wtroot.py main [--cwd D]                          print the main checkout of the repository holding D
        wtroot.py root [--cwd D]                          print the worktree root (see Root)
+       wtroot.py legacy [--cwd D]                        print each legacy root, one per line (none for a bare clone)
        wtroot.py scratch NAME [--cwd D]                  print (and create, with no marker) the scratch dir for NAME
        wtroot.py mark DIR --pid N [--role R] [--ticket T] [--running F]
                                                          write DIR/.owner.json (creating DIR)
        wtroot.py sweep [--cwd D] [--hours H] [--apply]   a dry run by default; --apply removes dead-owner folders
        wtroot.py selftest
 
-Root. Every worktree SDLC Lite makes lives under <main checkout>/.claude/worktrees/, Claude Code's own default for
-claude --worktree, EnterWorktree and Agent isolation: worktree, on both hosts: lanes (<root>/<lane>), fanout lanes
-(<root>/fanout/<lane>) and role throwaway trees (<root>/tmp/<agent name>/). The main checkout is the parent of
-git rev-parse --git-common-dir, never the current tree's toplevel, so a role started inside a lane gets a prefix
-under the main checkout and never nests (<lane>/.worktrees/tmp/... was seen in maison, 2026-10-14). A non-bare,
-non-.git common dir falls back to --show-toplevel. A bare clone (core.bare, lanes beside the bare dir, T-0561) has no
-main checkout the agents may use: its root is <bare parent>/lanes, outside every lane. A `worktree_root: <path>` line
-in .sdlc/config overrides either default; a relative path resolves against the main checkout, or for a bare clone
-against the bare dir's parent (the config is read from the current lane). LEGACY (.worktrees) is still read for one
-release.
+Root. Every worktree SDLC Lite makes lives in a sibling folder outside the repo, <main checkout parent>/<main
+checkout name>.worktrees/ (T-0563), on both hosts, so no watcher, test runner, indexer or .sdlc walker in the repo
+sees a lane: lanes (<root>/<lane>), fanout lanes (<root>/fanout/<lane>) and role throwaway trees
+(<root>/tmp/<agent name>/). The main checkout is the parent of git rev-parse --git-common-dir, never the current
+tree's toplevel, so a role started inside a lane gets the same root and never nests (<lane>/.worktrees/tmp/... was
+seen in maison, 2026-10-14). A non-bare, non-.git common dir falls back to --show-toplevel. A bare clone (core.bare,
+lanes beside the bare dir, T-0561) has no main checkout the agents may use: its root is <bare parent>/lanes, outside
+every lane. A `worktree_root: <path>` line in .sdlc/config overrides either default; a relative path resolves against
+the main checkout, or for a bare clone against the bare dir's parent (the config is read from the current lane).
+Legacy roots, still read for one release and moved by migrate-worktrees.sh: <main checkout>/.claude/worktrees
+(0.23.0 and 0.23.1, T-0550) and <main checkout>/.worktrees (before 0.23.0). A worktree Claude Code makes for itself
+under .claude/worktrees/ (Agent isolation: worktree, claude --worktree, EnterWorktree) is host-owned, not a root.
 
 Scratch. Files that are not worktrees (probe files, mutated copies) go to <system temp dir>/sdlc-lite/<repo key>/<name>,
 the system temp dir being $TMPDIR (tempfile.gettempdir()), as Claude Code's session scratchpad; never into the repo.
@@ -26,7 +29,7 @@ the system temp dir being $TMPDIR (tempfile.gettempdir()), as Claude Code's sess
 Owner marker. Each run folder holds .owner.json: pid, started (epoch seconds), started_at, role, ticket, and an
 optional running path (a *.running marker). An owner is live while its pid runs or its running file exists.
 
-Sweep. For each folder directly under <root>/tmp and under every repo's scratch dir (<system temp dir>/sdlc-lite/*,
+Sweep. For each folder directly under <root>/tmp (and each legacy root's tmp), and under every repo's scratch dir (<system temp dir>/sdlc-lite/*,
 so a throwaway repo's scratch is swept too; an emptied scratch dir of a repo goes with --apply): no .owner.json prints
 `unmarked: <path>` and is never deleted (legacy or hand-made); a live owner prints `kept <path>: owner live`; a dead
 owner younger than the limit (default 2 hours, lanes.py passes lane_min_age_hours) prints `kept <path>: recent`;
@@ -34,13 +37,15 @@ else `would remove <path>` (dry run) or, with --apply, its registered worktrees 
 --force, the folder is deleted, and it prints `removed <path>`. An unmarked run.sh prefix (<role>-<pid>) is left to
 reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
 
-Importable: main_top, bare_parent, root, tmp_root, scratch_root, scratch_dir, mark, owner, live, sweep.
+Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, tmp_root, tmp_roots, scratch_root,
+scratch_dir, mark, owner, live, sweep.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
 Path = pathlib.Path
-ROOT = ('.claude', 'worktrees')
-LEGACY = '.worktrees'
+SUFFIX = '.worktrees'  # the sibling root is <main checkout parent>/<main checkout name>.worktrees (T-0563)
+CLAUDE = ('.claude', 'worktrees')  # the 0.23 root, now legacy; also where Claude Code puts its own worktrees
+LEGACY = '.worktrees'  # the root before 0.23.0
 MARKER = '.owner.json'
 SWEEP_HOURS = 2.0
 RUNNER = re.compile(r'^[a-z]+-[0-9]+$')
@@ -88,10 +93,16 @@ def _config_root(top):
     return None
 
 
+def default_root(top):
+    """The sibling root of a main checkout: <its parent>/<its name>.worktrees (T-0563)."""
+    top = Path(os.path.abspath(str(top)))
+    return top.parent / (top.name + SUFFIX)
+
+
 def root(cwd='.'):
     """The worktree root, or None outside a repository: a worktree_root: line in .sdlc/config (relative to the main
-    checkout, or to a bare clone's parent dir), else <main checkout>/.claude/worktrees, else for a bare clone
-    <bare parent>/lanes (T-0561)."""
+    checkout, or to a bare clone's parent dir), else the sibling <main checkout parent>/<name>.worktrees (T-0563),
+    else for a bare clone <bare parent>/lanes (T-0561)."""
     bare = bare_parent(cwd)
     if bare:
         top = _git(os.path.abspath(str(cwd)), 'rev-parse', '--show-toplevel')
@@ -101,12 +112,29 @@ def root(cwd='.'):
     if not top:
         return None
     conf = _config_root(top)
-    return Path(os.path.normpath(os.path.join(top, conf))) if conf else Path(top, *ROOT)
+    return Path(os.path.normpath(os.path.join(top, conf))) if conf else default_root(top)
+
+
+def legacy_roots(cwd='.'):
+    """The roots read for one release: <main checkout>/.claude/worktrees and <main checkout>/.worktrees; none for a
+    bare clone."""
+    top = main_top(cwd)
+    return [Path(top, *CLAUDE), Path(top, LEGACY)] if top and not bare_parent(cwd) else []
+
+
+def is_legacy(path, cwd='.'):
+    """True when path lies under a legacy root of the repository holding cwd."""
+    return any(_under(str(path), str(r)) for r in legacy_roots(cwd))
 
 
 def tmp_root(cwd='.'):
     r = root(cwd)
     return r / 'tmp' if r else None
+
+
+def tmp_roots(cwd='.'):
+    """<root>/tmp, then each legacy root's tmp, without duplicates (a worktree_root: line may name a legacy root)."""
+    return list(dict.fromkeys([t for t in [tmp_root(cwd)] + [r / 'tmp' for r in legacy_roots(cwd)] if t is not None]))
 
 
 def scratch_root(cwd='.'):
@@ -167,15 +195,15 @@ def _under(p, d):
 
 
 def sweep(cwd='.', hours=None, apply=False, now=None, parents=None):
-    """[(verdict, path)] for each folder directly under <root>/tmp and the scratch dir; verdict is one of unmarked, live,
+    """[(verdict, path)] for each folder directly under each tmp root and scratch dir; verdict is one of unmarked, live,
     recent, would remove, removed, failed. Only a dead owner past the limit is removed, and only with apply."""
     hours = SWEEP_HOURS if hours is None else float(hours)
     now = time.time() if now is None else now
     top = main_top(cwd)
-    if parents is None:  # this repo's tmp dir, and every repo's scratch dir (a throwaway repo's scratch outlives the repo)
+    if parents is None:  # this repo's tmp dirs (legacy ones too), and every repo's scratch dir (it outlives the repo)
         base = scratch_root(cwd).parent
         keys = sorted(k for k in base.iterdir() if k.is_dir() and not k.is_symlink()) if base.is_dir() else []
-        parents = [p for p in [tmp_root(cwd)] + keys if p is not None]
+        parents = tmp_roots(cwd) + keys
     out = []
     for parent in parents:
         if not Path(parent).is_dir():
@@ -236,14 +264,25 @@ def selftest():
         repo.mkdir()
         g(repo, 'init', '-q', '-b', 'main')
         g(repo, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'init')
-        lane = base / 'repo' / '.claude' / 'worktrees' / 'lane-a'
+        sib = base / 'repo.worktrees'
+        lane = sib / 'lane-a'
         g(repo, 'worktree', 'add', '-q', '--detach', str(lane), 'HEAD')
-        expect('root from the main checkout is <main>/.claude/worktrees', root(repo) == repo / '.claude' / 'worktrees')
-        expect('root from a lane is the main checkout root, not nested in the lane',
-               root(lane) == repo / '.claude' / 'worktrees' and not str(root(lane)).startswith(str(lane)))
+        old = repo / '.claude' / 'worktrees' / 'lane-old'
+        g(repo, 'worktree', 'add', '-q', '--detach', str(old), 'HEAD')
+        expect('root from the main checkout is the sibling <parent>/<name>.worktrees, outside the main checkout (T-0563)',
+               root(repo) == sib and not _under(str(root(repo)), str(repo)))
+        expect('root from a lane is the same sibling root, not nested in the lane',
+               root(lane) == sib and not _under(str(root(lane)), str(lane)))
+        expect('root from a legacy .claude/worktrees lane is the same sibling root', root(old) == sib)
+        expect('a lane under .claude/worktrees is read as legacy, a sibling lane is not',
+               is_legacy(old, repo) and is_legacy(old, old) and not is_legacy(lane, repo))
+        expect('legacy roots are <main>/.claude/worktrees and <main>/.worktrees, from a lane too',
+               legacy_roots(lane) == [repo / '.claude' / 'worktrees', repo / '.worktrees'])
         # negative control: the toplevel of the lane (the old rule) does nest
         expect('control: --show-toplevel from the lane is the lane itself (the nesting the rule avoids)',
                _git(lane, 'rev-parse', '--show-toplevel') == str(lane))
+        expect('the sweep reads <root>/tmp, then the legacy tmp dirs', tmp_roots(lane) == [
+            sib / 'tmp', repo / '.claude' / 'worktrees' / 'tmp', repo / '.worktrees' / 'tmp'])
         expect('root outside a repository is None', root(base) is None)
         expect('scratch dir sits under the system temp dir, not the repo',
                _under(str(scratch_dir('x', repo)), tempfile.gettempdir()) and not _under(str(scratch_dir('x', repo)), str(repo)))
@@ -262,6 +301,8 @@ def selftest():
         expect('bare clone: the tmp prefix from a lane is outside every lane',
                tmp_root(blane) == kit / 'lanes' / 'tmp' and not _under(str(tmp_root(blane)), str(blane)))
         expect('bare clone: root from the bare dir itself is the same', root(kit / '.bare') == kit / 'lanes')
+        expect('bare clone: no legacy root, so the sweep reads only <bare parent>/lanes/tmp',
+               legacy_roots(blane) == [] and tmp_roots(blane) == [kit / 'lanes' / 'tmp'])
         (blane / '.sdlc').mkdir()
         (blane / '.sdlc' / 'config').write_text('# x\nworktree_root: ../trees\n', encoding='utf-8')
         expect('bare clone: a relative worktree_root: line resolves against the bare parent, not the lane',
@@ -308,8 +349,8 @@ def selftest():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='wtroot.py', description=__doc__.split('\n')[0])
-    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,scratch,mark,sweep,selftest}')
-    for n in ('main', 'root'):
+    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,legacy,scratch,mark,sweep,selftest}')
+    for n in ('main', 'root', 'legacy'):
         sub.add_parser(n).add_argument('--cwd', default='.')
     p = sub.add_parser('scratch')
     p.add_argument('name')
@@ -336,6 +377,10 @@ def main(argv=None):
         r = root(a.cwd)
         print(r or '')
         return 0 if r else 1
+    if a.cmd == 'legacy':
+        for r in legacy_roots(a.cwd):
+            print(r)
+        return 0
     if a.cmd == 'scratch':
         d = scratch_dir(a.name, a.cwd)
         d.mkdir(parents=True, exist_ok=True)

@@ -12,7 +12,7 @@
 #   expansion the hook cannot read (a variable other than $SDLC_TMP_WORKTREES), or a .. segment:
 #     denied (exit 2).
 # The prefix is $SDLC_TMP_WORKTREES when set, else `wtroot.py root --cwd <hook cwd>` plus /tmp, the parent of every
-# dispatch tmp prefix (as block-stray-worktree.sh: <main checkout>/.claude/worktrees/tmp, never a lane, T-0550, or
+# dispatch tmp prefix (as block-stray-worktree.sh: the sibling <main checkout>.worktrees/tmp, never a lane, T-0563, or
 # under a worktree_root: line or a bare clone's <bare parent>/lanes, T-0561), plus the dispatch scratch root
 # ${TMPDIR:-/tmp}/sdlc-lite (scripts/wtroot.py). With no prefix every rm is denied.
 # The builder, solo, the conductor, any other agent, and a session with no role pass untouched.
