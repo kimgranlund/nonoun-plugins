@@ -12,10 +12,10 @@ Read for this design [V]: the gen-ui-kit spec and scripts attached to T-0422 (`S
 
 Measured on 2026-10-10 with read-only git commands in this repository, before the cleanup recorded in `.sdlc/notes.md` (section 14) [V]:
 
-- 146 worktrees: the main checkout; 124 under `.worktrees/fanout*/` (71 fanout lanes dirs); 15 host trees under `.claude/worktrees/`; 6 made by hand under `.worktrees/` (`wave-b`, `ticket-stages-b`, `t0185`, `release-0.21.2`, `idle-host`, `haiku55`).
+- 146 worktrees: the main checkout; 124 under `.worktrees/fanout*/` (71 fanout lanes dirs); 15 host-owned trees under `.claude/worktrees/`; 6 made by hand under `.worktrees/` (`wave-b`, `ticket-stages-b`, `t0185`, `release-0.21.2`, `idle-host`, `haiku55`).
 - Of the 124 fanout trees, 119 are clean on a branch main contains, 2 have uncommitted changes (`fanout-fleet/integration`, `fanout-fleet2/integration`), and 3 are clean on branches main lacks (`fanout-b5/ratelimit` on `batch5-ratelimit`, `fanout-b5/selfc` on `batch5-selfc`, `fanout-load/load` on `loadlanes-load`, tips 2026-10-06). Of the 15 host trees, 13 are clean and 2 have changes (`agent-a8796067dca9eb594`, `agent-ae9ec401bb7128396`), all on branches main contains. Of the 6 hand-made trees, 4 have changes (`idle-host`, `t0185`, `ticket-stages-b`, `wave-b`).
 - 254 local branches: 146 checked out in a worktree, 108 with none; all 108 are ancestors of main.
-- Disk: `du -sh` gives 4.5G for `.worktrees/` and 446M for `.claude/worktrees/` (the ticket's 4.4 GB is an earlier reading).
+- Disk: `du -sh` gives 4.5G for `.worktrees/` and 446M for the host-owned `.claude/worktrees/` (the ticket's 4.4 GB is an earlier reading).
 
 Two gaps in the spec's `lane-close.sh`, reproduced in a throwaway repo [V]:
 
@@ -25,7 +25,7 @@ Two gaps in the spec's `lane-close.sh`, reproduced in a throwaway repo [V]:
 Other facts the design leans on:
 
 - fanout.py makes `<lanes-dir>/<lane>` on `<integration>-<lane>` and `<lanes-dir>/integration`, with the default lanes dir `<toplevel>/.worktrees/fanout`, and keeps them [V].
-- The host makes `.claude/worktrees/<name>` on `worktree-<name>` for `isolation: worktree`; prep names solo lanes `<id>-solo`, and land also resolves a host-named `worktree-agent-<hex>` branch through the agent id in `runs.jsonl` [V]. The plugin cannot choose that path [I: no host setting is known to this design].
+- The host makes its host-owned `.claude/worktrees/<name>` on `worktree-<name>` for `isolation: worktree`; prep names solo lanes `<id>-solo`, and land also resolves a host-named `worktree-agent-<hex>` branch through the agent id in `runs.jsonl` [V]. The plugin cannot choose that path [I: no host setting is known to this design].
 - solo_run.py `--worktree NAME`, and its default when a second solo is live, makes `<toplevel>/.worktrees/<name>` on branch `<name>` and never removes it [V].
 - run.sh and dispatch.py make detached `.worktrees/tmp/<role>-<pid>` trees and remove them; `reap-tmp-worktrees.sh` removes those of dead owners [V]. They are out of scope.
 - `fanout.py land` queues a merged solo for `dispatch.py prune`; `prune --done` only edits the queue [V].
@@ -41,8 +41,8 @@ Other facts the design leans on:
 | integration | fanout.py `run`, `land` | `<lanes-dir>/integration` | `<integration>` | main, or `lane_into` | `lanes.py sweep`, run by fanout step 5 after the fast-forward and by the next `prep` or `run` |
 | rolling scratch | fanout.py `roll` | `<lanes-dir>/rolling`, detached | none | none | `roll` itself, at its end |
 | solo worktree | solo_run.py `--worktree`, or its second-live-solo default | `<lanes root>/<name>` | `<name>` | main, or `lane_into` | `lanes.py sweep` |
-| host lane | the Claude host, `isolation: worktree` | `.claude/worktrees/<name>` | `worktree-<name>` | the integration branch it landed in | `dispatch.py prune --done <name>`, else `sweep` |
-| runner tmp | run.sh, dispatch.py | `.claude/worktrees/tmp/<name>` under the main checkout (T-0550; `.worktrees/tmp/` before 0.23.0), detached | none | none | unchanged: run.sh EXIT, `remove_tmp`, `reap-tmp-worktrees.sh`, the `wtroot.py` sweep |
+| host lane | the Claude host, `isolation: worktree` | `.claude/worktrees/<name>` (host-owned) | `worktree-<name>` | the integration branch it landed in | `dispatch.py prune --done <name>`; `sweep` never closes an `agent-*` tree (T-0564) |
+| runner tmp | run.sh, dispatch.py | `<worktree root>/tmp/<name>`, the sibling root (T-0563; the legacy `.claude/worktrees/tmp/` and `.worktrees/tmp/` are read for one release), detached | none | none | unchanged: run.sh EXIT, `remove_tmp`, `reap-tmp-worktrees.sh`, the `wtroot.py` sweep |
 | manual | a person | anywhere | any | none | the person; listed, never touched |
 
 The first five kinds are plugin lanes. Ownership is what lets `close` and `sweep` act on a tree: a `.lane.json` in it (written by `open`), a host record under `<lanes root>/host/` (written by `prep`, section 6), or, for trees made before this build, membership in a fanout lanes dir (a directory holding `merge.lock` and `logs/`), or a host tree whose branch `fanout.py land` resolved to a ticket. Everything else is manual, which keeps the root invariant that unrelated worktrees, branches and stashes are preserved [D]. After the build this table lives in the `lanes.py` docstring, and this section points there.
@@ -54,13 +54,13 @@ Decision [D]: lanes stay inside the checkout by default, under one lanes root, a
 - The pile is a closing problem. With close and sweep, a run keeps at most `--max-lanes` lane copies (default 4, hard cap 16) plus one integration tree, so the 440-copy walk the spec describes does not recur.
 - A session sandbox may not write outside its workspace. Codex headless conductors run inside their workspace sandbox [V, Codex execution]; making `../<repo>-lanes` from there is expected to fail [I]. Inside is the setting that works on both hosts.
 - The default must not create a directory beside the user's checkout unasked.
-- `.claude/worktrees/` is inside the checkout whatever the plugin does, so watcher exclusions are needed anyway.
+- The host-owned `.claude/worktrees/` is inside the checkout whatever the plugin does; SDLC Lite lanes no longer are (T-0563).
 
 What changes:
 
-- Lanes root: `lanes_root:` defaults to `.claude/worktrees` since 0.23.0 (T-0550; `.worktrees` before, still read for one release and moved by `scripts/migrate-0.23.sh`). With no line the default is `wtroot.py root`: a `worktree_root:` line, else the main checkout's `.claude/worktrees`, else for a bare clone `<bare parent>/lanes` (T-0561). fanout's default `--lanes-dir` becomes `<lanes root>/fanout` (the same path as today for a repo without the line), and solo_run's `--worktree` tree goes to `<lanes root>/<name>`. Runner tmp is `<wtroot.py root>/tmp`: `run.sh` sets `SDLC_TMP_WORKTREES` under it, and both role hooks derive the sub-agent prefix from the same `wtroot.py root` (T-0561).
-- Ignore rules: unchanged. `.worktrees/` and `.claude/worktrees/` stay gitignored, and fanout preflight and `prep` already refuse otherwise. A lanes root outside the toplevel needs no ignore entry, as for `--lanes-dir` today. `open` adds `.lane.json` to `<git common dir>/info/exclude`, as the spec does, so no tracked file changes and a lane's `git add -A` never stages it.
-- Watcher exclusions: unchanged for `.worktrees/` and `.claude/worktrees/`, and not needed for an outside lanes root. The fanout skill's caveat that Node resolution walks up into the main tree's `node_modules` stays true for in-tree lanes; an outside root removes it and needs `lane_setup:` (section 11).
+- Lanes root: `lanes_root:` defaults to the sibling `<main checkout parent>/<repo>.worktrees` (T-0563; the legacy `.claude/worktrees` of 0.23 and `.worktrees` before it are still read for one release and moved by `scripts/migrate-worktrees.sh`). With no line the default is `wtroot.py root`: a `worktree_root:` line, else the sibling root, else for a bare clone `<bare parent>/lanes` (T-0561). fanout's default `--lanes-dir` becomes `<lanes root>/fanout` (the same path as today for a repo without the line), and solo_run's `--worktree` tree goes to `<lanes root>/<name>`. Runner tmp is `<wtroot.py root>/tmp`: `run.sh` sets `SDLC_TMP_WORKTREES` under it, and both role hooks derive the sub-agent prefix from the same `wtroot.py root` (T-0561).
+- Ignore rules: the legacy `.worktrees/` and the host-owned `.claude/worktrees/` stay gitignored, and `prep` refuses otherwise. A lanes root outside the toplevel needs no ignore entry, as for `--lanes-dir` today. `open` adds `.lane.json` to `<git common dir>/info/exclude`, as the spec does, so no tracked file changes and a lane's `git add -A` never stages it.
+- Watcher exclusions: not needed for the sibling root, which is outside the repo (T-0563); the legacy and host-owned `.claude/worktrees/` keep theirs while they hold trees. An outside root needs `lane_setup:` (section 11).
 - Hook: block-stray-worktree.sh keeps its logic, because lanes are made by scripts and the hook governs role Bash text. Its deny message adds that a lane comes from `lanes.py open`. fanout `prep` prints a `lanes.py open` command for a `full` lane instead of the raw `git worktree add -b`, so a headless conductor can make that lane. The hook reference gets one sentence.
 
 ## 5. One home: `scripts/lanes.py` (item 2)
@@ -230,7 +230,7 @@ The plugin pins no Node binary: `lane_setup` is the repo's own command and selec
 - The hard-coded Node path in `env.sh` is not ported; `lane_setup` is the repo's own command (section 11).
 - The branch-name-equals-remote-ref crash in `reap-branches.mjs` (`pr/4297` beside `refs/remotes/pr/4297`): lanes.py names every ref in full and deletes with `update-ref -d refs/heads/<b> <sha>`. A selftest case makes a local `pr/1` beside `refs/remotes/pr/1` and closes only the local branch.
 - Two more gaps found here, both reproduced [V]: the shell close passes when its target does not resolve, and rename detection hides a deleted path. Row 5 and test step 3 cover them.
-- The host may expect `.claude/worktrees/<name>` to exist after its agent stops [I]. Closing only after `prune --done`, once the agent is stopped, limits that; live-run step 5 checks it.
+- The host may expect its host-owned `.claude/worktrees/<name>` to exist after its agent stops [I]. Closing only after `prune --done`, once the agent is stopped, limits that; live-run step 5 checks it.
 - `sweep` deletes branches without a question. It touches only plugin lanes that are clean and landed, records each sha first, and `lane_sweep: off` disables it; any uncommitted file keeps a lane.
 - An outside `lanes_root` may fail under a write-restricted sandbox [I]; `open` then refuses naming the path, and the default stays inside.
 - `sweep` during a `run`: `close` refuses a branch that moved (step 4) and an integration tree with open lanes (row 4), and `sweep` holds the lanes dir's `merge.lock` while it acts there.
@@ -242,7 +242,7 @@ Filed after the maintainer approves this design, in this order. `check.sh`, `che
 | # | Ticket | Size | Files changed | Done when |
 |---|---|---|---|---|
 | A | `lanes.py` core | L3 | new `scripts/lanes.py` (open, close, sweep, list, check, port, selftest; the kinds table, truth table and record fields in its docstring); `scripts/check.sh` (the selftest line); `docs/references/sdlc-internals.md` (an entry pointing at the docstring, and the new `.sdlc/config` keys beside `hash_bound`) | `(red)` `python3 plugins/sdlc-lite/scripts/lanes.py selftest` fails now (no file); after, it exits 0 with one case per truth-table row and per C1 to C6 control, each mutant observed failing; `check.sh` exits 0 |
-| B | fanout and solo_run use lanes | L3 | `scripts/fanout.py` (open in setup, close merged lanes, sweep at start, `lane still open` report lines, `SDLC_LANE_PORT`, `prep` prints `lanes.py open` for a `full` lane and writes the host record, `roll` removes its scratch, docstring and selftest cases); `scripts/solo_run.py` (`ensure_worktree` through `lanes.open`, selftest); `skills/fanout/SKILL.md` (a lifecycle paragraph replaces "Lane worktrees stay after the run", step 5 runs `lanes.py sweep`, allowed-tools; the `check.py` phrase list keeps `.claude/worktrees/`) | `(red)` a fanout selftest case that expects a merged lane's tree gone after `run` fails now; after, `fanout.py selftest` and `solo_run.py selftest` exit 0, and a stopped lane stays with its report line |
+| B | fanout and solo_run use lanes | L3 | `scripts/fanout.py` (open in setup, close merged lanes, sweep at start, `lane still open` report lines, `SDLC_LANE_PORT`, `prep` prints `lanes.py open` for a `full` lane and writes the host record, `roll` removes its scratch, docstring and selftest cases); `scripts/solo_run.py` (`ensure_worktree` through `lanes.open`, selftest); `skills/fanout/SKILL.md` (a lifecycle paragraph replaces "Lane worktrees stay after the run", step 5 runs `lanes.py sweep`, allowed-tools; the `check.py` phrase list kept the then-current, now legacy `.claude/worktrees/`) | `(red)` a fanout selftest case that expects a merged lane's tree gone after `run` fails now; after, `fanout.py selftest` and `solo_run.py selftest` exit 0, and a stopped lane stays with its report line |
 | C | close and prune report lanes | L2 | `scripts/tickets.py` (close prints `lane still open`); `scripts/dispatch.py` (`prune --done` closes the host lane, the listing names it); both selftests | `(red)` closing a ticket with an open lane prints no `lane still open` line now; after, `tickets.py selftest` and `dispatch.py selftest` exit 0 |
 | D | hook message | L1 | `hooks/block-stray-worktree.sh` (message only), `scripts/hook-selftest.sh` (C7), `docs/references/claude-hooks.md` (one sentence) | `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 with both C7 cases |
 | E | board and fleet | L2 | `scripts/board.py` (`--lanes` state cell), `scripts/fleet_collect.py` (lane counts), `scripts/fleet_detect.py` (`lane_pile`, C8), their selftests; `skills/board/SKILL.md` if it lists the `--lanes` columns | each selftest exits 0 with the C8 control |
@@ -303,7 +303,7 @@ Steps:
 ## 16. Decisions for the maintainer
 
 - Version: 0.22.4, as the ticket targets, not 0.22.3.
-- Lanes root default: `.claude/worktrees` (T-0550; `.worktrees` before 0.23.0), inside (recommended), or outside the checkout.
+- Lanes root default: the sibling `<repo>.worktrees` outside the checkout (T-0563; the legacy `.claude/worktrees` in 0.23, `.worktrees` before 0.23.0).
 - `sweep` at `prep` and `run` start: on by default with `lane_sweep: off` (recommended), or opt-in.
 - Auto-merge in `wait`: off, written opt-in only (recommended; the authorization rule requires it).
 - Where `closed-lanes.txt` and the archive live: under the lanes root (this design), or outside the repository as the 2026-10-10 cleanup did (`~/.claude/lane/`), which survives deleting the lanes root.

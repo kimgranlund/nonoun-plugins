@@ -23,6 +23,10 @@ Legacy roots, still read for one release and moved by migrate-worktrees.sh: <mai
 (0.23.0 and 0.23.1, T-0550) and <main checkout>/.worktrees (before 0.23.0). A worktree Claude Code makes for itself
 under .claude/worktrees/ (Agent isolation: worktree, claude --worktree, EnterWorktree) is host-owned, not a root.
 
+Host-owned. host_owned(path) names the host of a tree the host made for itself: Codex for ~/.codex/worktrees/*, Claude
+Code for .claude/worktrees/agent-*. lanes.py sweep prints `kept <lane>: host-owned (<host>)` for one and never closes
+it; dispatch.py never reports one as a stray (T-0564).
+
 Scratch. Files that are not worktrees (probe files, mutated copies) go to <system temp dir>/sdlc-lite/<repo key>/<name>,
 the system temp dir being $TMPDIR (tempfile.gettempdir()), as Claude Code's session scratchpad; never into the repo.
 
@@ -37,8 +41,8 @@ else `would remove <path>` (dry run) or, with --apply, its registered worktrees 
 --force, the folder is deleted, and it prints `removed <path>`. An unmarked run.sh prefix (<role>-<pid>) is left to
 reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
 
-Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, tmp_root, tmp_roots, scratch_root,
-scratch_dir, mark, owner, live, sweep.
+Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, host_owned, tmp_root, tmp_roots,
+scratch_root, scratch_dir, mark, owner, live, sweep.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
@@ -116,7 +120,7 @@ def root(cwd='.'):
 
 
 def legacy_roots(cwd='.'):
-    """The roots read for one release: <main checkout>/.claude/worktrees and <main checkout>/.worktrees; none for a
+    """The legacy roots read for one release: <main checkout>/.claude/worktrees and <main checkout>/.worktrees; none for a
     bare clone."""
     top = main_top(cwd)
     return [Path(top, *CLAUDE), Path(top, LEGACY)] if top and not bare_parent(cwd) else []
@@ -125,6 +129,17 @@ def legacy_roots(cwd='.'):
 def is_legacy(path, cwd='.'):
     """True when path lies under a legacy root of the repository holding cwd."""
     return any(_under(str(path), str(r)) for r in legacy_roots(cwd))
+
+
+def host_owned(path):
+    """'Codex' for a host-owned tree under ~/.codex/worktrees, 'Claude Code' for one under .claude/worktrees/agent-*,
+    else None: a worktree the host made for itself, never listed for removal (T-0564)."""
+    if _under(str(path), os.path.expanduser(os.path.join('~', '.codex', 'worktrees'))):
+        return 'Codex'
+    parts = Path(os.path.realpath(str(path))).parts
+    if any(parts[i:i + 2] == CLAUDE and parts[i + 2].startswith('agent-') for i in range(len(parts) - 2)):
+        return 'Claude Code'
+    return None
 
 
 def tmp_root(cwd='.'):
@@ -276,6 +291,10 @@ def selftest():
         expect('root from a legacy .claude/worktrees lane is the same sibling root', root(old) == sib)
         expect('a lane under .claude/worktrees is read as legacy, a sibling lane is not',
                is_legacy(old, repo) and is_legacy(old, old) and not is_legacy(lane, repo))
+        host = repo / '.claude' / 'worktrees' / 'agent-x'
+        expect('host-owned: Claude Code for .claude/worktrees/agent-*, Codex for ~/.codex/worktrees/*, none for a lane',
+               host_owned(host / 'sub') == 'Claude Code' and host_owned(os.path.expanduser('~/.codex/worktrees/ab/r')) == 'Codex'
+               and host_owned(old) is None and host_owned(lane) is None)
         expect('legacy roots are <main>/.claude/worktrees and <main>/.worktrees, from a lane too',
                legacy_roots(lane) == [repo / '.claude' / 'worktrees', repo / '.worktrees'])
         # negative control: the toplevel of the lane (the old rule) does nest

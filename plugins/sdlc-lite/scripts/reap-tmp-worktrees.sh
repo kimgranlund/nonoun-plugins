@@ -4,15 +4,15 @@
 # SIGKILL, or a role that outlived run_lifecycle.py's grace period). run.sh calls it at the start
 # and at the end of every real run; fanout calls it for a lane after each driver.
 # A prefix is a directory directly under <wtroot.py root>/tmp/ (the sibling <main checkout>.worktrees/tmp, T-0563, or
-# under a worktree_root: line or a bare clone's <bare parent>/lanes, T-0561), or for one release the legacy
-# <main checkout>/.claude/worktrees/tmp/ (T-0550) and <main checkout>/.worktrees/tmp/, named <role>-<pid> (matching
+# under a worktree_root: line or a bare clone's <bare parent>/lanes, T-0561), or for one release the
+# legacy <main checkout>/.claude/worktrees/tmp/ (T-0550) and <main checkout>/.worktrees/tmp/, named <role>-<pid> (matching
 # ^[a-z]+-[0-9]+$), the SDLC_TMP_WORKTREES of the run.sh whose pid it names. A prefix is skipped when
 # that pid names a live process (ps -p, so a process owned by another user counts as alive) or when
 # it is <own prefix> (compared by physical path). Every other prefix has a dead owner: each
 # registered worktree under it (paths compared by physical path, since macOS reports /private/var
 # for /var) gets git worktree remove --force --force, then the prefix is removed with rm -rf.
 # Finally git worktree prune runs, then each tmp dir, and the legacy .worktrees, are removed only when empty
-# (.claude/worktrees itself is Claude Code's and stays).
+# (the legacy .claude/worktrees itself is Claude Code's host-owned folder and stays).
 # Without ps on PATH liveness cannot be told, so it reaps nothing and exits 0.
 # Contract: it always exits 0. It deletes files only under the tmp dirs (plus the empty tmp dirs and the
 # empty legacy .worktrees dir themselves); git worktree remove and prune also drop the matching
@@ -34,8 +34,8 @@ phys() {
 }
 
 wt_tmp=$(python3 "$(dirname "$0")/wtroot.py" root --cwd "$top" 2>/dev/null) && wt_tmp="$wt_tmp/tmp" || wt_tmp="$top.worktrees/tmp"
-[[ "$wt_tmp" == "$top/.claude/worktrees/tmp" ]] && wt_tmp=""
-for base in "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" ${wt_tmp:+"$wt_tmp"}; do
+[[ "$wt_tmp" == "$top/.claude/worktrees/tmp" ]] && wt_tmp=""  # a worktree_root: line naming the legacy root
+for base in "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" ${wt_tmp:+"$wt_tmp"}; do  # legacy roots first
   [[ -d "$base" ]] || continue
   own_real=""
   [[ -n "$own" ]] && own_real=$(phys "$own")
@@ -59,6 +59,6 @@ for base in "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" ${wt_tmp:+"$wt_tm
   done
 done
 git -C "$top" worktree prune >/dev/null 2>&1
-rmdir "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" ${wt_tmp:+"$wt_tmp"} >/dev/null 2>&1
+rmdir "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" ${wt_tmp:+"$wt_tmp"} >/dev/null 2>&1  # legacy roots too
 rmdir "$top/.worktrees" >/dev/null 2>&1
 exit 0

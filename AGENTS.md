@@ -17,6 +17,7 @@ All paths and shell commands in this file are relative to the repository root.
 - Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/reports/` evidence, and `docs/other/`.
 - Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/specs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
 - Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for ticket levels L1 and L2 (a ticket's `size:` is its level, L1 to L5), `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
+- Worktrees: lanes live in `../<repo>.worktrees/` (`plugins/sdlc-lite/scripts/wtroot.py root`; the rule is the [Lanes section](plugins/sdlc-lite/AGENTS.md#lanes)). Lane open, land and close write `.git`, so under Codex run them with full access, not the `workspace-write` sandbox.
 - A new idea becomes a new ticket, not a larger one. Freeze a handoff once a role reads it, replan at most once, then ask.
 
 ## Read for the task

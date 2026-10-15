@@ -15,8 +15,8 @@
 # rule stays textual and the hook never queries the repo.
 # For a sub-agent role (no SDLC_ROLE) with no prefix variable, the prefix is `wtroot.py root --cwd <hook JSON's cwd>`
 # plus /tmp, the parent of every dispatch tmp prefix: the sibling <main checkout>.worktrees/tmp outside the repo (never a
-# lane, T-0550, T-0563), or under a worktree_root: line or a bare clone's <bare parent>/lanes (T-0561). The legacy
-# <main checkout>/.claude/worktrees/tmp is denied; a session with no role may still add Claude Code's own worktrees there.
+# lane, T-0550, T-0563), or under a worktree_root: line or a bare clone's <bare parent>/lanes (T-0561).
+# The legacy <main checkout>/.claude/worktrees/tmp is denied; a session with no role may still add host-owned trees there.
 # Allowed: git worktree add --detach "$SDLC_TMP_WORKTREES/<name>" <commit>, every other git
 # worktree subcommand (list, remove, prune), a mention inside a quoted argument
 # (grep -n "git worktree add" f), and anything outside a role run.

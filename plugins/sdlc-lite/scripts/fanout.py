@@ -30,14 +30,14 @@ and the headless default, which on Claude needs SDLC_CLAUDE_EXEC=1, T-0288).
 prep
   The preflight of `run` (the same refusals, the same messages, exit 2, nothing created: an unknown, done or twice-
   listed id, an uncommitted handoff, more lanes than --max-lanes, a planned-scope overlap unless --allow-overlap, a
-  lanes dir inside the tree that is not gitignored) plus one more: `.claude/worktrees/` must be gitignored, because the
+  lanes dir inside the tree that is not gitignored) plus one more: the host-owned `.claude/worktrees/` must be gitignored, because the
   host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers). Every lane SDLC Lite opens
   lives in the sibling root outside the repo, <main checkout parent>/<name>.worktrees (T-0563, wtroot.py).
   After the refusals it sweeps landed lanes as `run` does (lanes.sweep --apply, unless `lane_sweep: off`).
   Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
   for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
-  (worktree-<id>-solo, known before the spawn) and its `worktree` (.claude/worktrees/<id>-solo), and a `prompt` brief
+  (worktree-<id>-solo, known before the spawn) and its `worktree` (host-owned .claude/worktrees/<id>-solo), and a `prompt` brief
   that asks the solo to commit `<id>: <title>` on its branch (SOLO_SUBAGENT_PROMPT; the headless SOLO_PROMPT says
   never commit). For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
   solo reports (`dispatch.py prepare verifier L2`, or L3 for the tickets steps.py verifier-level names; SOLO_VERIFIER, T-0356); its result is committed on the
@@ -71,7 +71,7 @@ land
   result into the ticket folder with `git add -f`, and the close commit untracks it). Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
   (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
-  Lanes (T-0452), after the merge lock is released: a `merged` branch checked out under .claude/worktrees/<leaf> whose
+  Lanes (T-0452), after the merge lock is released: a `merged` branch checked out under host-owned .claude/worktrees/<leaf> whose
   leaf is not <id>-solo (the host names it agent-<agent_id>) gets its host record rebound, host_record(<leaf>) written
   and the provisional <id>-solo record removed; that host lane stays open (dispatch.py prune --done closes it). A
   branch whose tree holds a .lane.json of kind fanout is closed with lanes.close_lane(<tree>, into=<integration>) when
@@ -402,7 +402,7 @@ selftest
   80 percent of its budget prints `budget gate: budget.py ack`, no dispatch, and exits 4 while the other ticket still
   dispatches. Parity: for a planned-scope overlap, an uncommitted handoff, `--max-lanes 1` with two lanes, one id in two
   lanes and an unknown id, `run` and `prep` both exit 2 with the same stderr and create nothing; `--allow-overlap`
-  lets prep print the plan; `.claude/worktrees/` not gitignored exits 2 naming it. A land case (case 23, T-0285):
+  lets prep print the plan; host-owned `.claude/worktrees/` not gitignored exits 2 naming it. A land case (case 23, T-0285):
   branches worktree-T-0001-solo and worktree-T-0003-solo, each with one commit, land through a green gate to `merged`
   on a reused integration worktree (two merge commits, `close <id>` commits, status done, a solo lane in skips.md,
   main untouched and clean, the report listing both tickets with `Lane for` and the level line); a red gate resets the
@@ -423,7 +423,7 @@ selftest
   makes them; after settle the trees and branches are gone and refs/archive/<UTC date>/fanout/ff and .../fanout/hand
   exist; a diverged branch exits 2 and is kept; a tree outside a lanes dir is kept with `lane still open` and exit 1.
   Case 30 (host record): prep writes <lanes root>/host/T-0001-solo.lane.json (kind host, ticket T-0001); a land from
-  a worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 31 (roll scratch): after a merged
+  a host-owned worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 31 (roll scratch): after a merged
   roll and after a refused one, <lanes-dir>/rolling is absent and `git worktree list` names no rolling tree. Case 32
   (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
   and, after the land of its last ticket, is gone with an archive ref and its branch deleted.
@@ -488,8 +488,8 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
                'fanout.py commits this lane when you finish and closes the ticket after the merge.')
 
 # Sub-agent lanes (T-0285): the parent conductor spawns each solo ticket as a named background sub-agent with
-# isolation worktree. The host cuts <name> a worktree under .claude/worktrees/<name> on branch worktree-<name>.
-HOST_WORKTREES = '.claude/worktrees'
+# isolation worktree. The host cuts <name> a host-owned worktree under .claude/worktrees/<name> on branch worktree-<name>.
+HOST_WORKTREES = '.claude/worktrees'  # host-owned, not a lanes root
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
 HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
 SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\n{sync}Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
@@ -2334,7 +2334,7 @@ def queue_prune(ctx, lane, t, tier):
 
 
 def land_lanes(ctx, t, outcome):
-    """After a land, outside the merge lock (T-0452). A merged branch checked out under .claude/worktrees/<leaf> whose leaf
+    """After a land, outside the merge lock (T-0452). A merged branch checked out under host-owned .claude/worktrees/<leaf> whose leaf
     is not <id>-solo (the host names it agent-<agent_id>) gets its host record rebound to <leaf>, and the provisional
     <id>-solo record goes; that host lane stays open (dispatch.py prune --done closes it). A tree whose .lane.json is
     kind fanout is closed through lanes.close_lane after the record's last ticket merged. Returns the lines to print."""
@@ -2980,7 +2980,7 @@ def selftest():
 
         # 1. Two lanes, a stub driver, a gate that goes red on T-0003.
         repo, lanes = tmp / 'repo', tmp / 'lanes'
-        make_repo(repo, [(s, f'T-000{i}', 'ready') for i, s in enumerate('abcde', 1)], {'.gitignore': '.claude/worktrees/\n'})
+        make_repo(repo, [(s, f'T-000{i}', 'ready') for i, s in enumerate('abcde', 1)], {'.gitignore': '.claude/worktrees/\n'})  # host-owned
         stub = tmp / 'stub.sh'
         stub.write_text(STUB)
         stub.chmod(0o755)
@@ -3043,7 +3043,7 @@ def selftest():
 
         # 2. --dry-run and refusals create nothing.
         rr, rl = tmp / 'refuse', tmp / 'rlanes'
-        make_repo(rr, [('x', 'T-0001', 'ready'), ('y', 'T-0002', 'done')], {'.gitignore': '.claude/worktrees/\n'})
+        make_repo(rr, [('x', 'T-0001', 'ready'), ('y', 'T-0002', 'done')], {'.gitignore': '.claude/worktrees/\n'})  # host-owned
         default_lanes = tmp / 'refuse.worktrees' / 'fanout'
         proc = fanout(rr, '--dry-run', '--integration', 'fanout/dry', 'alpha=T-0001')
         expect(f'--dry-run exits 0 naming the lane branch and the default lanes dir under the sibling root '
@@ -3118,7 +3118,7 @@ def selftest():
                 '---\nid: T-0001\ntitle: "x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
                 'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
             (repo / 'docs' / 'spec.md').write_text('see .sdlc/0001-x/handoff.md\n', encoding='utf-8')
-            (repo / '.gitignore').write_text('.claude/worktrees/\n', encoding='utf-8')
+            (repo / '.gitignore').write_text('.claude/worktrees/\n', encoding='utf-8')  # host-owned
             for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
                          ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
                          ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
@@ -3518,8 +3518,8 @@ def selftest():
 
         er, el = tmp / 'external', tmp / 'elanes'
         make_ext(er, 'external_branch: ext\nexternal_branch: gone\n')
-        with open(er / '.git' / 'info' / 'exclude', 'a') as f_:  # lanes.py open takes its flock at <toplevel>/.claude/worktrees/lanes.lock
-            f_.write('.claude/worktrees/\n')
+        with open(er / '.git' / 'info' / 'exclude', 'a') as f_:  # the host-owned .claude/worktrees/ stays ignored
+            f_.write('.claude/worktrees/\n')  # host-owned
         e0, em0 = sh(er, 'rev-parse', 'ext').stdout.strip(), sh(er, 'rev-parse', 'main').stdout.strip()
         eargs = ('--integration', 'fanout/ext', '--lanes-dir', str(el))
         proc = fanout(er, '--dry-run', *eargs, 'alpha@ext=T-0002,T-0003', 'beta=T-0001')
@@ -3652,7 +3652,7 @@ def selftest():
         nt, ntl = tmp / 'ntroot', tmp / 'ntlanes'
         (nt / '.sdlc' / 'tickets' / '0001-x').mkdir(parents=True)
         (nt / '.sdlc' / 'config').write_text('ticket_folders: numbered\nticket_root: tickets\n', encoding='utf-8')
-        (nt / '.gitignore').write_text('.sdlc/config\n.claude/worktrees/\n', encoding='utf-8')
+        (nt / '.gitignore').write_text('.sdlc/config\n.claude/worktrees/\n', encoding='utf-8')  # host-owned
         (nt / '.sdlc' / 'tickets' / '0001-x' / 'handoff.md').write_text(
             '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
             'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
@@ -4142,7 +4142,7 @@ def selftest():
         # case 20b (T-0477): a gitignored, uncommitted ticket folder is copied into each fanout-owned lane worktree;
         # the same ticket in a repo that does not ignore .sdlc/ is still refused (case 20 above); case 22 checks prep still refuses
         gx, gxl = tmp / 'gitignored-sdlc', tmp / 'gxlanes'
-        make_repo(gx, [], {'.gitignore': '.sdlc/\n.claude/worktrees/\n'})
+        make_repo(gx, [], {'.gitignore': '.sdlc/\n.claude/worktrees/\n'})  # host-owned
         (gx / '.sdlc' / 'a').mkdir()
         (gx / '.sdlc' / 'a' / 'handoff.md').write_text(
             '---\nid: T-0001\ntitle: "Ticket a"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\n'
@@ -4277,7 +4277,7 @@ def selftest():
                rc_b == 1 and 'red: exit 3 rc=3' in out_b and 'gate waited' not in out_b)
 
         # case 22 (T-0285): prep prints the lane and the dispatch JSON per ticket, refuses what run refuses, creates nothing
-        gi = '.worktrees/\n.claude/worktrees/\n'
+        gi = '.worktrees/\n.claude/worktrees/\n'  # host-owned
 
         def verb(cwd, name, *args, **extra_env):
             return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), name, *args], cwd=str(cwd),
@@ -4313,7 +4313,7 @@ def selftest():
                d1.get('name') == 'T-0001-solo' and d1.get('subagent_type') == 'sdlc-lite:solo-L1'
                and d1.get('model') == 'sonnet' and d1.get('isolation') == 'worktree'
                and d1.get('run_in_background') is True and d1.get('branch') == 'worktree-T-0001-solo'
-               and d1.get('worktree') == '.claude/worktrees/T-0001-solo')
+               and d1.get('worktree') == '.claude/worktrees/T-0001-solo')  # host-owned
         expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
                'final commit `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
                and 'Never commit' not in d1.get('prompt', ''))
@@ -4324,7 +4324,7 @@ def selftest():
         expect(f'case 22 prep: level L1 has no verifier, level L2 prepares verifier L2 (negative control: not L3) against the '
                f'worktree, got {d1.get("verifier")!r} {d2.get("verifier")!r}',
                d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'
-               and 'prepare --solo-model opus verifier L2 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or '')
+               and 'prepare --solo-model opus verifier L2 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or '')  # host-owned
                and 'verifier L3' not in (d2.get('verifier') or ''))
         # T-0356: the positive control: a `verifier: L3` line in the handoff prepares verifier L3; the others stay L2
         pv = tmp / 'prep-verifier'
@@ -4415,8 +4415,8 @@ def selftest():
         pu = tmp / 'prep-unignored'
         sized_repo(pu, ['S'], {'.gitignore': '.worktrees/\n'})  # the pre-0.23.0 ignore only
         puo = verb(pu, 'prep', 'alpha=T-0001', '--lanes-dir', str(tmp / 'pul'), '--stagger', '0')
-        expect(f'case 22 prep: .claude/worktrees/ not ignored exits 2 naming it and .gitignore, got rc={puo.returncode} '
-               f'err={puo.stderr!r}', puo.returncode == 2 and '.claude/worktrees/' in puo.stderr and '.gitignore' in puo.stderr)
+        expect(f'case 22 prep: host-owned .claude/worktrees/ not ignored exits 2 naming it and .gitignore, got rc={puo.returncode} '
+               f'err={puo.stderr!r}', puo.returncode == 2 and '.claude/worktrees/' in puo.stderr and '.gitignore' in puo.stderr)  # host-owned
         pr_ov = tmp / 'prep-overlap'
         sized_repo(pr_ov, ['S', 'S'], {'.gitignore': gi})
         for slug in ('t1', 't2'):
@@ -4919,7 +4919,7 @@ def selftest():
             opened with lanes.py open before the run, one commit, merged into main."""
             r_ = tmp / name
             make_repo(r_, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready'), ('c', 'T-0003', 'ready')],
-                      {'.gitignore': '.claude/worktrees/\n',
+                      {'.gitignore': '.claude/worktrees/\n',  # host-owned
                        '.sdlc/config': 'lane_ports: 47400-47499\nlane_min_age_hours: 0\n' + extra_cfg})
             op = subprocess.run([sys.executable, str(SCRIPTS / 'lanes.py'), 'open', 'pre', '--ticket', 'T-0003', '--no-claim'],
                                 cwd=str(r_), env=ENV, capture_output=True, text=True)
@@ -4996,7 +4996,7 @@ def selftest():
                and sh(lo, 'rev-parse', '--verify', '-q', 'refs/heads/lane/T-0003-pre').returncode == 0)
 
         # case 30 (T-0452): prep writes the host lane record of a solo ticket; a land from a worktree the host named
-        # .claude/worktrees/agent-<id> rebinds it to that leaf
+        # host-owned .claude/worktrees/agent-<id> rebinds it to that leaf
         hr = tmp / 'host-record'
         sized_repo(hr, ['L1'], {'.gitignore': gi})
         hr_pin = ('--integration', 'fanout/h', '--lanes-dir', str(tmp / 'host-record-lanes'))
@@ -5016,7 +5016,7 @@ def selftest():
         hl = verb(hr, 'land', 'worktree-agent-x', '--ticket', 'T-0001', *hr_pin, '--base', 'main', '--gate', 'test -e x.txt')
         rebound = tmp / 'host-record.worktrees' / 'host' / 'agent-x.lane.json'
         rrec = json.loads(rebound.read_text()) if rebound.is_file() else {}
-        expect(f'case 30 host record: a land from .claude/worktrees/agent-x rebinds the record to agent-x.lane.json (kind '
+        expect(f'case 30 host record: a land from host-owned .claude/worktrees/agent-x rebinds the record to agent-x.lane.json (kind '
                f'host, branch worktree-agent-x, ticket T-0001, the prep base) and removes T-0001-solo.lane.json; the host '
                f'tree stays, got rc={hl.returncode} rec={rrec} out={hl.stdout[-600:]!r} err={hl.stderr[-300:]!r}',
                hl.returncode == 0 and rrec.get('kind') == 'host' and rrec.get('lane') == 'agent-x'

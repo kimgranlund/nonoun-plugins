@@ -2214,7 +2214,7 @@ status: proposed | ready | claimed | paused | blocked | done | dropped
 branch name.
 - `paused_reason:` is the one-line reason a `status: paused` ticket waits; `status: claimed` needs `claimed_by:`.
 - `branch:` and `worktree:` name the ticket's lane branch and its worktree (relative to the main checkout, under \
-`.claude/worktrees/`); the lane opener writes both and its close removes both. `check` warns on a `worktree:` that \
+the worktree root `../<repo>.worktrees/`, `wtroot.py root`); the lane opener writes both and its close removes both. `check` warns on a `worktree:` that \
 is not a registered worktree on that branch.
 
 Claim a ticket:
@@ -2232,7 +2232,7 @@ add a one-line `paused_reason:`, then rerun `roadmap`.
 Open a lane:
 1. Claim the ticket first: `<plugin-root>/scripts/lanes.py open` refuses an unclaimed local ticket.
 2. Run `python3 <plugin-root>/scripts/lanes.py open <name> --kind solo --ticket <id>`. It makes the worktree \
-and branch under `.claude/worktrees/` and writes `branch: <lane branch>` and `worktree: <path>` after \
+and branch under the worktree root (`../<repo>.worktrees/`) and writes `branch: <lane branch>` and `worktree: <path>` after \
 `claimed_by:`, so verified, unmerged work stays visible on the roadmap and in `lanes.py list --all`. A worktree \
 made by hand: run `<CMD> branch <id> <branch> --worktree <path>`.
 3. `lanes.py close <name>` removes the `branch:` and `worktree:` lines once the lane closes.
@@ -5595,22 +5595,22 @@ def selftest():
         run(rw / '.sdlc', 'roadmap')
         g('add', '-A')
         g('commit', '-q', '-m', 'init')
-        g('worktree', 'add', '-q', '-b', 'lane/T-0001-a', str(rw / '.claude' / 'worktrees' / 'T-0001-a'))
-        got = record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='.claude/worktrees/T-0001-a')
+        g('worktree', 'add', '-q', '-b', 'lane/T-0001-a', str(rw.parent / 'rt-wt.worktrees' / 'T-0001-a'))
+        got = record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='../rt-wt.worktrees/T-0001-a')
         h = (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8')
         rc, out, _ = run(rw / '.sdlc', 'check')
         expect(f'worktree: record_branch writes worktree: right after branch:, and check is quiet for a registered lane: {out!r} {h!r}',
-               got == 'a' and 'branch: lane/T-0001-a\nworktree: .claude/worktrees/T-0001-a\n' in h and rc == 0
+               got == 'a' and 'branch: lane/T-0001-a\nworktree: ../rt-wt.worktrees/T-0001-a\n' in h and rc == 0
                and 'worktree:' not in out)
-        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='.claude/worktrees/gone')
+        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='../rt-wt.worktrees/gone')
         rc, out, _ = run(rw / '.sdlc', 'check')
         expect(f'worktree: check warns on a worktree: that is not a registered worktree (negative control): {out!r}',
-               rc == 0 and 'warning: a: worktree: .claude/worktrees/gone is not a registered worktree' in out)
-        g('worktree', 'add', '-q', '-b', 'other', str(rw / '.claude' / 'worktrees' / 'o'))
-        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='.claude/worktrees/o')
+               rc == 0 and 'warning: a: worktree: ../rt-wt.worktrees/gone is not a registered worktree' in out)
+        g('worktree', 'add', '-q', '-b', 'other', str(rw.parent / 'rt-wt.worktrees' / 'o'))
+        record_branch(rw / '.sdlc', 'T-0001', 'lane/T-0001-a', worktree='../rt-wt.worktrees/o')
         rc, out, _ = run(rw / '.sdlc', 'check')
         expect(f'worktree: check warns on a worktree on another branch: {out!r}',
-               'warning: a: worktree: .claude/worktrees/o is on branch other, not the ticket branch: lane/T-0001-a' in out)
+               'warning: a: worktree: ../rt-wt.worktrees/o is on branch other, not the ticket branch: lane/T-0001-a' in out)
         rc, out, _ = run(rw / '.sdlc', 'branch', ('T-0001',))
         h = (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8')
         expect(f'worktree: tickets.py branch <id> with no branch removes branch: and worktree: together: {out!r}',
@@ -7008,7 +7008,7 @@ def main(argv):
     p = sub.add_parser('branch', help='set or clear the branch: and worktree: lines of a ticket (T-0550); the lane opener calls the same function')
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
     p.add_argument('branch', nargs='?', help='the lane branch; omit to remove both lines')
-    p.add_argument('--worktree', help='the lane worktree, relative to the main checkout (.claude/worktrees/<lane>)')
+    p.add_argument('--worktree', help='the lane worktree, relative to the main checkout (../<repo>.worktrees/<lane>)')
     p = sub.add_parser('roadmap', help='regenerate roadmap.md')
     p.add_argument('--numbered', action='store_true',
                    help='also refuse on a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
