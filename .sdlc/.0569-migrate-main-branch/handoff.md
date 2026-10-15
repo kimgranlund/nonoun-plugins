@@ -2,14 +2,12 @@
 id: T-0569
 title: "migrate script takes main from the first worktree's branch"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0563]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0569-t0569
-worktree: ../sdlc-lite.worktrees/T-0569-t0569
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +33,13 @@ The skip-unlanded rule is unchanged. Only the base it compares to changes.
 ## Acceptance criteria
 1. `bash plugins/sdlc-lite/scripts/migrate-worktrees.sh --selftest` exits 0. Its new case puts the primary checkout on `candidate` with a lane landed on `main` but not on `candidate`; the lane moves rather than being skipped. The case failed before the fix.
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L1 · verdict: pass · verifier: verifier-L2 (opus) · base: ba2daeddeeb4
+- Changed: migrate-worktrees.sh compares lanes against origin/HEAD, main or master
+- Commits: be824be T-0569: migrate-worktrees.sh judges landed against the default branch
+- Check: 1 `bash plugins/sdlc-lite/scripts/migrate-worktrees.sh --selftest` exits 0, with a new case where t...: pass
+- Check: 2 `git diff --check` exits 0: pass
+- Follow-up: note: there is no builder-.md in the artifacts dir solo lane, and... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/migrate-worktrees.sh:48 the selftest... -> notes.md

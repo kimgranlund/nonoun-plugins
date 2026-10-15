@@ -592,3 +592,8 @@
 - note: .sdlc/board.md: the deletion meets the conditional in Do item 2. At base it held only the header row of an empty table. `git grep '.sdlc/board.md'` finds no link to it outside this ticket's handoff, and neither the board skill nor `ragboard.py` mentions `board.md`. `docs_check.py --root .` reports 0 errors and no board.md finding. `tickets.py`'s ROOT_ALLOWED/TOP_ALLOWED still list board.md as allowed, which is harmless when the file is absent.
 - note: there is no builder-*.md in the artifacts dir, so no builder claims were available to check. `redck.py deviations` printed no `process deviation:` lines.
 - note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0574-verifier-L2: I removed the throwaway worktree, but the permission system denied `rm -rf` on the empty prefix directory, so that directory may still exist.
+
+## T-0569: migrate script takes main from the first worktree's branch (2026-10-15)
+
+- note: there is no builder-*.md in the artifacts dir (solo lane), and `redck.py deviations` printed no deviation lines. The pre-fix failure was proven by the red control above, not taken from any builder claim.
+- note: plugins/sdlc-lite/scripts/migrate-worktrees.sh:48 the selftest covers only the case where there is no origin/HEAD and `main` exists. The origin/HEAD branch and the `master` fallback have no test of their own.
