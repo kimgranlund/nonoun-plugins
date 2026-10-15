@@ -534,3 +534,11 @@
 ## T-0555: Wall-clock budgets per role and per ticket, enforced by dispatch.py (2026-10-14)
 
 - decide: The generated codex conductor TOML is modified and `codex_roles.py generate --check` passes, so it matches conductor.md.
+
+## T-0545: Lean records F: Docs and release 0.23.0 (0.23.0) (2026-10-14)
+
+- decide: CHANGELOG.md:3 says each entry is built from the `T-NNNN:` subjects since the last tag, but T-0522 (subject `T-0522: Live host check of the new model rows...`, commit 75b457c7, a dated report plus its evidence files) is absent from the CHANGELOG; the release report names it at line 23 only.
+- decide: CHANGELOG.md:13 credits T-0535 and line 24 credits T-0529 for work merged into T-0543 and T-0545, while T-0534 (`.sdlc/.0534-*/handoff.md`: "merged into T-0544") is credited nowhere; one rule for merged-in tickets would make the credits consistent.
+- decide: docs/references/sdlc-internals.md:48: the new "Close since 0.23.0 (T-0543)" paragraph sits above the section's lead sentence ("backs `/ticket`...", line 50), so the `## scripts/tickets.py` section no longer opens with its one-line summary as every other section in the file does.
+- decide: docs/README.md:62: the 0.23.0 entry sits between the 0.22.6 and 0.22.7 entries; the list was unordered before this change.
+- decide: The throwaway worktree is removed (`git worktree list` shows none); its empty parent `.claude/worktrees/tmp/0545-verifier-L3/` may remain because the `rm -rf` of that prefix was denied by the permission system.

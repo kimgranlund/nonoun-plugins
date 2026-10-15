@@ -2,14 +2,12 @@
 id: T-0545
 title: "Lean records F: Docs and release 0.23.0 (0.23.0)"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0544]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-13
 claimed_by: claude 2026-10-14
-branch: lane/T-0545-w75-0545
-worktree: .claude/worktrees/T-0545-w75-0545
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -41,3 +39,26 @@ verifier: L3
 - [ ] `test -f plugins/sdlc-lite/skills/handoff-format/references/writing-rules.md` exits 0 and `grep -q 'references/writing-rules.md' plugins/sdlc-lite/skills/handoff-format/SKILL.md` exits 0
 - [ ] `! grep -q 'moves to the records dir in a later release' plugins/sdlc-lite/skills/handoff-format/SKILL.md` exits 0
 - [ ] `grep -q 'printed only .*0001-subtract/handoff.md' docs/reports/2026-10-14-release-0-23-0.md` exits 0 (the live solo L2 lane on the release build left only `handoff.md` tracked in its closed folder)
+
+## Outcome
+
+2026-10-14 · lane: full L2 · verdict: pass · verifier: verifier-L3 (fable) · base: none
+- Changed: see commits
+- Commits: none
+- Check: 1 `bash plugins/sdlc-lite/scripts/check.sh` exits 0: pass
+- Check: 2 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Check: 4 `git diff --quiet 0ee323daed22acdd49273097bc445da9de911efa -- plugins/sdlc-lite/adapters/claude/l...: pass
+- Check: 5 `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0: pass
+- Check: 6 `grep -q '"version": "0.23.0"' plugins/sdlc-lite/.claude-plugin/plugin.json` and `.codex-plugin/p...: pass
+- Check: 7 `grep -q '^## \[0.23.0\] - 2026-10-14' CHANGELOG.md` exits 0: pass
+- Check: 8 `grep -q 'migrate-0.23.sh' docs/reports/2026-10-14-release-0-23-0.md` and `grep -q 'reports/2026-...: pass
+- Check: 9 `sed -n '/^## Still UNVERIFIED/,$p' docs/reports/2026-10-14-release-0-23-0.md | grep -c -E 'T-050...: pass
+- Check: 10 `test -f plugins/sdlc-lite/skills/handoff-format/references/writing-rules.md` and `grep -q 'refer...: pass
+- Check: 11 `! grep -q 'moves to the records dir in a later release' plugins/sdlc-lite/skills/handoff-format/...: pass
+- Check: 12 `grep -q 'printed only .*0001-subtract/handoff.md' docs/reports/2026-10-14-release-0-23-0.md` exi...: pass
+- Follow-up: decide: CHANGELOG.md:3 says each entry is built from the T-NNNN: subjects... -> notes.md
+- Follow-up: decide: CHANGELOG.md:13 credits T-0535 and line 24 credits T-0529 for work... -> notes.md
+- Follow-up: decide: docs/references/sdlc-internals.md:48: the new "Close since 0.23.0... -> notes.md
+- Follow-up: decide: docs/README.md:62: the 0.23.0 entry sits between the 0.22.6 and... -> notes.md
+- Follow-up: decide: The throwaway worktree is removed git worktree list shows none; its... -> notes.md
