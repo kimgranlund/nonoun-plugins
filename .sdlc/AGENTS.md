@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1dd08dce628b -->
+<!-- sdlc-lite:managed:start v1 sha256:5e9525ff35df -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -27,9 +27,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
 - ready: 0
 - claimed: 3
-  - T-0598 Codex verifier in a fresh lane refuses: the lane has no .codex/agents (0598-codex-lane-agents-missing), claimed by claude 2026-10-15
-  - T-0599 lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses (0599-lane-open-leaves-main-dirty), claimed by claude 2026-10-15
-  - T-0600 Codex docs name the ticket folder for solo request files; they land in the records dir (0600-codex-request-path-docs), claimed by claude 2026-10-15
+  - T-0598 Codex verifier in a fresh lane refuses: the lane has no .codex/agents (0598-codex-lane-agents-missing), claimed by claude 2026-10-15, branch lane/T-0598-t0598
+  - T-0599 lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses (0599-lane-open-leaves-main-dirty), claimed by claude 2026-10-15, branch lane/T-0599-t0599
+  - T-0600 Codex docs name the ticket folder for solo request files; they land in the records dir (0600-codex-request-path-docs), claimed by claude 2026-10-15, branch lane/T-0600-t0600
 - paused: 0
 - blocked: 0
 - done: 546
