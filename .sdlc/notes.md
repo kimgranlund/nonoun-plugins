@@ -640,3 +640,8 @@
 ## T-0595: lanes.py finish leaves the lane-close edit staged and can stick on rerun (2026-10-15)
 
 - note: `redck.py deviations` printed no `process deviation:` lines, and neither criterion is `(red)`.
+
+## T-0597: fanout land's generated-file staging fails on ignored mailbox paths (2026-10-15)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:1625 matches `git ls-files` output against `present` as raw strings. With the default `core.quotepath`, a non-ASCII path would come back quoted and be treated as untracked. Today every generated path is ASCII, so nothing breaks.
+- note: the throwaway worktree is removed. The permission hook refused `rm -rf` of the scratch directory /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0597-verifier-L2, which still holds neg.log.

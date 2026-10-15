@@ -2,14 +2,12 @@
 id: T-0597
 title: "fanout land's generated-file staging fails on ignored mailbox paths"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0597-t0597
-worktree: ../sdlc-lite.worktrees/T-0597-t0597
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -31,3 +29,13 @@ Non-generated conflicts still stop the merge.
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0. Its new case adds a fixture with `.sdlc/messages/` in `.gitignore` and some of its router files tracked, and land of two lanes succeeds; the case failed before the fix.
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L1 · verdict: pass · verifier: verifier-L2 (opus) · base: 7873caf51047
+- Changed: fanout land stages tracked generated files with add -u and skips ignored untracked ones
+- Commits: fef76cb T-0597: land stages tracked generated files with add -u, skips ignored untracked ones
+- Check: 1 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0; its new case adds a fixture with ...: pass
+- Check: 2 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:1625 matches git ls-files... -> notes.md
+- Follow-up: note: the throwaway worktree is removed -> notes.md
