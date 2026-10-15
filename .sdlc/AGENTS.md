@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:fa1a2399c30a -->
+<!-- sdlc-lite:managed:start v1 sha256:0e8c370b6597 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,17 +9,21 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 6
+- proposed: 10
   - T-0564 Worktree root guidance for Claude Code and Codex (0564-worktree-root-guidance)
   - T-0565 Lane merges stop conflicting on generated .sdlc/AGENTS.md and roadmap.md (0565-generated-files-merge)
   - T-0566 fanout.py land carries the lane's run records to main (0566-land-copies-runtime)
   - T-0568 Binary evidence lives in a user-scope cache, not in the repo (0568-evidence-user-cache)
   - T-0569 migrate script takes main from the first worktree's branch (0569-migrate-main-branch)
   - T-0570 Live Codex smoke run of one lane under the sibling worktree root (0570-codex-live-lane-smoke)
+  - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
+  - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
+  - T-0573 notes.md keeps only live notes (0573-prune-notes)
+  - T-0574 Silence the flat-layout warning and drop the stale board.md (0574-sdlc-config-board)
 - ready: 0
 - claimed: 2
   - T-0563 Worktree root moves to a sibling folder outside the repo (0563-sibling-worktree-root), claimed by claude 2026-10-15, branch lane/T-0563-t0563
-  - T-0567 Tracked scratch under .sdlc moves to reports or runtime (0567-sdlc-scratch-untrack), claimed by claude 2026-10-15
+  - T-0567 Tracked scratch under .sdlc moves to reports or runtime (0567-sdlc-scratch-untrack), claimed by claude 2026-10-15, branch lane/T-0567-t0567
 - paused: 0
 - blocked: 0
 - done: 526
