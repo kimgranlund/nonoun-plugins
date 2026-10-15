@@ -822,8 +822,9 @@ run "$rf" "$(rj sdlc-lite:builder-L3 "$fmtc")" SDLC_ROLE=verifier >/dev/null; rc
 [[ $rc -eq 0 ]] || fail "block-repo-format: SDLC_ROLE=verifier with a builder agent_type: exit $rc, want 0"
 run "$rf" "$(rj sdlc-lite:verifier-L1 "$fmtc")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-repo-format: SDLC_ROLE=builder with a verifier agent_type: exit $rc, want 2"
-# The sub-agent role also gets the stray-worktree rule. With no SDLC_TMP_WORKTREES a sub-agent may add
-# a detached worktree only under <main checkout>/.claude/worktrees/tmp, the parent of its dispatch tmp prefix (T-0550).
+# The sub-agent role also gets the stray-worktree rule. With no SDLC_TMP_WORKTREES a sub-agent may add a detached
+# worktree only under <wtroot.py root>/tmp, the parent of its dispatch tmp prefix: the sibling <main checkout>.worktrees/tmp
+# (T-0563), never the legacy <main checkout>/.claude/worktrees/tmp.
 srepo="$wtmp/repo"; mkdir -p "$srepo" "$wtmp/nogit"; git -C "$srepo" init -q
 stop=$(git -C "$srepo" rev-parse --show-toplevel)
 # swj <agent_type or empty> <command> [cwd]: the JSON of one Bash call with a cwd.
@@ -831,33 +832,45 @@ swj() {
   jq -n --arg at "$1" --arg c "$2" --arg cwd "${3:-$stop}" \
     '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$c}} | if $at != "" then .agent_type = $at else . end'
 }
-wtp="$stop/.claude/worktrees/tmp/verifier-L1-t"
+swroot=$(python3 "$scripts/wtroot.py" root --cwd "$stop")
+[[ "$swroot" == "$stop.worktrees" ]] || fail "wtroot.py root for $stop is '$swroot', want the sibling $stop.worktrees"
+wtp="$swroot/tmp/verifier-L1-t"
 for c in "git worktree add -b x \"$wtp/w\" HEAD" "git worktree add --detach /tmp/y HEAD" \
-  "git worktree add --detach \"$stop/.claude/worktrees/other/w\" HEAD" "git worktree add --detach \"$stop/.claude/worktrees/tmp/../w\" HEAD" \
-  "git worktree add \"$wtp/w\" HEAD" "git worktree add --detach \"$stop/.claude/worktrees/tmp\" HEAD" \
+  "git worktree add --detach \"$swroot/other/w\" HEAD" "git worktree add --detach \"$swroot/tmp/../w\" HEAD" \
+  "git worktree add \"$wtp/w\" HEAD" "git worktree add --detach \"$swroot/tmp\" HEAD" \
   "git worktree add --detach \"$stop/.worktrees/tmp/verifier-L1-t/w\" HEAD" \
+  "git worktree add --detach \"$stop/.claude/worktrees/tmp/verifier-L1-t/w\" HEAD" \
+  "git worktree add --detach .claude/worktrees/tmp/verifier-L1-t/w HEAD" \
   "bash -c \"git worktree add /tmp/y HEAD\""; do
   out=$(run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")"); rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for sub-agent sdlc-lite:verifier-L1: exit $rc, want 2"
   grep -q "role 'verifier'" <<<"$out" || fail "block-stray-worktree '$c' for sub-agent: stderr does not name the role"
 done
 for c in "git worktree add --detach \"$wtp/w\" HEAD" "git worktree add -d \"$wtp/w\" HEAD" \
-  "git worktree add --detach .claude/worktrees/tmp/verifier-L1-t/w HEAD" "git worktree list" "git worktree remove \"$wtp/w\""; do
+  "git -C \"$swroot\" worktree add --detach tmp/verifier-L1-t/w HEAD" "git worktree list" "git worktree remove \"$wtp/w\""; do
   run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-stray-worktree allows '$c' for sub-agent sdlc-lite:verifier-L1: exit $rc, want 0"
 done
 run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$wtmp/nogit")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent outside a git work tree: exit $rc, want 2"
-# T-0550: a sub-agent inside a lane gets the main checkout's prefix, never one nested in the lane.
+# T-0550, T-0563: a sub-agent inside a lane (a sibling one, a legacy .claude/worktrees one, or a host-owned
+# .claude/worktrees/agent-* tree) gets the main checkout's sibling prefix, never one nested in the lane.
 git -C "$srepo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
-slane="$stop/.claude/worktrees/lane-a"; git -C "$srepo" worktree add -q --detach "$slane" HEAD
-run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$slane")" >/dev/null; rc=$?
-[[ $rc -eq 0 ]] || fail "block-stray-worktree allows a sub-agent in a lane the main checkout's prefix: exit $rc, want 0"
-run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$slane/.claude/worktrees/tmp/v/w\" HEAD" "$slane")" >/dev/null; rc=$?
-[[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent in a lane a prefix nested in the lane: exit $rc, want 2"
+for slane in "$swroot/lane-a" "$stop/.claude/worktrees/lane-b" "$stop/.claude/worktrees/agent-y"; do
+  git -C "$srepo" worktree add -q --detach "$slane" HEAD
+  run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$slane")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree allows a sub-agent in $slane the main checkout's sibling prefix: exit $rc, want 0"
+  run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$slane/.claude/worktrees/tmp/v/w\" HEAD" "$slane")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent in $slane a prefix nested in the lane: exit $rc, want 2"
+done
 for at in "" sdlc-lite:conductor general-purpose; do
   run "$sw" "$(swj "$at" "git worktree add -b x /tmp/y HEAD")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-stray-worktree passes agent_type '${at:-none}' (negative control): exit $rc, want 0"
+done
+# A plain session (no role) may still make Claude Code's own worktree under .claude/worktrees (T-0563: host-owned).
+for c in "git worktree add .claude/worktrees/agent-x" "git worktree add -b worktree-agent-x \"$stop/.claude/worktrees/agent-x\" HEAD"; do
+  run "$sw" "$(swj "" "$c")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree passes a plain session '$c': exit $rc, want 0"
 done
 
 # block-role-write.sh: a read-only role sub-agent may Write only its dispatch result path (the
@@ -935,17 +948,18 @@ rma=$(env -u SDLC_ROLE -u SDLC_TMP_WORKTREES "${rmenv[@]}" "$rmh" < <(rmj "rm -r
 jq -e '.hookSpecificOutput.permissionDecision == "allow"' <<<"$rma" >/dev/null 2>&1 || fail "block-role-rm: rm under the prefix printed no allow decision: '$rma'"
 rma=$(env -u SDLC_ROLE -u SDLC_TMP_WORKTREES "${rmenv[@]}" "$rmh" < <(rmj "rm -rf $rmp/scratch && curl x" ""))
 [[ -z "$rma" ]] || fail "block-role-rm: a command with more than rm and cd printed a decision: '$rma'"
-# A sub-agent has no prefix variable: the prefix is the main checkout of its cwd plus /.claude/worktrees/tmp, and the
-# dispatch scratch root ${TMPDIR:-/tmp}/sdlc-lite (T-0550).
+# A sub-agent has no prefix variable: the prefix is <wtroot.py root>/tmp (the sibling <main checkout>.worktrees/tmp,
+# T-0563), and the dispatch scratch root ${TMPDIR:-/tmp}/sdlc-lite (T-0550).
 rmrepo="$wtmp/rmrepo"; mkdir -p "$rmrepo"; git -C "$rmrepo" init -q
 rmtop=$(git -C "$rmrepo" rev-parse --show-toplevel)
 rmsub() { jq -n --arg c "$1" --arg cwd "$rmrepo" '{tool_name:"Bash",tool_input:{command:$c},agent_type:"sdlc-lite:verifier-L1",cwd:$cwd}'; }
-run "$rmh" "$(rmsub "rm -rf $rmtop/.claude/worktrees/tmp/verifier-L1-x/scratch")" >/dev/null; rc=$?
-[[ $rc -eq 0 ]] || fail "block-role-rm allows a verifier sub-agent rm under the repo tmp prefix: exit $rc, want 0"
+run "$rmh" "$(rmsub "rm -rf $rmtop.worktrees/tmp/verifier-L1-x/scratch")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-role-rm allows a verifier sub-agent rm under the sibling tmp prefix: exit $rc, want 0"
 rmscr="${TMPDIR:-/tmp}"; rmscr="${rmscr%/}/sdlc-lite/rmrepo-x/verifier-L1-x"
 run "$rmh" "$(rmsub "rm -rf $rmscr/probe.txt")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-role-rm allows a verifier sub-agent rm under its scratch root: exit $rc, want 0"
-for c in "rm -rf $rmtop/src" "rm -rf $rmtop/.claude/worktrees/other/x" "rm -rf $rmtop/.worktrees/tmp/verifier-L1-x/s" "rm -rf /tmp/x" \
+for c in "rm -rf $rmtop/src" "rm -rf $rmtop.worktrees/other/x" "rm -rf $rmtop/.worktrees/tmp/verifier-L1-x/s" "rm -rf /tmp/x" \
+  "rm -rf $rmtop/.claude/worktrees/tmp/verifier-L1-x/s" \
   "rm -rf ${rmscr%/sdlc-lite/*}/other/x"; do
   run "$rmh" "$(rmsub "$c")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-role-rm denies a verifier sub-agent '$c': exit $rc, want 2"
@@ -956,7 +970,8 @@ bkit="$wtmp/bkit"; git clone -q --bare "$srepo" "$bkit/.bare"; git -C "$bkit/.ba
 bkit=$(cd "$bkit" && pwd -P); blane="$bkit/lanes/a"
 wrr="$wtmp/wrr"; mkdir -p "$wrr/.sdlc"; git -C "$wrr" init -q; wrr=$(cd "$wrr" && pwd -P)
 printf 'worktree_root: ../wrr-root\n' >"$wrr/.sdlc/config"
-for spec in "$blane|$bkit/lanes/tmp|$blane/.claude/worktrees/tmp" "$wrr|${wrr%/wrr}/wrr-root/tmp|$wrr/.claude/worktrees/tmp"; do
+for spec in "$blane|$bkit/lanes/tmp|$blane/.claude/worktrees/tmp" "$wrr|${wrr%/wrr}/wrr-root/tmp|$wrr/.claude/worktrees/tmp" \
+  "$stop|$swroot/tmp|$stop/.claude/worktrees/tmp"; do
   IFS='|' read -r tcwd good old <<<"$spec"
   tj() { jq -n --arg c "$1" --arg cwd "$tcwd" '{tool_name:"Bash",tool_input:{command:$c},agent_type:"sdlc-lite:verifier-L3",cwd:$cwd}'; }
   run "$sw" "$(tj "git worktree add --detach \"$good/verifier-L3/base\" HEAD")" >/dev/null; rc=$?

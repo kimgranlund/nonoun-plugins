@@ -3,17 +3,18 @@
 # Reaps throwaway worktree prefixes left by run.sh runs that died without their exit cleanup (a
 # SIGKILL, or a role that outlived run_lifecycle.py's grace period). run.sh calls it at the start
 # and at the end of every real run; fanout calls it for a lane after each driver.
-# A prefix is a directory directly under <main checkout>/.claude/worktrees/tmp/ (T-0550), or for one release the
-# legacy <main checkout>/.worktrees/tmp/, or <wtroot.py root>/tmp/ when that root differs (a worktree_root: line,
-# or a bare clone's <bare parent>/lanes, T-0561), named <role>-<pid> (matching
+# A prefix is a directory directly under <wtroot.py root>/tmp/ (the sibling <main checkout>.worktrees/tmp, T-0563, or
+# under a worktree_root: line or a bare clone's <bare parent>/lanes, T-0561), or for one release the legacy
+# <main checkout>/.claude/worktrees/tmp/ (T-0550) and <main checkout>/.worktrees/tmp/, named <role>-<pid> (matching
 # ^[a-z]+-[0-9]+$), the SDLC_TMP_WORKTREES of the run.sh whose pid it names. A prefix is skipped when
 # that pid names a live process (ps -p, so a process owned by another user counts as alive) or when
 # it is <own prefix> (compared by physical path). Every other prefix has a dead owner: each
 # registered worktree under it (paths compared by physical path, since macOS reports /private/var
 # for /var) gets git worktree remove --force --force, then the prefix is removed with rm -rf.
-# Finally git worktree prune runs, then each tmp dir, and the legacy .worktrees, are removed only when empty.
+# Finally git worktree prune runs, then each tmp dir, and the legacy .worktrees, are removed only when empty
+# (.claude/worktrees itself is Claude Code's and stays).
 # Without ps on PATH liveness cannot be told, so it reaps nothing and exits 0.
-# Contract: it always exits 0. It deletes files only under the two tmp dirs (plus the empty tmp dirs and the
+# Contract: it always exits 0. It deletes files only under the tmp dirs (plus the empty tmp dirs and the
 # empty legacy .worktrees dir themselves); git worktree remove and prune also drop the matching
 # entries in git's own worktree records. It never removes a worktree outside a dead owner's prefix,
 # never deletes a branch, and never changes the caller's exit code (callers ignore its status).
@@ -32,7 +33,7 @@ phys() {
   printf '%s%s\n' "${r%/}" "$rest"
 }
 
-wt_tmp=$(python3 "$(dirname "$0")/wtroot.py" root --cwd "$top" 2>/dev/null) && wt_tmp="$wt_tmp/tmp" || wt_tmp=""
+wt_tmp=$(python3 "$(dirname "$0")/wtroot.py" root --cwd "$top" 2>/dev/null) && wt_tmp="$wt_tmp/tmp" || wt_tmp="$top.worktrees/tmp"
 [[ "$wt_tmp" == "$top/.claude/worktrees/tmp" ]] && wt_tmp=""
 for base in "$top/.claude/worktrees/tmp" "$top/.worktrees/tmp" ${wt_tmp:+"$wt_tmp"}; do
   [[ -d "$base" ]] || continue

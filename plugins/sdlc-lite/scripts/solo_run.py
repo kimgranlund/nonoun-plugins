@@ -546,7 +546,8 @@ def ensure_worktree(name, base=None, task_dir=None):
     """Return the worktree path for --worktree <name>, creating it when missing. The role cannot do this itself:
     block-stray-worktree.sh denies a role creating worktrees or branches, so the launcher does. When the task's
     handoff.md front matter has an id, the tree is a lanes.py solo lane, <lanes root>/<id>-<slug> on lane/<id>-<slug>
-    (spec section 17.9 B); else <main checkout>/.claude/worktrees/<name> on a new branch <name> (T-0550, wtroot.py)."""
+    (spec section 17.9 B); else <worktree root>/<name> on a new branch <name>, the root from wtroot.py: the sibling
+    <main checkout parent>/<name>.worktrees (T-0563)."""
     sys.path.insert(0, str(SCRIPTS))
     import lanes
     import tickets
@@ -1137,14 +1138,14 @@ def selftest():
             wrepo.mkdir()
             for c in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i']):
                 subprocess.run(['git', *c], cwd=str(wrepo), check=True)
-            dw = wrepo / 'wt'  # no id in the front matter: .claude/worktrees/<name> on branch <name>
+            dw = wrepo / 'wt'  # no id in the front matter: <worktree root>/<name> on branch <name>
             dw.mkdir()
             (dw / 'handoff.md').write_text('## Goal\ng\n')
             pwdf = tmp / 'pwd.out'
             shim(f"pwd -P > {pwdf}\nprintf '%s' '{{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}}'\n")
             cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'L1', '--brief', 'b',
                                  '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
-            want = (wrepo / '.claude' / 'worktrees' / 'lane-x').resolve()
+            want = (tmp / 'wtrepo.worktrees' / 'lane-x').resolve()  # the sibling root, outside the repo (T-0563)
             br = subprocess.run(['git', 'branch', '--list', 'lane-x'], cwd=str(wrepo), capture_output=True, text=True).stdout
             expect('--worktree: run succeeds', cp.returncode == 0)
             expect('--worktree: worktree on a new branch', want.is_dir() and 'lane-x' in br)
@@ -1156,7 +1157,7 @@ def selftest():
             pwdf.unlink(missing_ok=True)
             cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dl), '--tier', 'L1', '--brief', 'b',
                                  '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
-            want = (wrepo / '.claude' / 'worktrees' / 'T-0001-lane-x').resolve()
+            want = (tmp / 'wtrepo.worktrees' / 'T-0001-lane-x').resolve()
             head = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=str(want), capture_output=True, text=True).stdout.strip() \
                 if want.is_dir() else ''
             try:
@@ -1164,7 +1165,7 @@ def selftest():
             except (OSError, ValueError):
                 lrec = {}
             expect('--worktree lanes: run succeeds', cp.returncode == 0)
-            expect('--worktree lanes: the tree is .claude/worktrees/T-0001-lane-x on lane/T-0001-lane-x', head == 'lane/T-0001-lane-x')
+            expect('--worktree lanes: the tree is <repo>.worktrees/T-0001-lane-x on lane/T-0001-lane-x', head == 'lane/T-0001-lane-x')
             expect('--worktree lanes: a .lane.json of kind solo lists the ticket',
                    lrec.get('kind') == 'solo' and lrec.get('tickets') == ['T-0001'] and lrec.get('branch') == 'lane/T-0001-lane-x')
             expect('--worktree lanes: session cwd is the lane tree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
@@ -1215,7 +1216,7 @@ def selftest():
             subprocess.run(['git', 'commit', '-q', '-m', 'ignore'], cwd=str(wr2), check=True)
             op = subprocess.run([sys.executable, lanes_py, 'open', 'wave/1', '--kind', 'integration'], cwd=str(wr2),
                                 capture_output=True, text=True, timeout=60)
-            itree = wr2 / '.claude' / 'worktrees' / 'wave-1'
+            itree = tmp / 'dfrepo.worktrees' / 'wave-1'
             expect('integration lane: lanes.py opens the integration lane', op.returncode == 0 and (itree / '.lane.json').is_file())
             c7, j7 = disp('par7')
             expect('integration lane: a closable lane (no unlanded work) keeps the checkout', c7.returncode == 0 and 'worktree' not in j7)
@@ -1363,7 +1364,8 @@ def main():
     r.add_argument('--backend', default=os.environ.get('SDLC_BACKEND', 'claude'))
     r.add_argument('--exec', action='store_true', help='Claude: start the headless session instead of printing the dispatch JSON')
     r.add_argument('--cwd')
-    r.add_argument('--worktree', metavar='NAME', help='create .worktrees/NAME on a new branch NAME first '
+    r.add_argument('--worktree', metavar='NAME', help='create <worktree root>/NAME (the sibling <main checkout>.worktrees) '
+                   'on a new branch NAME first '
                    '(unless it exists) and run the session there')
     r.add_argument('--no-worktree', action='store_true', help='stay in this checkout even when another solo is live')
     r.add_argument('--timeout', type=float)

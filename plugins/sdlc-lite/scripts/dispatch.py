@@ -113,7 +113,8 @@ it then does the following.
   header       writes <!-- role= level= model= effort= --> from the dispatch over any header the role wrote, then
                the body, to the result path.
   cleanup      removes the worktrees and directory under the dispatch's tmp prefix (only a path under
-               the tmp root, <main checkout>/.claude/worktrees/tmp/, or the legacy <tree>/.worktrees/tmp/), removes the
+               the tmp root, <worktree root>/tmp/, or a legacy one: <main checkout>/.claude/worktrees/tmp/,
+               <main checkout>/.worktrees/tmp/ or <tree>/.worktrees/tmp/), removes the
                scratch dir, runs the wtroot.py crash sweep (a dead owner past the limit goes, an unmarked folder is
                reported), then reports strays: worktrees and local branches that appeared since
                prepare (its snapshot sits in the attempt record) under a tmp root or on a branch named with the
@@ -1054,8 +1055,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         result = records / (stem + '.md')
         # the execution tree's toplevel: a lane worktree handoff, a --tree lane, or a main-checkout handoff run from a lane all get the lane as Tree
         toplevel = git('rev-parse', '--show-toplevel', cwd=run_tree).stdout.strip() or git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()
-        # T-0550: the prefix sits under the main checkout's .claude/worktrees/tmp, never nested in a lane; scratch goes to $TMPDIR
-        tmp_prefix = str((wtroot.tmp_root(toplevel) or Path(toplevel, *wtroot.ROOT, 'tmp')) / name)
+        # T-0550, T-0563: the prefix sits under <worktree root>/tmp (the sibling <main checkout>.worktrees), never nested in a
+        # lane; scratch goes to $TMPDIR
+        tmp_prefix = str((wtroot.tmp_root(toplevel) or wtroot.default_root(toplevel) / 'tmp') / name)
         scratch = str(wtroot.scratch_dir(name, toplevel))
 
         base = None
@@ -1147,10 +1149,11 @@ def validate_result(role, path):
 
 
 def tmp_roots(tree):
-    """The roots a dispatch tmp prefix may sit under: <main checkout>/.claude/worktrees/tmp (T-0550), and for one release
-    the legacy <tree>/.worktrees/tmp of an attempt prepared before 0.23.0."""
-    new = wtroot.tmp_root(tree)
-    return ([os.path.realpath(str(new))] if new else []) + [os.path.realpath(os.path.join(tree, wtroot.LEGACY, 'tmp'))]
+    """The roots a dispatch tmp prefix may sit under: <worktree root>/tmp (T-0563), and for one release the legacy
+    <main checkout>/.claude/worktrees/tmp (T-0550) and .worktrees/tmp, and <tree>/.worktrees/tmp of an attempt prepared
+    before 0.23.0."""
+    roots = [str(r) for r in wtroot.tmp_roots(tree)] + [os.path.join(tree, wtroot.LEGACY, 'tmp')]
+    return list(dict.fromkeys(os.path.realpath(r) for r in roots))
 
 
 def sweep_tmp(tree, scratch):
@@ -1203,7 +1206,7 @@ def remove_tmp(tree, prefix):
 
 def strays(tree, prefix, attempt):
     """(worktree [path, branch] pairs, branch names) that appeared since prepare and belong to this role: a worktree under
-    <tree>/.worktrees/tmp/ (its own prefix left out) or on a branch named with the role's agent name, a branch with that
+    a tmp root (tmp_roots; its own prefix left out) or on a branch named with the role's agent name, a branch with that
     name as prefix. Peers' worktrees and branches elsewhere are not this role's (T-0371)."""
     if 'worktrees_before' not in attempt:
         return [], []
@@ -2302,7 +2305,7 @@ def selftest():
         for key in ('subagent_type', 'model', 'effort', 'name', 'result', 'tmp_prefix', 'base_sha', 'prompt'):
             case('dispatch JSON has %s' % key, key in got and got[key] is not None)
         case('subagent type, Agent name, and result path', got['subagent_type'] == 'sdlc-lite:builder-L1' and got['name'] == 'w-builder-L1'
-             and got['result'] == str(R(w) / 'builder-L1.md') and os.path.realpath(got['tmp_prefix']) == os.path.realpath(str(rr / '.claude' / 'worktrees' / 'tmp' / 'w-builder-L1')))
+             and got['result'] == str(R(w) / 'builder-L1.md') and os.path.realpath(got['tmp_prefix']) == os.path.realpath(str(rr.parent / 'rr.worktrees' / 'tmp' / 'w-builder-L1')))
         head = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
         case('a builder gets its base sha, in the dispatch, base-sha, and the brief',
              got['base_sha'] == head and (R(w) / 'base-sha').read_text() == head + '\n' and 'Base sha: ' + head in got['prompt'])
@@ -2357,9 +2360,9 @@ def selftest():
         (lw / '.sdlc' / 'w').mkdir(parents=True, exist_ok=True)
         shutil.copy(rr / '.sdlc' / 'w' / 'handoff.md', lw / '.sdlc' / 'w' / 'handoff.md')
         rcl, dl, _ = prep(rr, 'verifier', 'L1', str(lw / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
-        case('a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree; its tmp prefix is under the main checkout (T-0550)',
+        case('a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree; its tmp prefix is under the sibling root of the main checkout (T-0550, T-0563)',
              rcl == 0 and dl['tree'] == os.path.realpath(str(lw)) and 'Tree: %s ' % dl['tree'] in dl['prompt']
-             and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '/.claude/worktrees/tmp/'))
+             and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '.worktrees/tmp/'))
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
         # T-0376: a lane forked from a commit newer than a stale stored base records its fork point, so a scope guard lists only the lane.
         def gt(where, *a):
@@ -2433,7 +2436,7 @@ def selftest():
 
         def names_lane(d, want=lane_tip2, avoid=main_head):
             return (d['tree'] == real_lane and 'Tree: %s ' % real_lane in d['prompt'] and 'Tree: %s ' % rr not in d['prompt']
-                    and d['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '/.claude/worktrees/tmp/')
+                    and d['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '.worktrees/tmp/')
                     and not d['tmp_prefix'].startswith(real_lane + '/')  # T-0550: never nested in the lane
                     and d['base_sha'] == want != avoid and 'Base sha: ' + want in d['prompt'])
         with clean_env(), cwd(lw2), contextlib.redirect_stderr(io.StringIO()):

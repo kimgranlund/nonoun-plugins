@@ -14,8 +14,9 @@
 # out an existing branch; with --detach it skips all branch DWIM whatever refs exist, so the
 # rule stays textual and the hook never queries the repo.
 # For a sub-agent role (no SDLC_ROLE) with no prefix variable, the prefix is `wtroot.py root --cwd <hook JSON's cwd>`
-# plus /tmp, the parent of every dispatch tmp prefix: <main checkout>/.claude/worktrees/tmp (never a lane, T-0550),
-# or under a worktree_root: line or a bare clone's <bare parent>/lanes (T-0561).
+# plus /tmp, the parent of every dispatch tmp prefix: the sibling <main checkout>.worktrees/tmp outside the repo (never a
+# lane, T-0550, T-0563), or under a worktree_root: line or a bare clone's <bare parent>/lanes (T-0561). The legacy
+# <main checkout>/.claude/worktrees/tmp is denied; a session with no role may still add Claude Code's own worktrees there.
 # Allowed: git worktree add --detach "$SDLC_TMP_WORKTREES/<name>" <commit>, every other git
 # worktree subcommand (list, remove, prune), a mention inside a quoted argument
 # (grep -n "git worktree add" f), and anything outside a role run.
@@ -42,7 +43,7 @@ cwd=$(jq -r '.cwd // ""' <<<"$json")
 [[ -n $cwd ]] || cwd=$PWD
 prefix=${SDLC_TMP_WORKTREES:-}
 # A sub-agent has no per-run prefix in its environment: its dispatch brief names <worktree root>/tmp/<name>,
-# the root from wtroot.py (<main checkout>/.claude/worktrees, a worktree_root: line, or a bare clone's
+# the root from wtroot.py (the sibling <main checkout>.worktrees, T-0563, a worktree_root: line, or a bare clone's
 # <bare parent>/lanes, T-0561), so any path under that tmp dir passes for it.
 if [[ -z $prefix && -z "${SDLC_ROLE:-}" ]]; then
   top=$(python3 "$(dirname "${BASH_SOURCE[0]}")/../scripts/wtroot.py" root --cwd "$cwd" 2>/dev/null) || top=""
