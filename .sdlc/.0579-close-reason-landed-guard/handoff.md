@@ -2,14 +2,12 @@
 id: T-0579
 title: "close --reason accepts a 'landed on main' claim that is false"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0579-t0579
-worktree: ../sdlc-lite.worktrees/T-0579-t0579
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -30,3 +28,14 @@ A reason with no landing claim behaves as today.
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0. Its new cases show `--reason "landed on main"` with no sha refused; a sha that is not an ancestor refused; an ancestor sha accepted. The refusals failed before the change.
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L1 · verdict: pass · verifier: verifier-L2 (opus) · base: 5b5f37a91fc3
+- Changed: close --reason refuses a landed/on-main claim without an ancestor sha; verifier notes exempt
+- Commits: ea94e40 T-0579: close --reason refuses an unproven landing claim; verifier notes exempt
+- Check: 1 `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, new cases show no-sha refused, n...: pass
+- Check: 2 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:964 the conductor-requested... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:1577 the docstring's second... -> notes.md
+- Follow-up: note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0579-ver... -> notes.md

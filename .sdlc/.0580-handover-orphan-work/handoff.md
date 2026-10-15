@@ -2,14 +2,12 @@
 id: T-0580
 title: "Handover and cleanup can strand unique work on snapshot refs or dangling commits"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0580-t0580
-worktree: ../sdlc-lite.worktrees/T-0580-t0580
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -33,3 +31,13 @@ Source: ui-kit-maison lessons 2026-10-15, `/Users/kimgranlund/Projects/maison/ui
 1. `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0. Its new case shows a fixture with a dangling commit holding a unique change and a snapshot ref whose change is already on main: `orphans` lists the first and not the second. The case failed before (no command).
 2. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0. Its handover case shows the archive ref exists after `claim --handover`.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 5b5f37a91fc3
+- Changed: claim --handover pins the branch as an archive ref; lanes.py orphans lists stranded work read-only
+- Commits: bb2bcee T-0580: claim --handover pins the branch; lanes.py orphans lists stranded work
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0, with the new orphans case: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, handover case shows the archive ...: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py orphans lists the second commit... -> notes.md

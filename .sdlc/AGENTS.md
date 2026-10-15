@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4ce70e6ea53f -->
+<!-- sdlc-lite:managed:start v1 sha256:981060988d77 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -30,12 +30,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0593 A repo pins the minimum plugin version every host must run (0593-plugin-min-version)
   - T-0594 One plugin command records, lands, closes and backs up a lane (0594-land-close-command)
 - ready: 0
-- claimed: 2
-  - T-0579 close --reason accepts a 'landed on main' claim that is false (0579-close-reason-landed-guard), claimed by claude 2026-10-15, branch lane/T-0579-t0579
-  - T-0580 Handover and cleanup can strand unique work on snapshot refs or dangling commits (0580-handover-orphan-work), claimed by claude 2026-10-15, branch lane/T-0580-t0580
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 537
+- done: 539
 - dropped: 29
 
 ## Procedures

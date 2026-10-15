@@ -616,3 +616,13 @@
 ## T-0585: tickets.py tidy archives into .sdlc/archive under layout: topics (2026-10-15)
 
 - note: plugins/sdlc-lite/scripts/tickets.py:2233 the router Procedures block still says `tidy lists its move into archive/` with no topics qualifier. It is rendered for every layout, so under topics it names the wrong folder. Out of this ticket's criteria.
+
+## T-0579: close --reason accepts a 'landed on main' claim that is false (2026-10-15)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:964 the conductor-requested check `python3 plugins/sdlc-lite/scripts/fanout.py selftest` printed `fanout selftest: PASS`, fanout_rc=0; the separator it appends (`'; verifier notes: '`) matches the split string at plugins/sdlc-lite/scripts/tickets.py:1579.
+- note: plugins/sdlc-lite/scripts/tickets.py:1577 the docstring's second sentence runs past the surrounding 120-column wrap; cosmetic only.
+- note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0579-verifier-L2-2 the throwaway worktree was removed with `git worktree remove --force` (rc=0); the follow-up `rm -rf` of the now-empty parent dir was denied by the permission system.
+
+## T-0580: Handover and cleanup can strand unique work on snapshot refs or dangling commits (2026-10-15)
+
+- note: `plugins/sdlc-lite/scripts/lanes.py` (`orphans`) lists the second commit of a stash (dangling `WIP on main: ...`) and old `refs/stash` entries as orphans. This is consistent with the ticket ("dangling commits whose patch is not on main"), so I filed it as an observation and not a defect.
