@@ -2,6 +2,33 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.24.0] - 2026-10-15
+
+Report: [docs/reports/2026-10-15-release-0-24-0.md](docs/reports/2026-10-15-release-0-24-0.md).
+
+### Changed
+
+- Worktrees move out of the repo to the sibling `<main checkout parent>/<repo>.worktrees/` on Claude Code and Codex alike (`wtroot.py root`); `.claude/worktrees/` and `.worktrees/` are read as legacy for one release, and `scripts/migrate-worktrees.sh` (dry run, then `--apply`) moves them, judging landed against the default branch and rewriting each moved ticket's `worktree:` line (T-0563, T-0569, T-0575). `migrate-0.23.sh` now calls it.
+- Root `AGENTS.md` and the onboarding block name the worktree root and say that under Codex every lane step needs full access, not `workspace-write` (T-0564, T-0570).
+- `lanes.py open` commits the ticket's `branch:` and `worktree:` record in main and never sweeps in a path that was already dirty (T-0599), and installs the Codex agents in a new lane when the main checkout has them (T-0598).
+
+### Added
+
+- `lanes.py finish <lane>`: record, verdict, commit, land, settle, close, lane removal and an optional `--backup` push in one rerunnable command (T-0594, T-0595).
+- `plugin_min: X.Y.Z` in `.sdlc/config`: `dispatch.py prepare`, `run.sh`, `solo_run.py run` and `lanes.py open` refuse an older running plugin or an older installed hook plugin, naming the update command (T-0593, T-0596).
+- `wtroot.py evidence <ticket>`: a user-cache folder for screenshots and other binaries; `tickets.py check` warns on tracked binaries under `.sdlc/` (T-0568).
+- `lanes.py orphans` lists snapshot refs and dangling commits that hold unique work; `claim --handover` pins the branch as `refs/archive/<date>/<branch>` first (T-0580).
+
+### Fixed
+
+- Lane merges through `fanout.py land` resolve and regenerate `.sdlc/AGENTS.md`, `roadmap.md`, `notes.md` and the mailbox routers instead of stopping, and stage tracked files under an ignored mailbox (T-0565, T-0597).
+- `fanout.py land` and `lanes.py close` carry the lane's `.sdlc/runtime/tasks/<ticket>/` records into main without overwriting newer ones (T-0566).
+- `dispatch.py prepare --tree` no longer takes a lane's base from a solo record made in another tree (T-0578).
+- `tickets.py close --reason` refuses a "landed" or "on main" claim that names no commit on the default branch; appended verifier notes are exempt (T-0579).
+- Topic-layout repos: the onboarding block names `.sdlc/notes/notes.md` and `.sdlc/work/archive/`, and `tidy` archives there (T-0576, T-0585).
+- Codex docs name the records dir for request files (T-0600).
+- Sweeps and stray reports skip Codex and Claude Code host-owned worktrees (T-0564).
+
 ## [0.23.1] - 2026-10-15
 
 Report: [docs/reports/2026-10-15-release-0-23-1.md](docs/reports/2026-10-15-release-0-23-1.md).

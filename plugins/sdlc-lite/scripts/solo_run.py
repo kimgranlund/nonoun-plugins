@@ -41,7 +41,7 @@ reports none) records cost_usd null with a cost_reason, and the budget reports t
 
 Claude: `SDLC_ROLE=solo claude -p --plugin-dir <plugin> --agent sdlc-lite:solo --model M --effort E
 --dangerously-skip-permissions --output-format json -- <brief>`. Codex: `codex_exec.py solo L1..L3 <brief>`; with SDLC_CODEX_TRANSPORT=subagent it adds
-`--request-file <task dir>/solo-<level>-<attempt>.request.json` (T-0372), the parent answers it through codex_exchange.py,
+`--request-file <records dir>/solo-<level>-<attempt>.request.json` (T-0372), the parent answers it through codex_exchange.py,
 and the record says transport subagent (a standalone run says exec).
 Exit status is the session's own, or 1 when it reported an error or its result text is empty (no result file is
 written, so stdout says FAILED; T-0531). A handoff that is still the unfilled ticket template of its type refuses
