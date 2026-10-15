@@ -3,7 +3,7 @@ id: T-0560
 title: "A plain tickets.py close leaves skips.md tracked in the closed folder"
 type: bug             # feature | bug | chore | spike | idea
 status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
-size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
@@ -31,3 +31,8 @@ T-0540 kept `skips.md` in the task folder by maintainer decision; C or D were to
 
 ## Constraints
 The failing test lands before or with the fix. Target 0.23.1.
+
+## Acceptance criteria
+1. A plain or `--reason` close of a ticket whose committed task-folder `skips.md` has a runtime records dir moves it there; after `git add -A` the closed folder tracks only `handoff.md`, and the Outcome still reads the lane: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, including its `(T-0560 plain)` and `(T-0560 reason)` cases (red before the fix).
+2. A legacy in-place ticket keeps its `skips.md`: the `(T-0560) a legacy in-place fixture keeps its skips.md in the folder` case passes in the same selftest.
+3. fanout land still closes and untracks as before: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
