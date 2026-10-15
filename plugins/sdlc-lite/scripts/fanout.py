@@ -65,7 +65,8 @@ land
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
   nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
   and, after copying the sub-agent worktree's records dir (order.records_dir) into the integration worktree's runtime
-  records dir (copy_lane_records; no commit on the branch), for a solo level L2 or L3, `no verifier result` or
+  records dir (copy_lane_records; no commit on the branch) and into the main checkout's, keeping a file there at least
+  as new (lanes.carry_records prints `records: <path>`, T-0566), for a solo level L2 or L3, `no verifier result` or
   `verifier <verdict>` read from that copy, else from the verifier results committed on the branch that the
   integration branch does not hold (git objects, newest by order.py: a branch with no worktree commits its verifier
   result into the ticket folder with `git add -f`, and the close commit untracks it). Exit 0 only for `merged`.
@@ -1689,7 +1690,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             src_rec = runtime_records(cf)
             if src_rec.is_dir():
                 dst_rec = order.records_dir(runtime_records(ctx['top'] / cf.relative_to(integ)), create=True)
-                shutil.copytree(str(src_rec), str(dst_rec), dirs_exist_ok=True)
+                lanes.copy_newer(src_rec, dst_rec)
         return 'merged', merge_sha[:7]
 
 
@@ -2210,10 +2211,11 @@ def land_preflight(a):
     if lanes_dir.exists() and not lanes_dir.is_dir():
         raise Refuse(f'--lanes-dir {lanes_dir} exists and is not a dir')
     integ_dir = lanes_dir / 'integration'
-    checked_out, wt_path = {}, None
+    checked_out, wt_path, main = {}, None, None
     for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
         if line.startswith('worktree '):
             wt_path = pathlib.Path(line[len('worktree '):]).resolve()
+            main = main or wt_path  # git lists the main checkout first
         elif line.startswith('branch refs/heads/'):
             checked_out[line[len('branch refs/heads/'):]] = wt_path
     where = checked_out.get(integration)
@@ -2224,7 +2226,7 @@ def land_preflight(a):
                      f'or pass another --lanes-dir')
     lane = Lane(land_lane_name(branch, tid), [tid], branch)
     lane.branch, lane.tip, lane.tickets = branch, tip, [t]
-    return {'lane_wt': checked_out.get(branch), 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
+    return {'lane_wt': checked_out.get(branch), 'main': main or top, 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
             'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
             'gates': list(a.gate or []), 'light_gates': list(a.light_gate or []), 'gate_needs': gate_needs_of(a),
@@ -2264,11 +2266,7 @@ def land_setup(ctx):
 RECORDS_IGNORE = shutil.ignore_patterns('*.log', '.run.lock', '*.running')
 
 
-def runtime_records(task_dir):
-    """The runtime records dir of a ticket folder, <nearest .sdlc>/runtime/tasks/<name without leading dots>, whatever
-    order.records_dir's legacy rule says for it (order._base finds the base)."""
-    p = os.path.abspath(os.fspath(task_dir))
-    return pathlib.Path(order._base(p)) / 'runtime' / 'tasks' / os.path.basename(p).lstrip('.')
+runtime_records = lanes.runtime_records
 
 
 def copy_lane_records(src_folder, dst_folder):
@@ -2296,7 +2294,11 @@ def land_ticket(ctx, lock):
         return 'no changes', tip[:7]
     wt = ctx.get('lane_wt')
     if wt and pathlib.Path(wt).is_dir():
-        copy_lane_records(pathlib.Path(wt) / ctx['trel'] / t.slug, ctx['integ_dir'] / ctx['trel'] / t.slug)
+        src = pathlib.Path(wt) / ctx['trel'] / t.slug
+        copy_lane_records(src, ctx['integ_dir'] / ctx['trel'] / t.slug)
+        dst = lanes.carry_records(src, ctx['main'] / ctx['trel'] / t.slug)  # T-0566: a close in main finds the verdict
+        if dst is not None:
+            say(ctx, lane, t.id, f'records: {dst}')
     kind, tier = ctx['kinds'][t.id]
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict, held = branch_verdict(ctx, ref, t, with_held=True)
@@ -4606,6 +4608,30 @@ def selftest():
         expect(f'case 23 land records copy negative control: with the copy off the same land reports no verifier result, '
                f'got rc={lwn1.returncode} out={lwn1.stdout[-300:]!r}', lwn1.returncode == 1 and 'no verifier result' in lwn1.stdout
                and sh(lwn, 'cat-file', '-e', 'fanout/w:w1.txt').returncode != 0)
+        # T-0566: a land that does not merge (a red gate) still carries the lane's records into the main checkout, so
+        # tickets.py close there finds the verdict with no hand copy; a main record newer than the lane's is kept
+        lc, lc_pin = records_repo('land-carry', 1)
+
+        def main_close():
+            return subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'close', 't1'],
+                                  cwd=str(lc), env=ENV, capture_output=True, text=True, timeout=120)
+        lc0 = main_close()
+        expect(f'case 23 land carry control: before the land, close in main finds no verdict, got rc={lc0.returncode} '
+               f'out={(lc0.stdout + lc0.stderr)[-300:]!r}', lc0.returncode != 0)
+        lc_rd = records_dir_(lc / '.sdlc' / 't1', create=True)
+        newer = json.dumps({'role': 'verifier', 'level': 'L3', 'model': 'fable', 'file': 'verifier-L3.md', 'main': 1}) + '\n'
+        (lc_rd / 'runs.jsonl').write_text(newer, encoding='utf-8')
+        future = time.time() + 3600
+        os.utime(lc_rd / 'runs.jsonl', (future, future))
+        lc1 = verb(lc, 'land', 'worktree-agent-w1', '--ticket', 'T-0001', *lc_pin, '--gate', 'false')
+        expect(f'case 23 land carry: a red land prints records: <main runtime path>, got rc={lc1.returncode} '
+               f'out={lc1.stdout[-400:]!r}', lc1.returncode == 1 and 'red: false' in lc1.stdout
+               and f'records: {lc_rd.resolve()}' in lc1.stdout)
+        expect('case 23 land carry: a main record newer than the lane copy is kept',
+               (lc_rd / 'runs.jsonl').read_text(encoding='utf-8') == newer)
+        lc2 = main_close()
+        expect(f'case 23 land carry: tickets.py close in main finds the carried verdict, got rc={lc2.returncode} '
+               f'out={(lc2.stdout + lc2.stderr)[-300:]!r}', lc2.returncode == 0 and (lc_rd / 'verifier-L3.md').is_file())
         # a host branch checked out in its worktree, its agent_id record only in that worktree's runtime records dir
         lhr = tmp / 'land-host-rec'
         sized_repo(lhr, ['L1'], {'.gitignore': gi})

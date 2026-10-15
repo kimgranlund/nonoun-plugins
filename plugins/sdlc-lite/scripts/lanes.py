@@ -106,7 +106,9 @@ Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a 
      description `<ticket> <title>`, the reason (ancestor, pr merged, content in <into>, discarded), into, the tip
      sha and the UTC time; point refs/archive/<UTC date>/<branch> at it with update-ref and a zero old value. If that
      fails, retry once with the leaf <branch>.<sha7>; a second failure stops the close with the branch intact.
-  2. Copy the tree's untracked and ignored .sdlc/ files, and the ignored .sdlc/runtime/tasks/ records (minus *.log,
+  2. Unless discarded, carry each local ticket's records dir into the main checkout's runtime records dir, keeping a
+     file there at least as new (T-0566), and print `records: <path>`. Then copy the tree's untracked and ignored
+     .sdlc/ files, and the ignored .sdlc/runtime/tasks/ records (minus *.log,
      *.running, *.run.lock), to <git common dir>/sdlc-lane-archive/<lane>/; a failed write stops the close here.
   3. git worktree remove --force <path>; a missing tree skips this step.
   4. git update-ref -d refs/heads/<b> <sha>: by full name, and only while the branch is at the sha the test read.
@@ -680,6 +682,68 @@ def copy_sdlc(path, dest):
     return None
 
 
+def runtime_records(task_dir):
+    """The runtime records dir of a ticket folder, <nearest .sdlc>/runtime/tasks/<name without leading dots>, whatever
+    order.records_dir's legacy rule says for it (order._base finds the base)."""
+    p = os.path.abspath(os.fspath(task_dir))
+    return Path(order._base(p)) / 'runtime' / 'tasks' / os.path.basename(p).lstrip('.')
+
+
+def copy_newer(src, dst):
+    """Copy the files under records dir src into dst, without logs or lock files, keeping (never overwriting or
+    deleting) a dst file at least as new as its source. Returns the number of files copied."""
+    n = 0
+    for dirpath, _, files in os.walk(str(src)):
+        for f in files:
+            if f.endswith(('.log', '.running', '.run.lock')):
+                continue
+            s = Path(dirpath) / f
+            d = Path(dst) / s.relative_to(src)
+            if d.exists() and d.stat().st_mtime >= s.stat().st_mtime:
+                continue
+            d.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(s), str(d))
+            n += 1
+    return n
+
+
+def carry_records(src_folder, dst_folder):
+    """T-0566: carry ticket folder src_folder's records dir (order.records_dir) into dst_folder's runtime records dir
+    (copy_newer), so a close in the main checkout finds the lane's verdict. Returns the dst records dir, or None when
+    there is nothing to carry: no records dir, a legacy ticket whose records travel in the folder itself, or the same
+    dir on both sides."""
+    src = order.records_dir(src_folder)
+    if not src.is_dir() or samepath(src, src_folder):
+        return None
+    dst = runtime_records(dst_folder)
+    if samepath(src, dst):
+        return None
+    dst = order.records_dir(dst, create=True)
+    copy_newer(src, dst)
+    return dst
+
+
+def carry_lane_records(ctx, d):
+    """Carry the records of each local ticket of lane d from its tree into the main checkout (carry_records), before
+    the tree is removed. Returns the `records: <path>` lines."""
+    lines = []
+    lroot, mroot = Path(d['path']) / '.sdlc', Path(ctx.top) / '.sdlc'
+    if not lroot.is_dir():
+        return lines
+    try:
+        ltdir = tickets.ticket_dir(lroot)
+        metas = tickets.load(ltdir)
+    except tickets.Fail:
+        return lines
+    want = {str(t) for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))}
+    for slug, meta in metas:
+        if meta.get('id') in want:
+            dst = carry_records(ltdir / slug, mroot / ltdir.relative_to(lroot) / slug)
+            if dst is not None:
+                lines.append(f'records: {dst}')
+    return lines
+
+
 def port_free(port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -722,7 +786,14 @@ def do_close(ctx, d, outcome, info, dry):
     ref, e = write_archive(ctx, b, sha, desc, reason, into)
     if e:
         return result(1, '\n'.join(pre + [e]), lane=name, path=d['path'], branch=b)
+    carried = []
     if d['exists']:
+        if how != 'discarded':  # a discarded lane's verdict must not close the ticket in main
+            try:
+                carried = carry_lane_records(ctx, d)
+            except OSError as e:
+                return result(1, '\n'.join(pre + [f'cannot carry the records of {name} into the main checkout: {e}; '
+                                                  f'archive ref {ref} kept, lane not closed']), lane=name, path=d['path'], branch=b)
         e = copy_sdlc(d['path'], ctx.common / 'sdlc-lane-archive' / name)
         if e:
             return result(1, '\n'.join(pre + [f'cannot archive the .sdlc files of {name}: {e}; archive ref {ref} kept, lane not closed']),
@@ -742,7 +813,7 @@ def do_close(ctx, d, outcome, info, dry):
         if LOCAL_ID.fullmatch(str(t)):
             with contextlib.suppress(tickets.Fail, OSError):
                 tickets.record_branch(Path(top) / '.sdlc', t, None, only=b)
-    lines = pre + [outcome]
+    lines = pre + [outcome] + carried
     pl = port_line(d['port'])
     if pl:
         lines.append(pl)
@@ -1467,6 +1538,37 @@ def case_row9(script, base):
         fails.append('row 9: a runtime log was archived')
     if t.g('for-each-ref', 'refs/tags'):
         fails.append('row 9: a ref under refs/tags was created')
+    return fails
+
+
+def case_carry(script, base):
+    """T-0566: close carries a lane ticket's runtime records into the main checkout, keeps a newer main file, and a
+    discarded lane carries nothing."""
+    t = Fixture(base, script, 'carry')
+    fails = []
+    for num, discard in ((8, False), (9, True)):
+        t.ticket(num, f'T{num}', claimed=True, status='claimed')
+        leaf, tree, b = t.open(f'c{num}', f'T-{num}')
+        t.work(tree)
+        if not discard:
+            t.merge(b)
+        key = f'.sdlc/runtime/tasks/{num:04d}-t'
+        t.write({f'.sdlc/{num:04d}-t/handoff.md': (t.top / f'.sdlc/{num:04d}-t/handoff.md').read_text(),
+                 '.sdlc/runtime/.gitignore': '*\n', f'{key}/verifier-L2.md': 'lane\n', f'{key}/runs.jsonl': 'lane\n'}, cwd=tree)
+        t.write({f'{key}/runs.jsonl': 'main\n'})
+        future = time.time() + 3600
+        os.utime(t.top / key / 'runs.jsonl', (future, future))
+        rc, o = t.lanes('close', leaf, *(['--discard'] if discard else []))
+        carried = [ln[len('records: '):] for ln in o.splitlines() if ln.startswith('records: ')]
+        got = (t.top / key / 'verifier-L2.md').is_file()
+        if discard:
+            if rc or carried or got:
+                fails.append(f'carry: a discarded lane carried records: {rc}: {o}')
+            continue
+        if rc or len(carried) != 1 or not samepath(carried[0], t.top / key) or not got:
+            fails.append(f'carry: the lane records did not reach the main checkout: {rc}: {o}')
+        if (t.top / key / 'runs.jsonl').read_text() != 'main\n':
+            fails.append('carry: a main record newer than the lane copy was overwritten')
     return fails
 
 
@@ -2206,6 +2308,7 @@ def run_selftest(script, src, base):
         need('row 11', case_row11(script, base) + case_rename(script, base) + case_deleted(script, base),
              'a change, a rename and a deletion the target lacks refuse')
         need('row 12', case_row12(script, base), 'close --discard closes with an archive tag')
+        need('carry', case_carry(script, base), 'close carries lane records into main, keeps a newer file, a discard carries none')
         print('ok: C6: every truth table row gives its outcome')
         need('C1', case_c1_nested(script, base) + case_c1_outside(script, base),
              'a stray nested tree, a record outside the lanes root and a lane really under the checkout fail')
