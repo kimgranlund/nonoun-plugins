@@ -583,3 +583,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L3 | P3 | none | ⏳ proposed |
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0585 | [.0585-tidy-topics-archive](.0585-tidy-topics-archive/handoff.md) | tickets.py tidy archives into .sdlc/archive under layout: topics | bug | L1 | P2 | none | 🟢 done |
+| T-0586 | [0586-topics-tidy-check-agree](0586-topics-tidy-check-agree/handoff.md) | Under layout: topics, tidy, check and the router text disagree | bug | L1 | P3 | none | ⏳ proposed |
+| T-0587 | [0587-solo-worktree-base](0587-solo-worktree-base/handoff.md) | solo_run.py run --worktree without --cwd records the session checkout's base | bug | L1 | P2 | none | ⏳ proposed |
