@@ -45,7 +45,16 @@ migrate() {
   root=$(phys "$root")
   say() { if (( apply )); then echo "$1"; else echo "would $1"; fi; }
 
-  main=$(git worktree list --porcelain | sed -n '1,/^$/s/^branch refs\/heads\///p' | head -n1)
+  # the base a lane must have landed on is the repo's default branch (tickets.py default_branch order: origin/HEAD's
+  # target, main, master), not the primary checkout's branch, which may be a long-lived non-default one (T-0569)
+  main=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); main=${main#origin/}
+  if [[ -z "$main" ]] || ! git rev-parse --verify --quiet "refs/heads/$main^{commit}" >/dev/null; then
+    main=""
+    for b in main master; do
+      if git rev-parse --verify --quiet "refs/heads/$b^{commit}" >/dev/null; then main=$b; break; fi
+    done
+  fi
+  [[ -n "$main" ]] || main=$(git worktree list --porcelain | sed -n '1,/^$/s/^branch refs\/heads\///p' | head -n1)
   # the legacy roots this run reads; one that is the root itself (a worktree_root: line naming it) has nothing to move
   local -a legacy=()
   for src in .claude/worktrees .worktrees; do  # the legacy roots
@@ -329,6 +338,18 @@ selftest() {
   snap2=$(git -C "$t/kit/.bare" worktree list --porcelain; find "$t/kit" -maxdepth 3 | sort)
   [[ $rc -eq 0 && "$out" == *"bare clone: worktree root $t/kit/lanes"* && "$snap1" == "$snap2" ]] \
     && ok "bare clone: from the bare dir --apply prints the root and changes nothing" || bad "bare clone: from the bare dir --apply prints the root and changes nothing: rc $rc $out"
+  # T-0569: the primary checkout sits on `candidate`; a lane landed on main but not on candidate still moves
+  local r2="$t/repo2"
+  g2() { git -C "$r2" -c user.name=t -c user.email=t@t "$@" >/dev/null 2>&1; }
+  mkdir -p "$r2" && git -C "$r2" init -q -b main && g2 commit -q --allow-empty -m init
+  g2 checkout -q -b candidate
+  g2 worktree add -q -b lane/landed "$r2/.worktrees/landed" main
+  echo new >"$r2/.worktrees/landed/l.txt" && g2 -C "$r2/.worktrees/landed" add l.txt && g2 -C "$r2/.worktrees/landed" commit -q -m "lane work"
+  g2 update-ref refs/heads/main "$(git -C "$r2/.worktrees/landed" rev-parse HEAD)"
+  out=$(cd "$r2" && bash "$me" --apply 2>&1); rc=$?
+  [[ $rc -eq 0 && "$out" != *'has not landed'* ]] && git -C "$r2" worktree list --porcelain | grep -qxF "worktree $t/repo2.worktrees/landed" \
+    && ok "primary checkout on candidate: a lane landed on main moves instead of being skipped" \
+    || bad "primary checkout on candidate: a lane landed on main moves instead of being skipped: rc $rc $out"
   if (( fails )); then echo "migrate-worktrees.sh selftest: FAIL ($fails)"; return 1; fi
   echo "migrate-worktrees.sh selftest: ok"
 }
