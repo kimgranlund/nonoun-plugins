@@ -2,14 +2,12 @@
 id: T-0575
 title: "Trace, fleet and migrate readers miss lanes under the sibling root"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0563]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0575-t0575
-worktree: ../sdlc-lite.worktrees/T-0575-t0575
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -34,3 +32,14 @@ Legacy roots stay readable for one release.
 1. Each of the four scripts' selftests exits 0. Each gains a fixture with a lane under a sibling root that the script now finds; that fixture failed before the change.
 2. `bash plugins/sdlc-lite/scripts/migrate-worktrees.sh --selftest` exits 0. Its new case shows that a moved lane's ticket `worktree:` line names the new path, and that `tickets.py check` prints no worktree warning for it.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: f81c82776029
+- Changed: trace, fleet and migrate readers find sibling-root lanes; migrate retargets ticket worktree lines
+- Commits: ac37f05 T-0575: trace, fleet and migrate readers find lanes under the sibling root
+- Check: 1 Each of the four scripts' selftests exits 0, each with a sibling-root fixture that failed before ...: pass
+- Check: 2 `bash plugins/sdlc-lite/scripts/migrate-worktrees.sh --selftest` exits 0, and its new case shows ...: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines; the... -> notes.md
+- Follow-up: note: dependents of the changed contract still pass: fleet_detect... -> notes.md

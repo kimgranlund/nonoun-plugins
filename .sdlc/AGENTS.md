@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:6df9b038cb61 -->
+<!-- sdlc-lite:managed:start v1 sha256:c70cd4c0e6c4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -20,12 +20,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0573 notes.md keeps only live notes (0573-prune-notes)
   - T-0574 Silence the flat-layout warning and drop the stale board.md (0574-sdlc-config-board)
 - ready: 0
-- claimed: 2
+- claimed: 1
   - T-0564 Worktree root guidance for Claude Code and Codex (0564-worktree-root-guidance), claimed by claude 2026-10-15, branch lane/T-0564-t0564
-  - T-0575 Trace, fleet and migrate readers miss lanes under the sibling root (0575-lane-readers-sibling-root), claimed by claude 2026-10-15, branch lane/T-0575-t0575
 - paused: 0
 - blocked: 0
-- done: 528
+- done: 529
 - dropped: 29
 
 ## Procedures

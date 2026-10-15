@@ -576,3 +576,8 @@
 
 - note: plugins/sdlc-lite/scripts/lanes.py:124 and fanout.py:33/:40/:492 still describe `.claude/worktrees/` as the host-isolation and gitignore path. That matches the host-owned rule, so it is not stale.
 - note: I could not remove my scratch copies (`mut/`, `base/`) under /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0563-verifier-L2: the rm was denied. No throwaway worktrees were created, and the repo is untouched.
+
+## T-0575: Trace, fleet and migrate readers miss lanes under the sibling root (2026-10-15)
+
+- note: redck.py deviations printed no `process deviation:` lines; the handoff has no `(red)` criteria, so there was no failing-first order to check.
+- note: dependents of the changed contract still pass: fleet_detect, fleet_status, fleet_config and solo_stats selftests all print ok. git.nested's old one-argument form still works when `under` is None. The full check.sh was not run, per the conductor notes.
