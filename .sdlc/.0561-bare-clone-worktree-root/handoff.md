@@ -2,14 +2,12 @@
 id: T-0561
 title: "Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-14
 claimed_by: claude 2026-10-14
-branch: lane/T-0561-w76-0561
-worktree: .claude/worktrees/T-0561-w76-0561
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 verifier: L3
 ---
@@ -42,3 +40,21 @@ The failing selftest (a bare-clone fixture with a lane, prefix outside the lane)
 6. reap-tmp-worktrees.sh run on a lane of a bare clone reaps a dead `<bare parent>/lanes/tmp/<role>-<pid>` prefix and its worktree (the 0.23.0 script left it).
 7. `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0, with its T-0561 fixtures (a bare-clone lane and a `worktree_root:` repo): a verifier sub-agent may add a detached worktree and rm under `<wtroot.py root>/tmp`, and is denied both under the old nested `<cwd>/.claude/worktrees/tmp`; they failed before the hook change.
 8. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-14 · lane: full L2 · verdict: pass · verifier: verifier-L3 (fable) · base: 20104bf87b00
+- Changed: see commits
+- Commits: b2175e5 T-0561: bare-clone worktree root through wtroot for lanes, fanout, reaper and role hooks
+- Check: 1 `python3 plugins/sdlc-lite/scripts/wtroot.py selftest` exits 0, its bare-clone cases print `ok:`,...: pass
+- Check: 2 `bash plugins/sdlc-lite/scripts/migrate-0.23.sh --selftest` exits 0 with its bare-clone cases: pass
+- Check: 3 `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0 and the dispatch selftest FAIL filter ex...: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with its `bare root` case; an expli...: pass
+- Check: 5 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with its `bare clone: --dry-run fr...: pass
+- Check: 6 reap-tmp-worktrees.sh on a lane of a bare clone reaps a dead `<bare parent>/lanes/tmp/<role>-<pid...: pass
+- Check: 7 `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 with its T-0561 fixtures, which failed ...: pass
+- Check: 8 `git diff --check` exits 0: pass
+- Follow-up: note: docs/references/sdlc-internals.md:25 still words the dispatch... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/AGENTS.md:38 Lanes, Where still names role temp... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/skills/handoff-format/run-operations.md:58 still... -> notes.md
+- Follow-up: note: verifier cleanup left on disk: the host permission system denied rm... -> notes.md

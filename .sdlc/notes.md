@@ -558,3 +558,10 @@
 - note: `redck.py deviations` printed nothing, and the handoff has no `(red)` criterion.
 - note: a main session started with `claude --agent sdlc-lite:solo-L2` and no SDLC_ROLE now resolves to the solo role and has background Bash denied, which is intended.
 - note (2026-10-15, T-0561 verifier): a foreground Bash call past the 600 s cap is auto-moved to the background by Claude Code, and the role then idles waiting for it; T-0562's hook cannot see that path. Fix candidates for a follow-up: roles split long suites into one selftest per call, or the brief states "no single command over 9 minutes"; fleet-doctor's `stalled` rule catches it meanwhile.
+
+## T-0561: Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again (2026-10-14)
+
+- note: docs/references/sdlc-internals.md:25 still words the dispatch brief's prefix as `<main checkout>/.claude/worktrees/tmp/<name>` and :27 says `record` removes only a path under `<main checkout>/.claude/worktrees/tmp/`; the code (plugins/sdlc-lite/scripts/dispatch.py:1058, :1152) now uses `wtroot.tmp_root`, so a bare clone or `worktree_root:` repo gets `<worktree root>/tmp/<name>`; the `tmp_roots` docstring at dispatch.py:1149-1150 has the same stale wording.
+- note: plugins/sdlc-lite/AGENTS.md:38 (Lanes, Where) still names role temp trees as `.claude/worktrees/tmp/<agent name>` only, while :31 now states the `worktree_root:` and bare-clone roots.
+- note: plugins/sdlc-lite/skills/handoff-format/run-operations.md:58 still words run.sh's prefix as `<main checkout>/.claude/worktrees/tmp/<role>-<pid>`; since plugins/sdlc-lite/scripts/run.sh:558 it is `<wtroot.py root>/tmp/<role>-<pid>`.
+- note: verifier cleanup left on disk: the host permission system denied `rm -rf /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0561-verifier-L3-2` (this run's scratch dir: a plugin copy with the base-sha hooks, three throwaway bare-clone fixture repos and a `worktree_root:` probe repo, and selftest outputs; no worktree of this repository, `git worktree list` shows none under the tmp prefix). Attempt 1's leftovers are gone. The dir can be deleted.

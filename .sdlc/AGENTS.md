@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:5f42599d0b7a -->
+<!-- sdlc-lite:managed:start v1 sha256:d101a4fba8c8 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -11,11 +11,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 - proposed: 0
 - ready: 0
-- claimed: 1
-  - T-0561 Bare-clone repos: worktree root falls back to the current lane's toplevel and nests again (0561-bare-clone-worktree-root), claimed by claude 2026-10-14, branch lane/T-0561-w76-0561
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 525
+- done: 526
 - dropped: 29
 
 ## Procedures
