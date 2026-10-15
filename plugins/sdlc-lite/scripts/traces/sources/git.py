@@ -4,7 +4,7 @@ read(repo, integration=None, limit=2000) returns one dict:
   worktrees        one {path, branch, nested} per `git worktree list --porcelain` entry; branch
                    is the short name, None when detached; nested is True when the path lies under
                    a worktree root of the repo (wtroot.py root, then the legacy roots) and below it
-                   holds another root (a `.worktrees` folder or `.claude/worktrees`) or lies under
+                   holds another root (a `.worktrees` folder or the legacy `.claude/worktrees`) or lies under
                    its `tmp/`;
   branches         `git for-each-ref --format=%(refname:short) refs/heads`, in its order;
   tracked_runtime  `git ls-files` paths ending in .log, .running, .run.lock, or .board-state.json;
@@ -66,7 +66,7 @@ def roots(repo):
 
 def _root_parts(parts):
     """Indexes of the parts that end a worktree root folder: a `<name>.worktrees` (sibling or pre-0.23.0) or
-    `.claude/worktrees`."""
+    the legacy `.claude/worktrees`."""
     return [i for i, s in enumerate(parts) if s.endswith(wtroot.SUFFIX)
             or (i and tuple(parts[i - 1:i + 1]) == wtroot.CLAUDE)]
 

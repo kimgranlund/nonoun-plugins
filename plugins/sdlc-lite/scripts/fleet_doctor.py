@@ -141,7 +141,7 @@ def role_kind(cmd, cwd):
 
 def lane_main(path):
     """Outside git: the main checkout a lane path names by wtroot's folder rules (<main>/.worktrees/...,
-    <main>/.claude/worktrees/..., <parent>/<main>.worktrees/...), else None."""
+    <main>/.claude/worktrees/... (legacy), <parent>/<main>.worktrees/...), else None."""
     parts = path.split(os.sep)
     for i, s in enumerate(parts):
         if s == wtroot.LEGACY or tuple(parts[i:i + 2]) == wtroot.CLAUDE:
