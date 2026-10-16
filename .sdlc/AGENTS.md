@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:7fa867ba9240 -->
+<!-- sdlc-lite:managed:start v1 sha256:c9ef03c3db75 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -27,12 +27,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0603 gate_lock selftest status checks never run: label compared to real, controls pass real0 (0603-gate-lock-selftest-label-guard)
   - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording)
 - ready: 0
-- claimed: 2
+- claimed: 1
   - T-0588 Atomic ticket claims and ids through git refs (0588-atomic-claims-refs), claimed by claude 2026-10-15, branch lane/T-0588-t0588
-  - T-0601 dispatch.py prune queues names that match no live agent (0601-prune-queue-names), claimed by claude 2026-10-15, branch lane/T-0601-t0601
 - paused: 0
 - blocked: 0
-- done: 551
+- done: 552
 - dropped: 29
 
 ## Procedures
