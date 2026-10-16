@@ -2,7 +2,7 @@
 id: T-0610
 title: "lanes.py ready exits 1 in a fresh repo: no conductor registered"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,10 @@ The ref pin and unlock stay as they are.
 
 ## Acceptance criteria
 1. (red) A lanes.py selftest case opens a lane in a fresh fixture repo with no registered conductor, runs `ready`, and expects the chosen outcome; `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/lanes.py:1586 The selftest does not cover the "any other refused send keeps exit 1" branch. The code path for it is unchanged from base.) · verifier: verifier-L2 (opus) · base: 520a354e2773
+- Changed: see commits
+- Commits: 0ffeb8a T-0610: lanes.py ready exits 1 in a fresh repo: no conductor registered
+- Check: 1 (red) A lanes.py selftest case opens a lane in a fresh fixture repo with no registered conductor,...: pass
