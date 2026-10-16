@@ -2,14 +2,12 @@
 id: T-0573
 title: "notes.md keeps only live notes"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
-branch: lane/T-0573-t0573
-worktree: ../sdlc-lite.worktrees/T-0573-t0573
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -33,3 +31,9 @@ Do not delete a note that an open ticket cites. Check with `grep -rn 'notes.md' 
 1. `wc -l < .sdlc/notes.md` is under 150.
 2. The Outcome lists each new ticket id filed from a note, or says `none`.
 3. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 and `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L1 · verdict: closed by reason (docs-only (verify_scope.py: docs-only; docs_check 0 errors): notes.md 647 to 31 lines, T-0602 to T-0605 filed from notes) · verifier: none · base: none
+- Changed: see commits
+- Commits: none
