@@ -2455,8 +2455,10 @@ is not a registered worktree on that branch.
 Claim a ticket:
 1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
 ask the user.
-2. Run `<CMD> claim <id> --by <agent>`, the agent one lowercase word (`claude`, `codex`, `astra`). It sets \
-`status: claimed`, writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:`, and runs `roadmap`. \
+2. Run `<CMD> claim <id>`; `--by <agent>` names the claimant and wins, else it takes `$SDLC_HOST`, else the host \
+(`claude:<session8>`, `codex:<thread>`). In git it first reserves `refs/sdlc/claims/<id>`, so a claim from any \
+worktree refuses naming the holder. It sets `status: claimed`, writes `claimed_by: <agent> <YYYY-MM-DD>` directly \
+after `created:`, and runs `roadmap`. \
 To take over a stale claim, add `--handover --reason "<why>"`.
 3. Start the work through `run.sh`, which puts it in progress: \
 `<plugin-root>/scripts/run.sh planner <level> <T>/<folder>/handoff.md`, or `/sdlc-lite:chain <T>/<folder>`. \
@@ -3292,7 +3294,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     # ids stay above every other worktree's max
     floor = id_floor(root)
     # plan everything first, so a refusal in the middle writes nothing
-    planned, notes, lines, dups, follow_lines = [], [], [], [], []
+    planned, notes, lines, dups, follow_lines, planned_at = [], [], [], [], [], None
     for i, item in enumerate(items, 1):
         tag, text = follow_tag(item)
         no_emphasis = re.sub(r'(?<!\w)_{1,2}(\S.*?\S|\S)_{1,2}(?!\w)', r'\1', text)
@@ -3319,15 +3321,18 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             lines.append(f'{i}. {tag}: {title} note')
             follow_lines.append(f'{tag}: {title} -> notes.md')
             continue
-        tid = f'T-{max(max((int(x["id"][2:]) for _, x in ts), default=0), floor) + 1:04d}'
-        s, k = base_, 2
-        while (td / (name := folder_name(s, tid, numbered))).exists() or any(x == name for x, _ in ts):
-            s, k = f'{base_}-{k}', k + 1
-        ctx = f'Follow-up from {pid} ({origin}):\n\n{text}'
-        t, _ = stamp(root, ts, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
-        planned.append((name, t))
+        def build(fl, base_=base_, title=title, ctx=f'Follow-up from {pid} ({origin}):\n\n{text}'):
+            tid = f'T-{max(max((int(x["id"][2:]) for _, x in ts), default=0), fl) + 1:04d}'
+            s, k = base_, 2
+            while (td / (name := folder_name(s, tid, numbered))).exists() or any(x == name for x, _ in ts):
+                s, k = f'{base_}-{k}', k + 1
+            t, _ = stamp(root, ts, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=fl)
+            return name, t, tid
+        name, t, tid = build(floor)
+        planned.append((name, t, build))
         lines.append(f'{i}. {tag}: {title} [{name}] ticket')
         follow_lines.append(f'{tag}: {title} -> {(parse(t) or {}).get("id", tid)}')
+        planned_at = len(follow_lines) - 1
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     hole = unfilled_line(root, raw)
@@ -3363,9 +3368,17 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + [f'expect {digest}'])
 
     note_docs_waiver()
-    for s, t in planned:
+    git, made = ref_git(root), []
+    for s, t, build in planned:
+        while git:  # T-0606: reserve refs/sdlc/ids/<id> as new does; an id another tree reserved moves on to the next
+            fid = (parse(t) or {}).get('id', '')
+            if ref_write(git, ID_REFS + fid, s):
+                break
+            s, t, _ = build(int(fid[2:]))
+            follow_lines[planned_at] = re.sub(r'T-\d+$', (parse(t) or {}).get('id', fid), follow_lines[planned_at])
         (td / s).mkdir()
         (td / s / 'handoff.md').write_text(t, encoding='utf-8')
+        made.append(s)
     if notes:
         append_notes(root, pid, meta.get('title') or slug, notes)
     body = raw[fm.end():]
@@ -3382,7 +3395,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     write_roadmap(root, load(td))
     if flag:
         ensure_numbered_config(root)
-    out = (f'{pid} done; follow-up ticket: ' + (', '.join(s for s, _ in planned) or 'none')
+    out = (f'{pid} done; follow-up ticket: ' + (', '.join(made) or 'none')
            + f'; {len(notes)} follow-up(s) appended to notes.md')
     if dups:
         out += '; skipped duplicate(s): ' + ', '.join(dups)
@@ -5550,6 +5563,7 @@ def selftest():
             rc, _, err = run(copies['bare'], 'new', ('feature', 'z'))
             expect(f'external: negative control, unregistered, new mints the colliding T-0002: rc={rc} {err!r}',
                    rc == 0 and tid(copies['bare'], 'z') == 'T-0002')
+            forget_ids(copies['bare-close'].parent)  # T-0606: close reserves id refs too, so drop the copied ones
             rc, out, err = close_one(copies['bare-close'], 1, slug='a')
             made = fresh(copies['bare-close'], {'a'})
             expect(f'external: negative control, unregistered, the close follow-up collides as T-0002: rc={rc} '
@@ -6015,6 +6029,27 @@ def selftest():
                f'{dict(load(ra_ / ".sdlc")).get("e")!r}',
                rc == 0 and dict(load(ra_ / '.sdlc')).get('e', {}).get('id') == 'T-0006'
                and gr('rev-parse', '--verify', '-q', 'refs/sdlc/ids/T-0006').returncode == 0)
+        # T-0606: a close --ticket follow-up reserves its id ref too, so a concurrent new in another worktree cannot
+        # reuse the id; both read the floor before either writes (the same barrier), then the id ref keeps them apart
+        run(ra_ / '.sdlc', 'new', ('feature', 'f', 'F'))
+        filer('filer-L1.md', 'None', '- Add retry to fetch', slug='f')(ra_ / '.sdlc')
+        rc, out, err = run(ra_ / '.sdlc', 'close', ('f',), dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else 'none'
+        bar2 = pathlib.Path(tmp) / 'rt-refs-bar2'
+        bar2.mkdir()
+        before = {x for x, _ in load(ra_ / '.sdlc')}
+        procs = [subprocess.Popen([sys.executable, '-c', drv, str(PLUGIN / 'scripts'), str(bar2), k, '--root',
+                                   str(w / '.sdlc'), *cmd],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=genv)
+                 for k, w, cmd in (('1', ra_, ['close', 'f', '--filer', '--ticket', '1', '--expect', token]),
+                                   ('2', wb, ['new', 'feature', 'h', 'H']))]
+        outs = [(p.communicate(timeout=120), p.returncode) for p in procs]
+        follow = [m.get('id') for x, m in load(ra_ / '.sdlc') if x not in before]
+        got = follow + [dict(load(wb / '.sdlc')).get('h', {}).get('id')]
+        expect(f'refs: a close --ticket follow-up and a concurrent new in another worktree get distinct ids: '
+               f'{got!r} {outs!r}',
+               all(rc == 0 for _, rc in outs) and None not in got and len(got) == 2 and len(set(got)) == 2
+               and all(gr('rev-parse', '--verify', '-q', 'refs/sdlc/ids/' + i).returncode == 0 for i in got))
 
         # area, claimed and paused: validation runs one way; the Area column shows only when an area exists
         ra = pathlib.Path(tmp) / 'rt-area' / '.sdlc'
@@ -7424,8 +7459,8 @@ def main(argv):
     p = sub.add_parser('claim', help='claim a ticket: status claimed and `claimed_by: <agent> <YYYY-MM-DD>` '
                                      'directly after created:, then regenerate the roadmap')
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
-    p.add_argument('--by', metavar='AGENT', help='the claiming agent: one lowercase word, e.g. claude, codex or astra; '
-                   'default: $SDLC_HOST, else claude or codex (with :<session>) from the host\'s own variables')
+    p.add_argument('--by', metavar='AGENT', help='the claiming agent, e.g. claude, astra or codex:<thread>; '
+                   'wins over $SDLC_HOST and host detection; default: $SDLC_HOST, else claude or codex (with :<session>) from the host\'s own variables')
     p.add_argument('--handover', action='store_true',
                    help='take over a claimed ticket: pin the branch: tip as refs/archive/<date>/<branch>, replace '
                         'the claimed_by value and append one dated body line; needs --reason')
