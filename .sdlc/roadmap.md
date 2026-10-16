@@ -598,4 +598,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0598 | [.0598-codex-lane-agents-missing](.0598-codex-lane-agents-missing/handoff.md) | Codex verifier in a fresh lane refuses: the lane has no .codex/agents | bug | L1 | P2 | none | 🟢 done |
 | T-0599 | [.0599-lane-open-leaves-main-dirty](.0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | 🟢 done |
 | T-0600 | [.0600-codex-request-path-docs](.0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟢 done |
-| T-0601 | [0601-prune-queue-names](0601-prune-queue-names/handoff.md) | dispatch.py prune queues names that match no live agent | bug | L2 | P2 | none | 🟡 claimed |
+| T-0601 | [0601-prune-queue-names](0601-prune-queue-names/handoff.md) | dispatch.py prune queues names that match no live agent | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0601-t0601) |
