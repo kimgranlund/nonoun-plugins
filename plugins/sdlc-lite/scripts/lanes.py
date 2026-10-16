@@ -60,7 +60,9 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   paths those writes changed in main as `<ids>: record lane <leaf>` (T-0599, printed as `committed: <sha> <message>`),
   so main is clean and a fast-forward settle is not blocked. A path already dirty before the open (staged or not) is
   never committed, compared by path: a ticket handoff left out this way prints `not committed: <path> (dirty before
-  open); commit it yourself`. Every close removes a record
+  open); commit it yourself`. When main tracks an upstream (T-0609: the repo lands through it, as by PR), open writes
+  and commits neither line, printing `not recorded: <main> tracks <upstream>, ...`, so main never gains a commit its
+  landing path does not push; the claim is the refs/sdlc/claims ref (T-0588). Every close removes a record
   ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it. list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
   first local ticket, else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
   manual worktree with verified, unmerged work shows its ticket.
@@ -1401,6 +1403,11 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
     if lock and kind != 'integration':
         lines.append(lock_line)
+    # T-0609: a main tracking an upstream lands through it (a PR repo), so a record commit there would diverge from origin
+    upstream = out(top, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', f'{ctx.main}@{{upstream}}')
+    if upstream and record_branch and rootp.is_dir() and any(LOCAL_ID.fullmatch(t) for t in ids):
+        lines.append(f'not recorded: {ctx.main} tracks {upstream}, so open writes no branch: or worktree: line in main')
+        record_branch = False
     pre = porcelain(top)
     written, handoffs = [], []
     for t in ids if record_branch and rootp.is_dir() else ():
@@ -2731,6 +2738,53 @@ def case_open_dirty_ticket(script, base):
     return fails
 
 
+def case_open_upstream(script, base):
+    """T-0609: in a main that tracks an upstream (a repo landing by PR), open commits nothing on main and leaves it
+    clean, so main stays fast-forwardable to origin."""
+    t = Fixture(base, script, 'openupstream')
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             '.sdlc/0001-one/handoff.md': ticket_file('T-0001', claimed=True)})
+    t.g('push', '-q', '-u', 'origin', 'main')
+    rc, o = t.lanes('open', 'one', '--ticket', 'T-0001', '--kind', 'solo')
+    if rc:
+        return [f'open upstream: open failed: {rc}: {o}']
+    fails = []
+    ahead = t.g('rev-list', 'origin/main..main')
+    if ahead:
+        fails.append(f'open upstream: main has commits origin lacks: {ahead.split()}')
+    dirty = t.g('status', '--porcelain')
+    if dirty:
+        fails.append(f'open upstream: main is dirty after open: {dirty!r}')
+    if 'not recorded: main tracks origin/main' not in o:
+        fails.append(f'open upstream: no not recorded line: {o}')
+    return fails
+
+
+def case_open_local_finish(script, base):
+    """T-0609: a main with no upstream (a repo landing locally) keeps the T-0599 record commit, so main is clean after
+    open with no commit of its own, and finish lands and closes."""
+    t = Fixture(base, script, 'openlocal')
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             '.sdlc/0001-fin/handoff.md': ticket_file('T-0001', claimed=True)})
+    leaf, tree, b = t.open('fin', 'T-0001', '--kind', 'solo')
+    fails = []
+    if t.g('status', '--porcelain'):
+        fails.append(f'open local: main is dirty after open: {t.g("status", "--porcelain")!r}')
+    if f'branch: {b}' not in t.g('show', 'HEAD:.sdlc/0001-fin/handoff.md'):
+        fails.append('open local: main HEAD does not hold the branch: line')
+    t.work(tree, {'fin.txt': 'work\n'})
+    rd = order.records_dir(tree / '.sdlc' / '0001-fin', create=True)
+    (rd / 'verifier-L2.md').write_text(FIN_VERDICT.format('pass'))
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    if rc or f'finish: {leaf} done' not in o:
+        fails.append(f'open local: finish wants exit 0 and done, got {rc}: {o}')
+    if finish_state(t, b, leaf) != ('done', False, False, False):
+        fails.append(f'open local: want (done, no tree, no branch, no finish branch), got {finish_state(t, b, leaf)}')
+    if t.g('status', '--porcelain'):
+        fails.append(f'open local: main is left dirty after finish: {t.g("status", "--porcelain")!r}')
+    return fails
+
+
 def case_pr_ref(script, base):
     t = Fixture(base, script, 'prref')
     leaf, tree, b = t.open('pr/1', None, '--kind', 'integration')
@@ -3282,6 +3336,10 @@ def run_selftest(script, src, base):
              'open commits the ticket branch: and worktree: lines in main and leaves other dirty paths alone (T-0599)')
         need('open dirty ticket', case_open_dirty_ticket(script, base),
              'a staged edit to the ticket handoff before open is not committed and is named in a not committed line (T-0599)')
+        need('open upstream', case_open_upstream(script, base),
+             'a main tracking an upstream gets no record commit and stays clean and level with origin (T-0609)')
+        need('open local finish', case_open_local_finish(script, base),
+             'a main with no upstream gets the record commit, stays clean, and finish lands and closes (T-0609)')
         need('claim unclaimed', case_claim_unclaimed(script, base), 'an unclaimed or unknown local ticket refuses')
         need('claim external', case_claim_external(script, base), 'an external id prints the directive and opens')
         cs = case_claim_still_open(script, base)

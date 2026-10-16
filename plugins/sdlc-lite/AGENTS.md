@@ -39,7 +39,7 @@ Interim directive until the plugin ships its own sweep.
 - Legacy: `<main checkout>/.claude/worktrees/` (0.23) and `<main checkout>/.worktrees/` (before 0.23.0) are read for one release; `scripts/migrate-worktrees.sh` moves them.
 - Host-owned: Codex's `~/.codex/worktrees/*` and Claude Code's own `.claude/worktrees/agent-*` (`wtroot.host_owned`). `lanes.py sweep` and `dispatch.py` stray reports never list them for removal.
 - Codex: `lanes.py open`, the solo and verifier runs in a lane, land and close write `.git` or the lane tree outside the checkout, so run them with full access, not the `workspace-write` sandbox. Each run folder holds an `.owner.json`; `lanes.py sweep` removes only a dead owner's folder past `lane_min_age_hours` and lists an unmarked one.
-- Open: `fanout.py run` or `prep` opens a lane; the ticket is claimed with `status: claimed` and `claimed_by:`.
+- Open: `fanout.py run` or `prep` opens a lane; the ticket is claimed with `status: claimed` and `claimed_by:`. `lanes.py open` commits the ticket's `branch:` and `worktree:` record on main only when main tracks no upstream; when it tracks one (a PR repo) it records nothing on main, so main stays level with origin (T-0609, `docs/references/sdlc-internals.md`).
 - Close: after `fanout.py land` and `tickets.py close`, remove the lane worktree and branch once their content is on the default branch (ancestor, a MERGED PR whose head sha equals the tip, or every changed file equal).
 - Before removal keep the branch reachable as `refs/archive/<date>/<branch>` and archive its untracked records.
 - Never delete unmerged work. A locked worktree (`git worktree lock`) is a running lane: skip it.
