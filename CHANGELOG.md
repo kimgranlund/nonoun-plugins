@@ -2,6 +2,21 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.24.2] - 2026-10-15
+
+Report: [docs/reports/2026-10-15-release-0-24-2.md](docs/reports/2026-10-15-release-0-24-2.md).
+
+### Fixed
+
+- `lanes.py open` makes no commit on a main that tracks an upstream, so PR repos keep local main fast-forwardable to origin; with no upstream it commits the record as before (T-0609).
+- `lanes.py ready` warns and exits 0 when no conductor mailbox is registered and the ref is pinned (T-0610).
+
+### Added
+
+- `lanes.py ready` pins the lane's review state as `refs/sdlc/ready/<id>` (uncommitted work becomes a snapshot commit; stash and index untouched), unlocks the lane and messages the conductor; `list --ready` shows each pin and marks it stale once the lane moves. `dispatch.py prepare verifier` adds `Review sha:` and warns when the tree moved (T-0590).
+- The multi-host rule for Claude Code, Codex and Pi in one repo lives in the plugin `AGENTS.md` Lanes section; `conductor.md` and the onboarding block link to it. Prepared verifier briefs now carry the run rules (uncommitted build, foreground only, no full check.sh, no git stash) (T-0591).
+- A live two-host rehearsal (Claude Code and Codex) passed: one claim winner, both tickets done ([report](docs/reports/2026-10-15-two-host-rehearsal.md), T-0592).
+
 ## [0.24.1] - 2026-10-15
 
 Report: [docs/reports/2026-10-15-release-0-24-1.md](docs/reports/2026-10-15-release-0-24-1.md).
