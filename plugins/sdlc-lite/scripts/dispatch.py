@@ -1125,6 +1125,10 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
                        'as your final message, with no <!-- role=... --> header line: dispatch.py record adds it, so check the file with '
                        'results.py validate <file> --role verifier --headerless; dispatch.py record reads the file, and a missing one fails the run)' % result)
+            # T-0591: run rules every verifier gets, so the conductor stops adding them by hand
+            prompt += ('\nThe build may be uncommitted: diff against Base sha, not HEAD. Run every command in the foreground with an explicit '
+                       'Bash timeout under 600000 ms; never run_in_background or Monitor. Never run the full check.sh; run the checks the '
+                       'criteria name. Never use git stash; the stash stack is shared across sessions.')
         if base:
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
         if review:
@@ -2489,6 +2493,11 @@ def selftest():
         rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
         case('negative control: with no ready ref there is no Review sha line and Base sha is not the Lane-Base start',
              rcr == 0 and 'Review sha' not in dr['prompt'] and dr['review_sha'] is None and dr['base_sha'] != start)
+        # T-0591: the verifier brief carries the run rules the conductor used to add by hand.
+        case('a prepared verifier prompt says the build may be uncommitted, foreground only with a timeout, no full check.sh, no git stash',
+             rcr == 0 and all(s in dr['prompt'] for s in (
+                 'The build may be uncommitted', 'Run every command in the foreground with an explicit Bash timeout under 600000 ms',
+                 'never run_in_background or Monitor', 'Never run the full check.sh', 'Never use git stash')))
         (rr / 'rd.txt').unlink()
         lw = rr.parent / (rr.name + '-lane')
         subprocess.run(['git', '-C', str(rr), 'worktree', 'add', '-q', '--detach', str(lw), 'HEAD'], capture_output=True)
