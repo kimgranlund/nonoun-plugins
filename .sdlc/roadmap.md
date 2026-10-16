@@ -586,7 +586,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0586 | [0586-topics-tidy-check-agree](0586-topics-tidy-check-agree/handoff.md) | Under layout: topics, tidy, check and the router text disagree | bug | L1 | P3 | none | ⏳ proposed |
 | T-0587 | [0587-solo-worktree-base](0587-solo-worktree-base/handoff.md) | solo_run.py run --worktree without --cwd records the session checkout's base | bug | L1 | P2 | none | ⏳ proposed |
 | T-0588 | [.0588-atomic-claims-refs](.0588-atomic-claims-refs/handoff.md) | Atomic ticket claims and ids through git refs | feature | L3 | P1 | none | 🟢 done |
-| T-0589 | [0589-lane-lock-owner](0589-lane-lock-owner/handoff.md) | lanes.py open locks the worktree with its owner; ready and close unlock it | feature | L2 | P1 | T-0588 | ⏳ proposed |
+| T-0589 | [0589-lane-lock-owner](0589-lane-lock-owner/handoff.md) | lanes.py open locks the worktree with its owner; ready and close unlock it | feature | L2 | P1 | T-0588 | 🟡 claimed |
 | T-0590 | [0590-lanes-ready-signal](0590-lanes-ready-signal/handoff.md) | lanes.py ready pins the review sha and tells the conductor | feature | L3 | P1 | T-0589 | ⏳ proposed |
 | T-0591 | [0591-multi-host-roles-doc](0591-multi-host-roles-doc/handoff.md) | Conductor, worker and verifier rules for Claude, Codex and Pi in one repo | chore | L2 | P2 | T-0590 | ⏳ proposed |
 | T-0592 | [0592-three-host-rehearsal](0592-three-host-rehearsal/handoff.md) | Live rehearsal: Claude, Codex and Pi working tickets in one repo | chore | L2 | P2 | T-0591, T-0570 | ⏳ proposed |
@@ -599,8 +599,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0599 | [.0599-lane-open-leaves-main-dirty](.0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | 🟢 done |
 | T-0600 | [.0600-codex-request-path-docs](.0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟢 done |
 | T-0601 | [.0601-prune-queue-names](.0601-prune-queue-names/handoff.md) | dispatch.py prune queues names that match no live agent | bug | L2 | P2 | none | 🟢 done |
-| T-0602 | [0602-check-specgate-order-comment](0602-check-specgate-order-comment/handoff.md) | check.py spec gate order check matches the run.sh header comment | bug | L1 | P2 | none | ⏳ proposed |
+| T-0602 | [0602-check-specgate-order-comment](0602-check-specgate-order-comment/handoff.md) | check.py spec gate order check matches the run.sh header comment | bug | L1 | P2 | none | 🟡 claimed |
 | T-0603 | [0603-gate-lock-selftest-label-guard](0603-gate-lock-selftest-label-guard/handoff.md) | gate_lock selftest status checks never run: label compared to real, controls pass real0 | bug | L1 | P2 | none | ⏳ proposed |
 | T-0604 | [.0604-router-tidy-archive-wording](.0604-router-tidy-archive-wording/handoff.md) | Router Procedures block names archive/ for tidy under every layout | chore | L2 | P2 | none | 🟢 done |
 | T-0605 | [0605-builder-redck-second-record-wording](0605-builder-redck-second-record-wording/handoff.md) | builder.md says a second redck record is only a base control, stale since T-0473 | chore | L2 | P2 | none | ⏳ proposed |
-| T-0606 | [0606-follow-up-id-refs](0606-follow-up-id-refs/handoff.md) | close --ticket follow-ups and docs miss the T-0588 claim and id refs | bug | L1 | P2 | none | ⏳ proposed |
+| T-0606 | [0606-follow-up-id-refs](0606-follow-up-id-refs/handoff.md) | close --ticket follow-ups and docs miss the T-0588 claim and id refs | bug | L1 | P2 | none | 🟡 claimed |
