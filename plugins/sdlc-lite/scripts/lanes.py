@@ -177,8 +177,10 @@ commit on HEAD (subject `sdlc ready snapshot: <id> in <lane>`, a `Lane-Base: <ba
      printed as `still locked: <reason> (not the lock open set)`.
   3. messages.py send --receiver <conductor> --sender <lane name as a mailbox name> --kind handoff --topic "ready <id>"
      --follow-up false with the body `<sha> <lane path>` and a line naming ticket, lane and branch. The receiver is the
-     .sdlc/config conductor: line, else conductor. A refused send prints `not sent to <receiver>: <why>; tell the
-     conductor yourself` and exits 1 with the ref kept.
+     .sdlc/config conductor: line, else conductor. A receiver with no registered mailbox prints a `warning: not
+     sent to <receiver>` line naming `lanes.py list --ready` and `messages.py register --name <receiver>` and exits 0
+     (the ref is pinned and the lane unlocked, T-0610); any other refused send prints `not sent to <receiver>: <why>;
+     tell the conductor yourself` and exits 1 with the ref kept.
 list --ready reads refs/sdlc/ready/* and joins each to the lane whose record lists the ticket. A row is stale when the
 lane's HEAD differs from the pinned HEAD (a snapshot's parent, else the sha) or its state's tree from the sha's tree,
 or when no lane holds the ticket. dispatch.py prepare verifier reads the same ref: `Review sha: <sha>`, and Base sha
@@ -1581,6 +1583,11 @@ def ready(target=None, ticket=None, cwd='.'):
     # beside tickets.py, the scripts dir this module imports from (a selftest mutant runs from a copy elsewhere)
     r = run([sys.executable, str(Path(tickets.__file__).resolve().parent / 'messages.py'), 'send', '--receiver', receiver, '--sender', sender, '--kind', 'handoff',
              '--topic', f'ready {tid}', '--follow-up', 'false', body], ctx.top)
+    if r is not None and r.returncode and f'receiver {receiver} is not registered' in err(r):
+        # the ref is pinned and the lane unlocked, so a missing mailbox is a warning, not a failure (T-0610)
+        lines.append(f'warning: not sent to {receiver}: no {receiver} mailbox is registered; the ready ref is pinned, '
+                     f'`lanes.py list --ready` shows it; to mail it, run `messages.py register --name {receiver} --harness claude|codex|human`')
+        return result(0, '\n'.join(lines), lane=name, path=path, branch=d['branch'], sha=sha, ref=ref)
     if r is None or r.returncode:
         lines.append(f'not sent to {receiver}: {err(r) if r is not None else "messages.py did not run"}; tell the conductor yourself')
         return result(1, '\n'.join(lines), lane=name, path=path, branch=d['branch'], sha=sha, ref=ref)
@@ -3027,6 +3034,30 @@ def case_ready(script, base):
     return fails
 
 
+def case_ready_unregistered(script, base):
+    """T-0610: in a repo whose conductor mailbox is not registered, ready on uncommitted work pins the ref, unlocks the
+    lane, prints a warning naming `lanes.py list --ready` and `messages.py register --name conductor`, and exits 0."""
+    t = Fixture(base, script, 'readyun')
+    t.ticket(92, 'unregistered', claimed=True)
+    hp = t.top / '.sdlc' / '0092-t' / 'handoff.md'
+    hp.write_text(hp.read_text() + '\n## Acceptance criteria\n1. `true` exits 0.\n')
+    lane, tree, _ = t.open('unreg', 'T-92', keep_lock=True)
+    (tree / 'keep.txt').write_text('edited\n')
+    ref = 'refs/sdlc/ready/T-92'
+    rc, o = t.lanes('ready', cwd=tree)
+    sha = t.g('rev-parse', '--verify', '-q', ref) if t.ok('rev-parse', '--verify', '-q', ref) else ''
+    fails = []
+    if rc or not sha or f'ready: {ref} {sha}' not in o.splitlines():
+        fails.append(f'ready: with no conductor registered ready did not exit 0 with {ref} pinned: {rc}: {o}')
+    if 'not sent to conductor' not in o or 'lanes.py list --ready' not in o or 'messages.py register --name conductor' not in o:
+        fails.append(f'ready: the unregistered-conductor warning does not name list --ready and the register step: {o}')
+    if any(b.startswith(f'worktree {tree}\n') and '\nlocked' in b for b in t.g('worktree', 'list', '--porcelain').split('\n\n')):
+        fails.append(f'ready: the lane is still locked: {o}')
+    if list((t.top / '.sdlc' / 'messages' / 'new' / 'conductor').glob('*.md')):
+        fails.append('ready: a message reached an unregistered conductor')
+    return fails
+
+
 def case_sweep_mergelock(script, base):
     t = Fixture(base, script, 'mlock')
     lanes_dir = t.top / '.worktrees' / 'fanout'
@@ -3360,6 +3391,8 @@ def run_selftest(script, src, base):
         need('ready', case_ready(script, base),
              'an unchanged lane and a ticket with no criteria refuse; uncommitted work pins a snapshot ref, unlocks and '
              'mails the conductor; list --ready shows it, stale after an edit; close deletes the ref')
+        need('ready unregistered', case_ready_unregistered(script, base),
+             'with no conductor registered ready pins the ref, unlocks, warns naming list --ready and the register step, and exits 0')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
         need('finish pass', case_finish_pass(script, base),
