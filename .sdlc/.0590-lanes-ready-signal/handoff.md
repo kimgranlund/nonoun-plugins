@@ -2,7 +2,7 @@
 id: T-0590
 title: "lanes.py ready pins the review sha and tells the conductor"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0589]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,12 @@ No use of the shared stash stack. Works with uncommitted lanes (Codex workers).
 
 ## Plan review
 - amend: criterion 2, the verifier keeps `Base sha:` as the lane start (the base_sha recorded in the ready commit) and gets a new `Review sha: <ready sha>` line; prepare warns when the tree differs from the ready sha. Using the ready sha as Base sha would empty the scope diff. Proposed by the solo; decided: maintainer conductor, 2026-10-15.
+
+## Outcome
+
+2026-10-15 · lane: full L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full; verifier notes: note: the conductor's side check holds. In a throwaway worktree at the base commit with the built scripts and an uncommitted edit plus an untracked file, `lanes.snapshot` and `lanes.pin` left the index file hash, `git status --porcelain`, `git diff --cached`, `git diff` and `git stash list` byte-identical before and after, and produced a snapshot commit holding the uncommitted files. The lanes selftest case also asserts status and an empty stash list around a real `ready` run. `git stash list` shows 1 entry in the shared repo both before and after; it predates this change. | note: new `conductor` key in `CONFIG_KEYS` is additive; the only other reader of `lanes.config` found by `git grep` (`fanout.py:1859`) uses key access and is unaffected.) · verifier: verifier-L2 (sonnet) · base: ee5bfabd0c38
+- Changed: see commits
+- Commits: 1cc6017 T-0590: lanes.py ready pins the review sha and tells the conductor; a8f933d T-0590: record criterion 2 amend (Review sha line, Base sha stays lane start); 7a0cca8 T-0590: record lane T-0590-t0590
+- Check: 1 `lanes.py selftest` exits 0, new cases cover ready on an uncommitted lane (ref plus mailbox messa...: pass
+- Check: 2 `dispatch.py selftest` exits 0, new case shows a verifier for a ticket with a ready ref taking th...: pass
+- Check: 3 `git diff --check` exits 0: pass

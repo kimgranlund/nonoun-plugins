@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d175facfc605 -->
+<!-- sdlc-lite:managed:start v1 sha256:f68a74931a87 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -23,12 +23,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0603 gate_lock selftest status checks never run: label compared to real, controls pass real0 (0603-gate-lock-selftest-label-guard)
   - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording)
 - ready: 0
-- claimed: 2
-  - T-0590 lanes.py ready pins the review sha and tells the conductor (0590-lanes-ready-signal), claimed by claude 2026-10-15, branch lane/T-0590-t0590
+- claimed: 1
   - T-0609 lanes.py open commits its record onto local main, which diverges from origin in PR repos (0609-lane-open-no-main-commit), claimed by claude 2026-10-15, branch lane/T-0609-t0609
 - paused: 0
 - blocked: 0
-- done: 559
+- done: 560
 - dropped: 29
 
 ## Procedures
