@@ -2,6 +2,24 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.24.1] - 2026-10-15
+
+Report: [docs/reports/2026-10-15-release-0-24-1.md](docs/reports/2026-10-15-release-0-24-1.md).
+
+### Fixed
+
+- `onboard.py setup` only refreshes managed blocks a repo already has; creating a root block, `docs/` entry stubs or `docs/layout.md` needs `--init` (T-0608).
+- The root `AGENTS.md` block states the repo's real lane root (`wtroot.py root`, so `<bare parent>/lanes/` in a bare clone), its ticket root, and says SDLC Lite is not set up when there is no `.sdlc/`; the mailbox line is advice (T-0607).
+- Topic-layout repos: `tidy` uses the same allowed names as `check`, still honours `top_level_allow:`, and the router names `work/archive/` (T-0586).
+- `dispatch.py prune` queues the agent's real spawn name, lists only this session's entries, and `--forget-stale` drops the rest (T-0601).
+- `check.py` anchors the spec-gate order check on the `specgate.py check` command, not the header comment (T-0602).
+- `close --ticket N` reserves the follow-up's id ref (T-0606).
+
+### Added
+
+- Claims and new ticket ids are reserved as git refs (`refs/sdlc/claims/<id>`, `refs/sdlc/ids/<id>`), so two hosts or worktrees cannot take the same ticket or id; `check` warns when front matter and refs disagree (T-0588).
+- `lanes.py open` locks the lane with its owner; `list` shows it `running (<owner> <ticket>)`, sweeps keep it, and close unlocks it (T-0589).
+
 ## [0.24.0] - 2026-10-15
 
 Report: [docs/reports/2026-10-15-release-0-24-0.md](docs/reports/2026-10-15-release-0-24-0.md).
