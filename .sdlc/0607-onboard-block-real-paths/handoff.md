@@ -8,6 +8,8 @@ priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
 claimed_by: claude 2026-10-15
+branch: lane/T-0607-t0607
+worktree: ../sdlc-lite.worktrees/T-0607-t0607
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -32,3 +34,6 @@ Default-layout repos get byte-identical output.
 
    Both cases failed before the change.
 2. `git diff --check` exits 0.
+
+## Plan review
+- amend: criterion 1 case `ticket_root: docs/tickets` replaced by "a repo with no .sdlc/ dir": gen-ui-kit has no .sdlc (its docs/tickets is its own system) and tickets.py accepts only `ticket_root: tickets`; decided: maintainer conductor, 2026-10-15.

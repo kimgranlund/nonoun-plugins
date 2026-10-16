@@ -8,7 +8,8 @@ Usage: onboard.py setup [--dry-run] [--force]   create or update the managed fil
 Design: docs/specs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
 The .sdlc layout is read through a function-local import of the sibling tickets.py, and the root
 block names the resolved roadmap, notes, and archive paths (.sdlc/roadmap.md, .sdlc/notes.md, .sdlc/archive/, or
-.sdlc/tickets/roadmap.md, .sdlc/notes/notes.md, .sdlc/work/archive/ with `layout: topics`).
+.sdlc/tickets/roadmap.md, .sdlc/notes/notes.md, .sdlc/work/archive/ with `layout: topics`), the ticket root, and
+the lane root from the sibling wtroot.py (`<bare parent>/lanes/` in a bare clone).
 
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
@@ -389,7 +390,7 @@ Managed by SDLC Lite onboard, template <N>.
 - Handoff files follow the `sdlc-lite:handoff-format` skill.
 - Tickets are created, closed, and archived through the `sdlc-lite:ticket` skill.
 - `.sdlc/roadmap.md` is generated. Do not edit it by hand.
-- `.sdlc/messages/` is a local mailbox. Keep it in `.gitignore` and never commit it.
+- `.sdlc/messages/` is a local mailbox. Never commit it; a `.gitignore` line for it is advised.
 - Do not move or rewrite a finished run record. Write no loose file at the top of `.sdlc/` or the project root: notes go to `.sdlc/notes.md`, an answer to another agent goes by `messages.py send`. The `.sdlc/AGENTS.md` Folder layout lists what may sit at the top; `tickets.py check` warns on anything else and `tickets.py tidy` moves it into `.sdlc/archive/`.
 <!-- sdlc-lite:managed:end -->
 """
@@ -537,14 +538,18 @@ NESTED_SIZE_TARGET = 30
 Template = collections.namedtuple('Template', 'before block after')
 Template.__doc__ = 'One entry file: starter text before the block, the block text, starter text after it.'
 
-Model = collections.namedtuple('Model', 'name topics homes loose readme nested roadmap notes archive',
-                               defaults=((), '.sdlc/roadmap.md', '.sdlc/notes.md', '.sdlc/archive/'))
+Model = collections.namedtuple('Model', 'name topics homes loose readme nested roadmap notes archive tickets lanes',
+                               defaults=((), '.sdlc/roadmap.md', '.sdlc/notes.md', '.sdlc/archive/', '.sdlc/',
+                                         '../<repo>.worktrees/'))
 Model.__doc__ = ('name: repository folder name. topics: list of Topic with one or more documents. '
                  'homes: list of Home that exist. loose: documents directly in docs/. '
                  'readme: docs/README.md exists. nested: list of Topic for a home, or a topic folder '
                  'under a home, that holds two or more documents (name is the path under docs/). '
                  'roadmap, notes: the resolved roadmap and notes paths relative to the root, posix form. '
-                 'archive: the resolved tidy archive folder, the same form with a trailing slash.')
+                 'archive: the resolved tidy archive folder, the same form with a trailing slash. '
+                 'tickets: the ticket root, the same form, or None with no .sdlc/ folder (the block then '
+                 'keeps no .sdlc/ line). lanes: the lane root as the block names it.')
+NO_SDLC_LINE = 'SDLC Lite tickets are not set up here: the repository has no `.sdlc/` folder.'
 Topic = collections.namedtuple('Topic', 'name docs readme')
 Home = collections.namedtuple('Home', 'path readme entry', defaults=(False,))
 NESTED_LINK_CAP = 20
@@ -599,8 +604,14 @@ def render_templates(model):
     t = _split_template(ROOT_AGENTS_TEMPLATE)
     out['AGENTS.md'] = Template(t.before.replace('<repository folder name>', model.name),
                                 t.block.replace('<N>', n).replace('.sdlc/roadmap.md', model.roadmap)
-                                .replace('.sdlc/notes.md', model.notes).replace('.sdlc/archive/', model.archive),
+                                .replace('.sdlc/notes.md', model.notes).replace('.sdlc/archive/', model.archive)
+                                .replace('`.sdlc/` holds', '`%s` holds' % (model.tickets or '.sdlc/'))
+                                .replace('`../<repo>.worktrees/`', '`%s`' % model.lanes),
                                 t.after)
+    if model.tickets is None:
+        out['AGENTS.md'] = out['AGENTS.md']._replace(block=''.join(
+            NO_SDLC_LINE + '\n' if line.startswith('`') else line
+            for line in _split_keep(out['AGENTS.md'].block) if line.startswith('`') or '.sdlc' not in line))
     stub = _split_template(CLAUDE_TEMPLATE)
     out['CLAUDE.md'] = stub
     topic_lines, home_lines, loose_lines = [], [], []
@@ -712,12 +723,14 @@ def build_model(root, layout, documents):
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
     return Model(name, topic_list, home_list, sorted(loose),
-                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, *_sdlc_paths(root))
+                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, *_sdlc_paths(root),
+                 _lane_root(root))
 
 
 def _sdlc_paths(root):
-    """(roadmap, notes, archive) from .sdlc/config, relative to root in posix form; archive is <work>/archive/.
-    A bad config is a SetupError."""
+    """(roadmap, notes, archive, tickets) from .sdlc/config, relative to root in posix form; archive is
+    <work>/archive/, and archive and tickets end in a slash; tickets is None with no .sdlc/ folder. A bad config
+    is a SetupError."""
     import pathlib
     import tickets  # function-local: tickets.py imports this module at its top level
     try:
@@ -725,7 +738,24 @@ def _sdlc_paths(root):
     except tickets.Fail as e:
         raise SetupError(str(e))
     rel = lambda p: pathlib.Path(os.path.relpath(str(p), root)).as_posix()
-    return rel(paths.roadmap), rel(paths.notes), rel(paths.work / 'archive') + '/'
+    tickets_root = rel(paths.tickets) + '/' if os.path.isdir(os.path.join(root, '.sdlc')) else None
+    return rel(paths.roadmap), rel(paths.notes), rel(paths.work / 'archive') + '/', tickets_root
+
+
+def _lane_root(root):
+    """The lane root as the block names it, from wtroot.root(): `../<repo>.worktrees/` for the default sibling
+    root, `<bare parent>/<path>/` in a bare clone, else the path relative to the main checkout."""
+    import pathlib
+    import wtroot
+    rel = lambda p, base: pathlib.Path(os.path.relpath(str(p), base)).as_posix() + '/'
+    lanes = wtroot.root(root)
+    bare = wtroot.bare_parent(root)
+    if bare:
+        return '<bare parent>/' + rel(lanes, bare)
+    top = wtroot.main_top(root)
+    if lanes is None or top is None or lanes == wtroot.default_root(top):
+        return '../<repo>.worktrees/'
+    return rel(lanes, top)
 
 
 def _nested_topics(root, layout, documents):
@@ -1570,7 +1600,7 @@ def gate_check_mode(impl):
 
     def edited(root):
         text = _text(root, 'AGENTS.md')
-        _put(root, 'AGENTS.md', text.replace('Do not move or rewrite', 'Please do not move or rewrite'))
+        _put(root, 'AGENTS.md', text.replace('Handoff files follow', 'Handoff files always follow'))
 
     def newer(root):
         _put(root, 'AGENTS.md', _region(TEMPLATE_VERSION + 1, 'from a later plugin\n'))
@@ -1677,7 +1707,7 @@ def _render_flat_always(model):
 
 def gate_layout_variant(impl):
     flat = _split_template(ROOT_AGENTS_TEMPLATE).block.replace('<N>', str(TEMPLATE_VERSION))
-    with _fixture() as root:
+    with _fixture({'.sdlc/config': ''}) as root:
         rc, out, err = _call(run_setup, root, impl)
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and block.text == flat, 'a flat repo does not get the unsubstituted root block')
@@ -1696,7 +1726,54 @@ def gate_layout_variant(impl):
         expect('current AGENTS.md' in out.splitlines(), 'topics AGENTS.md is not current: %r' % (out + err))
 
 
+# The lane-root and ticket-root lines of the root block (T-0607): rendered from wtroot.root() and
+# tickets.layout_paths(), so a bare clone and a tickets/ ticket root get their real paths.
+DEFAULT_LANES = Model._field_defaults['lanes']
+
+
+def _render_default_paths(model):
+    return render_templates(model._replace(lanes=DEFAULT_LANES, tickets='.sdlc/'))
+
+
+def _render_sdlc_always(model):
+    return render_templates(model._replace(tickets=model.tickets or '.sdlc/'))
+
+
+def _root_block(root, impl):
+    model = build_model(root, _parse_layout_text(LAYOUT_TEMPLATE, LAYOUT_PATH), list_documents(root))
+    return impl.render(model)['AGENTS.md'].block
+
+
+def gate_block_paths(impl):
+    with _fixture({'.sdlc/config': ''}) as root:
+        block = _root_block(root, impl)
+        expect('`%s`' % DEFAULT_LANES in block and '`.sdlc/` holds SDLC Lite tickets' in block,
+               'a default repo block does not name ../<repo>.worktrees/ and .sdlc/')
+        # a bare clone with lanes beside it (gen-ui-kit: <dir>/.bare, <dir>/lanes/<lane>)
+        _git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'x')
+        kit = os.path.join(os.path.dirname(root), 'kit')
+        _git(root, 'clone', '-q', '--bare', root, os.path.join(kit, '.bare'))
+        lane = os.path.join(kit, 'lanes', 'lane-a')
+        _git(os.path.join(kit, '.bare'), 'worktree', 'add', '-q', '--detach', lane, 'HEAD')
+        block = _root_block(lane, impl)
+        expect('`<bare parent>/lanes/`' in block and DEFAULT_LANES not in block,
+               'a bare-clone block does not name <bare parent>/lanes/ only: %r' % block)
+    with _fixture({'.sdlc/config': 'ticket_root: tickets\n'}) as root:
+        block = _root_block(root, impl)
+        expect('`.sdlc/tickets/` holds SDLC Lite tickets' in block,
+               'a ticket_root: tickets block does not name .sdlc/tickets/: %r' % block)
+    with _fixture() as root:
+        block = _root_block(root, impl)
+        expect('.sdlc' not in block.replace(NO_SDLC_LINE, '') and NO_SDLC_LINE in block,
+               'a repo with no .sdlc/ folder gets .sdlc/ lines: %r' % block)
+        expect('`%s`' % _lane_root(root) in block, 'a repo with no .sdlc/ folder lost the wtroot.root() lane line')
+
+
 GATES = [
+    ('block-paths', gate_block_paths, REAL, [
+        ('renders the default lane and ticket roots everywhere', REAL._replace(render=_render_default_paths)),
+        ('renders the .sdlc/ lines with no .sdlc/ folder', REAL._replace(render=_render_sdlc_always)),
+    ]),
     ('entry-resolver', gate_entry_resolver, resolve_entries, [
         ('skips the CLAUDE.md import rule', functools.partial(resolve_entries, check_import=False)),
         ('skips the link rule', functools.partial(resolve_entries, check_links=False)),

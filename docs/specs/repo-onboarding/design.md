@@ -260,7 +260,7 @@ Managed by SDLC Lite onboard, template <N>.
 - Handoff files follow the `sdlc-lite:handoff-format` skill.
 - Tickets are created, closed, and archived through the `sdlc-lite:ticket` skill.
 - `.sdlc/roadmap.md` is generated. Do not edit it by hand.
-- `.sdlc/messages/` is a local mailbox. Keep it in `.gitignore` and never commit it.
+- `.sdlc/messages/` is a local mailbox. Never commit it; a `.gitignore` line for it is advised.
 - Do not move or rewrite a finished run record.
 <!-- sdlc-lite:managed:end -->
 ```
