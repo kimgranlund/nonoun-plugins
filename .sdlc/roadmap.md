@@ -599,7 +599,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0599 | [.0599-lane-open-leaves-main-dirty](.0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | 🟢 done |
 | T-0600 | [.0600-codex-request-path-docs](.0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟢 done |
 | T-0601 | [.0601-prune-queue-names](.0601-prune-queue-names/handoff.md) | dispatch.py prune queues names that match no live agent | bug | L2 | P2 | none | 🟢 done |
-| T-0602 | [0602-check-specgate-order-comment](0602-check-specgate-order-comment/handoff.md) | check.py spec gate order check matches the run.sh header comment | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0602-t0602) |
+| T-0602 | [.0602-check-specgate-order-comment](.0602-check-specgate-order-comment/handoff.md) | check.py spec gate order check matches the run.sh header comment | bug | L1 | P2 | none | 🟢 done |
 | T-0603 | [0603-gate-lock-selftest-label-guard](0603-gate-lock-selftest-label-guard/handoff.md) | gate_lock selftest status checks never run: label compared to real, controls pass real0 | bug | L1 | P2 | none | ⏳ proposed |
 | T-0604 | [.0604-router-tidy-archive-wording](.0604-router-tidy-archive-wording/handoff.md) | Router Procedures block names archive/ for tidy under every layout | chore | L2 | P2 | none | 🟢 done |
 | T-0605 | [0605-builder-redck-second-record-wording](0605-builder-redck-second-record-wording/handoff.md) | builder.md says a second redck record is only a base control, stale since T-0473 | chore | L2 | P2 | none | ⏳ proposed |

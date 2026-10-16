@@ -2,7 +2,7 @@
 id: T-0602
 title: "check.py spec gate order check matches the run.sh header comment"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,10 @@ Touch `plugins/sdlc-lite/scripts/check.py` only. The failing negative control la
 
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 on the fixed tree and exits 1 on a copy of `run.sh` with the command moved below the `exec` line.
+
+## Outcome
+
+2026-10-15 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: .sdlc/runtime/tasks/0602-check-specgate-order-comment has no builder-*.md report, so builder claims could not be read; the verdict rests on the runs above. | note: the handoff Repro calls run.sh line 416 the command; it is the refusal `echo`, and the command is run.sh:414. The fix anchors on 414 correctly. | note: cleanup of the scratch dirs /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0602-verifier-L2 and /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0602-verifier-L2 was denied by the permission layer; both git worktrees were removed with `git worktree remove --force`, so only empty parent or probe files remain.) · verifier: verifier-L2 (opus) · base: 639a85601b88
+- Changed: see commits
+- Commits: 5c482fb T-0602: check.py spec gate order check matches the run.sh header comment; 42cde72 T-0602: record lane T-0602-t0602
+- Check: 1 `python3 plugins/sdlc-lite/scripts/check.py` exits 0 on the fixed tree and exits 1 on a copy of `...: pass
