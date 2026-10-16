@@ -2404,11 +2404,14 @@ def read_journal(path):
 
 
 def queue_prune(ctx, lane, t, tier):
-    """T-0368: a merged solo's work has landed, so it is no longer resumable: queue it for pruning."""
+    """T-0368: a merged solo's work has landed, so it is no longer resumable: queue it for pruning under the name it was
+    spawned with, read from its dispatch record in the lane tree, then the main checkout (T-0601)."""
     try:
         import dispatch  # same scripts/ dir
-        dispatch.prune_add(str(ctx['top']), subagent_name(t.id), 'solo', tier or '')
-        say(ctx, lane, t.id, f'prune: {subagent_name(t.id)}')
+        dirs = [pathlib.Path(w) / ctx['trel'] / t.slug for w in (ctx.get('lane_wt'), ctx['top']) if w]
+        name = dispatch.prune_solo_name(dirs, subagent_name(t.id))
+        dispatch.prune_add(str(ctx['top']), name, 'solo', tier or '')
+        say(ctx, lane, t.id, f'prune: {name}')
     except OSError as e:
         say(ctx, lane, t.id, f'prune queue not written: {e}')
 
