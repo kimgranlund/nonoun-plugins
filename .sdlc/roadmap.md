@@ -603,4 +603,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0603 | [0603-gate-lock-selftest-label-guard](0603-gate-lock-selftest-label-guard/handoff.md) | gate_lock selftest status checks never run: label compared to real, controls pass real0 | bug | L1 | P2 | none | ⏳ proposed |
 | T-0604 | [.0604-router-tidy-archive-wording](.0604-router-tidy-archive-wording/handoff.md) | Router Procedures block names archive/ for tidy under every layout | chore | L2 | P2 | none | 🟢 done |
 | T-0605 | [0605-builder-redck-second-record-wording](0605-builder-redck-second-record-wording/handoff.md) | builder.md says a second redck record is only a base control, stale since T-0473 | chore | L2 | P2 | none | ⏳ proposed |
-| T-0606 | [0606-follow-up-id-refs](0606-follow-up-id-refs/handoff.md) | close --ticket follow-ups and docs miss the T-0588 claim and id refs | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0606-t0606) |
+| T-0606 | [.0606-follow-up-id-refs](.0606-follow-up-id-refs/handoff.md) | close --ticket follow-ups and docs miss the T-0588 claim and id refs | bug | L1 | P2 | none | 🟢 done |

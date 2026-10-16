@@ -1,3 +1,3 @@
 `read/<receiver>/` holds messages that receiver has claimed and not yet acknowledged; the full procedures are in `../AGENTS.md`.
 A message leaves `read/` when it is acked (it moves to `done/`), which needs a reply first when `follow_up_requested: true`, or when `expire` finds it past its `expires` time.
-Reply: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/finish/T-0606-t0606/integration/.sdlc/messages/messages-run.py" reply <id> "<reply text>"`. Ack: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/finish/T-0606-t0606/integration/.sdlc/messages/messages-run.py" ack <id> --outcome "<outcome line>"`.
+Reply: `python3 ".sdlc/messages/messages-run.py" reply <id> "<reply text>"`. Ack: `python3 ".sdlc/messages/messages-run.py" ack <id> --outcome "<outcome line>"`.

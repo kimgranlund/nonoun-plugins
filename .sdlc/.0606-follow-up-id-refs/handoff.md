@@ -2,7 +2,7 @@
 id: T-0606
 title: "close --ticket follow-ups and docs miss the T-0588 claim and id refs"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,12 @@ Outside git, nothing changes.
 1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0. Its new case runs a `close --ticket N` follow-up and a concurrent `new`, which get distinct ids. The case failed before the fix.
 2. `grep -n 'refs/sdlc' docs/references/sdlc-internals.md` prints at least one line.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/tickets.py:3379 close reserves `refs/sdlc/ids/<id>` before `mkdir`, but unlike `new` (tickets.py:2803) it does not delete the ref when the folder write fails, so a failed close burns an id.) · verifier: verifier-L2 (opus) · base: 52ed9dc886f5
+- Changed: see commits
+- Commits: 37e52fb T-0606: close --ticket follow-ups and docs miss the T-0588 claim and id refs; 639a856 T-0606: record lane T-0606-t0606
+- Check: 1 `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0; its new case runs a `close --tic...: pass
+- Check: 2 `grep -n 'refs/sdlc' docs/references/sdlc-internals.md` prints at least one line: pass
+- Check: 3 `git diff --check` exits 0: pass
