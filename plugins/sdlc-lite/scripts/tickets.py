@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | claim <id> --by <agent> [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -260,7 +260,14 @@ writes `claimed_by: <agent> <YYYY-MM-DD>` directly after `created:` (refusing a 
 --reason TEXT`, which replaces the value and appends one dated body line, after first pinning the tip of the
 ticket's `branch:` as `refs/archive/<UTC date>/<branch>` (T-0580; `.<sha7>` on a clash, nothing written when the
 branch is missing or the pin fails)); `release <id>` removes it and sets
-`status: ready`; both regenerate the roadmap. check warns (exit 0) on a claimed_by line with a trailing comment,
+`status: ready`; both regenerate the roadmap. In git (T-0588) claims and ids are atomic through refs in the common
+git dir, which every worktree and host on the machine shares: claim first creates `refs/sdlc/claims/<id>` (a blob
+holding the claimed_by value) with `git update-ref <ref> <blob> ""` (create only if absent), so a claim from any
+other worktree refuses naming that holder; --handover replaces it only while it still holds the old value (creating
+it when missing, the repair for a claim made before refs); release and close delete it. new reserves
+`refs/sdlc/ids/<id>` the same way before writing and moves on to the next id while the ref exists. `--by` defaults
+to $SDLC_HOST, else claude or codex from the host's own variables with `:<session>` (claim_by). Outside git
+nothing changes. check also warns when the front matter and the claim refs disagree (claim_ref_warnings). check warns (exit 0) on a claimed_by line with a trailing comment,
 one not directly after created:, and a claim older than `claim_days:` in <root>/config (default 7) with no
 `*.running` file under its folder. Other statuses are set by hand: `status: claimed` needs a
 non-empty `claimed_by:` and `status: paused` a non-empty `paused_reason:`; on any other status neither field is
@@ -1802,13 +1809,116 @@ def claim_preflight(root, numbered):
     return td, ts, numbered
 
 
+CLAIM_REFS = 'refs/sdlc/claims/'
+ID_REFS = 'refs/sdlc/ids/'
+
+
+def ref_git(root):
+    """T-0588: a git runner (args, data=None) -> CompletedProcess in the repo holding root, or None outside git (no
+    git, or root not in a work tree), where claims and ids keep their front-matter-only behavior. Refs under refs/sdlc/
+    live in the common git dir, so every worktree of the repo sees the same ones."""
+    anchor = root.resolve()
+    while not anchor.is_dir() and anchor != anchor.parent:
+        anchor = anchor.parent
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+    def git(*a, data=None):
+        return subprocess.run(['git', '-C', str(anchor), *a], input=data, capture_output=True, text=True, env=env)
+    try:
+        if git('rev-parse', '--is-inside-work-tree').stdout.strip() != 'true':
+            return None
+    except OSError:
+        return None
+    return git
+
+
+def ref_read(git, ref):
+    """(object sha, its text without the trailing newline) of ref, or (None, None) when ref does not exist."""
+    sha = git('rev-parse', '--verify', '-q', ref).stdout.strip()
+    if not sha:
+        return None, None
+    return sha, git('cat-file', '-p', sha).stdout.rstrip('\n')
+
+
+def ref_write(git, ref, text, old=''):
+    """Point ref at a new blob holding text, only while ref still holds old (an object sha; '' means ref must not
+    exist yet: create only if absent). True when written; False when ref holds something else (a collision); Fail
+    when git cannot write the ref at all (a read-only .git, say)."""
+    p = git('hash-object', '-w', '--stdin', data=text + '\n')
+    if p.returncode == 0:
+        p = git('update-ref', ref, p.stdout.strip(), old)
+    if p.returncode == 0:
+        return True
+    if (ref_read(git, ref)[0] or '') != old:
+        return False
+    raise Fail(f'cannot write {ref}: {p.stderr.strip() or "git failed"}; nothing written')
+
+
+def ref_drop(root, ref):
+    """Delete ref when it exists (a no-op outside git or when absent)."""
+    git = ref_git(root)
+    if git and ref_read(git, ref)[0]:
+        git('update-ref', '-d', ref)
+
+
+def claim_ref_warnings(root, ts):
+    """T-0588: one `warning:` line per ticket whose front matter and refs/sdlc/claims/<id> disagree: status claimed
+    with no ref, a ref whose ticket is not claimed, or a ref whose text is not the claimed_by value. Ids with a ref but
+    no ticket in this tree are skipped (another worktree's new ticket). Outside git: none."""
+    git = ref_git(root)
+    if not git:
+        return []
+    held = {}
+    for line in git('for-each-ref', '--format=%(refname)', CLAIM_REFS).stdout.split():
+        held[line[len(CLAIM_REFS):]] = ref_read(git, line)[1]
+    out = []
+    for slug, m in ts:
+        tid = m.get('id')
+        if not (isinstance(tid, str) and ID_RE.fullmatch(tid)):
+            continue
+        ref, v = CLAIM_REFS + tid, held.get(tid)
+        fm = m.get('claimed_by').strip() if isinstance(m.get('claimed_by'), str) else ''
+        if m.get('status') == 'claimed' and v is None:
+            out.append(f'warning: {slug}: status claimed but {ref} is missing, so another worktree could claim it '
+                       f'too; fix: tickets.py claim {tid} --by <agent> --handover --reason TEXT')
+        elif v is not None and m.get('status') != 'claimed':
+            out.append(f'warning: {slug}: {ref} holds {v} but the front matter is status {m.get("status")}; fix: '
+                       f'tickets.py release {tid}, or claim it here with --handover')
+        elif v is not None and v != fm:
+            out.append(f'warning: {slug}: claimed_by {fm} but {ref} holds {v}; fix: tickets.py claim {tid} --by '
+                       f'<agent> --handover --reason TEXT')
+    return out
+
+
+def claim_by(by, env):
+    """T-0588: the claimed_by holder: an explicit --by as given; else SDLC_HOST, else claude or codex from the host's
+    own variables, with `:<session>` (CLAUDE_CODE_SESSION_ID or CODEX_THREAD_ID, first 8 characters) when one is
+    set and SDLC_HOST names none. '' when nothing names it."""
+    if (by or '').strip():
+        return by
+    host = (env.get('SDLC_HOST') or '').strip()
+    if not host:
+        if env.get('CODEX_THREAD_ID') or env.get('CODEX_SANDBOX') or env.get('SDLC_BACKEND') == 'codex':
+            host = 'codex'
+        elif env.get('CLAUDECODE') or env.get('CLAUDE_CODE_ENTRYPOINT') or env.get('CLAUDE_PID'):
+            host = 'claude'
+    session = (env.get('CLAUDE_CODE_SESSION_ID') if host.startswith('claude') else
+               env.get('CODEX_THREAD_ID') if host.startswith('codex') else '') or ''
+    if host and ':' not in host and session.strip():
+        host += ':' + session.strip()[:8]
+    return host
+
+
 def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=None):
     """Claim ref for agent by: status claimed and `claimed_by: <by> <date>` directly after created:, then the
     roadmap. A ticket already claimed refuses unless handover, which needs reason, replaces the value and
-    appends one dated body line naming the old and new holder and the reason."""
+    appends one dated body line naming the old and new holder and the reason. In git (T-0588) the claim first
+    creates refs/sdlc/claims/<id> holding the value, create only if absent, so a claim from any other worktree or host
+    refuses naming the holder; a handover replaces the ref only while it still holds the old value (or creates it
+    when missing, the repair for a claim made before refs)."""
     by = ' '.join((by or '').split())
     if not by or '#' in by:
-        raise Fail('--by needs an agent name with no #; nothing written')
+        raise Fail('--by needs an agent name with no # (or set SDLC_HOST); nothing written')
     if handover and not (reason or '').strip():
         raise Fail('--handover needs --reason TEXT; nothing written')
     if reason and not handover:
@@ -1817,8 +1927,12 @@ def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=
     slug, m = find_ticket(ts, ref)
     if m.get('status') in ('done', 'dropped'):
         raise Fail(f'{slug}: status {m.get("status")}; a closed ticket cannot be claimed; nothing written')
+    tid = m.get('id')
+    git = ref_git(root) if isinstance(tid, str) and ID_RE.fullmatch(tid) else None
+    cref = CLAIM_REFS + tid if git else None
+    old, ref_held = ref_read(git, cref) if git else (None, None)
     cur = m.get('claimed_by')
-    held = cur.strip() if isinstance(cur, str) and cur.strip() else ''
+    held = cur.strip() if isinstance(cur, str) and cur.strip() else (ref_held or '')
     if held and not handover:
         raise Fail(f'{slug}: already claimed by {held}; pick another ticket, or take it over with '
                    f'--handover --reason TEXT; nothing written')
@@ -1832,7 +1946,21 @@ def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=
                      value)
     if handover:
         text = text.rstrip('\n') + f'\n\nHandover {date}: from {held} to {by}: {" ".join(reason.split())}\n'
-    write_claim(root, td, ts, slug, text, numbered)
+    if git and not ref_write(git, cref, value, (old or '') if handover else ''):
+        now = ref_read(git, cref)[1]
+        why = (f'already claimed by {now} ({cref}); pick another ticket, or take it over with --handover --reason '
+               f'TEXT' if now and not handover else
+               f'{cref} changed during the handover (now {now or "absent"}); run the claim again')
+        raise Fail(f'{slug}: {why}; nothing written')
+    try:
+        write_claim(root, td, ts, slug, text, numbered)
+    except Exception:
+        if git:  # put the ref back the way it was
+            if old:
+                git('update-ref', cref, old)
+            else:
+                git('update-ref', '-d', cref)
+        raise
     return f'{slug}: claimed_by: {value}' + (f'; pinned {pinned}' if pinned else '')
 
 
@@ -1864,14 +1992,22 @@ def pin_branch(root, m):
 
 
 def cmd_release(root, ref, numbered=False):
-    """Release ref: remove its claimed_by line and set status ready when it was claimed, then the roadmap."""
+    """Release ref: remove its claimed_by line and set status ready when it was claimed, then the roadmap; in git
+    also delete refs/sdlc/claims/<id> (T-0588), which alone is enough when only the ref holds the claim."""
     td, ts, numbered = claim_preflight(root, numbered)
     slug, m = find_ticket(ts, ref)
+    git = ref_git(root) if isinstance(m.get('id'), str) and ID_RE.fullmatch(m['id']) else None
+    cref = CLAIM_REFS + m['id'] if git else None
     if m.get('status') != 'claimed' and 'claimed_by' not in m:
+        if git and ref_read(git, cref)[0]:
+            git('update-ref', '-d', cref)
+            return f'{slug}: released {cref}; front matter not claimed, left as is'
         raise Fail(f'{slug}: not claimed; nothing written')
     status = 'ready' if m.get('status') == 'claimed' else m.get('status')
     text = set_claim((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), status, None)
     write_claim(root, td, ts, slug, text, numbered)
+    if git:
+        ref_drop(root, cref)
     return f'{slug}: released, status {status}'
 
 
@@ -2651,9 +2787,19 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
         raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first (each line names the '
                                       'ticket folder; edit its handoff.md, then run tickets.py check)']))
     router_preflight(root)
-    text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=id_floor(root))
+    floor, git = id_floor(root), ref_git(root)
+    while True:  # T-0588: reserve refs/sdlc/ids/<id> before writing; an id another tree reserved moves on to the next
+        text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=floor)
+        if not git or ref_write(git, ID_REFS + meta['id'], folder_name(slug, meta['id'], numbered)):
+            break
+        floor = int(meta['id'][2:])
     d = td / folder_name(slug, meta['id'], numbered)
-    d.mkdir(parents=True)
+    try:
+        d.mkdir(parents=True)
+    except OSError:
+        if git:
+            git('update-ref', '-d', ID_REFS + meta['id'])
+        raise
     path = d / 'handoff.md'
     path.write_text(text, encoding='utf-8')
     if flag:
@@ -3066,6 +3212,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         body += outcome(f'closed by reason ({why})')
         note_docs_waiver()
         h.write_bytes((head + body).encode('utf-8'))
+        ref_drop(root, CLAIM_REFS + pid)  # T-0588: a done ticket holds no claim
         move_skips(d)
         if archive:
             d.rename(dot)
@@ -3227,6 +3374,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     acked = warnings.splitlines() if ack_warnings is not None and warnings else []
     body += outcome(verdict, follow_lines, acked)
     h.write_bytes((head + body).encode('utf-8'))
+    ref_drop(root, CLAIM_REFS + pid)  # T-0588: a done ticket holds no claim
     move_skips(d)
     if archive:
         d.rename(dot)
@@ -3309,6 +3457,7 @@ def cmd_check(root, numbered=False):
     out = [f'ok: {len(ts)} tickets, roadmap current']
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
+    out += claim_ref_warnings(root, ts)
     out += link_warnings(root)
     out += top_level_warnings(root)
     out += delivered_warnings(root, ts)
@@ -5232,6 +5381,14 @@ def selftest():
             def tid(root, slug):
                 return dict(load(root)).get(slug, {}).get('id')
 
+            def forget_ids(cwd):
+                """Make a copied repo stand for another clone: drop its refs/sdlc/ids/ reservations (T-0588), which a
+                clone never shares, so only external_branch can keep its new ids clear of the branch's."""
+                p = subprocess.run(['git', '-C', str(cwd), 'for-each-ref', '--format=%(refname)', 'refs/sdlc/ids'],
+                                   env=genv, capture_output=True, text=True)
+                for r in p.stdout.split():
+                    git(cwd, 'update-ref', '-d', r)
+
             wtmp = pathlib.Path(tmp) / 'worktrees'
             wtmp.mkdir()
             main_dir, nosdlc_dir = wtmp / 'main', wtmp / 'nosdlc'
@@ -5389,6 +5546,7 @@ def selftest():
             expect(f'external: registered, close --ticket 1 --expect mints its follow-up above ext T-0002, as '
                    f'T-0003: rc={rc} {out!r} {err!r} made={made}',
                    rc == 0 and [m.get('id') for m in made.values()] == ['T-0003'])
+            forget_ids(copies['bare'].parent)
             rc, _, err = run(copies['bare'], 'new', ('feature', 'z'))
             expect(f'external: negative control, unregistered, new mints the colliding T-0002: rc={rc} {err!r}',
                    rc == 0 and tid(copies['bare'], 'z') == 'T-0002')
@@ -5484,6 +5642,7 @@ def selftest():
             expect(f'ticket_root external: registered, new on main mints T-0003 above ext tickets/beta T-0002: '
                    f'rc={rc} {err!r} got={tid(x_root, "gamma")!r}',
                    rc == 0 and err == '' and tid(x_root, 'gamma') == 'T-0003')
+            forget_ids(xb_root.parent)
             rc, _, err = run(xb_root, 'new', ('feature', 'gamma'))
             expect(f'ticket_root external: negative control, no external_branch line, new mints the colliding '
                    f'T-0002: rc={rc} {err!r} got={tid(xb_root, "gamma")!r}',
@@ -5779,6 +5938,83 @@ def selftest():
                rc == 1 and 'branch: lane/gone is not a local branch' in err
                and (rw / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8') == before)
         record_branch(rw / '.sdlc', 'T-0001', None)
+
+        # atomic claims and ids (T-0588): refs/sdlc/claims/<id> and refs/sdlc/ids/<id> sit in the common git dir, so a
+        # claim or an id taken in one worktree refuses (or moves on to the next id) in another
+        genv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+        ra_, wb = pathlib.Path(tmp) / 'rt-refs', pathlib.Path(tmp) / 'rt-refs-b'
+        ra_.mkdir()
+        gr = lambda *x: subprocess.run(['git', '-C', str(ra_), '-c', 'user.name=t', '-c', 'user.email=t@t', *x],
+                                       capture_output=True, text=True, env=genv)
+        gr('init', '-q', '-b', 'main')
+        run(ra_ / '.sdlc', 'new', ('feature', 'a', 'A'))
+        run(ra_ / '.sdlc', 'new', ('feature', 'b', 'B'))
+        gr('add', '-A')
+        gr('commit', '-q', '-m', 'init')
+        gr('worktree', 'add', '-q', '-b', 'b', str(wb))
+        day = datetime.date.today().isoformat()
+        rc, _, err = run(ra_ / '.sdlc', 'claim', ('T-0001', 'claude:s1'))
+        held = gr('cat-file', '-p', 'refs/sdlc/claims/T-0001').stdout
+        rc2, _, err2 = run(wb / '.sdlc', 'claim', ('T-0001', 'codex:s2'))
+        expect(f'refs: a second claim from another worktree refuses naming the first holder: rc={rc} {err!r} '
+               f'{held!r} rc2={rc2} {err2!r}',
+               rc == 0 and held == f'claude:s1 {day}\n' and rc2 == 1 and f'already claimed by claude:s1 {day}' in err2
+               and 'claimed_by' not in (wb / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8'))
+        rc, out, err = run(ra_ / '.sdlc', 'release', ('T-0001',))
+        gone = gr('rev-parse', '--verify', '-q', 'refs/sdlc/claims/T-0001')
+        rc2, _, err2 = run(wb / '.sdlc', 'claim', ('T-0001', 'codex:s2'))
+        expect(f'refs: release removes the claim ref, and the other worktree can then claim: rc={rc} {err!r} '
+               f'rc2={rc2} {err2!r}',
+               rc == 0 and gone.returncode != 0 and rc2 == 0
+               and gr('cat-file', '-p', 'refs/sdlc/claims/T-0001').stdout == f'codex:s2 {day}\n')
+        run(ra_ / '.sdlc', 'claim', ('T-0002', 'claude:s1'))
+        pre = gr('rev-parse', '--verify', '-q', 'refs/sdlc/claims/T-0002').returncode
+        rc, out, err = run(ra_ / '.sdlc', 'close', ('b',), reason='done elsewhere')
+        expect(f'refs: close removes the claim ref: pre={pre} rc={rc} {err!r}',
+               pre == 0 and rc == 0 and gr('rev-parse', '--verify', '-q', 'refs/sdlc/claims/T-0002').returncode != 0)
+        edit(ra_ / '.sdlc', 'a', r'^status:.*$', 'status: claimed')
+        edit(ra_ / '.sdlc', 'a', r'^created:(.*)$', rf'created:\1\nclaimed_by: claude {day}')
+        gr('update-ref', '-d', 'refs/sdlc/claims/T-0001')
+        run(ra_ / '.sdlc', 'roadmap')
+        rc, out, err = run(ra_ / '.sdlc', 'check')
+        expect(f'refs: check warns on a front matter claim with no claim ref: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'warning: a: status claimed but refs/sdlc/claims/T-0001 is missing' in out)
+        rc, out, err = run(ra_ / '.sdlc', 'claim', ('T-0001', 'claude'), handover=True, reason='repair the ref')
+        rc_k, out_k, _ = run(ra_ / '.sdlc', 'check')
+        expect(f'refs: claim --handover writes the missing ref and check is quiet again: rc={rc} {err!r} {out_k!r}',
+               rc == 0 and gr('cat-file', '-p', 'refs/sdlc/claims/T-0001').stdout == f'claude {day}\n'
+               and rc_k == 0 and 'refs/sdlc/claims' not in out_k)
+        # two concurrent new calls, one per worktree: each process reads every tree before either writes (a barrier
+        # inside id_floor), so both pick the same next id and only the id ref can keep them apart
+        bar = pathlib.Path(tmp) / 'rt-refs-bar'
+        bar.mkdir()
+        drv = ('import pathlib, sys, time\nsys.path.insert(0, sys.argv[1])\nimport tickets\nreal = tickets.id_floor\n'
+               'def gated(root):\n    v = real(root)\n    pathlib.Path(sys.argv[2], "arrive-" + sys.argv[3]).touch()\n'
+               '    end = time.time() + 30\n'
+               '    while len(list(pathlib.Path(sys.argv[2]).glob("arrive-*"))) < 2 and time.time() < end:\n'
+               '        time.sleep(0.02)\n    return v\n'
+               'tickets.id_floor = gated\nsys.exit(tickets.main(sys.argv[4:]))\n')
+        procs = [subprocess.Popen([sys.executable, '-c', drv, str(PLUGIN / 'scripts'), str(bar), k, '--root',
+                                   str(w / '.sdlc'), 'new', 'feature', s, s.upper()],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=genv)
+                 for k, w, s in (('1', ra_, 'c'), ('2', wb, 'd'))]
+        outs = [(p.communicate(timeout=120), p.returncode) for p in procs]
+        got = [dict(load(w / '.sdlc')).get(s, {}).get('id') for w, s in ((ra_, 'c'), (wb, 'd'))]
+        expect(f'refs: two concurrent new calls in two worktrees stamp distinct ids: {got!r} {outs!r}',
+               all(rc == 0 for _, rc in outs) and None not in got and len(set(got)) == 2
+               and sorted(got) == ['T-0003', 'T-0004'])
+        for w, s in ((ra_, 'c'), (wb, 'd')):
+            fill(w / '.sdlc', s)
+        expect('refs: claim_by takes --by as given, else SDLC_HOST, else claude or codex with :<session>, else empty',
+               claim_by('astra', {'SDLC_HOST': 'pi'}) == 'astra' and claim_by(None, {'SDLC_HOST': 'pi'}) == 'pi'
+               and claim_by(None, {'CLAUDECODE': '1', 'CLAUDE_CODE_SESSION_ID': 'abcdef123456'}) == 'claude:abcdef12'
+               and claim_by(None, {'CODEX_THREAD_ID': 't-99'}) == 'codex:t-99' and claim_by(None, {}) == '')
+        gr('update-ref', 'refs/sdlc/ids/T-0005', 'HEAD')
+        rc, out, err = run(ra_ / '.sdlc', 'new', ('feature', 'e', 'E'))
+        expect(f'refs: new skips an id whose ref another tree reserved: rc={rc} {err!r} '
+               f'{dict(load(ra_ / ".sdlc")).get("e")!r}',
+               rc == 0 and dict(load(ra_ / '.sdlc')).get('e', {}).get('id') == 'T-0006'
+               and gr('rev-parse', '--verify', '-q', 'refs/sdlc/ids/T-0006').returncode == 0)
 
         # area, claimed and paused: validation runs one way; the Area column shows only when an area exists
         ra = pathlib.Path(tmp) / 'rt-area' / '.sdlc'
@@ -7188,7 +7424,8 @@ def main(argv):
     p = sub.add_parser('claim', help='claim a ticket: status claimed and `claimed_by: <agent> <YYYY-MM-DD>` '
                                      'directly after created:, then regenerate the roadmap')
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
-    p.add_argument('--by', required=True, metavar='AGENT', help='the claiming agent: one lowercase word, e.g. claude, codex or astra')
+    p.add_argument('--by', metavar='AGENT', help='the claiming agent: one lowercase word, e.g. claude, codex or astra; '
+                   'default: $SDLC_HOST, else claude or codex (with :<session>) from the host\'s own variables')
     p.add_argument('--handover', action='store_true',
                    help='take over a claimed ticket: pin the branch: tip as refs/archive/<date>/<branch>, replace '
                         'the claimed_by value and append one dated body line; needs --reason')
@@ -7245,7 +7482,7 @@ def main(argv):
     if cmd == 'selftest':
         return selftest()
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force),
-            'claim': lambda: (a.id, a.by), 'release': lambda: (a.id,), 'branch': lambda: (a.id, a.branch)}.get(cmd, tuple)()
+            'claim': lambda: (a.id, claim_by(a.by, os.environ)), 'release': lambda: (a.id,), 'branch': lambda: (a.id, a.branch)}.get(cmd, tuple)()
     kw = ({'numbered': getattr(a, 'numbered', False)}
           if cmd in ('new', 'close', 'roadmap', 'check', 'archive', 'claim', 'release') else {})
     if cmd == 'claim':
