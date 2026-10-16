@@ -4,7 +4,7 @@
   dispatch.py prepare [--dry-run] [--approved "<who: why>"] <role> <level> <handoff.md>
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
-  dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
+  dispatch.py prune [--root DIR] [--done NAME | --add NAME | --forget-stale]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
                                           transcript also shows `last activity <age>`, and `silent` after 30 minutes without a write (T-0476);
                                           a running one past its role's time budget ends `over-budget <age> (budget <n>m)` (T-0555)
@@ -146,11 +146,15 @@ Prune (T-0368). The host keeps a finished sub-agent as an idle, addressable team
 "prune": true into the dispatch for a one-shot role (scout, researcher, architect, archaeologist, planner, plan-reviewer,
 verifier, filer, ui-designer) and false for builder, whose failed run may be resumed (solo and the messenger are false too); --prune and
 --no-prune override it. record on exit 0 with prune true prints `prune: <agent name>` and appends {name, agent_id, role,
-level, recorded_at} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
+level, recorded_at, session} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
 result's ## Follow-ups section is not None (a filer is queued either way: its follow-ups are its output, which tickets.py
 close consumes, T-0531). `dispatch.py prune` lists the queue with the stop call per entry
 (`TaskStop task_id=<name>`); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
-(`fanout.py land` does it for a merged solo). The listing adds `; lane open <path>` to an entry whose host lane (lanes.py) still
+(`fanout.py land` does it for a merged solo, under the `name` of its newest solo dispatch record, else `<id>-solo`). The queue
+lives in the main checkout, also when the call runs in a linked worktree, and session is CLAUDE_CODE_SESSION_ID (a
+sub-agent shares its parent's). In a Claude session the listing shows only that session's entries and ends with
+`prune: <n> from other sessions not listed; drop them: dispatch.py prune --forget-stale` when others exist;
+`--forget-stale` removes those and prints `forgot: <name>` per entry (T-0601). The listing adds `; lane open <path>` to an entry whose host lane (lanes.py) still
 exists, and `--done NAME` then closes that lane through lanes.close_lane and prints `closed lane <path> (<reason>)` or
 `lane still open: <path> (<reason>)` (T-0453); without a lane it prints nothing more.
 Exit codes: 0 ok, 1 failed sub-agent, 2 unreadable dispatch or attempt, an attempt that is not running, or a result
@@ -1245,11 +1249,27 @@ def limit_marker(d, error):
 
 
 PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'
-PRUNE_KEYS = ('name', 'agent_id', 'role', 'level', 'recorded_at')
+PRUNE_KEYS = ('name', 'agent_id', 'role', 'level', 'recorded_at', 'session')
+
+
+def prune_session():
+    """The current Claude session id (a sub-agent shares its parent's), or None outside a Claude session (T-0601)."""
+    return os.environ.get('CLAUDE_CODE_SESSION_ID') or None
+
+
+def prune_root(root='.'):
+    """The main checkout when root is inside a linked worktree, since a lane's queue would die with its tree (T-0601);
+    else root."""
+    try:
+        main_ = wtroot.main_top(root)
+        top = git('rev-parse', '--show-toplevel', cwd=root).stdout.strip()
+    except OSError:
+        return root
+    return main_ if main_ and top and os.path.realpath(main_) != os.path.realpath(top) else root
 
 
 def prune_path(root='.'):
-    return Path(root) / PRUNE_REL
+    return Path(prune_root(root)) / PRUNE_REL
 
 
 def prune_read(root='.'):
@@ -1278,8 +1298,8 @@ def prune_edit(root, change):
 
 
 def prune_add(root, name, role='', level='', agent_id=None):
-    """Queue an agent by name (one entry per name; a later add replaces the earlier one)."""
-    entry = dict(name=name, agent_id=agent_id, role=role, level=level, recorded_at=run_lifecycle.now())
+    """Queue an agent by name (one entry per name; a later add replaces the earlier one), tagged with the current session."""
+    entry = dict(name=name, agent_id=agent_id, role=role, level=level, recorded_at=run_lifecycle.now(), session=prune_session())
     prune_edit(root, lambda es: [e for e in es if e.get('name') != name] + [entry])
     return entry
 
@@ -1289,6 +1309,34 @@ def prune_done(root, name):
     found = []
     prune_edit(root, lambda es: [e for e in es if e.get('name') != name or found.append(1)])
     return bool(found)
+
+
+def prune_forget_stale(root):
+    """Remove the entries another session queued (or that carry no session); returns their names. No current session
+    forgets nothing: every entry is then listed."""
+    session, gone = prune_session(), []
+    if session:
+        prune_edit(root, lambda es: [e for e in es if e.get('session') == session or gone.append(e['name'])])
+    return gone
+
+
+def prune_solo_name(dirs, default):
+    """The live Agent name of a landed solo: the name in the newest solo *.dispatch.json in a ticket folder or its records
+    dir (fanout prep writes <id>-solo, solo_run.py <n>-solo-<level>), searched in the order given; default when none (T-0601)."""
+    for d in dirs:
+        found = []
+        for where in {Path(d), Path(order.records_dir(d))}:
+            for f in where.glob('*.dispatch.json'):
+                try:
+                    j = json.loads(f.read_text(encoding='utf-8'))
+                    mtime = f.stat().st_mtime
+                except (OSError, ValueError):
+                    continue
+                if isinstance(j, dict) and j.get('role') == 'solo' and j.get('name'):
+                    found.append((mtime, j['name']))
+        if found:
+            return max(found)[1]
+    return default
 
 
 def host_lanes(root, names):
@@ -1328,13 +1376,19 @@ def prune_lane(root, name):
 
 
 def prune_lines(root='.'):
-    entries = prune_read(root)
+    """One stop call per entry of the current session (every entry outside a Claude session), then one line counting
+    the entries of other sessions, which no TaskStop here can reach (T-0601)."""
+    session, entries = prune_session(), prune_read(root)
+    stale = [e for e in entries if session and e.get('session') != session]
+    entries = [e for e in entries if e not in stale]
+    tail = (['prune: %d from other sessions not listed; drop them: dispatch.py prune --forget-stale' % len(stale)]
+            if stale else [])
     if not entries:
-        return ['prune: nothing queued']
+        return ['prune: nothing queued'] + tail
     open_ = host_lanes(root, [e['name'] for e in entries])
     return ['TaskStop task_id=%s    # %s %s, recorded %s; then: dispatch.py prune --done %s%s'
             % (e['name'], e.get('role') or 'agent', e.get('level') or '', e.get('recorded_at') or '?', e['name'],
-               '; lane open %s' % open_[e['name']]['path'] if e['name'] in open_ else '') for e in entries]
+               '; lane open %s' % open_[e['name']]['path'] if e['name'] in open_ else '') for e in entries] + tail
 
 
 def follow_up_pending(text):
@@ -1701,6 +1755,7 @@ def main(argv):
     pg2 = pr.add_mutually_exclusive_group()
     pg2.add_argument('--done', metavar='NAME', help='remove NAME from the queue once it is stopped')
     pg2.add_argument('--add', metavar='NAME', help='queue NAME (a landed builder or solo)')
+    pg2.add_argument('--forget-stale', action='store_true', help='drop the entries another session queued (T-0601)')
     pr.add_argument('--role', default='', help='with --add: the agent role')
     pr.add_argument('--level', default='', help='with --add: the agent level')
     sub.add_parser('selftest', help='run the regression cases in temp repos')
@@ -1721,6 +1776,9 @@ def main(argv):
                     return 2
                 prune_add(args.root, args.add, args.role, args.level)
                 print('queued: ' + args.add)
+            elif args.forget_stale:
+                gone = prune_forget_stale(args.root)
+                print('\n'.join('forgot: ' + n for n in gone) if gone else 'forgot: nothing')
             else:
                 print('\n'.join(prune_lines(args.root)))
         except Refuse as r:
@@ -3331,6 +3389,59 @@ def selftest():
         with contextlib.redirect_stdout(empty):
             main(['prune', '--root', str(rp)])
         case('prune on an empty queue says so', empty.getvalue().strip() == 'prune: nothing queued')
+        # T-0601: a landed solo is queued under its dispatch name, entries carry their session, and the listing shows
+        # only the current session's.
+        import fanout, types
+        sq = init_repo(tmp / 'solo-queue') or tmp / 'solo-queue'
+        sq_lane = tmp / 'solo-queue-lane'
+        subprocess.run(['git', '-C', str(sq), 'worktree', 'add', '-q', '-b', 'lane-sq', str(sq_lane)], check=True)
+        put(sq_lane / '.sdlc' / 'sq1' / 'handoff.md')
+        put(order.records_dir(sq_lane / '.sdlc' / 'sq1', create=True) / '0901-solo-L2.dispatch.json',
+            json.dumps(dict(name='0901-solo-L2', role='solo', level='L2')))
+        put(sq_lane / '.sdlc' / 'sq3' / 'T-0903-solo.dispatch.json', json.dumps(dict(name='T-0903-solo', role='solo', level='L1')))
+        put(sq_lane / '.sdlc' / 'sq2' / 'handoff.md')
+        sq_ctx = dict(top=sq, trel=Path('.sdlc'), lane_wt=str(sq_lane), run_id='fanout-t', logs=tmp)
+        with contextlib.redirect_stdout(io.StringIO()):
+            for tid, slug in (('T-0901', 'sq1'), ('T-0902', 'sq2'), ('T-0903', 'sq3')):
+                fanout.queue_prune(sq_ctx, types.SimpleNamespace(name='lane-sq'), types.SimpleNamespace(id=tid, slug=slug), 'L2')
+        case('T-0601 a solo landed through finish or fanout land is queued under its dispatch name (0901-solo-L2), '
+             'a fanout prep dispatch keeps T-0903-solo, and no dispatch record falls back to T-0902-solo',
+             [e['name'] for e in prune_read(str(sq))] == ['0901-solo-L2', 'T-0902-solo', 'T-0903-solo'])
+        put(tmp / 'sq-verifier.md', '## Verdict\npass\n')
+        with contextlib.redirect_stdout(io.StringIO()):
+            queue_prune(dict(prune=True, name='0901-verifier-L2', role='verifier', level='L2', artifacts_dir=str(tmp),
+                             attempt_file=str(tmp / 'none.attempt.json'), result=str(tmp / 'sq-verifier.md'), tree=str(sq_lane)),
+                        dict(status='completed', project=str(sq_lane)), 'ag-sq')
+        case('T-0601 a verifier recorded from a lane worktree is queued in the main checkout, not the lane tree',
+             '0901-verifier-L2' in [e['name'] for e in prune_read(str(sq))] and not (sq_lane / PRUNE_REL).exists())
+        saved_sid = os.environ.get('CLAUDE_CODE_SESSION_ID')
+        try:
+            ss = tmp / 'session-queue'
+            put(ss / PRUNE_REL, json.dumps([dict(name='0440-architect-L1', role='architect', level='L1', recorded_at='2026-10-11'),
+                                            dict(name='0500-verifier-L2', role='verifier', level='L2', session='sess-old')]))
+            os.environ['CLAUDE_CODE_SESSION_ID'] = 'sess-now'
+            prune_add(str(ss), '0565-solo-L2', 'solo', 'L2')
+            listing = prune_lines(str(ss))
+            case('T-0601 prune lists only the current session\'s entries and names --forget-stale for the 2 others',
+                 len(listing) == 2 and listing[0].startswith('TaskStop task_id=0565-solo-L2 ') and 'sess-now' not in listing[0]
+                 and '2 from other sessions' in listing[1] and 'dispatch.py prune --forget-stale' in listing[1]
+                 and prune_read(str(ss))[-1].get('session') == 'sess-now')
+            forgot = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(forgot), contextlib.redirect_stderr(io.StringIO()):
+                    rc_f = main(['prune', '--root', str(ss), '--forget-stale'])
+            except SystemExit as e:
+                rc_f = e.code
+            case('T-0601 prune --forget-stale removes the other sessions\' entries and keeps the current one',
+                 rc_f == 0 and [e['name'] for e in prune_read(str(ss))] == ['0565-solo-L2']
+                 and 'forgot: 0440-architect-L1' in forgot.getvalue() and 'forgot: 0500-verifier-L2' in forgot.getvalue())
+            case('T-0601 after --forget-stale the listing has no stale line (negative control)',
+                 [l.split()[1] for l in prune_lines(str(ss))] == ['task_id=0565-solo-L2'])
+        finally:
+            if saved_sid is None:
+                os.environ.pop('CLAUDE_CODE_SESSION_ID', None)
+            else:
+                os.environ['CLAUDE_CODE_SESSION_ID'] = saved_sid
         # T-0453: the listing names an open host lane; --done closes it through lanes.close_lane and says so.
         lr = tmp / 'lane-prune'
         init_repo(lr)
