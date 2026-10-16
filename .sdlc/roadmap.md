@@ -607,5 +607,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0607 | [.0607-onboard-block-real-paths](.0607-onboard-block-real-paths/handoff.md) | Onboard root block states lane root, ticket root and gitignore rules that are false for the repo | bug | L2 | P1 | none | 🟢 done |
 | T-0608 | [.0608-onboard-setup-creates-nothing](.0608-onboard-setup-creates-nothing/handoff.md) | onboard.py setup creates entry stubs and layout.md in a repo that never asked | bug | L2 | P1 | none | 🟢 done |
 | T-0609 | [.0609-lane-open-no-main-commit](.0609-lane-open-no-main-commit/handoff.md) | lanes.py open commits its record onto local main, which diverges from origin in PR repos | bug | L2 | P1 | none | 🟢 done |
-| T-0610 | [0610-ready-unregistered-conductor](0610-ready-unregistered-conductor/handoff.md) | lanes.py ready exits 1 in a fresh repo: no conductor registered | bug | L1 | P2 | none | 🔵 ready |
+| T-0610 | [0610-ready-unregistered-conductor](0610-ready-unregistered-conductor/handoff.md) | lanes.py ready exits 1 in a fresh repo: no conductor registered | bug | L1 | P2 | none | 🟡 claimed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1d8e5082abaf -->
+<!-- sdlc-lite:managed:start v1 sha256:6b2b541ef059 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -20,10 +20,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0587 solo_run.py run --worktree without --cwd records the session checkout's base (0587-solo-worktree-base)
   - T-0603 gate_lock selftest status checks never run: label compared to real, controls pass real0 (0603-gate-lock-selftest-label-guard)
   - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording)
-- ready: 2
-  - T-0610 lanes.py ready exits 1 in a fresh repo: no conductor registered (0610-ready-unregistered-conductor)
+- ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
-- claimed: 0
+- claimed: 1
+  - T-0610 lanes.py ready exits 1 in a fresh repo: no conductor registered (0610-ready-unregistered-conductor), claimed by claude 2026-10-15
 - paused: 0
 - blocked: 0
 - done: 563
