@@ -5079,6 +5079,7 @@ def selftest():
                 (pre_ / 'pre.txt').write_text('pre\n', encoding='utf-8')
                 sh(pre_, 'add', 'pre.txt')
                 sh(pre_, 'commit', '-q', '-m', 'pre work')
+                sh(r_, 'worktree', 'unlock', str(pre_))  # its worker is done (T-0589: open locks; a locked lane is kept)
             mg = sh(r_, 'merge', '-q', '--no-ff', '-m', 'merge pre', 'lane/T-0003-pre')
             expect(f'case 29 lifecycle: fixture {name}: lanes.py open and the merge of the pre lane into main succeed, got '
                    f'open rc={op.returncode} {op.stdout!r} {op.stderr!r}, merge rc={mg.returncode} {mg.stderr!r}',

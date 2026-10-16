@@ -86,7 +86,8 @@ Truth table for close and sweep; the first matching row wins.
   5          into does not resolve, or a git read fails                     cannot decide: <reason>                                    1
   6          tracked changes, or untracked files outside .sdlc/ and         uncommitted changes in <lane>: <first path>                1
              .lane.json, and no --discard
-  locked     the tree is locked (git worktree list --porcelain)             locked: <reason>                                           1
+  locked     the tree is locked (git worktree list --porcelain), except a   locked: <reason>                                           1
+             plain close of a lock equal to the record's lock (open's own)
   7          sweep only: no commit since base_sha                           kept <lane>: no commits                                    0
   8          sweep only: a host lane queued in .sdlc/runtime/prune.json     kept <lane>: agent not pruned                              0
              less than 6 hours ago
@@ -117,7 +118,8 @@ Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a 
      file there at least as new (T-0566), and print `records: <path>`. Then copy the tree's untracked and ignored
      .sdlc/ files, and the ignored .sdlc/runtime/tasks/ records (minus *.log,
      *.running, *.run.lock), to <git common dir>/sdlc-lane-archive/<lane>/; a failed write stops the close here.
-  3. git worktree remove --force <path>; a missing tree skips this step.
+  3. git worktree unlock <path> when the lane holds its own lock, then git worktree remove --force <path>; a missing
+     tree skips this step.
   4. git update-ref -d refs/heads/<b> <sha>: by full name, and only while the branch is at the sha the test read.
   5. git worktree prune; remove a host record; print `port <n> still listening (pid <p>)` when a listener holds
      the lane's port.
@@ -164,7 +166,13 @@ Record fields. .lane.json at the tree root, written by open, added to <git commo
   branch    the lane branch                        base      the --base ref          base_sha  its sha at open
   into      the ref the landed test reads          tickets   the ticket ids          port      a port, or null
   opened    UTC time of open                       run_id    $SDLC_RUN_ID, or null   setup     ok, failed rc=<n>, or null
+  lock      the reason open locked the tree with, or null
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
+  Lock (T-0589): the CLI open of a fanout or solo lane (the Python open_lane only with lock=True) runs git worktree lock
+  --reason "<holder> <tickets>" and prints `locked: <reason>`; the holder is refs/sdlc/claims/<id> (T-0588), else the
+  ticket's claimed_by:, its date dropped, else <host>:<session> from the environment. A locked lane is running: list
+  shows `running (<reason>)` where it would show open or closable (`stale, locked` stays), and sweep keeps it. ready
+  (T-0590) or a plain close of a landed lane clears that lock; close --discard refuses until `git worktree unlock`.
 
 Config (.sdlc/config of the main worktree; blank and # lines ignored):
   lanes_root: <path>        default wtroot.py root: the sibling <main checkout parent>/<name>.worktrees (T-0563; legacy .claude/worktrees
@@ -191,7 +199,7 @@ import plugin_min  # same scripts/ dir: the repo's minimum plugin version (T-059
 
 Path = pathlib.Path
 RECORD = '.lane.json'
-FIELDS = ('lane', 'kind', 'branch', 'base', 'base_sha', 'into', 'tickets', 'port', 'opened', 'run_id', 'setup')
+FIELDS = ('lane', 'kind', 'branch', 'base', 'base_sha', 'into', 'tickets', 'port', 'opened', 'run_id', 'setup', 'lock')
 KINDS = ('fanout', 'integration', 'solo')
 LOCAL_ID = re.compile(r'T-\d+')
 PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'  # dispatch.py PRUNE_REL
@@ -371,7 +379,7 @@ def has_ref(top, ref):
 def blank(path, exists, branch=None, head=None, locked=None):
     return dict(path=str(path), exists=exists, branch=branch, head=head, locked=locked, owner='', kind='manual',
                 lane=os.path.basename(str(path)), into=None, base=None, base_sha=None, tickets=[], port=None,
-                record=None, record_path=None, record_branch=None, setup=None)
+                record=None, record_path=None, record_branch=None, setup=None, lock=None)
 
 
 def apply_record(ctx, d, rec, host=False):
@@ -382,7 +390,7 @@ def apply_record(ctx, d, rec, host=False):
     if rec.get('branch'):
         d['branch'] = rec['branch']
     d['into'] = rec.get('into') or ctx.cfg['lane_into'] or ctx.main
-    for k in ('base', 'base_sha', 'port', 'setup'):
+    for k in ('base', 'base_sha', 'port', 'setup', 'lock'):
         d[k] = rec.get(k)
     t = rec.get('tickets') or []
     d['tickets'] = [t] if isinstance(t, str) else list(t)
@@ -648,7 +656,8 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
     if dirty and not discard: return '6', f'uncommitted changes in {name}: {dirty}', 1, {}  # DIRTY-CHECK
     if dirty:
         force = True
-    if d['locked'] is not None:
+    own = mode == 'close' and not discard and d['lock'] and d['locked'] == d['lock']  # the lock this lane's open set
+    if d['locked'] is not None and not own:
         return 'locked', f'locked: {d["locked"] or "no reason"}', 1, {}
     if mode == 'sweep':
         if d['base_sha']:
@@ -842,6 +851,8 @@ def do_close(ctx, d, outcome, info, dry):
         if e:
             return result(1, '\n'.join(pre + [f'cannot archive the .sdlc files of {name}: {e}; archive ref {ref} kept, lane not closed']),
                           lane=name, path=d['path'], branch=b)
+        if d['locked'] is not None:  # only the lane's own lock gets here (evaluate); a locked tree needs a second --force
+            git(top, 'worktree', 'unlock', d['path'])
         r = git(top, 'worktree', 'remove', '--force', d['path'])
         if r.returncode:
             return result(1, '\n'.join(pre + [f'cannot remove {d["path"]}: {err(r)}']), lane=name, path=d['path'], branch=b)
@@ -1256,8 +1267,26 @@ def ticket_title(rootp, tid):
     return next((str(m.get('title') or '') for _, m in metas if m.get('id') == tid), '')
 
 
+def lock_reason(rootp, ids):
+    """`<holder> <ids>`: the holder is refs/sdlc/claims/<first local id> (T-0588), else that ticket's claimed_by:, with
+    the trailing date dropped; else tickets.claim_by from the environment (<host>:<session>); else unknown."""
+    holder = ''
+    tid = next((t for t in ids if LOCAL_ID.fullmatch(t)), None)
+    if tid:
+        g = TICKETS.ref_git(rootp)
+        holder = (TICKETS.ref_read(g, TICKETS.CLAIM_REFS + tid)[1] or '') if g else ''
+        if not holder.strip() and rootp.is_dir():
+            try:
+                cb = next((m.get('claimed_by') for _, m in TICKETS.load(TICKETS.ticket_dir(rootp)) if m.get('id') == tid), '')
+            except (TICKETS.Fail, OSError):
+                cb = ''
+            holder = ' '.join(cb) if isinstance(cb, list) else str(cb or '')
+    holder = re.sub(r'\s+\d{4}-\d{2}-\d{2}$', '', ' '.join(holder.split())) or TICKETS.claim_by('', os.environ) or 'unknown'
+    return ' '.join([holder] + list(ids))
+
+
 def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None, root='.sdlc', dry_run=False, cwd='.', *,
-              path=None, branch=None, check_claim=True, record_branch=False):
+              path=None, branch=None, check_claim=True, record_branch=False, lock=False):
     ctx = Ctx(cwd)
     top = ctx.top
     ids = list(tickets or ())
@@ -1319,6 +1348,13 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         r = git(top, 'worktree', 'add', '-q', '-b', branch, str(tree), base_sha)
         if r.returncode:
             return result(1, '\n'.join(lines + [f'git worktree add failed: {err(r)}']), lane=leaf, path=tree, branch=branch)
+        if lock and kind != 'integration':  # T-0589: a locked tree is a running lane; list and sweep read its owner
+            reason = lock_reason(rootp, ids)
+            r = git(top, 'worktree', 'lock', '--reason', reason, str(tree))
+            if r.returncode:
+                lock_line = f'not locked: {err(r)}'
+            else:
+                rec['lock'], lock_line = reason, f'locked: {reason}'
         write_record(tree, rec)
     add_exclude(ctx.common)
     local = Path(top, '.claude', 'settings.local.json')  # gitignored, so a new worktree lacks it; copy only this file, never log it
@@ -1335,6 +1371,8 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     if desc:
         git(top, 'config', f'branch.{branch}.description', desc)
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
+    if lock and kind != 'integration':
+        lines.append(lock_line)
     pre = porcelain(top)
     written, handoffs = [], []
     for t in ids if record_branch and rootp.is_dir() else ():
@@ -1420,8 +1458,8 @@ def lane_states(ctx, d):
                     primary = 'stale'
         states = [primary]
     if d['locked'] is not None:
-        if states == ['open']:
-            states = ['locked']
+        if states in (['open'], ['closable']):  # T-0589: a locked lane is running, never closable
+            states = [f'running ({d["locked"] or "no reason"})']
         else:
             states.append('locked')
     if d['owner'] and d['branch'] and not d['branch'].startswith(NAMESPACES):
@@ -1680,7 +1718,7 @@ def main(argv=None):
         if a.cmd == 'open':
             r = open_lane(a.name, base=a.base, into=a.into, tickets=a.ticket, kind=a.kind, title=a.title, root=a.root,
                           dry_run=a.dry_run, path=a.path, branch=a.branch, check_claim=not a.no_claim,
-                          record_branch=True)
+                          record_branch=True, lock=True)
             print(r['message'])
             return r['rc']
         if a.cmd == 'close':
@@ -1788,12 +1826,15 @@ class Fixture:
     def tree(self, leaf):
         return wtroot.default_root(self.top) / leaf
 
-    def open(self, name, ticket=None, *extra):
+    def open(self, name, ticket=None, *extra, keep_lock=False):
+        """Open a lane with the CLI; unless keep_lock, unlock it as its worker's ready would (T-0589)."""
         args = ['open', name] + (['--ticket', ticket] if ticket else []) + list(extra)
         rc, o = self.lanes(*args)
         if rc:
             raise LaneError(f'open {name} failed: {o}')
         m = re.search(r'opened (\S+) at (.+?) \(branch (\S+),', o)
+        if not keep_lock:
+            self.ok('worktree', 'unlock', m.group(2))  # an unlocked tree (an integration lane) fails harmlessly
         return m.group(1), Path(m.group(2)), m.group(3)
 
     def work(self, tree, files=None, days=3):
@@ -2643,6 +2684,48 @@ def case_host_owned(script, base):
     return fails
 
 
+def case_lock(script, base):
+    """T-0589: open locks the tree with its owner (the claim ref holder, else claimed_by) and the ticket; list shows the
+    lane with no commits as running, not closable; sweep --apply keeps it; close --discard refuses it; a plain close
+    unlocks and closes it; an explicit unlock lets close --discard close a dirty lane."""
+    t = Fixture(base, script, 'lock')
+    t.ticket(77, 'owned lane', claimed=True)
+    t.ticket(78, 'unlocked by hand', claimed=True)
+    blob = subprocess.run(['git', 'hash-object', '-w', '--stdin'], cwd=str(t.top), input='codex:s1 2026-10-15\n',
+                          capture_output=True, text=True).stdout.strip()
+    t.g('update-ref', 'refs/sdlc/claims/T-77', blob)
+    own = t.open('own', 'T-77', keep_lock=True)
+    dis = t.open('dis', 'T-78', keep_lock=True)
+    fails = []
+    wl = t.g('worktree', 'list', '--porcelain')
+    for tree, reason in ((own[1], 'codex:s1 T-77'), (dis[1], 'claude T-78')):
+        if f'worktree {tree}\n' not in wl + '\n' or f'locked {reason}' not in wl:
+            fails.append(f'lock: open did not lock {tree.name} with {reason!r}: {wl}')
+    rc, o = t.lanes('list', '--json')
+    try:
+        rows = {r['lane']: r for r in json.loads(o)}
+    except ValueError:
+        return fails + [f'lock: list --json is not JSON: {o}']
+    r = rows.get(own[0]) or {}
+    if r.get('state') != 'running (codex:s1 T-77)' or 'closable' in (r.get('states') or []):
+        fails.append(f'lock: want {own[0]} running (codex:s1 T-77), not closable; got {r.get("state")!r}')
+    rc, o = t.lanes('sweep', '--apply')
+    if rc or f'kept {own[0]}: locked: codex:s1 T-77' not in o.splitlines() or not own[1].is_dir():
+        fails.append(f'lock: sweep --apply did not keep the locked lane: {rc}: {o}')
+    rc, o = t.lanes('close', own[0], '--discard')
+    if rc != 1 or o != 'locked: codex:s1 T-77' or not own[1].is_dir():
+        fails.append(f'lock: close --discard of a locked lane did not refuse: {rc}: {o}')
+    rc, o = t.lanes('close', own[0])
+    if rc or f'closed {own[0]} (ancestor)' not in o.splitlines() or own[1].exists() or str(own[1]) in t.g('worktree', 'list'):
+        fails.append(f'lock: close did not unlock and close the lane it locked: {rc}: {o}')
+    (dis[1] / 'keep.txt').write_text('edited\n')
+    t.g('worktree', 'unlock', str(dis[1]))
+    rc, o = t.lanes('close', dis[0], '--discard')
+    if rc or f'closed {dis[0]} (discarded' not in o or dis[1].exists():
+        fails.append(f'lock: close --discard after an explicit unlock did not close: {rc}: {o}')
+    return fails
+
+
 def case_sweep_mergelock(script, base):
     t = Fixture(base, script, 'mlock')
     lanes_dir = t.top / '.worktrees' / 'fanout'
@@ -2964,6 +3047,9 @@ def run_selftest(script, src, base):
         need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
         need('host-owned', case_host_owned(script, base),
              'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
+        need('lock', case_lock(script, base),
+             'open locks the lane with its owner; list shows it running, sweep keeps it, close --discard refuses, '
+             'close unlocks and closes it, and an explicit unlock lets --discard close')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
         need('finish pass', case_finish_pass(script, base),
