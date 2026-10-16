@@ -570,7 +570,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0570 | [.0570-codex-live-lane-smoke](.0570-codex-live-lane-smoke/handoff.md) | Live Codex smoke run of one lane under the sibling worktree root | chore | L2 | P1 | T-0563, T-0564 | 🟢 done |
 | T-0571 | [0571-trim-closed-tickets](0571-trim-closed-tickets/handoff.md) | Closed tickets keep only handoff.md and their Outcome | chore | L2 | P2 | T-0567 | ⏳ proposed |
 | T-0572 | [0572-lean-roadmap](0572-lean-roadmap/handoff.md) | roadmap.md lists open tickets plus a closed count | chore | L2 | P2 | T-0565 | ⏳ proposed |
-| T-0573 | [0573-prune-notes](0573-prune-notes/handoff.md) | notes.md keeps only live notes | chore | L1 | P3 | none | ⏳ proposed |
+| T-0573 | [0573-prune-notes](0573-prune-notes/handoff.md) | notes.md keeps only live notes | chore | L1 | P3 | none | 🟡 claimed |
 | T-0574 | [.0574-sdlc-config-board](.0574-sdlc-config-board/handoff.md) | Silence the flat-layout warning and drop the stale board.md | chore | L1 | P3 | T-0567 | 🟢 done |
 | T-0575 | [.0575-lane-readers-sibling-root](.0575-lane-readers-sibling-root/handoff.md) | Trace, fleet and migrate readers miss lanes under the sibling root | bug | L2 | P1 | T-0563 | 🟢 done |
 | T-0576 | [.0576-onboard-block-reads-layout](.0576-onboard-block-reads-layout/handoff.md) | Root AGENTS.md managed block names flat-layout paths after layout: topics | bug | L2 | P2 | none | 🟢 done |
@@ -585,7 +585,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0585 | [.0585-tidy-topics-archive](.0585-tidy-topics-archive/handoff.md) | tickets.py tidy archives into .sdlc/archive under layout: topics | bug | L1 | P2 | none | 🟢 done |
 | T-0586 | [0586-topics-tidy-check-agree](0586-topics-tidy-check-agree/handoff.md) | Under layout: topics, tidy, check and the router text disagree | bug | L1 | P3 | none | ⏳ proposed |
 | T-0587 | [0587-solo-worktree-base](0587-solo-worktree-base/handoff.md) | solo_run.py run --worktree without --cwd records the session checkout's base | bug | L1 | P2 | none | ⏳ proposed |
-| T-0588 | [0588-atomic-claims-refs](0588-atomic-claims-refs/handoff.md) | Atomic ticket claims and ids through git refs | feature | L3 | P1 | none | ⏳ proposed |
+| T-0588 | [0588-atomic-claims-refs](0588-atomic-claims-refs/handoff.md) | Atomic ticket claims and ids through git refs | feature | L3 | P1 | none | 🟡 claimed |
 | T-0589 | [0589-lane-lock-owner](0589-lane-lock-owner/handoff.md) | lanes.py open locks the worktree with its owner; ready and close unlock it | feature | L2 | P1 | T-0588 | ⏳ proposed |
 | T-0590 | [0590-lanes-ready-signal](0590-lanes-ready-signal/handoff.md) | lanes.py ready pins the review sha and tells the conductor | feature | L3 | P1 | T-0589 | ⏳ proposed |
 | T-0591 | [0591-multi-host-roles-doc](0591-multi-host-roles-doc/handoff.md) | Conductor, worker and verifier rules for Claude, Codex and Pi in one repo | chore | L2 | P2 | T-0590 | ⏳ proposed |
@@ -598,4 +598,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0598 | [.0598-codex-lane-agents-missing](.0598-codex-lane-agents-missing/handoff.md) | Codex verifier in a fresh lane refuses: the lane has no .codex/agents | bug | L1 | P2 | none | 🟢 done |
 | T-0599 | [.0599-lane-open-leaves-main-dirty](.0599-lane-open-leaves-main-dirty/handoff.md) | lanes.py open leaves its ticket record uncommitted in main, so settle --forward refuses | bug | L1 | P2 | none | 🟢 done |
 | T-0600 | [.0600-codex-request-path-docs](.0600-codex-request-path-docs/handoff.md) | Codex docs name the ticket folder for solo request files; they land in the records dir | chore | L2 | P2 | none | 🟢 done |
-| T-0601 | [0601-prune-queue-names](0601-prune-queue-names/handoff.md) | dispatch.py prune queues names that match no live agent | bug | L2 | P2 | none | ⏳ proposed |
+| T-0601 | [0601-prune-queue-names](0601-prune-queue-names/handoff.md) | dispatch.py prune queues names that match no live agent | bug | L2 | P2 | none | 🟡 claimed |

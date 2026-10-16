@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:27903e27d24b -->
+<!-- sdlc-lite:managed:start v1 sha256:5dbe49425591 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,10 +9,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 16
+- proposed: 13
   - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
   - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
-  - T-0573 notes.md keeps only live notes (0573-prune-notes)
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
   - T-0581 close --preflight at merge-ready, --reason skip lines, serialized closes (0581-close-preflight)
   - T-0582 Plan criteria replayed on main; criterion-only fixes amend without spending the replan (0582-criteria-replay-amend)
@@ -20,14 +19,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
   - T-0586 Under layout: topics, tidy, check and the router text disagree (0586-topics-tidy-check-agree)
   - T-0587 solo_run.py run --worktree without --cwd records the session checkout's base (0587-solo-worktree-base)
-  - T-0588 Atomic ticket claims and ids through git refs (0588-atomic-claims-refs)
   - T-0589 lanes.py open locks the worktree with its owner; ready and close unlock it (0589-lane-lock-owner)
   - T-0590 lanes.py ready pins the review sha and tells the conductor (0590-lanes-ready-signal)
   - T-0591 Conductor, worker and verifier rules for Claude, Codex and Pi in one repo (0591-multi-host-roles-doc)
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
-  - T-0601 dispatch.py prune queues names that match no live agent (0601-prune-queue-names)
 - ready: 0
-- claimed: 0
+- claimed: 3
+  - T-0573 notes.md keeps only live notes (0573-prune-notes), claimed by claude 2026-10-15
+  - T-0588 Atomic ticket claims and ids through git refs (0588-atomic-claims-refs), claimed by claude 2026-10-15
+  - T-0601 dispatch.py prune queues names that match no live agent (0601-prune-queue-names), claimed by claude 2026-10-15
 - paused: 0
 - blocked: 0
 - done: 549
