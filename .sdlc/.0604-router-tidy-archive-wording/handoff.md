@@ -2,7 +2,7 @@
 id: T-0604
 title: "Router Procedures block names archive/ for tidy under every layout"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -22,3 +22,9 @@ Regenerate the router (`.sdlc/AGENTS.md`) and keep `onboard.py` text consistent.
 ## Acceptance criteria
 1. A topics-layout router renders `work/archive/` in the tidy line and a flat router renders `archive/`; the tickets selftest covers both.
 2. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: full L2 · verdict: closed by reason (duplicate of T-0586, which covers the router tidy text under topics) · verifier: none · base: none
+- Changed: see commits
+- Commits: none
