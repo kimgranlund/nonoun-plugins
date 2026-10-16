@@ -2,7 +2,7 @@
 id: T-0609
 title: "lanes.py open commits its record onto local main, which diverges from origin in PR repos"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,11 @@ Its workaround is to reset main to origin after each lane open. T-0588 already m
 
    The first case failed before the change.
 2. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: with an upstream, the ticket gets no `branch:` line, so `lanes.py list` joins the lane to its ticket through the record's first local ticket, not `branch:`. The finish probe did not need it. `tickets.py selftest` and `lifecycle-selftest.py` were not run.) · verifier: verifier-L2 (sonnet) · base: 0e983fd16b7c
+- Changed: see commits
+- Commits: 893b9de T-0609: lanes.py open commits its record onto local main, which diverges from origin in PR repos; 150c513 T-0609: record lane T-0609-t0609
+- Check: 1 `lanes.py selftest` exits 0 with two new cases: pass
+- Check: 2 `git diff --check`: pass
