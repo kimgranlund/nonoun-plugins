@@ -95,7 +95,10 @@ either), takes no lock, and skips recovery.
 Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format sentence) plus a Tree line, a
 throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root), a scratch line
 ($TMPDIR/sdlc-lite/<repo key>/<Agent name>), and for builder and verifier a Base sha line,
-since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier brief also carries a Report file line:
+since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier for a ticket with a ready ref
+(refs/sdlc/ready/<id>, lanes.py ready, T-0590) also gets `Review sha: <its sha>`, stored as review_sha, and takes Base sha
+from the `Lane-Base:` line of that snapshot commit when it is an ancestor; prepare says so on stderr when the tree has
+moved since the pin (stale). A verifier brief also carries a Report file line:
 the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.
 The line also says the file carries no header (record adds it, T-0538) and names `results.py validate <file> --role verifier --headerless`.
 The prefix line says rm of scratch output under that prefix is allowed and refused elsewhere (hooks/block-role-rm.sh).
@@ -494,6 +497,33 @@ def build_base(directory, records=None, tree=None, role=None):
         say("SDLC_BASE_SHA refused: %s (supplied) differs from the step base %s (%s); name it in the handoff with a line 'base: <sha>' to use it"
             % (supplied, base[:12], why))
     return stored, base
+
+
+READY_REFS = 'refs/sdlc/ready/'  # lanes.py READY_REFS
+LANE_BASE_RE = re.compile(r'^Lane-Base: ([0-9a-f]{40})$', re.M)
+
+
+def ready_review(directory, tree, base):
+    """(review sha, base) for a verifier (T-0590): when refs/sdlc/ready/<ticket> exists for the ticket that owns
+    directory, review its sha, and take the base from the `Lane-Base:` line of its snapshot commit (lanes.py pin) when
+    that is an ancestor of the sha, else keep base; says so when tree no longer holds the pinned state. ('', base)
+    with no ready ref."""
+    tid = ticket_label(directory)[0]
+    sha = git('rev-parse', '-q', '--verify', READY_REFS + tid + '^{commit}', cwd=tree).stdout.strip() if tid else ''
+    if not sha:
+        return '', base
+    m = LANE_BASE_RE.search(git('log', '-1', '--format=%B', sha, cwd=tree).stdout)
+    if m and git('merge-base', '--is-ancestor', m.group(1), sha, cwd=tree).returncode == 0:
+        base = m.group(1)
+    import lanes  # local like host_lanes: lanes imports nothing from here
+    try:
+        stale = lanes.snapshot(tree) != lanes.ready_state(tree, sha)
+    except lanes.LaneError:
+        stale = True
+    if stale:
+        say('%s%s is stale: %s has moved since lanes.py ready pinned %s; the verifier reviews the pinned sha'
+            % (READY_REFS, tid, tree, sha[:12]))
+    return sha, base
 
 
 def lane_gate(role, directory, plugin):
@@ -1076,9 +1106,11 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         tmp_prefix = str((wtroot.tmp_root(toplevel) or wtroot.default_root(toplevel) / 'tmp') / name)
         scratch = str(wtroot.scratch_dir(name, toplevel))
 
-        base = None
+        base, review = None, ''
         if role in ('builder', 'verifier'):
             stored, base = build_base(directory, records, run_tree, role)
+            if role == 'verifier':
+                review, base = ready_review(directory, toplevel, base)
             if not dry_run and base != stored:
                 (records / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
@@ -1095,6 +1127,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                        'results.py validate <file> --role verifier --headerless; dispatch.py record reads the file, and a missing one fails the run)' % result)
         if base:
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
+        if review:
+            prompt += ('\nReview sha: %s (%s%s, the state the worker marked ready with lanes.py ready: review that commit; when Tree '
+                       'no longer holds it, check it out under the throwaway prefix above)' % (review, READY_REFS, ticket_label(directory)[0]))
         minutes = role_minutes(role, level)
         prompt += ('\nTime budget: %dm wall clock for %s %s; past it, dispatch.py status flags this attempt and the conductor checks on you'
                    % (minutes, role, level))
@@ -1108,7 +1143,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
                         prune=role in PRUNE_ROLES if prune is None else bool(prune),
                         role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix, scratch=scratch,
-                        base_sha=base, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
+                        base_sha=base, review_sha=review or None, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
                         handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate, time_budget_min=minutes,
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
                         attempt_file=str(records / (stem + '.attempt.json')),
@@ -2427,6 +2462,34 @@ def selftest():
         rcs, ds, _ = prep(rr, 'verifier', 'L1', '.sdlc/sb/handoff.md', '--dry-run')
         case('prepare verifier prints the solo dispatch base sha, not the later HEAD',
              rcs == 0 and ds['base_sha'] == pre and 'Base sha: ' + pre in ds['prompt'])
+        # T-0590: a ticket with a ready ref: the verifier gets Review sha (the ready sha) and Base sha from its snapshot's
+        # Lane-Base: line, not the later HEAD; a tree edited after ready is flagged stale; no ref, neither.
+        import lanes
+        put(rr / '.sdlc' / 'rd' / 'handoff.md', '---\nid: T-0950\ntitle: "ready"\n---\n\n## Goal\nx\n')
+        ci = ['git', '-C', str(rr), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm']
+        subprocess.run(['git', '-C', str(rr), 'add', '-A'], capture_output=True)
+        subprocess.run(ci + ['rd start'], capture_output=True)
+        start = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+        (rr / 'rd-done.txt').write_text('committed\n')
+        subprocess.run(['git', '-C', str(rr), 'add', 'rd-done.txt'], capture_output=True)
+        subprocess.run(ci + ['rd work'], capture_output=True)
+        (rr / 'rd.txt').write_text('uncommitted\n')
+        with clean_env():
+            rsha = lanes.pin(rr, 'T-0950', 'rd', start)[0]
+        subprocess.run(['git', '-C', str(rr), 'update-ref', READY_REFS + 'T-0950', rsha], capture_output=True)
+        rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
+        case('prepare verifier for a ticket with a ready ref: Review sha is the ready sha, Base sha its Lane-Base start, not HEAD',
+             rcr == 0 and dr['review_sha'] == rsha and 'Review sha: ' + rsha in dr['prompt'] and dr['base_sha'] == start
+             and 'Base sha: ' + start in dr['prompt'] and 'is stale' not in er)
+        (rr / 'rd.txt').write_text('edited after ready\n')
+        rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
+        case('a tree edited after ready: prepare says the ready ref is stale and still names the ready sha',
+             rcr == 0 and 'T-0950 is stale' in er and 'Review sha: ' + rsha in dr['prompt'])
+        subprocess.run(['git', '-C', str(rr), 'update-ref', '-d', READY_REFS + 'T-0950'], capture_output=True)
+        rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
+        case('negative control: with no ready ref there is no Review sha line and Base sha is not the Lane-Base start',
+             rcr == 0 and 'Review sha' not in dr['prompt'] and dr['review_sha'] is None and dr['base_sha'] != start)
+        (rr / 'rd.txt').unlink()
         lw = rr.parent / (rr.name + '-lane')
         subprocess.run(['git', '-C', str(rr), 'worktree', 'add', '-q', '--detach', str(lw), 'HEAD'], capture_output=True)
         (lw / '.sdlc' / 'w').mkdir(parents=True, exist_ok=True)
