@@ -159,7 +159,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             `<name> -> archive/<name>` (`work/archive/<name>` under `layout: topics`): allowed are AGENTS.md, CLAUDE.md, config, layout.md, roadmap.md, board.md,
             notes.md, notes, fleet.json, gate-ledger.jsonl, messages, runtime, supervisor, evals, proposals, goals,
             tickets, work, archive, dogfood, a _- or .-prefixed name, a folder holding handoff.md or plan-doc.md,
-            a name matching a `top_level_allow: a, b` glob of <root>/config, and a name git ignores. A dry run
+            a name matching a `top_level_allow: a, b` glob of <root>/config, and a name git ignores. Under
+            `layout: topics` the allowed names are the ones check allows (AGENTS.md, CLAUDE.md, config, layout.md,
+            board.md, tickets, work, notes, messages, evals, proposals, supervisor, runtime, dogfood, a _- or
+            .-prefixed name, a folder holding handoff.md or plan-doc.md), so a loose root notes.md, roadmap.md or
+            archive is listed; `top_level_allow:` globs still hold, so tidy never moves a name they allow (T-0586). A dry run
             unless --apply, which moves each (git mv when tracked, else a rename) and refuses, moving nothing,
             while a *.running marker exists under <root> or a destination exists (T-0544)
   number    convert a plain-slug root: rename each ticket folder <slug> to NNNN-<slug> after its id, rewrite
@@ -852,14 +856,17 @@ def git_ignored_tracked(root, names):
 
 
 def top_level_strays(root):
-    """The names directly under <root> the layout rule does not allow (T-0544), sorted: not in TOP_ALLOWED, not _- or
+    """The names directly under <root> the layout rule does not allow (T-0544), sorted: not in TOP_ALLOWED (ROOT_ALLOWED
+    under `layout: topics`, as root_strays does; T-0586), not _- or
     .-prefixed (templates, closed tickets, dotfiles), not a folder holding handoff.md or plan-doc.md, matching no
     `top_level_allow:` glob of <root>/config, and not ignored by git. [] when <root> is not a dir."""
     if not root.is_dir():
         return []
+    topics = layout_paths(root).layout == 'topics'
+    allowed = ROOT_ALLOWED if topics else TOP_ALLOWED  # check's allow list under topics (T-0586)
     globs = config_top_level_allow(root)
     names = [p.name for p in sorted(root.iterdir())
-             if p.name not in TOP_ALLOWED and not p.name.startswith(('_', '.'))
+             if p.name not in allowed and not p.name.startswith(('_', '.'))
              and not (p.is_dir() and ((p / 'handoff.md').is_file() or (p / 'plan-doc.md').is_file()))
              and not any(fnmatch.fnmatch(p.name, g) for g in globs)]
     ignored, _ = git_ignored_tracked(root, names)
@@ -2424,18 +2431,28 @@ ROUTER_PLUGIN_LINE = ('- `<plugin-root>` is the installed sdlc-lite plugin folde
 
 ROUTER_CMD = 'python3 <plugin-root>/scripts/tickets.py --root <R>'  # <CMD> in the procedures, unless tickets_cmd: is set
 
-ROUTER_PROCEDURES = """\
-## Procedures
-
-Folder layout:
+ROUTER_FLAT_ALLOWED = """\
 - The top of `<R>` holds only ticket and task folders (a folder with a `handoff.md` or `plan-doc.md`), \
 `AGENTS.md`, `CLAUDE.md`, `config`, `roadmap.md`, `board.md`, `notes.md`, `notes/`, `fleet.json`, \
 `gate-ledger.jsonl`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, \
 `archive/`, and `_`- or `.`-prefixed entries. A `top_level_allow: <glob>, ...` line in `<R>/config` allows more.
+"""
+
+ROUTER_TOPICS_ALLOWED = """\
+- The top of `<R>` holds only `AGENTS.md`, `CLAUDE.md`, `config`, `layout.md`, `board.md`, `tickets/`, `work/`, \
+`notes/`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `dogfood/`, and `_`- or `.`-prefixed \
+entries; ticket folders go in `tickets/`, task folders in `work/`. A `top_level_allow:` line only keeps `tidy` from moving a name; `check` still reports it.
+"""
+
+ROUTER_PROCEDURES = """\
+## Procedures
+
+Folder layout:
+""" + ROUTER_FLAT_ALLOWED + """\
 - Run records (role results, attempts, `runs.jsonl`, `skips.md`) go in the git-ignored records dir \
 `<R>/runtime/tasks/<folder>/` (`<plugin-root>/scripts/order.py records-dir <T>/<folder>` prints it). Notes go to \
-`notes.md`, an answer to another agent goes by `messages.py send`, anything else into `archive/`.
-- `<CMD> check` warns on any other top-level entry; `<CMD> tidy` lists its move into `archive/` and \
+`notes.md`, an answer to another agent goes by `messages.py send`, anything else into `<ARCHIVE>`.
+- `<CMD> check` warns on any other top-level entry; `<CMD> tidy` lists its move into `<ARCHIVE>` and \
 `<CMD> tidy --apply` makes it. Move nothing under `<R>` while a `*.running` marker exists: a role is using it.
 
 Create a ticket:
@@ -2623,6 +2640,9 @@ def router_bodies(root, ts):
     if topics:
         body = body.replace(ROUTER_FLAT_INTRO, ROUTER_TOPICS_INTRO, 1)
         body, tickets_body = (b.replace('go to `notes.md`', 'go to `<R>/notes/notes.md`') for b in (body, tickets_body))
+        body, tickets_body = (b.replace(ROUTER_FLAT_ALLOWED, ROUTER_TOPICS_ALLOWED, 1) for b in (body, tickets_body))
+    archive = (layout_paths(root).work / 'archive').relative_to(root).as_posix() + '/'  # archive/ or work/archive/
+    body, tickets_body = (b.replace('<ARCHIVE>', archive) for b in (body, tickets_body))
     cmd = tickets_cmd(root) or ROUTER_CMD
     out = {'AGENTS.md': body.replace('<CMD>', cmd).replace('<R>', r).replace('<T>', t)}
     if nested:
@@ -6340,6 +6360,36 @@ def selftest():
                rc == 0 and (tp / 'work' / 'archive' / 'loose-1.md').is_file()
                and not (tp / 'loose-1.md').exists() and not (tp / 'archive').exists()
                and rc2 == 0 and 'stray' not in err2 + out2)
+
+        # T-0586 tidy's allow list is check's under topics, and the router names the archive tidy uses
+        tp = tp_root('tp-tidy-allow')
+        run(tp, 'new', ('feature', 'alpha', 'Alpha'))
+        for name in ('notes.md', 'roadmap.md'):
+            (tp / name).write_text('x\n', encoding='utf-8')
+        rc, out, err = run(tp, 'tidy')
+        rcc, _, errc = run(tp, 'check')
+        expect(f'(T-0586) topics tidy lists a loose root notes.md and roadmap.md, as check does: rc={rc},{rcc} '
+               f'{out!r} {errc!r}',
+               rc == 0 and 'notes.md -> work/archive/notes.md' in out and 'roadmap.md -> work/archive/roadmap.md' in out
+               and rcc == 1 and 'notes.md: stray entry at the root' in errc)
+        rc, out, err = run(tp, 'tidy', apply=True)
+        rc2, out2, err2 = run(tp, 'check')
+        expect(f'(T-0586) topics tidy --apply clears the root strays check reported: rc={rc},{rc2} {out!r} {err2!r}',
+               rc == 0 and rc2 == 0 and (tp / 'work' / 'archive' / 'notes.md').is_file())
+        router = tr_text(tp / 'AGENTS.md')
+        expect('(T-0586) topics router names work/archive/ and no bare archive/ or flat allow list',
+               'lists its move into `work/archive/`' in router and 'anything else into `work/archive/`' in router
+               and 'into `archive/`' not in router and '`roadmap.md`, `board.md`, `notes.md`' not in router)
+
+        tp = tp_root('tp-tidy-glob')
+        run(tp, 'new', ('feature', 'alpha', 'Alpha'))
+        (tp / 'keep-me.sh').write_text('x\n', encoding='utf-8')
+        with open(tp / 'config', 'a', encoding='utf-8') as cf:
+            cf.write('top_level_allow: keep-me.sh\n')
+        rc, out, err = run(tp, 'tidy')
+        rc2, out2, err2 = run(tp, 'tidy', apply=True)
+        expect(f'(T-0586) topics tidy honours top_level_allow: and never moves keep-me.sh: rc={rc},{rc2} {out!r} {out2!r}',
+               rc == 0 and rc2 == 0 and 'keep-me.sh' not in out + out2 and (tp / 'keep-me.sh').is_file())
 
         tp = tp_root('tp-close')
         run(tp, 'new', ('feature', 'alpha', 'Alpha'))
