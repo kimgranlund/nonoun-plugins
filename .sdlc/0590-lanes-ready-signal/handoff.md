@@ -35,3 +35,6 @@ No use of the shared stash stack. Works with uncommitted lanes (Codex workers).
 1. `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0. Its new cases cover: `ready` on a lane with uncommitted changes, which creates the ref with those changes and a mailbox message; `list --ready` showing it; an edit after ready, which shows `stale`; and `ready` on an unchanged lane, which refuses. The cases failed before the change.
 2. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0. Its new case shows a verifier prepared for a ticket with a ready ref taking that sha as `Base sha:`.
 3. `git diff --check` exits 0.
+
+## Plan review
+- amend: criterion 2, the verifier keeps `Base sha:` as the lane start (the base_sha recorded in the ready commit) and gets a new `Review sha: <ready sha>` line; prepare warns when the tree differs from the ready sha. Using the ready sha as Base sha would empty the scope diff. Proposed by the solo; decided: maintainer conductor, 2026-10-15.
