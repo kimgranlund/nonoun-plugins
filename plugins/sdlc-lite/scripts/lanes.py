@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""lanes.py: the one home of the lane lifecycle. Open, close, finish, sweep, list, check, port and archive a lane.
+"""lanes.py: the one home of the lane lifecycle. Open, close, finish, ready, sweep, list, check, port and archive a lane.
 
   lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--kind fanout|integration|solo] [--title TEXT]
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
+  lanes.py ready [<name|path>] [--ticket ID]   pin the review sha, unlock, and tell the conductor (default: the current lane)
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
+  lanes.py list --ready [--json]           one line per ready ref: ticket, lane, sha, path, and stale when the lane moved
   lanes.py check [--warn]                  C1 placement, C2 ports, C3 record drift; --warn prints and exits 0
   lanes.py port [<path>]                   the port of the lane holding <path> (default the cwd); exit 1 if none
   lanes.py archive list [<branch>]
@@ -160,6 +162,27 @@ steps are skipped` (exit 1). Each step skips itself when its effect is already t
   A lane already gone with a landed archive ref prints `finish: <lane> is already finished (archive <ref>)` and exits 0,
   after the backup step when --backup is given.
 
+Ready (T-0590): `ready [<lane>] [--ticket ID]`, run by the worker when its ticket is done, on any host. The ticket is
+--ticket, else the record's first local ticket. It refuses (exit 1, nothing written) when the ticket's handoff (the lane
+tree's copy, else the main checkout's) lists no item under ## Acceptance criteria, or when the lane's state has the tree
+of base_sha (else the merge base with into): `no changes in <lane> since <sha>`. The state is HEAD plus every tracked and
+untracked file git does not ignore (minus *.log, .run.lock, *.running), written through a copy of the index with
+add -A and write-tree, never git stash. A state equal to HEAD pins HEAD; otherwise git commit-tree writes a snapshot
+commit on HEAD (subject `sdlc ready snapshot: <id> in <lane>`, a `Lane-Base: <base sha>` trailer, printed as
+`snapshot: ...`), and nothing in the tree or its index changes. Then:
+  1. git update-ref refs/sdlc/ready/<id> <sha> (a rerun moves it) and print `ready: <ref> <sha>`.
+  2. Clear the lane's own lock (the record's lock, as close does): `unlocked: <reason>`; a foreign lock is kept and
+     printed as `still locked: <reason> (not the lock open set)`.
+  3. messages.py send --receiver <conductor> --sender <lane name as a mailbox name> --kind handoff --topic "ready <id>"
+     --follow-up false with the body `<sha> <lane path>` and a line naming ticket, lane and branch. The receiver is the
+     .sdlc/config conductor: line, else conductor. A refused send prints `not sent to <receiver>: <why>; tell the
+     conductor yourself` and exits 1 with the ref kept.
+list --ready reads refs/sdlc/ready/* and joins each to the lane whose record lists the ticket. A row is stale when the
+lane's HEAD differs from the pinned HEAD (a snapshot's parent, else the sha) or its state's tree from the sha's tree,
+or when no lane holds the ticket. dispatch.py prepare verifier reads the same ref: `Review sha: <sha>`, and Base sha
+from the snapshot's Lane-Base: trailer (pin(), the Python API it shares). Every close deletes
+refs/sdlc/ready/<id> for each local ticket of the record.
+
 Record fields. .lane.json at the tree root, written by open, added to <git common dir>/info/exclude; a host record
 <lanes root>/host/<name>.lane.json has the same fields.
   lane      the lane name (the tree leaf)          kind      fanout, integration or solo (host for a host record)
@@ -185,6 +208,7 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
   lane_keep: <branch>...    sweep keeps these  lane_names:, lane_sweep:  read and returned only (fanout owns them)
   plugin_min: <X.Y.Z>       open refuses (exit 2) when the running plugin ($SDLC_BACKEND's manifest) is older (T-0593)
   land_gate: <cmd>          the gate finish passes to fanout.py land and settle; default none
+  conductor: <name>         the mailbox receiver ready sends to; default conductor (T-0590)
 """
 import argparse, contextlib, datetime, fcntl, io, json, os, pathlib, re, shutil, socket, subprocess, sys, tempfile, time
 
@@ -206,7 +230,10 @@ PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'  # dispatch.py PRUNE_REL
 PRUNE_TTL = 6 * 3600
 NAMESPACES = ('lane/', 'wave/', 'release/')
 CONFIG_KEYS = ('lanes_root', 'lane_into', 'lane_setup', 'lane_ports', 'lane_stale_days', 'lane_min_age_hours',
-               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate')
+               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate', 'conductor')
+READY_REFS = 'refs/sdlc/ready/'  # T-0590: dispatch.py READY_REFS
+SNAPSHOT_SUBJECT = 'sdlc ready snapshot:'
+SNAPSHOT_SKIP = (':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock', ':(exclude,glob)**/*.running')
 
 
 class LaneError(Exception):
@@ -319,7 +346,7 @@ def config(toplevel):
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
                 lane_setup=vals.get('lane_setup') or None, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
-                lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None)
+                lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None, conductor=vals.get('conductor') or None)
 
 
 def worktrees(cwd):
@@ -868,6 +895,7 @@ def do_close(ctx, d, outcome, info, dry):
         if LOCAL_ID.fullmatch(str(t)):
             with contextlib.suppress(tickets.Fail, OSError):
                 tickets.record_branch(Path(top) / '.sdlc', t, None, only=b)
+            git(top, 'update-ref', '-d', READY_REFS + str(t))  # T-0590: the review pin goes with its lane
     lines = pre + [outcome] + carried
     pl = port_line(d['port'])
     if pl:
@@ -1438,6 +1466,150 @@ def host_record(name, branch, into, tickets, base=None, cwd='.'):
     return rec
 
 
+# ---- ready (T-0590) ---------------------------------------------------------------------------------------
+
+def snapshot(path):
+    """(HEAD sha, tree sha) of the tree at path as it stands: tracked and untracked files git does not ignore, minus logs
+    and lock files, written through a copy of the index so the real index and the stash stack stay untouched. path may be
+    any directory in the tree: the whole tree is read."""
+    path = out(path, 'rev-parse', '--show-toplevel') or path
+    head = out(path, 'rev-parse', '--verify', '-q', 'HEAD')
+    idx = out(path, 'rev-parse', '--path-format=absolute', '--git-path', 'index')
+    if not head or not idx:
+        raise LaneError(f'cannot read HEAD or the index of {path}')
+    with tempfile.TemporaryDirectory() as td:
+        tmp = os.path.join(td, 'index')
+        if os.path.isfile(idx):
+            shutil.copy2(idx, tmp)
+        env = dict(os.environ, GIT_INDEX_FILE=tmp)
+        r = subprocess.run(['git', 'add', '-A', '--', '.', *SNAPSHOT_SKIP], cwd=str(path), capture_output=True, text=True, env=env)
+        w = subprocess.run(['git', 'write-tree'], cwd=str(path), capture_output=True, text=True, env=env) if r.returncode == 0 else r
+    if w.returncode:
+        raise LaneError(f'cannot snapshot {path}: {err(w)}')
+    return head, w.stdout.strip()
+
+
+def ready_state(top, sha):
+    """(head, tree) a ready sha pins: a snapshot commit pins its parent and its tree, any other commit itself."""
+    subject = out(top, 'log', '-1', '--format=%s', sha) or ''
+    head = out(top, 'rev-parse', '--verify', '-q', f'{sha}^1') if subject.startswith(SNAPSHOT_SUBJECT) else sha
+    return head, out(top, 'rev-parse', '--verify', '-q', f'{sha}^{{tree}}')
+
+
+def has_criteria(handoff):
+    """True when the handoff lists at least one item under ## Acceptance criteria."""
+    try:
+        text = Path(handoff).read_text(encoding='utf-8')
+    except OSError:
+        return False
+    inside = False
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Acceptance criteria'
+        elif inside and re.match(r'\s*(?:[-*]|\d+[.)])\s+\S', line):
+            return True
+    return False
+
+
+def pin(path, tid, name, base, state=None):
+    """(sha, line or None): the commit that pins the tree at path, HEAD when its state equals HEAD, else a snapshot
+    commit on HEAD (git commit-tree, nothing in the tree or index changes) whose message carries `Lane-Base: <base>`,
+    which dispatch.py prepare verifier reads as Base sha. state is a snapshot(path) already taken."""
+    head, tree = state or snapshot(path)
+    if out(path, 'rev-parse', '--verify', '-q', 'HEAD^{tree}') == tree:
+        return head, None
+    msg = f'{SNAPSHOT_SUBJECT} {tid} in {name}\n\nUncommitted work at HEAD {head}.\n' + (f'\nLane-Base: {base}\n' if base else '')
+    r = git(path, 'commit-tree', tree, '-p', head, '-m', msg)
+    if r.returncode:
+        raise LaneError(f'cannot write the snapshot commit: {err(r)}')
+    sha = r.stdout.strip()
+    return sha, f'snapshot: {sha[:12]} holds the uncommitted work on HEAD {head[:12]}'
+
+
+def ready(target=None, ticket=None, cwd='.'):
+    """Pin refs/sdlc/ready/<ticket> at the lane's state, unlock the lane's own lock, and send the conductor a ready
+    message (see Ready in the docstring). Returns a result dict."""
+    ctx = Ctx(cwd)
+    lanes = discover(ctx)
+    if target is None:
+        d = next((x for x in lanes if ctx.current and samepath(x['path'], ctx.current)), None)
+        if d is None:
+            return result(1, f'not in a lane: {ctx.cwd}; name the lane')
+    else:
+        d, refusal = find(ctx, lanes, str(target))
+        if refusal:
+            return refusal
+    name, path = d['lane'], d['path']
+    if not d['owner'] or not d['exists']:
+        return result(1, f'not a plugin lane with a tree: {path}', lane=name, path=path, branch=d['branch'])
+    tid = ticket or next((t for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))), None)
+    if not tid:
+        return result(1, f'{name} has no local ticket: name it with --ticket', lane=name, path=path, branch=d['branch'])
+    hits = ticket_handoffs(ctx, path, tid)
+    if not any(has_criteria(h) for h in hits):
+        where = hits[0] if hits else f'the {tid} handoff'
+        return result(1, f'{tid} has no acceptance criteria: add them to {where} first', lane=name, path=path, branch=d['branch'])
+    head, tree = snapshot(path)
+    base = d['base_sha'] or out(path, 'merge-base', 'HEAD', d['into'] or ctx.main)
+    if base and out(path, 'rev-parse', '--verify', '-q', f'{base}^{{tree}}') == tree:
+        return result(1, f'no changes in {name} since {base[:12]}: nothing to review', lane=name, path=path, branch=d['branch'])
+    try:
+        sha, line = pin(path, tid, name, base, (head, tree))
+    except LaneError as e:
+        return result(1, str(e), lane=name, path=path, branch=d['branch'])
+    lines = [line] if line else []
+    ref = READY_REFS + tid
+    r = git(path, 'update-ref', ref, sha)
+    if r.returncode:
+        return result(1, '\n'.join(lines + [f'cannot write {ref}: {err(r)}']), lane=name, path=path, branch=d['branch'])
+    lines.append(f'ready: {ref} {sha}')
+    if d['locked'] is not None and d['lock'] and d['locked'] == d['lock']:  # the lane's own lock, as close clears it
+        r = git(ctx.top, 'worktree', 'unlock', path)
+        lines.append(f'unlocked: {d["lock"]}' if r.returncode == 0 else f'not unlocked: {err(r)}')
+    elif d['locked'] is not None:
+        lines.append(f'still locked: {d["locked"] or "no reason"} (not the lock open set)')
+    receiver = ctx.cfg['conductor'] or 'conductor'
+    sender = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')[:40].rstrip('-') or 'lane'
+    body = f'{sha} {path}\nticket {tid}, lane {name}, branch {d["branch"] or "none"}: review this sha; lanes.py list --ready flags it stale once the lane moves'
+    # beside tickets.py, the scripts dir this module imports from (a selftest mutant runs from a copy elsewhere)
+    r = run([sys.executable, str(Path(tickets.__file__).resolve().parent / 'messages.py'), 'send', '--receiver', receiver, '--sender', sender, '--kind', 'handoff',
+             '--topic', f'ready {tid}', '--follow-up', 'false', body], ctx.top)
+    if r is None or r.returncode:
+        lines.append(f'not sent to {receiver}: {err(r) if r is not None else "messages.py did not run"}; tell the conductor yourself')
+        return result(1, '\n'.join(lines), lane=name, path=path, branch=d['branch'], sha=sha, ref=ref)
+    lines.append(f'sent: ready {tid} to {receiver} ({r.stdout.strip()})')
+    return result(0, '\n'.join(lines), lane=name, path=path, branch=d['branch'], sha=sha, ref=ref)
+
+
+def ticket_handoffs(ctx, path, tid):
+    """The handoff paths of local ticket tid, in the lane tree first, then the main checkout."""
+    res = []
+    for top in (path, ctx.top):
+        rootp = Path(top) / '.sdlc'
+        res += [tickets.ticket_dir(rootp) / s / 'handoff.md' for s, m in local_tickets(top) if m.get('id') == tid]
+    return res
+
+
+def ready_rows(cwd='.'):
+    """One row per refs/sdlc/ready/<ticket>: ticket, lane, path, sha, and stale when the lane's HEAD or tree is no longer
+    the pinned state (a lane that is gone is stale too)."""
+    ctx = Ctx(cwd)
+    lanes = discover(ctx)
+    rows = []
+    for line in (out(ctx.top, 'for-each-ref', '--format=%(refname) %(objectname)', READY_REFS) or '').splitlines():
+        ref, sha = line.split()
+        tid = ref[len(READY_REFS):]
+        d = next((x for x in lanes if x['owner'] and x['exists'] and tid in x['tickets']), None)
+        stale = True
+        if d is not None:
+            try:
+                stale = snapshot(d['path']) != ready_state(ctx.top, sha)  # READY-STALE
+            except LaneError:
+                stale = True
+        rows.append(dict(ticket=tid, lane=d['lane'] if d else None, path=d['path'] if d else None, sha=sha, ref=ref, stale=stale))
+    return rows
+
+
 # ---- list, still_open, check, port, archive ---------------------------------------------------------------
 
 def lane_states(ctx, d):
@@ -1665,7 +1837,7 @@ def orphans(cwd='.'):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,sweep,list,check,port,archive,orphans,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,check,port,archive,orphans,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -1689,10 +1861,14 @@ def main(argv=None):
     p.add_argument('--backup', metavar='REMOTE/REF')
     p.add_argument('--transcript', metavar='JSONL')
     p.add_argument('--verifier-transcript', metavar='JSONL')
+    p = sub.add_parser('ready')
+    p.add_argument('target', nargs='?')
+    p.add_argument('--ticket')
     p = sub.add_parser('sweep')
     p.add_argument('--apply', action='store_true')
     p = sub.add_parser('list')
     p.add_argument('--all', action='store_true')
+    p.add_argument('--ready', action='store_true')
     p.add_argument('--stale', action='store_true')
     p.add_argument('--fail', action='store_true')
     p.add_argument('--json', action='store_true')
@@ -1712,6 +1888,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == 'list' and a.fail and not a.stale:
         ap.error('--fail needs --stale')
+    if a.cmd == 'list' and a.ready and (a.all or a.stale):
+        ap.error('--ready takes no --all or --stale')
     if a.cmd == 'selftest':
         return selftest()
     try:
@@ -1727,6 +1905,17 @@ def main(argv=None):
             return r['rc']
         if a.cmd == 'finish':
             return finish(a.target, backup=a.backup, transcript=a.transcript, verifier_transcript=a.verifier_transcript)
+        if a.cmd == 'ready':
+            r = ready(a.target, ticket=a.ticket)
+            print(r['message'])
+            return r['rc']
+        if a.cmd == 'list' and a.ready:
+            rows = ready_rows()
+            if a.json:
+                print(json.dumps(rows, indent=2))
+            for r in rows if not a.json else ():
+                print(f'{r["ticket"]}  {r["lane"] or "(no lane)"}  {r["sha"]}  {r["path"] or "-"}' + ('  stale' if r['stale'] else ''))
+            return 0
         if a.cmd == 'sweep':
             res, rc = sweep(apply=a.apply)
             for r in res:
@@ -2726,6 +2915,64 @@ def case_lock(script, base):
     return fails
 
 
+def case_ready(script, base):
+    """T-0590: ready refuses an unchanged lane and a ticket with no criteria; on uncommitted work it pins a snapshot
+    commit holding it (index and stash untouched), unlocks the lane and mails the conductor; list --ready shows the
+    row, stale once the lane is edited; close deletes the ref."""
+    t = Fixture(base, script, 'ready')
+    crit = '\n## Acceptance criteria\n1. `true` exits 0.\n'
+    t.ticket(90, 'ready lane', claimed=True)
+    t.ticket(91, 'no criteria', claimed=True)
+    hp = t.top / '.sdlc' / '0090-t' / 'handoff.md'
+    hp.write_text(hp.read_text() + crit)
+    reg = subprocess.run([sys.executable, str(HERE / 'messages.py'), 'register', '--name', 'conductor', '--harness', 'claude'],
+                         cwd=str(t.top), capture_output=True, text=True)
+    if reg.returncode:
+        return [f'ready: cannot register the conductor: {reg.stderr}']
+    lane, tree, _ = t.open('rdy', 'T-90', keep_lock=True)
+    bare, btree, _ = t.open('bare', 'T-91', keep_lock=True)
+    fails, ref = [], 'refs/sdlc/ready/T-90'
+    inbox = t.top / '.sdlc' / 'messages' / 'new' / 'conductor'
+    rc, o = t.lanes('ready', lane)
+    if rc != 1 or f'no changes in {lane} since' not in o or t.ok('rev-parse', '--verify', '-q', ref) or list(inbox.glob('*.md')):
+        fails.append(f'ready: an unchanged lane did not refuse with nothing written: {rc}: {o}')
+    (btree / 'keep.txt').write_text('bare\n')
+    rc, o = t.lanes('ready', bare)
+    if rc != 1 or 'T-91 has no acceptance criteria' not in o or t.ok('rev-parse', '--verify', '-q', 'refs/sdlc/ready/T-91'):
+        fails.append(f'ready: a ticket with no acceptance criteria did not refuse: {rc}: {o}')
+    (tree / 'keep.txt').write_text('edited\n')
+    (tree / 'new.txt').write_text('new\n')
+    status = t.g('status', '--porcelain', cwd=tree)
+    rc, o = t.lanes('ready', cwd=tree)
+    sha = t.g('rev-parse', '--verify', '-q', ref) if t.ok('rev-parse', '--verify', '-q', ref) else ''
+    if rc or not sha or f'ready: {ref} {sha}' not in o.splitlines():
+        return fails + [f'ready: ready on uncommitted work did not pin {ref}: {rc}: {o}']
+    if t.g('show', f'{sha}:new.txt') != 'new' or t.g('show', f'{sha}:keep.txt') != 'edited' \
+            or t.g('rev-parse', f'{sha}^1') != t.g('rev-parse', 'HEAD', cwd=tree) \
+            or f'Lane-Base: {t.g("rev-parse", "main")}' not in t.g('log', '-1', '--format=%B', sha):
+        fails.append(f'ready: the ready sha {sha} is not a snapshot commit of the uncommitted work on the lane HEAD naming its base')
+    if t.g('status', '--porcelain', cwd=tree) != status or t.g('stash', 'list'):
+        fails.append('ready: the lane index or the stash stack changed')
+    if any(b.startswith(f'worktree {tree}\n') and '\nlocked' in b for b in t.g('worktree', 'list', '--porcelain').split('\n\n')):
+        fails.append(f'ready: the lane is still locked: {o}')
+    msgs = list(inbox.glob('*.md'))
+    text = msgs[0].read_text() if len(msgs) == 1 else ''
+    if 'topic: ready T-90' not in text or 'kind: handoff' not in text or f'{sha} {tree}' not in text:
+        fails.append(f'ready: want one handoff message `ready T-90` carrying the sha and lane path, got {len(msgs)}: {text}')
+    rc, o = t.lanes('list', '--ready')
+    want = f'T-90  {lane}  {sha}  {tree}'
+    if rc or o.splitlines() != [want]:
+        fails.append(f'ready: list --ready want {want!r}, got {rc}: {o}')
+    (tree / 'new.txt').write_text('changed after ready\n')
+    rc, o = t.lanes('list', '--ready')
+    if rc or o.splitlines() != [want + '  stale']:
+        fails.append(f'ready: an edit after ready did not show stale: {rc}: {o}')
+    rc, o = t.lanes('close', lane, '--discard')
+    if rc or t.ok('rev-parse', '--verify', '-q', ref):
+        fails.append(f'ready: close did not delete {ref}: {rc}: {o}')
+    return fails
+
+
 def case_sweep_mergelock(script, base):
     t = Fixture(base, script, 'mlock')
     lanes_dir = t.top / '.worktrees' / 'fanout'
@@ -2774,6 +3021,8 @@ MUTANTS = (
      'left a directory', 'a C9 refusal leaves a directory'),
     ('DESC-COPY', "head = desc or '(no description)'" + '  # DESC-COPY', "head = '(no description)'" + '  # DESC-COPY',
      case_c13, 'lacks the description', 'the C13 tag message lacks the description'),
+    ('READY-STALE', "stale = snapshot(d['path']) != ready_state(ctx.top, sha)" + '  # READY-STALE',
+     'stale = False  # READY-STALE', case_ready, 'did not show stale', 'list --ready shows no stale row after an edit'),
     ('REALPATH', 'child, parent = os.path.realpath(str(child)), os.path.realpath(str(parent))' + '  # REALPATH',
      'child, parent = os.path.normpath(str(child)), os.path.normpath(str(parent))' + '  # REALPATH', case_c1_outside,
      'passed a symlinked path', 'C1 passes a symlinked path'),
@@ -3050,6 +3299,9 @@ def run_selftest(script, src, base):
         need('lock', case_lock(script, base),
              'open locks the lane with its owner; list shows it running, sweep keeps it, close --discard refuses, '
              'close unlocks and closes it, and an explicit unlock lets --discard close')
+        need('ready', case_ready(script, base),
+             'an unchanged lane and a ticket with no criteria refuse; uncommitted work pins a snapshot ref, unlocks and '
+             'mails the conductor; list --ready shows it, stale after an edit; close deletes the ref')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
         need('finish pass', case_finish_pass(script, base),
