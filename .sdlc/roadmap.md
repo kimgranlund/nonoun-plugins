@@ -589,7 +589,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0589 | [.0589-lane-lock-owner](.0589-lane-lock-owner/handoff.md) | lanes.py open locks the worktree with its owner; ready and close unlock it | feature | L2 | P1 | T-0588 | 🟢 done |
 | T-0590 | [.0590-lanes-ready-signal](.0590-lanes-ready-signal/handoff.md) | lanes.py ready pins the review sha and tells the conductor | feature | L3 | P1 | T-0589 | 🟢 done |
 | T-0591 | [.0591-multi-host-roles-doc](.0591-multi-host-roles-doc/handoff.md) | Conductor, worker and verifier rules for Claude, Codex and Pi in one repo | chore | L2 | P2 | T-0590 | 🟢 done |
-| T-0592 | [0592-three-host-rehearsal](0592-three-host-rehearsal/handoff.md) | Live rehearsal: Claude, Codex and Pi working tickets in one repo | chore | L2 | P2 | T-0591, T-0570 | 🟡 claimed |
+| T-0592 | [.0592-three-host-rehearsal](.0592-three-host-rehearsal/handoff.md) | Live rehearsal: Claude, Codex and Pi working tickets in one repo | chore | L2 | P2 | T-0591, T-0570 | 🟢 done |
 | T-0593 | [.0593-plugin-min-version](.0593-plugin-min-version/handoff.md) | A repo pins the minimum plugin version every host must run | feature | L2 | P1 | none | 🟢 done |
 | T-0594 | [.0594-land-close-command](.0594-land-close-command/handoff.md) | One plugin command records, lands, closes and backs up a lane | feature | L3 | P1 | none | 🟢 done |
 | T-0595 | [.0595-finish-followups](.0595-finish-followups/handoff.md) | lanes.py finish leaves the lane-close edit staged and can stick on rerun | bug | L2 | P1 | none | 🟢 done |
