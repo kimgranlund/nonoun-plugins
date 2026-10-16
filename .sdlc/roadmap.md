@@ -606,3 +606,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0606 | [.0606-follow-up-id-refs](.0606-follow-up-id-refs/handoff.md) | close --ticket follow-ups and docs miss the T-0588 claim and id refs | bug | L1 | P2 | none | 🟢 done |
 | T-0607 | [.0607-onboard-block-real-paths](.0607-onboard-block-real-paths/handoff.md) | Onboard root block states lane root, ticket root and gitignore rules that are false for the repo | bug | L2 | P1 | none | 🟢 done |
 | T-0608 | [.0608-onboard-setup-creates-nothing](.0608-onboard-setup-creates-nothing/handoff.md) | onboard.py setup creates entry stubs and layout.md in a repo that never asked | bug | L2 | P1 | none | 🟢 done |
+| T-0609 | [0609-lane-open-no-main-commit](0609-lane-open-no-main-commit/handoff.md) | lanes.py open commits its record onto local main, which diverges from origin in PR repos | bug | L2 | P1 | none | ⏳ proposed |
