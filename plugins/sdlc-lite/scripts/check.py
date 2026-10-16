@@ -685,15 +685,16 @@ for phrase, rels in SPEC_GATE.items():
         elif not spec_gate_missing(text.replace(phrase, ''), phrase):
             errors.append(f'check.py: spec gate text negative control not flagged for {rel}')
 SPEC_GATE_EXEC = 'exec python3 "$plugin_root/scripts/run_lifecycle.py"'
+def spec_gate_cmd(l): return not l.lstrip().startswith('#') and 'specgate.py" check' in l
 def spec_gate_order_bad(lines):
-    gate = next((i for i, l in enumerate(lines) if 'specgate.py check' in l), None)
+    gate = next((i for i, l in enumerate(lines) if spec_gate_cmd(l)), None)
     run = next((i for i, l in enumerate(lines) if SPEC_GATE_EXEC in l), None)
     return gate is None or run is None or gate > run
 rs_lines = (root/'scripts/run.sh').read_text().split('\n') if (root/'scripts/run.sh').is_file() else []
 if spec_gate_order_bad(rs_lines):
     errors.append('scripts/run.sh: specgate.py check does not come before exec run_lifecycle.py')
 else:
-    gi = next(i for i, l in enumerate(rs_lines) if 'specgate.py check' in l)
+    gi = next(i for i, l in enumerate(rs_lines) if spec_gate_cmd(l))
     ri = next(i for i, l in enumerate(rs_lines) if SPEC_GATE_EXEC in l)
     swapped = list(rs_lines); swapped[gi], swapped[ri] = swapped[ri], swapped[gi]
     if not spec_gate_order_bad(swapped): errors.append('check.py: spec gate order negative control not flagged')
