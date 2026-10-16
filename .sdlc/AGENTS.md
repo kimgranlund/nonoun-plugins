@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:b6a6adc8d570 -->
+<!-- sdlc-lite:managed:start v1 sha256:585f7638c6b5 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 14
+- proposed: 13
   - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
   - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
@@ -17,7 +17,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0582 Plan criteria replayed on main; criterion-only fixes amend without spending the replan (0582-criteria-replay-amend)
   - T-0583 Driver loop wakes on role completion or state change, not timed polling (0583-event-driven-driver)
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
-  - T-0586 Under layout: topics, tidy, check and the router text disagree (0586-topics-tidy-check-agree)
   - T-0587 solo_run.py run --worktree without --cwd records the session checkout's base (0587-solo-worktree-base)
   - T-0590 lanes.py ready pins the review sha and tells the conductor (0590-lanes-ready-signal)
   - T-0591 Conductor, worker and verifier rules for Claude, Codex and Pi in one repo (0591-multi-host-roles-doc)
@@ -26,11 +25,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording)
 - ready: 0
 - claimed: 2
-  - T-0607 Onboard root block states lane root, ticket root and gitignore rules that are false for the repo (0607-onboard-block-real-paths), claimed by claude 2026-10-15
-  - T-0608 onboard.py setup creates entry stubs and layout.md in a repo that never asked (0608-onboard-setup-creates-nothing), claimed by claude 2026-10-15
+  - T-0586 Under layout: topics, tidy, check and the router text disagree (0586-topics-tidy-check-agree), claimed by claude 2026-10-15, branch lane/T-0586-t0586
+  - T-0607 Onboard root block states lane root, ticket root and gitignore rules that are false for the repo (0607-onboard-block-real-paths), claimed by claude 2026-10-15, branch lane/T-0607-t0607
 - paused: 0
 - blocked: 0
-- done: 556
+- done: 557
 - dropped: 29
 
 ## Procedures

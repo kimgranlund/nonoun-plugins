@@ -32,7 +32,7 @@ batch and `final check: pass`. Stderr: `reorg.py: refused: <reason>` per refusal
 
 Frozen: under .sdlc/, ignored by Git, or matched (the path or a parent folder) by a `## Frozen paths` pattern of
 docs/layout.md, read with onboard.parse_layout and matched with onboard.frozen_match. A missing or unparsable
-docs/layout.md refuses: run onboard.py setup first.
+docs/layout.md refuses: run onboard.py setup --init first.
 
 Refusals, all before any write and also in the dry run: a malformed plan; docs/layout.md missing or unparsable; a move
 source that is not a tracked file, is frozen, or is AGENTS.md, CLAUDE.md, README.md, or docs/layout.md; a destination
@@ -100,7 +100,7 @@ import inventory  # noqa: E402
 MARKDOWN = ('.md', '.mdx', '.markdown')
 ENTRY_NAMES = ('AGENTS.md', 'CLAUDE.md', 'README.md')
 LAYOUT = 'docs/layout.md'
-SETUP_FIRST = 'run onboard.py setup first'
+SETUP_FIRST = 'run onboard.py setup --init first'
 LOCK_NAME = '.run.lock'
 SPLIT_KEEP = re.compile(r'[^\n]*\n|[^\n]+\Z')
 REFUSED = 'reorg.py: refused: '

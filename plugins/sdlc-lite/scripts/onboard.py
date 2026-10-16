@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Onboard a repository to SDLC Lite: entry files, docs layout, and check mode.
 
-Usage: onboard.py setup [--dry-run] [--force]   create or update the managed files
-       onboard.py check                         report the state of every managed file
-       onboard.py selftest                      run the gates on temp fixtures
+Usage: onboard.py setup [--dry-run] [--force] [--init]   refresh the managed blocks (--init: create them)
+       onboard.py check                                  report the state of every managed file
+       onboard.py selftest                               run the gates on temp fixtures
 
 Design: docs/specs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
 The .sdlc layout is read through a function-local import of the sibling tickets.py, and the root
@@ -11,6 +11,9 @@ block names the resolved roadmap, notes, and archive paths (.sdlc/roadmap.md, .s
 .sdlc/tickets/roadmap.md, .sdlc/notes/notes.md, .sdlc/work/archive/ with `layout: topics`), the ticket root, and
 the lane root from the sibling wtroot.py (`<bare parent>/lanes/` in a bare clone).
 
+setup refreshes the managed blocks a file already holds and changes nothing else; it lists on
+stderr each file --init would create or append a block to. setup --init also creates missing
+entry files and docs/layout.md and appends a block to an unmanaged entry file.
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
 check writes nothing, prints `<label> <path>` per file, and exits 1 unless every entry file is
@@ -899,9 +902,14 @@ def decide(state, rows=ROWS):
     raise AssertionError('no upsert row matched')
 
 
+def is_refresh(c):
+    """A change to a managed block the file already holds; setup without --init writes only these."""
+    return c.old is not None and c.action == 'replace'
+
+
 # The parts of the implementation that the selftest swaps for defective variants.
-Impl = collections.namedtuple('Impl', 'render wrap rows find_block labels preflight')
-REAL = Impl(render_templates, wrap_block, ROWS, find_block, LABELS, True)
+Impl = collections.namedtuple('Impl', 'render wrap rows find_block labels preflight refresh')
+REAL = Impl(render_templates, wrap_block, ROWS, find_block, LABELS, True, is_refresh)
 
 Change = collections.namedtuple('Change', 'path row action label old new notes')
 Change.__doc__ = 'One file. row is None outside the upsert table. old/new are None when not read or not written.'
@@ -1048,8 +1056,12 @@ def _plan_or_report(root, impl, force, err):
     return None
 
 
-def run_setup(root, impl=None, dry_run=False, force=False, out=None, err=None):
-    """setup: print the diff (dry run) or write it. Returns the exit status."""
+def run_setup(root, impl=None, dry_run=False, force=False, init=False, out=None, err=None):
+    """setup: print the diff (dry run) or write it. Returns the exit status.
+
+    Without init only existing managed blocks are refreshed; every file init would create or
+    append to is listed on stderr as `--init would <create|append a block to> <path>`.
+    """
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
     changes = _plan_or_report(root, impl, force, err)
     if changes is None:
@@ -1059,6 +1071,11 @@ def run_setup(root, impl=None, dry_run=False, force=False, out=None, err=None):
         for note in c.notes + ([size] if size else []):
             err.write(note + '\n')
     todo = [c for c in changes if _changed(c)]
+    if not init:
+        for c in todo:
+            if not impl.refresh(c):
+                err.write('--init would %s %s\n' % ('create' if c.old is None else 'append a block to', c.path))
+        todo = [c for c in todo if impl.refresh(c)]
     if dry_run:
         for c in todo:
             out.write(_diff(c.path, c.old, c.new))
@@ -1362,7 +1379,7 @@ def _expect_hash(block, what):
 
 def gate_create(impl):
     with _fixture() as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'empty fixture: setup exited %d: %s' % (rc, err.strip()))
         expect(_files(root) == sorted(BASE_FILES), 'empty fixture: files are %r' % _files(root))
         before, block, after = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
@@ -1393,7 +1410,7 @@ def gate_create(impl):
                'default layout kinds or decide parsed as %r' % (layout,))
     untracked = dict(RICH_DOCS, **{'docs/alpha/draft.md': '# Not tracked\n'})
     with _fixture(untracked, track=sorted(RICH_DOCS)) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'topic fixture: setup exited %d: %s' % (rc, err.strip()))
         want = sorted(BASE_FILES + list(untracked) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md'])
         expect(_files(root) == want, 'topic fixture: files are %r' % _files(root))
@@ -1408,7 +1425,7 @@ def gate_create(impl):
                % block.text[block.text.find('## Contents'):])
     with _fixture({'docs': 'a regular file named docs\n', 'README.md': '# demo\n'}) as root:
         snap = _snapshot(root)
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc != 0, 'docs is a regular file: setup exited 0')
         expect(_snapshot(root) == snap, 'docs is a regular file: the fixture changed')
         expect('docs' in err, 'docs is a regular file: stderr does not name docs: %r' % err)
@@ -1435,7 +1452,7 @@ def _render_nested_for_every_home(model):
 
 def gate_nested_entries(impl):
     with _fixture(NESTED_DOCS, track=sorted(NESTED_DOCS)) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'nested fixture: setup exited %d: %s' % (rc, err.strip()))
         files = _files(root)
         for want in ('docs/guides/AGENTS.md', 'docs/guides/CLAUDE.md', 'docs/guides/setup/AGENTS.md',
@@ -1465,7 +1482,7 @@ def gate_preserve(impl):
     files = dict((p, v[0]) for p, v in user.items())
     files.update({'docs/alpha/a.md': '# A\n', 'docs/alpha/b.md': '# B\n'})
     with _fixture(files, track=['docs/alpha/a.md', 'docs/alpha/b.md']) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'setup exited %d: %s' % (rc, err.strip()))
         for path, (orig, want_before, want_after) in user.items():
             text = _text(root, path)
@@ -1483,16 +1500,56 @@ def gate_idempotence(impl):
                  'docs/beta/CLAUDE.md': 'not managed, and beta has no entry\n'})
     for label, files, track in (('empty', {}, ()), ('rich', rich, sorted(RICH_DOCS))):
         with _fixture(files, track=track) as root:
-            rc, out, err = _call(run_setup, root, impl)
+            rc, out, err = _call(run_setup, root, impl, init=True)
             expect(rc == 0, '%s fixture: first setup exited %d: %s' % (label, rc, err.strip()))
             snap = _snapshot(root)
-            rc, out, err = _call(run_setup, root, impl, dry_run=True)
+            rc, out, err = _call(run_setup, root, impl, dry_run=True, init=True)
             expect(rc == 0 and out == '', '%s fixture: second dry run printed a diff:\n%s' % (label, out))
-            rc, out, err = _call(run_setup, root, impl)
+            rc, out, err = _call(run_setup, root, impl, init=True)
             expect(rc == 0 and out == '', '%s fixture: second setup reported %r' % (label, out))
             expect(_snapshot(root) == snap, '%s fixture: second setup changed the tree' % label)
             rows = dict((c.path, c.row) for c in plan(root, impl) if c.row is not None)
             expect(all(r in (5, 7) for r in rows.values()), '%s fixture: second run rows %r' % (label, rows))
+
+
+def _refresh_everything(c):
+    """Defect variant: treats every change as a refresh, so setup writes without --init."""
+    return True
+
+
+def gate_refresh_only(impl):
+    """setup without --init changes no file in an unmanaged repo and lists what --init adds;
+    --init behaves as before; a repo already set up keeps refreshing without --init."""
+    files = dict(RICH_DOCS, **{'AGENTS.md': '# Mine\n\nkeep me\n'})
+    with _fixture(files, track=sorted(RICH_DOCS)) as root:
+        snap = _snapshot(root)
+        for dry in (True, False):
+            rc, out, err = _call(run_setup, root, impl, dry_run=dry)
+            expect(rc == 0, 'no --init (dry run %s): setup exited %d: %s' % (dry, rc, err.strip()))
+            expect(out == '', 'no --init (dry run %s): setup printed %r' % (dry, out))
+            expect(_snapshot(root) == snap, 'no --init (dry run %s): the fixture changed' % dry)
+            for line in ('--init would append a block to AGENTS.md', '--init would create CLAUDE.md',
+                         '--init would create docs/AGENTS.md', '--init would create docs/alpha/AGENTS.md',
+                         '--init would create docs/layout.md'):
+                expect(line in err.splitlines(), 'no --init (dry run %s): stderr lacks %r: %r' % (dry, line, err))
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        expect(rc == 0, '--init: setup exited %d: %s' % (rc, err.strip()))
+        want = sorted(BASE_FILES + list(RICH_DOCS) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md'])
+        expect(_files(root) == want, '--init: files are %r' % _files(root))
+        before, _, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
+        expect(before == '# Mine\n\nkeep me\n', '--init: AGENTS.md bytes before the block are %r' % before)
+        expect('--init would' not in err, '--init: stderr still lists --init changes: %r' % err)
+        _put(root, 'CLAUDE.md', _region(TEMPLATE_VERSION, 'an older stub\n'))
+        _put(root, 'docs/beta/one.md', '# One\n')
+        _put(root, 'docs/beta/two.md', '# Two\n')
+        _git(root, 'add', '--', 'docs/beta/one.md', 'docs/beta/two.md')
+        rc, out, err = _call(run_setup, root, impl)
+        expect(rc == 0, 'set-up repo: setup exited %d: %s' % (rc, err.strip()))
+        expect(_text(root, 'CLAUDE.md') == _region(TEMPLATE_VERSION, STUB), 'set-up repo: stale CLAUDE.md not refreshed')
+        expect('updated CLAUDE.md' in out.splitlines(), 'set-up repo: setup reported %r' % out)
+        expect('docs/beta/AGENTS.md' not in _files(root), 'set-up repo: created docs/beta/AGENTS.md without --init')
+        expect('--init would create docs/beta/AGENTS.md' in err.splitlines(),
+               'set-up repo: stderr does not list docs/beta/AGENTS.md: %r' % err)
 
 
 def gate_row_order(impl):
@@ -1511,12 +1568,12 @@ def gate_row_order(impl):
         files = {} if content in (None, 'current') else {path: content}
         with _fixture(files) as root:
             if content == 'current':
-                _call(run_setup, root, impl)
+                _call(run_setup, root, impl, init=True)
             before = _snapshot(root)
             got = dict((c.path, c) for c in plan(root, impl))[path]
             expect((got.row, got.action) == (row, action), 'row %d fixture: decided row %s (%s)'
                    % (row, got.row, got.action))
-            rc, out, err = _call(run_setup, root, impl)
+            rc, out, err = _call(run_setup, root, impl, init=True)
             expect(rc == 0, 'row %d fixture: setup exited %d: %s' % (row, rc, err.strip()))
             old, new = before.get(path), _snapshot(root).get(path)
             if action in ('report', 'none'):
@@ -1528,7 +1585,7 @@ def gate_row_order(impl):
             if row in reported:
                 expect('%s %s' % (reported[row], path) in err, 'row %d fixture: not reported: %r' % (row, err))
             if row == 4:
-                rc, out, err = _call(run_setup, root, impl, force=True)
+                rc, out, err = _call(run_setup, root, impl, force=True, init=True)
                 _, block, _ = _parts(_text(root, path), path)
                 expect(rc == 0 and 'Managed by SDLC Lite onboard' in block.text, 'row 4: --force did not replace')
 
@@ -1536,14 +1593,14 @@ def gate_row_order(impl):
 def gate_malformed_markers(impl):
     old = '# Mine\n\n' + _region(TEMPLATE_VERSION, 'an older block\n') + '\ntail\n'
     with _fixture({'AGENTS.md': old}) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         before, block, after = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and before == '# Mine\n\n' and after == '\ntail\n', 'well-formed block: outside bytes changed')
         expect(ROLE_LINE in block.text, 'well-formed block: not replaced with the current template')
         _expect_hash(block, 'AGENTS.md')
     fenced = '# Mine\n\n```markdown\n' + START_MARKER % (TEMPLATE_VERSION, digest('x\n')) + '\nx\n```\n'
     with _fixture({'AGENTS.md': fenced}) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         text = _text(root, 'AGENTS.md')
         expect(rc == 0 and text.startswith(fenced) and text != fenced,
                'a start marker inside a code fence was not ordinary text: %r' % err)
@@ -1556,7 +1613,7 @@ def gate_malformed_markers(impl):
     ]
     for label, content in bad:
         with _fixture({'AGENTS.md': content}) as root:
-            rc, out, err = _call(run_setup, root, impl)
+            rc, out, err = _call(run_setup, root, impl, init=True)
             expect(_text(root, 'AGENTS.md') == content, '%s: the file changed' % label)
             expect('malformed AGENTS.md' in err, '%s: not reported: %r' % (label, err))
             rc, out, err = _call(run_check, root, impl)
@@ -1586,7 +1643,7 @@ def gate_entry_resolver(resolve):
 
 def gate_check_mode(impl):
     with _fixture() as root:
-        _call(run_setup, root, impl)
+        _call(run_setup, root, impl, init=True)
         snap = _snapshot(root)
         rc, out, err = _call(run_check, root, impl)
         want = ['current %s' % p for p in BASE_FILES if p != LAYOUT_PATH] + ['present ' + LAYOUT_PATH]
@@ -1616,7 +1673,7 @@ def gate_check_mode(impl):
     ]
     for label, path, mutate in cases:
         with _fixture() as root:
-            _call(run_setup, root, impl)
+            _call(run_setup, root, impl, init=True)
             mutate(root)
             snap = _snapshot(root)
             rc, out, err = _call(run_check, root, impl)
@@ -1681,14 +1738,14 @@ def gate_lane_text(impl):
     with _fixture({'AGENTS.md': stale}) as root:
         rc, out, err = _call(run_check, root, impl)
         expect('stale AGENTS.md' in out + err, 'a block with the old route is not reported stale: %r' % (out + err))
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and block.version == TEMPLATE_VERSION, 'the old block is not replaced by the current version')
         expect(LANE_LINE in block.text and OLD_ROUTE not in block.text, 'the replaced block does not route by the lane')
         expect('solo' in block.text and ROLE_LINE in block.text, 'the replaced block lost the solo default or the role line')
     edited = '# Mine\n\n' + _region(TEMPLATE_VERSION, 'edited by hand\n', old_block) + '\ntail\n'
     with _fixture({'AGENTS.md': edited}) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         expect('edited AGENTS.md' in out + err, 'a hand-edited block is not reported edited: %r' % (out + err))
         expect('edited by hand' in _text(root, 'AGENTS.md'), 'a hand-edited block was overwritten without --force')
 
@@ -1708,13 +1765,13 @@ def _render_flat_always(model):
 def gate_layout_variant(impl):
     flat = _split_template(ROOT_AGENTS_TEMPLATE).block.replace('<N>', str(TEMPLATE_VERSION))
     with _fixture({'.sdlc/config': ''}) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and block.text == flat, 'a flat repo does not get the unsubstituted root block')
         rc, out, err = _call(run_check, root, impl)
         expect('current AGENTS.md' in out.splitlines(), 'flat AGENTS.md is not current: %r' % (out + err))
     with _fixture({'.sdlc/config': 'ticket_root: tickets\nlayout: topics\n'}) as root:
-        rc, out, err = _call(run_setup, root, impl)
+        rc, out, err = _call(run_setup, root, impl, init=True)
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and '.sdlc/tickets/roadmap.md' in block.text and '.sdlc/roadmap.md' not in block.text,
                'a topics repo block does not name .sdlc/tickets/roadmap.md only')
@@ -1816,6 +1873,9 @@ GATES = [
     ('idempotence', gate_idempotence, REAL, [
         ('template variant embeds a run counter', REAL._replace(render=_render_with_run_counter())),
     ]),
+    ('refresh-only', gate_refresh_only, REAL, [
+        ('writes every change without --init', REAL._replace(refresh=_refresh_everything)),
+    ]),
     ('row-order', gate_row_order, REAL, [
         ('rows 4 and 6 swapped', REAL._replace(rows=_swap_rows(ROWS, 4, 6))),
     ]),
@@ -1887,6 +1947,9 @@ def main(argv=None):
     sp = sub.add_parser('setup', help='create or update the managed files')
     sp.add_argument('--dry-run', action='store_true', help='print the diff of every change and write nothing')
     sp.add_argument('--force', action='store_true', help='replace a managed block edited by hand')
+    sp.add_argument('--init', action='store_true',
+                    help='also create missing entry files and docs/layout.md and append a block to an unmanaged file '
+                         '(without it, setup refreshes existing managed blocks only)')
     sp.add_argument('--yes', action='store_true', help='write without asking (an interactive run asks once after the diff)')
     sub.add_parser('check', help='report the state of every managed file and write nothing')
     sub.add_parser('selftest', help='run the gates on temp fixtures')
@@ -1902,13 +1965,13 @@ def main(argv=None):
         return 1
     if args.cmd == 'setup':
         if not args.dry_run and not args.yes and sys.stdin.isatty():
-            rc = run_setup(root, dry_run=True, force=args.force)
+            rc = run_setup(root, dry_run=True, force=args.force, init=args.init)
             if rc:
                 return rc
             if input('Write these changes? [y/N] ').strip().lower() not in ('y', 'yes'):
                 print('nothing written')
                 return 0
-        return run_setup(root, dry_run=args.dry_run, force=args.force)
+        return run_setup(root, dry_run=args.dry_run, force=args.force, init=args.init)
     return run_check(root)
 
 

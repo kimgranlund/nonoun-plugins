@@ -80,7 +80,8 @@ Claude Code loads a nested `AGENTS.md` only through an `@` import in a `CLAUDE.m
 | Command | Effect |
 | --- | --- |
 | `onboard.py setup --dry-run` | Prints the diff of every change and writes nothing. |
-| `onboard.py setup [--force]` | Writes the changes. |
+| `onboard.py setup [--force]` | Writes the changes. Without `--init` it refreshes only the managed blocks files already hold (rows 4 with `--force` and 6) and lists on stderr each file `--init` would create or append to. |
+| `onboard.py setup --init [--force]` | Also creates missing files (row 1, `docs/layout.md`) and appends to unmanaged ones (row 8). |
 | `onboard.py check` | Reports the state of each file and writes nothing. |
 
 The skill runs the dry run, shows the diff, asks the user once, and then runs setup.
@@ -89,7 +90,7 @@ Setup and check parse `docs/layout.md` when it exists, to tell topics from homes
 
 ## Upsert behavior
 
-The script decides per file, in this order. The first row that matches applies. `docs/layout.md` is outside this table: setup creates it when it is missing and never touches it otherwise.
+The script decides per file, in this order. The first row that matches applies. `docs/layout.md` is outside this table: setup with `--init` creates it when it is missing and never touches it otherwise. Rows 1 and 8 apply only with `--init`.
 
 | # | State | Action |
 | --- | --- | --- |
