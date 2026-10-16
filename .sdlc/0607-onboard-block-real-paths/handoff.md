@@ -34,3 +34,6 @@ Default-layout repos get byte-identical output.
 
    Both cases failed before the change.
 2. `git diff --check` exits 0.
+
+## Plan review
+- amend: criterion 1 case `ticket_root: docs/tickets` replaced by "a repo with no .sdlc/ dir": gen-ui-kit has no .sdlc (its docs/tickets is its own system) and tickets.py accepts only `ticket_root: tickets`; decided: maintainer conductor, 2026-10-15.
