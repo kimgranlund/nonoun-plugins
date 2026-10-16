@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ab8ae1b8ffb8 -->
+<!-- sdlc-lite:managed:start v1 sha256:30280d928e7a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 14
+- proposed: 16
   - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
   - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
@@ -24,6 +24,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0592 Live rehearsal: Claude, Codex and Pi working tickets in one repo (0592-three-host-rehearsal)
   - T-0603 gate_lock selftest status checks never run: label compared to real, controls pass real0 (0603-gate-lock-selftest-label-guard)
   - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording)
+  - T-0607 Onboard root block states lane root, ticket root and gitignore rules that are false for the repo (0607-onboard-block-real-paths)
+  - T-0608 onboard.py setup creates entry stubs and layout.md in a repo that never asked (0608-onboard-setup-creates-nothing)
 - ready: 0
 - claimed: 0
 - paused: 0
