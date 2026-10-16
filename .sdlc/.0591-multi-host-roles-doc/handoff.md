@@ -2,7 +2,7 @@
 id: T-0591
 title: "Conductor, worker and verifier rules for Claude, Codex and Pi in one repo"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0590]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,13 @@ One authoritative location; others link to it.
 1b. `grep -c -E 'wtroot.py (root|evidence)' plugins/sdlc-lite/agents/conductor.md` prints at least 2, and conductor.md orders land before close.
 1c. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0. Its new case shows that a prepared verifier prompt contains the foreground-only and no-full-check.sh lines; the case failed before the change.
 2. `python3 plugins/sdlc-lite/scripts/check.py`, `claude_roles.py generate --check`, `codex_roles.py generate --check` and `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: plugins/sdlc-lite/agents/conductor.md:63 and :80 duplicate part of the AGENTS.md:43 rule. conductor.md:63 links to AGENTS.md as the one home, so this is consistent with the "one authoritative location" constraint.) · verifier: verifier-L2 (sonnet) · base: da09bc8ff771
+- Changed: see commits
+- Commits: 1d8824b T-0591: Conductor, worker and verifier rules for Claude, Codex and Pi in one repo
+- Check: 1 `grep -n 'lanes.py ready'` hits all three files: pass
+- Check: 2 (1b) wtroot.py root/evidence count in conductor.md is at least 2, and land is ordered before close: pass
+- Check: 3 (1c) `dispatch.py selftest` exits 0, and the new case failed before the change: pass
+- Check: 4 (2) check.py, claude_roles generate --check, codex_roles generate --check and git diff --check al...: pass
