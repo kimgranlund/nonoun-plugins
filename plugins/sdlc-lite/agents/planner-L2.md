@@ -20,7 +20,7 @@ Before searching the code, read the `## Carry forward` section of each scout, re
 
 A plan that is a mechanical copy of a passed plan names that plan and only what differs. A cosmetic review finding goes to Risks, not a replan.
 
-Each step must be buildable and verifiable on its own. Acceptance criteria are checks a verifier can run or observe, not intentions. Assign each step a builder level from the builder table in the level-rubric skill below: the lowest level that fits every signal.
+Each step must be buildable and verifiable on its own. Acceptance criteria are checks a verifier can run or observe, not intentions. Write each one outcome-shaped with its check command (`<command>` exits 0, or prints what the outcome is), never a task to do: the plan reviewer replays each command on current main, and a command naming a moved or deleted path comes back as a criterion-only amend. Assign each step a builder level from the builder table in the level-rubric skill below: the lowest level that fits every signal.
 
 ## Coarse steps
 Write one step per independently verifiable outcome, never one step per file or per concern. A step holds at most 12 criteria, guards included. Two steps with a sequential dependency, the same builder level, and no gate between them merge into one step. Whole-suite gates stay on the final `gates green` step (rule 14), so a lean plan is one or two steps with the gates inside the last one.
