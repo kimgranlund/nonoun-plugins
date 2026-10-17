@@ -4014,8 +4014,9 @@ def selftest():
 
         # 16. A solo lane closes through the real lane decision and the real tickets.py close (T-0222): a
         # `claude` shim on PATH stands in only for the model session; nothing bypasses steps.py lane, the
-        # driver choice, the skips.md write, or the skips guard. Negative control: with the Skipped write off,
-        # the close is refused and the second ticket never runs.
+        # driver choice, the skips.md write, or the skips guard. Negative control: with the Skipped write off, the
+        # lane writes no `decided: lane` entry and the close by reason writes the missing ones itself (T-0581), so
+        # the `decided: lane` entries of the live run come from the lane.
         shim = tmp / 'shim'
         shim.mkdir()
         (shim / 'claude').write_text('#!/usr/bin/env bash\nset -eu\necho "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"\n'
@@ -4044,9 +4045,13 @@ def selftest():
                '- lane: solo' in sk and '- skip: planner; step: all;' in sk and '- skip: filer; step: all;' in sk
                and 'decided: lane' in sk)
         rr0, ll0, pr0 = real_lane('off', True)
-        expect(f'case 16 negative control: with the Skipped write off the close is refused, got rc={pr0.returncode} '
-               f'out={pr0.stdout[-300:]!r}', pr0.returncode == 1 and 'close refused' in pr0.stdout
-               and 'no ## Skipped entry' in pr0.stdout)
+        sk0 = next((q_.read_text(encoding='utf-8') for q_ in (rr0 / '.sdlc' / 'runtime' / 'tasks' / '0001-one' / 'skips.md',
+                                                           rr0 / '.sdlc' / 'runtime' / 'tasks' / 'one' / 'skips.md') if q_.is_file()), '')
+        expect(f'case 16 negative control: with the Skipped write off the lane writes no entry and the close by reason '
+               f'writes the planner entry, got rc={pr0.returncode} {sk0!r} out={pr0.stdout[-300:]!r}',
+               '- lane: solo' in sk0 and 'decided: lane' not in sk0
+               and '- skip: planner; step: all; reason: closed by reason (' in sk0
+               and 'decided: tickets.py close --reason' in sk0)
         # write_solo_skips directly: idempotent, and a forced --lane solo (no lane record) writes nothing
         tdir_ = tmp / 'skiptask'
         tdir_.mkdir()

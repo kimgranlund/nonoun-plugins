@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -93,7 +93,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             nothing; without either flag it refuses the same way. --numbered persists the mode
             close --reason TEXT is for a ticket whose work other tickets did: it skips the verdict gate
             and the filer (warnings and follow-ups ignored), sets the ticket done, appends ## Outcome
-            with verdict `closed by reason (TEXT)`, and files no follow-ups
+            with verdict `closed by reason (TEXT)`, and files no follow-ups. A ## Skipped entry the lane record
+            still needs (below) is written as `- skip: <role>; step: <n|all>; reason: closed by reason (TEXT);
+            decided: tickets.py close --reason` instead of refusing
             a TEXT matching `on main` or `landed` (case-insensitive) must name a commit sha that is an
             ancestor of the default branch, else the close refuses
             close --filer --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
@@ -119,9 +121,16 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             waiver covers a step), or `skipped (filer route)`. After the Outcome (before any rename) a
             task-folder skips.md moves into the records dir (T-0560), so the closed folder tracks only
             handoff.md; a legacy ticket whose records stay in place keeps it
-            On every path (plain, --filer, --reason, --ack-warnings, --dry-run) close refuses, writing nothing,
+            On every path but --reason (plain, --filer, --ack-warnings, --dry-run) close refuses, writing nothing,
             when the ticket's skips.md records lane solo, lean, fix, or full but lacks a result or a ## Skipped
             entry for the planner or a step verifier, as check does; no skips.md or no lane record is exempt
+            close --preflight is read-only: it runs the same gates for the same route and prints `ready` (exit 0)
+            or one line per item close would demand (exit 1): the verdict, the filer and its open warnings, the
+            ## Skipped lines, refs needing --rewrite-refs or --keep-refs, held criteria, placeholder text. It
+            refuses with --dry-run, --skip, --expect or --ticket
+            Every other close (and --dry-run) holds an exclusive flock on <root>/runtime/close.lock, so closes in
+            one root run one at a time; a second one prints `waiting for <lock>: another close is running` and waits.
+            A runtime/ dir the lock creates gets a `*` .gitignore, so the lock leaves git status clean
   roadmap   regenerate the roadmap (<root>/roadmap.md, or <root>/tickets/roadmap.md with `layout: topics`) in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule). Only open tickets get a row; done and
             dropped ones are counted in one `Closed: <n> done, <m> dropped` line after the table
@@ -316,6 +325,7 @@ Build progress is not tracked here: /board derives it from each task's step arti
 import argparse
 import collections
 import datetime
+import fcntl
 import fnmatch
 import hashlib
 import heapq
@@ -3030,7 +3040,8 @@ def outcome_section(meta, lane, verdict, verifier, base, changed, commits, check
 
 
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
-              ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False, filer=False, changed=None):
+              ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False, filer=False, changed=None,
+              preflight=False):
     """Close a ticket and append its ## Outcome. Three routes; every refusal writes nothing.
     Default (no filer, no reason): the verdict gate. Each live step-<n> dir in the records dir (else the task level)
     needs its newest verifier (run_order.newest) to say pass, or a counting `- skip: verifier; step: <n|all>;
@@ -3042,7 +3053,13 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     filer=True: read the newest filer-L*.md: refuse on open warnings (unless force or ack_warnings), and its
     Follow-ups bullets are the items. With no filer here, the refusal names every other worktree's same-relative
     <slug>/ holding a filer-L*.md (glob only, never read). No verdict gate runs.
-    reason (not None): no verdict gate and no filer; set done, file no follow-ups.
+    reason (not None): no verdict gate and no filer; set done, file no follow-ups. A ## Skipped entry skip_missing
+    still needs is written as `- skip: <role>; step: <n|all>; reason: closed by reason (<why>); decided: tickets.py
+    close --reason` instead of refusing (T-0581).
+    preflight (T-0581): read-only. Run the same gates for the same route, collect each refusal flattened to one line
+    (no `nothing written` tail) instead of raising on the first, and return `ready` when there are none, else raise
+    them all in one Fail. A missing ticket, a done one, a ticket problem or a bad flag combination still refuses at
+    once. It refuses with dry_run, skip, expect and ticket.
     Follow-up items: each has a tag (follow_tag): fix-now, decide or note; untagged counts as decide. Title, slug,
     duplicate check and ticket context use the text after the tag; the digest covers the full items.
     ticket: the one 1-based index to file as a proposed idea ticket with from: <id>; it must be a decide item, in
@@ -3082,6 +3099,17 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     close, so the close goes ahead and writes `deferred: <ref> -> <owner>` as a Deviation line (T-0472).
     After a successful close, one `lane still open: <path> (branch <b>, <reason>)` line per plugin lane that lists the
     ticket (lanes.still_open) follows the result line; the exit code is unchanged (T-0453)."""
+    if preflight and (dry_run or skip is not None or expect is not None or ticket is not None):
+        raise Fail(f'{slug}: --preflight lists what close would demand and writes nothing, so it does not combine '
+                   f'with --dry-run, --skip, --expect or --ticket; nothing written')
+    missing = []
+
+    def need(msg):
+        """A refusal: raised at once, or with preflight collected as one line."""
+        if not preflight:
+            raise Fail(msg)
+        missing.append(' '.join(re.sub(r';? *nothing written$', '', msg.strip()).split()))
+
     if keep_refs and rewrite_refs:
         raise Fail(f'{slug}: --keep-refs leaves citations as they are and --rewrite-refs rewrites them, so they '
                    f'do not combine; use one; nothing written')
@@ -3106,8 +3134,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if reason is not None:
         problem = landing_claim_problem(root, reason)
         if problem:
-            raise Fail(f'{slug}: --reason: {problem}; merge it and name its sha, or reword the reason; '
-                       f'nothing written')
+            need(f'{slug}: --reason: {problem}; merge it and name its sha, or reword the reason; '
+                 f'nothing written')
     td = layout_paths(root).tickets
     flag = numbered
     numbered = numbered or config_numbered(root)
@@ -3143,17 +3171,23 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     deferred = [f"deferred: {i['ref']} -> {i['who']}" for i in to_stage]
     held = [i for i in held if i not in to_stage]
     if held:
-        raise Fail(f'{slug}: criteria still held: '
-                   + ', '.join(f"{i['ref']} {i['state']} {i['who']}" for i in held)
-                   + '; settle them in the owner stage; nothing written')
+        need(f'{slug}: criteria still held: '
+             + ', '.join(f"{i['ref']} {i['state']} {i['who']}" for i in held)
+             + '; settle them in the owner stage; nothing written')
     skips_f = skips_path(d)
     got = skip_missing(d)
     docs_base = docs_waiver(d) if got and any(m.startswith('verifier') for m in got[1]) else None
     if docs_base:  # T-0429, T-0496: a docs-only or tests-gate diff closes on its own checks; the guard below still counts the planner
         got = skip_missing(d, covered=('verifier',))
-    if got:
-        raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
-                   f'decided: <who>" line per role under ## Skipped in {skips_f}; nothing written')
+    reason_skips = []
+    if got and reason is not None:  # T-0581: --reason writes the entries it needs instead of refusing
+        why_ = reason.strip()
+        reason_skips = [f'- skip: {m.split()[0]}; step: {m.split()[-1] if " step " in m else "all"}; '
+                        f'reason: closed by reason ({why_}); decided: tickets.py close --reason' for m in got[1]]
+    elif got:
+        need(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
+             f'decided: <who>" line per role under ## Skipped in {skips_f}, or close --reason "<why>" to write '
+             f'them; nothing written')
     skips_text = skips_f.read_text(encoding='utf-8') if skips_f.is_file() else ''
     lane = {'lean': 'full', 'solo': 'solo', 'fix': 'fix'}.get(last_lane(skips_text), 'full')
     rows = gated_verifiers(d, [kv for role, kv in skip_entries(skips_text) if role == 'verifier'])
@@ -3163,7 +3197,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         bad = [] if docs_base else [r for r in rows if r['verdict'] != 'pass' and not r['cover']]
         if bad:
             where = records_of(d)
-            raise Fail(f'{slug}: the verifier verdict does not allow a close:\n'
+            need(f'{slug}: the verifier verdict does not allow a close:\n'
                        + ''.join(f"  {r['label']}: {r['path']} verdict {r['verdict'] or 'unparsable'}\n" if r['path']
                                  else f"  {r['label']}: no verifier result in {where if r['n'] is None else where / r['label']}\n"
                                  for r in bad)
@@ -3171,6 +3205,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          f'under ## Skipped in {skips_f}, or close --reason "<why>"; nothing written')
 
     def note_docs_waiver():
+        for line in reason_skips:
+            add_skip_line(skips_f, line)
         if docs_base:
             add_skip_line(skips_f, f'- skip: verifier; step: all; reason: {docs_base[1]} diff against {docs_base[0][:12]} '
                                    f'(verify_scope.py); decided: tickets.py close')
@@ -3180,9 +3216,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if refs and not rewrite_refs and not force and not keep_refs:
         via_force = (f' or --keep-refs (close, leave them and record them in the Outcome)'
                      + ('' if ack_warnings is not None else ' or --force (close anyway, leaving them)'))
-        raise Fail(f'{slug}: close renames it to {dot.name}, but these files outside it reference {old_ref}:\n'
+        need(f'{slug}: close renames it to {dot.name}, but these files outside it reference {old_ref}:\n'
                    + ''.join(f'  {f}\n' for f in refs)
-                   + f'rerun with --rewrite-refs (rewrite them to {new_ref}){via_force}; nothing written')
+             + f'rerun with --rewrite-refs (rewrite them to {new_ref}){via_force}; nothing written')
     rewrite = refs if rewrite_refs else []
     cite_note = f'; citation scan skipped (citation_skip): {", ".join(cite_skipped)}' if cite_skipped else ''
 
@@ -3233,7 +3269,11 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if not why:
             raise Fail(f'{slug}: empty --reason; give the reason the ticket is closed; nothing written')
         if not n:
-            raise Fail(f'{h}: no status: line in front matter; nothing written')
+            need(f'{h}: no status: line in front matter; nothing written')
+        if preflight:
+            if missing:
+                raise Fail('\n'.join(missing))
+            return 'ready'
         body = raw[fm.end():]
         if body and not body.endswith('\n'):
             body += '\n'
@@ -3264,22 +3304,23 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                     pass
             hint = (f'; a filer record exists in {", ".join(held)}; commit or copy it into this tree, then rerun close'
                     if held else '')
-            raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first{hint}; nothing written')
-        src = filers[-1]
-        text = src.read_text(encoding='utf-8')
+            need(f'{slug}: no filer-L*.md in {d}; run /file on the task first{hint}; nothing written')
+        src = filers[-1] if filers else d / 'filer-L1.md'
+        text = src.read_text(encoding='utf-8') if filers else '## Warnings\nNone\n\n## Follow-ups\nNone\n'
         warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
         if warnings is None or follow is None:
-            raise Fail(f'{src}: missing a ## Warnings or ## Follow-ups section; nothing written')
+            need(f'{src}: missing a ## Warnings or ## Follow-ups section; nothing written')
+            warnings, follow = warnings or 'None', follow or 'None'
         if ack_warnings is not None and is_none(warnings):
-            raise Fail(f'{slug}: no open warnings to acknowledge in {src.name}; rerun without --ack-warnings; '
-                       f'nothing written')
+            need(f'{slug}: no open warnings to acknowledge in {src.name}; rerun without --ack-warnings; '
+                 f'nothing written')
         if not is_none(warnings) and not force and ack_warnings is None:
-            raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record '
-                       f'why they no longer apply, or --force to override):\n{warnings}')
+            need(f'{slug}: filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record '
+                 f'why they no longer apply, or --force to override):\n{warnings}')
         items = [] if is_none(follow) else bullets(follow)
         if not is_none(follow) and not items:
-            raise Fail(f'{src}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
-                       f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
+            need(f'{src}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
+                 f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
         src_name, origin = src.name, f'{final}/{src.name}'
     else:
         items = [re.sub(r'^[-*][ \t]+', '', ln) for p, _, ok in read if ok for ln in results.notes_lines(p)]
@@ -3360,12 +3401,16 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         follow_lines.append(f'{tag}: {title} -> {(parse(t) or {}).get("id", tid)}')
         planned_at = len(follow_lines) - 1
     if not n:
-        raise Fail(f'{h}: no status: line in front matter; nothing written')
+        need(f'{h}: no status: line in front matter; nothing written')
     hole = unfilled_line(root, raw)
     if hole:
-        raise Fail(f'{slug}/handoff.md:{hole[0]}: still holds {meta.get("type")} template placeholder text: '
-                   f'{hole[1].strip()[:60]!r}; fill it in, or close --reason "<why>" when the work was done '
-                   f'elsewhere; nothing written')
+        need(f'{slug}/handoff.md:{hole[0]}: still holds {meta.get("type")} template placeholder text: '
+             f'{hole[1].strip()[:60]!r}; fill it in, or close --reason "<why>" when the work was done '
+             f'elsewhere; nothing written')
+    if preflight:
+        if missing:
+            raise Fail('\n'.join(missing))
+        return 'ready'
     if dry_run:
         opens = [f'open {m["id"]} {m.get("title", "")} [{x}]'
                  for x, m in sorted(ts, key=lambda e: e[1]['id'])
@@ -3790,6 +3835,32 @@ def run(root, cmd, args=(), **kw):
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
+
+
+def close_wait_notice(path):
+    """Tell the user a close is queued behind another one holding the close lock (T-0581)."""
+    print(f'waiting for {path}: another close is running in this root', file=sys.stderr, flush=True)
+
+
+def close_lock(root):
+    """T-0581: an open handle holding an exclusive flock on <root>/runtime/close.lock, so closes in one root run one
+    at a time; a second close prints close_wait_notice and blocks until the first releases it. None when <root> is
+    not a dir (root_guard refuses it next). main takes it, not run, so the selftest's in-process closes write no
+    lock file. A runtime/ dir it creates gets a `*` .gitignore, so the lock never dirties a tree that does not
+    ignore runtime/ (a fanout integration worktree). Closing the handle releases the lock."""
+    if not root.is_dir():
+        return None
+    path = root / 'runtime' / 'close.lock'
+    if not path.parent.is_dir():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        (path.parent / '.gitignore').write_text('*\n', encoding='utf-8')
+    fh = open(path, 'a')
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        close_wait_notice(path)
+        fcntl.flock(fh, fcntl.LOCK_EX)
+    return fh
 
 
 # ---------- selftest ----------
@@ -6533,9 +6604,66 @@ def selftest():
                rc == 1 and err.endswith('entry for planner'))
         r = sk_root('close-reason', ['fix'], files=built, status_done=False)
         rc, _, err = run(r, 'close', ('lean-a',), reason='x')
-        expect(f'(skips) close --reason without entries refuses, status unchanged: rc={rc} {err!r}',
-               rc == 1 and 'no ## Skipped entry for planner;' in err and err.endswith('nothing written')
-               and status(r, 'lean-a') == 'proposed')
+        sk = skips_path(r / 'lean-a')
+        sk = sk.read_text(encoding='utf-8') if sk.is_file() else ''
+        expect(f'(skips) T-0581: close --reason without entries writes the skip lines it needs and closes: '
+               f'rc={rc} {err!r} {sk!r}',
+               rc == 0 and status(r, 'lean-a') == 'done' and run(r, 'check')[0] == 0
+               and '- skip: planner; step: all; reason: closed by reason (x); decided: tickets.py close --reason\n' in sk)
+        # T-0581: close --preflight lists every item close would demand, one line each, and writes nothing
+        r = sk_root('pre-full', ['full'], files=built, status_done=False)
+        before = snap(r)
+        rc, out, err = run(r, 'close', ('lean-a',), preflight=True, filer=False)
+        expect(f'(skips) T-0581: preflight on a full-lane ticket with no skip entry lists it and exits 1, writing '
+               f'nothing: rc={rc} {out!r} {err!r}',
+               rc == 1 and any('no ## Skipped entry for planner' in ln for ln in err.splitlines())
+               and any('verifier verdict' in ln for ln in err.splitlines())
+               and 'nothing written' not in err and snap(r) == before and status(r, 'lean-a') == 'proposed')
+        rc, out, err = run(r, 'close', ('lean-a',), preflight=True, reason='x')
+        expect(f'(skips) T-0581: preflight with --reason is ready (--reason writes the skip lines): rc={rc} {out!r} '
+               f'{err!r}', rc == 0 and out == 'ready' and snap(r) == before)
+        rc, out, err = run(sk_root('pre-ok', ['fix'], PL + FL, files=built, status_done=False), 'close', ('lean-a',),
+                           preflight=True, filer=False)
+        expect(f'(skips) T-0581: preflight still names the verifier verdict when the skip entries are present: '
+               f'rc={rc} {err!r}', rc == 1 and 'no ## Skipped entry' not in err and 'verifier verdict' in err)
+        rc, _, err = run(r, 'close', ('lean-a',), preflight=True, dry_run=True)
+        expect(f'(skips) T-0581: preflight refuses with --dry-run: rc={rc} {err!r}',
+               rc == 1 and '--preflight' in err and snap(r) == before)
+        # T-0581: two concurrent closes in one root run one after the other; the second reports waiting
+        cl = pathlib.Path(tmp) / 'close-lock' / '.sdlc'
+        for s in ('lock-a', 'lock-b'):
+            run(cl, 'new', ('chore', s))
+        mark = cl.parent / 'marks'
+        mark.mkdir()
+        drv = ('import pathlib, sys, time\nsys.path.insert(0, sys.argv[1])\nimport tickets\n'
+               'mark, k = pathlib.Path(sys.argv[2]), sys.argv[3]\n'
+               'real, notice = tickets.cmd_close, getattr(tickets, "close_wait_notice", None)\n'
+               'def log(s):\n    with open(mark / "log", "a") as fh:\n        fh.write(s + "\\n")\n'
+               'def gated(*a, **kw):\n    log("start-" + k)\n    (mark / ("in-" + k)).touch()\n'
+               '    end = time.time() + 60\n'
+               '    while k == "1" and not (mark / "waiting-2").exists() and time.time() < end:\n'
+               '        time.sleep(0.02)\n'
+               '    try:\n        return real(*a, **kw)\n    finally:\n        log("end-" + k)\n'
+               'def waiting(p):\n    (mark / ("waiting-" + k)).touch()\n    notice(p)\n'
+               'tickets.cmd_close, tickets.close_wait_notice = gated, waiting\nsys.exit(tickets.main(sys.argv[4:]))\n')
+
+        def close_proc(k, s):
+            return subprocess.Popen([sys.executable, '-c', drv, str(PLUGIN / 'scripts'), str(mark), k, '--root',
+                                     str(cl), 'close', s, '--reason', 'lock test'],
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        import time as _time
+        procs = [close_proc('1', 'lock-a')]
+        end = _time.time() + 60
+        while not (mark / 'in-1').exists() and procs[0].poll() is None and _time.time() < end:
+            _time.sleep(0.02)
+        procs.append(close_proc('2', 'lock-b'))
+        outs = [(*p.communicate(timeout=120), p.returncode) for p in procs]
+        log = (mark / 'log').read_text(encoding='utf-8').split() if (mark / 'log').is_file() else []
+        expect(f'(T-0581) two concurrent closes run one after the other and the second reports waiting: {log!r} '
+               f'{outs!r}',
+               all(rc == 0 for _, _, rc in outs) and log == ['start-1', 'end-1', 'start-2', 'end-2']
+               and 'waiting' in outs[1][1] and status(cl, 'lock-a') == 'done' and status(cl, 'lock-b') == 'done'
+               and (cl / 'runtime' / '.gitignore').read_text(encoding='utf-8') == '*\n')
         r = sk_root('close-filer', ['lean'], files=built, status_done=False)
         filer('filer-L1.md', 'None', 'None', slug='lean-a')(r)
         rc, _, err = run(r, 'close', ('lean-a',))
@@ -6581,25 +6709,25 @@ def selftest():
                '- skip: verifier; step: all; reason: docs-only diff against ' in sk and sk.index('## Skipped') < sk.index('- skip: verifier'))
         expect(f'(docs-only) check passes after the waiver: {run(r, "check")[2]!r}', run(r, 'check')[0] == 0)
         r = vs_root('vs-script', [('docs/specs/x.md', '# x\n'), ('scripts/tool.py', 'x = 1\n')])
-        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        rc, _, err = run(r, 'close', ('lean-a',))  # the filer route: the skip gate refuses before the filer read
         expect(f'(docs-only) a diff touching one script path still needs a verifier: rc={rc} {err!r}',
                rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed'
                and 'docs-only diff' not in (r / 'lean-a' / 'skips.md').read_text(encoding='utf-8'))
         for rel in ('plugins/p/skills/s/SKILL.md', 'plugins/p/agents/a.md'):
             r = vs_root('vs-md-' + rel.split('/')[2], [(rel, '# role\n')])
-            rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+            rc, _, err = run(r, 'close', ('lean-a',))
             expect(f'(docs-only) a Markdown file under {rel.split("/")[2]}/ still needs a verifier: rc={rc} {err!r}',
                    rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
         r = vs_root('vs-red', [('.sdlc/lean-a/notes.md', 'n\n')], base_files=[('docs/loose.md', '# loose\n')])
-        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        rc, _, err = run(r, 'close', ('lean-a',))
         expect(f'(docs-only) a record-only diff that fails docs_check still needs a verifier: rc={rc} {err!r}',
                rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
         r = vs_root('vs-override', [('docs/specs/x.md', '# x\n')], handoff_tail='\nverifier: L2\n')
-        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        rc, _, err = run(r, 'close', ('lean-a',))
         expect(f'(docs-only) a verifier: L2 line in the handoff keeps the verifier: rc={rc} {err!r}',
                rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
         r = vs_root('vs-nobase', [('docs/specs/x.md', '# x\n')], recorded=False)
-        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        rc, _, err = run(r, 'close', ('lean-a',))
         expect(f'(docs-only) no recorded base keeps the verifier: rc={rc} {err!r}', rc == 1 and NOVER in err)
 
         # ---- (tests-gate) T-0496: a qualifying L2 solo pilot ticket closes with no verifier result; pilot off or a report gap keeps it ----
@@ -6629,12 +6757,12 @@ def selftest():
                '- skip: verifier; step: all; reason: tests-gate diff against ' in sk and sk.index('## Skipped') < sk.index('- skip: verifier'))
         expect(f'(tests-gate) check passes after the skip: {run(r, "check")[2]!r}', run(r, 'check')[0] == 0)
         r = tg_root('tg-off', pilot=False)
-        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        rc, _, err = run(r, 'close', ('lean-a',))
         expect(f'(tests-gate) the same ticket without the config line still needs a verifier: rc={rc} {err!r}',
                rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed'
                and 'tests-gate diff' not in (r / 'lean-a' / 'skips.md').read_text(encoding='utf-8'))
         r = tg_root('tg-report', exits=1)
-        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        rc, _, err = run(r, 'close', ('lean-a',))
         expect(f'(tests-gate) a report missing one exit line still needs a verifier: rc={rc} {err!r}',
                rc == 1 and NOVER in err and status(r, 'lean-a') == 'proposed')
 
@@ -7495,8 +7623,8 @@ def main(argv):
                    help='the one-line `- Changed:` text of the ## Outcome (default: see commits)')
     p.add_argument('--reason', metavar='TEXT',
                    help='close with no verdict gate and no filer (work done elsewhere): set done, append ## Outcome '
-                        'with verdict `closed by reason (TEXT)`, file no follow-ups (refuses with --dry-run, --skip, '
-                        '--expect, --ticket or --filer)')
+                        'with verdict `closed by reason (TEXT)`, write any ## Skipped entry the lane record still '
+                        'needs, file no follow-ups (refuses with --dry-run, --skip, --expect, --ticket or --filer)')
     p.add_argument('--ack-warnings', metavar='TEXT',
                    help='with --filer: close while the filer warnings are open: each warning line becomes an Outcome '
                         '`- Deviation: acknowledged warning (TEXT): <line>`, follow-ups file as normal (refuses '
@@ -7529,6 +7657,11 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
+    p.add_argument('--preflight', action='store_true',
+                   help='read-only: run the same gates for the same route (--filer, --reason, the refs flags) and '
+                        'print `ready` (exit 0), or one line per item close would demand (exit 1): the verdict, the '
+                        'filer, ## Skipped lines, refs needing --rewrite-refs or --keep-refs, open warnings; takes no '
+                        'lock; refuses with --dry-run, --skip, --expect or --ticket')
     p = sub.add_parser('claim', help='claim a ticket: status claimed and `claimed_by: <agent> <YYYY-MM-DD>` '
                                      'directly after created:, then regenerate the roadmap')
     p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
@@ -7621,12 +7754,18 @@ def main(argv):
         kw['keep_refs'] = a.keep_refs
         kw['filer'] = a.filer
         kw['changed'] = a.changed
+        kw['preflight'] = a.preflight
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)
         except Fail as e:
             print(e, file=sys.stderr)
             return 1
-    rc, out, err = run(pathlib.Path(a.root), cmd, args, **kw)
+    lock = close_lock(pathlib.Path(a.root)) if cmd == 'close' and not a.preflight else None
+    try:
+        rc, out, err = run(pathlib.Path(a.root), cmd, args, **kw)
+    finally:
+        if lock:
+            lock.close()
     if out:
         print(out)
     if err:

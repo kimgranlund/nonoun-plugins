@@ -6618,7 +6618,8 @@ def selftest():
               and not missing.exists() and snapshot(tmp) == before)
 
         # (lane solo close) a conductor-style flow, no fanout: steps lane, then tickets.py close --reason, with
-        # the T-0219 skips guard live. Negative control: with the Skipped write off, the close is refused.
+        # the T-0219 skips guard live. Negative control: with the Skipped write off, a plain close is refused (close
+        # --reason writes the missing entries itself since T-0581, so it cannot show the guard).
         def solo_flow(name, disable):
             r = tmp / f'solo-{name}'
             subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
@@ -6636,8 +6637,8 @@ def selftest():
             subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(d)], cwd=str(r),
                            env=env_, capture_output=True, text=True)
             second = (d / 'skips.md').read_text(encoding='utf-8')
-            closed = subprocess.run([*tk, 'close', 'solo-a', '--reason', 'delivered by solo'], cwd=str(r), env=env_,
-                                    capture_output=True, text=True)
+            closed = subprocess.run([*tk, 'close', 'solo-a', *([] if disable else ['--reason', 'delivered by solo'])],
+                                    cwd=str(r), env=env_, capture_output=True, text=True)
             return made, lane_run_, first, second, closed
 
         made, lr, first, second, closed = solo_flow('on', False)
@@ -6650,7 +6651,7 @@ def selftest():
               second.count('- skip: planner;') == 1 and second.count('- skip: filer;') == 1
               and first.count('- skip:') == 2 and second.count('- lane: solo') == 2)
         made0, lr0, first0, second0, closed0 = solo_flow('off', True)
-        check('(lane solo close) negative control: with the Skipped write off the close by reason is refused '
+        check('(lane solo close) negative control: with the Skipped write off a plain close is refused '
               f'(rc={closed0.returncode} {closed0.stderr.strip()[:160]!r})',
               closed0.returncode == 1 and 'no ## Skipped entry' in closed0.stderr and '- skip:' not in second0)
         full_ = tmp / 'solo-full'
