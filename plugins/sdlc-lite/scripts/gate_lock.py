@@ -1143,7 +1143,7 @@ def case_cap(py, base, label):
         waitfor(lambda: (m / 'started-3').exists() or 'waiting for a slot' in (m / 'err-3').read_text(), 5)
         if (m / 'started-3').exists():
             return ['the third holder started at once with the compute capacity held']
-        if label == 'real':
+        if label.startswith('real'):
             st = gl(py, env, 'status')
             if not (st.returncode == 0 and 'name H1' in st.stdout and 'name H2' in st.stdout and 'name H3' in st.stdout and 'age ' in st.stdout):
                 bad.append(f'status does not list the holders and the waiter, got {st.stdout!r}')
@@ -1246,7 +1246,7 @@ def case_livegroup(py, base, label):
         r = gl(py, env, 'run', '--need', 'compute_units=6', '--timeout', '2', '--', 'true')
         if not (r.returncode == 3 and r.stderr.startswith('gate_lock: timeout')):
             bad.append(f'a live group lost its charge when its wrapper died, rc={r.returncode} {r.stderr!r}')
-        if label == 'real':
+        if label.startswith('real'):
             st = gl(py, env, 'status')
             if 'orphaned group' not in st.stdout:
                 bad.append(f'status does not show the orphaned group, got {st.stdout!r}')
