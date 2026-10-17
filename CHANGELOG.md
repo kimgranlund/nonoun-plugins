@@ -2,6 +2,21 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.24.4] - 2026-10-17
+
+Report: [docs/reports/2026-10-17-release-0-24-4.md](docs/reports/2026-10-17-release-0-24-4.md).
+
+### Fixed
+
+- `messages.py send` with an absolute `--root` writes the mailbox entry files exactly as a relative root does, so a peer's reply no longer rewrites the receiving repo's tracked `.sdlc/messages/*AGENTS.md` with absolute paths (T-0612).
+- `steps.py lint` and `plan_check.py` no longer report "reads this step's own verifier result" for a verifier file at an absolute path in another repository (T-0613).
+- `solo_run.py run --worktree` without `--cwd` records the session checkout's base (T-0587).
+- The `gate_lock.py` selftest status checks run again; they compared a label to the real value and passed vacuously (T-0603).
+
+### Changed
+
+- `builder.md` no longer says a second `redck` record is only a base control, stale since T-0473 (T-0605).
+
 ## [0.24.3] - 2026-10-17
 
 Report: [docs/reports/2026-10-17-release-0-24-3.md](docs/reports/2026-10-17-release-0-24-3.md).
