@@ -33,6 +33,7 @@ Arguments: `$ARGUMENTS`
 | `--ticket N` | With `close`: file follow-up N, a `decide:` item, as the one ticket; needs `--expect` | no ticket filed | `--ticket 1` |
 | `--expect DIGEST` | With `close`: the digest from the last line of the dry run | - | `--expect 3fa9c1` |
 | `--rewrite-refs` | With `close`, `archive`, or `migrate-layout`: rewrite files that cite a moved folder | off | `archive --rewrite-refs` |
+| `--preflight` | With `close`: read-only; print `ready` (exit 0) or one line per item close will demand (exit 1), writing nothing | off | `close board-crash --preflight` |
 | `--keep-refs` | With `close`: leave citing files as they are and list them on a `- Deviation:` line of the `## Outcome`, without overriding open Warnings | off | `close board-crash --keep-refs` |
 | `--apply` | With `migrate-size`: write the rewrites; without it the run is a dry run | off | `migrate-size --apply` |
 | `--scope PATH` | With `blockers`: narrow the list to one task or ticket dir | every ticket | `blockers --scope .sdlc/add-retry` |
