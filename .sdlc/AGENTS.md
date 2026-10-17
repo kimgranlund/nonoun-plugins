@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c4dedb93b048 -->
+<!-- sdlc-lite:managed:start v1 sha256:e5534d3b5afb -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,12 +15,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
-- claimed: 2
+- claimed: 1
   - T-0612 messages.py send --root rewrites tracked entry files with absolute paths (0612-messages-root-abs-paths), claimed by sdlc-lite-author 2026-10-17
-  - T-0613 steps.py lint flags another repo's verifier file as the step's own result (0613-lint-foreign-verifier-result), claimed by sdlc-lite-author 2026-10-17
 - paused: 0
 - blocked: 0
-- done: 571
+- done: 572
 - dropped: 29
 
 ## Procedures

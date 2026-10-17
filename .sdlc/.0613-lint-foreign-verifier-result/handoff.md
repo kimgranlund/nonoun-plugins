@@ -2,7 +2,7 @@
 id: T-0613
 title: "steps.py lint flags another repo's verifier file as the step's own result"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,13 @@ The failing test lands before or with the fix, never after.
 - The existing T-0415 own-result cases still report the finding (same selftest).
 - (red) The new case fails on the base commit (revert the fix, run the selftest, observe exit 1, restore).
 - `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0.
+
+## Outcome
+
+2026-10-17 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/plan_check.py:958 `clarify_foreign` resolves the repo root from the process cwd (`git rev-parse --show-toplevel` with no `-C`), not from the clarified file's folder. It also ignores the main checkout of a linked worktree, which steps.py `repo_roots` does count. So running clarify from another directory, or on an absolute path into the main checkout from a lane, can classify a path differently. | note: plugins/sdlc-lite/scripts/steps.py:7061 the in-repo control predicts the next fixture dir name with `tmp / f"o-repo{count[0] + 1}"`. This works today but is coupled to `o_repo`'s counter. | note: .sdlc/0613-lint-foreign-verifier-result/skips.md:5 the working tree has a duplicated `lane: solo` line that is not in the review sha.) · verifier: verifier-L2 (opus) · base: beb81bd34449
+- Changed: see commits
+- Commits: a6a08d9 T-0613: steps.py lint flags another repo's verifier file as the step's own result
+- Check: 1 `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and includes a new case: a criterio...: pass
+- Check: 2 The existing T-0415 own-result cases still report the finding (same selftest): pass
+- Check: 3 (red) The new case fails on the base commit: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0: pass

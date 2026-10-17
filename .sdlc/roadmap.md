@@ -10,6 +10,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0612 | [0612-messages-root-abs-paths](0612-messages-root-abs-paths/handoff.md) | messages.py send --root rewrites tracked entry files with absolute paths | bug | L1 | P2 | none | 🟡 claimed |
-| T-0613 | [0613-lint-foreign-verifier-result](0613-lint-foreign-verifier-result/handoff.md) | steps.py lint flags another repo's verifier file as the step's own result | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 571 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 572 done, 29 dropped (git log or .NNNN-* folders)
