@@ -197,10 +197,11 @@ Entry files
     <mailbox>/<state>/CLAUDE.md                `@AGENTS.md`
   send and reply write them after every check passed and before the message is delivered, so a
   refused send or reply writes none; tickets.py roadmap writes the same files. expire never writes
-  them. The templates are ENTRY_TEMPLATE and STAGE_TEMPLATES; {{launcher}} renders as the absolute path
-  of <mailbox>/messages-run.py, so every command runs the launcher, and a copied file records its own
-  folder in it. A file that is missing or differs is overwritten whole through a temp file
-  and os.replace: the files are generated and git-ignored, so edits are lost. Every subcommand
+  them. The templates are ENTRY_TEMPLATE and STAGE_TEMPLATES; {{launcher}} renders as the path
+  of <mailbox>/messages-run.py relative to the git toplevel holding the mailbox (absolute outside git), the same
+  text for a relative and an absolute --root, so every command runs the launcher from the repository root and a
+  tracked mailbox does not change; the launcher records its own script folder. A file that is missing or
+  differs is overwritten whole through a temp file and os.replace: the files are generated and git-ignored, so edits are lost. Every subcommand
   ignores them.
 
 Schema
@@ -793,10 +794,25 @@ def has_reply(mbox, mid, fields):
 
 # ---------------------------------------------------------------- entry files
 
+def launcher_path(mbox):
+    """The launcher as the entry files name it: relative to the git toplevel that holds the mailbox, so the text is
+    the same whether --root was relative or absolute and a send from another repo leaves a tracked mailbox
+    unchanged. Outside git, or when the mailbox is outside its toplevel, the absolute path."""
+    path = os.path.join(os.path.abspath(mbox), LAUNCHER_NAME)
+    folder = os.path.dirname(os.path.realpath(path))
+    while not os.path.isdir(folder):
+        folder = os.path.dirname(folder)
+    top = git(folder, '--show-toplevel')
+    if top is None:
+        return path
+    rel = os.path.relpath(os.path.join(os.path.realpath(os.path.dirname(path)), LAUNCHER_NAME), os.path.realpath(top))
+    return path if rel.startswith(os.pardir) else rel.replace(os.sep, '/')
+
+
 def entry_files(mbox):
     """The ten entry files as [(path relative to the mailbox, bytes)], rendered for this mailbox and file's folder."""
     scripts = os.path.dirname(os.path.realpath(__file__))
-    launcher = os.path.join(mbox, LAUNCHER_NAME)
+    launcher = launcher_path(mbox)
 
     def render(template):
         return template.replace('{{launcher}}', launcher).encode('utf-8')
@@ -2464,7 +2480,7 @@ def case_entry_written(h):
         st_fail(f'AGENTS.md headings are {heads}, expected {ST_HEADINGS}')
     if '{{' in root:
         st_fail('AGENTS.md still holds a {{ placeholder')
-    script = '"' + os.path.join(b.mbox, 'messages-run.py') + '"'
+    script = '".sdlc/messages/messages-run.py"'
     if script not in root:
         st_fail(f'AGENTS.md does not name {script}')
     if got['messages-run.py'] == b'' or repr(os.path.dirname(h.me)).encode() not in got['messages-run.py']:
@@ -2490,6 +2506,25 @@ def case_entry_refreshed(h):
     for rel in ST_ENTRY_FILES:
         if again[rel] != first[rel]:
             st_fail(f'{rel} after the next send differs from what the first send wrote')
+
+
+def case_entry_root_forms(h):
+    """T-0612: a send with an absolute --root, run from another folder, writes the entry files a send with the relative
+    root writes, so a tracked mailbox does not change and the launcher is named by its repo-relative path."""
+    rel, absolute, elsewhere = Box(h), Box(h), h.fresh('elsewhere')
+    os.mkdir(elsewhere)
+    send = ('send', '--receiver', 'bob', '--sender', 'alice', '--topic', 't', '--follow-up', 'false', 'hi')
+    for b in (rel, absolute):
+        b.reg('bob')
+    rel.ok('--root', '.sdlc', *send)
+    absolute.ok('--root', os.path.join(absolute.repo, '.sdlc'), *send, cwd=elsewhere)
+    want = '"' + '.sdlc/messages/messages-run.py' + '"'
+    first, second = st_entries(rel), st_entries(absolute)
+    if want not in first['AGENTS.md'].decode('utf-8'):
+        st_fail(f'the relative-root send does not name {want} in AGENTS.md')
+    for name in ST_ENTRY_FILES:
+        if first[name] != second[name]:
+            st_fail(f'{name} differs between a send with the relative root and a send with the absolute root')
 
 
 def case_entry_refused(h):
@@ -3470,6 +3505,7 @@ SELFTEST_CASES = (
     ('worktree: one shared mailbox', case_worktree),
     ('entry files: written by send', case_entry_written),
     ('entry files: refreshed by the next send', case_entry_refreshed),
+    ('entry files: same bytes for a relative and an absolute --root', case_entry_root_forms),
     ('entry files: refused send writes none', case_entry_refused),
     ('entry files: every command parses', case_entry_parses),
     ('entry files: scripted path-only run', case_entry_scripted),
