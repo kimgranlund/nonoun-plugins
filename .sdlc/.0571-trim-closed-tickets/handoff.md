@@ -38,6 +38,7 @@ Never remove a closed ticket's top `handoff.md`. `tickets.py check` and `tickets
 ## Outcome
 
 2026-10-17 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: plain-text (non-link) citations of removed paths remain unrewritten in dated reports, for example `docs/reports/proposals-live-run.md` (45 mentions), `docs/reports/2026-10-12-ceremony-audit.md` and `docs/reports/2026-10-12-ceremony-audit/counts.txt`, `docs/reports/2026-10-12-compaction-prompt-replay.md`. Criterion 4 covers links only, and the handoff says to leave report text alone, so this is not a fail. | note: many closed-ticket `handoff.md` files still name removed siblings such as `.0440-per-tier-agent-prompts/architect-L1.md` in plain text. They sit outside the `docs plugins .sdlc/*.md AGENTS.md` scope the handoff names. | note: `plugins/sdlc-lite/scripts/traces/fixtures/corpus-sdlc/` now ships about 35 run-record files inside the plugin tree; they are test fixtures only.) · verifier: verifier-L2 (sonnet) · base: 51cbf1bacc20
+- Removal commit: a4ecbde (4638 files); the removed files remain at 51cbf1ba, which the rewritten links name.
 - Changed: see commits
 - Commits: a4ecbde T-0571: Closed tickets keep only handoff.md and their Outcome
 - Check: 1 Only handoff.md and verifier-L*.md remain tracked under closed folders: pass
