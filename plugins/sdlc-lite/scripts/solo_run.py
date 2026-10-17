@@ -162,7 +162,8 @@ def refuse_template(task_dir):
 
 def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284). tree (run --cwd)
-    is the tree the solo builds in: base_sha is its HEAD and the prompt carries its Tree line, not the session checkout's (T-0546)."""
+    is the tree the solo builds in: base_sha is its HEAD and the prompt carries its Tree line, not the session checkout's (T-0546);
+    a --worktree lane wins over it, so base_sha is the lane tree's HEAD, matching the recorded tree (T-0587)."""
     tier = tier_of(tier)
     if tier not in TIERS:
         raise Refuse(f'no solo level {tier!r}: want L1, L2, or L3')
@@ -184,7 +185,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=dispatch.agent_name('solo', tier, tdir, 1), description=dispatch.list_description(tdir, 'solo', tier),
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
              role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(records(tdir)),
-             attempt_id=attempt, base_sha=head_sha(tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
+             attempt_id=attempt, base_sha=head_sha(worktree or tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
     d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {dispatch.handoff_locator(d["artifacts_dir"])}\n{brief}'
     tree = worktree or tree  # T-0550: a --worktree lane gets the same Tree line dispatch.py prepare writes; the lane wins
@@ -1341,6 +1342,14 @@ def selftest():
         dn = cli()
         expect('negative control: without --cwd the base is the session checkout HEAD and the prompt has no Tree line',
                dn.get('base_sha') == sess_head != other_head and '\nTree: ' not in dn.get('prompt', '') and 'tree' not in dn)
+        # T-0587: a reused --worktree lane already ahead of the session checkout: base_sha is the lane HEAD, matching tree.
+        lane = ['--worktree', 'lane-y', '--cwd', str(sess)]
+        cli(*lane)
+        lane_tree = tmp / 'session.worktrees' / 'lane-y'
+        subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'ahead'], cwd=str(lane_tree), check=True)
+        dl = cli(*lane)
+        expect('run --worktree reuse: base_sha is the lane HEAD (ahead of the session checkout), matching tree (T-0587)',
+               dl.get('base_sha') == head_sha(lane_tree) != sess_head and dl.get('tree') == os.path.realpath(str(lane_tree)))
         # T-0596: run (the maintainer's --no-worktree path included) refuses with exit 2 when plugin_min: is above the
         # running plugin's version, before any record; an equal version dispatches.
         have = json.loads((PLUGIN / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
