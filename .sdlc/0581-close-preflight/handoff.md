@@ -28,3 +28,6 @@ Close output and requirements stay the same apart from these.
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0. Its new cases show: preflight on a full-lane ticket with no skips.md entry lists it and exits 1; `--reason` on that ticket closes with the skip line written; and two concurrent closes run one after the other (the second reports waiting). The cases failed before the change.
 2. `git diff --check` exits 0.
+
+## Plan review
+- amend: scope adds the two selftest negative controls that relied on `close --reason` refusing a ticket with no `## Skipped` lines: `plugins/sdlc-lite/scripts/steps.py` (lane solo close case, about line 6471) and `plugins/sdlc-lite/scripts/fanout.py` (case 16). Each control moves to a close that still refuses (a plain or `--filer` close); `steps.py selftest` and `fanout.py selftest` must exit 0. Found by the solo; decided: maintainer conductor, 2026-10-17.
