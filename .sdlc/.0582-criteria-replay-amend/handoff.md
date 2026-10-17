@@ -2,7 +2,7 @@
 id: T-0582
 title: "Plan criteria replayed on main; criterion-only fixes amend without spending the replan"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,12 @@ Maintainer decision 2026-10-15 to file this. Independent verification and the de
 1. `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0. Its new cases show a `criterion-only` finding after the replan routes to `amend`, while a design finding after the replan still routes to the user. The cases failed before the change.
 2. `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-17 · lane: full L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `plugins/sdlc-lite/scripts/steps.py` around lines 2156-2192 and 3260-3268: `split --only N` logs only the chosen steps' amends, but `review` reports "applied" once any line for that review is logged (`amended_reviews`). A later `--only` split for the other amended steps still applies and logs them, so the effect is only the reason-line wording. Not covered by a selftest case. | note: the `selftest` and `check.py` rc values were read from separate re-runs, because the first pipeline's `PIPESTATUS` was empty under zsh.) · verifier: verifier-L2 (sonnet) · base: e02e01164de9
+- Changed: see commits
+- Commits: 608a47c T-0582: Plan criteria replayed on main; criterion-only fixes amend without spending the replan
+- Check: 1 `steps.py selftest` exits 0, with new cases showing a `criterion-only` finding after the replan r...: pass
+- Check: 2 `check.py`, `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0: pass
+- Check: 3 `git diff --check` exits 0: pass
