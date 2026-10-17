@@ -2031,6 +2031,9 @@ def _cost_poll_pattern():
 # --- corpus regression ------------------------------------------------------------------------
 
 _CORPUS = '.sdlc/.0109-make-the-fixed-count-lint'
+# Three closed tickets' run records as they stood at 51cbf1ba, before T-0571 trimmed closed folders
+# to handoff.md; the case copies them into a throwaway repo as its .sdlc.
+_CORPUS_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures', 'corpus-sdlc')
 
 
 def _toplevel():
@@ -2059,16 +2062,23 @@ def _corpus_run_rows(top, rows, rel, rec):
     return [r for r in here if r['attempt_id'] == f'legacy:{rel}/runs.jsonl#{rec["index"]}']
 
 
-@case('corpus: this repo\'s .sdlc traces ingest whole and give the known findings')
+@case('corpus: three closed tickets\' .sdlc traces ingest whole and give the known findings')
 def _corpus():
+    import shutil
+    real_top = _toplevel()
+    logs = os.path.join(real_top or '', '.worktrees/fanout-night/logs')
+    lanes = [os.path.dirname(logs)] if real_top and os.path.isdir(logs) else []
+    with tempfile.TemporaryDirectory() as top:
+        shutil.copytree(_CORPUS_FIXTURE, os.path.join(top, '.sdlc'))
+        _corpus_in(top, lanes)
+
+
+def _corpus_in(top, lanes):
     from . import ingest, store
     from .detectors import cost, escalation, hygiene, plan
     from .sources import runs
-    top = _toplevel()
-    if not top or not os.path.isdir(os.path.join(top, _CORPUS)):
-        raise Skip(f'{_CORPUS} is absent under the git toplevel')
     with tempfile.TemporaryDirectory() as tmp:
-        out = ingest.run(top, out=tmp, bench_dir=os.path.join(tmp, 'nb'))
+        out = ingest.run(top, lanes_dirs=lanes, out=tmp, bench_dir=os.path.join(tmp, 'nb'))
         with open(os.path.join(out, store.EVENTS), encoding='utf-8') as f:
             rows = [json.loads(line) for line in f if line.strip()]
         with open(os.path.join(out, store.AUX), encoding='utf-8') as f:
@@ -2104,8 +2114,7 @@ def _corpus():
              {'path': '.sdlc/.0134-mirror-the-extended-planner-rules/step-1/verifier-L1.md'}),
             ('replan-loop',
              {'path': '.sdlc/.0113-close-rename-breaks-refs/step-2.superseded-1/builder-L2.md'})]
-    logs = os.path.join(top, '.worktrees/fanout-night/logs')
-    if os.path.isdir(logs):
+    if lanes:
         want.append(('overwritten-gate-log', {}))
     else:
         print('skip: corpus: overwritten-gate-log: .worktrees/fanout-night/logs is absent')

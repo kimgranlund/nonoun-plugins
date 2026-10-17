@@ -28,7 +28,7 @@ One writer on `check.py` at a time. Skills stay self-contained (`check.py` item 
 - replan: step 1: step-1/builder-L3.md blocked with `plan defect:` on criterion 3 (the `^FAIL` guard also matches the `FAIL: N role levels` summary line; the builder proposes `^FAIL ` with a trailing space). Every other step 1 criterion passes and the step 1 work is in the tree, uncommitted, so its `(red)` criteria are no longer red on this tree.
 
 ## Notes
-- Old and new hint per skill: [hints.md](hints.md) (33 rows; `report` and the merged `plan` are standardized here, so no follow-up for them).
+- Old and new hint per skill: [hints.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0463-skill-ui-hints/hints.md) (33 rows; `report` and the merged `plan` are standardized here, so no follow-up for them).
 
 ## Closed
 

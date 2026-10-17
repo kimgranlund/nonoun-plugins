@@ -34,7 +34,7 @@ An ephemeral wake costs the same each time and needs no session state. It does n
 
 ### Evidence for headless resume
 
-Both hosts can continue a recorded session from a headless call. Checked live on 2026-10-01 in a throwaway repository with `claude 2.1.286` (the Haiku id pinned at the time, before T-0353) and `codex-cli 0.159.2` (`gpt-5.6-terra`, low). Every row is a single trial on one machine and one account. The record is the review's raw result, `.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md` (D19):
+Both hosts can continue a recorded session from a headless call. Checked live on 2026-10-01 in a throwaway repository with `claude 2.1.286` (the Haiku id pinned at the time, before T-0353) and `codex-cli 0.159.2` (`gpt-5.6-terra`, low). Every row is a single trial on one machine and one account. The record is the review's raw result, [`.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md) (D19):
 
 | Host | Command | Result |
 | --- | --- | --- |

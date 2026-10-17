@@ -1,6 +1,6 @@
 # Builder overlay retest, L5 arm B (T-0458 addendum)
 
-Adds the cell the first report could not run. Evidence: `2026-10-12-builder-overlay-retest/rt-ndc-step2-L5-B-1/` and the run log line of 15:14Z in `.sdlc/.0458-builder-overlay-retest/run-log.md`. The cap was raised from 20 to 30 USD for this cell (`.sdlc/notes.md`, 2026-10-12).
+Adds the cell the first report could not run. Evidence: `2026-10-12-builder-overlay-retest/rt-ndc-step2-L5-B-1/` and the run log line of 15:14Z in [`.sdlc/.0458-builder-overlay-retest/run-log.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0458-builder-overlay-retest/run-log.md). The cap was raised from 20 to 30 USD for this cell (`.sdlc/notes.md`, 2026-10-12).
 
 ## Result
 

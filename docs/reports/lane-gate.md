@@ -21,7 +21,7 @@ Branch `lane-gate`, from main at 8d45cb6. Claims below are backed by command out
 
 - Round 1 (fable L3): fail on two items. `fanout.py` never set the override for `--driver`, and `/fix` step 3 dead-ended on exit 5. Both fixed in e022c6e, plus no skips.md write on a dry run.
 - Round 2, failed criteria only (a first attempt hit the 25 minute limit and was rerun): criteria 5 and 8 pass; criterion 7 fail, because the new `lane: fix` line made `tickets.py close --reason` refuse without `## Skipped` entries for planner and filer. The verifier named the fix (two skip lines in SKILL.md step 3) and observed that shape close with exit 0 in its own throwaway repo.
-- The SKILL.md fix was applied after round 2 and not re-run through a third verifier (replan cap). Verdict records: `.sdlc/.0274-lane-gate/verifier-L3-first.md.txt`, `verifier-L3-second.md.txt`.
+- The SKILL.md fix was applied after round 2 and not re-run through a third verifier (replan cap). Verdict records: [`.sdlc/.0274-lane-gate/verifier-L3-first.md.txt`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0274-lane-gate/verifier-L3-first.md.txt), `verifier-L3-second.md.txt`.
 
 ## Checks run
 

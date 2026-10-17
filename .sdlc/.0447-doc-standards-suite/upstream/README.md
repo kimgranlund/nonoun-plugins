@@ -1,1 +1,0 @@
-Upstream copies for T-0447, read-only inputs. Source: github.com/kimgranlund/claude-plugins, path harness/skills/prompt-wording-rules, commit 5f9819b86b4dc77934fd36226025cec2e2a88d81 (files SKILL.md, references/rubric.md, references/linguistic-techniques-for-agents.md, scripts/potency_lint.py). The build ports a distilled subset; it does not copy these files into the plugin.

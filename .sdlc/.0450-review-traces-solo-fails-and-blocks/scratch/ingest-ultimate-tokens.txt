@@ -1,1 +1,0 @@
-/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout37/m/.sdlc/runtime/traces/ultimate-tokens-6db11d08/events.jsonl

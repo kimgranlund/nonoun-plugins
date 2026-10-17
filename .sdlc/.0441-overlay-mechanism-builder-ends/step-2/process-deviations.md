@@ -1,2 +1,0 @@
-# Process deviations (written by redck.py audit; the verifier and filer read this file)
-process deviation: red-checkpoint: retrospective: attempt 7814d8e5fd81416c80aa2e7b16a4fe9f, handoff sha256 6888c4b7a99c, 4 of 4 (red) criteria without a pre-edit red control: `cd .sdlc/0441-overlay-mechanism-builder-ends/step-2 && test -s live...`; `cd .sdlc/0441-overlay-mechanism-builder-ends/step-2 && test -s live...`; `cd .sdlc/0441-overlay-mechanism-builder-ends/step-2 && test -f live...`; `cd .sdlc/0441-overlay-mechanism-builder-ends/step-2 && test -s live...`

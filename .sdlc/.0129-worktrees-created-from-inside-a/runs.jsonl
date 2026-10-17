@@ -1,2 +1,0 @@
-{"ts":"2026-09-27T05:25:27Z","role":"planner","level":"L2","model":"opus","effort":"medium","file":"planner-L2.md","cost_usd":1.0659336,"duration_ms":440470,"turns":15}
-{"ts":"2026-09-27T06:15:28Z","role":"filer","level":"L1","model":"sonnet","effort":"medium","file":"filer-L1.md","cost_usd":0.24115339999999996,"duration_ms":35467,"turns":10,"stray_worktrees":[],"stray_branches":[]}

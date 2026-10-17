@@ -1,1 +1,0 @@
-/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout37/m/.sdlc/runtime/traces/agent-ui-b4274bcd/findings.jsonl

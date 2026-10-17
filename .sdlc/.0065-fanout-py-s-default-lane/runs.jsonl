@@ -1,3 +1,0 @@
-{"ts":"2026-09-25T17:56:26Z","role":"planner","level":"L1","model":"sonnet","effort":"medium","file":"planner-L1.md","cost_usd":0.15336960000000002,"duration_ms":22934,"turns":6}
-{"ts":"2026-09-25T18:34:04Z","role":"planner","level":"L3","model":"fable","effort":"xhigh","file":"planner-L3.md","cost_usd":2.94468,"duration_ms":437546,"turns":17}
-{"ts":"2026-09-25T18:38:59Z","role":"filer","level":"L1","model":"opus","effort":"low","file":"filer-L1.md","cost_usd":0.257445,"duration_ms":23854,"turns":3}

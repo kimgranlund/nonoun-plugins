@@ -1,2 +1,0 @@
-{"ts":"2026-09-25T00:49:20Z","role":"builder","level":"L2","model":"opus","effort":"low","cost_usd":0.3815332,"duration_ms":39933,"turns":7}
-{"ts":"2026-09-25T00:49:52Z","role":"verifier","level":"L1","model":"sonnet","effort":"medium","cost_usd":0.150138,"duration_ms":26341,"turns":7}

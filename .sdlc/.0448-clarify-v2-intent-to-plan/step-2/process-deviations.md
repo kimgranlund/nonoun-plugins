@@ -1,2 +1,0 @@
-# Process deviations (written by redck.py audit; the verifier and filer read this file)
-process deviation: red-checkpoint: retrospective: attempt 7b55bee9c52948dba42febcf9d5262ea, handoff sha256 cd653eec9c1c, 3 of 3 (red) criteria without a pre-edit red control: `for p in "plan_check.py clarify" "unverifiable: " "[owner: maintain...`; `sed -n "/^## Intent/,/^## Context/p" plugins/sdlc-lite/skills/hando...`; `for f in docs/reports/*-clarify-v2-replay.md; do grep -qE "^Result:...`
