@@ -10,7 +10,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0587 | [0587-solo-worktree-base](0587-solo-worktree-base/handoff.md) | solo_run.py run --worktree without --cwd records the session checkout's base | bug | L1 | P2 | none | 🟡 claimed |
 | T-0603 | [0603-gate-lock-selftest-label-guard](0603-gate-lock-selftest-label-guard/handoff.md) | gate_lock selftest status checks never run: label compared to real, controls pass real0 | bug | L1 | P2 | none | 🟡 claimed |
-| T-0605 | [0605-builder-redck-second-record-wording](0605-builder-redck-second-record-wording/handoff.md) | builder.md says a second redck record is only a base control, stale since T-0473 | chore | L2 | P2 | none | 🟡 claimed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 
-Closed: 568 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 569 done, 29 dropped (git log or .NNNN-* folders)

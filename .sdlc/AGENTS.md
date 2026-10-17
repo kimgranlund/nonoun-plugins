@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a0d791376e56 -->
+<!-- sdlc-lite:managed:start v1 sha256:39a4ecce26da -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,13 +15,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
-- claimed: 3
+- claimed: 2
   - T-0587 solo_run.py run --worktree without --cwd records the session checkout's base (0587-solo-worktree-base), claimed by claude 2026-10-17
   - T-0603 gate_lock selftest status checks never run: label compared to real, controls pass real0 (0603-gate-lock-selftest-label-guard), claimed by claude 2026-10-17
-  - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording), claimed by claude 2026-10-17
 - paused: 0
 - blocked: 0
-- done: 568
+- done: 569
 - dropped: 29
 
 ## Procedures
