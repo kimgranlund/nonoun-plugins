@@ -77,6 +77,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             `split --only N` in /chain 4.2 needs no flag. A review that says blocked is never overridden
             (it names missing decisions the user answers), and a newer plan-reviewer result ends the
             override. With no rejecting review the flag does nothing and writes nothing.
+            A review whose findings are all criterion-only (T-0582; with any notes-fix items) is not a
+            rejection when each amend applies (see review): split writes each new criterion line into its
+            step handoff in place of the line holding the old span, so lint and the --only (guard) and (red)
+            runs check the new text, folds the notes-fix items, appends "- criterion-only amend: <review
+            file>: step <n>: old `<old>` -> new <new>" under ## Plan review in <task dir>/handoff.md (once per
+            line; created when missing) for each chosen step it amends, and names each amend on stderr.
             Refuses an invalid result first: when the chosen plan, or the newest plan-reviewer-*.md
             that counts after it, fails results.structure_error (role planner, plan-reviewer), it
             prints "invalid result: <path>: <reason>" before the review check and the goal read.
@@ -226,8 +232,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 pass                                     -> split
                 replan whose every ## Findings item is "- step <n>: notes-fix: <text>" -> read as pass
                   (T-0364); split then appends a "### Notes" list of the step's items to that step's handoff
+                pass or replan whose every ## Findings item is notes-fix or "- step <n>: criterion-only: old
+                  `<span>` -> new <criterion>. Evidence: <...>", with one criterion-only item at least (T-0582)
+                  -> amend (split amends each criterion in place and logs it; the replan is not spent), or
+                  split when every amend is logged or already in the plan; an item that does not apply (a
+                  step the plan lacks, not exactly one criterion line of the step holding the old span, a
+                  new text that fails an amend's text checks) makes the review a design replan, below
                 replan                                   -> replan, but stop when the task dir holds
-                  two or more plan-reviewer results with Verdict replan (the count is per task dir);
+                  two or more plan-reviewer results with Verdict replan (the count is per task dir; a
+                  criterion-only review whose amends ## Plan review logs is not counted, an unlogged one is);
                   a "review override: <that file name>: <reason>" line under ## Plan review in
                   <task dir>/handoff.md (written by split --override-review) -> split, whatever the count
                 blocked                                  -> stop (ask its ## Missing decisions)
@@ -2140,8 +2153,13 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
     step_cap_or_fail(plan, task_dir, steps, target)
+    fix = criterion_amends(plan, after[-1], steps) if after else None
+    applies = fix is not None and fix[2] is None
+    amended = [a for a in fix[1] if not only or a[0] in only] if applies else []
+    if applies:
+        steps = fix[0]
     lint_or_fail(plan, steps, tree, 'steps.py split')
-    folded =review_findings(after[-1])[0] if after and review_verdict(after[-1]) == 'pass' else None
+    folded = review_findings(after[-1])[0] if after and (review_verdict(after[-1]) == 'pass' or applies) else None
     if only:
         missing = sorted(set(n for n in only if n not in steps))
         if missing:
@@ -2171,6 +2189,8 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
     if override:
         record_review_override(task_dir, *override)
         print(f'steps: review override: {override[0]} says replan; split anyway: {override[1]}', file=sys.stderr)
+    if amended:
+        record_criterion_amends(task_dir, os.path.basename(after[-1]), amended)
     for d in held:
         dest = next_superseded(d)
         d.rename(dest)
@@ -2983,16 +3003,19 @@ def cmd_resume(task):
 # --- review -----------------------------------------------------------------
 
 NOTES_FIX_RE = re.compile(r'^[-*] step (\d+): notes-fix: (\S.*)$')
+CRITERION_ONLY_RE = re.compile(r'^[-*] step (\d+): criterion-only: old `([^`]+)` -> new (\S.*?)\. Evidence: \S')
 
 
 def review_findings(path):
     """({step number: [one-line fix text]} of the `- step <n>: notes-fix: <text>` items under ## Findings of a
-    plan-reviewer result, count of the other items) (T-0364). Read leniently; never raises."""
+    plan-reviewer result (T-0364), [(step number, old span, new criterion text)] of its `- step <n>: criterion-only:
+    old `<span>` -> new <text>. Evidence: <...>` items (T-0582), count of the other items). Read leniently; never
+    raises."""
     try:
         lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
     except (OSError, UnicodeDecodeError):
-        return {}, 0
-    notes, other, inside = {}, 0, False
+        return {}, [], 0
+    notes, amends, other, inside = {}, [], 0, False
     for line in lines:
         if line.startswith('## '):
             inside = line.rstrip() == '## Findings'
@@ -3000,18 +3023,97 @@ def review_findings(path):
         if not inside or not line.strip():
             continue
         m = NOTES_FIX_RE.match(line.strip())
+        a = CRITERION_ONLY_RE.match(line.strip())
         if m:
             notes.setdefault(int(m.group(1)), []).append(' '.join(m.group(2).split()))
+        elif a:
+            old = a.group(2)[1:] if a.group(2).startswith(' ') else a.group(2)
+            amends.append((int(a.group(1)), old[:-1] if old.endswith(' ') else old, a.group(3).strip()))
         else:
             other += 1
-    return notes, other
+    return notes, amends, other
 
 
 def review_notes(path):
     """The notes-fix items of a plan-reviewer result when every item under ## Findings is one, else None.
-    A `- plan:` item, an unmarked step item, and a file with no items are not notes-level."""
-    notes, other = review_findings(path)
-    return notes if notes and not other else None
+    A `- plan:` item, an unmarked step item, a criterion-only item, and a file with no items are not notes-level."""
+    notes, amends, other = review_findings(path)
+    return notes if notes and not amends and not other else None
+
+
+def criterion_amends(plan, review, steps=None):
+    """(steps, todo, why) for a plan-reviewer result whose findings are all criterion-only or notes-fix items, with
+    at least one criterion-only item (T-0582), else None. steps is {n: block} of the plan (parse_steps, or the steps
+    given) with each todo amend applied in place: the one criterion line of step n whose command spans hold the old
+    span is replaced by the new text, after every text check an amend makes (check_new_text). todo lists the
+    (n, old, new) amends applied; a pair whose new text step n already holds, with no line holding the old span,
+    needs none. why is None when every pair applies, else the reason the review is a design replan (a step the plan
+    lacks, no or several lines holding the old span, a new text that fails a check); steps and todo are then empty."""
+    _, amends, other = review_findings(review)
+    if not amends or other:
+        return None
+
+    def refuse(why, detail=()):
+        raise Fail(why)
+
+    plan = pathlib.Path(plan)
+    try:
+        out = dict(parse_steps(plan) if steps is None else steps)
+        todo = []
+        for n, old, new in amends:
+            if n not in out:
+                refuse(f'step {n} is not in {os.path.basename(plan)}')
+            lines = out[n].split('\n')
+            items, targets = criterion_targets(lines, ('### Acceptance criteria',), old)
+            if not targets and new_applied(items, new):
+                continue
+            idx, target = one_target(targets, old, refuse)
+            check_new_text(plan, target, new, refuse)
+            indent, marker, _ = list_item(target)
+            lines[idx] = f'{indent}{marker} {new}'
+            out[n] = '\n'.join(lines)
+            todo.append((n, old, new))
+    except Fail as e:
+        return {}, [], f'its criterion-only finding does not apply: {str(e).splitlines()[0]}'
+    return out, todo, None
+
+
+CRITERION_LOG_RE = re.compile(r'^[-*] criterion-only amend: (\S+): step \d+: ')
+
+
+def criterion_log(review_name, n, old, new):
+    """The ## Plan review line split writes for one applied criterion-only amend."""
+    return f'- criterion-only amend: {review_name}: step {n}: old `{old}` -> new {new}'
+
+
+def plan_review_lines(task_dir):
+    """The stripped lines under ## Plan review in <task dir>/handoff.md. Read leniently: a missing handoff holds none."""
+    found, inside = [], False
+    try:
+        lines = (pathlib.Path(task_dir) / 'handoff.md').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return found
+    for line in lines:
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Plan review'
+        elif inside:
+            found.append(line.strip())
+    return found
+
+
+def amended_reviews(task_dir):
+    """Names of the plan-reviewer results whose criterion-only amends split logged under ## Plan review."""
+    return {m.group(1) for line in plan_review_lines(task_dir) if (m := CRITERION_LOG_RE.match(line))}
+
+
+def design_replan(path, amended):
+    """True when a plan-reviewer result counts toward the replan cap: Verdict replan (review_verdict), unless every
+    finding is criterion-only or notes-fix and split logged its amends (its name in amended). An unlogged
+    criterion-only review counts: it did not apply, or it was never split."""
+    if review_verdict(path) != 'replan':
+        return False
+    _, amends, other = review_findings(path)
+    return not (amends and not other and os.path.basename(path) in amended)
 
 
 def review_verdict(path):
@@ -3065,19 +3167,7 @@ REVIEW_OVERRIDE_RE = re.compile(r'^(?:[-*] )?review override: (\S+): (\S.*)$')
 def review_overrides(task_dir):
     """{plan-reviewer result file name: reason} from the `review override: <file>: <reason>` lines under
     ## Plan review in <task dir>/handoff.md. Read leniently: a missing handoff holds none."""
-    found, inside = {}, False
-    try:
-        lines = (pathlib.Path(task_dir) / 'handoff.md').read_text(encoding='utf-8').splitlines()
-    except OSError:
-        return found
-    for line in lines:
-        if line.startswith('## '):
-            inside = line.rstrip() == '## Plan review'
-            continue
-        m = inside and REVIEW_OVERRIDE_RE.match(line.strip())
-        if m:
-            found[m.group(1)] = m.group(2)
-    return found
+    return {m.group(1): m.group(2) for line in plan_review_lines(task_dir) if (m := REVIEW_OVERRIDE_RE.match(line))}
 
 
 def record_review_override(task_dir, review_name, reason):
@@ -3093,14 +3183,38 @@ def record_review_override(task_dir, review_name, reason):
         raise Fail(f'steps split: cannot write {p}: {e}')
 
 
+def record_criterion_amends(task_dir, review_name, amended):
+    """Append one criterion_log line per applied criterion-only amend to ## Plan review in <task dir>/handoff.md
+    (created when missing), skipping a line already there, and name each on stderr. An OSError is a Fail naming
+    the path."""
+    p = pathlib.Path(task_dir) / 'handoff.md'
+    have = set(plan_review_lines(task_dir))
+    try:
+        with open(p, encoding='utf-8', newline='') as f:
+            text = f.read()
+        for n, old, new in amended:
+            print(f'steps: step {n}: criterion-only amend: old `{old}` -> new {new}', file=sys.stderr)
+            line = criterion_log(review_name, n, old, new)
+            if line not in have:
+                text = section_text(text, '## Plan review', line, at_end=True)
+        with open(p, 'w', encoding='utf-8', newline='') as f:
+            f.write(text)
+    except OSError as e:
+        raise Fail(f'steps split: cannot write {p}: {e}')
+
+
 def rejected_by_review(plan, task_dir):
     """(plan-reviewer result, verdict) when the newest plan-reviewer result that counts after plan
     says replan or blocked, else None. A replan review that a `review override:` line names is not
-    a rejection; a blocked one never is overridden."""
+    a rejection; a blocked one never is overridden. A review whose criterion-only amends all apply
+    (criterion_amends) is not a rejection, whatever its verdict; one whose amends do not apply is a replan."""
     after = [r for r in order.ordered(task_dir, 'plan-reviewer') if order.counts_after(r, plan)]
     if not after:
         return None
     v = review_verdict(after[-1])
+    fix = criterion_amends(plan, after[-1]) if v in ('pass', 'replan') else None
+    if fix is not None:
+        v = 'pass' if fix[2] is None else 'replan'
     if v == 'replan' and os.path.basename(after[-1]) in review_overrides(task_dir):
         return None
     return (after[-1], v) if v in ('replan', 'blocked') else None
@@ -3140,19 +3254,32 @@ def review_action(task):
     if err is not None:
         return 'invalid result', None, f'{r}: {err}', read
     v = review_verdict(r)
+    fix = criterion_amends(plan, r) if v in ('pass', 'replan') else None
+    why_fix = ''
+    if fix is not None and fix[2] is None:
+        if not fix[1] or rname in amended_reviews(t):
+            return ('split', None, f'the criterion-only amends of the newest plan review {rname} are applied; '
+                    'split', read)
+        return ('amend', None,
+                f'every finding of the newest plan review {rname} is criterion-only (or notes-fix): run steps.py '
+                f'split, which amends {len(fix[1])} criterion line(s) in the step handoffs in place and logs each '
+                'under ## Plan review; the replan is not spent', read)
+    if fix is not None:
+        v, why_fix = 'replan', f' ({fix[2]})'
     if v == 'pass':
         return 'split', None, f'the newest plan review {rname} passed {pname}', read
     if v == 'replan':
         why_override = review_overrides(t).get(rname)
         if why_override:
             return 'split', None, f'the newest plan review {rname} says replan; overridden: {why_override}', read
-        replans = [x for x in reviews if review_verdict(x) == 'replan']
+        amended = amended_reviews(t)
+        replans = [x for x in reviews if x == r or design_replan(x, amended)]
         if len(replans) >= 2:
             read += [x for x in replans if x not in read]
             return ('stop', None,
-                    f'{len(replans)} plan reviews in {t} say replan (newest {rname}); '
+                    f'{len(replans)} plan reviews in {t} say replan (newest {rname}{why_fix}); '
                     'the second replan review asks the user', read)
-        return 'replan', None, f'the newest plan review {rname} says replan; replan at planner L3', read
+        return 'replan', None, f'the newest plan review {rname} says replan{why_fix}; replan at planner L3', read
     if v == 'blocked':
         return ('stop', None,
                 f'the newest plan review {rname} says blocked; ask the user its ## Missing decisions', read)
@@ -6229,6 +6356,60 @@ def selftest():
                     'plan-reviewer-L1-2.md': r_notes('replan', NF)},
                    ['planner-L3.md', 'plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'])
         check('(r) notes-fix reviews never count toward the one-replan cap', r_first(d) == 'split')
+        # (r) T-0582: a criterion-only finding (a fact mismatch on main) is amended in place and never spends the
+        # replan; a design finding after the replan still asks the user
+        CP = r_plan('L4', tail='- `test -f old.md` exits 0\n')
+        CO = ('- step 1: criterion-only: old `test -f old.md` -> new `test -f new.md` exits 0. '
+              'Evidence: `test -f old.md` exits 1 on main; `test -f new.md` exits 0.')
+        CO_LOG = ('- criterion-only amend: plan-reviewer-L1-2.md: step 1: old `test -f old.md` -> '
+                  'new `test -f new.md` exits 0')
+        AFTER = ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md', 'plan-reviewer-L1-2.md']
+        d = r_task({'planner-L3.md': CP, 'plan-reviewer-L1.md': r_review('replan'), 'planner-L3-2.md': CP,
+                    'plan-reviewer-L1-2.md': r_notes('replan', CO)}, AFTER)
+        check('(r) a criterion-only finding after the replan routes to amend, not to the user', r_first(d) == 'amend')
+        d2 = r_task({'planner-L3.md': CP, 'plan-reviewer-L1.md': r_review('replan'), 'planner-L3-2.md': CP,
+                     'plan-reviewer-L1-2.md': r_review('replan')}, AFTER)
+        check('(r) negative: a design finding after the replan still routes to the user (stop)', r_first(d2) == 'stop')
+        rc, _, err = run_main(['split', str(d)])
+        sh = (d / 'step-1' / 'handoff.md').read_text(encoding='utf-8') if rc == 0 else ''
+        th = (d / 'handoff.md').read_text(encoding='utf-8')
+        rc2, _, _ = run_main(['split', str(d)])
+        check('(r) split applies a criterion-only amend to the step handoff, logs it once under ## Plan review, '
+              'and review then says split',
+              rc == 0 and '- `test -f new.md` exits 0\n' in sh and 'old.md' not in sh
+              and th == '## Goal\ng\n\n## Plan review\n' + CO_LOG + '\n'
+              and 'steps: step 1: criterion-only amend: old `test -f old.md` -> new `test -f new.md` exits 0' in err
+              and r_first(d) == 'split' and rc2 == 0
+              and (d / 'handoff.md').read_text(encoding='utf-8') == th)
+        for v in ('replan', 'pass'):
+            d = r_task({'planner-L3.md': CP, 'plan-reviewer-L1.md': r_notes(v, CO)})
+            check(f'(r) a first {v} review whose findings are all criterion-only routes to amend', r_first(d) == 'amend')
+        rc, _, _ = run_main(['split', str(d)])
+        check('(r) a logged criterion-only amend does not spend the replan a builder amend needs',
+              rc == 0 and 'criterion-only amend:' in (d / 'handoff.md').read_text(encoding='utf-8')
+              and replan_used(d / 'step-1') is None)
+        files = {'planner-L3.md': CP, 'plan-reviewer-L1.md': r_notes('replan', CO), 'planner-L3-2.md': CP,
+                 'plan-reviewer-L1-2.md': r_review('replan')}
+        logged = '## Goal\ng\n\n## Plan review\n' + CO_LOG.replace('L1-2.md', 'L1.md') + '\n'
+        check('(r) an applied (logged) criterion-only review is not counted: a later design review replans; '
+              'negative: unlogged, it counts and the design review stops',
+              r_first(r_task(files, AFTER, handoff=logged)) == 'replan' and r_first(r_task(files, AFTER)) == 'stop')
+        for bad, why in ((CO.replace('old `test -f old.md`', 'old `test -f gone.md`'), 'an old span no criterion holds'),
+                         (CO.replace('step 1:', 'step 2:', 1), 'a step the plan does not have'),
+                         (CO.split('. Evidence:')[0], 'no Evidence'),
+                         (CO + '\n- step 1: interfaces: Do names a missing symbol.', 'a design finding beside it')):
+            d = r_task({'planner-L3.md': CP, 'plan-reviewer-L1.md': r_notes('replan', bad)})
+            before = snapshot(d)
+            rc, out, _ = run_main(['split', str(d)])
+            check(f'(r) negative: a criterion-only review with {why} is a design replan and split refuses',
+                  r_first(d) == 'replan' and rc == 1 and out == '' and snapshot(d) == before)
+        d = r_task({'planner-L3.md': CP, 'plan-reviewer-L1.md': r_notes('replan', CO + '\n' + NF)})
+        rc, _, _ = run_main(['split', str(d)])
+        sh = (d / 'step-1' / 'handoff.md').read_text(encoding='utf-8') if rc == 0 else ''
+        check('(r) criterion-only beside notes-fix findings: review says amend; split amends and folds the Notes',
+              r_first(r_task({'planner-L3.md': CP, 'plan-reviewer-L1.md': r_notes('replan', CO + '\n' + NF)}))
+              == 'amend' and rc == 0 and '- `test -f new.md` exits 0\n' in sh
+              and sh.endswith('\n### Notes\n- guard line contradicts the Do; use the Do.\n- add tests/x.py to scope.\n'))
         # (lane) the lane of a ticket, and its record in skips.md
         def l_handoff(size='L2', tail=''):
             front = f'---\nid: T-0001\ntitle: "x"\nsize: {size}\n---\n\n' if size is not None else ''
