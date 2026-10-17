@@ -2,6 +2,24 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.24.3] - 2026-10-17
+
+Report: [docs/reports/2026-10-17-release-0-24-3.md](docs/reports/2026-10-17-release-0-24-3.md).
+
+### Changed
+
+- `roadmap.md` lists only open tickets and ends with one `Closed: <n> done, <m> dropped` line, so it stays small and rarely conflicts on merge (T-0572).
+- `close --reason` writes the `## Skipped` lines a lane needs instead of refusing (T-0581).
+
+### Added
+
+- `tickets.py close <slug> --preflight`: read-only, prints `ready` or one line per item close will demand. Closes take a lock (`.sdlc/runtime/close.lock`) and run one at a time (T-0581).
+- The plan reviewer replays each criterion's check on current main; a `criterion-only` finding is applied as a logged amend at split and does not spend the replan. The design-replan cap is unchanged (T-0582).
+
+### Maintenance
+
+- This repo's closed ticket folders keep only `handoff.md` (and the newest verifier result where no `## Outcome` exists); 4638 run-record files left the tree, still at `51cbf1ba` (T-0571). The tests-gate pilot ended.
+
 ## [0.24.2] - 2026-10-15
 
 Report: [docs/reports/2026-10-15-release-0-24-2.md](docs/reports/2026-10-15-release-0-24-2.md).
