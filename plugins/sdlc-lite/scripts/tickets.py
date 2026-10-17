@@ -123,7 +123,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             when the ticket's skips.md records lane solo, lean, fix, or full but lacks a result or a ## Skipped
             entry for the planner or a step verifier, as check does; no skips.md or no lane record is exempt
   roadmap   regenerate the roadmap (<root>/roadmap.md, or <root>/tickets/roadmap.md with `layout: topics`) in dependency order (refuses on any ticket problem, including,
-            in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
+            in numbered mode (as for new), the NNNN-<slug> prefix/id rule). Only open tickets get a row; done and
+            dropped ones are counted in one `Closed: <n> done, <m> dropped` line after the table
   check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
             Router below). With `layout: topics` it also fails each entry directly under <root> other than
             AGENTS.md, CLAUDE.md, config, layout.md, board.md, tickets, work, notes, messages, evals, proposals,
@@ -2372,7 +2373,8 @@ def area_of(m):
 
 def render(ts, root):
     """The roadmap text. An Area column after Type appears only when some ticket has a non-empty area, so a
-    root with no area renders byte for byte as before. A paused Status cell carries its paused_reason."""
+    root with no area renders byte for byte as before. A paused Status cell carries its paused_reason. Done and
+    dropped tickets get no row, only the count line after the table (T-0572)."""
     with_area = any(area_of(m) for _, m in ts)
     if with_area:
         rows = ['| ID | Ticket | Title | Type | Area | Size | Pri | Depends on | Status |',
@@ -2390,7 +2392,10 @@ def render(ts, root):
         return cache[0]
     lp = layout_paths(root)
     prefix = '' if lp.tickets == lp.roadmap.parent else 'tickets/'
+    closed = collections.Counter(m['status'] for _, m in ordered if m['status'] in ('done', 'dropped'))
     for slug, m in ordered:
+        if m['status'] in closed:
+            continue
         deps = ', '.join(render_dep(d, met_caps, base) for d in m['depends']) or 'none'
         title = m['title'].replace('|', '\\|')
         status = f"{GLYPH[m['status']]} {m['status']}"
@@ -2403,7 +2408,8 @@ def render(ts, root):
         area = ' ' + area_of(m).replace('|', '\\|') + ' |' if with_area else ''
         rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} |{area} {m['size']} | "
                     f"{m['priority']} | {deps} | {status} |")
-    return HEADER + '\n' + '\n'.join(rows) + '\n'
+    return (HEADER + '\n' + '\n'.join(rows) + '\n\n'
+            + f"Closed: {closed['done']} done, {closed['dropped']} dropped (git log or .NNNN-* folders)\n")
 
 
 def write_roadmap(root, ts):
@@ -3939,8 +3945,9 @@ def selftest():
         rc_r, _, err_r = run(root, 'roadmap')
         rc, _, err = run(root, 'check')
         a, rm = row(root, 'T-0001')
-        expect(f'cap: edge orders after its provider: rc={rc_r}/{rc} {err_r!r} {err!r} {rm!r}',
-               rc_r == 0 and rc == 0 and '| cap:widget |' in a and 0 <= rm.find('| T-0002 |') < rm.find('| T-0001 |'))
+        expect(f'cap: a done provider meets the edge and gets no row (T-0572): rc={rc_r}/{rc} {err_r!r} {err!r} {rm!r}',
+               rc_r == 0 and rc == 0 and '| cap:widget |' in a and '| T-0002 |' not in rm
+               and '\nClosed: 1 done, 0 dropped' in rm)
         root = case(steps(deps('alpha', 'cap:widget'), provides('beta', '[widget]')))
         rc, _, err = run(root, 'roadmap')
         a, rm = row(root, 'T-0001')
@@ -4818,7 +4825,8 @@ def selftest():
                and sorted(made) == ['0004-add-retry-to-fetch']
                and 'Follow-up from T-0003 (.0003-x/filer-L1.md):' in ctx and run(root, 'check')[0] == 0)
         rm = (root / 'roadmap.md').read_text(encoding='utf-8')
-        expect(f'(u) roadmap lists .0003-x: {rm!r}', '| T-0003 | [.0003-x](.0003-x/handoff.md) |' in rm)
+        expect(f'(u) roadmap counts .0003-x as closed and gives it no row: {rm!r}',
+               '| T-0003 |' not in rm and '\nClosed: 1 done, 0 dropped' in rm)
         before = snap(root)
         for kw in ({}, {'reason': 'again'}, {'dry_run': True}):
             rc, _, err = run(root, 'close', ('0003-x',), **kw)
@@ -5751,7 +5759,7 @@ def selftest():
         expect(f'ticket_root: numbered close renames to tickets/.0001-alpha: rc={rc} {out!r} {err!r}',
                rc == 0 and (tr / 'tickets' / '.0001-alpha' / 'handoff.md').is_file()
                and not (tr / 'tickets' / '0001-alpha').exists() and not (tr / '.0001-alpha').exists()
-               and '(tickets/.0001-alpha/handoff.md)' in tr_text(tr / 'roadmap.md') and run(tr, 'check')[0] == 0)
+               and '\nClosed: 1 done, 0 dropped' in tr_text(tr / 'roadmap.md') and run(tr, 'check')[0] == 0)
 
         if shutil.which('git'):
             tr = tr_root('tr-git', 'ticket_folders: numbered\n')
@@ -5784,7 +5792,7 @@ def selftest():
         rc, out, err = run(tr, 'archive')
         expect(f'ticket_root: archive renames to tickets/.0001-alpha: rc={rc} {out!r} {err!r}',
                rc == 0 and (tr / 'tickets' / '.0001-alpha').is_dir() and not (tr / '.0001-alpha').exists()
-               and '(tickets/.0001-alpha/handoff.md)' in tr_text(tr / 'roadmap.md') and run(tr, 'check')[0] == 0)
+               and '\nClosed: 1 done, 0 dropped' in tr_text(tr / 'roadmap.md') and run(tr, 'check')[0] == 0)
 
         bad = pathlib.Path(tmp) / 'tr-bad' / '.sdlc'
         bad.mkdir(parents=True)
@@ -6454,7 +6462,7 @@ def selftest():
                    f'{out!r} {err!r}',
                    linked and rc == 0 and (tp / 'tickets' / '.0001-alpha').is_dir())
             edit(tp / 'tickets', '0002-beta', r'^status:.*$', 'status: done')
-            run(tp, 'roadmap')
+            # no roadmap rerun: a done ticket gets no row (T-0572), so only the stale roadmap still links it
             linked = '](0002-beta/handoff.md)' in tr_text(tp / 'tickets' / 'roadmap.md')
             rc, out, err = run(tp, 'archive')
             expect(f'layout topics: the archive reference scan skips tickets/roadmap.md: linked={linked} rc={rc} '
@@ -7431,6 +7439,21 @@ def selftest():
         expect(f'(T-0544) the router holds Folder layout and Ticket lifecycle and claims by <agent>: {b!r}',
                '\nFolder layout:\n' in b and '\nTicket lifecycle:\n' in b and '--by <agent>' in b
                and '<claude|codex>' not in b)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # T-0572: the roadmap lists open tickets only, and counts the closed ones in one line
+        cr = pathlib.Path(tmp) / '.sdlc'
+        for s in ('c-one', 'c-two', 'c-three', 'c-open'):
+            run(cr, 'new', ('chore', s, f'Ticket {s}'))
+        for s in ('c-one', 'c-two', 'c-three'):
+            edit(cr, s, r'^status:.*$', 'status: done')
+        rc, _, err = run(cr, 'roadmap')
+        rm = (cr / 'roadmap.md').read_text(encoding='utf-8')
+        rows = [ln for ln in rm.splitlines() if ln.startswith('| T-')]
+        expect(f'(T-0572) the roadmap has one row, for the open ticket, and the line Closed: 3 done, 0 dropped: '
+               f'rc={rc} {err!r} {rm!r}',
+               rc == 0 and len(rows) == 1 and rows[0].startswith('| T-0004 | [c-open]')
+               and '\nClosed: 3 done, 0 dropped (git log or .NNNN-* folders)\n' in rm)
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)

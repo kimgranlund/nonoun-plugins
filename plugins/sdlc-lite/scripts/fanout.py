@@ -5007,8 +5007,10 @@ def selftest():
         expect(f'T-0489 settle --forward: main is the archived integration tip, got main={main_sf} ref={ref_sf!r}',
                bool(ref_sf) and sh(sf, 'rev-parse', f'{ref_sf}^{{commit}}').stdout.strip() == main_sf)
         rm_rows = sh(sf, 'show', 'main:.sdlc/roadmap.md').stdout.splitlines()
-        expect(f'T-0489 settle --forward: the roadmap on main lists T-0001 done and T-0003 proposed, got {rm_rows!r}',
-               any(x.startswith('| T-0001 |') and x.rstrip().endswith('done |') for x in rm_rows)
+        expect(f'T-0489 settle --forward: the roadmap on main counts T-0001 closed and lists T-0003 proposed, got '
+               f'{rm_rows!r}',
+               not any(x.startswith('| T-0001 |') for x in rm_rows)
+               and any(x.startswith('Closed: 1 done, 0 dropped') for x in rm_rows)
                and any(x.startswith('| T-0003 |') and x.rstrip().endswith('proposed |') for x in rm_rows))
         ck = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'check'], cwd=str(sf), env=ENV,
                             capture_output=True, text=True)
