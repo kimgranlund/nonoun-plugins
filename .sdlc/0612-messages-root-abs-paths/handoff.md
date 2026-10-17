@@ -28,3 +28,8 @@ Found in the 2026-10-17 fleet retro: three conductors sent replies with an absol
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and includes a new case: a `send` with an absolute `--root` writes entry files byte-identical to a `send` with the relative root.
+- (red) The new case fails on the base commit (revert the fix, run the selftest, observe exit 1, restore).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.

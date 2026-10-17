@@ -28,3 +28,9 @@ Found writing the 2026-10-17 fleet retro verify handoff (`.sdlc/runtime/tasks/fl
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and includes a new case: a criterion citing an absolute verifier-result path outside the repository lints ok.
+- The existing T-0415 own-result cases still report the finding (same selftest).
+- (red) The new case fails on the base commit (revert the fix, run the selftest, observe exit 1, restore).
+- `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0.
