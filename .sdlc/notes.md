@@ -6,6 +6,7 @@
 
 - 2026-10-09: maintainer decision (T-0419): conductors may refresh managed blocks of docs/**/AGENTS.md in their own repo under the narrow rule in `plugins/sdlc-lite/skills/onboard/SKILL.md` (Standing authorization). Anything else (root AGENTS.md, template change, new file, `--force`, other repos) is reported to the maintainer with the diff.
 - 2026-10-10: maintainer decision: the L4 full-chain cost replay (docs/reports/2026-10-09-l4-full-chain-cost-replay.md, verdict: allow chunked solo for L3/L4 with at most 4 chunks) stays a report; no build ticket. Revisit when a solo run is priced (K-001) and n is above 2. The scope-vs-tests lint (T-0416) and the delta verifier (T-0417) were both decided "do not build".
+- 2026-10-17: maintainer decision: the tests-gate pilot (T-0496) ends; every ticket keeps one independent verifier, and `tests_gate: pilot` is removed from `.sdlc/config`. The T-0530 (`.sdlc` root in lanes.py) and T-0467 (overlap definitions) caveats are dropped as unused paths.
 
 ## Lean work records (maintainer decisions 2026-10-13)
 
@@ -20,10 +21,5 @@
 
 ## Live caveats and open decisions
 
-- T-0496 decide: `tickets.py close` writes the tests-gate skip line only for a solo ticket with a `step-<n>/` dir, so a real solo ticket with no step dir never gets the line, `gate_tests_only` never counts it, and the pilot barely reaches the tickets it targets; decide whether close should consult the gate on that path.
-- T-0496 decide: the handoff asks `lanes.py` to print `gate: tests-only` or `gate: verifier`, but `lanes.py list` has no per-ticket surface; the unattended run left `lanes.py` untouched and put the field in `solo_stats.py` only (skips.md decision); name a surface (a lane column, the `/report` lanes view) or drop it.
-- T-0496 decide: the 20-ticket readout needs K-005 for tests-gate tickets and rework after close (a reopen, or a follow-up citing a closed ticket within 7 days), and neither is built; `first_pass / verified` excludes tickets with no verifier round, so the revert rule cannot be evaluated yet.
-- T-0467 decide: `plan_check.py fanout` refused with `FAIL overlap` for T-0498 and T-0499 because both cite the same evidence report, while `fanout.py run --dry-run` printed `overlap (planned scope): none` for the same pair; say which definition should win.
-- T-0530 decide: plugins/sdlc-lite/scripts/lanes.py:719 and :1013: close and list resolve tickets under a hardcoded `Path(top) / '.sdlc'` (as the existing `local_tickets` at :681) while open uses `--root`; a non-default root would record on open and never clear on close.
 - T-0519 note: the Pareto read behind the 2026-10-12 model decisions comes from third-party Artificial Analysis summaries, is unverified, and has no copy in `docs/reports/`; no replay ran.
 - T-0520 note: The live run used the legacy `run.sh` Claude branch. The generated `ui-designer-L<n>` agents, the sub-agent dispatch path, and the Codex host have no live evidence.
