@@ -143,8 +143,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0016-ticket-numbered-folders/runs.jsonl:1 (run) "role=planner level=L1"
-- .sdlc/.0016-ticket-numbered-folders/runs.jsonl:2 (run) "role=planner level=L3"
+- [.sdlc/.0016-ticket-numbered-folders/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0016-ticket-numbered-folders/runs.jsonl):1 (run) "role=planner level=L1"
+- [.sdlc/.0016-ticket-numbered-folders/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0016-ticket-numbered-folders/runs.jsonl):2 (run) "role=planner level=L3"
 
 ## Proposed change
 
@@ -164,8 +164,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0060-unpassable-plan-criteria/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0060-unpassable-plan-criteria/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0060-unpassable-plan-criteria/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0060-unpassable-plan-criteria/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0060-unpassable-plan-criteria/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0060-unpassable-plan-criteria/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -185,8 +185,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0065-fanout-py-s-default-lane/runs.jsonl:1 (run) "role=planner level=L1 file=planner-L1.md"
-- .sdlc/.0065-fanout-py-s-default-lane/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0065-fanout-py-s-default-lane/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0065-fanout-py-s-default-lane/runs.jsonl):1 (run) "role=planner level=L1 file=planner-L1.md"
+- [.sdlc/.0065-fanout-py-s-default-lane/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0065-fanout-py-s-default-lane/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -206,8 +206,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0081-add-a-steps-py-selftest/runs.jsonl:1 (run) "role=planner level=L1 file=planner-L1.md"
-- .sdlc/.0081-add-a-steps-py-selftest/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0081-add-a-steps-py-selftest/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0081-add-a-steps-py-selftest/runs.jsonl):1 (run) "role=planner level=L1 file=planner-L1.md"
+- [.sdlc/.0081-add-a-steps-py-selftest/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0081-add-a-steps-py-selftest/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -227,8 +227,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0092-run-a-live-probe-to/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0092-run-a-live-probe-to/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0092-run-a-live-probe-to/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0092-run-a-live-probe-to/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0092-run-a-live-probe-to/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0092-run-a-live-probe-to/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -248,8 +248,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0109-make-the-fixed-count-lint/runs.jsonl:1 (run) "role=planner level=L1 file=planner-L1.md"
-- .sdlc/.0109-make-the-fixed-count-lint/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0109-make-the-fixed-count-lint/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0109-make-the-fixed-count-lint/runs.jsonl):1 (run) "role=planner level=L1 file=planner-L1.md"
+- [.sdlc/.0109-make-the-fixed-count-lint/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0109-make-the-fixed-count-lint/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -269,8 +269,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0113-close-rename-breaks-refs/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0113-close-rename-breaks-refs/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0113-close-rename-breaks-refs/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0113-close-rename-breaks-refs/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0113-close-rename-breaks-refs/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0113-close-rename-breaks-refs/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -290,8 +290,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0121-pattern-kill-hook-does-not/runs.jsonl:1 (run) "role=planner level=L1 file=planner-L1.md"
-- .sdlc/.0121-pattern-kill-hook-does-not/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0121-pattern-kill-hook-does-not/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0121-pattern-kill-hook-does-not/runs.jsonl):1 (run) "role=planner level=L1 file=planner-L1.md"
+- [.sdlc/.0121-pattern-kill-hook-does-not/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0121-pattern-kill-hook-does-not/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -311,8 +311,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0132-planner-batch-probes/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0132-planner-batch-probes/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0132-planner-batch-probes/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0132-planner-batch-probes/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0132-planner-batch-probes/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0132-planner-batch-probes/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -332,8 +332,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0135-extend-the-clean-status-lint/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0135-extend-the-clean-status-lint/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0135-extend-the-clean-status-lint/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0135-extend-the-clean-status-lint/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0135-extend-the-clean-status-lint/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0135-extend-the-clean-status-lint/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -353,8 +353,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0157-review-sdlc-traces/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
-- .sdlc/.0157-review-sdlc-traces/runs.jsonl:3 (run) "role=planner level=L3 file=planner-L3-2.md"
+- [.sdlc/.0157-review-sdlc-traces/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0157-review-sdlc-traces/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0157-review-sdlc-traces/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0157-review-sdlc-traces/runs.jsonl):3 (run) "role=planner level=L3 file=planner-L3-2.md"
 
 ## Proposed change
 
@@ -374,8 +374,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0162-entry-files-in-step-handoffs/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0162-entry-files-in-step-handoffs/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0162-entry-files-in-step-handoffs/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0162-entry-files-in-step-handoffs/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0162-entry-files-in-step-handoffs/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0162-entry-files-in-step-handoffs/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -395,8 +395,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0166-agent-spawn-hook/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0166-agent-spawn-hook/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0166-agent-spawn-hook/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0166-agent-spawn-hook/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0166-agent-spawn-hook/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0166-agent-spawn-hook/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -416,8 +416,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0177-mailbox-core/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0177-mailbox-core/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0177-mailbox-core/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0177-mailbox-core/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0177-mailbox-core/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0177-mailbox-core/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -437,8 +437,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0178-messenger-agent/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0178-messenger-agent/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0178-messenger-agent/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0178-messenger-agent/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0178-messenger-agent/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0178-messenger-agent/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -458,8 +458,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0179-messages-entry-files/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0179-messages-entry-files/runs.jsonl:3 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0179-messages-entry-files/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0179-messages-entry-files/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0179-messages-entry-files/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0179-messages-entry-files/runs.jsonl):3 (run) "role=planner level=L3 file=planner-L3.md"
 
 ## Proposed change
 
@@ -479,9 +479,9 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0181-messages-wait/runs.jsonl:1 (run) "role=planner level=L2 file=planner-L2.md"
-- .sdlc/.0181-messages-wait/runs.jsonl:2 (run) "role=planner level=L3 file=planner-L3.md"
-- .sdlc/.0181-messages-wait/runs.jsonl:4 (run) "role=planner level=L3 file=planner-L3-2.md"
+- [.sdlc/.0181-messages-wait/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0181-messages-wait/runs.jsonl):1 (run) "role=planner level=L2 file=planner-L2.md"
+- [.sdlc/.0181-messages-wait/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0181-messages-wait/runs.jsonl):2 (run) "role=planner level=L3 file=planner-L3.md"
+- [.sdlc/.0181-messages-wait/runs.jsonl](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0181-messages-wait/runs.jsonl):4 (run) "role=planner level=L3 file=planner-L3-2.md"
 
 ## Proposed change
 
@@ -522,16 +522,16 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0081-add-a-steps-py-selftest/step-1.superseded-1/verifier-L1.md:16 (## For the next attempt) "plan defect: the mutant criterion says to copy `plugins/sdlc-lite/scripts/steps.py` alone to a temp dir, but steps.py does `import order` (line 76), so the c..."
-- .sdlc/.0081-add-a-steps-py-selftest/step-1.superseded-1/verifier-L1.md:17 (## For the next attempt) "plan defect: the (guard) says `git diff --name-only` lists no other file, but the task handoff `.sdlc/0081-add-a-steps-py-selftest/handoff.md` was modified b..."
-- .sdlc/.0092-run-a-live-probe-to/step-2.superseded-1/builder-L1.md:8 (## Notes (first line required format)) "plan defect: `git diff --quiet HEAD -- plugins/sdlc-lite/hooks plugins/sdlc-lite/scripts/hook-live-probe.sh` fails at the pre-step-2 state itself, because no..."
-- .sdlc/.0092-run-a-live-probe-to/step-2.superseded-1/builder-L1.md:39 (## Notes) "plan defect: `git diff --quiet HEAD -- plugins/sdlc-lite/hooks plugins/sdlc-lite/scripts/hook-live-probe.sh` fails at the pre-step-2 tree state, because non-..."
-- .sdlc/.0113-close-rename-breaks-refs/step-2.superseded-1/builder-L2.md:19 (## Notes) "plan defect: `git diff --quiet HEAD -- plugins/sdlc-lite/scripts/tickets.py` cannot pass. Only merge steps commit, so step 1's tickets.py change is still unc..."
-- .sdlc/.0134-mirror-the-extended-planner-rules/step-1/verifier-L1.md:28 (## For the next attempt) "plan defect: criterion 4 (`git diff --stat HEAD | awk '{print $1}'` plus an empty `git ls-files --others --exclude-standard`) can never pass inside a /chain..."
-- .sdlc/.0135-extend-the-clean-status-lint/step-1.superseded-1/builder-L3.md:23 (## Notes) "plan defect: criterion 5 (the `steps.py split "$d/t"` criterion) writes `printf 'h\n' >"$d/t/handoff.md"`, a handoff with no `## Goal` section. `split` reads..."
-- .sdlc/.0157-review-sdlc-traces/step-2.superseded-1/builder-L2.md:23 (## Notes) "plan defect: (guard) scope. Its regex `^(plugins/sdlc-lite/scripts/traces/.*)$` does not allow `plugins/sdlc-lite/scripts/traces.py` (the entry script, with..."
-- .sdlc/.0162-entry-files-in-step-handoffs/step-5.superseded-1/builder-L3.md:23 (## Notes) "plan defect: the Codex levels "builder L4, verifier L3. These levels map to `gpt-6-astra`" are wrong for the verifier. `codex_roles.resolve` switches the ver..."
-- .sdlc/.0178-messenger-agent/step-2.superseded-1/builder-L2.md:26 (## Notes) "plan defect: criterion `for a in ... conductor-l1; do grep -qF messenger .../sdlc-conductor-l1.toml` assumes the conductor agent preloads level-rubric, but i..."
+- [.sdlc/.0081-add-a-steps-py-selftest/step-1.superseded-1/verifier-L1.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0081-add-a-steps-py-selftest/step-1.superseded-1/verifier-L1.md):16 (## For the next attempt) "plan defect: the mutant criterion says to copy `plugins/sdlc-lite/scripts/steps.py` alone to a temp dir, but steps.py does `import order` (line 76), so the c..."
+- [.sdlc/.0081-add-a-steps-py-selftest/step-1.superseded-1/verifier-L1.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0081-add-a-steps-py-selftest/step-1.superseded-1/verifier-L1.md):17 (## For the next attempt) "plan defect: the (guard) says `git diff --name-only` lists no other file, but the task handoff `.sdlc/0081-add-a-steps-py-selftest/handoff.md` was modified b..."
+- [.sdlc/.0092-run-a-live-probe-to/step-2.superseded-1/builder-L1.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0092-run-a-live-probe-to/step-2.superseded-1/builder-L1.md):8 (## Notes (first line required format)) "plan defect: `git diff --quiet HEAD -- plugins/sdlc-lite/hooks plugins/sdlc-lite/scripts/hook-live-probe.sh` fails at the pre-step-2 state itself, because no..."
+- [.sdlc/.0092-run-a-live-probe-to/step-2.superseded-1/builder-L1.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0092-run-a-live-probe-to/step-2.superseded-1/builder-L1.md):39 (## Notes) "plan defect: `git diff --quiet HEAD -- plugins/sdlc-lite/hooks plugins/sdlc-lite/scripts/hook-live-probe.sh` fails at the pre-step-2 tree state, because non-..."
+- [.sdlc/.0113-close-rename-breaks-refs/step-2.superseded-1/builder-L2.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0113-close-rename-breaks-refs/step-2.superseded-1/builder-L2.md):19 (## Notes) "plan defect: `git diff --quiet HEAD -- plugins/sdlc-lite/scripts/tickets.py` cannot pass. Only merge steps commit, so step 1's tickets.py change is still unc..."
+- [.sdlc/.0134-mirror-the-extended-planner-rules/step-1/verifier-L1.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0134-mirror-the-extended-planner-rules/step-1/verifier-L1.md):28 (## For the next attempt) "plan defect: criterion 4 (`git diff --stat HEAD | awk '{print $1}'` plus an empty `git ls-files --others --exclude-standard`) can never pass inside a /chain..."
+- [.sdlc/.0135-extend-the-clean-status-lint/step-1.superseded-1/builder-L3.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0135-extend-the-clean-status-lint/step-1.superseded-1/builder-L3.md):23 (## Notes) "plan defect: criterion 5 (the `steps.py split "$d/t"` criterion) writes `printf 'h\n' >"$d/t/handoff.md"`, a handoff with no `## Goal` section. `split` reads..."
+- [.sdlc/.0157-review-sdlc-traces/step-2.superseded-1/builder-L2.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0157-review-sdlc-traces/step-2.superseded-1/builder-L2.md):23 (## Notes) "plan defect: (guard) scope. Its regex `^(plugins/sdlc-lite/scripts/traces/.*)$` does not allow `plugins/sdlc-lite/scripts/traces.py` (the entry script, with..."
+- [.sdlc/.0162-entry-files-in-step-handoffs/step-5.superseded-1/builder-L3.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0162-entry-files-in-step-handoffs/step-5.superseded-1/builder-L3.md):23 (## Notes) "plan defect: the Codex levels "builder L4, verifier L3. These levels map to `gpt-6-astra`" are wrong for the verifier. `codex_roles.resolve` switches the ver..."
+- [.sdlc/.0178-messenger-agent/step-2.superseded-1/builder-L2.md](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0178-messenger-agent/step-2.superseded-1/builder-L2.md):26 (## Notes) "plan defect: criterion `for a in ... conductor-l1; do grep -qF messenger .../sdlc-conductor-l1.toml` assumes the conductor agent preloads level-rubric, but i..."
 - .sdlc/codex-scout-luna/step-1/verifier-L1.md:17 (## For the next attempt) "plan defect: the step changed a shared contract (the scout L1 model in `adapters/codex/models.json`) but did not include its dependent doc table. `docs/codex..."
 - .sdlc/verify-ticket-stages/step-1/verifier-L3.md:62 (## For the next attempt) "plan defect: criterion 10 (the em dash count guard) counts added lines, and two regenerated single-line TOML fields carry em dashes that already exist on mai..."
 

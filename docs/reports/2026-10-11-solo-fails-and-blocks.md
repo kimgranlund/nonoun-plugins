@@ -8,7 +8,7 @@ Result in one line: of 34 first-round non-passes, 22 are builder gaps, 9 are cri
 
 Sample size: 34 first-round verifier non-passes (all of them) and 20 of the 39 builder blocked notes in the window (a stratified read, k = 2).
 
-How it was drawn: `.sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py` (rerun it from the repo root; its output is kept beside it as `sample.txt`). It reuses `solo_stats.py` and `fleet_collect.py`, so it follows the baseline method:
+How it was drawn: [`.sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py) (rerun it from the repo root; its output is kept beside it as `sample.txt`). It reuses `solo_stats.py` and `fleet_collect.py`, so it follows the baseline method:
 - A solo ticket has a `solo` row in a `runs.jsonl` inside the window, at or after 2026-10-08 and up to 2026-10-11T20:00:00Z. That `--until` instant is the one that reproduces the baseline counts.
 - Only each repo's main checkout `.sdlc` is read, worktree copies are left out, hidden closed `.NNNN-*` folders are read, and ui-kit-maison's `ticket_root: tickets` layout is honoured.
 - Verifier rounds are ordered by round number, then level (`verifier-L2.md`, `-2`, `-3`), never by name.
@@ -21,7 +21,7 @@ Count differences:
 - Non-passes. With no `--until`, the script prints 175 solo tickets and 128 verified, and still 34 first-round non-passes.
 
 Commands run, all from this tree:
-- `python3 plugins/sdlc-lite/scripts/traces.py ingest <repo>`, then `traces.py detect --repo <repo>`, then `traces.py clusters --max 5 --repo <repo>`, for each of the four repos. All exited 0. Output went to the gitignored `.sdlc/runtime/traces/<repo-key>`, and the stdout copies are in `.sdlc/.0450-review-traces-solo-fails-and-blocks/scratch/`. No `--rerun-criteria` was passed.
+- `python3 plugins/sdlc-lite/scripts/traces.py ingest <repo>`, then `traces.py detect --repo <repo>`, then `traces.py clusters --max 5 --repo <repo>`, for each of the four repos. All exited 0. Output went to the gitignored `.sdlc/runtime/traces/<repo-key>`, and the stdout copies are in [`.sdlc/.0450-review-traces-solo-fails-and-blocks/scratch/`](https://github.com/kimgranlund/sdlc-lite/tree/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0450-review-traces-solo-fails-and-blocks/scratch). No `--rerun-criteria` was passed.
 - `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since 2026-10-08` for each repo, with stdout kept in the same scratch folder.
 - `python3 .sdlc/.0450-review-traces-solo-fails-and-blocks/sample.py`, and the same with `--since 2000-01-01 --until none` for the all-time count.
 
@@ -105,8 +105,8 @@ Cause: solo reported done while a criterion span, or the repo gate the handoff n
 - `~/Projects/nonoun/sdlc-lite/.sdlc/.0372-codex-solo-native-transport/verifier-L2.md`: the documented `solo_run.py` invocation is not runnable as written.
 
 Two are criterion defects that the same run would have exposed before the verifier round:
-- `~/Projects/nonoun/sdlc-lite/.sdlc/.0356-verifier-routing-by-level/verifier-L3.md`: on macOS `wc -l` pads its count, so `grep -qx 4` never matches.
-- `~/Projects/nonoun/sdlc-lite/.sdlc/.0398-fanout-stale-verifier-result/verifier-L2.md`: the selftest prints only misses, so no output can hold the required ok lines.
+- [`~/Projects/nonoun/sdlc-lite/.sdlc/.0356-verifier-routing-by-level/verifier-L3.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0356-verifier-routing-by-level/verifier-L3.md): on macOS `wc -l` pads its count, so `grep -qx 4` never matches.
+- [`~/Projects/nonoun/sdlc-lite/.sdlc/.0398-fanout-stale-verifier-result/verifier-L2.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0398-fanout-stale-verifier-result/verifier-L2.md): the selftest prints only misses, so no output can hold the required ok lines.
 
 Rule: `plugins/sdlc-lite/agents/solo.md` `## Loop` step 3 ("Run every check command") and `## Verification` (L2 and L3). Smallest wording, appended to Loop step 3: "Before `verify: needed`, run each `## Acceptance criteria` and Done-when command span exactly as written, the same text and not a paraphrase, and list each with its exit code in the report. A span that cannot exit 0 on a correct tree (a padded count, output that never prints) is a criterion defect: report `blocked: plan defect: <criterion> <why>` instead of `verify: needed`."
 
@@ -166,7 +166,7 @@ Measure: the `plan-defect-refusal` detector count per repo per window (now maiso
 ### Not ranked
 
 These have no single agent rule that would have prevented them; the verifier caught them as designed:
-- Probe-found defects (4): `~/Projects/nonoun/sdlc-lite/.sdlc/.0381-runner-wrong-lane-base/verifier-L2.md`, `~/Projects/nonoun/sdlc-lite/.sdlc/.0426-record-removes-tmp-prefix/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/.0323-component-file-dropzone/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/0366-table-expansion-header-text/verifier-L2.md`.
+- Probe-found defects (4): [`~/Projects/nonoun/sdlc-lite/.sdlc/.0381-runner-wrong-lane-base/verifier-L2.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0381-runner-wrong-lane-base/verifier-L2.md), [`~/Projects/nonoun/sdlc-lite/.sdlc/.0426-record-removes-tmp-prefix/verifier-L2.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0426-record-removes-tmp-prefix/verifier-L2.md), `~/Projects/maison/ui-kit-maison/.sdlc/tickets/.0323-component-file-dropzone/verifier-L2.md`, `~/Projects/maison/ui-kit-maison/.sdlc/tickets/0366-table-expansion-header-text/verifier-L2.md`.
 - Incomplete deliverables (4): 0216, 0321, 0446, 0410.
 - Scope widened (1): 0138.
 

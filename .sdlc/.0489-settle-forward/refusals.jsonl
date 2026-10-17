@@ -1,2 +1,0 @@
-{"ts": "2026-10-12T18:46:48Z", "tool": "steps.py lint", "plan": ".sdlc/0489-settle-forward/step-1/handoff.md", "step": 1, "text": "steps: /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout46/q/.sdlc/0489-settle-forward/step-1/handoff.md: cited path does not exist: .sdlc/gate-ledger.jsonl"}
-{"ts": "2026-10-12T18:48:45Z", "tool": "steps.py lint", "plan": ".sdlc/0489-settle-forward/step-1/handoff.md", "step": 1, "text": "steps: .sdlc/0489-settle-forward/step-1/handoff.md: cited path does not exist: .sdlc/gate-ledger.jsonl"}

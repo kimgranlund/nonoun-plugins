@@ -1,2 +1,0 @@
-{"ts":"2026-09-25T00:19:42Z","role":"planner","level":"L1","model":"sonnet","effort":"medium","cost_usd":0.1165852,"duration_ms":19196,"turns":6}
-{"ts":"2026-09-25T00:22:12Z","role":"filer","level":"L1","model":"opus","effort":"low","cost_usd":0.19228060000000002,"duration_ms":12569,"turns":2}

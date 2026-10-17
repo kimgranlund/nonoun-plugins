@@ -1,6 +1,6 @@
 # Progressive Context gap analysis review
 
-Recorded: 2026-10-05. Ticket T-0247. Reviewed: `docs/specs/generative-constructs/progressive-context-gap-analysis.md` at commit 61404dd (150 lines). Reviewer: `run.sh architect L1` (Fable high), a different model family from the author (Sonnet). Raw record: `.sdlc/.0247-pc-gap-analysis/review/decompose/report.md`.
+Recorded: 2026-10-05. Ticket T-0247. Reviewed: `docs/specs/generative-constructs/progressive-context-gap-analysis.md` at commit 61404dd (150 lines). Reviewer: `run.sh architect L1` (Fable high), a different model family from the author (Sonnet). Raw record: [`.sdlc/.0247-pc-gap-analysis/review/decompose/report.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0247-pc-gap-analysis/review/decompose/report.md).
 
 ## Verdict
 

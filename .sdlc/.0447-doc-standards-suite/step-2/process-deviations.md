@@ -1,2 +1,0 @@
-# Process deviations (written by redck.py audit; the verifier and filer read this file)
-process deviation: red-checkpoint: retrospective: attempt a9db4fffa1cc44de811e3b54538d0207, handoff sha256 42fe48147dfd, 2 of 2 (red) criteria without a pre-edit red control: `python3 -B -c "import sys; sys.path.insert(0, 'plugins/sdlc-lite/sc...`; `python3 -B -c "import sys, tempfile, os; sys.path.insert(0, 'plugin...`

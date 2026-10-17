@@ -1,6 +1,6 @@
 # Plan eval cases
 
-Six asks, one per kind, each with the kind the skill should resolve, the lint its result must pass, and the questions it should ask. The first five are the replay of the merge design (`.sdlc/.0462-plan-skills-merge-design/architect-L1.md`, Replay plan) and of the T-0467 handoff; the sixth comes from the T-0465 handoff.
+Six asks, one per kind, each with the kind the skill should resolve, the lint its result must pass, and the questions it should ask. The first five are the replay of the merge design ([`.sdlc/.0462-plan-skills-merge-design/architect-L1.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0462-plan-skills-merge-design/architect-L1.md), Replay plan) and of the T-0467 handoff; the sixth comes from the T-0465 handoff.
 
 - `<case>.ask.md`: the ask near-verbatim, then one `Source:` line naming where it came from.
 - `<case>.expected.md`: line 1 `Kind: <kind>`, line 2 `Lint: ` and the backticked lint command of that kind, line 3 `Questions: ` and the count expected.

@@ -1,1 +1,0 @@
-{"ts": "2026-10-12T13:08:04Z", "tool": "steps.py lint", "plan": ".sdlc/0464-ceremony-audit/step-1/handoff.md", "step": 1, "text": "steps: /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout41/w/.sdlc/0464-ceremony-audit/step-1/handoff.md: cited path does not exist: .sdlc/.0999-nope/"}

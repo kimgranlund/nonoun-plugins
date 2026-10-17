@@ -194,7 +194,7 @@ T0183_STEP3 = [
 T0183_STEP7 = [
     '- (guard) `bash plugins/sdlc-lite/scripts/check.sh`',
 ]
-# T-0195 (.sdlc/.0195-runner-family-task-dir/planner-L3-2.md): step 4 runs check.sh with no guard timeout line.
+# T-0195 (51cbf1ba:.sdlc/.0195-runner-family-task-dir/planner-L3-2.md): step 4 runs check.sh with no guard timeout line.
 T0195_STEP4 = [
     '- (guard) `bash plugins/sdlc-lite/scripts/check.sh`',
 ]
