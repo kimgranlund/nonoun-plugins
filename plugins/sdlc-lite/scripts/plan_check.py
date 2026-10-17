@@ -955,8 +955,26 @@ def clarify_glossary_aliases(glossary):
     return aliases
 
 
+def clarify_foreign(token):
+    """True when the token is an absolute path outside the git toplevel of the working directory: another repository's
+    file (T-0613; the steps.py reads_own_verifier exemption). A relative or in-repo path, or no git, is not foreign."""
+    path = token.split('=', 1)[-1]
+    if not path.startswith('/'):
+        return False
+    try:
+        r = subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    top = r.stdout.strip()
+    if r.returncode != 0 or not top:
+        return False
+    a, root = pathlib.Path(path).resolve(), pathlib.Path(top).resolve()
+    return not (a == root or root in a.parents)
+
+
 def clarify_defect(item):
-    if CLARIFY_VERIFIER.search(item):
+    own = ' '.join(t for t in re.split(r'[\s`\'"]+', item) if not (CLARIFY_VERIFIER.search(t) and clarify_foreign(t)))
+    if CLARIFY_VERIFIER.search(own):
         return 'reads its own step\'s verifier result'
     for tok in CLARIFY_SHA.findall(item):
         if re.search(r'[0-9]', tok) and re.search(r'[a-f]', tok):
@@ -1602,6 +1620,8 @@ def clarify_selftest(expect):
     mutant('clarify-done', 'an EARS item with a lower-case must', swap('the close rule MUST accept', 'the close rule must accept'))
     mutant('clarify-done-defect', 'an item reads its own verifier result',
            swap('- unverifiable:', '- `cat .sdlc/x/step-1/verifier-L2.md` says pass\n- unverifiable:'))
+    expect('clarify: clarify-done-defect T-0613 an item citing a verifier result outside the repository is exempt',
+           rules(swap('- unverifiable:', '- `test -s /nonexistent-other-repo/.sdlc/x/verifier-L1.md`\n- unverifiable:')) == [])
     mutant('clarify-done-defect', 'an item names a fixed sha', swap('against `$SDLC_BASE_SHA`', 'against `a9d42334`'))
     mutant('clarify-done-defect', 'an item needs a live rehearsal',
            swap('- unverifiable:', '- one more rehearsal plan runs to `plan done` with no hand step\n- unverifiable:'))

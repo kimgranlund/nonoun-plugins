@@ -147,7 +147,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             check hidden inside a script the span calls stays out of reach.
             It must not read its own step's verifier result (T-0415): a span in step n that holds
             verifier-L followed by a digit and names no step-<m>/ folder with m other than n, or that
-            names step-<n>/verifier-L<d> itself, can pass only after that verifier passes; finding
+            names step-<n>/verifier-L<d> itself, can pass only after that verifier passes; a verifier
+            result at an absolute path outside the repository (under none of repo_roots) belongs to another
+            repo's ticket and is not counted (T-0613), a relative or in-repo path still is; finding
             "steps: <plan> step <n>: acceptance criterion reads this step's own verifier result, so it
             can pass only after the verifier passes: <span>" and the hint line "move it to a later
             step, or declare it held with a trailing [stage: ..., owner: ...] clause". A criterion line
@@ -1790,15 +1792,28 @@ FINDING_STEP_RE = re.compile(r'\bstep (\d+):')
 PLAN_REVIEW_DATED_RE = re.compile(r'^- \d{4}-\d{2}-\d{2} (.*)$')
 
 
-def reads_own_verifier(text, n):
+def reads_own_verifier(text, n, roots=()):
     """True when a criterion span of step n names a verifier result (verifier-L<d>) and names no step-<m>/
     folder with m other than n, or names step-<n>/verifier-L<d> itself: it can pass only after this step's own
-    verifier passes. A span that names an earlier step's folder (step-1/verifier-L2.md from step 2) is fine."""
-    if not VERIFIER_RESULT_RE.search(text):
+    verifier passes. A span that names an earlier step's folder (step-1/verifier-L2.md from step 2) is fine.
+    A verifier result at an absolute path under none of roots (T-0613; repo_roots) belongs to another
+    repository's ticket and is not this step's own; a relative or in-repo path still counts."""
+    own_hits = [t for t in re.split(r'[\s`\'"]+', text) if VERIFIER_RESULT_RE.search(t)
+                and not (roots and foreign_absolute(t, roots))]
+    if not own_hits:
         return False
-    if re.search(rf'\bstep-{n}/verifier-L[\d*?\[]', text):
+    if any(re.search(rf'\bstep-{n}/verifier-L[\d*?\[]', t) for t in own_hits):
         return True
     return all(int(m) == n for m in STEP_FOLDER_RE.findall(text))
+
+
+def foreign_absolute(token, roots):
+    """True when the token (a NAME= prefix dropped) is an absolute path under none of roots: another repository."""
+    path = token.split('=', 1)[-1]
+    if not path.startswith('/'):
+        return False
+    a = pathlib.Path(path).resolve()
+    return not any(a == r or r in a.parents for r in roots)
 
 
 def held_line(line):
@@ -1982,6 +1997,7 @@ def lint_steps(plan, steps, tree=None):
     base = None
     full_gates = full_gate_commands_for(plan)
     created = set()
+    roots = repo_roots(pathlib.Path(plan).resolve().parent)
     for n, block in steps.items():
         paths = read_first_paths(block)
         if paths and base is None:
@@ -2053,7 +2069,7 @@ def lint_steps(plan, steps, tree=None):
                                 'non-empty and the criterion can never pass: check '
                                 '`git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files '
                                 '(`git ls-files --others --exclude-standard -- <path>`) instead')
-            if reads_own_verifier(text, n) and not held_line(line):
+            if reads_own_verifier(text, n, roots) and not held_line(line):
                 findings.append(f"steps: {plan} step {n}: acceptance criterion reads this step's own verifier result, "
                                 f'so it can pass only after the verifier passes: {text}\n'
                                 '  move it to a later step, or declare it held with a trailing '
@@ -7031,6 +7047,21 @@ def selftest():
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(circ) negative control: a criterion that reads an earlier step verifier result passes lint',
               rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err and review_lines(d) == [])
+        # T-0613: a verifier result at an absolute path outside the repository belongs to another repo's ticket
+        foreign = tmp / 'circ-foreign-repo' / '.sdlc' / 'runtime' / 'tasks' / '0247-x' / 'verifier-L1.md'
+        d = o_repo(f'`test -s {foreign}`')
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        d2 = o_repo(f'`test -s {foreign.with_name("verifier-L1.attempt.json")}`')
+        rc2, out2, err2 = run_main(['lint', str(d2 / 'planner-L2.md')])
+        check('(circ) T-0613: a verifier result at an absolute path outside the repository passes lint',
+              rc == 0 and out.startswith('steps lint: ok') and circ_msg not in err
+              and rc2 == 0 and out2.startswith('steps lint: ok') and circ_msg not in err2)
+        d = o_repo('`test -s verifier-L1.md`')
+        rc, _, err = run_main(['lint', str(d / 'planner-L2.md')])
+        d2 = o_repo(f'`test -s {tmp / f"o-repo{count[0] + 1}" / ".sdlc" / "x" / "verifier-L1.md"}`')
+        rc2, _, err2 = run_main(['lint', str(d2 / 'planner-L2.md')])
+        check('(circ) T-0613 control: a relative or in-repo absolute verifier result is still refused',
+              rc == 1 and circ_msg in err and rc2 == 1 and circ_msg in err2)
 
         d = o_repo('`test -s .sdlc/x/step-1/verifier-L1.md`')
         (d / 'step-3').mkdir()
