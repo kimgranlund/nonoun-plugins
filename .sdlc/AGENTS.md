@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:2cc0e40430a7 -->
+<!-- sdlc-lite:managed:start v1 sha256:37c84d837c94 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,9 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
-  - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets)
-  - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap)
+- proposed: 8
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
   - T-0581 close --preflight at merge-ready, --reason skip lines, serialized closes (0581-close-preflight)
   - T-0582 Plan criteria replayed on main; criterion-only fixes amend without spending the replan (0582-criteria-replay-amend)
@@ -22,7 +20,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0605 builder.md says a second redck record is only a base control, stale since T-0473 (0605-builder-redck-second-record-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
-- claimed: 0
+- claimed: 2
+  - T-0571 Closed tickets keep only handoff.md and their Outcome (0571-trim-closed-tickets), claimed by claude 2026-10-17
+  - T-0572 roadmap.md lists open tickets plus a closed count (0572-lean-roadmap), claimed by claude 2026-10-17
 - paused: 0
 - blocked: 0
 - done: 564
