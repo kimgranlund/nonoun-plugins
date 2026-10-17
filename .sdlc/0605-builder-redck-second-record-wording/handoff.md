@@ -2,11 +2,12 @@
 id: T-0605
 title: "builder.md says a second redck record is only a base control, stale since T-0473"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
+claimed_by: claude 2026-10-17
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 

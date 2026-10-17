@@ -2,11 +2,12 @@
 id: T-0587
 title: "solo_run.py run --worktree without --cwd records the session checkout's base"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-15
+claimed_by: claude 2026-10-17
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
