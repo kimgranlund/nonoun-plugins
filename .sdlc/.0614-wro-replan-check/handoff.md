@@ -2,7 +2,7 @@
 id: T-0614
 title: "traces wrong-resume-order fires without checking for a replan, once per step pair"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -66,3 +66,20 @@ Validation scope: `traces.py selftest -k escalation` and the full `traces.py sel
 - (guard) Only the two traces files changed: `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc' | grep -vxE 'plugins/sdlc-lite/scripts/traces/(detectors/escalation|selftest)\.py')"` exits 0.
 - (guard) No new untracked files: `test -z "$(git ls-files --others --exclude-standard -- . ':(exclude).sdlc')"` exits 0.
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/traces` exits 0.
+
+## Outcome
+
+2026-10-18 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/traces/detectors/escalation.py:383-389 rebuilds the replan stamp list once per blocked step and not once per task. This is harmless at current sizes. | note: `git grep` for the detector name outside .sdlc finds only escalation.py, selftest.py and thresholds.py:35 (unchanged), which matches the handoff's Dependents line.) · verifier: verifier-L2 (opus) · base: 76851b81a2aa
+- Changed: see commits
+- Commits: 79b962c T-0614: traces wrong-resume-order fires without checking for a replan, once per step pair
+- Check: 1 (red) A completed planner between the block and the later build suppresses the finding: pass
+- Check: 2 (red) One blocked step with two later built steps yields one finding, citing the earliest later a...: pass
+- Check: 3 (guard) A failed planner in the window does not suppress the finding: pass
+- Check: 4 (red) The quiet-after-replan case exists and passes: pass
+- Check: 5 (red) The once-per-blocked-step case exists and passes: pass
+- Check: 6 (red) The detector docstring names the replan check: pass
+- Check: 7 (guard) `traces.py selftest -k escalation` exits 0: pass
+- Check: 8 (guard) `traces.py selftest` exits 0: pass
+- Check: 9 (guard) Only the two traces files changed: pass
+- Check: 10 (guard) No new untracked files: pass
+- Check: 11 (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/traces` exits 0: pass

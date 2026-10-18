@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1dd50c4f5ad4 -->
+<!-- sdlc-lite:managed:start v1 sha256:2de51fa2c80a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,11 +16,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 - ready: 2
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
   - T-0615 traces replan-loop counts failed planner launches as replans (0615-replan-loop-failed-planners)
-- claimed: 1
-  - T-0614 traces wrong-resume-order fires without checking for a replan, once per step pair (0614-wro-replan-check), claimed by sdlc-lite-author 2026-10-18
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 573
+- done: 574
 - dropped: 29
 
 ## Procedures
