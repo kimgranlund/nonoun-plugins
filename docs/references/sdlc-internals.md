@@ -202,7 +202,7 @@ Detector families (`traces/detectors/`) are escalation, plan, hygiene, and cost.
 
 | Key | Default | Family: finding |
 |---|---|---|
-| `replan_loop_planners` | 2 | escalation: replan-loop (planner rows in one task dir) |
+| `replan_loop_planners` | 2 | escalation: replan-loop (completed planner rows in one task dir) |
 | `replan_loop_high_replans` | 2 | escalation: replan-loop-high |
 | `bump_levels` | 1 | escalation: unchanged-verdict-bump |
 | `exit_code_missing_section` | 3 | escalation: exit-3-result |

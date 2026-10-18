@@ -8,7 +8,7 @@ merged(overrides)
 """
 
 THRESHOLDS = {
-    # escalation: replan-loop fires at this many planner rows in one task dir (or any
+    # escalation: replan-loop fires at this many completed planner rows in one task dir (or any
     # superseded row), and is high severity at this many replans.
     'replan_loop_planners': 2,
     'replan_loop_high_replans': 2,
