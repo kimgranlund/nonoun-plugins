@@ -2,6 +2,15 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.24.5] - 2026-10-18
+
+Report: [docs/reports/2026-10-18-release-0-24-5.md](docs/reports/2026-10-18-release-0-24-5.md).
+
+### Fixed
+
+- The `traces` detector `wrong-resume-order` stays quiet when a completed planner run lies between a blocked step and a later build, and reports once per blocked step instead of once per step pair; on ui-kit-maison its live rows fell from 120 to 15 (T-0614).
+- The `traces` detector `replan-loop` counts only completed planner attempts, so cancelled launches are no longer reported as replans (T-0615).
+
 ## [0.24.4] - 2026-10-17
 
 Report: [docs/reports/2026-10-17-release-0-24-4.md](docs/reports/2026-10-17-release-0-24-4.md).
