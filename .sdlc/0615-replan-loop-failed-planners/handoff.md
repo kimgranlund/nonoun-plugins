@@ -11,7 +11,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-The bug is fixed and a test that failed before the fix passes after it.
+replan-loop counts only completed planner attempts, proven by a selftest case that failed before the fix.
 
 ## Repro
 1. Same ingest and detect as T-0614 on ui-kit-maison.

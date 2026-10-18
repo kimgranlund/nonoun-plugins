@@ -12,7 +12,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-The bug is fixed and a test that failed before the fix passes after it.
+wrong-resume-order fires only when no completed replan lies between a blocked step and a later build, once per blocked step, proven by selftest cases that failed before the fix.
 
 ## Repro
 1. `python3 plugins/sdlc-lite/scripts/traces.py ingest /Users/kimgranlund/Projects/maison/ui-kit-maison`
