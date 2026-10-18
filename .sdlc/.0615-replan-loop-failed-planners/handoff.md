@@ -2,7 +2,7 @@
 id: T-0615
 title: "traces replan-loop counts failed planner launches as replans"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -63,3 +63,20 @@ Validation scope: `traces.py selftest -k escalation`, the full `traces.py selfte
 - (guard) Only the listed files changed: `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc' | grep -vxE 'plugins/sdlc-lite/scripts/traces/(detectors/(escalation|thresholds)|selftest)\.py|docs/references/sdlc-internals\.md')"` exits 0.
 - (guard) No new untracked files: `test -z "$(git ls-files --others --exclude-standard -- . ':(exclude).sdlc')"` exits 0.
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/traces docs/references/sdlc-internals.md` exits 0.
+
+## Outcome
+
+2026-10-18 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/traces/table.py:102 sets status 'completed' on legacy rows, so legacy planners still count, as the Do says. Running `git grep -n "replan-loop\|replan_loop"` outside .sdlc turns up no other description of the counted set as plain "planner rows". | note: no builder-*.md exists in the artifacts dir (solo lane), so there were no builder claims to check against. | note: the throwaway worktree was removed with `git worktree remove`. A hook denied `rm -rf` on the now-empty /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0615-verifier-L2 prefix dir, so it may still be there.) · verifier: verifier-L2 (opus) · base: 7de054be37bf
+- Changed: see commits
+- Commits: e0accae T-0615: traces replan-loop counts failed planner launches as replans
+- Check: 1 (red) A failed planner attempt does not raise the replan count: pass
+- Check: 2 (guard) Two completed planners still fire: pass
+- Check: 3 (red) The case exists and passes: pass
+- Check: 4 (red) escalation.py docstring says "completed planner": pass
+- Check: 5 (red) thresholds.py says "completed planner": pass
+- Check: 6 (red) sdlc-internals.md says "completed planner": pass
+- Check: 7 (guard) `traces.py selftest -k escalation` exits 0: pass
+- Check: 8 (guard) `traces.py selftest` exits 0: pass
+- Check: 9 (guard) Only the listed files changed: pass
+- Check: 10 (guard) No new untracked files: pass
+- Check: 11 (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/traces docs/references/sd...: pass
