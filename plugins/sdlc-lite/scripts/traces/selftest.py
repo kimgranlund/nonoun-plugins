@@ -1395,6 +1395,17 @@ for _det, _build, _check in _ESC:
     case(f'escalation: {_det} quiet on control')(lambda d=_det, b=_build: _esc_quiet(d, b))
 
 
+@case('escalation: replan-loop ignores a failed planner attempt')
+def _esc_rpl_failed():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _esc_repo(tmp, {
+            '': [_e('planner-L3', 'p1', _PLANNED),
+                 _e('planner-L3-2', 'p2', None, status='failed', exit_code=1)],
+            'step-1': _esc_passed_step()})
+        got = _esc_detect(repo, 'replan-loop')
+        assert got == [], f'replan-loop counted a failed planner attempt: {got}'
+
+
 @case('escalation: wrong-resume-order quiet after a completed replan')
 def _esc_wro_replan():
     with tempfile.TemporaryDirectory() as tmp:

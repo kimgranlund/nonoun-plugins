@@ -12,8 +12,8 @@ a builder's Status (done, blocked, inherited) is read from the result file its s
 through steps.build_status_or_none, and a verifier's verdict is the row's `verdict`.
 
 Detectors (cause_hint files are plugin-relative):
-  replan-loop            a task dir with thresholds' replan_loop_planners planner rows or more,
-                         or any superseded row; evidence each superseded dir's newest builder
+  replan-loop            a task dir with thresholds' replan_loop_planners completed planner rows
+                         or more, or any superseded row; evidence each superseded dir's newest builder
                          (else verifier) result (order.newest) and the planner attempt ids;
                          high severity at replan_loop_high_replans replans (max of planners - 1
                          and superseded dirs). Cause agents/planner.md.
@@ -233,7 +233,8 @@ def rules_named(text):
 def replan_loop(ctx):
     out = []
     for task, rows in _by_task(ctx.rows).items():
-        planners = sorted((r for r in rows if r.get('role') == 'planner' and r.get('step') is None),
+        planners = sorted((r for r in rows if r.get('role') == 'planner' and r.get('step') is None
+                                and r.get('status') == 'completed'),
                           key=lambda r: (r.get('attempt_k') or 1, str(r.get('attempt_id'))))
         sup = sorted({_row_dir(r) for r in rows if r.get('superseded') and _row_dir(r)})
         if len(planners) < ctx.t['replan_loop_planners'] and not sup:
