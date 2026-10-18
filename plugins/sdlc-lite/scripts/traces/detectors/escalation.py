@@ -31,8 +31,10 @@ Detectors (cause_hint files are plugin-relative):
                          each builder or verifier row with plan_defect True, evidence its result
                          file at its `plan defect:` line, cause agents/planner.md.
   wrong-resume-order     a live step n whose newest builder is blocked while a higher live step m
-                         holds a builder attempt started after that blocked attempt finished;
-                         evidence both attempt ids (the earliest such attempt per step m). Cause
+                         holds a builder attempt started after that blocked attempt finished,
+                         unless a completed planner run (task dir, no step) finished between the
+                         block and that build; one finding per blocked step, evidence both attempt
+                         ids (the earliest such attempt over all higher steps). Cause
                          skills/chain/SKILL.md.
   exit-3-result          an attempt with exit code exit_code_missing_section; evidence its id.
                          Cause agents/<role>.md.
@@ -378,27 +380,37 @@ def wrong_resume_order(ctx):
             done = table._stamp(ctx.attempt(blocked).get('finished_at'))
             if done is None:
                 continue
+            replans = []
+            for r in rows:
+                if r.get('role') == 'planner' and r.get('step') is None \
+                        and r.get('status') == 'completed' and r.get('attempt_id'):
+                    stamp = table._stamp(ctx.attempt(r).get('finished_at'))
+                    if stamp is not None:
+                        replans.append(stamp)
+            later = []
             for m, (_, mrows) in sorted(dirs.items()):
                 if m <= n:
                     continue
-                later = []
                 for r in mrows:
                     if r.get('role') != 'builder' or not r.get('attempt_id'):
                         continue
                     start = table._stamp(ctx.attempt(r).get('started_at'))
                     try:
-                        if start is not None and start > done:
-                            later.append((start, r['attempt_id']))
+                        if start is None or start <= done:
+                            continue
+                        if any(done < stamp <= start for stamp in replans):
+                            continue
+                        later.append((start, m, r['attempt_id']))
                     except TypeError:  # naive against aware
                         continue
-                if not later:
-                    continue
-                first = min(later)[1]
-                out.append(_make(ctx, 'wrong-resume-order', 'wrong-resume-order',
-                                 'skills/chain/SKILL.md', 'resume from the blocked step',
-                                 [{'attempt_id': blocked['attempt_id']}, {'attempt_id': first}],
-                                 f'{task}: step {m} built after step {n} blocked, '
-                                 f'with no replan in between'))
+            if not later:
+                continue
+            _, m, first = min(later)
+            out.append(_make(ctx, 'wrong-resume-order', 'wrong-resume-order',
+                             'skills/chain/SKILL.md', 'resume from the blocked step',
+                             [{'attempt_id': blocked['attempt_id']}, {'attempt_id': first}],
+                             f'{task}: step {m} built after step {n} blocked, '
+                             f'with no replan in between'))
     return out
 
 

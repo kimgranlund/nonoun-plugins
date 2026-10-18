@@ -1395,6 +1395,34 @@ for _det, _build, _check in _ESC:
     case(f'escalation: {_det} quiet on control')(lambda d=_det, b=_build: _esc_quiet(d, b))
 
 
+@case('escalation: wrong-resume-order quiet after a completed replan')
+def _esc_wro_replan():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _esc_repo(tmp, {
+            '': [_e('planner-L2', 'pl', _PLANNED, started_at='2026-09-30T06:02:00+00:00',
+                    finished_at='2026-09-30T06:03:00+00:00')],
+            'step-1': [_e('builder-L2', 'blk', _builder_text('blocked'))],
+            'step-2': [_e('builder-L2', 'nx', _builder_text('done'),
+                          started_at='2026-09-30T06:05:00+00:00',
+                          finished_at='2026-09-30T06:06:00+00:00')]})
+        got = _esc_detect(repo, 'wrong-resume-order')
+        assert got == [], f'wrong-resume-order fired after a completed replan: {got}'
+
+
+@case('escalation: wrong-resume-order fires once per blocked step')
+def _esc_wro_once():
+    def late(aid, m):
+        return _e('builder-L2', aid, _builder_text('done'),
+                  started_at=f'2026-09-30T06:0{m}:00+00:00',
+                  finished_at=f'2026-09-30T06:0{m}:30+00:00')
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _esc_repo(tmp, {'step-1': [_e('builder-L2', 'blk', _builder_text('blocked'))],
+                               'step-2': [late('n2', 5)], 'step-3': [late('n3', 7)]})
+        got = _esc_detect(repo, 'wrong-resume-order')
+        assert len(got) == 1, got
+        assert got[0]['evidence'] == [{'attempt_id': 'blk'}, {'attempt_id': 'n2'}], got[0]
+
+
 @case('escalation: plan-defect-refusal groups entries by rule and flags result plan defects')
 def _esc_plan_defect_groups():
     handoff = ('# task\n\n## Plan review (conductor)\n'
