@@ -9,5 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L3 | P3 | none | ⏳ proposed |
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
+| T-0614 | [0614-wro-replan-check](0614-wro-replan-check/handoff.md) | traces wrong-resume-order fires without checking for a replan, once per step pair | bug | L1 | P2 | none | 🔵 ready |
+| T-0615 | [0615-replan-loop-failed-planners](0615-replan-loop-failed-planners/handoff.md) | traces replan-loop counts failed planner launches as replans | bug | L1 | P2 | none | 🔵 ready |
 
 Closed: 573 done, 29 dropped (git log or .NNNN-* folders)
