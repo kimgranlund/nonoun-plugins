@@ -28,6 +28,7 @@ import tempfile
 from pathlib import Path
 
 import order  # same scripts/ dir: records_dir finds a task's runs, attempts and step dirs
+import roots  # same scripts/ dir: the work root that holds the ticket folders under a work_root line
 
 HERE = Path(__file__).resolve().parent
 SCHEMA = 'session-status/1'
@@ -630,11 +631,26 @@ def entry(verb, tense, subject, ident='', outcome='', when=None, evidence='', tr
     return e
 
 
-def task_dirs(sdlc):
+def ticket_homes(sdlc):
+    """[sdlc], plus <top>/<work_root> when .sdlc/config sets a work_root line (roots.py). A config roots.py
+    refuses is no work root: the report never fails on it."""
     try:
-        return sorted(d for d in sdlc.iterdir() if d.is_dir() and not d.name.startswith('.') and (d / 'handoff.md').is_file())
-    except OSError:
-        return []
+        text = roots.read_config(sdlc)
+        if roots.parse(text).work_root:
+            return [sdlc, Path(roots.resolve(sdlc, text).work)]
+    except (roots.Fail, OSError, UnicodeDecodeError):
+        pass
+    return [sdlc]
+
+
+def task_dirs(sdlc):
+    out = []
+    for home in ticket_homes(sdlc):
+        try:
+            out += [d for d in home.iterdir() if d.is_dir() and not d.name.startswith('.') and (d / 'handoff.md').is_file()]
+        except OSError:
+            pass
+    return sorted(out)
 
 
 def step_dirs(task):
@@ -899,7 +915,7 @@ def collect(root, env, now=None, th=None, since=None, last=5, nxt=3):
 
     # timeline: recent
     recent = []
-    for d in sorted(sdlc.glob('.[0-9]*')) if sdlc.is_dir() else []:
+    for d in sorted(d for home in ticket_homes(sdlc) if home.is_dir() for d in home.glob('.[0-9]*')):
         if not d.is_dir():
             continue
         cfm = front_matter((read_text(d / 'handoff.md') or '')[:2000])
@@ -1785,15 +1801,17 @@ def _fake_runner(cmd, cwd, timeout=15):
     return run(cmd, cwd, timeout)
 
 
-def _records_fixture(base, now, pid, runtime):
+def _records_fixture(base, now, pid, runtime, work=None):
     """T-0541: one open ticket whose task folder holds only handoff.md and skips.md, with a running
     attempt (parent_pid pid) and priced runs.jsonl in .sdlc/runtime/tasks/<key>/ (runtime) or in
-    the task folder (legacy)."""
+    the task folder (legacy). work: a work_root value, whose dir holds the task folder."""
     root = Path(base)
     root.mkdir(parents=True, exist_ok=True)
     subprocess.run(['git', 'init', '-q', str(root)], check=True)
     sdlc = root / '.sdlc'
-    t = _w(sdlc / '0001-a' / 'handoff.md', '---\nid: T-0001\ntitle: "a"\ntype: chore\nstatus: claimed\nsize: L2\ndepends: []\n---\n\n'
+    if work:
+        _w(sdlc / 'config', 'work_root: %s\n' % work)
+    t = _w((root / work if work else sdlc) / '0001-a' / 'handoff.md', '---\nid: T-0001\ntitle: "a"\ntype: chore\nstatus: claimed\nsize: L2\ndepends: []\n---\n\n'
            '## Goal\nRecords dir.\n').parent
     _w(t / 'skips.md', '## Lane\n- lane: full\n')
     r = sdlc / 'runtime' / 'tasks' / '0001-a' if runtime else t
@@ -1867,11 +1885,13 @@ def selftest():
 
     try:
         # records dir (T-0541): runtime-only records and legacy in-folder records report the same ticket and cost
-        for label, runtime in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+        for label, runtime, work in (('records dir: runtime-only fixture', True, None),
+                                     ('records dir: legacy fixture', False, None),
+                                     ('records dir: work_root legacy fixture', False, 'docs/work')):
             counter[0] += 1
-            rroot = _records_fixture(base / ('r%d' % counter[0]), now, live, runtime)
+            rroot = _records_fixture(base / ('r%d' % counter[0]), now, live, runtime, work)
             r = collect(rroot, env_for(rroot), now, th)
-            moved = not (rroot / '.sdlc' / '0001-a' / 'runs.jsonl').exists() == runtime
+            moved = not (rroot / (work or '.sdlc') / '0001-a' / 'runs.jsonl').exists() == runtime
             case('%s: ticket T-0001 and cost.dollars > 0, got %s %s' % (label, r['work']['ticket'], r['cost']['dollars']),
                  moved and r['work']['ticket'] == 'T-0001' and (r['cost']['dollars'] or 0) > 0)
 
