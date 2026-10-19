@@ -27,7 +27,7 @@ Each `evidence` item is either an `http(s)` URL (checked for form only, never fe
 
 The body holds a `## Method` line and a later `## Result` line. Each is followed by at least one non-blank line before the next `## ` line.
 
-Example eval, `.sdlc/evals/0001-scout-sonnet.md`:
+Example eval, `docs/work/evals/0001-scout-sonnet.md`:
 
 ```
 ---
@@ -55,7 +55,7 @@ Sonnet matched Haiku on 9 of 10 tasks at a higher cost.
 
 `table-lock.json` holds exactly three keys:
 
-- `eval`: the cited eval, a repository-relative path such as `.sdlc/evals/0000-baseline.md`.
+- `eval`: the cited eval, a repository-relative path such as `docs/work/evals/0000-baseline.md`.
 - `previous_eval`: the eval it replaced, or `null`.
 - `table_sha256`: the hash of the model table the cited eval covers.
 
@@ -89,7 +89,7 @@ Change the model table:
 1. Run the experiment.
 2. Record it with `evals.py add`.
 3. Change the row in `run.sh` or `models.json` (a user decision).
-4. Run `python3 plugins/sdlc-lite/scripts/evals.py lock --eval .sdlc/evals/<file>`.
+4. Run `python3 plugins/sdlc-lite/scripts/evals.py lock --eval docs/work/evals/<file>`.
 5. Run `python3 plugins/sdlc-lite/scripts/check.py`.
 
 Never edit `table-lock.json` by hand; only `evals.py lock` writes it.

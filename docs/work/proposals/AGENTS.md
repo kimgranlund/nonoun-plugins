@@ -1,6 +1,6 @@
 # Proposals
 
-This folder holds candidate changes that `proposals.py scan` mines from past runs: `runs.jsonl` files, builder and verifier results, and `.sdlc/notes.md`. Nothing is applied automatically. `accept` needs a valid eval in `.sdlc/evals/`, and `promote` only files an idea ticket through `tickets.py new idea`. The script never edits a plugin file, runs an experiment, or changes a model default. Run every command from the repository root; `P` below means `python3 plugins/sdlc-lite/scripts/proposals.py`.
+This folder holds candidate changes that `proposals.py scan` mines from past runs: `runs.jsonl` files, builder and verifier results, and `docs/work/NOTES.md`. Nothing is applied automatically. `accept` needs a valid eval in `docs/work/evals/`, and `promote` only files an idea ticket through `tickets.py new idea`. The script never edits a plugin file, runs an experiment, or changes a model default. Run every command from the repository root; `P` below means `python3 plugins/sdlc-lite/scripts/proposals.py`.
 
 ## File format
 
@@ -23,9 +23,9 @@ Example, `replan-1a2b3c4d/proposal.md`:
 ```
 ---
 id: P-0001
-title: Repeated planner runs in .sdlc/.0183-supervisor-script
+title: Repeated planner runs in docs/work/.0183-supervisor-script
 status: candidate
-pattern: replan .sdlc/.0183-supervisor-script
+pattern: replan docs/work/.0183-supervisor-script
 occurrences: 2
 created: 2026-10-04
 eval:
@@ -33,8 +33,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/.0183-supervisor-script/runs.jsonl:1 (run) "role=planner level=L3 file=planner-L3.md"
-- .sdlc/.0183-supervisor-script/runs.jsonl:9 (run) "role=planner level=L3 file=planner-L3-2.md"
+- docs/work/.0183-supervisor-script/runs.jsonl:1 (run) "role=planner level=L3 file=planner-L3.md"
+- docs/work/.0183-supervisor-script/runs.jsonl:9 (run) "role=planner level=L3 file=planner-L3-2.md"
 
 ## Proposed change
 
@@ -50,7 +50,7 @@ Examine what the first plan missed and whether a planner rule or the level rubri
 | `builder-bump` | `runs.jsonl` | its dir | each distinct builder level | `role=... level=... file=...` |
 | `next-attempt` | verifier results | the lowercased `## For the next attempt` text | that text in a different dir (`None` skipped) | the text |
 | `plan-defect` | failing verifiers and blocked builders | none | a line starting `plan defect:` | the line |
-| `follow-up` | `.sdlc/notes.md` | `<tag> <lowercased text>` | a `- fix-now:` or `- decide:` line | the line |
+| `follow-up` | `docs/work/NOTES.md` | `<tag> <lowercased text>` | a `- fix-now:` or `- decide:` line | the line |
 
 A pattern with two or more occurrences becomes a candidate; one occurrence files nothing. A subject dir is repo-relative, with the leading dot dropped from a closed ticket folder `.NNNN-<slug>`, so a ticket's pattern survives the close rename. scan skips the top-level `proposals/`, `messages/`, `runtime/`, and `dogfood/` folders and the `--proposals` dir, and follows no symlink.
 
@@ -69,7 +69,7 @@ No move goes backward, and any other move is refused.
 - Scan: `python3 plugins/sdlc-lite/scripts/proposals.py scan`. Add `--proposals <dir>` before `scan` for a look that writes elsewhere. It prints one line per new or updated proposal and ends `proposals scan: <n> new, <n> updated, <n> unchanged`.
 - List: `python3 plugins/sdlc-lite/scripts/proposals.py list` prints id, status, occurrences, folder, and title per proposal.
 - Show: `python3 plugins/sdlc-lite/scripts/proposals.py show <id>`.
-- Accept: add the eval first by following `.sdlc/evals/AGENTS.md`, then `python3 plugins/sdlc-lite/scripts/proposals.py accept <id> --eval .sdlc/evals/<file>`. It refuses with no eval, a missing file, a file outside `.sdlc/evals/`, or an invalid eval.
+- Accept: add the eval first by following `docs/work/evals/AGENTS.md`, then `python3 plugins/sdlc-lite/scripts/proposals.py accept <id> --eval docs/work/evals/<file>`. It refuses with no eval, a missing file, a file outside `docs/work/evals/`, or an invalid eval.
 - Reject: `python3 plugins/sdlc-lite/scripts/proposals.py reject <id> --reason TEXT`.
 - Promote: `python3 plugins/sdlc-lite/scripts/proposals.py promote <id>` files an idea ticket through `tickets.py new idea` and records its id.
 - Never edit a proposal's front matter by hand.

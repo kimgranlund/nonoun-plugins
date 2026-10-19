@@ -28,7 +28,7 @@ Negative control: M-1 reads 0 now, below the target of 1, so it is red before st
 None. Publish, push, tag, `onboard.py setup` and external writes are not implied.
 
 ## Budget and stop rules
-Stop and write state to .sdlc/notes.md at $8 total, the per-step cap in each step, a rate or weekly limit, or three 529s in a row. replan cap: 1, then stop.
+Stop and write state to docs/work/NOTES.md at $8 total, the per-step cap in each step, a rate or weekly limit, or three 529s in a row. replan cap: 1, then stop.
 
 ## Step 1: Two preflight and stop rules in run-rules.md
 level: L1
@@ -64,7 +64,7 @@ In section 8.1 of plan-doc-executor.md add one line: the first live run and rehe
 ### Acceptance criteria
 - (red) `git grep -q '2026-10-11-plan-doc-live-run' -- docs/specs/sdlc-lite/plan-doc-executor.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/docs_check.py --root . >/dev/null`
-- (guard) `git grep -q 'git grep' -- .sdlc/plan-doc-hardening/plan-doc.md`
+- (guard) `git grep -q 'git grep' -- docs/work/plan-doc-hardening/plan-doc.md`
 
 ## Upserts
 | path | mode | step |

@@ -13,7 +13,7 @@ and writes nothing. Per repo it prints:
                 hold a ## Status whose first word is blocked (a result rewritten later counts as rewritten)
   late_defects  builder and verifier rows whose result holds a line starting `plan defect:`
   verifier_min  completed verifier attempts: median and max of finished_at minus started_at
-Stand-in until fleet_collect.py carries these fields (plan step 1 of .sdlc/plan-reliability-docs/plan.md).
+Stand-in until fleet_collect.py carries these fields (plan step 1 of docs/work/plan-reliability-docs/plan.md).
 """
 import glob
 import json

@@ -29,7 +29,7 @@ Negative control: K-002 reads 34.3 now, above the target of 15, so it is red bef
 None. Publish, push, tag, `onboard.py setup` and external writes are not implied.
 
 ## Budget and stop rules
-Stop and write state to .sdlc/notes.md at $120 total, the per-step cap in each step, a rate or weekly limit, or three 529s in a row. replan cap: 1, then stop.
+Stop and write state to docs/work/NOTES.md at $120 total, the per-step cap in each step, a rate or weekly limit, or three 529s in a row. replan cap: 1, then stop.
 
 ## Step 1: Collector fields for K-002, K-003, K-004 and verifier minutes
 level: L2
@@ -55,7 +55,7 @@ Add selftest cases with exactly these labels: `interrupted: lost_min runs to the
 
 Then remove the "absent until plan step 1" notes from the `read:` lines of `docs/kpi/002-restart-recovery-minutes.md`, `003-blocked-builders-per-wave.md` and `004-unsatisfiable-criteria-caught.md`, and the matching "cannot be read today" sentence in each Reading it, so the KPI files describe the fields as they now exist (K-004 keeps its note that early reads 0 until step 5).
 
-Contract dependents (`git grep -l fleet_collect -- plugins scripts`): `fleet_detect.py`, `fleet_status.py`, `plan_check.py`, `check.py`, `check.sh`, `skills/fleet-retro/SKILL.md`, `skills/plan-goal/references/goal-rules.md`, `skills/plan-verification/references/outcome-block.md`. All read existing keys only; the new keys are additive, so none is edited. Validation scope: `fleet_collect.py selftest`, plus `fleet_detect.py selftest` and `fleet_status.py selftest` as the two dependents that parse the collector's JSON. A read-only stand-in that computes the same numbers today is `.sdlc/plan-reliability-docs/kpi-baseline-probe.py`; compare one window by hand if a number looks off.
+Contract dependents (`git grep -l fleet_collect -- plugins scripts`): `fleet_detect.py`, `fleet_status.py`, `plan_check.py`, `check.py`, `check.sh`, `skills/fleet-retro/SKILL.md`, `skills/plan-goal/references/goal-rules.md`, `skills/plan-verification/references/outcome-block.md`. All read existing keys only; the new keys are additive, so none is edited. Validation scope: `fleet_collect.py selftest`, plus `fleet_detect.py selftest` and `fleet_status.py selftest` as the two dependents that parse the collector's JSON. A read-only stand-in that computes the same numbers today is `docs/work/plan-reliability-docs/kpi-baseline-probe.py`; compare one window by hand if a number looks off.
 ### Acceptance criteria
 - (red) `out=$(python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest 2>&1) && for l in 'interrupted: lost_min runs to the next attempt start in the same dir and role' 'orphaned: a running attempt whose parent pid is dead is counted' 'negative control: a running attempt whose parent pid is alive is not counted orphaned'; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
 - (red) `out=$(python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest 2>&1) && for l in 'results: a builder result whose Status is blocked is counted' 'plan_defects: a plan defect line in a builder or verifier result is counted late' 'plan_defects: a refusals.jsonl line in the window is counted early'; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
@@ -235,7 +235,7 @@ verify: auto
 cap: $10
 guard timeout: 1900
 ### Do
-Not a ticket to file: the integration check after steps 1 to 7 land on one branch. Depends on: steps 1 to 7. Run every gate below and fix any red the earlier steps introduced; a gate already red at this step's build-start HEAD is reported as `inherited red`. `check.sh` took 615 s at plan time of task 0233 (`.sdlc/.0233-reorg-apply/planner-L3-2.md`, Assumptions); the timeout is about three times that.
+Not a ticket to file: the integration check after steps 1 to 7 land on one branch. Depends on: steps 1 to 7. Run every gate below and fix any red the earlier steps introduced; a gate already red at this step's build-start HEAD is reported as `inherited red`. `check.sh` took 615 s at plan time of task 0233 (`docs/work/.0233-reorg-apply/planner-L3-2.md`, Assumptions); the timeout is about three times that.
 ### Acceptance criteria
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`
@@ -260,10 +260,10 @@ Not a ticket to file: the integration check after steps 1 to 7 land on one branc
 
 ## Done when
 Measure: K-002 reads <= 15 by the Measured by command.
-Plan: `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/plan-reliability-docs/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote state to .sdlc/notes.md.
+Plan: `python3 plugins/sdlc-lite/scripts/plan_done.py docs/work/plan-reliability-docs/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote state to docs/work/NOTES.md.
 Goal line:
 ```
-/goal complete build and verify .sdlc/plan-reliability-docs/plan-doc.md by the run-plan skill: done when `python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/plan-reliability-docs/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote the state. Do not end the turn while it exits 1 and an item is open that you can work on.
+/goal complete build and verify docs/work/plan-reliability-docs/plan-doc.md by the run-plan skill: done when `python3 plugins/sdlc-lite/scripts/plan_done.py docs/work/plan-reliability-docs/plan-doc.md` exits 0 and prints `plan done`, or exits 4 after `plan_done.py stop` wrote the state. Do not end the turn while it exits 1 and an item is open that you can work on.
 ```
 
 ## Assumptions
@@ -275,7 +275,7 @@ Goal line:
 - `queue_prune` queues only recorded completions, and `prune --add` checks nothing: verified by `dispatch.py:848-862`, `808-812`, `1149-1151`.
 - Every `(red)` criterion is red now for the reason the step removes (a missing selftest label, a missing flag in `--help`, a missing sentence, a missing report, or the KPI note still present), and every `(guard)` is green at base: verified by one probe run per criterion on 2026-10-09 with `SDLC_BASE_SHA=HEAD` (reds in the tree, guards in a `git worktree add --detach` copy at 8277055c). The `dispatch.py` and `steps.py` selftest criteria were evaluated against one cached run of each selftest at this HEAD (both exit 0; `dispatch.py selftest` took 129 s), not re-run per criterion. `check.sh` was not run at plan time; its time comes from the record named in step 8.
 - The goal, KPI and spec documents and this plan are committed before step 1 is split: assumed, not verified. While `docs/goals/`, `docs/kpi/` and `docs/specs/sdlc-lite/restart-and-blocked-run-plan.md` stay untracked, every scope guard reads them as untracked files and is red (observed in this tree).
-- The K-002, K-003 and K-004 baselines are from `.sdlc/plan-reliability-docs/kpi-baseline-probe.py`, run once over four repositories on 2026-10-09: verified as a command output, unverified as a KPI value (the collector cannot read them yet).
+- The K-002, K-003 and K-004 baselines are from `docs/work/plan-reliability-docs/kpi-baseline-probe.py`, run once over four repositories on 2026-10-09: verified as a command output, unverified as a KPI value (the collector cannot read them yet).
 
 ## Risks
 - Step 1's orphan count uses `kill(pid, 0)`, which reads a reused pid as alive; step 4 adds the start-time check to `dispatch.py` only. The collector undercounts orphans until it reuses that check; a later ticket can share it.

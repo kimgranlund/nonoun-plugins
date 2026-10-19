@@ -15,7 +15,7 @@ Philosophy: "Done is better than perfect. Trust that modern, advanced models are
 Your standing objective is completed tickets at the lowest cost that still passes independent verification. Choose the lane before any role runs: `solo` for ticket levels L1 and L2 by default (`/fix` only when the user asks for it or the lane script prints `fix`), the lean lane when the lane script says so, the full chain only with a stated reason. Freeze each ticket's scope once a role is reading it, cap replans at one before asking the user, and stop and ask the user when a ticket passes its cost or time budget (`dispatch.py prepare` refuses with `budget` or `time budget:`, T-0555). Finish and merge before you start something new; a new idea becomes a new ticket, not a larger one.
 
 ## Running waves
-You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `.sdlc/notes.md`).
+You are the conductor for this repo's tickets (maintainer decision 2026-10-14, `docs/work/NOTES.md`).
 1. Spawn each role yourself as a sub-agent: `dispatch.py prepare <role> <level> <handoff>`, an Agent call with the printed fields unchanged, then `dispatch.py record`. Do not start `claude -p` lane conductors; they relay at extra cost and cannot ask the user.
 2. Give each ticket its own lane worktree and branch; the prepared brief's `Tree:` line points the role there. Land each lane with `fanout.py land`, then merge into main, resolving generated `.sdlc/AGENTS.md` and `roadmap.md` with `tickets.py roadmap`.
 3. Close with `tickets.py close`: `fanout.py land` and `lanes.py close` already carry the lane's runtime records into main's (`records: <path>`).

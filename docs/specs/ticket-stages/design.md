@@ -92,6 +92,7 @@ docs/work/       work root: ticket and task folders, ROADMAP.md, NOTES.md, archi
 - The command drops the `ticket_root:` and `layout:` lines, writes `work_root:`, removes the old sub-routers, regenerates the roadmap, routers and mailbox entries, and runs `check`.
 - Cites in live files are rewritten as `migrate-layout` rewrites them. A file under `docs/reports/` or inside a closed `.NNNN-slug` folder is a frozen record: it is listed as `keep` and never edited.
 - It refuses, writing nothing, on an unsafe `--to`, another `work_root` already set, a `*.running` marker, any uncommitted change, a bad ticket, or an existing target.
+- This repository migrated on 2026-10-19 (T-0636). `--rewrite-refs` also rewrote plugin code, selftest fixtures and prose that describes history or the `.sdlc` default; those rewrites were reverted by hand and only live links and pointers to this repo's records kept. Relative links inside closed ticket folders were written from `.sdlc/` and no longer resolve one level deeper; they stay frozen and are rows of `docs/reports/broken-links-allowlist.md`.
 
 ## Message bus
 

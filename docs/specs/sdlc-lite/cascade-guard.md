@@ -10,7 +10,7 @@ A shared gate counts the agent runs already recorded for the scope a dispatch is
 
 ## 2. Sources
 
-- The maison conductor's report and the maintainer's decisions of 2026-10-10: the `## Context` of the T-0427 ticket handoff, `.sdlc/.0427-cascade-guard-design/handoff.md`.
+- The maison conductor's report and the maintainer's decisions of 2026-10-10: the `## Context` of the T-0427 ticket handoff, `docs/work/.0427-cascade-guard-design/handoff.md`.
 - Maison evidence, read as data (never written):
   - T-0378 plan reviews `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/plan-reviewer-L1.md` (replan) and `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/plan-reviewer-L1-2.md` (pass); its plans `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/planner-L3-2.md` and `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0378-integration-wave-3/planner-L3-3.md`.
   - T-0379 plan reviews `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0379-integration-wave-4/plan-reviewer-L1.md` and `/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0379-integration-wave-4/plan-reviewer-L1-2.md` (both replan).
@@ -187,7 +187,7 @@ The maison T-0339 `verifier-L3.md` returned `fail` with a `plan defect:` line: t
 - The counter and T-0421: the `route correction` row and the `route template-check` row record no model run, so they do not count. The template review itself is a model run and counts as one run; it does not count as a replan.
 - The counter and the cap together: the normal one-step path is planner, plan review, builder, verifier, 4 runs. One replan with its review makes 6, and then a failed build's rebuild is the 7th run and asks. The longest plan stage the cap allows (template review saying replan, then planner, review, planner, review) is 6 task rows, so the first builder asks. That is deliberate: by then the plan stage alone has cost a full step.
 - [T-0400](verifier-held-criteria.md): a held criterion (`unmet-dependency` or `deferred`) waits or holds instead of a rebuild. A settling run is a verifier run on named refs; it counts as a run, and the skip rule does not refuse it because its criteria are held, not passed.
-- Out of this design: T-0428 owns the wording (the doctrine lines in conductor.md line 9, verifier.md line 33, plan-reviewer.md line 17 and planner.md line 18), closed in `.sdlc/.0428-close-first-doctrine/`. T-0429 owns the docs-only verifier skip, built as [verify_scope.py](../../../plugins/sdlc-lite/scripts/verify_scope.py), closed in `.sdlc/.0429-skip-verifier-docs-only/`. Neither is changed here.
+- Out of this design: T-0428 owns the wording (the doctrine lines in conductor.md line 9, verifier.md line 33, plan-reviewer.md line 17 and planner.md line 18), closed in `docs/work/.0428-close-first-doctrine/`. T-0429 owns the docs-only verifier skip, built as [verify_scope.py](../../../plugins/sdlc-lite/scripts/verify_scope.py), closed in `docs/work/.0429-skip-verifier-docs-only/`. Neither is changed here.
 
 ## 7. Measures
 

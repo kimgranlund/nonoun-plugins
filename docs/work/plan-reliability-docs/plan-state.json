@@ -3,6 +3,6 @@
   "stopped": {
     "reason": "plan defect: step 1 is already built by T-0411 (c10b01de); solo T-0435-solo found fleet_collect.py fields and docs/kpi edits present, all seven selftest labels ok, the (red) KPI criterion already green, no diff possible; ticket T-0435 left claimed, to close with --reason or replan",
     "time": "2026-10-11T12:57:48Z",
-    "resume": "python3 plugins/sdlc-lite/scripts/plan_done.py .sdlc/plan-reliability-docs/plan-doc.md"
+    "resume": "python3 plugins/sdlc-lite/scripts/plan_done.py docs/work/plan-reliability-docs/plan-doc.md"
   }
 }

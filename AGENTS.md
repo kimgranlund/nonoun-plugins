@@ -55,7 +55,7 @@ Read only the linked details needed for the change. Keep scope-specific instruct
 | Skill behavior and conditional references | Each plugin's `skills/` directory |
 | Host manifests | Each plugin's `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` |
 | Marketplace membership | `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`; preserve parity |
-| Current task ordering | `.sdlc/roadmap.md`, when present; regenerate through the ticket workflow |
+| Current task ordering | `docs/work/ROADMAP.md`, when present; regenerate through the ticket workflow |
 
 ## Validation proportional to the change
 

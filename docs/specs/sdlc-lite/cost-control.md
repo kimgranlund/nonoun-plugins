@@ -31,7 +31,7 @@ So a mechanical gate removes about a quarter of replans and 30 percent of findin
 
 ## Conductor text is T-0199's
 
-T-0199 (`.sdlc/.0199-conductor-rules`, commit 36875d4 on main) owns `agents/conductor.md` and the conductor's objective, lane-first routing, the `Lane: <lane> because <reason>` line, and the stop rules, including that a second replan verdict, or a ticket past its budget once the budget ticket lands, is a hard stop that comes to the user. Nothing below restates that text. Each item names only the machinery T-0199's text calls (a script, an exit code, a file), and where an item needs one more conductor sentence, it lands as a change to T-0199's text after T-0199 merges, never as a parallel edit. T-0209 (maintainer lean default, filed on main) is the maintainer-side line and is also not repeated here.
+T-0199 (`docs/work/.0199-conductor-rules`, commit 36875d4 on main) owns `agents/conductor.md` and the conductor's objective, lane-first routing, the `Lane: <lane> because <reason>` line, and the stop rules, including that a second replan verdict, or a ticket past its budget once the budget ticket lands, is a hard stop that comes to the user. Nothing below restates that text. Each item names only the machinery T-0199's text calls (a script, an exit code, a file), and where an item needs one more conductor sentence, it lands as a change to T-0199's text after T-0199 merges, never as a parallel edit. T-0209 (maintainer lean default, filed on main) is the maintainer-side line and is also not repeated here.
 
 ## What already exists
 
@@ -131,7 +131,7 @@ A replan today is a new planning run that rereads the repository. The seven judg
 4. Delta re-review effort (authorized). A plan-reviewer run is a delta re-review when the task dir holds an earlier `plan-reviewer-*.md` with Verdict `replan` and the plan under review is a replan of it; `run.sh` selects effort `medium` for it. A first review, a review of a plan with no earlier `replan` verdict, and every other role keep their current effort. The family rule is unchanged.
 5. Cap and measure. The existing stop after two `replan` verdicts stays, and the conductor's hard stop on a second replan is T-0199 text (d); this item adds no conductor wording. `footprint.py` gains `replans` (non-stale planner results beyond the first, plus `replan` verdicts), so the target is a gate and not a story.
 
-Delta re-reviews run one effort level lower than the plan-reviewer's current effort for that case (user decision 2026-10-04: a delta re-review checks only the findings, not the whole plan). Today `plan-reviewer:L1` is `fable high` and the family rule moves it to Opus at the same effort after a Fable planner, so a delta re-review runs at `medium` on whichever family the rule picks. This is the one explicitly authorized change to a model and effort default. It is implemented by T-0213 in `run.sh` and `skills/level-rubric/SKILL.md`, `scripts/check.py` keeps checking their agreement, and, under the T-0185 rule, the change needs a new eval file under `.sdlc/evals/` and a `scripts/evals.py lock` update. The eval records only what it measured (see T-0213's handoff); no other model or effort changes.
+Delta re-reviews run one effort level lower than the plan-reviewer's current effort for that case (user decision 2026-10-04: a delta re-review checks only the findings, not the whole plan). Today `plan-reviewer:L1` is `fable high` and the family rule moves it to Opus at the same effort after a Fable planner, so a delta re-review runs at `medium` on whichever family the rule picks. This is the one explicitly authorized change to a model and effort default. It is implemented by T-0213 in `run.sh` and `skills/level-rubric/SKILL.md`, `scripts/check.py` keeps checking their agreement, and, under the T-0185 rule, the change needs a new eval file under `docs/work/evals/` and a `scripts/evals.py lock` update. The eval records only what it measured (see T-0213's handoff); no other model or effort changes.
 
 ### Files
 
@@ -205,7 +205,7 @@ After T-0187 (`board.py`), T-0199 (conductor text) and B (`run.sh`, `run_lifecyc
 
 ## Filed tickets
 
-Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`.sdlc/.0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
+Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`docs/work/.0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
 
 ## Targets
 

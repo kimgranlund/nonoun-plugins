@@ -21,7 +21,7 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 
 | id | kind | holds | not | why | writer | form | life | entry | read | owner |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `work/` | work | ticket and task folders, the generated `ROADMAP.md` and `NOTES.md` | designs and plans under review -> `planning/` | work records next to the docs they change | `tickets.py` | `NNNN-slug/handoff.md` | close dot-renames in place | - | running or closing a ticket | `tickets.py` |
+| `work/` | work | ticket and task folders, the generated `ROADMAP.md` and `NOTES.md`, and `evals/`, `proposals/`, `archive/` and `fleet.json`; here since `.sdlc/config` set `work_root: docs/work` (T-0636) | designs and plans under review -> `planning/` | work records next to the docs they change | `tickets.py` | `NNNN-slug/handoff.md` | close dot-renames in place | - | running or closing a ticket | `tickets.py` |
 | `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | - | defining the system | `docs_check.py` |
 | `planning/` | planning | proposals and plans under review | built facts -> `specs/` | decisions need a place | people | `status:` front matter | accept, then `archive/` | - | deciding or scheduling | `docs_check.py` |
 | `decisions/` | decisions | one numbered decision per file | narrative -> `specs/` | reasons outlive people | people | `NNNN-slug.md`, `status:` | supersede | - | asking why | `docs_check.py` |
