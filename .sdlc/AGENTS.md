@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:7ff5d801fa6d -->
+<!-- sdlc-lite:managed:start v1 sha256:bc1479638e7e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,7 +15,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
-- claimed: 0
+- claimed: 1
+  - T-0618 Design: move tracked work records from .sdlc to docs/work, runtime stays in .sdlc (0618-work-records-in-docs), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
 - done: 577

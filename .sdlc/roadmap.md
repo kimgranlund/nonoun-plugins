@@ -9,5 +9,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L3 | P3 | none | ⏳ proposed |
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
+| T-0618 | [0618-work-records-in-docs](0618-work-records-in-docs/handoff.md) | Design: move tracked work records from .sdlc to docs/work, runtime stays in .sdlc | chore | L2 | P2 | none | 🟡 claimed |
 
 Closed: 577 done, 29 dropped (git log or .NNNN-* folders)
