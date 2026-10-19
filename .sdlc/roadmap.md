@@ -10,5 +10,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0616 | [0616-lane-records-lost-on-sweep](0616-lane-records-lost-on-sweep/handoff.md) | Lane run records vanish when gen-ui-kit lanes are swept, so fleet_collect undercounts | bug | L2 | P2 | none | ⏳ proposed |
+| T-0617 | [0617-lint-verifier-forbidden-git](0617-lint-verifier-forbidden-git/handoff.md) | steps.py lint accepts criteria that use git commands the verifier may not run | bug | L1 | P2 | none | 🔵 ready |
 
 Closed: 575 done, 29 dropped (git log or .NNNN-* folders)
