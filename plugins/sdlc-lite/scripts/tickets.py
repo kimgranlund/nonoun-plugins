@@ -1085,7 +1085,8 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
     gitignored <root>/AGENTS.md that cites tickets/<slug> counts, not only files under the ticket dir.
     Files under <base>/runtime/ (the runtime records, never a citation; base is scan when given, else root) are always
     left out, and so are files matching a citation_skip: glob of <base>/config (config_citation_skip, fnmatch on the
-    toplevel-relative path, T-0535). skipped, a list, collects the citation_skip files that held a reference."""
+    toplevel-relative path, T-0535). Under a work root the generated router blocks (router_files of base) are left
+    out of the text checked, since close regenerates them (T-0625). skipped, a list, collects the citation_skip files that held a reference."""
     try:
         here = root.resolve()
         anchor = here
@@ -1120,6 +1121,9 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
         cbase = (scan if scan is not None else root).resolve()
         runtime = (cbase.relative_to(top) / 'runtime').as_posix() + '/'
         globs = config_citation_skip(cbase)
+        # under a work root the generated router lists (<work_root>/<slug>) and close regenerates it (T-0625)
+        routers = ({p.resolve().relative_to(top).as_posix() for _l, p, k in router_files(cbase) if k == 'agents'}
+                   if work_dir(cbase) is not None else set())
         files = []
         for f in sorted({f for f in hits.split('\0') if f and f != skip and (own or not f.startswith(old + '/'))}):
             if f.startswith(runtime):
@@ -1131,6 +1135,10 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
                 if not marked:
                     files.append(f)  # unreadable: keep it, so the scan refuses instead of passing silently
                 continue
+            if f in routers:
+                fb = onboard.find_block(text)
+                if fb.status == 'block':
+                    text = text.replace(fb.block.text, '', 1)
             if lit.search(text) or ref_tokens(text, top, f, old):
                 if not marked:
                     files.append(f)
@@ -2544,6 +2552,29 @@ One folder per task with no ticket: release records, verification handoffs, dogf
 `../tickets/`. `tickets.py roadmap` generates this block: do not edit inside it.
 """
 
+ROUTER_WORK_INTRO = """\
+This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task \
+records, `<ROADMAP>`, and `<NOTES>` are in the work root `<T>/`. `tickets.py roadmap` (also run by `new` and \
+`close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun \
+`roadmap`. `<ROADMAP>` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only \
+when asked.
+"""
+
+ROUTER_WORK_ALLOWED = """\
+- The top of `<R>` holds only `AGENTS.md`, `CLAUDE.md`, `config`, `board.md`, `fleet.json`, `gate-ledger.jsonl`, \
+`messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, `archive/`, and `_`- \
+or `.`-prefixed entries; ticket and task folders go in `<T>/`. A \
+`top_level_allow: <glob>, ...` line in `<R>/config` allows more.
+"""
+
+WORK_ROOT_TEMPLATE = """\
+# Work records
+
+This folder is the SDLC Lite work root: ticket and task folders, the generated `<ROADMAP>`, and `<NOTES>`. How to \
+create, claim, and close a ticket, and the stage counts, are in [`<R>/AGENTS.md`](<UP>/AGENTS.md). `tickets.py \
+roadmap` generates this block: do not edit inside it.
+"""
+
 NOTES_TEMPLATE = """\
 # Notes
 
@@ -2576,9 +2607,14 @@ def router_paths(root):
 def router_files(root):
     """[(label, path, kind)] for the managed router files: AGENTS.md and CLAUDE.md at <root>, with
     `ticket_root: tickets` also tickets/AGENTS.md and tickets/CLAUDE.md, and with `layout: topics` also
-    work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and notes/CLAUDE.md. kind is 'agents' or 'claude'."""
+    work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and notes/CLAUDE.md, and with `work_root: W` also W/AGENTS.md
+    and W/CLAUDE.md, labelled by their path relative to file_base(root) (T-0625). kind is 'agents' or 'claude'."""
     out = [('AGENTS.md', root / 'AGENTS.md', 'agents'), ('CLAUDE.md', root / 'CLAUDE.md', 'claude')]
-    if ticket_dir(root) != root and work_dir(root) is None:
+    wd = work_dir(root)
+    if wd is not None:
+        t = router_paths(root)[1]
+        out += [(f'{t}/AGENTS.md', wd / 'AGENTS.md', 'agents'), (f'{t}/CLAUDE.md', wd / 'CLAUDE.md', 'claude')]
+    if ticket_dir(root) != root and wd is None:
         out += [('tickets/AGENTS.md', root / 'tickets' / 'AGENTS.md', 'agents'),
                 ('tickets/CLAUDE.md', root / 'tickets' / 'CLAUDE.md', 'claude')]
     if layout_paths(root).layout == 'topics':
@@ -2588,11 +2624,12 @@ def router_files(root):
     return out
 
 
-def stage_lines(ts):
+def stage_lines(ts, prefix=''):
     """One `- <stage>: <count>` line per status in ENUMS order; under each ACTIVE status (proposed, ready,
     claimed, paused, blocked) one `  - <id> <title> (<folder>)` line per ticket in id order, with
     `, claimed by <value>` for a non-empty string claimed_by, then `, paused: <reason>` for a paused ticket's
-    non-empty string paused_reason, then `, branch <b>` for a non-empty string branch. The folder is the bare folder name, never a path."""
+    non-empty string paused_reason, then `, branch <b>` for a non-empty string branch. The folder is the bare folder name,
+    after prefix: '' by default, `<work_root>/` under a work root (T-0625)."""
     out = []
     for st in ENUMS['status']:
         group = sorted(((m.get('id') if isinstance(m.get('id'), str) else '', slug, m)
@@ -2601,7 +2638,7 @@ def stage_lines(ts):
         if st in ACTIVE:
             for tid, slug, m in group:
                 title = m.get('title') if isinstance(m.get('title'), str) else ''
-                line = f'  - {tid} {title} ({slug})'
+                line = f'  - {tid} {title} ({prefix}{slug})'
                 c = m.get('claimed_by')
                 if isinstance(c, str) and c.strip():
                     line += f', claimed by {c.strip()}'
@@ -2620,19 +2657,26 @@ def router_bodies(root, ts):
     the tickets/AGENTS.md block. Text between the markers, ending with a newline. Under `layout: topics` the
     router's first paragraph is ROUTER_TOPICS_INTRO, both procedures send notes to `<R>/notes/notes.md`, and
     work/AGENTS.md and notes/AGENTS.md get WORK_TEMPLATE and NOTES_TEMPLATE; the flat text is unchanged. Each
-    procedure command starts with <CMD>: the `tickets_cmd:` value of <root>/config, else ROUTER_CMD."""
+    procedure command starts with <CMD>: the `tickets_cmd:` value of <root>/config, else ROUTER_CMD. Under
+    `work_root: W` (T-0625) the router names W's paths (ROUTER_WORK_INTRO, ROUTER_WORK_ALLOWED, `(W/<folder>)` stage
+    lines, notes to W/NOTES.md) and W/AGENTS.md gets WORK_ROOT_TEMPLATE, an entry pointing to the router."""
     r, t = router_paths(root)
     wd = work_dir(root)
     nested = ticket_dir(root) != root and wd is None
     topics = layout_paths(root).layout == 'topics'
     line = ROUTER_WORK if wd is not None else ROUTER_TICKETS if nested else ROUTER_HERE
     body = (ROUTER_TEMPLATE.replace('<ticket folders line>', line)
-            .replace('<stage lines>', '\n'.join(stage_lines(ts))))
+            .replace('<stage lines>', '\n'.join(stage_lines(ts, f'{t}/' if wd is not None else ''))))
     tickets_body = TICKETS_TEMPLATE
     if topics:
         body = body.replace(ROUTER_FLAT_INTRO, ROUTER_TOPICS_INTRO, 1)
         body, tickets_body = (b.replace('go to `notes.md`', 'go to `<R>/notes/notes.md`') for b in (body, tickets_body))
         body, tickets_body = (b.replace(ROUTER_FLAT_ALLOWED, ROUTER_TOPICS_ALLOWED, 1) for b in (body, tickets_body))
+    if wd is not None:
+        lp = layout_paths(root)
+        body = (body.replace(ROUTER_FLAT_INTRO, ROUTER_WORK_INTRO, 1).replace(ROUTER_FLAT_ALLOWED, ROUTER_WORK_ALLOWED, 1)
+                .replace('go to `notes.md`', 'go to `<NOTES>`').replace('<ROADMAP>', f'<T>/{lp.roadmap.name}')
+                .replace('<NOTES>', f'<T>/{lp.notes.name}'))
     # archive/, work/archive/, or ../<work_root>/archive/ under a work root (T-0623)
     archive = pathlib.Path(os.path.relpath(layout_paths(root).work / 'archive', root)).as_posix() + '/'
     body, tickets_body = (b.replace('<ARCHIVE>', archive) for b in (body, tickets_body))
@@ -2640,6 +2684,11 @@ def router_bodies(root, ts):
     out = {'AGENTS.md': body.replace('<CMD>', cmd).replace('<R>', r).replace('<T>', t)}
     if nested:
         out['tickets/AGENTS.md'] = tickets_body.replace('<CMD>', cmd).replace('<R>', r).replace('<T>', t)
+    if wd is not None:
+        up = pathlib.Path(os.path.relpath(root.resolve(), wd.resolve())).as_posix()
+        out[f'{t}/AGENTS.md'] = (WORK_ROOT_TEMPLATE.replace('<ROADMAP>', layout_paths(root).roadmap.name)
+                                 .replace('<NOTES>', layout_paths(root).notes.name).replace('<UP>', up)
+                                 .replace('<R>', r))
     if topics:
         out['work/AGENTS.md'] = WORK_TEMPLATE
         out['notes/AGENTS.md'] = NOTES_TEMPLATE
@@ -5928,6 +5977,16 @@ def selftest():
                rc == 0 and out == str(ww / '0001-a' / 'handoff.md') and (ww / '0001-a' / 'handoff.md').is_file()
                and tree(wr) == ['AGENTS.md', 'CLAUDE.md', 'config', 'messages']
                and '\nrouter: .sdlc/AGENTS.md ' in tr_text(ww / '0001-a' / 'handoff.md'))
+        # T-0625: the router names work-root paths; docs/work/AGENTS.md is a short entry pointing to it
+        fb = onboard.find_block(tr_text(wr / 'AGENTS.md'))
+        wb = onboard.find_block(tr_text(ww / 'AGENTS.md')) if (ww / 'AGENTS.md').is_file() else None
+        rb, eb = (fb.block.text if fb.status == 'block' else ''), (wb.block.text if wb and wb.status == 'block' else '')
+        expect(f'work_root router: .sdlc/AGENTS.md lists (docs/work/0001-a) and names docs/work/ROADMAP.md and '
+               f'docs/work/NOTES.md; docs/work/AGENTS.md points to .sdlc/AGENTS.md: {rb!r} {eb!r}',
+               '  - T-0001  (docs/work/0001-a)\n' in rb and '`docs/work/ROADMAP.md`' in rb
+               and 'Notes go to `docs/work/NOTES.md`' in rb and '`roadmap.md`' not in rb and '`notes.md`' not in rb
+               and '](../../.sdlc/AGENTS.md)' in eb and '`ROADMAP.md`' in eb
+               and tr_text(ww / 'CLAUDE.md') == '@AGENTS.md\n' if (ww / 'CLAUDE.md').is_file() else False)
         (ww / 'ROADMAP.md').unlink()
         rc, out, err = run(wr, 'roadmap')
         names = sorted(os.listdir(ww)) if ww.is_dir() else []
