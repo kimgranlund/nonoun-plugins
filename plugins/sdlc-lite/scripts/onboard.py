@@ -472,8 +472,8 @@ The first line that matches wins.
 ## Adding a document
 
 1. Pick the home above; [the layout](layout.md) lists any extra homes.
-2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`.
-3. Add a link to it in its folder's `AGENTS.md`; the onboard setup refreshes the generated Contents lists.
+2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`. A home whose `## Kinds` form in [the layout](layout.md) is numbered (such as `NNNN-slug.md`) takes the next number from `docs_check.py next docs/<home>`, or by hand: read the highest existing number and held ref, then run `git update-ref refs/sdlc/doc-ids/<home>/<NNNN> "$(printf 'docs/<home>/<NNNN>\\n' | git hash-object -w --stdin)" ""`, which is create-only.
+3. Add a link to it in its folder's `AGENTS.md`, outside the generated managed block, since a hand edit inside the block fails its stamp. The onboard setup also lists it.
 4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
 5. Find the document's type in `specs/doc-standards/README.md`, when this repository has it, and follow the card its row names.
 
