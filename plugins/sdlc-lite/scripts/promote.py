@@ -9,12 +9,14 @@ The copy goes to docs/<home>/<slug>.md with front matter: `source: T-NNNN`, `sou
 and the home's mandatory key (`status: proposed` for planning and decisions, `date: <today>` for reports).
 Reports also get a YYYY-MM-DD- file name prefix. Refuses an unknown home, an existing target, a non-Markdown
 artifact, and a decisions slug with no four-digit number prefix. Never edits the ticket's handoff.md and never
-removes the .sdlc copy. --note appends one line to .sdlc/notes.md (or .sdlc/notes/notes.md under topics layout).
+removes the .sdlc copy. --note appends one line to .sdlc/notes.md (or .sdlc/notes/notes.md under topics layout, or the work
+root's NOTES.md under a work_root line). Homes come from docs_check.DEFAULT_HOMES; the work home is refused.
 --root is the repository root (default: the current directory). Calls no model.
 """
 import argparse
 import datetime
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -23,8 +25,10 @@ import shutil
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import docs_check  # noqa: E402
+import roots  # noqa: E402
 
-HOMES = docs_check.DEFAULT_HOMES
+WORK_HOME = 'work'  # tickets.py writes it; a promoted note there would be flagged B-2a
+HOMES = tuple(h for h in docs_check.DEFAULT_HOMES if h != WORK_HOME)
 
 
 class Refuse(Exception):
@@ -60,12 +64,22 @@ def with_front_matter(text, keys):
 
 
 def notes_path(root):
-    topics = os.path.join(root, '.sdlc', 'notes', 'notes.md')
-    return topics if os.path.isfile(topics) else os.path.join(root, '.sdlc', 'notes.md')
+    state = os.path.join(root, '.sdlc')
+    try:
+        notes = str(roots.resolve(pathlib.Path(state)).notes)
+    except roots.Fail as e:
+        raise Refuse(str(e))
+    if os.path.commonpath([os.path.abspath(state), os.path.abspath(notes)]) != os.path.abspath(state):
+        return notes  # a work_root: line puts NOTES.md outside .sdlc
+    topics = os.path.join(state, 'notes', 'notes.md')
+    return topics if os.path.isfile(topics) else os.path.join(state, 'notes.md')
 
 
 def promote(root, artifact, home, slug=None, ticket=None, note=False, today=None):
     today = today or datetime.date.today().isoformat()
+    if home == WORK_HOME:
+        raise Refuse('work is the work root home, written by tickets.py; a promoted note there would be flagged '
+                     'B-2a, so pick a docs home that is not work: %s' % ', '.join(HOMES))
     if home not in HOMES:
         raise Refuse('unknown home %r; one of %s' % (home, ', '.join(HOMES)))
     if home == 'assets':
@@ -164,6 +178,28 @@ def selftest():
         expect(refused(tmp, review, 'reports', today='2026-10-06'), 'overwrote an existing report')
         expect(open(handoff).read() == before, 'handoff changed after refusals')
         expect(refused(tmp, os.path.join(tdir, 'missing.md'), 'specs'), 'accepted a missing artifact')
+        # work home: refused whatever DEFAULT_HOMES says, with its own reason (not the unknown-home one)
+        try:
+            promote(tmp, review, 'work', slug='x')
+            expect(False, 'promoted into the work home')
+        except Refuse as e:
+            expect('work' in str(e) and 'unknown home' not in str(e), 'work refusal reason: %s' % e)
+        expect(not os.path.exists(os.path.join(tmp, 'docs', 'work')), 'wrote docs/work')
+        # work_root: the --note line goes to the work root's NOTES.md
+        wr = os.path.join(tmp, 'wr')
+        wdir = os.path.join(wr, '.sdlc', '0098-demo')
+        os.makedirs(wdir)
+        with open(os.path.join(wr, '.sdlc', 'config'), 'w') as f:
+            f.write('work_root: docs/work\n')
+        wrev = os.path.join(wdir, 'verifier-L3.md')
+        with open(wrev, 'w') as f:
+            f.write('# Review\n')
+        r = promote(wr, wrev, 'reports', today='2026-10-06', note=True)
+        expect(r == 'docs/reports/2026-10-06-verifier-l3.md', 'work_root report path %s' % r)
+        wnotes = os.path.join(wr, 'docs', 'work', 'NOTES.md')
+        expect(os.path.isfile(wnotes) and 'promoted verifier-L3.md to docs/reports/' in open(wnotes).read(),
+               'note line not in docs/work/NOTES.md')
+        expect(not os.path.exists(os.path.join(wr, '.sdlc', 'notes.md')), 'wrote .sdlc/notes.md under work_root')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     if fails:

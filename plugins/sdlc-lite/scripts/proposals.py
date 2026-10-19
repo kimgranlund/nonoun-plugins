@@ -11,7 +11,7 @@ top-level proposals, messages, runtime, and dogfood dirs and the --proposals dir
 the records dirs that hold each task's runs.jsonl and role results)
   runs.jsonl   one JSON object per line; a line whose role or level is not a string is skipped
   role result  a file named (builder|verifier)-L[1-5](-<suffix>)?.md; sections parse as in results.py
-  notes.md     <root>/notes.md lines of the form `- fix-now: <text>` or `- decide: <text>`
+  notes.md     <root>/notes.md (or the work root's NOTES.md under a work_root line) lines of the form `- fix-now: <text>` or `- decide: <text>`
 
 Patterns (a key with two or more occurrences becomes a candidate)
   verifier-fail <dir>    verifier results in one dir with Verdict fail
@@ -77,6 +77,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import roots  # noqa: E402
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -160,8 +163,13 @@ def rel(path, repo):
         return p.as_posix()
 
 
-def subject_of(dirpath, repo):
-    parts = Path(dirpath).relative_to(repo).parts
+def subject_of(dirpath, repo, work=None, state_name='.sdlc'):
+    """The folder subject of a record dir. A dir under the work root (work_root: line) takes the state root name
+    as its first part, so a pattern is the same before and after the records move there."""
+    if work is not None and (Path(dirpath) == work or work in Path(dirpath).parents):
+        parts = (state_name,) + Path(dirpath).relative_to(work).parts
+    else:
+        parts = Path(dirpath).relative_to(repo).parts
     if parts[1:3] == ('runtime', 'tasks') and len(parts) > 3:
         parts = parts[:1] + parts[3:]
     return '/'.join(p[1:] if DOT_TICKET_RE.fullmatch(p) else p for p in parts)
@@ -213,15 +221,19 @@ def collect(root, proposals):
     repo = root.parent
     proposals = Path(proposals).resolve()
     found = {}
+    r = roots.resolve(root)
+    work = r.work if r.work != root and root not in r.work.parents else None  # a work_root: line is set
+    bases = [root] + ([work] if work is not None and work.is_dir() else [])
 
     def add(kind, subj, path, line, where, q, extra=''):
         found.setdefault((kind, subj), []).append((rel(path, repo), line, where, q, extra))
 
-    for dirpath, dirnames, filenames in os.walk(str(root)):
+    walk = ((base, d, n, f) for base in bases for d, n, f in os.walk(str(base)))  # lazy: pruning dirnames works
+    for base, dirpath, dirnames, filenames in walk:
         here = Path(dirpath)
         keep = []
         for name in sorted(dirnames):
-            if here == root and name in SKIP_TOP and name != 'runtime':
+            if here == base and name in SKIP_TOP and name != 'runtime':
                 continue
             if here == root / 'runtime' and name != 'tasks':
                 continue
@@ -229,7 +241,7 @@ def collect(root, proposals):
                 continue
             keep.append(name)
         dirnames[:] = keep
-        subj = subject_of(here, repo)
+        subj = subject_of(here, repo, work, root.name)
         seen_advice = set()
         for name in sorted(filenames):
             path = here / name
@@ -260,7 +272,7 @@ def collect(root, proposals):
                     if role == 'builder' and level not in levels:
                         levels.add(level)
                         add('builder-bump', subj, path, n, 'run', quote(q))
-            elif here == root and name == 'notes.md':
+            elif (here == root and name == 'notes.md') or (work is not None and path == r.notes):  # rule: notes
                 try:
                     text = read_source(path)
                 except OSError:
@@ -534,7 +546,7 @@ def cmd_accept(args, root, proposals, plugin):
     repo = repo_of(root)
     p = find(proposals, args.id, repo)
     forward(p, 'accepted')
-    evals_dir = (Path(root) / 'evals').resolve()
+    evals_dir = roots.resolve(Path(root).resolve()).evals.resolve()
     shown = rel(evals_dir, repo)
     reason = None
     path = None
@@ -745,6 +757,7 @@ def selftest(plugin):
         d = t / ('neg-' + key)
         d.mkdir()
         (d / 'proposals.py').write_text(text, encoding='utf-8')
+        shutil.copyfile(str(Path(me).parent / 'roots.py'), str(d / 'roots.py'))
         return d / 'proposals.py', None
 
     def case(name, fn):
@@ -1139,6 +1152,29 @@ def selftest(plugin):
             case('records dir: %s fixture: planner rows in a records dir file one replan candidate under the '
                  'task folder subject' % label, cr)
 
+        def wr(need):
+            proj = t / 'work-root'
+            w(proj / '.sdlc/config', 'work_root: docs/work\n')
+            w(proj / 'docs/work/NOTES.md', '# Notes\n\n## T-0001: One (2026-10-01)\n\n- decide: Pick  a format\n\n'
+                                           '## T-0002: Two (2026-10-02)\n\n- decide: pick a FORMAT\n')
+            w(proj / 'docs/work/.0007-x/runs.jsonl', '{"role":"planner","level":"L2"}\n{"role":"planner","level":"L3"}\n')
+            w(proj / 'docs/work/evals/0000-ok.md', VALID_EVAL)
+            track(proj)
+            rc, out, err = ev(proj, ['scan'])
+            props = sorted((proj / 'docs/work/proposals').glob('*/proposal.md'))
+            need(rc == 0 and len(props) == 2, 'scan: rc=%d %r %r %r' % (rc, out, err, props))
+            need(not (proj / '.sdlc/proposals').exists(), 'wrote .sdlc/proposals under work_root')
+            texts = [read(q) or '' for q in props]
+            need(any('- docs/work/NOTES.md:5 (## T-0001: One (2026-10-01)) "decide: Pick a format"' in x for x in texts),
+                 'no NOTES.md evidence line: %r' % texts)
+            need(any('pattern: replan .sdlc/0007-x' in x.split('\n') and '- docs/work/.0007-x/runs.jsonl:1' in x
+                     for x in texts), 'no work-root runs.jsonl replan: %r' % texts)
+            rc, out, err = ev(proj, ['accept', 'P-0001', '--eval', str(proj / 'docs/work/evals/0000-ok.md')])
+            need(rc == 0 and out == 'accepted P-0001 (eval docs/work/evals/0000-ok.md)\n', 'accept: rc=%d %r %r' % (rc, out, err))
+            rc, out, err = ev(proj, ['list'])
+            need(rc == 0 and 'P-0001' in out, 'list: rc=%d %r %r' % (rc, out, err))
+        case('work_root: docs/work scans docs/work/NOTES.md and the work-root records, and files under docs/work/proposals', wr)
+
         def c20(need):
             need(runs[0] > 0, 'no command ran')
             for v in violations:
@@ -1185,12 +1221,12 @@ def main(argv):
     if args.cmd == 'selftest':
         return selftest(args.plugin)
     root = Path(args.root)
-    proposals = Path(args.proposals) if args.proposals else root / 'proposals'
+    proposals = Path(args.proposals) if args.proposals else roots.resolve(root.resolve()).proposals
     handler = {'scan': cmd_scan, 'list': cmd_list, 'show': cmd_show, 'accept': cmd_accept,
                'reject': cmd_reject, 'promote': cmd_promote}[args.cmd]
     try:
         return handler(args, root, proposals, Path(args.plugin))
-    except Refusal as e:
+    except (Refusal, roots.Fail) as e:
         print('proposals.py: %s' % e, file=sys.stderr)
         return 1
 
