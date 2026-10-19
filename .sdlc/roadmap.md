@@ -10,5 +10,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0618 | [0618-work-records-in-docs](0618-work-records-in-docs/handoff.md) | Design: move tracked work records from .sdlc to docs/work, runtime stays in .sdlc | chore | L2 | P2 | none | 🟡 claimed |
+| T-0619 | [0619-docs-index-and-cap](0619-docs-index-and-cap/handoff.md) | docs_check: every doc listed in its home index, per-home file cap | feature | L2 | P2 | T-0618 | 🔵 ready |
 
 Closed: 577 done, 29 dropped (git log or .NNNN-* folders)
