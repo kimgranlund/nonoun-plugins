@@ -2,7 +2,7 @@
 id: T-0632
 title: "work_root t10: check.py reads record paths from the resolver: NAME_ALLOW and the evals lock path"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0621]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0 with a NAME_ALLOW negative control: under `work_root: docs/work` a retired spelling under docs/work/.0001-a/ is allowed and one under docs/specs/ is flagged (red before: flagged). (Amended 2026-10-19, the ticket's one replan: the evals guard clause moved to T-0630, because the guard reads through `evals.py`, which T-0630 changes; check.py must not claim the guard reads the work root before then.)
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/check.py:1220. The no-work_root evals assertion also tests only roots.resolve, not the guard. It is harmless today because evals.py hardcodes `<root>/evals`.) · verifier: verifier-L2 (opus) · base: 07f5a2f160a6
+- Changed: see commits
+- Commits: bf4144b T-0632: work_root t10: check.py reads record paths from the resolver: NAME_ALLOW and the evals lock path; 0deed7e T-0632: move evals guard clause to T-0630 (verifier plan defect)
+- Check: 1 `python3 plugins/sdlc-lite/scripts/check.py` exits 0 with a NAME_ALLOW negative control: under `w...: pass
