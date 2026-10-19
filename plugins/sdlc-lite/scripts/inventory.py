@@ -9,8 +9,9 @@ It reads tracked files with `git ls-files` and writes nothing into the repositor
 report to PATH and refuses a PATH inside the repository. There are no model calls and no network.
 
 Documents: tracked md, mdx, markdown, rst, adoc, and txt files (not requirements*, robots, CMakeLists, and similar),
-outside node_modules, dist, build, vendor, .worktrees, .git, any tracked path Git ignores, and `.sdlc/` (ticket and run
-records are frozen in the reorganization design; `--include-sdlc` brings them in).
+outside node_modules, dist, build, vendor, .worktrees, .git, any tracked path Git ignores, and `.sdlc/` plus the
+`work_root:` directory of .sdlc/config when set (ticket and run records are frozen in the reorganization design;
+`--include-sdlc` brings them in).
 
 Links, as this script defines them (the reorganization draft left "link" open):
   - a link is an inline `[t](target)`, a reference definition `[id]: target`, or an HTML `href`/`src` attribute;
@@ -87,12 +88,21 @@ def join_rel(base_dir, target):
     return None if p.startswith('..') else p.replace(os.sep, '/')
 
 
-def is_doc(path, include_sdlc=False):
+def record_prefixes(root):
+    """Prefixes of the tracked work records: .sdlc/ plus the work_root of <root>/.sdlc/config, when set."""
+    import roots
+    try:
+        return roots.record_prefixes(root)
+    except (roots.Fail, OSError, ValueError):
+        return ('.sdlc/',)
+
+
+def is_doc(path, include_sdlc=False, prefixes=('.sdlc/',)):
     if not path.lower().endswith(DOC_EXT):
         return False
     if any(part in SKIP_PARTS for part in path.split('/')):
         return False
-    if not include_sdlc and path.split('/')[0] == '.sdlc':
+    if not include_sdlc and path.startswith(prefixes):
         return False
     if path.lower().endswith('.txt') and TXT_DENY.search(path):
         return False
@@ -169,7 +179,8 @@ def build(root, stale_days=180, max_lines=500, many_docs=8, dup_threshold=0.6, e
         while d:
             dirs.add(d)
             d = os.path.dirname(d)
-    docs = sorted(p for p in tracked if is_doc(p, include_sdlc) and p not in ignored)
+    prefixes = record_prefixes(root)
+    docs = sorted(p for p in tracked if is_doc(p, include_sdlc, prefixes) and p not in ignored)
     doc_set = set(docs)
     skipped = sorted(p for p in tracked if p.lower().endswith(DOC_EXT) and p not in doc_set)
     dates = last_commit_dates(root)
@@ -473,6 +484,17 @@ def selftest():
             expect('fixture:', False, m)
         expect('.sdlc records are skipped by default', not any(r['path'].startswith('.sdlc/') for r in rep['documents']))
         expect('--include-sdlc brings .sdlc records in', any(r['path'] == '.sdlc/t/handoff.md' for r in build(fx, include_sdlc=True)['documents']))
+        wr = tmp / 'wr'
+        wr.mkdir()
+        _run(['git', 'init', '-q'], wr)
+        for rel, text in (('.sdlc/config', 'work_root: docs/work\n'), ('docs/work/0001-a/handoff.md', '# Ticket\n'),
+                          ('docs/guide.md', '# Guide\n')):
+            _write(wr, rel, text)
+        _run(['git', 'add', '-A'], wr)
+        _run(['git', 'commit', '-q', '-m', 'w'], wr)
+        expect('work_root records are skipped by default', [r['path'] for r in build(wr)['documents']] == ['docs/guide.md'])
+        expect('--include-sdlc brings work_root records in',
+               any(r['path'] == 'docs/work/0001-a/handoff.md' for r in build(wr, include_sdlc=True)['documents']))
         crep = build(cl)
         expect('negative control: the clean fixture reports no flags', not crep['summary']['flag_counts'] and
                not any(f['flags'] for f in crep['folders']), str(crep['summary']['flag_counts']))

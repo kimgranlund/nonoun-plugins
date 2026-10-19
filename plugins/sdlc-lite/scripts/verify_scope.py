@@ -41,6 +41,7 @@ unmet condition and exits 1. The conditions, in the order checked:
                   docs/reports/. An added name has no dependents and is not searched
   report          only with --report: the report file is readable and, for every criterion span
                   (results.criterion_spans), holds a line with the span in backticks and `exit 0`
+In protected-path, size and shared-name, `.sdlc/` also means the `work_root:` directory of <root>/.sdlc/config, when set.
 The `verifier requested by <handoff>` line above is the ninth condition. Solo calls the CLI without --report, because
 its report file is written after it ends; `tickets.py close` is the authority and always requires the report.
 """
@@ -63,10 +64,23 @@ PROTECTED_DIRS = ('agents', 'hooks', 'adapters')
 PROTECTED_NAMES = ('levels.json', 'models.json', 'run.sh', 'dispatch.py', 'results.py', 'gate_lock.py')
 SENSITIVE = ('security', 'secret', 'auth', 'credential', 'permission')
 MAX_FILES, MAX_LINES = 8, 300
-OUTSIDE_SDLC = ('--', '.', ':(exclude).sdlc')
 QUOTED_RES = (re.compile(r"'([^'\n]{4,})'"), re.compile(r'"([^"\n]{4,})"'), re.compile(r'`([^`\n]{4,})`'))
 NAME_RES = (re.compile(r'\b(?:def|class|function)\s+([A-Za-z_]\w*)'), re.compile(r'^\s*([A-Za-z_]\w*)\s*=(?!=)'),
             re.compile(r'"([^"\n]+)"\s*:'), re.compile(r'(?<![\w-])(--[A-Za-z][\w-]*)'))
+
+
+def record_prefixes(root):
+    """The repo-relative prefixes of the tracked work records: .sdlc/ plus the work_root of <root>/.sdlc/config, if any."""
+    import roots
+    try:
+        return roots.record_prefixes(root)
+    except (roots.Fail, OSError, ValueError):
+        return ('.sdlc/',)
+
+
+def outside_records(root):
+    """The git pathspec of everything outside the work records."""
+    return ('--', '.') + tuple(f':(exclude){p.rstrip("/")}' for p in record_prefixes(root))
 
 
 def docs_path(path):
@@ -168,7 +182,7 @@ def protected_path(path):
 
 def size_problem(root, base, untracked):
     """None, or why the changed paths outside .sdlc/ are over MAX_FILES files or MAX_LINES changed lines."""
-    stat = git(root, 'diff', '--numstat', '--no-renames', '-z', base, *OUTSIDE_SDLC)
+    stat = git(root, 'diff', '--numstat', '--no-renames', '-z', base, *outside_records(root))
     if stat.returncode != 0:
         raise ValueError(stat.stderr.strip() or f'git diff failed against {base}')
     files, lines = set(), 0
@@ -198,8 +212,8 @@ def size_problem(root, base, untracked):
 def removed_names(root, base):
     """The shared-name tokens the diff against base removes outside .sdlc/, in order, a repeat once: quoted literals of
     4 or more characters, names defined on a `-` line and the basenames of deleted files, each found on no `+` line."""
-    diff = git(root, 'diff', '-U0', '--no-renames', '--no-color', '--no-ext-diff', base, *OUTSIDE_SDLC)
-    gone = git(root, 'diff', '--name-only', '--no-renames', '--diff-filter=D', '-z', base, *OUTSIDE_SDLC)
+    diff = git(root, 'diff', '-U0', '--no-renames', '--no-color', '--no-ext-diff', base, *outside_records(root))
+    gone = git(root, 'diff', '--name-only', '--no-renames', '--diff-filter=D', '-z', base, *outside_records(root))
     if diff.returncode != 0 or gone.returncode != 0:
         raise ValueError((diff.stderr or gone.stderr).strip() or f'git diff failed against {base}')
     minus, plus, hunk = [], [], False
@@ -223,7 +237,8 @@ def removed_names(root, base):
 def shared_name(root, base, changed):
     """None, or `<token> in <path>` for the first removed name a tracked file outside the diff still holds."""
     for t in removed_names(root, base):
-        hits = git(root, 'grep', '-F', '-l', '-z', '-e', t, '--', '.', ':(exclude).sdlc', ':(exclude)docs/reports')
+        hits = git(root, 'grep', '-F', '-l', '-z', '-e', t, '--', '.',
+                   *(f':(exclude){p.rstrip("/")}' for p in record_prefixes(root)), ':(exclude)docs/reports')
         for p in hits.stdout.split('\0'):
             if p and p not in changed:
                 return f'{t} in {p}'
@@ -278,12 +293,13 @@ def tests_gate(root, base, handoff, paths, report=None, need_report=False):
             return f'red-control: {last.get("phase")} control for {clip(span)}'
         if last.get('result') != 'red':
             return f'red-control: control was {last.get("result")} for {clip(span)}'
-    outside = [p for p in paths if not p.startswith('.sdlc/')]
+    prefixes = record_prefixes(root)
+    outside = [p for p in paths if not p.startswith(prefixes)]
     bad = next((p for p in outside if protected_path(p)), None)
     if bad is not None:
         return f'protected-path: {bad}'
     new = git(root, 'ls-files', '--others', '--exclude-standard', '-z').stdout.split('\0')
-    why = size_problem(root, base, [p for p in new if p and not p.startswith('.sdlc/')])
+    why = size_problem(root, base, [p for p in new if p and not p.startswith(prefixes)])
     if why:
         return f'size: {why}'
     why = shared_name(root, base, set(outside))
@@ -465,7 +481,7 @@ def selftest():
     TOOL = 'x = 1\n\n\ndef helper():\n    return 1\n'
 
     def gate(tmp, name, size='L2', lane='solo', crit=RED, extra_crit='', tail='', phase='pre-edit', pilot=True,
-             tool=TOOL.replace('x = 1', 'x = 2'), more=(), report=f'- `{SPAN}` exit 0\n'):
+             tool=TOOL.replace('x = 1', 'x = 2'), more=(), report=f'- `{SPAN}` exit 0\n', work_root=None):
         """(root, base, handoff, report) of the positive fixture with the named properties flipped."""
         r = os.path.join(tmp, name)
         os.makedirs(r)
@@ -477,8 +493,9 @@ def selftest():
         sh(r, 'add', '-A')
         sh(r, 'commit', '-qm', 'base')
         b = subprocess.run(['git', '-C', r, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
-        if pilot:
-            put(r, '.sdlc/config', 'tests_gate: pilot\n')
+        cfg = ('tests_gate: pilot\n' if pilot else '') + (f'work_root: {work_root}\n' if work_root else '')
+        if cfg:
+            put(r, '.sdlc/config', cfg)
         put(r, '.sdlc/t/handoff.md', f'---\nid: T-1\nsize: {size}   # level\n---\n\n## Goal\ng\n\n'
                                      f'## Acceptance criteria\n{crit}\n{extra_crit}{tail}')
         put(r, '.sdlc/t/skips.md', f'# Skips\n\n## Lane\n- lane: lean; point: p; reasons: r\n- lane: {lane}; point: p; reasons: r\n')
@@ -518,6 +535,17 @@ def selftest():
         expect(f'tests-gate red: protected-path: {got}', got.startswith('tests-gate: protected-path'))
         got = why(tmp, 'size', more=[('big.py', 'y = 1\n' * 301)])
         expect(f'tests-gate red: size: {got}', got.startswith('tests-gate: size'))
+        nine = [(f'docs/work/n{i}.md', 'x\n') for i in range(9)]
+        got = why(tmp, 'work-default', more=nine)
+        expect(f'tests-gate red: size, nine docs/work files without work_root: {got}', got.startswith('tests-gate: size'))
+        got = why(tmp, 'work-size', more=nine, work_root='docs/work')
+        expect(f'tests-gate ok: nine docs/work files under work_root do not count toward the file cap: {got}',
+               got == 'tests-gate')
+        got = why(tmp, 'work-prot-default', more=[('docs/work/auth.md', 'x\n')])
+        expect(f'tests-gate red: protected-path, docs/work/auth.md without work_root: {got}',
+               got.startswith('tests-gate: protected-path'))
+        got = why(tmp, 'work-prot', more=[('docs/work/auth.md', 'x\n')], work_root='docs/work')
+        expect(f'tests-gate ok: a sensitive name under work_root is a record, not protected: {got}', got == 'tests-gate')
         got = why(tmp, 'shared', tool=TOOL.replace('x = 1', 'x = 2').replace('helper', 'helper2'))
         expect(f'tests-gate red: shared-name: {got}', got == 'tests-gate: shared-name: helper in other.py')
         got = why(tmp, 'report', report=f'- `{SPAN}` exit 1\n')
