@@ -2,7 +2,7 @@
 id: T-0617
 title: "steps.py lint accepts criteria that use git commands the verifier may not run"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,16 @@ The failing test lands before or with the fix, never after. Match the command as
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
 - (guard) `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0.
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: b29bf5a3dc94
+- Changed: see commits
+- Commits: 258bdf6 T-0617: steps.py lint accepts criteria that use git commands the verifier may not run
+- Check: 1 (red) `python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1 | grep -F 'ok:' | grep -qF 'git s...: pass
+- Check: 2 (guard) `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0: pass
+- Check: 3 (red) `grep -qF 'git stash' plugins/sdlc-lite/agents/planner.md` exits 0: pass
+- Check: 4 (guard) `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0: pass
+- Check: 5 (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0: pass
+- Check: 6 (guard) `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0: pass
+- Check: 7 (guard) `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
