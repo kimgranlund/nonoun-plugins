@@ -2,6 +2,25 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.25.0] - 2026-10-19
+
+Report: [docs/reports/2026-10-19-release-0-25-0.md](docs/reports/2026-10-19-release-0-25-0.md).
+
+### Added
+
+- Opt-in work root: one `.sdlc/config` line, `work_root: docs/work`, moves tracked work records (tickets, closed tickets, `ROADMAP.md`, `NOTES.md`, evals, proposals, `fleet.json`) into `docs/work/`, while `.sdlc/` keeps config, `runtime/`, `messages/` and the generated router. With no line every path is unchanged (T-0618, T-0621 to T-0634, T-0637).
+- `scripts/roots.py`, the one resolver for every root path, replacing five separate `.sdlc` walkers (T-0621).
+- `tickets.py migrate-work-root --to docs/work [--rewrite-refs] [--dry-run]` moves a flat, nested or topics `.sdlc` into one `docs/work` shape; closed tickets move unchanged (T-0635). This repository now runs on it (T-0636).
+- `work/` is a first-class docs home in the onboard layout (T-0634).
+- Docs naming: each folder's index is the onboard-generated `## Contents` list in its `AGENTS.md`; a Kinds row can declare a numbered form for new files, with `docs_check.py next <folder>` reserving numbers through a git ref; UPPERCASE names only for ecosystem files and declared singletons; `## Levels`, `## Grandfathered` and `## Caps` sections in `docs/layout.md` (T-0620).
+- `docs_check` D-13 (a document not listed in its folder's `AGENTS.md`) and D-14 (more than 12 documents directly in a folder), as warnings by default (T-0619).
+
+### Fixed
+
+- `steps.py lint` refuses a criterion that runs a git command the verifier may not run (`stash`, `checkout`, `reset`, `restore`, `commit`); `planner.md` names them (T-0617).
+- `results.py` and `plan_check.py` selftests no longer depend on the live repository layout (T-0638).
+- `lanes.py close` carries lane records into the main checkout under a work root (T-0639).
+
 ## [0.24.5] - 2026-10-18
 
 Report: [docs/reports/2026-10-18-release-0-24-5.md](docs/reports/2026-10-18-release-0-24-5.md).
