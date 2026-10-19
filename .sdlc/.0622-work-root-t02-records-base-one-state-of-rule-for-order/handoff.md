@@ -2,7 +2,7 @@
 id: T-0622
 title: "work_root t02: records base: one state_of rule for order.py, records.sh, steps.py, budget.py, dispatch.py"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0621]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/order.py selftest` exits 0 with the case: under `work_root: docs/work`, `order.py records-dir <top>/docs/work/0001-a` prints <top>/.sdlc/runtime/tasks/0001-a and `order.py task-dir` maps it back (red before: <top>/docs/work/runtime/tasks/0001-a); `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 with the same case through records.sh
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: the red-checkpoint deviation check (redck.py deviations) printed no `process deviation:` lines; the criterion carries no (red) tag, and I observed the failing control at Base myself.) · verifier: verifier-L2 (sonnet) · base: 07f5a2f160a6
+- Changed: see commits
+- Commits: ddb51ea T-0622: work_root t02: records base: one state_of rule for order.py, records.sh, steps.py, budget.py, dispatch.py
+- Check: 1 order.py selftest exits 0 with the work_root records-dir / task-dir case, and hook-selftest.sh ex...: pass

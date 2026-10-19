@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:786f81dedd03 -->
+<!-- sdlc-lite:managed:start v1 sha256:54ece28d2193 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -25,14 +25,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths)
   - T-0635 work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape (0635-work-root-t12-tickets-py-migrate-work-root-flat-nested)
   - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
-- claimed: 4
-  - T-0622 work_root t02: records base: one state_of rule for order.py, records.sh, steps.py, budget.py, dispatch.py (0622-work-root-t02-records-base-one-state-of-rule-for-order), claimed by sdlc-lite-author 2026-10-19
+- claimed: 3
   - T-0623 work_root t03: tickets.py resolution sites: new/claim/roadmap/check/tidy in the work root (ROADMAP.md, NO (0623-work-root-t03-tickets-py-resolution-sites-new-claim-ro), claimed by sdlc-lite-author 2026-10-19
   - T-0628 work_root t08a: ticket and run readers: fleet_collect keys, solo_stats, report, board (0628-work-root-t08a-ticket-and-run-readers-fleet-collect-key), claimed by sdlc-lite-author 2026-10-19
   - T-0631 work_root t09b: plan_check, plan_done, solo_run: notes-path rule and new plain task folder from the resolv (0631-work-root-t09b-plan-check-plan-done-solo-run-notes-path), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
-- done: 582
+- done: 583
 - dropped: 29
 
 ## Procedures
