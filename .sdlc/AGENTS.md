@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:107268290e11 -->
+<!-- sdlc-lite:managed:start v1 sha256:f36b31fc5f8c -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -22,14 +22,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths)
   - T-0635 work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape (0635-work-root-t12-tickets-py-migrate-work-root-flat-nested)
   - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
-- claimed: 4
+- claimed: 3
   - T-0624 work_root t04: tickets.py close/number/archive: dot rename and citation scan under the work root (0624-work-root-t04-tickets-py-close-number-archive-dot-rena), claimed by sdlc-lite-author 2026-10-19
   - T-0626 work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil (0626-work-root-t06-lanes-and-fanout-untracked-work-root-tic), claimed by sdlc-lite-author 2026-10-19
   - T-0627 work_root t07: record-prefix consumers: verify_scope size/protected gates, reorg freeze and digest, inven (0627-work-root-t07-record-prefix-consumers-verify-scope-siz), claimed by sdlc-lite-author 2026-10-19
-  - T-0631 work_root t09b: plan_check, plan_done, solo_run: notes-path rule and new plain task folder from the resolv (0631-work-root-t09b-plan-check-plan-done-solo-run-notes-path), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
-- done: 585
+- done: 586
 - dropped: 29
 
 ## Procedures

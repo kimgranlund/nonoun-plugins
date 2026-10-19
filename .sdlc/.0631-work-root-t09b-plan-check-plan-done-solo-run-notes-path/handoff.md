@@ -2,7 +2,7 @@
 id: T-0631
 title: "work_root t09b: plan_check, plan_done, solo_run: notes-path rule and new plain task folder from the resolv"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0621]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0 with the case: under `work_root: docs/work` a goal whose stop rule names docs/work/NOTES.md passes stop-state (red before: fails); `plan_done.py selftest` accepts the same; `solo_run.py selftest` creates a new task under docs/work
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/solo_run.py:958 only selftest lines changed here. `new_task` already resolves the work root through `tickets.ticket_dir`, so the solo_run part of the criterion confirms behavior from earlier work. This ticket adds no code change there.) · verifier: verifier-L2 (opus) · base: b9e57a78b1a2
+- Changed: see commits
+- Commits: b3a006f T-0631: work_root t09b: plan_check, plan_done, solo_run: notes-path rule and new plain task folder from the resolv
+- Check: 1 `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0 with the case: under `work_roo...: pass
