@@ -2,7 +2,7 @@
 name: onboard
 description: "Set up or check the entry files (AGENTS.md, CLAUDE.md) and the docs layout for a repository adopting SDLC Lite, keeping anything the repository already wrote. NOT for moving existing documents into the layout."
 argument-hint: "[setup [--init] [--force] | check]"
-allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py:*)
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py:*), Bash(git init:*)
 ---
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
@@ -30,10 +30,16 @@ Workflow:
 3. Ask the user once whether to apply it. Pass `--force` only when the user asks to replace an `edited` block.
 4. On approval, run `onboard.py setup` with the same flags and report its output.
 
+Not a Git work tree: when `onboard.py` exits 1 with `not a Git work tree`, it wrote nothing. Make one AskUserQuestion call (header `Not a repo`) with these options, each with a one-line consequence:
+- `Run git init here (Recommended)`: creates a repository in this folder and onboards it.
+- `Use another folder`: reruns onboarding from the folder you name.
+- `Stop`: changes nothing.
+
+On the first, run `git init`, then continue at step 2 with `--init` (the user asked to onboard). On the second, rerun from the folder the user names. On the third, stop. Never run `git init` unless the user chose it. With no AskUserQuestion (headless), ask the same question as numbered plain text.
+
 Rules:
 - The script writes every file. Write no file text yourself, and never hand-edit the managed blocks or `docs/layout.md` output to work around a report.
 - On a parse error (exit 1 naming a file and line), report the file and line and stop. Do not retry or patch the file.
-- Outside a Git work tree the script exits 1 and writes nothing; report the reason.
 - The default homes include `goals/` and `kpi/`; setup lists them in `docs/AGENTS.md` and never creates either folder empty, and `docs_check.py` rules G-1 to G-5 check the files a repository puts there.
 
 ## Standing authorization: managed-block refresh
