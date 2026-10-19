@@ -21,7 +21,8 @@ listing and the digest, and writes nothing. It never runs the final check, which
 --dry-run recomputes the same listing and digest before any write and needs --approve equal to that digest.
 Digest: SHA-256 hex of the sorted lines `path <p>` for every tracked file outside .sdlc/, `file <p> <sha256>` for
 every tracked non-frozen file outside .sdlc/ (always docs/layout.md), and `plan <json, sorted keys, compact>`, so an
-edited document or plan refuses and a change under .sdlc/ does not.
+edited document or plan refuses and a change under .sdlc/ does not. When .sdlc/config sets `work_root:`, that
+directory counts as .sdlc/ everywhere in this paragraph and in the Frozen rule below.
 
 Stdout, the same listing for dry run and apply: `batch <n>: <name>`, `move <from> -> <to>`,
 `fix <file>:<line> <old> -> <new>`, `rewrite <file>:<line> <old> -> <new>` (file, line, and old text as that batch
@@ -96,6 +97,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import onboard  # noqa: E402
 import rename_refs  # noqa: E402
 import inventory  # noqa: E402
+import roots  # noqa: E402
 
 MARKDOWN = ('.md', '.mdx', '.markdown')
 ENTRY_NAMES = ('AGENTS.md', 'CLAUDE.md', 'README.md')
@@ -151,8 +153,16 @@ def is_md(path):
     return path.lower().endswith(MARKDOWN)
 
 
-def under_sdlc(path):
-    return path == '.sdlc' or path.startswith('.sdlc/')
+def under_sdlc(path, prefixes=('.sdlc/',)):
+    """True when path is a work record: under .sdlc/ or, when the prefixes carry one, under the work_root."""
+    return path.startswith(prefixes) or path in tuple(p.rstrip('/') for p in prefixes)
+
+
+def record_prefixes(root):
+    try:
+        return roots.record_prefixes(root)
+    except (roots.Fail, OSError, ValueError):
+        return ('.sdlc/',)
 
 
 def layout_frozen(patterns, path):
@@ -290,7 +300,7 @@ class Repo(object):
 
 
 def is_frozen(repo, path):
-    return under_sdlc(path) or path in repo.ignored or layout_frozen(repo.layout.frozen, path)
+    return under_sdlc(path, repo.records) or path in repo.ignored or layout_frozen(repo.layout.frozen, path)
 
 
 def gather(root):
@@ -309,6 +319,7 @@ def gather(root):
         raise Refused(['%s:%d does not parse (%s); %s' % (LAYOUT, e.line, e.reason, SETUP_FIRST)])
     except (UnicodeDecodeError, OSError) as e:
         raise Refused(['%s cannot be read (%s); %s' % (LAYOUT, e, SETUP_FIRST)])
+    repo.records = record_prefixes(root)
     repo.tracked = sorted(set(zsplit(git(root, 'ls-files', '-z').stdout)))
     repo.tracked_set = set(repo.tracked)
     repo.ignored = set(zsplit(git(root, 'ls-files', '-z', '-ci', '--exclude-standard').stdout))
@@ -318,7 +329,7 @@ def gather(root):
     repo.frozen = set(p for p in repo.tracked if is_frozen(repo, p))
     repo.raw, repo.text, repo.binary = {}, {}, {}
     for p in repo.tracked:
-        if under_sdlc(p):
+        if under_sdlc(p, repo.records):
             continue
         data, text, link = read_file(root, p)
         repo.raw[p] = data
@@ -330,7 +341,7 @@ def gather(root):
             repo.text[p] = text
     if LAYOUT not in repo.raw:
         repo.raw[LAYOUT] = read_file(root, LAYOUT)[0]
-    repo.frozen_hash = dict((p, sha(repo.raw.get(p))) for p in repo.frozen if not under_sdlc(p))
+    repo.frozen_hash = dict((p, sha(repo.raw.get(p))) for p in repo.frozen if not under_sdlc(p, repo.records))
     return repo
 
 
@@ -355,13 +366,13 @@ def check_moves(repo, plan):
         if f in seen:
             errs.append('%s is moved twice' % f)
         seen.add(f)
-        if f in repo.frozen or under_sdlc(f) or f in ign or layout_frozen(frozen_pats, f):
+        if f in repo.frozen or under_sdlc(f, repo.records) or f in ign or layout_frozen(frozen_pats, f):
             errs.append('move source %s is frozen' % f)
         elif f not in repo.tracked_set:
             errs.append('move source %s is not a tracked file' % f)
         if posixpath.basename(f) in ENTRY_NAMES or f == LAYOUT:
             errs.append('move source %s is an entry file, and entry files never move' % f)
-        if under_sdlc(t) or t in ign or layout_frozen(frozen_pats, t):
+        if under_sdlc(t, repo.records) or t in ign or layout_frozen(frozen_pats, t):
             errs.append('move destination %s is frozen' % t)
         if os.path.lexists(full(root, t)):
             errs.append('move destination %s exists' % t)
@@ -410,7 +421,7 @@ def held_locks(root):
 def plan_digest(repo, plan):
     lines = set()
     for p in repo.tracked:
-        if under_sdlc(p):
+        if under_sdlc(p, repo.records):
             continue
         lines.add('path %s' % p)
         if p not in repo.frozen:
@@ -584,7 +595,7 @@ def compute(repo, plan, impl):
         fixes = {}
         for lf in b.get('links', []):
             f, old, new = lf['file'], lf['old'], lf['new']
-            if f in repo.frozen or under_sdlc(f):
+            if f in repo.frozen or under_sdlc(f, repo.records):
                 refusals.append('link fix file %s is frozen' % f)
             elif f not in tracked or not is_md(f) or f not in text:
                 refusals.append('link fix file %s is not a tracked Markdown file' % f)
@@ -674,7 +685,7 @@ def final_check(root, repo, baseline, origin, froms):
     tracked = sorted(set(zsplit(git(root, 'ls-files', '-z').stdout)))
     texts = {}
     for p in tracked:
-        if p in repo.frozen or under_sdlc(p):
+        if p in repo.frozen or under_sdlc(p, repo.records):
             continue
         _, text, link = read_file(root, p)
         if text is not None and not link:
@@ -1001,7 +1012,16 @@ def held(path):
 
 # digest
 
+WORK_FILES = _with(BASE, **{'.sdlc/config': 'work_root: docs/work\n', 'docs/work/t/n.md': 'x\n'})
+NO_WORK_FILES = _with(BASE, **{'docs/work/t/n.md': 'x\n'})
+
+
 def gate_digest(impl):
+    with fixture(WORK_FILES) as root:
+        d = digest_of(run(root, ONE, dry=True, impl=impl)[1])
+        _put(root, 'docs/work/t/n.md', 'changed\n')
+        _put(root, 'docs/work/t/new.md', 'new\n')
+        expect(digest_of(run(root, ONE, dry=True, impl=impl)[1]) == d, 'a change under the work_root changed the digest')
     with fixture() as root:
         rc, dry, err = run(root, ONE, dry=True, impl=impl)
         expect(rc == 0, 'dry run exit %d: %s' % (rc, err.strip()))
@@ -1015,6 +1035,10 @@ def gate_digest(impl):
 
 
 def neg_digest():
+    with fixture(NO_WORK_FILES) as root:
+        d = digest_of(run(root, ONE, dry=True)[1])
+        _put(root, 'docs/work/t/n.md', 'changed\n')
+        refuses(root, ONE, 'digest mismatch', approve=d, dry=False)
     with fixture() as root:
         d = digest_of(run(root, ONE, dry=True)[1])
         _put(root, 'docs/c.md', '# C\n\nedited\n')
@@ -1063,6 +1087,9 @@ def neg_frozen():
     with fixture(FROZEN_FILES, force=('ign/x.md',)) as root:
         for src, dst in (('.sdlc/x/n.md', 'docs/n.md'), ('docs/archive/old.md', 'docs/old.md'),
                          ('ign/x.md', 'docs/x.md'), ('docs/a.md', 'docs/archive/a.md')):
+            refuses(root, plan1(src, dst), 'frozen')
+    with fixture(WORK_FILES) as root:
+        for src, dst in (('docs/work/t/n.md', 'docs/n.md'), ('docs/a.md', 'docs/work/a.md')):
             refuses(root, plan1(src, dst), 'frozen')
 
 
