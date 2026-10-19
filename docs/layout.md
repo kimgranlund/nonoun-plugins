@@ -132,3 +132,7 @@ otherwise -> `other/`
 - `reports/supervisor-live-run.md`
 - `reports/ticket-root-router-live-run.md`
 - `reports/workflow-stage-pilot/**`
+
+## Levels
+
+- `D-13` error

@@ -19,7 +19,7 @@ is silent without the registry.
 
 The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without that file the
 twelve default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
-D-11, D-12 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
+D-11, D-12, D-13 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
 belong to onboard.py check, not to this script.
 
 D-12 (T-0620): UPPERCASE names are allowed only for ECOSYSTEM_NAMES and for singletons a `## Kinds` row's form
@@ -30,6 +30,14 @@ refs/sdlc/doc-ids/<home>/ (as tickets.py reserves refs/sdlc/ids/), so parallel l
 ref only. `grandfather` is the migrate step: it lists the files the numbered form flags, and with --write appends them
 to `## Grandfathered` in docs/layout.md; nothing is renamed. A `## Levels` line (- `D-12` error) raises a rule's
 warnings to that level.
+
+D-13 and D-14 (T-0619) keep docs/ from becoming a dumping ground; both ship as warnings. D-13: a document not linked
+from the nearest AGENTS.md within its home (its folder's own, else, for a topic without one, the folder above), by any
+link, so a hand-written list counts as well as the onboard-generated Contents list; a folder whose generated list ends
+in onboard's overflow line (`- and N more documents`) is left to D-14. D-14: a home, or a topic directly under a
+topic-kind home, holding more documents directly in it than the cap (12, or `## Caps` - `D-14` 20 in
+docs/layout.md); documents already in topic subfolders do not count. Both skip the reports, assets, archive and work
+kinds, report evidence folders and frozen paths.
 
 A home of kind `work` holds ticket and task records, not documents: D-7, D-9, D-12 and B-1a skip it, and the
 record rule B-2a applies instead, as it does under .sdlc/ (ticket and task folders, the record folders, the
@@ -55,7 +63,7 @@ TOPIC_KINDS = ('specs', 'planning', 'references', 'guides', 'decisions')
 PLANNING_STATUS = ('proposed', 'accepted', 'rejected', 'superseded')
 DECISION_STATUS = ('proposed', 'accepted', 'superseded')
 CLOSED_STATUS = ('accepted', 'rejected', 'superseded')
-LEGACY_EXEMPT = ('D-1', 'D-2', 'D-3', 'D-4', 'D-9', 'D-10', 'D-11', 'D-12', 'B-3a')
+LEGACY_EXEMPT = ('D-1', 'D-2', 'D-3', 'D-4', 'D-9', 'D-10', 'D-11', 'D-12', 'D-13', 'B-3a')
 DATE_IN_NAME = re.compile(r'\d{4}-\d{2}-\d{2}')
 GOAL_STATUS = ('proposed', 'active', 'achieved', 'dropped')
 KPI_STATUS = ('proposed', 'active', 'retired')
@@ -90,6 +98,9 @@ OTHER_MAX_AHEAD_DAYS = 90
 ENTRY_TARGET_DOCS = 60
 ENTRY_TARGET_NESTED = 30
 DOC_LINE_LIMIT = 400
+INDEX_EXEMPT = ('reports', 'assets', 'archive', 'work')  # kinds D-13 and D-14 skip
+FOLDER_CAP = 12  # D-14 default; docs/layout.md `## Caps` (- `D-14` 20) overrides it
+OVERFLOW_LINE = re.compile(r'^\s*[-*+]\s+and \d+ more documents in this folder\s*$')  # onboard's NESTED_LINK_CAP line
 
 
 class Finding(object):
@@ -421,6 +432,52 @@ def run(root, only=None, today=None, disable=()):
             if folder + '/AGENTS.md' not in have and folder + '/CLAUDE.md' not in have:
                 out.append(Finding('error', 'D-7', 'docs/' + folder + '/',
                                    '%d documents and no AGENTS.md or CLAUDE.md' % count))
+    if on('D-13') or on('D-14'):
+        have = set(files)
+        indexed = [rel for rel in files if '/' in rel and rel.split('/', 1)[0] in kinds and md(rel) and not entry(rel)
+                   and kind_of(rel) not in INDEX_EXEMPT and not under(ev, rel)
+                   and not onboard._frozen(layout.frozen, 'docs/' + rel)]
+        cache = {}
+
+        def index(folder):
+            """(link targets relative to docs/, overflow line seen) for folder/AGENTS.md, or None without one."""
+            if folder not in cache:
+                cache[folder] = None
+                if folder + '/AGENTS.md' in have:
+                    targets, over = set(), False
+                    for line, fenced in onboard.scan_lines(repo.text('docs/' + folder + '/AGENTS.md')):
+                        if fenced:
+                            continue
+                        over = over or bool(OVERFLOW_LINE.match(line))
+                        for m in LINK.finditer(line):
+                            path = re.split(r'[#?]', m.group(1).strip('<>'), 1)[0]
+                            if path:
+                                targets.add(os.path.normpath(os.path.join(folder, path)).replace(os.sep, '/'))
+                    cache[folder] = (targets, over)
+            return cache[folder]
+
+        for rel in indexed if on('D-13') else ():
+            # the nearest entry file within the home: the folder's own, else (a topic without one) the one above it
+            folder, top = os.path.dirname(rel), rel.split('/', 1)[0]
+            found = index(folder)
+            while found is None and folder != top and 'D-13-home' not in disable:
+                folder = os.path.dirname(folder)
+                found = index(folder)
+            if found is None or rel in found[0] or (found[1] and 'D-13-overflow' not in disable):
+                continue
+            add('warning', 'D-13', rel, 'not listed in docs/%s/AGENTS.md; run the onboard setup to refresh its Contents '
+                'list, or add the link by hand' % folder)
+        if on('D-14'):
+            cap = layout.caps.get('D-14', FOLDER_CAP) if 'caps' not in disable else FOLDER_CAP
+            direct = {}
+            for rel in indexed:
+                folder = os.path.dirname(rel)
+                if '/' not in folder or (folder.count('/') == 1 and kind_of(rel) in TOPIC_KINDS):
+                    direct[folder] = direct.get(folder, 0) + 1
+            for folder, count in sorted(direct.items()):
+                if count > cap and not onboard._frozen(layout.frozen, 'docs/' + folder):
+                    add('warning', 'D-14', folder + '/', '%d documents directly in this folder, over the cap of %d; '
+                        'split them into topic subfolders' % (count, cap))
     if on('B-1a'):
         for rel in files:
             # a report's evidence folder keeps copies of run output on purpose (the zone D-9 also treats as evidence)
@@ -855,6 +912,11 @@ def _cases():
         ('D-10', w('docs/specs/links.md', '[x](missing.md)\n'), 'docs/specs/links.md'),
         ('D-11', w('docs/specs/long.md', 'x\n' * 401), 'docs/specs/long.md'),
         ('D-12', w('docs/specs/Bad Name.md', '# B\n'), 'docs/specs/Bad Name.md'),
+        ('D-13', many(('docs/specs/AGENTS.md', '# specs\n\n## Contents\n\n- [other.md](other.md)\n'),
+                      ('docs/specs/other.md', '# O\n')), 'docs/specs/api.md'),
+        ('D-14', many(*[('docs/guides/g%02d.md' % i, '# G\n') for i in range(13)]
+                      + [('docs/guides/AGENTS.md', '# guides\n\n' + ''.join('- [g%02d.md](g%02d.md)\n' % (i, i)
+                                                                         for i in range(13)))]), 'docs/guides/'),
         ('B-1a', w('docs/references/builder-L1-2.md', 'x\n'), 'docs/references/builder-L1-2.md'),
         ('B-1a', w('docs/references/runs.jsonl', 'x\n'), 'docs/references/runs.jsonl'),
         ('B-2a', w('.sdlc/design-notes/review.md', '# R\n'), '.sdlc/design-notes/'),
@@ -1012,6 +1074,40 @@ def gate_work_home(runner):
             raise GateFailure('a stray file under docs/work/ was not flagged')
 
 
+def gate_index_cap(runner):
+    """D-13 checks a folder's entry file, or the home's for a topic without one, by any link (a hand-written list
+    counts) and skips a folder whose generated list ends in the overflow line; D-14 reads its cap from ## Caps and
+    counts direct documents only; a Levels line raises D-13."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, 'docs/goals/AGENTS.md', '# goals\n\n## Documents\n\n- [001-first-goal.md](001-first-goal.md)\n'
+                                            '- [002-second.md](002-second.md)\n')
+        _write(tmp, 'docs/goals/002-second.md', _goal(2, kpis='none: later', status='proposed'))
+        _write(tmp, 'docs/specs/AGENTS.md', '# specs\n\n## Contents\n\n- [api.md](api.md)\n- and 1 more documents in this folder\n')
+        _write(tmp, 'docs/specs/more.md', '# M\n')
+        _write(tmp, 'docs/references/AGENTS.md', '# references\n\n## Contents\n\n- [glossary.md](glossary.md)\n'
+                                                 '- [deep/one.md](deep/one.md)\n')
+        _write(tmp, 'docs/references/deep/one.md', '# O\n')
+        bad = [f.line() for f in runner(tmp) if f.rule in ('D-13', 'D-14')]
+        if bad:
+            raise GateFailure('listed documents were flagged: %r' % bad)
+        _write(tmp, 'docs/references/deep/two.md', '# T\n')
+        got = [f for f in runner(tmp) if f.rule == 'D-13']
+        if not any(f.path == 'docs/references/deep/two.md' for f in got):
+            raise GateFailure('a document in a topic with no entry file, missing from the home list, was not flagged')
+        _write(tmp, 'docs/references/deep/AGENTS.md', '# deep\n\n## Contents\n\n- [one.md](one.md)\n- [two.md](two.md)\n')
+        if any(f.rule == 'D-13' for f in runner(tmp)):
+            raise GateFailure('a topic entry file that lists its documents was not used')
+        _write(tmp, 'docs/layout.md', _layout('kebab-case', '\n## Caps\n\n- `D-14` 2\n\n## Levels\n\n- `D-13` error\n'))
+        _write(tmp, 'docs/references/deep/three.md', '# T\n')
+        got = [f for f in runner(tmp) if f.rule == 'D-14']
+        if [f.path for f in got] != ['docs/references/deep/']:
+            raise GateFailure('a ## Caps value of 2 gave %r, expected docs/references/deep/ only' % [f.line() for f in got])
+        got = [f for f in runner(tmp) if f.rule == 'D-13']
+        if [(f.path, f.level) for f in got] != [('docs/references/deep/three.md', 'error')]:
+            raise GateFailure('a Levels line did not raise D-13: %r' % [f.line() for f in got])
+
+
 SPECS_ROW = '| `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case |'
 
 
@@ -1031,7 +1127,7 @@ def gate_numbered(runner):
         _write(tmp, 'docs/layout.md', _layout('`NNN-slug.md`', '\n## Grandfathered\n\n- `specs/api.md`\n'))
         _write(tmp, 'docs/specs/002-numbered.md', '# N\n')
         _write(tmp, 'docs/specs/AGENTS.md', '# S\n')
-        bad = [f.line() for f in runner(tmp) if f.level != 'info']
+        bad = [f.line() for f in runner(tmp) if f.level != 'info' and f.rule != 'D-13']  # their stub entry files list nothing
         if bad:
             raise GateFailure('numbered or grandfathered files were flagged: %r' % bad)
         _write(tmp, 'docs/specs/new-thing.md', '# N\n')
@@ -1055,7 +1151,7 @@ def gate_uppercase(runner):
         _write(tmp, 'docs/guides/AGENTS.md', '# G\n')
         _write(tmp, 'docs/specs/INDEX.md', '# I\n')
         _write(tmp, 'docs/specs/AGENTS.md', '# S\n')
-        bad = [f.line() for f in runner(tmp) if f.level != 'info']
+        bad = [f.line() for f in runner(tmp) if f.level != 'info' and f.rule != 'D-13']  # their stub entry files list nothing
         if bad:
             raise GateFailure('ecosystem names or declared singletons were flagged: %r' % bad)
         _write(tmp, 'docs/specs/SPEC.md', '# S\n')
@@ -1105,7 +1201,7 @@ def gate_grandfather(migrate):
         _write(tmp, 'docs/specs/old-name.md', '# O\n')
         if migrate(tmp, True) != ['specs/api.md', 'specs/old-name.md']:
             raise GateFailure('the migrate step did not list the two misnamed files')
-        bad = [f.line() for f in run(tmp, today=TODAY) if f.level != 'info']
+        bad = [f.line() for f in run(tmp, today=TODAY) if f.level != 'info' and f.rule != 'D-13']  # their stub entry files list nothing
         if bad:
             raise GateFailure('grandfathered files were still flagged: %r' % bad)
         if migrate(tmp, True):
@@ -1132,6 +1228,10 @@ def selftest():
              ('numbered', gate_numbered, _real, [('drops the numbered form', _without('D-12-numbered')),
                                                  ('ignores Grandfathered', _without('grandfathered')),
                                                  ('ignores Levels', _without('levels'))]),
+             ('index-cap', gate_index_cap, _real, [('ignores the overflow line', _without('D-13-overflow')),
+                                                   ('never falls back to the home entry', _without('D-13-home')),
+                                                   ('ignores Caps', _without('caps')),
+                                                   ('ignores Levels', _without('levels'))]),
              ('uppercase', gate_uppercase, _real, [('treats UPPERCASE names as plain names', _without('D-12-upper')),
                                                    ('drops the ecosystem names', _without('ecosystem-names')),
                                                    ('drops declared singletons', _without('singletons'))]),

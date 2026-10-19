@@ -48,7 +48,8 @@ DECIDE = '## Decide'
 LEGACY = '## Legacy'
 LEVELS = '## Levels'
 GRANDFATHERED = '## Grandfathered'
-OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY, LEVELS, GRANDFATHERED)
+CAPS = '## Caps'
+OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY, LEVELS, GRANDFATHERED, CAPS)
 DOC_KINDS = ('work', 'specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 KIND_COLUMNS = ('id', 'kind', 'holds', 'not', 'why', 'writer', 'form', 'life', 'entry', 'read', 'owner')
 KIND_REQUIRED = ('id', 'kind', 'holds', 'not', 'why', 'form', 'read')
@@ -60,19 +61,20 @@ HOME_FORM = re.compile(r'^\s*[-*+]\s+`([^`]*/)`(?:\s+takes\s+(' + TICKED + r'(?:
 FROZEN_FORM = re.compile(r'^\s*[-*+]\s+' + TICKED + r'\s*$')
 DECIDE_FORM = re.compile(r'^\s*(\d+)\.\s+(.*\?)\s+yes\s*->\s*`([^`]+)`\s*$')
 LEVEL_FORM = re.compile(r'^\s*[-*+]\s+`([A-Z]+-\d+[a-z]?)`\s+(error|warning)\s*$')
+CAP_FORM = re.compile(r'^\s*[-*+]\s+`([A-Z]+-\d+[a-z]?)`\s+(\d+)\s*$')
 OTHERWISE_FORM = re.compile(r'^\s*otherwise\s*->\s*`([^`]+)`\s*$')
 TABLE_SPLIT = re.compile(r'(?<!\\)\|')
 SEPARATOR_CELL = re.compile(r'^:?-{3,}:?$')
 FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 
-Layout = collections.namedtuple('Layout', 'homes frozen kinds decide legacy levels grandfathered',
-                                defaults=({}, (), [], {}, []))
+Layout = collections.namedtuple('Layout', 'homes frozen kinds decide legacy levels grandfathered caps',
+                                defaults=({}, (), [], {}, [], {}))
 Layout.__doc__ = ('homes: dict of home path to a tuple of globs, in file order. frozen: list of patterns. '
                   'kinds: dict of row id to a dict of the eleven registry fields, in file order. '
                   'decide: tuple of (question, id) in order, ending with ("otherwise", id); empty without a '
                   '## Decide section. legacy: list of globs. levels: dict of rule id to the level its warnings '
                   'are raised to (## Levels). grandfathered: list of globs whose names keep their pre-numbering form '
-                  '(## Grandfathered).')
+                  '(## Grandfathered). caps: dict of rule id to the number it caps (## Caps, `D-14` 12).')
 
 
 class LayoutError(Exception):
@@ -113,7 +115,7 @@ def _cells(line):
 def _parse_layout_text(text, path, skip=frozenset(), docs=True):
     """docs=False reads a layout for another tree (.sdlc): kinds are free text and the required
     ## Homes and ## Frozen paths sections and the home cross-check do not apply."""
-    homes, frozen, legacy, levels, grandfathered = {}, [], [], {}, []
+    homes, frozen, legacy, levels, grandfathered, caps = {}, [], [], {}, [], {}
     kinds, decide = {}, []
     otherwise = None
     state = {'header': False, 'sep': False}
@@ -195,6 +197,14 @@ def _parse_layout_text(text, path, skip=frozenset(), docs=True):
                 raise LayoutError(path, n, 'list line under %r is not `<rule>` error|warning' % LEVELS)
             levels[m.group(1)] = m.group(2)
             continue
+        if section == CAPS:
+            m = CAP_FORM.match(line)
+            if not m:
+                if 'caps-form' in skip:
+                    continue
+                raise LayoutError(path, n, 'list line under %r is not `<rule>` <number>' % CAPS)
+            caps[m.group(1)] = int(m.group(2))
+            continue
         if section == HOMES:
             m = HOME_FORM.match(line)
             if not m:
@@ -226,7 +236,7 @@ def _parse_layout_text(text, path, skip=frozenset(), docs=True):
     if DECIDE in seen and otherwise is None and 'decide-form' not in skip:
         raise LayoutError(path, max(n, 1), '%r has no otherwise line' % DECIDE)
     return Layout(homes, frozen, kinds, tuple(decide) + ((('otherwise', otherwise),) if otherwise else ()), legacy,
-                  levels, grandfathered)
+                  levels, grandfathered, caps)
 
 
 def parse_layout(path, docs=True):
@@ -463,7 +473,7 @@ The first line that matches wins.
 
 1. Pick the home above; [the layout](layout.md) lists any extra homes.
 2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`.
-3. Run the onboard setup again to refresh the links below.
+3. Add a link to it in its folder's `AGENTS.md`; the onboard setup refreshes the generated Contents lists.
 4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
 5. Find the document's type in `specs/doc-standards/README.md`, when this repository has it, and follow the card its row names.
 
@@ -1198,7 +1208,7 @@ def gate_layout_sections(parse):
     decide = ('## Decide\n1. Is it evidence of something that happened? yes -> `reports/`\n'
               '2. Is it a description of the system? yes -> `specs/`\notherwise -> `specs/`\n')
     legacy = '## Legacy\n- `reports/old/**`\n- `imported/**`\n'
-    levels = '## Levels\n- `D-12` error\n## Grandfathered\n- `specs/old.md`\n'
+    levels = '## Levels\n- `D-12` error\n## Grandfathered\n- `specs/old.md`\n## Caps\n- `D-14` 20\n'
     old_style = '## Homes\n- `maintenance/`\n## Frozen paths\n- `x/`\n## Kinds is mentioned in prose only\n'
     cases = [
         ('unknown kind', base + '## Kinds\n' + KIND_HEADER + _kind_row('specs/', 'diary'), 8),
@@ -1215,6 +1225,7 @@ def gate_layout_sections(parse):
         ('Legacy line without backticks', base + '## Legacy\n- reports/old/**\n', 6),
         ('Levels line with an unknown level', base + '## Levels\n- `D-12` fatal\n', 6),
         ('Grandfathered line without backticks', base + '## Grandfathered\n- specs/old.md\n', 6),
+        ('Caps line without a number', base + '## Caps\n- `D-14` many\n', 6),
     ]
     with tempfile.TemporaryDirectory() as tmp:
         def write(name, text):
@@ -1233,6 +1244,7 @@ def gate_layout_sections(parse):
         expect(got.legacy == ['reports/old/**', 'imported/**'], 'legacy parsed as %r' % (got.legacy,))
         expect(got.levels == {'D-12': 'error'} and got.grandfathered == ['specs/old.md'],
                'levels or grandfathered parsed as %r' % (got,))
+        expect(got.caps == {'D-14': 20}, 'caps parsed as %r' % (got,))
         expect(got.homes == {'specs/': (), 'reports/': ()} and got.frozen == [], 'homes or frozen changed: %r' % (got,))
         got = parse(write('old.md', old_style))
         expect(got.kinds == {} and got.decide == () and got.legacy == [] and got.frozen == ['x/'],
@@ -1895,6 +1907,7 @@ GATES = [
         ('skips the Decide form rules', functools.partial(_parse_layout, skip=frozenset({'decide-form'}))),
         ('skips the Legacy form rule', functools.partial(_parse_layout, skip=frozenset({'legacy-form'}))),
         ('skips the Levels form rule', functools.partial(_parse_layout, skip=frozenset({'levels-form'}))),
+        ('skips the Caps form rule', functools.partial(_parse_layout, skip=frozenset({'caps-form'}))),
         ('skips the duplicate heading rule', functools.partial(_parse_layout, skip=frozenset({'duplicate-heading'}))),
     ]),
     ('layout-other-tree', gate_layout_other_tree, functools.partial(_parse_layout, docs=False), [
