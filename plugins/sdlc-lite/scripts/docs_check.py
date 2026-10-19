@@ -3,9 +3,11 @@
 
 Usage:
   docs_check.py [--root DIR] [--only GROUP_OR_ID[,..]] [--today YYYY-MM-DD]
+  docs_check.py next docs/<home>
+  docs_check.py grandfather [--write]
   docs_check.py selftest
 
-Read-only: reads the target, writes nothing, calls no model. Prints one line per finding,
+The check is read-only: it reads the target, writes nothing, calls no model. Prints one line per finding,
 `<error|warning> <rule> <path>: <message>`, then a summary; exits 1 when any error was found.
 `--only` takes rule ids (D-3) or the groups `docs` (D-*), `goals` (G-*), `boundary` (B-*) and
 `standards` (S-*).
@@ -19,6 +21,15 @@ The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without t
 twelve default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
 D-11, D-12 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
 belong to onboard.py check, not to this script.
+
+D-12 (T-0620): UPPERCASE names are allowed only for ECOSYSTEM_NAMES and for singletons a `## Kinds` row's form
+cell declares (`ROADMAP.md`). A row whose form declares `NNN-slug.md` numbers new files in its home: a file there
+without the number is a D-12 warning unless `## Grandfathered` lists it (decisions, goals and kpi keep their own
+name rules). `next` prints the next number of such a home and reserves it with a create-only ref under
+refs/sdlc/doc-ids/<home>/ (as tickets.py reserves refs/sdlc/ids/), so parallel lanes never share one; it writes that
+ref only. `grandfather` is the migrate step: it lists the files the numbered form flags, and with --write appends them
+to `## Grandfathered` in docs/layout.md; nothing is renamed. A `## Levels` line (- `D-12` error) raises a rule's
+warnings to that level.
 
 A home of kind `work` holds ticket and task records, not documents: D-7, D-9, D-12 and B-1a skip it, and the
 record rule B-2a applies instead, as it does under .sdlc/ (ticket and task folders, the record folders, the
@@ -59,6 +70,13 @@ KEBAB = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
 VERSION_SUFFIX = re.compile(r'-v\d+(\.\d+)*$')
 DECISION_NAME = re.compile(r'^(\d{4})-[a-z0-9]+(-[a-z0-9]+)*\.md$')
 REPORT_NAME = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-z0-9]+(-[a-z0-9]+)*\.md$')
+ECOSYSTEM_NAMES = ('README.md', 'AGENTS.md', 'CLAUDE.md', 'CHANGELOG.md', 'LICENSE', 'CONTRIBUTING.md')
+UPPER_STEM = re.compile(r'^[A-Z][A-Z0-9_]*(-[A-Z0-9_]+)*$')
+NUMBER_FORM = re.compile(r'`(N{3,})-slug\.md`')
+SINGLETON_FORM = re.compile(r'`([A-Z][A-Z0-9_]*(?:-[A-Z0-9_]+)*(?:\.[a-z]+)?)`')
+OWN_NAME_RULE = ('decisions', 'goals', 'kpi', 'work')  # kinds whose file names another rule already checks
+NUMBER_WIDTH = {'decisions': 4, 'goals': 3, 'kpi': 3}
+DOC_ID_REFS = 'refs/sdlc/doc-ids/'
 LINK = re.compile(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
 GENERATED_NAME = re.compile(r'^(runs\.jsonl|skips\.md|budget-ack\.md|[a-z][a-z-]*-L\d(-\d+)?\.md|.*\.attempt\.json|.*\.request\.json|.*\.running|.*\.log)$')
 RETRY_NAME = re.compile(r'^[a-z][a-z-]*-L\d-\d+\.md$')
@@ -169,6 +187,21 @@ def legacy_match(layout, rel):
     return False
 
 
+def grandfathered(layout, rel):
+    return any(onboard.frozen_match(p, rel) or onboard.frozen_match(p, 'docs/' + rel) for p in layout.grandfathered)
+
+
+def number_width(layout, name):
+    """Digits a home's Kinds row form declares (`NNN-slug.md` -> 3), or None when it declares no numbered form."""
+    m = NUMBER_FORM.search(layout.kinds.get(name + '/', {}).get('form', ''))
+    return len(m.group(1)) if m else None
+
+
+def singletons(layout):
+    """Home name -> the UPPERCASE file names its Kinds row form cell declares (`ROADMAP.md`)."""
+    return {rid.rstrip('/'): set(SINGLETON_FORM.findall(row.get('form', ''))) for rid, row in layout.kinds.items()}
+
+
 def record_findings(paths, prefix, record_dirs, loose_md):
     """B-2a over one record home: paths are relative to it, prefix is the home as a finding path."""
     have = set(paths)
@@ -236,6 +269,8 @@ def run(root, only=None, today=None, disable=()):
     def add(level, rule, rel, message):
         if rule in LEGACY_EXEMPT and legacy_match(layout, rel):
             return
+        if level == 'warning' and 'levels' not in disable:
+            level = layout.levels.get(rule, level)
         out.append(Finding(level, rule, 'docs/' + rel, message))
 
     def kind_of(rel):
@@ -245,6 +280,7 @@ def run(root, only=None, today=None, disable=()):
     work = lambda rel: records and kind_of(rel) == 'work'  # noqa: E731
 
     entry = lambda rel: rel.rsplit('/', 1)[-1] in ENTRY_FILES  # noqa: E731
+    singles = singletons(layout)
     md = lambda rel: rel.lower().endswith('.md')  # noqa: E731
 
     if on('D-1'):
@@ -322,16 +358,21 @@ def run(root, only=None, today=None, disable=()):
                     add('warning', 'D-11', rel, 'entry file has %d lines, over its %d-line target' % (n, _entry_target(rel)))
             elif n > DOC_LINE_LIMIT:
                 add('warning', 'D-11', rel, 'document has %d lines, over the %d-line soft limit' % (n, DOC_LINE_LIMIT))
-        if on('D-12') and not in_ev and base not in ENTRY_FILES and base not in TOP_FILES and not work(rel):
+        stem, dot, ext = base.rpartition('.')
+        if not dot:
+            stem, ext = base, ''
+        upper = bool(UPPER_STEM.match(stem)) and 'D-12-upper' not in disable
+        allowed = upper and (('ecosystem-names' not in disable and base in ECOSYSTEM_NAMES)
+                             or ('singletons' not in disable and depth == 1 and base in singles.get(top, ())))
+        if on('D-12') and not in_ev and base not in ENTRY_FILES and base not in TOP_FILES and not work(rel) and not allowed:
             problems = []
-            stem, dot, ext = base.rpartition('.')
-            if not dot:
-                stem, ext = base, ''
             if ' ' in base:
                 problems.append('has a space')
             if ext != ext.lower():
                 problems.append('has an upper-case extension')
-            if not KEBAB.match(stem):
+            if upper:
+                problems.append('is UPPERCASE; only ecosystem names and singletons a layout.md Kinds row declares may be')
+            elif not KEBAB.match(stem):
                 problems.append('is not lowercase kebab-case')
             if VERSION_SUFFIX.search(stem):
                 problems.append('has a version suffix')
@@ -341,6 +382,12 @@ def run(root, only=None, today=None, disable=()):
                 problems.append('decision name must be NNNN-slug.md')
             for p in problems:
                 add('error', 'D-12', rel, 'file name %s' % p)
+            width = number_width(layout, top) if top else None
+            if ('D-12-numbered' not in disable and width and depth == 1 and md(rel) and kind not in OWN_NAME_RULE
+                    and not re.match(r'^\d{%d}-[a-z0-9]+(-[a-z0-9]+)*\.md$' % width, base)
+                    and not ('grandfathered' not in disable and grandfathered(layout, rel))):
+                add('warning', 'D-12', rel, 'file name must be %s-slug.md: %s/ numbers new files (docs_check.py next docs/%s)'
+                    % ('N' * width, top, top))
             for seg in rel.split('/')[:-1]:
                 if not in_ev and not KEBAB.match(seg):
                     add('error', 'D-12', rel, 'folder name %r is not lowercase kebab-case' % seg)
@@ -671,6 +718,71 @@ def report(findings, out):
     return 1 if errors else 0
 
 
+# ---------------------------------------------------------------- numbering
+
+class NextError(Exception):
+    pass
+
+
+def next_number(root, folder, reserve=True):
+    """The next free number in a numbered home, reserved through a create-only git ref so two lanes never share it.
+
+    folder is the home relative to root (docs/decisions). The candidate is one past the highest number in a file name
+    or a held ref of that home; a ref another lane created in between moves it on. Outside git nothing is reserved."""
+    name = folder.strip('/')
+    if not name.startswith('docs/') or '/' in name[len('docs/'):]:
+        raise NextError('%s is not a home directly under docs/' % folder)
+    name = name[len('docs/'):]
+    layout = load_layout(root)
+    kinds, _ = home_kinds(layout)
+    if kinds.get(name) == 'work':
+        raise NextError('docs/%s/ is a work home: tickets.py new allocates its ids' % name)
+    width = number_width(layout, name) or NUMBER_WIDTH.get(kinds.get(name))
+    if not width:
+        raise NextError('docs/%s/ has no Kinds row whose form declares a numbered name such as `NNN-slug.md`' % name)
+    pat = re.compile(r'^(\d{%d})-' % width)
+    nums = [int(m.group(1)) for m in (pat.match(p.rsplit('/', 1)[-1]) for p in Repo(root).files
+                                      if p.startswith('docs/%s/' % name) and p.count('/') == 2) if m]
+    import pathlib
+    import tickets  # function-local: tickets.py imports onboard and is large
+    git = tickets.ref_git(pathlib.Path(root))
+    prefix = DOC_ID_REFS + name + '/'
+    if git:
+        held = git('for-each-ref', '--format=%(refname)', prefix).stdout.split()
+        nums += [int(r[len(prefix):]) for r in held if r[len(prefix):].isdigit()]
+    n = max(nums, default=0) + 1
+    while reserve and git:
+        try:
+            if tickets.ref_write(git, prefix + '%0*d' % (width, n), 'docs/%s/%0*d' % (name, width, n)):
+                break
+        except tickets.Fail as e:
+            raise NextError(str(e))
+        n += 1
+    return '%0*d' % (width, n)
+
+
+def grandfather(root, write):
+    """The migrate step: misnamed files in numbered homes, relative to docs/, that ## Grandfathered does not list yet.
+    With write, appends them to docs/layout.md under ## Grandfathered (adding the section when missing)."""
+    found = sorted({f.path[len('docs/'):] for f in run(root, only={'D-12'}, disable=('levels',))
+                    if f.level == 'warning' and '-slug.md:' in f.message})
+    if not found or not write:
+        return found
+    path = os.path.join(root, onboard.LAYOUT_PATH)
+    with open(path, encoding='utf-8') as f:
+        text = f.read()
+    lines = ''.join('- `%s`\n' % rel for rel in found)
+    m = re.search(r'^## Grandfathered[ \t]*\n(?:[ \t]*\n|[ \t]*[-*+].*\n)*', text, re.M)
+    if m:
+        body = text[m.start():m.end()].rstrip('\n') + '\n'
+        text = text[:m.start()] + body + lines + '\n' + text[m.end():].lstrip('\n')
+    else:
+        text = text.rstrip('\n') + '\n\n## Grandfathered\n\n' + lines
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(text.rstrip('\n') + '\n')
+    return found
+
+
 # ---------------------------------------------------------------- selftest
 
 class GateFailure(AssertionError):
@@ -900,6 +1012,106 @@ def gate_work_home(runner):
             raise GateFailure('a stray file under docs/work/ was not flagged')
 
 
+SPECS_ROW = '| `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case |'
+
+
+def _layout(specs_form, tail=''):
+    """The default layout with the specs/ row's form cell replaced, plus extra sections."""
+    text = onboard.LAYOUT_TEMPLATE
+    if SPECS_ROW not in text:
+        raise GateFailure('the default layout has no specs/ row to edit')
+    return text.replace(SPECS_ROW, SPECS_ROW[:-len(' kebab-case |')] + ' %s |' % specs_form) + tail
+
+
+def gate_numbered(runner):
+    """A row's `NNN-slug.md` form numbers new files in its home; a Grandfathered path keeps its name; a Levels line
+    raises the warning to an error."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, 'docs/layout.md', _layout('`NNN-slug.md`', '\n## Grandfathered\n\n- `specs/api.md`\n'))
+        _write(tmp, 'docs/specs/002-numbered.md', '# N\n')
+        _write(tmp, 'docs/specs/AGENTS.md', '# S\n')
+        bad = [f.line() for f in runner(tmp) if f.level != 'info']
+        if bad:
+            raise GateFailure('numbered or grandfathered files were flagged: %r' % bad)
+        _write(tmp, 'docs/specs/new-thing.md', '# N\n')
+        got = [f for f in runner(tmp) if f.rule == 'D-12' and f.path == 'docs/specs/new-thing.md']
+        if [f.level for f in got] != ['warning']:
+            raise GateFailure('an unnumbered new file gave %r, expected one D-12 warning' % [f.line() for f in got])
+        _write(tmp, 'docs/layout.md', _layout('`NNN-slug.md`', '\n## Grandfathered\n\n- `specs/api.md`\n'
+                                                               '\n## Levels\n\n- `D-12` error\n'))
+        got = [f for f in runner(tmp) if f.rule == 'D-12' and f.path == 'docs/specs/new-thing.md']
+        if [f.level for f in got] != ['error']:
+            raise GateFailure('a Levels line did not raise D-12: %r' % [f.line() for f in got])
+
+
+def gate_uppercase(runner):
+    """Ecosystem names and singletons a Kinds row declares may be UPPERCASE; any other UPPERCASE stem is D-12."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, 'docs/layout.md', _layout('kebab-case, `INDEX.md`'))
+        _write(tmp, 'docs/guides/CHANGELOG.md', '# C\n')
+        _write(tmp, 'docs/guides/CONTRIBUTING.md', '# C\n')
+        _write(tmp, 'docs/guides/AGENTS.md', '# G\n')
+        _write(tmp, 'docs/specs/INDEX.md', '# I\n')
+        _write(tmp, 'docs/specs/AGENTS.md', '# S\n')
+        bad = [f.line() for f in runner(tmp) if f.level != 'info']
+        if bad:
+            raise GateFailure('ecosystem names or declared singletons were flagged: %r' % bad)
+        _write(tmp, 'docs/specs/SPEC.md', '# S\n')
+        _write(tmp, 'docs/guides/INDEX.md', '# I\n')
+        got = {f.path for f in runner(tmp) if f.rule == 'D-12'}
+        for rel in ('docs/specs/SPEC.md', 'docs/guides/INDEX.md'):
+            if rel not in got:
+                raise GateFailure('an undeclared UPPERCASE name was not flagged: %s' % rel)
+
+
+def _git_fixture(tmp):
+    _clean(tmp)
+    subprocess.run(['git', 'init', '-q', tmp], check=True)
+    subprocess.run(['git', '-C', tmp, 'add', '-A'], check=True)
+
+
+def gate_next(alloc):
+    """`next` reserves through a create-only ref: two calls never share a number, a held ref is skipped, and a folder
+    whose row declares no numbered form is refused."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _git_fixture(tmp)
+        a, b = alloc(tmp, 'docs/decisions'), alloc(tmp, 'docs/decisions')
+        if (a, b) != ('0002', '0003'):
+            raise GateFailure('two reservations gave %r, expected 0002 and 0003' % ((a, b),))
+        blob = subprocess.run(['git', '-C', tmp, 'hash-object', '-w', '--stdin'], input=b'x\n',
+                              stdout=subprocess.PIPE, check=True).stdout.decode().strip()
+        subprocess.run(['git', '-C', tmp, 'update-ref', DOC_ID_REFS + 'decisions/0004', blob], check=True)
+        c = alloc(tmp, 'docs/decisions')
+        if c != '0005':
+            raise GateFailure('a held ref was not skipped: got %r, expected 0005' % c)
+        if alloc(tmp, 'docs/goals') != '002':
+            raise GateFailure('goals/ did not allocate a three-digit number after 001')
+        try:
+            alloc(tmp, 'docs/specs')
+        except NextError:
+            return
+        raise GateFailure('a folder with no numbered form was given a number')
+
+
+def gate_grandfather(migrate):
+    """The migrate step lists every misnamed file in a numbered home under ## Grandfathered, once."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, 'docs/layout.md', _layout('`NNN-slug.md`'))
+        _write(tmp, 'docs/specs/AGENTS.md', '# S\n')
+        _write(tmp, 'docs/specs/002-numbered.md', '# N\n')
+        _write(tmp, 'docs/specs/old-name.md', '# O\n')
+        if migrate(tmp, True) != ['specs/api.md', 'specs/old-name.md']:
+            raise GateFailure('the migrate step did not list the two misnamed files')
+        bad = [f.line() for f in run(tmp, today=TODAY) if f.level != 'info']
+        if bad:
+            raise GateFailure('grandfathered files were still flagged: %r' % bad)
+        if migrate(tmp, True):
+            raise GateFailure('a second migrate run listed files again')
+
+
 def _real(root):
     return run(root, today=TODAY)
 
@@ -917,6 +1129,14 @@ def selftest():
                                                  ('flags an evidence folder', lambda root: run(root, today=TODAY, disable=('B-1a-evidence',)))]),
              ('work-home', gate_work_home, _real, [('drops B-2a', _without('B-2a')),
                                                    ('applies the docs rules to work/', _without('work-records'))]),
+             ('numbered', gate_numbered, _real, [('drops the numbered form', _without('D-12-numbered')),
+                                                 ('ignores Grandfathered', _without('grandfathered')),
+                                                 ('ignores Levels', _without('levels'))]),
+             ('uppercase', gate_uppercase, _real, [('treats UPPERCASE names as plain names', _without('D-12-upper')),
+                                                   ('drops the ecosystem names', _without('ecosystem-names')),
+                                                   ('drops declared singletons', _without('singletons'))]),
+             ('grandfather', gate_grandfather, grandfather, [('writes nothing', lambda root, write: grandfather(root, False))]),
+             ('next', gate_next, next_number, [('reserves no ref', lambda root, folder: next_number(root, folder, reserve=False))]),
              ('read-only', gate_read_only, _real, [])]
     for name, gate, real, defects in gates:
         problems = []
@@ -946,7 +1166,9 @@ def selftest():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='docs_check.py', description=__doc__.split('\n', 1)[0])
-    ap.add_argument('cmd', nargs='?', choices=['selftest'])
+    ap.add_argument('cmd', nargs='?', choices=['selftest', 'next', 'grandfather'])
+    ap.add_argument('folder', nargs='?', help='next: the numbered home, e.g. docs/decisions')
+    ap.add_argument('--write', action='store_true', help='grandfather: append the list to docs/layout.md')
     ap.add_argument('--root', default=None)
     ap.add_argument('--only', default=None, help='comma list of rule ids or the groups docs, goals, boundary and standards')
     ap.add_argument('--today', default=None)
@@ -956,6 +1178,20 @@ def main(argv=None):
     root = args.root or onboard.repo_root() or os.getcwd()
     if not os.path.isdir(root):
         sys.stderr.write('docs_check.py: %s is not a directory\n' % root)
+        return 2
+    try:
+        if args.cmd == 'next':
+            if not args.folder:
+                sys.stderr.write('docs_check.py: next needs a folder, e.g. docs/decisions\n')
+                return 2
+            print(next_number(root, args.folder))
+            return 0
+        if args.cmd == 'grandfather':
+            for rel in grandfather(root, args.write):
+                print('- `%s`' % rel)
+            return 0
+    except (NextError, onboard.LayoutError) as e:
+        sys.stderr.write('docs_check.py: %s\n' % e)
         return 2
     only = set(args.only.split(',')) if args.only else None
     today = _dates(args.today) if args.today else None

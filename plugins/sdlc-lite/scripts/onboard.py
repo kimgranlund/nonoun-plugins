@@ -46,7 +46,9 @@ SECTIONS = (HOMES, FROZEN)
 KINDS = '## Kinds'
 DECIDE = '## Decide'
 LEGACY = '## Legacy'
-OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY)
+LEVELS = '## Levels'
+GRANDFATHERED = '## Grandfathered'
+OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY, LEVELS, GRANDFATHERED)
 DOC_KINDS = ('work', 'specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 KIND_COLUMNS = ('id', 'kind', 'holds', 'not', 'why', 'writer', 'form', 'life', 'entry', 'read', 'owner')
 KIND_REQUIRED = ('id', 'kind', 'holds', 'not', 'why', 'form', 'read')
@@ -57,16 +59,20 @@ TICKED = r'`([^`]+)`'
 HOME_FORM = re.compile(r'^\s*[-*+]\s+`([^`]*/)`(?:\s+takes\s+(' + TICKED + r'(?:\s*,\s*' + TICKED + r')*))?\s*$')
 FROZEN_FORM = re.compile(r'^\s*[-*+]\s+' + TICKED + r'\s*$')
 DECIDE_FORM = re.compile(r'^\s*(\d+)\.\s+(.*\?)\s+yes\s*->\s*`([^`]+)`\s*$')
+LEVEL_FORM = re.compile(r'^\s*[-*+]\s+`([A-Z]+-\d+[a-z]?)`\s+(error|warning)\s*$')
 OTHERWISE_FORM = re.compile(r'^\s*otherwise\s*->\s*`([^`]+)`\s*$')
 TABLE_SPLIT = re.compile(r'(?<!\\)\|')
 SEPARATOR_CELL = re.compile(r'^:?-{3,}:?$')
 FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 
-Layout = collections.namedtuple('Layout', 'homes frozen kinds decide legacy', defaults=({}, (), []))
+Layout = collections.namedtuple('Layout', 'homes frozen kinds decide legacy levels grandfathered',
+                                defaults=({}, (), [], {}, []))
 Layout.__doc__ = ('homes: dict of home path to a tuple of globs, in file order. frozen: list of patterns. '
                   'kinds: dict of row id to a dict of the eleven registry fields, in file order. '
                   'decide: tuple of (question, id) in order, ending with ("otherwise", id); empty without a '
-                  '## Decide section. legacy: list of globs.')
+                  '## Decide section. legacy: list of globs. levels: dict of rule id to the level its warnings '
+                  'are raised to (## Levels). grandfathered: list of globs whose names keep their pre-numbering form '
+                  '(## Grandfathered).')
 
 
 class LayoutError(Exception):
@@ -107,7 +113,7 @@ def _cells(line):
 def _parse_layout_text(text, path, skip=frozenset(), docs=True):
     """docs=False reads a layout for another tree (.sdlc): kinds are free text and the required
     ## Homes and ## Frozen paths sections and the home cross-check do not apply."""
-    homes, frozen, legacy = {}, [], []
+    homes, frozen, legacy, levels, grandfathered = {}, [], [], {}, []
     kinds, decide = {}, []
     otherwise = None
     state = {'header': False, 'sep': False}
@@ -181,6 +187,14 @@ def _parse_layout_text(text, path, skip=frozenset(), docs=True):
             continue
         if section is None or not LIST_LINE.match(line):
             continue
+        if section == LEVELS:
+            m = LEVEL_FORM.match(line)
+            if not m:
+                if 'levels-form' in skip:
+                    continue
+                raise LayoutError(path, n, 'list line under %r is not `<rule>` error|warning' % LEVELS)
+            levels[m.group(1)] = m.group(2)
+            continue
         if section == HOMES:
             m = HOME_FORM.match(line)
             if not m:
@@ -197,10 +211,10 @@ def _parse_layout_text(text, path, skip=frozenset(), docs=True):
             if not m:
                 if 'form' in skip and section == FROZEN:
                     continue
-                if 'legacy-form' in skip and section == LEGACY:
+                if 'legacy-form' in skip and section in (LEGACY, GRANDFATHERED):
                     continue
                 raise LayoutError(path, n, 'list line under %r is not one `<glob>`' % section)
-            (frozen if section == FROZEN else legacy).append(m.group(1))
+            {FROZEN: frozen, LEGACY: legacy, GRANDFATHERED: grandfathered}[section].append(m.group(1))
     if docs:
         for head in SECTIONS:
             if head not in seen:
@@ -211,7 +225,8 @@ def _parse_layout_text(text, path, skip=frozenset(), docs=True):
                     raise LayoutError(path, ln, 'row id %r under %r is not a home listed under %r' % (rid, KINDS, HOMES))
     if DECIDE in seen and otherwise is None and 'decide-form' not in skip:
         raise LayoutError(path, max(n, 1), '%r has no otherwise line' % DECIDE)
-    return Layout(homes, frozen, kinds, tuple(decide) + ((('otherwise', otherwise),) if otherwise else ()), legacy)
+    return Layout(homes, frozen, kinds, tuple(decide) + ((('otherwise', otherwise),) if otherwise else ()), legacy,
+                  levels, grandfathered)
 
 
 def parse_layout(path, docs=True):
@@ -485,7 +500,7 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 
 | id | kind | holds | not | why | writer | form | life | entry | read | owner |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `work/` | work | ticket and task folders, the generated `ROADMAP.md` and `NOTES.md` | designs and plans under review -> `planning/` | work records next to the docs they change | `tickets.py` | `NNNN-slug/handoff.md` | close dot-renames in place | - | running or closing a ticket | `tickets.py` |
+| `work/` | work | ticket and task folders, the generated `ROADMAP.md` and `NOTES.md` | designs and plans under review -> `planning/` | work records next to the docs they change | `tickets.py` | `NNNN-slug/handoff.md`, `ROADMAP.md`, `NOTES.md` | close dot-renames in place | - | running or closing a ticket | `tickets.py` |
 | `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | - | defining the system | `docs_check.py` |
 | `planning/` | planning | proposals and plans under review | built facts -> `specs/` | decisions need a place | people | `status:` front matter | accept, then `archive/` | - | deciding or scheduling | `docs_check.py` |
 | `decisions/` | decisions | one numbered decision per file | narrative -> `specs/` | reasons outlive people | people | `NNNN-slug.md`, `status:` | supersede | - | asking why | `docs_check.py` |
@@ -526,7 +541,7 @@ TOPIC_AGENTS_TEMPLATE = """\
 Describe what this topic covers.
 
 <!-- sdlc-lite:managed:start v<N> sha256:<H> -->
-## Documents
+## Contents
 
 <a link to README.md when it exists, then one link per document>
 <!-- sdlc-lite:managed:end -->
@@ -1183,6 +1198,7 @@ def gate_layout_sections(parse):
     decide = ('## Decide\n1. Is it evidence of something that happened? yes -> `reports/`\n'
               '2. Is it a description of the system? yes -> `specs/`\notherwise -> `specs/`\n')
     legacy = '## Legacy\n- `reports/old/**`\n- `imported/**`\n'
+    levels = '## Levels\n- `D-12` error\n## Grandfathered\n- `specs/old.md`\n'
     old_style = '## Homes\n- `maintenance/`\n## Frozen paths\n- `x/`\n## Kinds is mentioned in prose only\n'
     cases = [
         ('unknown kind', base + '## Kinds\n' + KIND_HEADER + _kind_row('specs/', 'diary'), 8),
@@ -1197,6 +1213,8 @@ def gate_layout_sections(parse):
         ('Decide with no otherwise', base + '## Decide\n1. Is it a plan? yes -> `specs/`\n', 6),
         ('Decide line after otherwise', base + '## Decide\notherwise -> `specs/`\n1. Is it a plan? yes -> `specs/`\n', 7),
         ('Legacy line without backticks', base + '## Legacy\n- reports/old/**\n', 6),
+        ('Levels line with an unknown level', base + '## Levels\n- `D-12` fatal\n', 6),
+        ('Grandfathered line without backticks', base + '## Grandfathered\n- specs/old.md\n', 6),
     ]
     with tempfile.TemporaryDirectory() as tmp:
         def write(name, text):
@@ -1205,7 +1223,7 @@ def gate_layout_sections(parse):
                 f.write(text)
             return p
 
-        got = parse(write('ok.md', base + kinds + '\n' + decide + '\n' + legacy))
+        got = parse(write('ok.md', base + kinds + '\n' + decide + '\n' + legacy + levels))
         expect(list(got.kinds) == ['specs/', 'reports/'], 'kinds parsed as %r' % (list(got.kinds),))
         expect(got.kinds['reports/']['kind'] == 'reports' and got.kinds['specs/']['read'] == 'when using it',
                'kind row fields parsed wrong: %r' % (got.kinds,))
@@ -1213,6 +1231,8 @@ def gate_layout_sections(parse):
                               ('Is it a description of the system?', 'specs/'), ('otherwise', 'specs/')),
                'decide parsed as %r' % (got.decide,))
         expect(got.legacy == ['reports/old/**', 'imported/**'], 'legacy parsed as %r' % (got.legacy,))
+        expect(got.levels == {'D-12': 'error'} and got.grandfathered == ['specs/old.md'],
+               'levels or grandfathered parsed as %r' % (got,))
         expect(got.homes == {'specs/': (), 'reports/': ()} and got.frozen == [], 'homes or frozen changed: %r' % (got,))
         got = parse(write('old.md', old_style))
         expect(got.kinds == {} and got.decide == () and got.legacy == [] and got.frozen == ['x/'],
@@ -1422,7 +1442,7 @@ def gate_create(impl):
                'default layout kinds or decide parsed as %r' % (layout,))
         work = layout.kinds.get('work/', {})
         expect((work.get('kind'), work.get('form'), work.get('life'), work.get('owner'))
-               == ('work', '`NNNN-slug/handoff.md`', 'close dot-renames in place', '`tickets.py`'),
+               == ('work', '`NNNN-slug/handoff.md`, `ROADMAP.md`, `NOTES.md`', 'close dot-renames in place', '`tickets.py`'),
                'default layout work/ Kinds row is %r' % (work,))
         expect(layout.decide[0][1] == 'work/', 'default layout Decide does not start with work/: %r' % (layout.decide,))
     untracked = dict(RICH_DOCS, **{'docs/alpha/draft.md': '# Not tracked\n'})
@@ -1434,7 +1454,7 @@ def gate_create(impl):
         expect('docs/reference/' not in _snapshot(root), 'topic fixture: created an empty folder docs/reference/')
         before, block, after = _parts(_text(root, 'docs/alpha/AGENTS.md'), 'docs/alpha/AGENTS.md')
         expect(before == '# alpha\n\nDescribe what this topic covers.\n\n', 'topic entry starter is %r' % before)
-        expect(block.text == '## Documents\n\n- [README.md](README.md)\n- [design.md](design.md)\n'
+        expect(block.text == '## Contents\n\n- [README.md](README.md)\n- [design.md](design.md)\n'
                '- [notes/one.md](notes/one.md)\n', 'topic entry block is %r' % block.text)
         expect(_text(root, 'docs/alpha/CLAUDE.md') == _region(TEMPLATE_VERSION, STUB), 'topic stub is wrong')
         _, block, _ = _parts(_text(root, 'docs/AGENTS.md'), 'docs/AGENTS.md')
@@ -1874,6 +1894,7 @@ GATES = [
         ('skips the duplicate row rule', functools.partial(_parse_layout, skip=frozenset({'kinds-duplicate'}))),
         ('skips the Decide form rules', functools.partial(_parse_layout, skip=frozenset({'decide-form'}))),
         ('skips the Legacy form rule', functools.partial(_parse_layout, skip=frozenset({'legacy-form'}))),
+        ('skips the Levels form rule', functools.partial(_parse_layout, skip=frozenset({'levels-form'}))),
         ('skips the duplicate heading rule', functools.partial(_parse_layout, skip=frozenset({'duplicate-heading'}))),
     ]),
     ('layout-other-tree', gate_layout_other_tree, functools.partial(_parse_layout, docs=False), [

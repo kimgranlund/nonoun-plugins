@@ -11,7 +11,7 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 | `planning/` | Unbuilt proposals: sub-agent mode, the idle-host watcher, reorganization, the docs schema | Before building one; a built one moves into `specs/` |
 | `reports/` | Dated evidence, including the [readiness and recovery trials](reports/readiness-recovery-validation.md) | What was verified; history, not instructions |
 
-<!-- sdlc-lite:managed:start v1 sha256:647403c29ef8 -->
+<!-- sdlc-lite:managed:start v1 sha256:7e64ab355440 -->
 # Documents
 
 Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
@@ -59,6 +59,7 @@ The first line that matches wins.
 ## Contents
 
 - [README.md](README.md)
+- `work/`
 - [specs/](specs/AGENTS.md)
 - [planning/](planning/AGENTS.md)
 - [goals/](goals/AGENTS.md)

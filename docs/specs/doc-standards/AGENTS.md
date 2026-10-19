@@ -2,8 +2,8 @@
 
 Document standards: one registry row, one card, and a template or schema per document type. Read [the registry](README.md) row first, then the one card it names.
 
-<!-- sdlc-lite:managed:start v1 sha256:87febdd2864f -->
-## Documents
+<!-- sdlc-lite:managed:start v1 sha256:461c50348720 -->
+## Contents
 
 - [README.md](README.md)
 - [core.md](core.md)
