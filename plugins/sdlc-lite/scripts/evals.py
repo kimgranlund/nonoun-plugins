@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """evals.py: recorded model and effort experiments, and the lock that ties the model table to one.
 
-Evals live in <root>/evals/ (root is the .sdlc folder). The repo dir is <root>/.. resolved; every
+Evals live in <root>/evals/ (root is the .sdlc folder), or in <work_root>/evals/ when .sdlc/config
+sets a work_root line (roots.py). The repo dir is <root>/.. resolved; every
 evidence path and every path in the lock is relative to it, in posix form.
 
 Eval file
@@ -72,6 +73,9 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import roots  # noqa: E402
 
 FIELDS = ('role', 'level', 'model', 'effort', 'host', 'task_set', 'pass_rate', 'cost_usd', 'date', 'evidence')
 
@@ -285,6 +289,11 @@ def repo_of(root):
     return Path(root).resolve().parent
 
 
+def evals_of(root):
+    """The evals dir of the state root: <root>/evals, or <work_root>/evals under a work_root line."""
+    return roots.resolve(Path(root).resolve()).evals
+
+
 def rel(path, repo):
     p = Path(path).resolve()
     try:
@@ -318,7 +327,7 @@ def target_problem(path, root, repo):
     path = Path(path)
     if not path.is_file():
         return 'no such file'
-    evals_dir = (Path(root) / 'evals').resolve()
+    evals_dir = evals_of(root).resolve()
     if path.resolve().parent != evals_dir:
         return 'not in %s' % rel(evals_dir, repo)
     return validate_eval(path, repo)
@@ -328,7 +337,7 @@ def check_problems(root, plugin):
     """The list of problem lines for <root>/evals and its lock; empty when all is well."""
     root = Path(root)
     repo = repo_of(root)
-    evals_dir = root / 'evals'
+    evals_dir = evals_of(root)
     if not evals_dir.is_dir():
         return ['%s: missing' % rel(evals_dir, repo)]
     problems = []
@@ -418,7 +427,7 @@ def cmd_add(args, root, plugin):
     reason = validate_text(text, repo)
     if reason:
         return refuse(reason)
-    evals_dir = Path(root) / 'evals'
+    evals_dir = evals_of(root)
     highest = -1
     if evals_dir.is_dir():
         for f in evals_dir.iterdir():
@@ -437,7 +446,7 @@ def cmd_add(args, root, plugin):
 
 def cmd_list(args, root, plugin):
     repo = repo_of(root)
-    evals_dir = Path(root) / 'evals'
+    evals_dir = evals_of(root)
     if not evals_dir.is_dir():
         return 0
     for f in sorted(evals_dir.iterdir()):
@@ -460,7 +469,7 @@ def cmd_check(args, root, plugin):
             print(p)
         print('evals check: FAIL')
         return 1
-    evals_dir = Path(root) / 'evals'
+    evals_dir = evals_of(root)
     n = sum(1 for f in evals_dir.iterdir() if f.is_file() and EVAL_NAME_RE.fullmatch(f.name))
     lock, _ = read_lock(evals_dir / LOCK_NAME)
     print('evals check: ok (%d evals, lock cites %s)' % (n, lock['eval']))
@@ -475,7 +484,7 @@ def cmd_lock(args, root, plugin):
     reason = target_problem(path, root, repo)
     if reason:
         return refuse('%s: %s' % (args.eval, reason))
-    lock_path = Path(root) / 'evals' / LOCK_NAME
+    lock_path = evals_of(root) / LOCK_NAME
     subject = rel(lock_path, repo)
     previous = None
     if lock_path.exists():
@@ -591,6 +600,7 @@ def selftest(plugin):
         d = t / ('neg-' + key)
         d.mkdir()
         (d / 'evals.py').write_text(text, encoding='utf-8')
+        shutil.copyfile(str(me.parent / 'roots.py'), str(d / 'roots.py'))
         return d / 'evals.py', None
 
     def case(name, fn):
@@ -795,6 +805,24 @@ def selftest(plugin):
         case('negative control: evals.py without the date rule passes a reused eval', c15)
         case('negative control: evals.py without the required-field check accepts a missing field', c16)
 
+        def c17(need):
+            d = project(more / 'workroot')
+            (d / '.sdlc' / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+            rc, out, err = ev(d, add_args('first'))
+            need(rc == 0 and out.strip() == 'docs/work/evals/0000-first.md', 'add: rc=%d %r %r' % (rc, out, err))
+            need((d / 'docs' / 'work' / 'evals' / '0000-first.md').is_file(), 'no eval under docs/work/evals')
+            need(not (d / '.sdlc' / 'evals').exists(), 'wrote .sdlc/evals under work_root')
+            rc, out, err = ev(d, ['list'])
+            need(rc == 0 and out.startswith('0000-first.md\t'), 'list: rc=%d %r %r' % (rc, out, err))
+            rc, out, err = ev(d, ['lock', '--eval', str(d / 'docs' / 'work' / 'evals' / '0000-first.md')])
+            need(rc == 0 and (d / 'docs' / 'work' / 'evals' / LOCK_NAME).is_file(), 'lock: rc=%d %r %r' % (rc, out, err))
+            rc, out, err = ev(d, ['check'])
+            need(rc == 0 and 'lock cites docs/work/evals/0000-first.md' in out, 'check: rc=%d %r %r' % (rc, out, err))
+            (d / 'docs' / 'work' / 'evals' / '0001-bad.md').write_text('no front matter\n', encoding='utf-8')
+            rc, out, err = ev(d, ['check'])
+            need(rc == 1 and 'docs/work/evals/0001-bad.md' in out, 'bad eval not named by work path: rc=%d %r' % (rc, out))
+        case('work_root: docs/work puts evals, the lock and the check under docs/work/evals', c17)
+
         def c13(need):
             need(runs[0] > 0, 'no command ran')
             for v in violations:
@@ -843,7 +871,10 @@ def main(argv):
     if args.cmd == 'selftest':
         return selftest(args.plugin)
     handler = {'add': cmd_add, 'list': cmd_list, 'check': cmd_check, 'lock': cmd_lock, 'hash': cmd_hash}[args.cmd]
-    return handler(args, Path(args.root), Path(args.plugin))
+    try:
+        return handler(args, Path(args.root), Path(args.plugin))
+    except roots.Fail as e:
+        return refuse(str(e))
 
 
 if __name__ == '__main__':

@@ -1217,6 +1217,10 @@ with tempfile.TemporaryDirectory() as _td:
     if not name_bad({'docs/specs/x.md': _wtext['docs/work/.0001-a/handoff.md']}, _wallow): errors.append('check.py: product name work_root control not flagged for docs/specs')
     if roots.resolve(_wst).evals != pathlib.Path(_td)/'docs/work/evals': errors.append('check.py: roots.resolve does not give docs/work/evals under work_root: docs/work')
     if roots.resolve(work_root_fixture(pathlib.Path(_td)/'plain', 'layout: flat')).evals != pathlib.Path(_td)/'plain/.sdlc/evals': errors.append('check.py: roots.resolve moved off .sdlc/evals with no work_root')
+    # evals lock guard under a work_root: the guard's `evals.py --root .sdlc check` names the invalid eval at its docs/work/evals path
+    _ew = work_root_fixture(pathlib.Path(_td)/'evals-work', 'work_root: docs/work'); (_ew.parent/'docs/work/evals').mkdir(parents=True); (_ew.parent/'docs/work/evals/0000-bad.md').write_text('no front matter\n')
+    _er = subprocess.run([sys.executable, str(root/'scripts/evals.py'), '--root', str(_ew), '--plugin', str(root), 'check'], capture_output=True, text=True)
+    if _er.returncode == 0 or 'docs/work/evals/0000-bad.md' not in _er.stdout + _er.stderr: errors.append('check.py: evals lock guard did not report the invalid eval at docs/work/evals under work_root: docs/work')
 if (_repo/'.git').exists():
     _names = {}
     for _rel in subprocess.run(['git', 'ls-files', '-z'], cwd=_repo, capture_output=True, text=True).stdout.split('\0'):
