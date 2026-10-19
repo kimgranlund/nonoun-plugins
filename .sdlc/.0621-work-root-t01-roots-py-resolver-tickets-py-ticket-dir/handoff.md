@@ -2,7 +2,7 @@
 id: T-0621
 title: "work_root t01: roots.py resolver; tickets.py ticket_dir/layout_paths/layout_lines delegate to it"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/roots.py selftest` exits 0 (red before: no such file) with cases: `work_root: docs/work` resolves tickets to <top>/docs/work, roadmap to <top>/docs/work/ROADMAP.md, notes to <top>/docs/work/NOTES.md and runtime to <top>/.sdlc/runtime; no work_root line resolves every path exactly as tickets.layout_paths did; `work_root: .sdlc/x`, `../x`, an absolute path, and work_root beside `ticket_root: tickets` or `layout: topics` each raise Fail; and `python3 plugins/sdlc-lite/scripts/tickets.py selftest` still exits 0
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: the throwaway base worktree was removed. The scratch dir `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0621-verifier-L2` could not be deleted because the permission system denied `rm`. It holds only mutated copies of the scripts and probe output, and the repo tree is untouched.) · verifier: verifier-L2 (sonnet) · base: 00173bad539b
+- Changed: see commits
+- Commits: b44dae1 T-0621: work_root t01: roots.py resolver; tickets.py ticket_dir/layout_paths/layout_lines delegate to it
+- Check: 1 roots.py selftest exits 0 with the listed work_root cases, and tickets.py selftest still exits 0: pass
