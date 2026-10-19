@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:7b80baec4fdd -->
+<!-- sdlc-lite:managed:start v1 sha256:e52aec5ab234 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,15 +13,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
   - T-0583 Driver loop wakes on role completion or state change, not timed polling (0583-event-driven-driver)
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
-- ready: 6
+- ready: 5
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
   - T-0619 docs_check: every doc listed in its home index, per-home file cap (0619-docs-index-and-cap)
   - T-0620 docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons (0620-docs-uppercase-masters)
-  - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths)
   - T-0635 work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape (0635-work-root-t12-tickets-py-migrate-work-root-flat-nested)
   - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
-- claimed: 1
+- claimed: 2
   - T-0626 work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil (0626-work-root-t06-lanes-and-fanout-untracked-work-root-tic), claimed by sdlc-lite-author 2026-10-19
+  - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
 - done: 590
