@@ -2,7 +2,7 @@
 id: T-0634
 title: "work_root t14: work/ is a first-class docs home: onboard templates for the docs/AGENTS.md block row and t"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0621]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,12 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0 with the case: the generated docs/AGENTS.md block has a `work/` row (Home, Holds, Never holds) first in the Which-home order, and the generated docs/layout.md Kinds table has a `work/` row with form `NNNN-slug/handoff.md`, life `close dot-renames in place`, owner `tickets.py` (red before: no row); `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0 with the case: docs/work/0001-a/handoff.md, docs/work/.0002-b/builder-L1-2.md, docs/work/ROADMAP.md and docs/work/NOTES.md raise no finding and docs/work/stray.md is flagged (red before: topic rules and B-1a); `docs_check.py --root .` exits 0 on this repository
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `git grep "eleven default"` over plugins, scripts and docs found no stale count outside the touched docs_check.py strings (updated to "twelve"). | note: `onboard.py check` still reports size/stale/missing lines for docs entries (e.g. docs/AGENTS.md 70 lines over the 60-line target). docs/AGENTS.md and docs/layout.md report `current` and `present`. I did not diff those lines against base. | note: Scratch cleanup was partial. The throwaway base worktree was removed with `git worktree remove`. rm of the scratch fixture dirs (/Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0634-verifier-L2 and /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0634-verifier-L2) was denied by the permission system, so a small fixture dir remains in each.) · verifier: verifier-L2 (sonnet) · base: 07f5a2f160a6
+- Changed: see commits
+- Commits: 0da23c2 T-0634: work_root t14: work/ is a first-class docs home: onboard templates for the docs/AGENTS.md block row and t
+- Check: 1 onboard.py selftest exits 0 with the work/ row cases (AGENTS.md block row first in Which-home; la...: pass
+- Check: 2 docs_check.py selftest exits 0 with docs/work/0001-a/handoff.md, docs/work/.0002-b/builder-L1-2.m...: pass
+- Check: 3 `docs_check.py --root .` exits 0 on this repository: pass

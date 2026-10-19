@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d8de9842bc52 -->
+<!-- sdlc-lite:managed:start v1 sha256:752d90a5cadd -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -27,14 +27,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths)
   - T-0635 work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape (0635-work-root-t12-tickets-py-migrate-work-root-flat-nested)
   - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
-- claimed: 4
+- claimed: 3
   - T-0622 work_root t02: records base: one state_of rule for order.py, records.sh, steps.py, budget.py, dispatch.py (0622-work-root-t02-records-base-one-state-of-rule-for-order), claimed by sdlc-lite-author 2026-10-19
   - T-0623 work_root t03: tickets.py resolution sites: new/claim/roadmap/check/tidy in the work root (ROADMAP.md, NO (0623-work-root-t03-tickets-py-resolution-sites-new-claim-ro), claimed by sdlc-lite-author 2026-10-19
   - T-0630 work_root t09a: evals, proposals, promote read and write the work root (0630-work-root-t09a-evals-proposals-promote-read-and-write-t), claimed by sdlc-lite-author 2026-10-19
-  - T-0634 work_root t14: work/ is a first-class docs home: onboard templates for the docs/AGENTS.md block row and t (0634-work-root-t14-work-is-a-first-class-docs-home-onboard), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
-- done: 580
+- done: 581
 - dropped: 29
 
 ## Procedures
