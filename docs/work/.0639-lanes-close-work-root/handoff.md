@@ -2,7 +2,7 @@
 id: T-0639
 title: "lanes.py close crashes in carry_lane_records under work_root"
 type: bug             # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,11 @@ The failing test lands before or with the fix. No change with no `work_root:` li
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with a case that closes a lane under `work_root: docs/work` and finds the ticket's records carried to the main checkout's records dir (red before: ValueError).
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/lanes.py:831 resolves `tickets.ticket_dir(mroot)` inside the same `try` as the lane dir. If the main checkout's `.sdlc/config` has an unsafe `work_root` and raises `tickets.Fail`, the carry is now skipped silently. Before this change, that config was not read on this path.) · verifier: verifier-L2 (opus) · base: 1c832f9fb9d0
+- Changed: see commits
+- Commits: c47295e T-0639: lanes.py close crashes in carry_lane_records under work_root
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with a case that closes a lane unde...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
