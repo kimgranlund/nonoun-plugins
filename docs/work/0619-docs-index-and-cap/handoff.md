@@ -24,3 +24,10 @@ User decision 2026-10-19: numbers by kind plus an index, not numbers everywhere.
 - Update the onboard managed block's "Adding a document" steps so step 3 says to add the link to the folder's entry file (onboard setup refreshes the generated Contents list).
 - Validation: `python3 plugins/sdlc-lite/scripts/docs_check.py selftest`, `python3 plugins/sdlc-lite/scripts/onboard.py selftest`, and `python3 plugins/sdlc-lite/scripts/check.py`.
 - From T-0620: the folder index is the `## Contents` list onboard generates in each folder `AGENTS.md`; `docs/goals/AGENTS.md` and `docs/kpi/AGENTS.md` are hand-written, so D-13 needs a rule for folders without a generated list; the generated list stops at 20 links (`NESTED_LINK_CAP` in onboard.py), so D-13 must not flag files beyond that cap, or the cap must follow D-14's limit. Raise levels through T-0620's `## Levels` section in `docs/layout.md`.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0; its `rules` gate has D-13 and D-14 cases with `drops D-13` and `drops D-14` negatives, and the `index-cap` gate (hand-written list, overflow line, topic fallback to the home entry, `## Caps`, a Levels raise) rejects each defective variant.
+- `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0, with the `## Caps` form case and its `skips the Caps form rule` negative.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (guard 33 names `D-1` to `D-14`).
+- `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` exits 0 with no D-13 finding; `docs/layout.md` raises D-13 to error and D-14 stays a warning (this repo has one: `docs/specs/sdlc-lite/`, 14 documents).
+- `grep -n "Add a link to it in its folder" plugins/sdlc-lite/scripts/onboard.py docs/AGENTS.md` prints two lines.
