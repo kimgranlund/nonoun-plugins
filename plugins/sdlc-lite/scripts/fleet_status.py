@@ -42,13 +42,13 @@ emoji and its word, and an empty cell is a hyphen:
 Every row ends with its source in brackets, the last column of a table row (the ticket folder under the repo's
 .sdlc, `PR #N`, `@ sha`, `.sdlc` for a repo's board, `.git`; the Repo cell names the repo) or `loadavg, ps`; a row
 with no source raises RenderError, render exits 1 and prints nothing. No pipe and no em dash is printed.
-render reads the registry (--fleet, default .sdlc/fleet.json): --repos narrows the active repos by name, a name the
+render reads the registry (--fleet, default .sdlc/fleet.json, or fleet.json in the work root when .sdlc/config sets work_root): --repos narrows the active repos by name, a name the
 registry excludes is skipped with a note on stderr and never shown, an unknown name exits 2. render writes the
 same state files as collect (the snapshot makes the next call's `since last`); --no-write skips them. Exit codes:
 0 ok, 1 a row had no source, 2 usage, a bad registry or an unknown repo.
 
 collect: REPO paths name the repos to inspect; with none, the active entries of the fleet registry (--fleet, default
-`.sdlc/fleet.json`, see docs/specs/sdlc-lite/fleet-config.md) are inspected. A registry entry whose directory is
+`.sdlc/fleet.json` or the work root's fleet.json, see docs/specs/sdlc-lite/fleet-config.md) are inspected. A registry entry whose directory is
 missing is reported with an `error` and skipped; an explicit REPO that is missing exits 2.
 
 State. Two files live in --state-dir (default `<cwd>/.sdlc/runtime`, git-ignored; never inside an inspected
@@ -94,7 +94,7 @@ here or in scan_repo() and not in the schema fails the selftest. The notes below
     counts      rows per state
     needs_you[] {kind: blocked, id, task, title, owner: user | conductor | unknown, note, age_s} for each ticket
                 with status blocked (owner from an `owner: user|conductor` line in its handoff.md or in
-                .sdlc/notes.md on a line naming its id; age_s since handoff.md's last commit, else its mtime),
+                notes.md (NOTES.md in the work root) on a line naming its id; age_s since handoff.md's last commit, else its mtime),
                 and {kind: pr, number, title, url, detail, age_s} for each open, non-draft pull request (gh pr
                 list; `--no-gh` skips; age_s since it was opened)
     prs         {open[], drafts, error?} or "skipped"
@@ -126,6 +126,7 @@ import board          # same scripts/ dir: the board's own task and row logic (d
 import fleet_collect  # same scripts/ dir: bounded subprocess, worktree discovery, process classes
 import fleet_config   # same scripts/ dir: the repo registry
 import messages       # same scripts/ dir: ID_RE only; a message file is never opened here
+import roots as sdlc_roots  # same scripts/ dir: where notes.md lives (T-0621)
 import order          # same scripts/ dir: records_dir, where a task's markers, attempts and runs live
 import tickets        # same scripts/ dir: the only front matter parser
 
@@ -581,7 +582,11 @@ def blocked_owner(task, root, tid):
     if m:
         return m.group(1).lower(), m.group(0).strip()[:120]
     if tid:
-        for line in fleet_collect.read_text(os.path.join(str(root), 'notes.md')).splitlines():
+        try:
+            notes = sdlc_roots.resolve(pathlib.Path(root)).notes
+        except sdlc_roots.Fail:
+            notes = pathlib.Path(root) / 'notes.md'
+        for line in fleet_collect.read_text(str(notes)).splitlines():
             m = re.search(r'\bowner\s*[:=]\s*(user|conductor)\b', line, re.I)
             if m and re.search(r'(?<![\w-])' + re.escape(tid) + r'(?!\d)', line):
                 return m.group(1).lower(), line.strip()[:120]
@@ -740,8 +745,8 @@ def scan_repo(entry, procs, now, active_s, gh, since=None):
                 # running on it is work the board claims.
                 claims = any(r[2] == '\U0001F7E1' and r[3].startswith(('running', 'building', 'verifying'))
                              for r in brows)
-            rel = task.relative_to(root)
-            copies = [os.path.join(w, '.sdlc', str(rel)) for w in linked]
+            rel = task.relative_to(repo)   # .sdlc/<folder>, or <work_root>/<folder> under a work_root line
+            copies = [os.path.join(w, str(rel)) for w in linked]
             copies = [c for c in copies if os.path.isdir(c)]
             state, evidence = judge_row(str(task), copies, worktrees_named(linked, tid, task.name), procs,
                                         claims, now_ts, active_s)
@@ -1331,7 +1336,7 @@ def select_entries(fleet, names):
 
 
 def render_main(argv):
-    fleet_file, names, since_arg, ping = fleet_config.DEFAULT, [], 'last', False
+    fleet_file, names, since_arg, ping = fleet_config.default_path(), [], 'last', False
     state_dir, stop_line, active, gh, write = None, DEFAULT_STOP_LINE, DEFAULT_ACTIVE_MINUTES, True, True
     i = 0
     try:
@@ -1414,7 +1419,7 @@ def main(argv):
     if argv[0] != 'collect':
         print(USAGE, file=sys.stderr)
         return 2
-    paths, fleet_file, state_dir = [], fleet_config.DEFAULT, None
+    paths, fleet_file, state_dir = [], fleet_config.default_path(), None
     stop_line, active, gh, write = DEFAULT_STOP_LINE, DEFAULT_ACTIVE_MINUTES, True, True
     rest, i = argv[1:], 0
     try:
@@ -1723,6 +1728,26 @@ def selftest_collect():
         ok('needs you: a notes.md line for another id is not used', 'T-0110' not in ny)
         ok('needs you: no owner is reported as unknown, not dropped',
            next(n for n in out['needs_you'] if n['id'] == 'T-0011') is not None)
+
+        # work_root (T-0629): the registry and the blocked ticket's owner note move to the work root
+        wr = os.path.join(tmp, 'wrrepo')
+        os.makedirs(wr)
+        git(wr, 'init', '-q', '-b', 'main')
+        write(os.path.join(wr, '.sdlc', 'config'), 'work_root: docs/work\n')
+        wd = os.path.join(wr, 'docs', 'work', '0001-blocked-note')
+        write(os.path.join(wd, 'handoff.md'), '---\nid: T-0021\ntitle: "t"\ntype: chore\nstatus: blocked\nsize: S\n---\n\n## Goal\nx\n')
+        write(os.path.join(wr, 'docs', 'work', 'NOTES.md'), '- T-0021 waits on a call, owner: user\n')
+        write(os.path.join(wr, '.sdlc', 'notes.md'), '- T-0021 owner: conductor\n')   # the old path is not read under work_root
+        try:
+            dflt = fleet_config.default_path(wr)
+        except AttributeError:
+            dflt = None
+        ok('work_root: the default registry is docs/work/fleet.json', dflt == os.path.join(wr, 'docs', 'work', 'fleet.json'))
+        ok('work_root: with no work_root line the default registry is .sdlc/fleet.json',
+           fleet_config.default_path(os.path.join(tmp, 'nowr')) == os.path.join(tmp, 'nowr', '.sdlc', 'fleet.json'))
+        outw = collect([{'name': 'wr', 'path': wr, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
+        nyw = {n['id']: n for n in outw['needs_you'] if n['kind'] == 'blocked'}
+        ok('work_root: a blocked ticket owner is read from docs/work/NOTES.md', nyw.get('T-0021', {}).get('owner') == 'user')
 
         # release state
         rel = out['repos'][0]['release']

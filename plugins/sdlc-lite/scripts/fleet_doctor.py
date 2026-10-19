@@ -10,7 +10,7 @@ Usage: fleet_doctor.py collect [REPO ...] [--fleet FILE] [--state-dir DIR] [--ou
        fleet_doctor.py resolve (--kill PID | --restart NAME) [--state-dir DIR] [--findings FILE]
        fleet_doctor.py selftest
 
-collect: REPO defaults to the active entries of .sdlc/fleet.json (--fleet), else the current directory; the first
+collect: REPO defaults to the active entries of .sdlc/fleet.json, or the work root's fleet.json (--fleet), else the current directory; the first
 repo is "this repo". It writes the snapshot to --out (default <state-dir>/snapshot.json) and prints its path. State
 dir default: .sdlc/runtime/fleet-doctor under this repo. Snapshot keys:
   ts, this_repo, load1, cores, top[] {pid, cpu, age_s, cmd} (the 10 busiest processes)
@@ -513,7 +513,7 @@ def main(argv):
         fleet, out = take(argv, '--fleet'), take(argv, '--out')
         repos = [os.path.abspath(a) for a in argv if not a.startswith('-')]
         if not repos:
-            fpath = fleet or os.path.join(here, '.sdlc', 'fleet.json')
+            fpath = fleet or fleet_config.default_path(here)
             if os.path.exists(fpath):
                 repos = [os.path.expanduser(r['path']) for r in fleet_config.load(fpath)['repos']
                          if r['status'] == 'active']

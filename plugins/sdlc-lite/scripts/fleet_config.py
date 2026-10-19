@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Active repo registry: .sdlc/fleet.json. No model call; reads and writes only that file.
+"""Active repo registry: .sdlc/fleet.json (fleet.json in the work root under a work_root line). No model call; reads and writes only that file.
 
 Usage: fleet_config.py [--file PATH] show [--active] | add --path P --name N --conductor C [--gh O/R]
        | exclude REPO --reason R | include REPO | selftest
 Schema: docs/specs/sdlc-lite/fleet-config.md. A malformed file exits 1 naming the line.
 """
-import argparse, datetime, json, os, re, sys, tempfile
+import argparse, datetime, json, os, pathlib, re, sys, tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import roots  # same scripts/ dir: the resolver that places fleet.json (T-0621)
 
 DEFAULT = os.path.join(".sdlc", "fleet.json")
 REQ = ("path", "name", "conductor", "status")
@@ -13,6 +16,16 @@ REQ = ("path", "name", "conductor", "status")
 
 class FleetError(Exception):
     pass
+
+
+def default_path(top="."):
+    """The default registry file of the repo at `top`: roots.py's fleet path (docs/work/fleet.json under a
+    work_root line, else .sdlc/fleet.json). A config roots.py refuses keeps the .sdlc path, so show still reads."""
+    state = pathlib.Path(top) / ".sdlc"
+    try:
+        return str(roots.resolve(state).fleet)
+    except roots.Fail:
+        return str(state / "fleet.json")
 
 
 def _line_of(text, idx):
@@ -113,12 +126,19 @@ def selftest():
             raise AssertionError("bad entry loaded")
         except FleetError as e:
             assert want in str(e), str(e)
+    top = os.path.join(d, "top")
+    os.makedirs(os.path.join(top, ".sdlc"))
+    assert default_path(top) == os.path.join(top, ".sdlc", "fleet.json"), "default without work_root"
+    open(os.path.join(top, ".sdlc", "config"), "w").write("work_root: docs/work\n")
+    assert default_path(top) == os.path.join(top, "docs", "work", "fleet.json"), "default under work_root"
+    open(os.path.join(top, ".sdlc", "config"), "w").write("work_root: ../x\n")
+    assert default_path(top) == os.path.join(top, ".sdlc", "fleet.json"), "refused config keeps the .sdlc path"
     print("selftest ok")
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--file", default=DEFAULT)
+    ap.add_argument("--file", default=None)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("show"); s.add_argument("--active", action="store_true")
     a = sub.add_parser("add")
@@ -129,6 +149,7 @@ def main():
     i = sub.add_parser("include"); i.add_argument("repo")
     sub.add_parser("selftest")
     args = ap.parse_args()
+    args.file = args.file or default_path()
     try:
         if args.cmd == "selftest":
             return selftest()
