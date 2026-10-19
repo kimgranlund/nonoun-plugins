@@ -759,6 +759,12 @@ def layout_paths(root):
     return LayoutPaths(r.layout, r.tickets, r.roadmap, r.notes, r.work)
 
 
+def work_dir(root):
+    """ticket_dir(root) when <root>/config sets a `work_root:` line (T-0623): <top>/<work_root>, outside <root>,
+    holding the ticket and task folders, ROADMAP.md and NOTES.md. None without the line."""
+    return ticket_dir(root) if roots.parse(roots.read_config(root)).work_root else None
+
+
 def strays(root):
     """One problem line per ticket folder left directly under <root> while <root>/config sets
     `ticket_root: tickets`: a dir other than tickets that load()'s folder rule takes (not _ or . prefixed, except
@@ -766,6 +772,11 @@ def strays(root):
     stray. [] when the ticket root is <root> itself."""
     if ticket_dir(root) == root:
         return []
+    wd = work_dir(root)
+    if wd is not None:
+        dest = pathlib.Path(os.path.relpath(wd, root.parent)).as_posix()
+        return [f'{name}: ticket folder outside the ticket root; {root}/config sets work_root, so move it to '
+                f'{dest}/{name}' for name, _ in load(root)]
     return [f'{name}: ticket folder outside the ticket root; {root}/config sets ticket_root: tickets, so move it '
             f'to tickets/{name}' for name, _ in load(root) if name != 'tickets']
 
@@ -834,8 +845,10 @@ def top_level_strays(root):
     `top_level_allow:` glob of <root>/config, and not ignored by git. [] when <root> is not a dir."""
     if not root.is_dir():
         return []
-    topics = layout_paths(root).layout == 'topics'
-    allowed = ROOT_ALLOWED if topics else TOP_ALLOWED  # check's allow list under topics (T-0586)
+    lp = layout_paths(root)
+    allowed = ROOT_ALLOWED if lp.layout == 'topics' else TOP_ALLOWED  # check's allow list under topics (T-0586)
+    if work_dir(root) is not None:  # T-0623: the roadmap and notes live in the work root, so a copy here is loose
+        allowed = tuple(n for n in allowed if n not in ('roadmap.md', 'notes.md', 'notes'))
     globs = config_top_level_allow(root)
     names = [p.name for p in sorted(root.iterdir())
              if p.name not in allowed and not p.name.startswith(('_', '.'))
@@ -867,7 +880,7 @@ def cmd_tidy(root, apply=False):
     if not names:
         return 'nothing to tidy'
     adir = layout_paths(root).work / 'archive'
-    arel = adir.relative_to(root).as_posix()
+    arel = pathlib.Path(os.path.relpath(adir, root)).as_posix()  # ../<work_root>/archive under a work root (T-0623)
     moves = [f'{n} -> {arel}/{n}' for n in names]
     if not apply:
         return '\n'.join(moves + ['dry run: nothing moved; rerun with --apply to move'])
@@ -948,8 +961,8 @@ def branch_tickets(root, branch):
     """[(slug, meta)] for the ticket folders committed at <branch>:<rel>, read from git objects with no checkout
     (rel is root relative to its worktree's toplevel, as in worktree_pairs). The branch's own config decides the
     ticket root: when the <branch>:<rel>/config blob (read with `git cat-file -p`; a missing blob is no line)
-    holds `ticket_root: tickets` under ticket_dir's rule, the folders are listed at <branch>:<rel>/tickets;
-    without the line, or with an unsupported value, at <branch>:<rel>. Slugs stay folder names. Folders follow load()'s rule (names
+    holds `ticket_root: tickets` under ticket_dir's rule, the folders are listed at <branch>:<rel>/tickets, and
+    with `work_root: W` at <branch>:<rel>/../W (T-0623); without a line, or with an unsupported value, at <branch>:<rel>. Slugs stay folder names. Folders follow load()'s rule (names
     starting with _ or . are skipped, except a closed-ticket folder .NNNN-<slug>); each <dir>/handoff.md blob is
     read through one `git cat-file --batch` process, and only those with front matter count, sorted by dir name.
     [] when git is missing, a git call fails, the branch does not exist, or root is outside the toplevel. A
@@ -976,15 +989,11 @@ def branch_tickets(root, branch):
             cfg = git(top, 'cat-file', '-p', f'{branch}:config' if rel == '.' else f'{branch}:{rel}/config')
         except ValueError:
             cfg = b''  # no config blob on the branch: no line
-        values = []
-        for line in cfg.decode('utf-8', 'replace').splitlines():
-            if not line.strip() or line.lstrip().startswith('#'):
-                continue
-            m = TICKET_ROOT_RE.fullmatch(line)
-            if m:
-                values.append(m.group(1))
-        if values and all(v == 'tickets' for v in values):
-            rel = 'tickets' if rel == '.' else f'{rel}/tickets'
+        try:  # the branch's own ticket_root or work_root line (T-0623) moves its ticket root
+            rel = pathlib.Path(os.path.normpath(roots.ticket_dir(pathlib.Path(rel), cfg.decode('utf-8', 'replace'))))
+            rel = rel.as_posix()
+        except Fail:
+            pass  # an unsupported value: the folders stay at <branch>:<rel>
         prefix = f'{branch}:' if rel == '.' else f'{branch}:{rel}/'
         dirs = []
         for entry in git(top, 'ls-tree', '-z', branch if rel == '.' else f'{branch}:{rel}').split(b'\0'):
@@ -2544,6 +2553,7 @@ tickets. It names no folder paths. `tickets.py roadmap` generates this block: do
 
 ROUTER_HERE = '- Ticket folders: next to this file.'
 ROUTER_TICKETS = '- Ticket folders: `tickets/`; the same procedures are in `tickets/AGENTS.md`.'
+ROUTER_WORK = '- Ticket folders: `<T>/`, the work root `work_root:` in `<R>/config` names.'  # T-0623
 ACTIVE = ('proposed', 'ready', 'claimed', 'paused', 'blocked')
 
 
@@ -2557,6 +2567,9 @@ def router_paths(root):
         rel = pathlib.Path(os.path.relpath(here, base)).as_posix()
     if ticket_dir(root) == root:
         return rel, rel
+    wd = work_dir(root)
+    if wd is not None:  # T-0623: the work root, outside <root>
+        return rel, pathlib.Path(os.path.relpath(wd.resolve(), base)).as_posix()
     return rel, (pathlib.PurePosixPath(rel) / 'tickets').as_posix()
 
 
@@ -2565,7 +2578,7 @@ def router_files(root):
     `ticket_root: tickets` also tickets/AGENTS.md and tickets/CLAUDE.md, and with `layout: topics` also
     work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and notes/CLAUDE.md. kind is 'agents' or 'claude'."""
     out = [('AGENTS.md', root / 'AGENTS.md', 'agents'), ('CLAUDE.md', root / 'CLAUDE.md', 'claude')]
-    if ticket_dir(root) != root:
+    if ticket_dir(root) != root and work_dir(root) is None:
         out += [('tickets/AGENTS.md', root / 'tickets' / 'AGENTS.md', 'agents'),
                 ('tickets/CLAUDE.md', root / 'tickets' / 'CLAUDE.md', 'claude')]
     if layout_paths(root).layout == 'topics':
@@ -2609,16 +2622,19 @@ def router_bodies(root, ts):
     work/AGENTS.md and notes/AGENTS.md get WORK_TEMPLATE and NOTES_TEMPLATE; the flat text is unchanged. Each
     procedure command starts with <CMD>: the `tickets_cmd:` value of <root>/config, else ROUTER_CMD."""
     r, t = router_paths(root)
-    nested = ticket_dir(root) != root
+    wd = work_dir(root)
+    nested = ticket_dir(root) != root and wd is None
     topics = layout_paths(root).layout == 'topics'
-    body = (ROUTER_TEMPLATE.replace('<ticket folders line>', ROUTER_TICKETS if nested else ROUTER_HERE)
+    line = ROUTER_WORK if wd is not None else ROUTER_TICKETS if nested else ROUTER_HERE
+    body = (ROUTER_TEMPLATE.replace('<ticket folders line>', line)
             .replace('<stage lines>', '\n'.join(stage_lines(ts))))
     tickets_body = TICKETS_TEMPLATE
     if topics:
         body = body.replace(ROUTER_FLAT_INTRO, ROUTER_TOPICS_INTRO, 1)
         body, tickets_body = (b.replace('go to `notes.md`', 'go to `<R>/notes/notes.md`') for b in (body, tickets_body))
         body, tickets_body = (b.replace(ROUTER_FLAT_ALLOWED, ROUTER_TOPICS_ALLOWED, 1) for b in (body, tickets_body))
-    archive = (layout_paths(root).work / 'archive').relative_to(root).as_posix() + '/'  # archive/ or work/archive/
+    # archive/, work/archive/, or ../<work_root>/archive/ under a work root (T-0623)
+    archive = pathlib.Path(os.path.relpath(layout_paths(root).work / 'archive', root)).as_posix() + '/'
     body, tickets_body = (b.replace('<ARCHIVE>', archive) for b in (body, tickets_body))
     cmd = tickets_cmd(root) or ROUTER_CMD
     out = {'AGENTS.md': body.replace('<CMD>', cmd).replace('<R>', r).replace('<T>', t)}
@@ -2752,7 +2768,8 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
         text = text[:m.start(1)] + context.strip('\n') + gap + text[m.end(1):]
     fm = re.match(r'---\r?\n.*?^(---[ \t]*\r?$)', text, re.S | re.M)
     if fm:
-        t = router_paths(root)[1]
+        r, t = router_paths(root)
+        t = r if work_dir(root) is not None else t  # the router stays in <root> under a work root (T-0623)
         text = (text[:fm.start(1)] + f'router: {t}/AGENTS.md  # how to claim and close this ticket\n'
                 + text[fm.start(1):])
     text = normalize_size_text(text)[0]  # an older consumer template's alias size is stored as its level
@@ -3492,7 +3509,7 @@ def cmd_check(root, numbered=False):
     if errs:
         raise Fail('\n'.join(errs))
     if stale(root, ts):
-        raise Fail(f'roadmap.md: stale or missing, run tickets.py --root {root} roadmap')
+        raise Fail(f'{layout_paths(root).roadmap.name}: stale or missing, run tickets.py --root {root} roadmap')
     errs = router_problems(root, ts)
     if errs:
         raise Fail('\n'.join(errs))
@@ -3517,7 +3534,7 @@ def cmd_check(root, numbered=False):
                    f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
     out += [f'warning: external_branch {b} is not a local branch'
             for b in unknown_branches(root, external_branches(root))]
-    if layout_paths(root).layout == 'flat' and not layout_lines(root):
+    if layout_paths(root).layout == 'flat' and not layout_lines(root) and work_dir(root) is None:
         out.append(f"warning: {root} uses the flat layout; tickets.py migrate-layout moves it to topic folders "
                    f"(add 'layout: flat' to {root}/config to keep it and silence this)")
     return '\n'.join(out)
@@ -5722,6 +5739,45 @@ def selftest():
                    f'T-0002: rc={rc} {err!r} got={tid(xb_root, "gamma")!r}',
                    rc == 0 and tid(xb_root, 'gamma') == 'T-0002')
 
+            # (vi) work_root across trees (T-0623): another worktree's docs/work and a registered branch's docs/work
+            # count toward the next id, each resolved from that tree's or branch's own config. forget_ids drops the
+            # shared id refs, so only the tree and branch scans keep the ids clear
+            k_dir, kw_dir = wtmp / 'wrw', wtmp / 'wrw-wt'
+            git(wtmp, 'init', '-q', '-b', 'main', 'wrw')
+            (k_dir / '.sdlc').mkdir()
+            (k_dir / '.sdlc' / 'config').write_text('work_root: docs/work\nticket_folders: numbered\n',
+                                                    encoding='utf-8')
+            run(k_dir / '.sdlc', 'new', ('chore', 'a'))
+            commit(k_dir, 'a')
+            git(k_dir, 'worktree', 'add', '-q', '../wrw-wt', '-b', 'wrw-wt')
+            rc_b, _, err_b = run(kw_dir / '.sdlc', 'new', ('chore', 'b'))
+            forget_ids(k_dir)
+            rc_c, _, err_c = run(k_dir / '.sdlc', 'new', ('chore', 'c'))
+            got = (tid(kw_dir / 'docs' / 'work', '0002-b'), tid(k_dir / 'docs' / 'work', '0003-c'))
+            expect(f'work_root worktree: an id in the other worktree\'s docs/work counts (b T-0002 there, c T-0003 '
+                   f'here): rc={rc_b},{rc_c} {err_b!r} {err_c!r} got={got!r}',
+                   rc_b == rc_c == 0 and got == ('T-0002', 'T-0003'))
+            y_dir = wtmp / 'wrx'
+            git(wtmp, 'init', '-q', '-b', 'main', 'wrx')
+            (y_dir / '.sdlc').mkdir()
+            (y_dir / '.sdlc' / 'config').write_text('work_root: docs/work\nticket_folders: numbered\n',
+                                                    encoding='utf-8')
+            run(y_dir / '.sdlc', 'new', ('chore', 'a'))
+            commit(y_dir, 'a')
+            git(y_dir, 'checkout', '-q', '-b', 'ext')
+            run(y_dir / '.sdlc', 'new', ('chore', 'b'))
+            commit(y_dir, 'b')
+            git(y_dir, 'checkout', '-q', 'main')
+            got = [(sl, m.get('id')) for sl, m in branch_tickets(y_dir / '.sdlc', 'ext')]
+            expect(f'work_root external: branch_tickets reads <branch>:docs/work from the branch config: {got!r}',
+                   got == [('0001-a', 'T-0001'), ('0002-b', 'T-0002')])
+            with open(y_dir / '.sdlc' / 'config', 'a', encoding='utf-8') as fh:
+                fh.write('external_branch: ext\n')
+            forget_ids(y_dir)
+            rc, _, err = run(y_dir / '.sdlc', 'new', ('chore', 'c'))
+            expect(f'work_root external: new on main mints T-0003 above ext docs/work/0002-b: rc={rc} {err!r}',
+                   rc == 0 and tid(y_dir / 'docs' / 'work', '0003-c') == 'T-0003')
+
         # outside git (no worktrees to consult) the local root decides: the first id is T-0001
         solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
         rc, _, err = run(solo, 'new', ('feature', 'solo'))
@@ -5860,6 +5916,43 @@ def selftest():
                    rc == 0 and ticket_dir(nc) == nc and (nc / 'alpha' / 'handoff.md').is_file()
                    and not (nc / 'tickets').exists() and '| [alpha](alpha/handoff.md) |' in tr_text(nc / 'roadmap.md')
                    and run(nc, 'check')[0] == 0)
+
+        # ---- work_root (T-0623): new, roadmap and check use <top>/<work_root>; .sdlc keeps config and the router ----
+        wr = pathlib.Path(tmp) / 'wr' / '.sdlc'
+        ww = wr.parent / 'docs' / 'work'
+        wr.mkdir(parents=True)
+        (wr / 'config').write_text('work_root: docs/work\nticket_folders: numbered\n', encoding='utf-8')
+        rc, out, err = run(wr, 'new', ('chore', 'a'))
+        expect(f'work_root: new writes docs/work/0001-a/handoff.md, nothing under .sdlc but config, router and messages: '
+               f'rc={rc} {out!r} {err!r} sdlc={tree(wr) if wr.is_dir() else None}',
+               rc == 0 and out == str(ww / '0001-a' / 'handoff.md') and (ww / '0001-a' / 'handoff.md').is_file()
+               and tree(wr) == ['AGENTS.md', 'CLAUDE.md', 'config', 'messages']
+               and '\nrouter: .sdlc/AGENTS.md ' in tr_text(ww / '0001-a' / 'handoff.md'))
+        (ww / 'ROADMAP.md').unlink()
+        rc, out, err = run(wr, 'roadmap')
+        names = sorted(os.listdir(ww)) if ww.is_dir() else []
+        expect(f'work_root: roadmap writes a file named exactly ROADMAP.md in docs/work: rc={rc} {err!r} {names!r}',
+               rc == 0 and 'ROADMAP.md' in names and 'roadmap.md' not in names and not (wr / 'roadmap.md').exists()
+               and '| [0001-a](0001-a/handoff.md) |' in tr_text(ww / 'ROADMAP.md'))
+        rc, out, err = run(wr, 'check')
+        expect(f'work_root: check passes, no migrate-layout hint: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'migrate-layout' not in out)
+        rc, out, err = run(wr, 'claim', ('T-0001', 'tester'))
+        expect(f'work_root: claim edits docs/work/0001-a and keeps check green: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'status: claimed' in tr_text(ww / '0001-a' / 'handoff.md') and run(wr, 'check')[0] == 0)
+        rc, out, err = run(wr, 'tidy')
+        expect(f'work_root: tidy finds nothing loose in .sdlc: rc={rc} {out!r} {err!r}',
+               rc == 0 and out == 'nothing to tidy')
+        (wr / 'roadmap.md').write_text('old\n', encoding='utf-8')
+        rc, out, err = run(wr, 'tidy')
+        expect(f'work_root: a leftover .sdlc/roadmap.md is loose; tidy lists its move into docs/work/archive: '
+               f'rc={rc} {out!r} {err!r}', rc == 0 and 'roadmap.md -> ../docs/work/archive/roadmap.md' in out)
+        (wr / 'roadmap.md').unlink()
+        shutil.copytree(ww / '0001-a', wr / '0002-b')
+        edit(wr, '0002-b', r'^id: T-0001', 'id: T-0002')
+        rc, _, err = run(wr, 'check')
+        expect(f'work_root: a ticket folder left at .sdlc/0002-b fails check as a stray: rc={rc} {err!r}',
+               rc == 1 and '0002-b: ticket folder outside the ticket root' in err and 'docs/work/0002-b' in err)
 
         # ---- router: <root>/AGENTS.md holds a managed block with stage counts, open tickets and procedures ----
         def block_of(path):
