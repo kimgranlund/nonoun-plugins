@@ -11,6 +11,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0620 | [0620-docs-uppercase-masters](0620-docs-uppercase-masters/handoff.md) | docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons | feature | L2 | P2 | T-0618 | 🔵 ready |
 | T-0619 | [0619-docs-index-and-cap](0619-docs-index-and-cap/handoff.md) | docs_check: every doc listed in its home index, per-home file cap | feature | L2 | P2 | T-0618, T-0620 | 🔵 ready |
-| T-0639 | [0639-lanes-close-work-root](0639-lanes-close-work-root/handoff.md) | lanes.py close crashes in carry_lane_records under work_root | bug | L1 | P2 | none | 🔵 ready |
+| T-0639 | [0639-lanes-close-work-root](0639-lanes-close-work-root/handoff.md) | lanes.py close crashes in carry_lane_records under work_root | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 596 done, 29 dropped (git log or .NNNN-* folders)
