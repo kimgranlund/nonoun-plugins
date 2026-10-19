@@ -8,7 +8,8 @@ Usage: onboard.py setup [--dry-run] [--force] [--init]   refresh the managed blo
 Design: docs/specs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
 The .sdlc layout is read through a function-local import of the sibling tickets.py, and the root
 block names the resolved roadmap, notes, and archive paths (.sdlc/roadmap.md, .sdlc/notes.md, .sdlc/archive/, or
-.sdlc/tickets/roadmap.md, .sdlc/notes/notes.md, .sdlc/work/archive/ with `layout: topics`), the ticket root, and
+.sdlc/tickets/roadmap.md, .sdlc/notes/notes.md, .sdlc/work/archive/ with `layout: topics`, or
+docs/work/ROADMAP.md, docs/work/NOTES.md, docs/work/archive/ with `work_root: docs/work`), the ticket root, and
 the lane root from the sibling wtroot.py (`<bare parent>/lanes/` in a bare clone).
 
 setup refreshes the managed blocks a file already holds and changes nothing else; it lists on
@@ -1797,6 +1798,16 @@ def gate_layout_variant(impl):
         expect(block.version == TEMPLATE_VERSION, 'topics block is v%d' % block.version)
         rc, out, err = _call(run_check, root, impl)
         expect('current AGENTS.md' in out.splitlines(), 'topics AGENTS.md is not current: %r' % (out + err))
+    with _fixture({'.sdlc/config': 'work_root: docs/work\n'}) as root:  # T-0625: the work root's paths
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
+        expect(rc == 0 and '`docs/work/ROADMAP.md` is generated' in block.text
+               and 'notes go to `docs/work/NOTES.md`' in block.text and 'into `docs/work/archive/`' in block.text
+               and '`docs/work/` holds SDLC Lite tickets' in block.text
+               and '.sdlc/roadmap.md' not in block.text and '.sdlc/notes.md' not in block.text,
+               'a work_root repo block does not name docs/work/ROADMAP.md, docs/work/NOTES.md and docs/work/archive/')
+        rc, out, err = _call(run_check, root, impl)
+        expect('current AGENTS.md' in out.splitlines(), 'work_root AGENTS.md is not current: %r' % (out + err))
 
 
 # The lane-root and ticket-root lines of the root block (T-0607): rendered from wtroot.root() and
