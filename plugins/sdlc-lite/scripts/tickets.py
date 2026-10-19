@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -204,6 +204,20 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             rewrite, keep and `config <line>` lines and writes nothing. With nothing to move and both config lines
             present it prints `nothing to migrate` and check's output. Afterwards run onboard.py setup to refresh
             the root AGENTS.md block
+  migrate-work-root  move the tracked work records of a flat, nested (ticket_root: tickets) or topics root to one
+            flat work root <top>/<--to> (default docs/work; T-0635), pairing each roots.resolve field of the old
+            config with the same field of the new one: ticket folders (open and closed .NNNN-<slug>) and plain task
+            folders become its children, roadmap and notes become ROADMAP.md and NOTES.md, evals/, proposals/,
+            archive/ and fleet.json move under it, and any other loose entry of <root> (tidy's rule) goes to
+            <to>/archive/. config, _templates, runtime/, messages/ and the router stay in <root>. The old
+            sub-routers are removed (`remove <path>`), the ticket_root: and layout: lines dropped (`config drop
+            <line>`), `work_root: <to>` written, the roadmap, routers and mailbox entries regenerated, and check's
+            output appended. Cites are found and rewritten as migrate-layout does; a file under docs/reports/ or
+            in a closed .NNNN-<slug> folder is a frozen record, printed `keep <file> (<why>)` and never rewritten.
+            Refuses, writing nothing, on an unsafe --to (roots.Fail), another work_root already set, a *.running
+            marker under <root>, outside git, any uncommitted change, a bad ticket or router block, an unknown entry
+            in an old topic dir, or an existing target. With work_root: <to> already set it prints `nothing to
+            migrate` and check's output. --dry-run prints the lines and writes nothing
   migrate-size  rewrite each alias `size:` (SIZE_ALIASES, read as L1 to L4) to its level in the front matter of
             every ticket handoff.md (closed .NNNN-<slug> folders too) and every <root>/_templates/*.md, printing
             `<path>: size <old> -> <new>` per file. A dry run unless --apply; --apply writes and regenerates the
@@ -1211,7 +1225,9 @@ def migrate_text(text, top, f, moves):
     file-relative token in a file that moves becomes os.path.relpath from f's new dir to the moved target; any other
     named token gets only the matched component replaced by dst relative to src's parent. In a file that moves, a
     file-relative token naming no src that resolves from f's old dir to an existing path is re-expressed the same
-    way. A trailing / and a leading ./ (when the new form does not start with ../) are kept."""
+    way. A trailing / and a leading ./ (when the new form does not start with ../) are kept. A dst in another dir
+    tree (relative to src's parent it starts with ../) is collapsed, so .sdlc/roadmap.md becomes
+    docs/work/ROADMAP.md, never .sdlc/../docs/work/ROADMAP.md."""
     top = str(top)
     S = [(os.path.normpath(os.path.join(top, s)), os.path.normpath(os.path.join(top, d))) for s, d in moves]
 
@@ -1273,8 +1289,15 @@ def migrate_text(text, top, f, moves):
                 if form == 'file' and moving:
                     new = rel_form(tok, os.path.normpath(os.path.join(fdir, tok)))
                 else:
-                    parts = parts[:i] + [posixpath.relpath(dst, posixpath.dirname(src) or '.')] + parts[i + 1:]
+                    rel = posixpath.relpath(dst, posixpath.dirname(src) or '.')
+                    parts = parts[:i] + [rel] + parts[i + 1:]
                     new = '/'.join(parts)
+                    if rel.startswith('../'):  # a move to another root (migrate-work-root): collapse .sdlc/../docs
+                        new = posixpath.normpath(new)
+                        if tok.endswith('/') and not new.endswith('/'):
+                            new += '/'
+                        if tok.startswith('./') and not new.startswith('../'):
+                            new = './' + new
                 break
             if new is not None:
                 break
@@ -3828,6 +3851,183 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
     return '\n'.join(lines + [checked])
 
 
+STATE_KEEP = ('AGENTS.md', 'CLAUDE.md', 'config', 'layout.md', 'board.md', 'gate-ledger.jsonl', 'messages', 'runtime',
+              'supervisor', 'goals', 'dogfood')  # what stays in <root> after migrate-work-root, besides _ and . names
+
+
+def cmd_migrate_work_root(root, to='docs/work', dry_run=False, rewrite_refs=False):
+    """Move the tracked work records of a flat, nested (`ticket_root: tickets`) or topics root to the work root
+    <top>/<to> (T-0635), one flat shape: the move plan pairs each roots.resolve field of the old config with the
+    same field of the new one. Ticket folders (open and closed .NNNN-<slug>) and plain task folders become children
+    of <to>; roadmap and notes become <to>/ROADMAP.md and <to>/NOTES.md; evals/, proposals/, archive/ and fleet.json
+    move under <to>; any other loose entry of <root> (tidy's rule) goes to <to>/archive/<name>. config, _templates,
+    runtime/, messages/ and the router stay in <root>. The old sub-routers are removed, the `ticket_root:` and
+    `layout:` lines dropped, `work_root: <to>` written, the roadmap, routers and mailbox entries regenerated, and
+    check run. Cites are rewritten as migrate-layout does (migrate_text; --rewrite-refs, else refuse naming them);
+    a file under docs/reports/ or a closed .NNNN-<slug> folder is a frozen record and kept as it is. Refuses,
+    writing nothing, on an unsafe <to>, another work_root already set, a *.running marker, outside git, a dirty
+    work tree, a bad ticket or router block, an old topic dir holding an unknown entry, or an existing target."""
+    label = 'migrate-work-root'
+    root = root.resolve()  # every path below is compared with and made relative to the resolved git toplevel
+    old = roots.resolve(root)
+    running = sorted(str(p.relative_to(root)) for p in root.rglob('*.running')) if root.is_dir() else []
+    if running:
+        raise Fail(f'{label}: a role is running (*.running markers): {", ".join(running)}; rerun once they finish; '
+                   f'nothing written')
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    p = subprocess.run(['git', '-C', str(root.resolve()), 'rev-parse', '--show-toplevel'], env=env,
+                       capture_output=True, text=True)
+    top = pathlib.Path(p.stdout.strip()).resolve() if p.returncode == 0 else None
+    try:
+        rel = root.resolve().relative_to(top) if top else None
+    except ValueError:
+        rel = None
+    if rel is None:
+        raise Fail(f'{label}: {root} is not inside a git work tree; the cite scan needs git to find the files that '
+                   f'cite the moved paths; nothing written')
+    text = read_text(root / 'config') if (root / 'config').is_file() else ''
+    keep = [x for x in text.splitlines(keepends=True)
+            if not (x.strip() and not x.lstrip().startswith('#')
+                    and (TICKET_ROOT_RE.fullmatch(x.rstrip('\r\n')) or LAYOUT_RE.fullmatch(x.rstrip('\r\n'))
+                         or roots.WORK_ROOT_RE.fullmatch(x.rstrip('\r\n'))))]
+    body = ''.join(keep)
+    new_text = body + ('' if not body or body.endswith('\n') else '\n') + f'work_root: {to}\n'
+    new = roots.resolve_text(top, rel, new_text)
+    cur = roots.parse(text).work_root
+    if cur and old.work.resolve() != new.work.resolve():
+        raise Fail(f'{label}: {root}/config already sets {cur[0][1]}; nothing written')
+    p = subprocess.run(['git', '-C', str(top), 'status', '--porcelain'], env=env, capture_output=True, text=True)
+    if p.returncode:
+        raise Fail(f'{label}: git status failed: {p.stderr.strip()}; nothing written')
+    dirty = p.stdout.splitlines()
+    if dirty:
+        raise Fail(f'{label}: the work tree has uncommitted changes; commit or stash them first:\n'
+                   + ''.join(f'  {x}\n' for x in dirty[:10]) + ('  ...\n' if len(dirty) > 10 else '')
+                   + 'nothing written')
+    ts = load(old.tickets)
+    errs = problems(ts, config_numbered(root), areas=config_areas(root))
+    if errs:
+        raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
+    router_preflight(root)
+    if cur:
+        return 'nothing to migrate\n' + cmd_check(root)
+    subs = [path for _, path, _ in router_files(root)][2:]  # the sub-routers; <root>/AGENTS.md and CLAUDE.md stay
+    moves, unknown = [], []
+    taken = {n for n, _ in ts}
+
+    def add(src, dst):
+        if (src.exists() or src.is_symlink()) and src != dst:
+            moves.append((src, dst))
+
+    topic_dirs = ('tickets', 'work', 'notes') if old.layout == 'topics' else ('tickets',) if old.nested else ()
+    if old.tickets != root:
+        for e in sorted(old.tickets.iterdir()):
+            if e in subs or e == old.roadmap:
+                continue
+            if e.is_dir() and (e.name in taken or DOT_RE.fullmatch(e.name)):
+                add(e, new.tickets / e.name)
+            else:
+                unknown.append(e)
+    if old.layout == 'topics':
+        for e in sorted(old.tasks.iterdir()) if old.tasks.is_dir() else []:
+            if e not in subs and e != old.archive:
+                add(e, new.tasks / e.name)
+        for e in sorted(old.notes.parent.iterdir()) if old.notes.parent.is_dir() else []:
+            if e not in subs and e != old.notes:
+                unknown.append(e)
+    if unknown:
+        raise Fail(f'{label}: these entries of an old topic dir have no place in the work root; move or remove each, '
+                   f'commit, and rerun:\n' + ''.join(f'  {e.relative_to(top).as_posix()}\n' for e in unknown)
+                   + 'nothing written')
+    for f in ('roadmap', 'notes', 'evals', 'proposals', 'archive', 'fleet'):
+        add(getattr(old, f), getattr(new, f))
+    moved = {s for s, _ in moves}
+    globs = config_top_level_allow(root)
+    loose = []
+    for e in sorted(root.iterdir()):
+        n = e.name
+        if e in moved or n in STATE_KEEP or n.startswith('_') or (n.startswith('.') and not DOT_RE.fullmatch(n)):
+            continue
+        if n in topic_dirs:
+            continue
+        if e.is_dir() and (n in taken or DOT_RE.fullmatch(n) or (e / 'handoff.md').is_file()
+                           or (e / 'plan-doc.md').is_file()):
+            add(e, new.tasks / n)
+        elif not any(fnmatch.fnmatch(n, g) for g in globs):
+            loose.append(n)
+    ignored, _ = git_ignored_tracked(root, loose)
+    moves += [(root / n, new.archive / n) for n in loose if n not in ignored]
+    clash = [d for _, d in moves if d.exists() or d.is_symlink()]
+    if clash:
+        raise Fail(f'{label}: {", ".join(d.relative_to(top).as_posix() for d in clash)} already exist(s); '
+                   f'nothing written')
+    tmoves = [(s.relative_to(top).as_posix(), d.relative_to(top).as_posix()) for s, d in moves]
+    skip = {old.roadmap.relative_to(top).as_posix()} | {s.relative_to(top).as_posix() for s in subs}
+    runtime = old.runtime.relative_to(top).as_posix() + '/'
+    cands = set()
+    if moves:
+        names = sorted({posixpath.basename(s) for s, _ in tmoves})
+        for extra, paths in ((['--untracked'], []),
+                             (['--untracked', '--no-exclude-standard'], [rel.as_posix()] + [s for s, _ in tmoves])):
+            pats = [x for n in names for x in ('-e', n)] + (['-e', '../'] if paths else [])
+            q = subprocess.run(['git', '-C', str(top), 'grep', *extra, '-I', '-l', '-z', '--full-name', '-F', *pats,
+                                '--', *paths], env=env, capture_output=True, text=True)
+            if q.returncode not in (0, 1):
+                raise Fail(f'{label}: cite scan failed (git grep): {q.stderr.strip()}; nothing written')
+            cands.update(f for f in q.stdout.split('\0') if f)
+    tdir = old.tickets.relative_to(top).as_posix()
+    rewrites, keeps, unreadable = {}, [], []
+    for f in sorted(cands - skip):
+        if f.startswith(runtime):
+            continue
+        try:
+            body = (top / f).read_bytes().decode('utf-8', 'surrogateescape')
+        except OSError:
+            unreadable.append(f)
+            continue
+        if migrate_text(body, top, f, tmoves) == body:
+            continue
+        sub = f[len(tdir) + 1:] if f.startswith(tdir + '/') else ''
+        if f.startswith('docs/reports/'):
+            keeps.append((f, 'dated record under docs/reports/'))
+        elif sub and DOT_RE.fullmatch(sub.split('/', 1)[0]):
+            keeps.append((f, 'frozen closed-ticket record'))
+        else:
+            rewrites[f] = migrate_text(body, top, f, tmoves)
+    if unreadable:
+        raise Fail(f'{label}: cannot read these files to scan them for cites:\n'
+                   + ''.join(f'  {f}\n' for f in unreadable) + 'nothing written')
+    if rewrites and not rewrite_refs:
+        raise Fail(f'{label} would move these paths, but other files cite them:\n'
+                   + ''.join(f'  {f}\n' for f in sorted(rewrites))
+                   + 'rerun with --rewrite-refs (rewrite them to the new paths); nothing written')
+    lines = ([f'move {s} -> {d}' for s, d in tmoves]
+             + [f'remove {s.relative_to(top).as_posix()}' for s in subs if s.is_file()]
+             + [f'rewrite {f}' for f in sorted(rewrites)] + [f'keep {f} ({why})' for f, why in sorted(keeps)]
+             + [f'config drop {x.strip()}' for x in text.splitlines(keepends=True) if x not in keep]
+             + [f'config work_root: {to}'])
+    if dry_run:
+        return '\n'.join(lines)
+    for f, body in rewrites.items():
+        (top / f).write_bytes(body.encode('utf-8', 'surrogateescape'))
+    for s, d in moves:
+        d.parent.mkdir(parents=True, exist_ok=True)
+        s.rename(d)
+    for s in subs:
+        if s.is_file():
+            s.unlink()
+    for d in (root / n for n in topic_dirs):
+        if d.is_dir() and not any(d.iterdir()):
+            d.rmdir()
+    (root / 'config').write_text(new_text, encoding='utf-8')
+    write_roadmap(root, load(layout_paths(root).tickets))
+    try:
+        checked = cmd_check(root)
+    except Fail as e:
+        raise Fail(f'migrated, but check failed:\n{e}')
+    return '\n'.join(lines + [checked])
+
+
 def run(root, cmd, args=(), **kw):
     """(exit code, stdout, stderr). The CLI and the selftest both go through here.
     kw goes to new, close, roadmap, check and archive (numbered=). Every command but new goes through root_guard."""
@@ -3855,6 +4055,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_number(root, **kw), ''
         if cmd == 'migrate-layout':
             return 0, cmd_migrate_layout(root, **kw), ''
+        if cmd == 'migrate-work-root':
+            return 0, cmd_migrate_work_root(root, **kw), ''
         if cmd == 'migrate-size':
             return 0, cmd_migrate_size(root, **kw), ''
         if cmd == 'blockers':
@@ -7094,6 +7296,133 @@ def selftest():
             expect(f'(mig) a root outside git refuses: rc={rc} {err!r}',
                    rc == 1 and 'not inside a git work tree' in err and (nr / 'alpha').is_dir())
 
+            # ---- migrate-work-root (T-0635): flat, nested and topics sources into one flat docs/work shape ----
+            def wcommit(cwd):
+                mgit(cwd, 'add', '-A')
+                mgit(cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                     'commit', '--no-verify', '--allow-empty', '-qm', 'x')
+
+            def snap(top):
+                return sorted((p.relative_to(top).as_posix(), p.read_bytes()) for p in top.rglob('*')
+                              if p.is_file() and '.git' not in p.relative_to(top).parts)
+
+            wf = mig_root('wr-flat', 'ticket_folders: numbered\n')
+            top = wf.parent
+            ww = top / 'docs' / 'work'
+            run(wf, 'new', ('chore', 'a', 'A'))
+            run(wf, 'new', ('chore', 'b', 'B'))
+            edit(wf, '0001-a', r'^status:.*$', 'status: done')
+            with (wf / '0001-a' / 'handoff.md').open('a', encoding='utf-8') as fh:
+                fh.write('see .sdlc/0002-b/handoff.md and ../../README.md\n')
+            (wf / '0001-a').rename(wf / '.0001-a')
+            wr(wf / 'plain-task' / 'handoff.md', 'plain task\n')
+            wr(wf / 'old-stuff' / 'x.md', 'loose\n')
+            wr(wf / 'evals' / 'AGENTS.md', 'evals\n')
+            wr(wf / 'proposals' / 'p.md', 'proposal\n')
+            wr(wf / 'fleet.json', '{}\n')
+            wr(wf / 'notes.md', '# Notes\nsee 0002-b/handoff.md\n')
+            wr(wf / '_templates' / 'keep.txt', 'x\n')
+            wr(wf / 'runtime' / 'tasks' / 'k.txt', 'x\n')
+            wr(top / '.gitignore', '.sdlc/runtime/\n')
+            wr(top / 'README.md', 'readme\n')
+            wr(top / 'docs' / 'guide.md', 'see .sdlc/0002-b/handoff.md and .sdlc/roadmap.md and .sdlc/notes.md\n')
+            wr(top / 'docs' / 'reports' / 'r.md', 'see .sdlc/0002-b/handoff.md\n')
+            run(wf, 'roadmap')
+            wcommit(top)
+            closed_before = (wf / '.0001-a' / 'handoff.md').read_bytes()
+            before = snap(top)
+            wr(wf / 'runtime' / 'tasks' / '0002-b' / 'solo.running', 'x\n')
+            rc, _, err = run(wf, 'migrate-work-root', to='docs/work', rewrite_refs=True)
+            expect(f'(wroot) a *.running marker refuses, writing nothing: rc={rc} {err!r}',
+                   rc == 1 and 'solo.running' in err and err.endswith('nothing written')
+                   and snap(top) == sorted(before + [('.sdlc/runtime/tasks/0002-b/solo.running', b'x\n')]))
+            (wf / 'runtime' / 'tasks' / '0002-b' / 'solo.running').unlink()
+            with (top / 'README.md').open('a', encoding='utf-8') as fh:
+                fh.write('x\n')
+            rc, _, err = run(wf, 'migrate-work-root', to='docs/work', rewrite_refs=True)
+            expect(f'(wroot) an uncommitted change refuses, writing nothing: rc={rc} {err!r}',
+                   rc == 1 and 'uncommitted changes' in err and err.endswith('nothing written')
+                   and not ww.exists() and (wf / '0002-b').is_dir())
+            mgit(top, 'checkout', '-q', '--', 'README.md')
+            wr(ww / '0002-b' / 'x.md', 'x\n')
+            wcommit(top)
+            before = snap(top)
+            rc, _, err = run(wf, 'migrate-work-root', to='docs/work', rewrite_refs=True)
+            expect(f'(wroot) an existing target refuses, writing nothing: rc={rc} {err!r}',
+                   rc == 1 and 'docs/work/0002-b already exist' in err and snap(top) == before)
+            shutil.rmtree(top / 'docs' / 'work')
+            wcommit(top)
+            before = snap(top)
+            rc, _, err = run(wf, 'migrate-work-root', to='.sdlc/work', rewrite_refs=True)
+            expect(f'(wroot) a target under .sdlc refuses, writing nothing: rc={rc} {err!r}',
+                   rc == 1 and 'nothing written' in err and snap(top) == before)
+            rc, _, err = run(wf, 'migrate-work-root', to='docs/work')
+            el = err.splitlines()
+            expect(f'(wroot) cites without --rewrite-refs refuse, naming live files only: rc={rc} {err!r}',
+                   rc == 1 and '  docs/guide.md' in el and '--rewrite-refs' in err
+                   and not any(x.strip().startswith(('docs/reports/', '.sdlc/.0001-a/')) for x in el)
+                   and snap(top) == before)
+            rc, out, err = run(wf, 'migrate-work-root', to='docs/work', dry_run=True, rewrite_refs=True)
+            ol = out.splitlines()
+            expect(f'(wroot) dry run lists moves, rewrites, keeps and config, writing nothing: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'move .sdlc/roadmap.md -> docs/work/ROADMAP.md' in ol
+                   and 'move .sdlc/notes.md -> docs/work/NOTES.md' in ol
+                   and 'move .sdlc/old-stuff -> docs/work/archive/old-stuff' in ol
+                   and 'rewrite docs/guide.md' in ol
+                   and 'keep docs/reports/r.md (dated record under docs/reports/)' in ol
+                   and 'keep .sdlc/.0001-a/handoff.md (frozen closed-ticket record)' in ol
+                   and 'config work_root: docs/work' in ol and snap(top) == before)
+            rc, out, err = run(wf, 'migrate-work-root', to='docs/work', rewrite_refs=True)
+            got = sorted(os.listdir(ww)) if ww.is_dir() else []
+            expect(f'(wroot) flat fixture lands in docs/work with exact-case ROADMAP.md and NOTES.md, state kept in '
+                   f'.sdlc, config set, check green: rc={rc} {out!r} {err!r} work={got!r} sdlc={sorted(os.listdir(wf))!r}',
+                   rc == 0 and got == ['.0001-a', '0002-b', 'AGENTS.md', 'CLAUDE.md', 'NOTES.md', 'ROADMAP.md',
+                                       'archive', 'evals', 'fleet.json', 'plain-task', 'proposals']
+                   and sorted(os.listdir(ww / 'archive')) == ['old-stuff']
+                   and sorted(os.listdir(wf)) == ['AGENTS.md', 'CLAUDE.md', '_templates', 'config', 'messages',
+                                                  'runtime']
+                   and (wf / 'config').read_text(encoding='utf-8') == 'ticket_folders: numbered\nwork_root: docs/work\n'
+                   and rd('docs/guide.md') == ('see docs/work/0002-b/handoff.md and docs/work/ROADMAP.md and '
+                                               'docs/work/NOTES.md\n')
+                   and rd('docs/reports/r.md') == 'see .sdlc/0002-b/handoff.md\n'
+                   and (ww / '.0001-a' / 'handoff.md').read_bytes() == closed_before
+                   and rd('docs/work/NOTES.md') == '# Notes\nsee 0002-b/handoff.md\n'
+                   and run(wf, 'check')[0] == 0)
+            wcommit(top)
+            rc, out, err = run(wf, 'migrate-work-root', to='docs/work')
+            expect(f'(wroot) a second run prints nothing to migrate: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.splitlines()[0] == 'nothing to migrate')
+            # nested (ticket_root: tickets) and topics sources land in the same flat shape, layout lines dropped
+            wn = mig_root('wr-nested', 'ticket_root: tickets\n')
+            run(wn, 'new', ('chore', 'a', 'A'))
+            wcommit(wn.parent)
+            rc, out, err = run(wn, 'migrate-work-root', to='docs/work')
+            wnw = wn.parent / 'docs' / 'work'
+            got = sorted(os.listdir(wnw)) if wnw.is_dir() else []
+            expect(f'(wroot) a nested source lands flat in docs/work: rc={rc} {out!r} {err!r} work={got!r}',
+                   rc == 0 and got == ['AGENTS.md', 'CLAUDE.md', 'ROADMAP.md', 'a']
+                   and not (wn / 'tickets').exists()
+                   and (wn / 'config').read_text(encoding='utf-8') == 'work_root: docs/work\n'
+                   and run(wn, 'check')[0] == 0)
+            wt = mig_root('wr-topics', 'ticket_root: tickets\nlayout: topics\n')
+            run(wt, 'new', ('chore', 'a', 'A'))
+            run(wt, 'new', ('chore', 'b', 'B'))
+            wr(wt / 'work' / 'task-x' / 'handoff.md', 'plain\n')
+            wr(wt / 'notes' / 'notes.md', '# Notes\n')
+            run(wt, 'roadmap')
+            wcommit(wt.parent)
+            tc = run(wt, 'check')[0]
+            rc, out, err = run(wt, 'migrate-work-root', to='docs/work', rewrite_refs=True)
+            wtw = wt.parent / 'docs' / 'work'
+            got = sorted(os.listdir(wtw)) if wtw.is_dir() else []
+            expect(f'(wroot) a topics source lands in the same flat shape with its ticket_root and layout lines '
+                   f'dropped: rc={rc} {out!r} {err!r} work={got!r} sdlc={sorted(os.listdir(wt))!r}',
+                   tc == 0 and rc == 0
+                   and got == ['AGENTS.md', 'CLAUDE.md', 'NOTES.md', 'ROADMAP.md', 'a', 'b', 'task-x']
+                   and sorted(os.listdir(wt)) == ['AGENTS.md', 'CLAUDE.md', 'config', 'messages']
+                   and (wt / 'config').read_text(encoding='utf-8') == 'work_root: docs/work\n'
+                   and run(wt, 'check')[0] == 0)
+
     # ---- T-0543: the default close gates on the verifier verdict and appends ## Outcome; T-0529 placeholder gate;
     # T-0535 citation_skip; runtime records are read and never cite ----
     with tempfile.TemporaryDirectory() as tmp:
@@ -7880,6 +8209,15 @@ def main(argv):
                    help='print each move, rewrite, keep and config line; write nothing')
     p.add_argument('--rewrite-refs', action='store_true',
                    help='rewrite files that cite a moved path to its new path instead of refusing')
+    p = sub.add_parser('migrate-work-root', help='move the tracked work records of a flat, nested or topics root to '
+                                                 'one flat work root (default docs/work), rewrite cites with '
+                                                 '--rewrite-refs, set work_root:, run check')
+    p.add_argument('--to', default='docs/work', metavar='PATH',
+                   help='the work root, relative to the dir holding <root> (default: docs/work)')
+    p.add_argument('--dry-run', action='store_true',
+                   help='print each move, remove, rewrite, keep and config line; write nothing')
+    p.add_argument('--rewrite-refs', action='store_true',
+                   help='rewrite live files that cite a moved path to its new path instead of refusing')
     p = sub.add_parser('migrate-size', help='rewrite the 0.21.x alias sizes to levels (L1 to L4) in ticket and '
                                             'template front matter; a dry run unless --apply')
     p.add_argument('--apply', action='store_true', help='write the rewrites and regenerate the roadmap')
@@ -7903,6 +8241,10 @@ def main(argv):
     if cmd == 'branch':
         kw['worktree'] = a.worktree
     if cmd == 'migrate-layout':
+        kw['dry_run'] = a.dry_run
+        kw['rewrite_refs'] = a.rewrite_refs
+    if cmd == 'migrate-work-root':
+        kw['to'] = a.to
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs
     if cmd in ('migrate-size', 'tidy'):
