@@ -11,6 +11,8 @@ claimed_by: sdlc-lite-author 2026-10-19
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
+base: c3e435b7778ec1fd7ecc3556952129169a0dfca9
+
 ## Goal
 lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root files auto-resolve on land.
 
