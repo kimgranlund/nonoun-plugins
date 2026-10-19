@@ -958,6 +958,21 @@ def selftest():
             (root / 'config').write_text('ticket_root: tickets\n')
             td2 = new_task('', 'In the ticket root', root=str(root))
             expect('new task: default slug under ticket_root', td2.parent == root / 'tickets' and td2.name.startswith('solo-'))
+            wproj = tmp / 'wrproj'  # work_root: the new plain task folder lands in the work root, with its solo record
+            (wproj / '.sdlc').mkdir(parents=True)
+            (wproj / '.sdlc' / 'config').write_text('work_root: docs/work\n')
+            td3 = new_task('wr-task', 'In the work root', root=str(wproj / '.sdlc'))
+            expect('new task: under work_root: docs/work the folder is docs/work/wr-task and .sdlc holds none',
+                   td3 == wproj / 'docs' / 'work' / 'wr-task' and (td3 / 'handoff.md').is_file()
+                   and not (wproj / '.sdlc' / 'wr-task').exists())
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'wr-cli',
+                                 '--tier', 'L1', '--brief', 'cli brief'], cwd=str(wproj), capture_output=True, text=True,
+                                env=dict(os.environ), timeout=60)
+            wrec = order.records_dir(wproj / 'docs' / 'work' / 'wr-cli') / 'runs.jsonl'
+            recs = [json.loads(x) for x in wrec.read_text().splitlines()] if wrec.is_file() else []
+            expect(f'new task CLI: under work_root rc 0, docs/work/wr-cli/handoff.md and one solo record, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
+                   cp.returncode == 0 and (wproj / 'docs' / 'work' / 'wr-cli' / 'handoff.md').is_file()
+                   and [x.get('role') for x in recs] == ['solo'] and not (wproj / '.sdlc' / 'wr-cli').exists())
             # The CLI path end to end: no ticket, a shim claude, cwd is the project.
             pr = tmp / 'cliproj'
             (pr / '.sdlc').mkdir(parents=True)
