@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:0dfc60cd479c -->
+<!-- sdlc-lite:managed:start v1 sha256:a87941fc4c82 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,10 +13,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0577 --rewrite-refs rewrites citations inside frozen records (docs/work/0577-rewrite-refs-frozen-paths)
   - T-0583 Driver loop wakes on role completion or state change, not timed polling (docs/work/0583-event-driven-driver)
   - T-0584 tickets.py inventory: landed state by content and patch identity (docs/work/0584-tickets-inventory)
-- ready: 3
+- ready: 4
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
   - T-0619 docs_check: every doc listed in its home index, per-home file cap (docs/work/0619-docs-index-and-cap)
   - T-0620 docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons (docs/work/0620-docs-uppercase-masters)
+  - T-0639 lanes.py close crashes in carry_lane_records under work_root (docs/work/0639-lanes-close-work-root)
 - claimed: 0
 - paused: 0
 - blocked: 0
