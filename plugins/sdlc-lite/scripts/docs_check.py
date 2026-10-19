@@ -16,9 +16,13 @@ registry. S-2, S-4, S-5 and S-6 apply only to a file that opts in with a `doc-ty
 is silent without the registry.
 
 The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without that file the
-eleven default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
+twelve default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
 D-11, D-12 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
 belong to onboard.py check, not to this script.
+
+A home of kind `work` holds ticket and task records, not documents: D-7, D-9, D-12 and B-1a skip it, and the
+record rule B-2a applies instead, as it does under .sdlc/ (ticket and task folders, the record folders, the
+entry files and the ROADMAP.md and NOTES.md singletons named by roots.py).
 """
 import argparse
 import datetime
@@ -31,8 +35,9 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import onboard  # noqa: E402
+import roots  # noqa: E402
 
-DEFAULT_HOMES = ('specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
+DEFAULT_HOMES = ('work', 'specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 ENTRY_FILES = ('AGENTS.md', 'CLAUDE.md', 'README.md')
 TOP_FILES = ENTRY_FILES + ('layout.md',)
 TOPIC_KINDS = ('specs', 'planning', 'references', 'guides', 'decisions')
@@ -60,6 +65,8 @@ RETRY_NAME = re.compile(r'^[a-z][a-z-]*-L\d-\d+\.md$')
 SDLC_RECORD_DIRS = ('tickets', 'work', 'notes', 'messages', 'evals', 'proposals', 'supervisor', '_templates', 'decompose')
 SDLC_LOOSE_MD = ('AGENTS.md', 'CLAUDE.md', 'notes.md', 'roadmap.md', 'board.md')
 TICKET_DIR = re.compile(r'^\.?\d{4}-')
+WORK_RECORD_DIRS = ('archive', 'evals', 'proposals')
+WORK_LOOSE_MD = ENTRY_FILES + (roots.ROADMAP, roots.NOTES)
 PLANNING_AGE_DAYS = 30
 OTHER_MAX_AHEAD_DAYS = 90
 ENTRY_TARGET_DOCS = 60
@@ -162,6 +169,29 @@ def legacy_match(layout, rel):
     return False
 
 
+def record_findings(paths, prefix, record_dirs, loose_md):
+    """B-2a over one record home: paths are relative to it, prefix is the home as a finding path."""
+    have = set(paths)
+    flagged = set()
+    out = []
+    for rel in paths:
+        if not rel.lower().endswith('.md'):
+            continue
+        if '/' not in rel:
+            if rel not in loose_md:
+                out.append(Finding('warning', 'B-2a', prefix + rel, 'loose Markdown file outside the record types'))
+            continue
+        top = rel.split('/', 1)[0]
+        if top in record_dirs or TICKET_DIR.match(top) or top.startswith('verify-') or top in flagged:
+            continue
+        if top + '/handoff.md' in have or any(p.startswith(top + '/step-') for p in paths):
+            continue
+        flagged.add(top)
+        out.append(Finding('warning', 'B-2a', prefix + top + '/',
+                           'folder is not a ticket folder, a task folder (handoff.md or step-N/), or a known record folder'))
+    return out
+
+
 def evidence_dirs(files, kinds):
     """Folders named like a sibling report: docs/<reports-home>/.../<stem>/ next to <stem>.md."""
     have = set(files)
@@ -211,6 +241,9 @@ def run(root, only=None, today=None, disable=()):
     def kind_of(rel):
         return kinds.get(rel.split('/', 1)[0]) if '/' in rel else None
 
+    records = 'work-records' not in disable
+    work = lambda rel: records and kind_of(rel) == 'work'  # noqa: E731
+
     entry = lambda rel: rel.rsplit('/', 1)[-1] in ENTRY_FILES  # noqa: E731
     md = lambda rel: rel.lower().endswith('.md')  # noqa: E731
 
@@ -225,7 +258,7 @@ def run(root, only=None, today=None, disable=()):
             seen.add(top)
             if any(not legacy_match(layout, r) for r in files if r.startswith(top + '/')):
                 out.append(Finding('error', 'D-1', 'docs/' + top + '/',
-                                   'not one of the eleven default homes or a listed home with a ## Kinds row'))
+                                   'not one of the twelve default homes or a listed home with a ## Kinds row'))
         for name, kind in custom:
             out.append(Finding('info', 'D-1', 'docs/' + name + '/', 'custom home bound to kind %s' % kind))
     for rel in files:
@@ -260,7 +293,7 @@ def run(root, only=None, today=None, disable=()):
                 if stamp and (today - stamp).days > PLANNING_AGE_DAYS:
                     add('warning', 'D-8', rel, 'status %s for more than %d days; move to archive/ after its content is promoted'
                         % (fm.get('status'), PLANNING_AGE_DAYS))
-        if on('D-9') and top is not None and not base.startswith('.') and not in_ev:
+        if on('D-9') and top is not None and not base.startswith('.') and not in_ev and not work(rel):
             sm = re.match(r'^(.*)\.(sha256|json)$', base)
             sidecar = bool(sm) and ('docs/' + rel.rsplit('/', 1)[0] + '/' + sm.group(1) + '.md') in repo.files
             if kind == 'assets' and md(rel) and not entry(rel):
@@ -289,7 +322,7 @@ def run(root, only=None, today=None, disable=()):
                     add('warning', 'D-11', rel, 'entry file has %d lines, over its %d-line target' % (n, _entry_target(rel)))
             elif n > DOC_LINE_LIMIT:
                 add('warning', 'D-11', rel, 'document has %d lines, over the %d-line soft limit' % (n, DOC_LINE_LIMIT))
-        if on('D-12') and not in_ev and base not in ENTRY_FILES and base not in TOP_FILES:
+        if on('D-12') and not in_ev and base not in ENTRY_FILES and base not in TOP_FILES and not work(rel):
             problems = []
             stem, dot, ext = base.rpartition('.')
             if not dot:
@@ -327,7 +360,7 @@ def run(root, only=None, today=None, disable=()):
         homes_topics = {}
         for rel in files:
             parts = rel.split('/')
-            if len(parts) < 2 or parts[0] not in kinds or entry(rel) or not md(rel) or under(ev, rel):
+            if len(parts) < 2 or parts[0] not in kinds or entry(rel) or not md(rel) or under(ev, rel) or work(rel):
                 continue
             homes_topics.setdefault(parts[0], 0)
             homes_topics[parts[0]] += 1
@@ -344,6 +377,8 @@ def run(root, only=None, today=None, disable=()):
     if on('B-1a'):
         for rel in files:
             # a report's evidence folder keeps copies of run output on purpose (the zone D-9 also treats as evidence)
+            if work(rel):
+                continue
             if GENERATED_NAME.match(rel.rsplit('/', 1)[-1]) and not ('B-1a-evidence' not in disable and under(ev, rel)):
                 add('error', 'B-1a', rel, 'generated-file name under docs/; run output belongs in .sdlc/')
     if on('B-3a'):
@@ -364,23 +399,10 @@ def run(root, only=None, today=None, disable=()):
                         add('warning', 'B-3a', rel, 'docs file links to a path under .sdlc/: %s' % target)
     if on('B-2a'):
         sdlc = [p[len('.sdlc/'):] for p in repo.files if p.startswith('.sdlc/')]
-        have = set(sdlc)
-        flagged = set()
-        for rel in sdlc:
-            if not md(rel):
-                continue
-            if '/' not in rel:
-                if rel not in SDLC_LOOSE_MD:
-                    out.append(Finding('warning', 'B-2a', '.sdlc/' + rel, 'loose Markdown file outside the record types'))
-                continue
-            top = rel.split('/', 1)[0]
-            if top in SDLC_RECORD_DIRS or TICKET_DIR.match(top) or top.startswith('verify-') or top in flagged:
-                continue
-            if top + '/handoff.md' in have or any(p.startswith(top + '/step-') for p in sdlc):
-                continue
-            flagged.add(top)
-            out.append(Finding('warning', 'B-2a', '.sdlc/' + top + '/',
-                               'folder is not a ticket folder, a task folder (handoff.md or step-N/), or a known record folder'))
+        out.extend(record_findings(sdlc, '.sdlc/', SDLC_RECORD_DIRS, SDLC_LOOSE_MD))
+        for name in sorted({rel.split('/', 1)[0] for rel in files if work(rel)}):
+            inside = [rel[len(name) + 1:] for rel in files if rel.startswith(name + '/')]
+            out.extend(record_findings(inside, 'docs/' + name + '/', WORK_RECORD_DIRS, WORK_LOOSE_MD))
     concept_rules(repo, kinds, today, add, on, root)
     standards_rules(repo, kinds, add, on, root)
     out.sort(key=lambda f: (f.rule, f.path, f.message))
@@ -625,9 +647,13 @@ def _mtime(root, rel):
 
 
 def retry_counts(root):
+    """Role-result retry files under .sdlc/ and docs work homes (records), and elsewhere under docs/ (flagged)."""
     repo = Repo(root)
-    sdlc = sum(1 for p in repo.files if p.startswith('.sdlc/') and RETRY_NAME.match(p.rsplit('/', 1)[-1]))
-    docs = sum(1 for p in repo.files if p.startswith('docs/') and RETRY_NAME.match(p.rsplit('/', 1)[-1]))
+    kinds, _ = home_kinds(load_layout(root))
+    retry = [p for p in repo.files if RETRY_NAME.match(p.rsplit('/', 1)[-1])]
+    record = lambda p: p.startswith('.sdlc/') or (p.startswith('docs/') and p.count('/') > 1 and kinds.get(p.split('/')[1]) == 'work')  # noqa: E731
+    sdlc = sum(1 for p in retry if record(p))
+    docs = sum(1 for p in retry if p.startswith('docs/') and not record(p))
     return sdlc, docs
 
 
@@ -858,6 +884,22 @@ def gate_boundary(runner):
             raise GateFailure('--only boundary did not select only B rules')
 
 
+def gate_work_home(runner):
+    """Ticket folders and the UPPERCASE singletons under docs/work/ raise nothing; a stray file there is flagged."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, 'docs/work/0001-a/handoff.md', '# H\n')
+        _write(tmp, 'docs/work/.0002-b/builder-L1-2.md', '# B\n')
+        _write(tmp, 'docs/work/ROADMAP.md', '# R\n')
+        _write(tmp, 'docs/work/NOTES.md', '# N\n')
+        bad = [f.line() for f in runner(tmp) if f.level != 'info']
+        if bad:
+            raise GateFailure('work records were flagged: %r' % bad)
+        _write(tmp, 'docs/work/stray.md', '# S\n')
+        if not any(f.path == 'docs/work/stray.md' for f in runner(tmp)):
+            raise GateFailure('a stray file under docs/work/ was not flagged')
+
+
 def _real(root):
     return run(root, today=TODAY)
 
@@ -873,6 +915,8 @@ def selftest():
              ('boundary', gate_boundary, _real, [('drops B-1a', _without('B-1a')), ('drops B-3a', _without('B-3a')),
                                                  ('drops B-2a', _without('B-2a')),
                                                  ('flags an evidence folder', lambda root: run(root, today=TODAY, disable=('B-1a-evidence',)))]),
+             ('work-home', gate_work_home, _real, [('drops B-2a', _without('B-2a')),
+                                                   ('applies the docs rules to work/', _without('work-records'))]),
              ('read-only', gate_read_only, _real, [])]
     for name, gate, real, defects in gates:
         problems = []
@@ -922,7 +966,8 @@ def main(argv=None):
         return 2
     if only is None or 'boundary' in only or 'B-1a' in only:
         sd, dc = retry_counts(root)
-        sys.stdout.write('info B-1a: %d role-result retry files under .sdlc/ (they belong there, not flagged), %d under docs/ (flagged above)\n' % (sd, dc))
+        sys.stdout.write('info B-1a: %d role-result retry files under .sdlc/ or a docs work home (they belong there, not flagged), '
+                         '%d elsewhere under docs/ (flagged above)\n' % (sd, dc))
     return report(findings, sys.stdout)
 
 
