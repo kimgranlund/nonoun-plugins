@@ -5,7 +5,7 @@ type: chore           # feature | bug | chore | spike | idea
 status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
-depends: [T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634, T-0635]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002, T-0637]
+depends: [T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634, T-0635, T-0637]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-19
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
