@@ -27,7 +27,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             after every other check passes and before any write. Without --supersede nothing is renamed.
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
-            It also refuses a criterion span that joins two checks with an unquoted || (see lint),
+            It also refuses a criterion span that runs git stash, checkout, reset, restore, or commit in its
+            command text (agents/verifier.md rule 3; quoted text does not count; T-0617), a span that joins
+            two checks with an unquoted || (see lint),
             one that pins a commit sha fixed at plan time (except the ancestry form
             git merge-base --is-ancestor <sha> HEAD), and one that compares a count over a
             changing set with a fixed number (see lint), and one whose ### Read first lists a
@@ -1410,6 +1412,56 @@ def uses_grep_perl(text):
     return bool(GREP_PERL_RE.search(text))
 
 
+FORBIDDEN_GIT_RE = re.compile(r'(?<![\w.-])git(?:\s+(?:-[Cc]\s+\S+|--[\w-]+(?:=\S+)?))*\s+'
+                              r'(stash|checkout|reset|restore|commit)(?![\w-])')
+
+
+def unquoted_command_text(text):
+    """A span with its quoted text blanked, so a word inside quotes is not read as a command. A $( ... )
+    inside double quotes keeps its text: it runs. A backslash hides the next character."""
+    out = []
+    i, n = 0, len(text)
+    quote = None
+    depth = 0
+    while i < n:
+        c = text[i]
+        if quote is None:
+            if c == '\\':
+                out.append('  ')
+                i += 2
+                continue
+            if c in '\'"':
+                quote = c
+                out.append(' ')
+            else:
+                out.append(c)
+        elif depth:
+            out.append(c)
+            depth += (c == '(') - (c == ')')
+        elif c == '\\' and quote == '"':
+            out.append('  ')
+            i += 2
+            continue
+        elif c == quote:
+            quote = None
+            out.append(' ')
+        elif quote == '"' and text.startswith('$(', i):
+            out.append('$(')
+            depth = 1
+            i += 1
+        else:
+            out.append(' ')
+        i += 1
+    return ''.join(out)
+
+
+def forbidden_git(text):
+    """The git subcommand (stash, checkout, reset, restore, commit) a span runs that agents/verifier.md
+    rule 3 forbids a verifier, else None. Command text only: a word in quotes does not count."""
+    m = FORBIDDEN_GIT_RE.search(unquoted_command_text(text))
+    return m.group(1) if m else None
+
+
 def read_first_paths(block):
     """The paths listed under a step block's ### Read first, up to the next ## or ### line, with
     ``` fenced lines left out. Each list item (- or *) that holds a code span gives one path: the
@@ -1987,7 +2039,7 @@ def order_findings(plan, steps, base):
 
 def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
-    parses, one per unquoted || join, one for a pinned commit sha, one for a count over a changing
+    parses, one per unquoted || join, one per forbidden git command (forbidden_git), one for a pinned commit sha, one for a count over a changing
     set compared with a fixed number, and one for a span that reads its own step's verifier result on a
     line with no held clause (reads_own_verifier); one per ### Read first path that does not exist, resolved against
     the git toplevel of the plan's folder (else that folder); one per path a verifier or builder result
@@ -2042,6 +2094,12 @@ def lint_steps(plan, steps, tree=None):
                                 '  compare against HEAD at build start (`HEAD`, `HEAD~1`) instead: '
                                 'a fixed sha goes stale on the first sync from main '
                                 '(only `git merge-base --is-ancestor <sha> HEAD` may name a sha)')
+            sub = forbidden_git(text)
+            if sub:
+                findings.append(f'steps: {plan} step {n}: plan defect: acceptance criterion runs git {sub}, which '
+                                f'the verifier may not run (agents/verifier.md rule 3): {text}\n'
+                                '  to compare against base, use a git worktree add --detach copy '
+                                'or read-only git (log, diff, show, rev-parse, status)')
             if node_test_dir(text):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion runs node --test on a directory: '
                                 f'{text}\n'
@@ -4767,6 +4825,23 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '- `! cat x | grep -E "a|b"`\n- `! python3 -c "import sys; sys.exit(0)"`\n- `grep -c P x`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k2b) portable guard forms lint ok', rc == 0 and out.strip() == 'steps lint: ok')
+        # (k2d) T-0617: a git command agents/verifier.md rule 3 forbids is refused in command text; quoted
+        # text, read-only git, and git worktree add --detach pass
+        for form in ('s=$(git stash create); test -n "$s"', 'git -C x checkout main', 'git reset --hard HEAD',
+                     'git restore a', 'git commit -m x', 'test -n "$(git stash list)"'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k2d) lint refuses a forbidden git command ({form})', ['lint', str(d / 'planner-L2.md')], d,
+                    needles=('plan defect', 'agents/verifier.md rule 3'))
+        d = task(plan=PLAN.replace('- one works', '- `s=$(git stash create); test -n "$s"`'))
+        refused('(k2d) the refusal names git stash', ['lint', str(d / 'planner-L2.md')], d,
+                needles=('plan defect', 'git stash', 'agents/verifier.md rule 3'))
+        ok_git = ['git diff --check', "grep -qF 'git stash list' x", 'grep -qF "git checkout" x',
+                  'git worktree add --detach "$t" HEAD', 'git log -1 && git show HEAD && git rev-parse HEAD',
+                  'git status --porcelain -- x', 'git restore-x']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{x}`' for x in ok_git)))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2d) read-only git, git worktree add --detach, and quoted git words lint ok',
+              rc == 0 and out.strip() == 'steps lint: ok')
         # (k2c) a tests: line names exact repo-relative files (T-0395); a directory, glob, absolute path, or .. is refused
         for form in ('tests/', 'tests/*.sh', '/abs/a.sh', '../a.sh'):
             d = task(plan=PLAN.replace('- one works', f'- one works\ntests: tests/ok.sh, {form}'))
