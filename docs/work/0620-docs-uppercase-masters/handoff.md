@@ -25,3 +25,10 @@ User decision 2026-10-19 after an adversarial review of the earlier "one UPPERCA
 - UPPERCASE: allowed for the ecosystem names (`README.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`, `LICENSE`, `CONTRIBUTING.md`) and for singletons a `layout.md` row declares (`work/ROADMAP.md`, `work/NOTES.md` from T-0618); any other UPPERCASE stem is a D-12 finding.
 - Ship new findings as `warning` first, raisable to `error` in `layout.md`.
 - Validation: `python3 plugins/sdlc-lite/scripts/docs_check.py selftest`, `python3 plugins/sdlc-lite/scripts/onboard.py selftest`, `python3 plugins/sdlc-lite/scripts/check.py`.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0; its gates `numbered`, `uppercase`, `grandfather` and `next` each reject their negative variants (a numbered-form rule dropped, Grandfathered or Levels ignored, ecosystem names or declared singletons dropped, a migrate step that writes nothing, an allocator that reserves no ref).
+- `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0; its gates `create` and `layout-sections` pass (the entry block heading change and the two new layout sections with their form errors).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` reports 0 errors.
+- No existing file under `docs/` is renamed: `git diff --name-status --diff-filter=R $(git merge-base HEAD main)` prints nothing.

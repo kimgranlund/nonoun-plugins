@@ -281,13 +281,15 @@ The `work/` home (T-0634) holds work records, not documents: ticket and task fol
 
 `docs/<topic>/AGENTS.md`:
 
+This `## Contents` list is the folder's index (T-0620): onboard writes and refreshes it, and there is no separate master file beside `AGENTS.md`.
+
 ```markdown
 # <topic folder name>
 
 Describe what this topic covers.
 
 <!-- sdlc-lite:managed:start v<N> sha256:<H> -->
-## Documents
+## Contents
 
 <a link to README.md when it exists, then one link per document>
 <!-- sdlc-lite:managed:end -->

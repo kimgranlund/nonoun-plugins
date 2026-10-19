@@ -2,8 +2,8 @@
 
 The Progressive Context specification set. Read when changing the Progressive Context plugin; the unbuilt browser and A2UI parts are in `planning/generative-constructs/`.
 
-<!-- sdlc-lite:managed:start v1 sha256:2595efd39953 -->
-## Documents
+<!-- sdlc-lite:managed:start v1 sha256:b70110a057c3 -->
+## Contents
 
 - [README.md](README.md)
 - [01-system-brief.md](01-system-brief.md)
