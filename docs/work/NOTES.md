@@ -23,3 +23,8 @@
 
 - T-0519 note: the Pareto read behind the 2026-10-12 model decisions comes from third-party Artificial Analysis summaries, is unverified, and has no copy in `docs/reports/`; no replay ran.
 - T-0520 note: The live run used the legacy `run.sh` Claude branch. The generated `ui-designer-L<n>` agents, the sub-agent dispatch path, and the Codex host have no live evidence.
+
+## T-0636: work_root t13: migrate this repository to docs/work (2026-10-19)
+
+- note: check.sh was not run by this verifier; the conductor's separate run is the evidence for that part of #1.
+- note: `docs/reports/2026-10-12-ceremony-audit.md` has one `.sdlc/.0356-...` path turned into an absolute GitHub permalink; its sha was not checked.
