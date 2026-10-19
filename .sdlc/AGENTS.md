@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d4fa4703df89 -->
+<!-- sdlc-lite:managed:start v1 sha256:7b80baec4fdd -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -20,12 +20,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths)
   - T-0635 work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape (0635-work-root-t12-tickets-py-migrate-work-root-flat-nested)
   - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
-- claimed: 2
-  - T-0625 work_root t05: generated router .sdlc/AGENTS.md names work-root paths; work-root entry file; onboard root (0625-work-root-t05-generated-router-sdlc-agents-md-names-wo), claimed by sdlc-lite-author 2026-10-19
+- claimed: 1
   - T-0626 work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil (0626-work-root-t06-lanes-and-fanout-untracked-work-root-tic), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
-- done: 589
+- done: 590
 - dropped: 29
 
 ## Procedures
