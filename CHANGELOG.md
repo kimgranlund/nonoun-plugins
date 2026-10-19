@@ -2,6 +2,14 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.25.1] - 2026-10-19
+
+Report: [docs/reports/2026-10-19-release-0-25-1.md](docs/reports/2026-10-19-release-0-25-1.md).
+
+### Fixed
+
+- `/sdlc-lite:onboard` outside a Git work tree asks one question (run `git init` here, use another folder, or stop) instead of ending with advice; it runs `git init` only on that choice and then continues with `--init` (T-0640).
+
 ## [0.25.0] - 2026-10-19
 
 Report: [docs/reports/2026-10-19-release-0-25-0.md](docs/reports/2026-10-19-release-0-25-0.md).
