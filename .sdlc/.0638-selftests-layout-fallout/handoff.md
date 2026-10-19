@@ -2,7 +2,7 @@
 id: T-0638
 title: "results and plan_check selftests break under the work_root migration"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,12 @@ Found by the full check.sh in the T-0636 lane (2 of 57 jobs failed) on 2026-10-1
 - `python3 plugins/sdlc-lite/scripts/results.py selftest` exits 0 on this tree.
 - `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0 on this tree.
 - Both selftests exit 0 when run with the lane's fixed scripts inside a `work_root: docs/work` repository: copy the two fixed files into `/Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/T-0636-t0636/plugins/sdlc-lite/scripts/` is NOT allowed; instead run them from a throwaway worktree of this lane whose `.sdlc/config` has `work_root: docs/work` added.
+
+## Outcome
+
+2026-10-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: .sdlc/runtime/tasks/0638-selftests-layout-fallout has no builder or solo report; the build was judged from the diff and observed runs only. redck.py deviations printed no process deviation lines.) · verifier: verifier-L2 (opus) · base: f7845cf1a6d1
+- Changed: see commits
+- Commits: e11560d T-0638: results and plan_check selftests break under the work_root migration
+- Check: 1 `python3 plugins/sdlc-lite/scripts/results.py selftest` exits 0 on this tree: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/plan_check.py selftest` exits 0 on this tree: pass
+- Check: 3 Both selftests exit 0 from a throwaway worktree of this lane whose `.sdlc/config` has `work_root:...: pass
