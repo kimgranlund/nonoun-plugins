@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:260e052abfa7 -->
+<!-- sdlc-lite:managed:start v1 sha256:e4dc68739e74 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -6,6 +6,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 - Ticket folders: `docs/work/`, the work root `work_root:` in `.sdlc/config` names.
 - Mailbox: `messages/` is a git-ignored mailbox, not a record; follow `messages/AGENTS.md` to send, read, reply, ack, or expire a message with `<plugin-root>/scripts/messages.py`.
 - `<plugin-root>` is the installed sdlc-lite plugin folder, the one holding `scripts/tickets.py`: `${CLAUDE_PLUGIN_ROOT}` in Claude Code; in Codex, the folder two levels above the `sdlc-lite` skill.
+- No plugin installed: follow `.sdlc/by-hand.md` to create, claim, release or close a ticket with git alone.
 
 ## Stages
 
@@ -26,7 +27,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 ## Procedures
 
 Folder layout:
-- The top of `.sdlc` holds only `AGENTS.md`, `CLAUDE.md`, `config`, `board.md`, `fleet.json`, `gate-ledger.jsonl`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, `archive/`, and `_`- or `.`-prefixed entries; ticket and task folders go in `docs/work/`. A `top_level_allow: <glob>, ...` line in `.sdlc/config` allows more.
+- The top of `.sdlc` holds only `AGENTS.md`, `CLAUDE.md`, `by-hand.md`, `config`, `board.md`, `fleet.json`, `gate-ledger.jsonl`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, `archive/`, and `_`- or `.`-prefixed entries; ticket and task folders go in `docs/work/`. A `top_level_allow: <glob>, ...` line in `.sdlc/config` allows more.
 - Run records (role results, attempts, `runs.jsonl`, `skips.md`) go in the git-ignored records dir `.sdlc/runtime/tasks/<folder>/` (`<plugin-root>/scripts/order.py records-dir docs/work/<folder>` prints it). Notes go to `docs/work/NOTES.md`, an answer to another agent goes by `messages.py send`, anything else into `../docs/work/archive/`.
 - `python3 <plugin-root>/scripts/tickets.py --root .sdlc check` warns on any other top-level entry; `python3 <plugin-root>/scripts/tickets.py --root .sdlc tidy` lists its move into `../docs/work/archive/` and `python3 <plugin-root>/scripts/tickets.py --root .sdlc tidy --apply` makes it. Move nothing under `.sdlc` while a `*.running` marker exists: a role is using it.
 
