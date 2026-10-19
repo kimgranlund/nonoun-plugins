@@ -5954,6 +5954,62 @@ def selftest():
         expect(f'work_root: a ticket folder left at .sdlc/0002-b fails check as a stray: rc={rc} {err!r}',
                rc == 1 and '0002-b: ticket folder outside the ticket root' in err and 'docs/work/0002-b' in err)
 
+        # ---- work_root close (T-0624): the dot rename stays in docs/work; the cite scan covers the repo, not runtime ----
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the work_root close cases')
+        else:
+            wc = pathlib.Path(tmp) / 'wr-close' / '.sdlc'
+            wcw = wc.parent / 'docs' / 'work'
+            wc.mkdir(parents=True)
+            (wc / 'config').write_text('work_root: docs/work\nticket_folders: numbered\n', encoding='utf-8')
+            run(wc, 'new', ('chore', 'a'))
+            spec = wc.parent / 'docs' / 'specs' / 'x.md'
+            spec.parent.mkdir(parents=True)
+            spec.write_text('see docs/work/0001-a/handoff.md\n', encoding='utf-8')
+            rec = wc / 'runtime' / 'tasks' / '0001-a' / 'builder-L1.md'
+            rec.parent.mkdir(parents=True)
+            rec.write_text('read docs/work/0001-a/handoff.md\n', encoding='utf-8')
+            wenv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+            subprocess.run(['git', '-C', str(wc.parent), 'init', '-q'], env=wenv, capture_output=True, check=True)
+            rc, out, err = run(wc, 'close', ('0001-a',), reason='done elsewhere')
+            expect(f'work_root close: a docs/specs/x.md cite of docs/work/0001-a refuses and is named; the '
+                   f'.sdlc/runtime cite is not: rc={rc} {out!r} {err!r}',
+                   rc == 1 and 'docs/specs/x.md' in err and 'docs/work/0001-a' in err and 'runtime' not in err
+                   and (wcw / '0001-a').is_dir())
+            rc, out, err = run(wc, 'close', ('0001-a',), reason='done elsewhere', rewrite_refs=True)
+            expect(f'work_root close: --rewrite-refs renames docs/work/0001-a to docs/work/.0001-a, rewrites '
+                   f'docs/specs/x.md and leaves the runtime record: rc={rc} {out!r} {err!r} work={tree(wcw)}',
+                   rc == 0 and (wcw / '.0001-a' / 'handoff.md').is_file() and not (wcw / '0001-a').exists()
+                   and not (wc / '.0001-a').exists() and 'rewrote refs in docs/specs/x.md' in out
+                   and tr_text(spec) == 'see docs/work/.0001-a/handoff.md\n'
+                   and tr_text(rec) == 'read docs/work/0001-a/handoff.md\n'
+                   and 'Closed: 1 done' in tr_text(wcw / 'ROADMAP.md') and run(wc, 'check')[0] == 0)
+            # number then archive: plain docs/work/b -> 0001-b -> .0001-b, each cite rewritten, runtime left
+            wn = pathlib.Path(tmp) / 'wr-number' / '.sdlc'
+            wnw = wn.parent / 'docs' / 'work'
+            wn.mkdir(parents=True)
+            (wn / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+            run(wn, 'new', ('chore', 'b'))
+            spec = wn.parent / 'docs' / 'specs' / 'x.md'
+            spec.parent.mkdir(parents=True)
+            spec.write_text('see docs/work/b/handoff.md\n', encoding='utf-8')
+            rec = wn / 'runtime' / 'tasks' / 'b' / 'r.md'
+            rec.parent.mkdir(parents=True)
+            rec.write_text('docs/work/b/handoff.md\n', encoding='utf-8')
+            subprocess.run(['git', '-C', str(wn.parent), 'init', '-q'], env=wenv, capture_output=True, check=True)
+            rc, out, err = run(wn, 'number')
+            expect(f'work_root number: docs/work/b becomes docs/work/0001-b and the docs/specs cite follows, runtime '
+                   f'left: rc={rc} {out!r} {err!r} work={tree(wnw)}',
+                   rc == 0 and (wnw / '0001-b' / 'handoff.md').is_file() and not (wnw / 'b').exists()
+                   and tr_text(spec) == 'see docs/work/0001-b/handoff.md\n'
+                   and tr_text(rec) == 'docs/work/b/handoff.md\n')
+            edit(wnw, '0001-b', r'^status:.*$', 'status: done')
+            rc, out, err = run(wn, 'archive', rewrite_refs=True)
+            expect(f'work_root archive: docs/work/0001-b becomes docs/work/.0001-b and the cite follows: rc={rc} '
+                   f'{out!r} {err!r} work={tree(wnw)}',
+                   rc == 0 and (wnw / '.0001-b' / 'handoff.md').is_file() and not (wn / '.0001-b').exists()
+                   and tr_text(spec) == 'see docs/work/.0001-b/handoff.md\n')
+
         # ---- router: <root>/AGENTS.md holds a managed block with stage counts, open tickets and procedures ----
         def block_of(path):
             f = onboard.find_block(tr_text(path))
