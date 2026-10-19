@@ -5,8 +5,9 @@
 #   records_dir <dir>        print the records dir for a task or step dir (no create)
 #   records_dir_make <dir>   same, and for a runtime result mkdir -p it and write
 #                            <base>/runtime/.gitignore ('*') when missing
-# Rules, first match wins (<base> is the nearest ancestor named .sdlc, else the parent;
-# <key> is the folder name without leading dots):
+# Rules, first match wins (<base> is the nearest ancestor named .sdlc, else <A>/.sdlc for the
+# nearest ancestor A whose .sdlc/config sets a work_root holding the dir, else the parent: the
+# roots.py state_of rule; <key> is the folder name without leading dots):
 #   1. a path already inside <base>/runtime/tasks/ is itself;
 #   2. a step-<n> dir (or step-<n>.superseded-<k>) is records_dir(parent)/<name>;
 #   3. an existing <base>/runtime/tasks/<key>;
@@ -26,7 +27,39 @@ _records_base() {
     q=$up
   done
   q=${1%/*}
-  printf '%s\n' "${q:-/}"
+  q=${q:-/}
+  # rule 2: the nearest ancestor A (q itself included) whose A/.sdlc/config sets a work_root W holding q
+  local a=$q w
+  while :; do
+    w=$(_records_work_root "${a%/}/.sdlc/config")
+    if [[ -n $w ]]; then
+      case $q in
+        "${a%/}/$w"|"${a%/}/$w"/*) printf '%s\n' "${a%/}/.sdlc"; return 0 ;;
+      esac
+    fi
+    [[ $a == / ]] && break
+    a=${a%/*}
+    a=${a:-/}
+  done
+  printf '%s\n' "$q"
+}
+
+# The work_root value of a config file (roots.py rules), normalized with no ./ or trailing /; nothing when the file
+# is absent or sets no work_root, or the value is one roots.py refuses (empty, ., absolute, .., under .sdlc, two
+# different values, beside ticket_root).
+_records_work_root() {
+  local cfg=$1 vals v
+  [[ -f $cfg ]] || return 0
+  vals=$(sed -n -E 's/^[[:space:]]*work_root[[:space:]]*:[[:space:]]*([^#]*[^#[:space:]])?[[:space:]]*(#.*)?$/=\1/p' "$cfg" | sort -u)
+  [[ -n $vals && $vals != *$'\n'* ]] || return 0
+  grep -Eq '^[[:space:]]*ticket_root[[:space:]]*:' "$cfg" && return 0
+  v=${vals#=}
+  while [[ $v == ./* ]]; do v=${v#./}; done
+  while [[ $v == */ ]]; do v=${v%/}; done
+  case $v in
+    ''|.|/*|..|../*|*/..|*/../*|.sdlc|.sdlc/*) return 0 ;;
+  esac
+  printf '%s\n' "$v"
 }
 
 # find in a here-doc, not a glob (a glob with no match aborts under zsh) and not <(...)

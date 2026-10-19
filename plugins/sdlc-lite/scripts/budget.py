@@ -10,8 +10,8 @@ user). --tier takes the level; the deprecated 0.21.x size names are read as thei
 
   status  resolves the ticket from a ticket dir, a step dir, a superseded step dir, or a handoff.md
           (ticket_of walks up to the nearest handoff.md whose front matter has an `id`, stopping at the
-          filesystem root or at a dir named .sdlc) and prints spend, budget (the ceiling), percent,
-          state (ok, warn at 80 percent or more, over at 100 or more), and unmetered_runs.
+          filesystem root, at a dir named .sdlc, or at the work root a work_root line names) and prints
+          spend, budget (the ceiling), percent, state (ok, warn at 80 percent or more, over at 100 or more), and unmetered_runs.
           Exit 0 ok, 3 warn or over, 2 no budget or no ticket.
   set     writes or replaces one `budget_usd:` line in the front matter; refuses (exit 2) with none.
   ack     writes budget-ack.md (front matter usd, reason, ts) in the ticket's records dir (order.py records_dir;
@@ -31,6 +31,7 @@ import argparse, datetime, json, math, os, pathlib, re, sys, tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import tickets  # same scripts/ dir: the only front matter parser
 import order  # same scripts/ dir: the records dir rule (records_dir, task_dir)
+import roots  # same scripts/ dir: the state root rule (state_of, ticket_dir)
 
 TIERS = {'L1': 5, 'L2': 30, 'L3': 60}  # budget_usd by ticket level
 
@@ -64,6 +65,18 @@ def front(path):
     return meta if isinstance(meta, dict) else None
 
 
+def work_root(d):
+    """The work root (roots.ticket_dir of roots.state_of) that holds d when a work_root line puts it outside .sdlc, else
+    None."""
+    state = roots.state_of(d)
+    if state is None or state in d.parents:
+        return None
+    try:
+        return roots.ticket_dir(state)
+    except roots.Fail:
+        return None
+
+
 def ticket_of(path):
     """The ticket folder for a ticket dir, step dir, superseded step dir, or handoff.md; None when none."""
     p = pathlib.Path(path).resolve()
@@ -75,7 +88,7 @@ def ticket_of(path):
             return None
         d = pathlib.Path(t).resolve()
     while True:
-        if d.name == '.sdlc':
+        if d.name == '.sdlc' or d == work_root(d):
             return None
         meta = front(d / 'handoff.md')
         if meta is not None and meta.get('id'):
@@ -287,6 +300,20 @@ def selftest():
         loose.joinpath('handoff.md').write_text('## Goal\nno front matter\n', encoding='utf-8')
         expect('status: no budget exits 2',
                status(t)[0] == 2 and status(bad)[0] == 2 and status(loose)[0] == 2)
+
+        # work_root: docs/work (T-0622): the ticket folder sits outside .sdlc, its runs in .sdlc/runtime/tasks
+        wtop = pathlib.Path(tmp) / 'wr'
+        (wtop / '.sdlc').mkdir(parents=True)
+        (wtop / '.sdlc' / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+        wt = ticket(wtop / 'docs' / 'work', '0001-a')
+        runs(order.records_dir(wt) / 'step-1', {'role': 'builder', 'cost_usd': 9, 'attempt_id': 'w1'})
+        rc, s = status(order.records_dir(wt) / 'step-1')
+        rcw, sw = status(wt)
+        (wtop / 'docs' / 'handoff.md').write_text(wt.joinpath('handoff.md').read_text(encoding='utf-8'), encoding='utf-8')
+        (wtop / 'docs' / 'work' / 'loose').mkdir()
+        expect('status: a work_root ticket meters its runtime records, and the walk stops at the repo top',
+               rc == 3 and s.get('spend') == '9.00' and rcw == 3 and sw.get('spend') == '9.00'
+               and ticket_of(wtop / 'docs' / 'work' / 'loose') is None)
 
         t = ticket(root, 'acked')
         # Estimated cost counts: all-estimated runs at 85 percent exit 3; the same runs with null costs exit 0.
