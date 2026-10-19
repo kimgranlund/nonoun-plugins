@@ -356,7 +356,7 @@ def _steps_cases(case):
              True if ok else got, True)
         accept = os.path.join(tmp, 'accept-all')
         os.mkdir(accept)
-        for name in ('steps.py', 'order.py', 'results.py'):
+        for name in ('steps.py', 'order.py', 'roots.py', 'results.py'):
             shutil.copy(os.path.join(here, name), os.path.join(accept, name))
         with open(os.path.join(accept, 'results.py'), 'a', encoding='utf-8') as f:
             f.write('\nvalidate = lambda path, role=None: None\nstructure_error = lambda path, role=None: None\n')

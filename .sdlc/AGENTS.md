@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1153e9970068 -->
+<!-- sdlc-lite:managed:start v1 sha256:6900100db0e9 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -21,7 +21,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0636 work_root t13: migrate this repository to docs/work (docs/work/0636-work-root-t13-migrate-this-repository-to-docs-work), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
-- done: 594
+- done: 595
 - dropped: 29
 
 ## Procedures
