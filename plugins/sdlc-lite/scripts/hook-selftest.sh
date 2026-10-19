@@ -674,6 +674,22 @@ out=$(run "$wh" "$(wj "$wtmp/other/handoff.md")" ); rc=$?
 out=$(run "$wh" '{"tool_name":"Edit","tool_input":{}}'); rc=$?
 [[ $rc -eq 0 && -z "$out" ]] || fail "handoff-edit: missing file_path was not a silent pass (rc=$rc)"
 
+# records.sh under work_root (T-0622): a ticket folder in <top>/docs/work keeps its records in <top>/.sdlc/runtime/tasks,
+# the same rule as order.py records-dir; a dir outside the work root keeps the parent-dir fallback. The hook finds the
+# running marker there.
+wr="$wtmp/workroot"; mkdir -p "$wr/.sdlc" "$wr/docs/work/0001-a" "$wr/docs/work/.0002-b" "$wr/docs/other/0003-c"
+printf 'work_root: docs/work/  # tracked records\n' >"$wr/.sdlc/config"; : >"$wr/docs/work/0001-a/handoff.md"
+got=$(bash -c '. "$1"; records_dir "$2"' _ "$(dirname "$0")/records.sh" "$wr/docs/work/0001-a")
+[[ "$got" == "$wr/.sdlc/runtime/tasks/0001-a" ]] || fail "records.sh work_root: records_dir gave '$got', want $wr/.sdlc/runtime/tasks/0001-a"
+want=$(python3 "$(dirname "$0")/order.py" records-dir "$wr/docs/work/.0002-b/step-1")
+got=$(bash -c '. "$1"; records_dir "$2"' _ "$(dirname "$0")/records.sh" "$wr/docs/work/.0002-b/step-1")
+[[ "$got" == "$want" && "$got" == "$wr/.sdlc/runtime/tasks/0002-b/step-1" ]] || fail "records.sh work_root step dir: '$got', order.py '$want'"
+got=$(bash -c '. "$1"; records_dir "$2"' _ "$(dirname "$0")/records.sh" "$wr/docs/other/0003-c")
+[[ "$got" == "$wr/docs/other/runtime/tasks/0003-c" ]] || fail "records.sh outside the work root: '$got', want the parent-dir fallback"
+mkdir -p "$wr/.sdlc/runtime/tasks/0001-a" && : >"$wr/.sdlc/runtime/tasks/0001-a/builder-L2.running"
+out=$(run "$wh" "$(wj "$wr/docs/work/0001-a/handoff.md")"); rc=$?
+[[ $rc -eq 0 && "$out" == *builder-L2* ]] || fail "handoff-edit work_root: the runtime marker of a docs/work handoff was not found (rc=$rc)"
+
 # warn-handoff-edit.sh with a real prepared attempt (T-0505): dispatch.py prepare writes the running marker, so the freeze
 # holds with no hand-made .running file; record (completed or failed) and recover (a dead owner) release it; recover leaves
 # an attempt that another live run owns. One throwaway repo and task folder per case (a live attempt refuses a second

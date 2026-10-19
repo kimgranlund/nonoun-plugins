@@ -25,12 +25,15 @@ Records dir (records_dir): role results, runs.jsonl and step dirs live in
   4. legacy: the dir holds runs.jsonl, a *.attempt.json, a role result, or a step-<n> dir that
      holds one of those; records stay in place;
   5. else <base>/runtime/tasks/<key>.
-<base> is the nearest ancestor named .sdlc, else the dir's parent. skips.md is no marker.
+<base> is roots.state_of the dir's parent: the nearest ancestor named .sdlc, else <top>/.sdlc when
+<top>/.sdlc/config sets a work_root that holds the dir; else the dir's parent. skips.md is no marker.
 scripts/records.sh holds the same rule for bash. task_dir maps a records dir back.
 
 Importable from the same scripts/ dir: records, ordered, newest, counts_after, records_dir, task_dir.
 """
-import json, os, pathlib, re, sys, tempfile
+import json, os, pathlib, re, subprocess, sys, tempfile
+
+import roots  # same scripts/ dir: the state root rule (state_of, ticket_dir)
 
 RESULT = re.compile(r'^([a-z][a-z-]*)-L(\d+)(?:-(\d+))?\.md$')
 LOOSE = re.compile(r'^([a-z][a-z-]*)-L(\d+)')
@@ -38,15 +41,11 @@ STEP = re.compile(r'^step-\d+(?:\.superseded-\d+)?$')
 
 
 def _base(p):
-    """Nearest ancestor of p named .sdlc, else p's parent."""
+    """The state root that owns p's parent (roots.state_of: the nearest ancestor named .sdlc, else the .sdlc whose
+    config sets a work_root holding p), else p's parent."""
     q = os.path.dirname(p)
-    while True:
-        if os.path.basename(q) == '.sdlc':
-            return q
-        up = os.path.dirname(q)
-        if up == q:
-            return os.path.dirname(p)
-        q = up
+    state = roots.state_of(q)
+    return str(state) if state is not None else q
 
 
 def _holds_records(d):
@@ -118,9 +117,15 @@ def task_dir(path):
     tasks = os.path.join(base, 'runtime', 'tasks')
     if p.startswith(tasks + os.sep):
         key = p[len(tasks) + 1:].split(os.sep, 1)[0]
-        for c in (key, '.' + key, os.path.join('tickets', key), os.path.join('tickets', '.' + key),
-                  os.path.join('work', key), os.path.join('work', '.' + key)):
-            d = os.path.join(base, c)
+        cands = [os.path.join(base, c) for c in (key, '.' + key, os.path.join('tickets', key),
+                 os.path.join('tickets', '.' + key), os.path.join('work', key), os.path.join('work', '.' + key))]
+        try:
+            work = roots.ticket_dir(base)
+        except roots.Fail:
+            work = None
+        if work is not None and not (str(work) + os.sep).startswith(base + os.sep):  # a work_root outside .sdlc
+            cands[:0] = [os.path.join(str(work), key), os.path.join(str(work), '.' + key)]
+        for d in cands:
             if os.path.isfile(os.path.join(d, 'handoff.md')):
                 return pathlib.Path(d)
         return None
@@ -387,6 +392,33 @@ def selftest():
               task_dir(os.path.join(rt, '0099-z')) is None
               and str(task_dir(os.path.join(sd, '0001-a', 'step-2'))) == os.path.join(sd, '0001-a')
               and str(task_dir(os.path.join(sd, '0001-a'))) == os.path.join(sd, '0001-a'))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # work_root: docs/work keeps the ticket folders outside .sdlc; records stay in .sdlc/runtime (T-0622)
+        top = os.path.realpath(tmp)
+        sd = os.path.join(top, '.sdlc')
+        rt = os.path.join(sd, 'runtime', 'tasks')
+        os.makedirs(sd)
+        with open(os.path.join(sd, 'config'), 'w', encoding='utf-8') as f:
+            f.write('work_root: docs/work  # tracked records\n')
+        wd = os.path.join(top, 'docs', 'work')
+        for rel in ('0001-a', '.0002-b'):
+            os.makedirs(os.path.join(wd, rel))
+            with open(os.path.join(wd, rel, 'handoff.md'), 'w', encoding='utf-8') as f:
+                f.write('x\n')
+        cli = lambda *a: subprocess.run([sys.executable, os.path.abspath(__file__), *a],
+                                        capture_output=True, text=True).stdout.strip()
+        check('(h) work_root: records-dir puts a work-root task under .sdlc/runtime/tasks',
+              cli('records-dir', os.path.join(wd, '0001-a')) == os.path.join(rt, '0001-a')
+              and str(records_dir(os.path.join(wd, '.0002-b', 'step-1')))
+              == os.path.join(rt, '0002-b', 'step-1'))
+        check('(h) work_root: task-dir maps a runtime records dir back to the work-root folder',
+              cli('task-dir', os.path.join(rt, '0001-a')) == os.path.join(wd, '0001-a')
+              and str(task_dir(os.path.join(rt, '0002-b', 'step-1'))) == os.path.join(wd, '.0002-b'))
+        os.makedirs(os.path.join(top, 'docs', 'other', '0003-c'))
+        check('(h) work_root: a dir outside the work root keeps the parent-dir fallback',
+              cli('records-dir', os.path.join(top, 'docs', 'other', '0003-c'))
+              == os.path.join(top, 'docs', 'other', 'runtime', 'tasks', '0003-c'))
 
     if misses:
         print('order selftest: FAIL, these did not hold:', file=sys.stderr)

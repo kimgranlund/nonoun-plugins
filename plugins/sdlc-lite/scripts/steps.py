@@ -100,7 +100,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             result, a missing goal, a step folder that holds role output) record nothing.
   precheck  fail fast (exit 1, naming ## Goal) when <task dir>/handoff.md has no ## Goal section, as split
             would; run.sh calls it before a planner or plan-reviewer on a task handoff. Writes nothing.
-  lint      <step dir | step-<n>/handoff.md> (T-0379): check the .sdlc paths a step handoff cites. Each must exist, and a
+  lint      <step dir | step-<n>/handoff.md> (T-0379): check the .sdlc paths (and work_root paths, roots.py) a step handoff cites. Each must exist, and a
             report (builder-L*.md, verifier-L*.md, plan-reviewer-*.md) of the handoff's own step folder that has a
             step-<n>.superseded-<k>/ sibling must name that superseded folder, not the live step-<n>/ (a later report of the
             same name would satisfy it), except under ## Previous attempt. Exit 1, "plan defect: ..." last; dispatch.py
@@ -497,6 +497,7 @@ import time
 
 import order
 import results
+import roots as sdlc_roots  # the state root rule (state_of, record_prefixes); `roots` is a local name here
 
 STEP_RE = re.compile(r'^## Step (\d+): (.+)$')
 LEVEL_RE = re.compile(r'^level: L[1-5]\s*$')
@@ -1613,7 +1614,20 @@ def history_warnings(plan, steps):
 # step-<n>/builder-L3.md now points at nothing (or, after the rebuild, at the NEW attempt's report). The
 # producer is the plan text, which split copies verbatim; the rewrite below and the lint check close it.
 
-CITE_RE = re.compile(r"""(?:^|[\s`'"(\[=])((?:[^\s`'"()<>\[\],;|]*/)?\.sdlc/[^\s`'"()<>\[\],;|]+)""")
+_CITE_RES = {}
+
+
+def cite_re(prefixes=('.sdlc/',)):
+    """The citation regex for repo-relative record prefixes (roots.record_prefixes): group 1 is the path, group p
+    the prefix it cites."""
+    if prefixes not in _CITE_RES:
+        alt = '|'.join(re.escape(x) for x in prefixes)
+        _CITE_RES[prefixes] = re.compile(
+            r"""(?:^|[\s`'"(\[=])((?:[^\s`'"()<>\[\],;|]*/)?(?P<p>""" + alt + r""")[^\s`'"()<>\[\],;|]+)""")
+    return _CITE_RES[prefixes]
+
+
+CITE_RE = cite_re()
 REPORT_FILE_RE = re.compile(r'^[a-z][a-z-]*-L[1-5](?:-\d+)?\.md$')
 STEP_DIR_RE = re.compile(r'^step-(\d+)$')
 SUPERSEDED_RE = re.compile(r'^step-(\d+)\.superseded-(\d+)$')
@@ -1629,21 +1643,31 @@ def sdlc_base(folder):
     return pathlib.Path(git_toplevel(folder) or folder)
 
 
-def cited_sdlc_paths(text):
-    """[(start, end, rel, anchor)] for each .sdlc/... path in text: rel starts at .sdlc/, [start, end) is its
+def record_prefixes(base):
+    """roots.record_prefixes of base: ('.sdlc/',) plus '<work_root>/' when base/.sdlc/config sets one; a refused
+    config gives ('.sdlc/',)."""
+    try:
+        return sdlc_roots.record_prefixes(base)
+    except sdlc_roots.Fail:
+        return ('.sdlc/',)
+
+
+def cited_sdlc_paths(text, prefixes=('.sdlc/',)):
+    """[(start, end, rel, anchor)] for each .sdlc/... path in text (and each <work_root>/... path when prefixes,
+    from record_prefixes, names one): rel starts at its prefix, [start, end) is its
     span in text; anchor is the absolute folder the path was written under (so it resolves exactly as written),
     or None for a relative citation, which resolves against sdlc_base. A path whose prefix is exactly / is no citation (T-0474). A path that runs into a placeholder or glob (<n>, *, {a,b}, $VAR, ?) or is only a folder stem is no
     citation; a trailing sentence dot or :line is trimmed."""
     out = []
-    for m in CITE_RE.finditer(text):
-        raw, at = m.group(1), m.start(1)
-        i = raw.index('.sdlc/')
+    for m in cite_re(prefixes).finditer(text):
+        raw, at, pre = m.group(1), m.start(1), m.group('p')
+        i = raw.index(pre)
         if raw[:i] == '/':
             continue
         rel, start = raw[i:], at + i
         rel = PATH_LINENO_RE.sub('', rel.rstrip('.:')).rstrip('.:')
         end = start + len(rel)
-        if any(c in rel for c in '*{}$?') or text[end:end + 1] in ('<', '*', '{', '$', '?') or len(rel) <= len('.sdlc/'):
+        if any(c in rel for c in '*{}$?') or text[end:end + 1] in ('<', '*', '{', '$', '?') or len(rel) <= len(pre):
             continue
         out.append((start, end, rel, pathlib.Path(raw[:i]) if raw.startswith('/') else None))
     return out
@@ -1676,7 +1700,7 @@ def rewrite_prior_links(text, base):
     path that exists, one that already names a superseded folder, and any other path stay as written; no report
     file is touched."""
     changes, pieces, last = [], [], 0
-    for start, end, rel, anchor in cited_sdlc_paths(text):
+    for start, end, rel, anchor in cited_sdlc_paths(text, record_prefixes(base)):
         root = anchor or pathlib.Path(base)
         if (root / rel).exists():
             continue
@@ -1716,8 +1740,8 @@ def section_of(text, heading):
     return text[m.end():m.end() + (nxt.start() if nxt else len(text))]
 
 
-def declared_future_paths(text):
-    """The .sdlc paths the handoff says the step itself creates: a [creates: <path>, ...] marker anywhere, a
+def declared_future_paths(text, prefixes=('.sdlc/',)):
+    """The .sdlc (and work root, per prefixes) paths the handoff says the step itself creates: a [creates: <path>, ...] marker anywhere, a
     path on an `Outputs:` line, a path after a create verb (create, write, add, generate, new file) on a line of
     ### Do, and a path inside a code span of a (red) criterion (it runs only after the build). A declared folder
     covers the paths under it."""
@@ -1727,13 +1751,13 @@ def declared_future_paths(text):
     for m in OUTPUTS_LINE_RE.finditer(text):
         eol = text.find('\n', m.end())
         line = text[m.end():eol if eol >= 0 else len(text)]
-        out.update(rel for _, _, rel, _ in cited_sdlc_paths(' ' + line))
+        out.update(rel for _, _, rel, _ in cited_sdlc_paths(' ' + line, prefixes))
     for line in section_of(text, 'Do').splitlines():
         v = CREATE_VERB_RE.search(line)
         if v:
-            out.update(rel for st, _, rel, _ in cited_sdlc_paths(' ' + line) if st - 1 > v.start())
+            out.update(rel for st, _, rel, _ in cited_sdlc_paths(' ' + line, prefixes) if st - 1 > v.start())
     for span in red_spans(text):
-        out.update(rel for _, _, rel, _ in cited_sdlc_paths(' ' + span))
+        out.update(rel for _, _, rel, _ in cited_sdlc_paths(' ' + span, prefixes))
     return out
 
 
@@ -1742,7 +1766,7 @@ def covered_by(rel, created):
     return any(rel == f or rel.startswith(f.rstrip('/') + '/') for f in created)
 
 
-def earlier_created(task_dir, n):
+def earlier_created(task_dir, n, prefixes=('.sdlc/',)):
     """The paths the steps before step n declare they create (declared_future_paths, T-0533): from the
     newest plan's ## Step blocks and the live step-<m>/handoff.md files with m < n. A step may cite a path an
     earlier step creates."""
@@ -1751,12 +1775,12 @@ def earlier_created(task_dir, n):
         plan, _ = find_plan(pathlib.Path(task_dir))
         for m, block in parse_steps(plan).items():
             if m < n:
-                out |= declared_future_paths(block)
+                out |= declared_future_paths(block, prefixes)
     for m, d in step_dirs(task_dir).items():
         h = step_handoff(d)
         if m < n and h.is_file():
             with contextlib.suppress(OSError, UnicodeError):
-                out |= declared_future_paths(h.read_text(encoding='utf-8'))
+                out |= declared_future_paths(h.read_text(encoding='utf-8'), prefixes)
     return out
 
 
@@ -1802,14 +1826,15 @@ def link_findings(handoff):
     handoff = pathlib.Path(handoff)
     text = handoff.read_text(encoding='utf-8')
     base = sdlc_base(handoff.parent)
+    prefixes = record_prefixes(base)
     own = handoff.resolve().parent
     prev = previous_attempt_span(text)
     seen, findings = set(), []
-    future, names, roots = declared_future_paths(text), foreign_repo_names(text), repo_roots(handoff.parent)
+    future, names, roots = declared_future_paths(text, prefixes), foreign_repo_names(text), repo_roots(handoff.parent)
     sm = STEP_DIR_RE.match(own.name)
     if sm:
-        future |= earlier_created(own.parent, int(sm.group(1)))
-    for start, _, rel, anchor in cited_sdlc_paths(text):
+        future |= earlier_created(own.parent, int(sm.group(1)), prefixes)
+    for start, _, rel, anchor in cited_sdlc_paths(text, prefixes):
         root = anchor or base
         key = (str(anchor), rel)
         if key in seen:
@@ -2542,9 +2567,10 @@ def ref_key(ref):
 
 
 def sdlc_root(task):
-    """The .sdlc root that holds a task dir: the nearest ancestor named .sdlc, else the task dir's parent."""
+    """The .sdlc root that holds a task dir (roots.state_of its parent: the nearest ancestor named .sdlc, else the
+    .sdlc whose config sets a work_root holding the task), else the task dir's parent."""
     t = pathlib.Path(task).resolve()
-    return next((a for a in t.parents if a.name == '.sdlc'), t.parent)
+    return sdlc_roots.state_of(t.parent) or t.parent
 
 
 def subject_met(subject, root):
@@ -6888,6 +6914,22 @@ def selftest():
         # an uncited-placeholder or glob path is not a citation
         h.write_text('## Task goal\ng\n\nWrite .sdlc/<task>/step-<n>/builder-L3.md and see .sdlc/0001-x/step-*/x.md.\n', encoding='utf-8')
         check('(L) placeholder and glob paths are not checked', run_main(['lint', str(h)])[0] == 0)
+        # under work_root: docs/work a step handoff's citations of the work root are checked too (T-0622)
+        wtop = lroot / 'wr'
+        (wtop / '.sdlc').mkdir(parents=True)
+        (wtop / '.sdlc' / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+        (wtop / 'docs' / 'work' / '0001-x').mkdir(parents=True)
+        (wtop / 'docs' / 'work' / '0001-x' / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        wh = wtop / '.sdlc' / 'runtime' / 'tasks' / '0001-x' / 'step-1' / 'handoff.md'
+        wh.parent.mkdir(parents=True)
+        wh.write_text('## Task goal\ng\n\n## Step 1: s\nlevel: L1\nRead docs/work/0001-x/handoff.md first.\n', encoding='utf-8')
+        rc_ok = run_main(['lint', str(wh)])[0]
+        wh.write_text('## Task goal\ng\n\n## Step 1: s\nlevel: L1\nRead `docs/work/0001-x/gone.md` first.\n', encoding='utf-8')
+        rc, _, err = run_main(['lint', str(wh)])
+        check('(L) work_root: lint checks a cited docs/work path and names an absent one',
+              rc_ok == 0 and rc == 1 and 'docs/work/0001-x/gone.md' in err and 'does not exist' in err)
+        check('(L) work_root: sdlc_root of a docs/work task is the .sdlc state root',
+              sdlc_root(wtop / 'docs' / 'work' / '0001-x') == wtop.resolve() / '.sdlc')
         # a plan defect is not raised for a Read first path split will rewrite; a truly absent one still is
         td = l_task({'step-3.superseded-1': ['builder-L3.md']}, cites={3: 'builder-L3.md'})
         check('(L) plan lint accepts a Read first path that split will rewrite', run_main(['lint', str(td)])[0] == 0)
