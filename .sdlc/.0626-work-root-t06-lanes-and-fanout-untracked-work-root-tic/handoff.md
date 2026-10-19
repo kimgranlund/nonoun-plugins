@@ -2,7 +2,7 @@
 id: T-0626
 title: "work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0622]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with the case: under `work_root: docs/work` an untracked docs/work/0002-b/ in a lane does not make it dirty (red before); `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a land whose only conflict is docs/work/ROADMAP.md resolved by regeneration
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: The fanout selftest case for the docs/work/ROADMAP.md conflict is not red at c3e435b7. `generated_files` already resolves a work-root roadmap via `tickets.layout_paths` (T-0621/T-0623). The criterion does not mark that half "(red)", so this does not fail it. The new case is a regression guard, and the roadmap-removal mutant above shows it bites.) · verifier: verifier-L2 (sonnet) · base: 6acec72a394f
+- Changed: see commits
+- Commits: 80bf4a6 T-0626: work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil
+- Check: 1 lanes.py selftest exits 0 with the work_root untracked-ticket case (red before), and fanout.py se...: pass
