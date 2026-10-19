@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c39275b33973 -->
+<!-- sdlc-lite:managed:start v1 sha256:2252abc6f2ca -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,15 +13,30 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0577 --rewrite-refs rewrites citations inside frozen records (0577-rewrite-refs-frozen-paths)
   - T-0583 Driver loop wakes on role completion or state change, not timed polling (0583-event-driven-driver)
   - T-0584 tickets.py inventory: landed state by content and patch identity (0584-tickets-inventory)
-- ready: 3
+- ready: 19
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (0611-pi-host-rehearsal)
   - T-0619 docs_check: every doc listed in its home index, per-home file cap (0619-docs-index-and-cap)
   - T-0620 docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons (0620-docs-uppercase-masters)
-- claimed: 1
-  - T-0618 Design: move tracked work records from .sdlc to docs/work, runtime stays in .sdlc (0618-work-records-in-docs), claimed by sdlc-lite-author 2026-10-19
+  - T-0621 work_root t01: roots.py resolver; tickets.py ticket_dir/layout_paths/layout_lines delegate to it (0621-work-root-t01-roots-py-resolver-tickets-py-ticket-dir)
+  - T-0622 work_root t02: records base: one state_of rule for order.py, records.sh, steps.py, budget.py, dispatch.py (0622-work-root-t02-records-base-one-state-of-rule-for-order)
+  - T-0623 work_root t03: tickets.py resolution sites: new/claim/roadmap/check/tidy in the work root (ROADMAP.md, NO (0623-work-root-t03-tickets-py-resolution-sites-new-claim-ro)
+  - T-0624 work_root t04: tickets.py close/number/archive: dot rename and citation scan under the work root (0624-work-root-t04-tickets-py-close-number-archive-dot-rena)
+  - T-0625 work_root t05: generated router .sdlc/AGENTS.md names work-root paths; work-root entry file; onboard root (0625-work-root-t05-generated-router-sdlc-agents-md-names-wo)
+  - T-0626 work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil (0626-work-root-t06-lanes-and-fanout-untracked-work-root-tic)
+  - T-0627 work_root t07: record-prefix consumers: verify_scope size/protected gates, reorg freeze and digest, inven (0627-work-root-t07-record-prefix-consumers-verify-scope-siz)
+  - T-0628 work_root t08a: ticket and run readers: fleet_collect keys, solo_stats, report, board (0628-work-root-t08a-ticket-and-run-readers-fleet-collect-key)
+  - T-0629 work_root t08b: fleet registry and notes readers: fleet_config, fleet_status, fleet_doctor (0629-work-root-t08b-fleet-registry-and-notes-readers-fleet-c)
+  - T-0630 work_root t09a: evals, proposals, promote read and write the work root (0630-work-root-t09a-evals-proposals-promote-read-and-write-t)
+  - T-0631 work_root t09b: plan_check, plan_done, solo_run: notes-path rule and new plain task folder from the resolv (0631-work-root-t09b-plan-check-plan-done-solo-run-notes-path)
+  - T-0632 work_root t10: check.py reads record paths from the resolver: NAME_ALLOW and the evals lock path (0632-work-root-t10-check-py-reads-record-paths-from-the-res)
+  - T-0633 work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents (0633-work-root-t11-agent-and-skill-prose-names-record-paths)
+  - T-0634 work_root t14: work/ is a first-class docs home: onboard templates for the docs/AGENTS.md block row and t (0634-work-root-t14-work-is-a-first-class-docs-home-onboard)
+  - T-0635 work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape (0635-work-root-t12-tickets-py-migrate-work-root-flat-nested)
+  - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 577
+- done: 578
 - dropped: 29
 
 ## Procedures

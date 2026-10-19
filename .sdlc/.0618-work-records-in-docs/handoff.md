@@ -2,7 +2,7 @@
 id: T-0618
 title: "Design: move tracked work records from .sdlc to docs/work, runtime stays in .sdlc"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,9 @@ User decision 2026-10-19: tickets to docs, runtime stays. Reference counts in `p
 - Runtime records stay git-ignored and outside `docs/`; the collector, traces and retros keep reading them.
 - The ticket split names, per ticket: files, level (L1 or L2), depends, and one red check. Order: resolver first, then readers, then the migrate command, then this repo's migration.
 - Cover: closed-ticket dot rename and citation scan across the new root, the generated `.sdlc/AGENTS.md` router, `docs/` checks (`scripts/check.py` docs items, link checks) accepting ticket folders, hooks and agent texts that name `.sdlc/` paths, and Codex parity.
+
+## Outcome
+
+2026-10-19 · lane: full L2 · verdict: closed by reason (design done: architect manifest-v2 split into T-0621 to T-0636) · verifier: none · base: none
+- Changed: see commits
+- Commits: none
