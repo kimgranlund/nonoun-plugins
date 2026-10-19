@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:97e0a5aeed38 -->
+<!-- sdlc-lite:managed:start v1 sha256:0e107cac6622 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,11 +18,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0619 docs_check: every doc listed in its home index, per-home file cap (0619-docs-index-and-cap)
   - T-0620 docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons (0620-docs-uppercase-masters)
   - T-0636 work_root t13: migrate this repository to docs/work (0636-work-root-t13-migrate-this-repository-to-docs-work)
-- claimed: 1
-  - T-0637 work_root loose ends: planner untracked exclude, fleet Source column, registry and usage text (0637-work-root-loose-ends), claimed by sdlc-lite-author 2026-10-19
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 593
+- done: 594
 - dropped: 29
 
 ## Procedures
