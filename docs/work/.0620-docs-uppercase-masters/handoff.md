@@ -2,7 +2,7 @@
 id: T-0620
 title: "docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0618]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,14 @@ User decision 2026-10-19 after an adversarial review of the earlier "one UPPERCA
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` reports 0 errors.
 - No existing file under `docs/` is renamed: `git diff --name-status --diff-filter=R $(git merge-base HEAD main)` prints nothing.
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: plugins/sdlc-lite/scripts/docs_check.py (D-12 UPPERCASE branch): in the scratch run the undeclared UPPERCASE file was reported at level `error`, while the numbered-form finding is `warning`. D-12 kebab names were already errors before this build, so this is probably not a new finding, but the constraint says new findings ship as warning. decide: confirm the UPPERCASE finding should stay an error, or demote it to warning. | docs/AGENTS.md: docs_check reports the entry file at 71 lines over its 60-line target (D-11 warning, not an error). note: it was already 70 lines at the base sha, the build added one Contents line.) · verifier: verifier-L2 (sonnet) · base: e4d1eecea928
+- Changed: see commits
+- Commits: 4a71e58 T-0620: docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons
+- Check: 1 docs_check.py selftest exits 0 and gates numbered, uppercase, grandfather, next reject their nega...: pass
+- Check: 2 onboard.py selftest exits 0, gates create and layout-sections pass: pass
+- Check: 3 check.py exits 0: pass
+- Check: 4 docs_check.py --root . reports 0 errors: pass
+- Check: 5 No existing docs file renamed: pass
