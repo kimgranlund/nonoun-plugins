@@ -88,8 +88,8 @@ Truth table for close and sweep; the first matching row wins.
   3          the branch is checked out in another worktree                  branch <b> checked out at <path>                           1
   4          an integration tree with an open lane whose into is its branch lanes still open into <b>: <names>                         1
   5          into does not resolve, or a git read fails                     cannot decide: <reason>                                    1
-  6          tracked changes, or untracked files outside .sdlc/ and         uncommitted changes in <lane>: <first path>                1
-             .lane.json, and no --discard
+  6          tracked changes, or untracked files outside .sdlc/, the        uncommitted changes in <lane>: <first path>                1
+             work_root: dir when set, and .lane.json, and no --discard
   locked     the tree is locked (git worktree list --porcelain), except a   locked: <reason>                                           1
              plain close of a lock equal to the record's lock (open's own)
   7          sweep only: no commit since base_sha                           kept <lane>: no commits                                    0
@@ -120,7 +120,7 @@ Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a 
      fails, retry once with the leaf <branch>.<sha7>; a second failure stops the close with the branch intact.
   2. Unless discarded, carry each local ticket's records dir into the main checkout's runtime records dir, keeping a
      file there at least as new (T-0566), and print `records: <path>`. Then copy the tree's untracked and ignored
-     .sdlc/ files, and the ignored .sdlc/runtime/tasks/ records (minus *.log,
+     .sdlc/ files (and the work_root: dir's untracked files when set), and the ignored .sdlc/runtime/tasks/ records (minus *.log,
      *.running, *.run.lock), to <git common dir>/sdlc-lane-archive/<lane>/; a failed write stops the close here.
   3. git worktree unlock <path> when the lane holds its own lock, then git worktree remove --force <path>; a missing
      tree skips this step.
@@ -224,6 +224,7 @@ import order  # same scripts/ dir: newest-result ordering
 import results  # same scripts/ dir: the verifier verdict
 import wtroot  # same scripts/ dir: the worktree root, owner markers and the crash sweep (T-0550)
 import plugin_min  # same scripts/ dir: the repo's minimum plugin version (T-0593)
+import roots  # same scripts/ dir: the work-root record prefixes (T-0626)
 
 Path = pathlib.Path
 RECORD = '.lane.json'
@@ -585,8 +586,19 @@ def resolve_into(ctx, into, fetch=True):
     return ref, note
 
 
+def trail_prefixes(path):
+    """The repo-relative prefixes of the tree's work records: '.sdlc/', plus '<work_root>/' when its .sdlc/config
+    sets one (T-0626). A config roots refuses keeps '.sdlc/' alone."""
+    try:
+        return roots.record_prefixes(path)
+    except roots.Fail:
+        return ('.sdlc/',)
+
+
 def first_dirty(path):
-    """(first dirty path or None, error or None): tracked changes, or untracked files outside .sdlc/ and .lane.json."""
+    """(first dirty path or None, error or None): tracked changes, or untracked files outside .lane.json and the
+    trail_prefixes (.sdlc/, and the work root when set)."""
+    prefixes = trail_prefixes(path)
     r = git(path, 'status', '--porcelain=v1', '-z', '--untracked-files=all')
     if r.returncode:
         return None, f'git status failed in {path}: {err(r)}'
@@ -600,7 +612,7 @@ def first_dirty(path):
         code, p = e[:2], e[3:]
         if code[0] in 'RC':
             i += 1
-        if code == '??' and (p == RECORD or p == '.sdlc' or p.startswith('.sdlc/')):
+        if code == '??' and (p == RECORD or any(p == x.rstrip('/') or p.startswith(x) for x in prefixes)):
             continue
         return p, None
     return None, None
@@ -749,7 +761,7 @@ def write_archive(ctx, b, sha, desc, reason, into):
 
 
 def copy_sdlc(path, dest):
-    r = git(path, 'ls-files', '--others', '-z', '--', '.sdlc')
+    r = git(path, 'ls-files', '--others', '-z', '--', *(x.rstrip('/') for x in trail_prefixes(path)))
     if r.returncode:
         return f'git ls-files failed: {err(r)}'
     skip = ('.log', '.running', '.run.lock')
@@ -2150,6 +2162,21 @@ def case_row9(script, base):
     return fails
 
 
+def case_work_root(script, base):
+    """T-0626: under `work_root: docs/work` an untracked ticket folder there is trail like .sdlc/, not dirt, and
+    close archives it with the .sdlc files."""
+    t = Fixture(base, script, 'workroot')
+    leaf, tree, b = t.open('a', 'T-13')
+    t.work(tree)
+    t.merge(b)
+    t.write({'.sdlc/config': 'work_root: docs/work\n', 'docs/work/0002-b/handoff.md': 'trail\n'}, cwd=tree)
+    rc, o = t.lanes('close', leaf)
+    fails = [] if rc == 0 and o == f'closed {leaf} (ancestor)' else [f'work root: got {rc}: {o}']
+    if not (t.top / '.git' / 'sdlc-lane-archive' / leaf / 'docs' / 'work' / '0002-b' / 'handoff.md').is_file():
+        fails.append('work root: the untracked docs/work ticket was not archived')
+    return fails
+
+
 def case_carry(script, base):
     """T-0566: close carries a lane ticket's runtime records into the main checkout, keeps a newer main file, and a
     discarded lane carries nothing."""
@@ -3337,6 +3364,8 @@ def run_selftest(script, src, base):
             need(k, [f for f in sw if f.startswith(k + ':')], line)
         need('C5', [f for f in sw if f.startswith('C5') or f.startswith('sweep')], 'sweep closes only the landed lane and writes one archive ref')
         need('row 9', case_row9(script, base), 'a --no-ff merge closes by ancestry, archive ref and .sdlc copy written')
+        need('work root', case_work_root(script, base),
+             'under work_root: docs/work an untracked docs/work/0002-b/ is not dirt and is archived on close')
         need('row pr merged', case_prmerged(script, base), 'a merged PR whose head is the tip closes')
         need('row 10', case_row10(script, base), 'a git merge --squash closes by content')
         need('row 11', case_row11(script, base) + case_rename(script, base) + case_deleted(script, base),

@@ -4964,6 +4964,41 @@ def selftest():
         expect(f'T-0565 lane merge: the merge commit itself carries the regenerated roadmap and router (both lanes\' '
                f'tickets), got merge={gmerge!r} changed={g_gen!r}',
                bool(gmerge) and len(g_gen) == 2 and '| T-0003 |' in g_show and '| T-0004 |' in g_show)
+
+        # T-0626: under `work_root: docs/work` a land whose only conflict is docs/work/ROADMAP.md (each side filed a
+        # ticket and wrote its own roadmap) is resolved, and the regenerated roadmap lists both sides' tickets
+        wr = tmp / 'gen-merge-work-root'
+        wr.mkdir()
+        sh(wr, 'init', '-q', '-b', 'main')
+
+        def wr_ticket(num, slug_):
+            hp = wr / 'docs' / 'work' / f'{num:04d}-{slug_}' / 'handoff.md'
+            hp.parent.mkdir(parents=True, exist_ok=True)
+            hp.write_text(f'---\nid: T-{num:04d}\ntitle: "Ticket {slug_}"\ntype: chore\nstatus: ready\nsize: L1\n'
+                          f'priority: P2\ndepends: []\ncreated: 2026-10-19\n---\n\nbody\n', encoding='utf-8')
+
+        (wr / '.sdlc').mkdir()
+        (wr / '.sdlc' / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+        wr_ticket(1, 'a')
+        (wr / 'docs' / 'work' / 'ROADMAP.md').write_text('base\n', encoding='utf-8')
+        sh(wr, 'add', '-A')
+        sh(wr, 'commit', '-q', '-m', 'base')
+        for branch, num, slug_ in (('side', 2, 'b'), ('main', 3, 'c')):
+            if branch != 'main':
+                sh(wr, 'checkout', '-q', '-b', branch, 'main')
+            wr_ticket(num, slug_)
+            (wr / 'docs' / 'work' / 'ROADMAP.md').write_text(f'only T-{num:04d}\n', encoding='utf-8')
+            sh(wr, 'add', '-A')
+            sh(wr, 'commit', '-q', '-m', f'file T-{num:04d}')
+            sh(wr, 'checkout', '-q', 'main')
+        wm = merge_generated(wr, 'side', wr / '.sdlc')
+        w_rows = (wr / 'docs' / 'work' / 'ROADMAP.md').read_text(encoding='utf-8')
+        w_staged = sh(wr, 'diff', '--cached', '--name-only').stdout.split()
+        expect(f'T-0626 work root merge: the docs/work/ROADMAP.md conflict is resolved by regeneration and staged with '
+               f'both sides\' tickets, got {wm!r} staged={w_staged!r} rows={w_rows[-300:]!r}',
+               wm is None and 'docs/work/ROADMAP.md' in w_staged and '<<<<<<<' not in w_rows
+               and all(f'| {x} |' in w_rows for x in ('T-0001', 'T-0002', 'T-0003')))
+        sh(wr, 'merge', '--abort')
         mr, mlands = gen_fixture('gen-merge-mailbox', mailbox=True)
         m_tracked = sh(mr, 'ls-files', '.sdlc/messages').stdout.split()
         expect(f'T-0597 lane merge: with .sdlc/messages/ git-ignored and some of its router files tracked, both lands exit 0, '
