@@ -28,3 +28,4 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/evals.py selftest` exits 0 with the case: `evals.py --root .sdlc list` under `work_root: docs/work` reads docs/work/evals/ (red before); `proposals.py selftest` scans docs/work/NOTES.md; `promote.py selftest` appends to docs/work/NOTES.md
+- Moved from T-0632: `check.py`'s evals lock guard (`_evals`, which runs `evals.py --root .sdlc check`) reports a `docs/work/evals/` path on a `work_root: docs/work` fixture with an invalid eval there; this observed run is the control. `check.py` is added to this ticket's files for that one control.
