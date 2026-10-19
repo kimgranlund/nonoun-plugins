@@ -2,7 +2,7 @@
 id: T-0616
 title: "Lane run records vanish when gen-ui-kit lanes are swept, so fleet_collect undercounts"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,9 @@ outcome metric: `fleet_collect.py collect <gen-ui-kit>` runs count over a window
 
 ## Constraints
 The failing test lands before or with the fix, never after. Read-only toward gen-ui-kit; reproduce with a throwaway repo.
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (diagnosed, cause outside sdlc-lite: ~/.claude/lane/lane-close.sh archives each lane's .sdlc to ../ui-kit-archive/sdlc/<lane>, which fleet_collect never scans; all 9 lanes' runs.jsonl (18 rows, incl. cf7 62.529) are there; no code change) · verifier: none · base: none
+- Changed: see commits
+- Commits: none
