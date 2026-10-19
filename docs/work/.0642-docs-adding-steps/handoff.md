@@ -2,7 +2,7 @@
 id: T-0642
 title: "docs/AGENTS.md 'Adding a document' misleads hand edits and ignores numbered forms"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,15 @@ The onboard-generated "Adding a document" steps in `docs/AGENTS.md` let a person
 - `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0
 - `python3 plugins/sdlc-lite/scripts/onboard.py check 2>&1 | grep -qx 'current docs/AGENTS.md'` (amended 2026-10-19, the ticket's one replan: plain `onboard.py check` already exits 1 on main from unadopted `docs/goals/` and `docs/kpi/`)
 - `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0
+
+## Outcome
+
+2026-10-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: redck.py deviations printed no process deviation lines; no criterion is marked (red). | note: the scratch probe repo /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0642-verifier-L2/repo could not be removed (rm denied by the permission system); the throwaway worktree was removed.) · verifier: verifier-L2 (opus) · base: 7c191b1d1a85
+- Changed: see commits
+- Commits: 9916c72 T-0642: docs/AGENTS.md 'Adding a document' misleads hand edits and ignores numbered forms; 4164cbd T-0642: amend criterion 5 (pre-existing onboard check red)
+- Check: 1 `grep -q 'refs/sdlc/doc-ids/' plugins/sdlc-lite/scripts/onboard.py`: pass
+- Check: 2 `grep -q 'docs_check.py next' plugins/sdlc-lite/scripts/onboard.py`: pass
+- Check: 3 `grep -q 'managed:start' docs/AGENTS.md && grep -A12 '^## Adding a document' docs/AGENTS.md | gre...: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0: pass
+- Check: 5 `python3 plugins/sdlc-lite/scripts/onboard.py check 2>&1 | grep -qx 'current docs/AGENTS.md'`: pass
+- Check: 6 `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0: pass
