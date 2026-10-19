@@ -11,7 +11,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0620 | [0620-docs-uppercase-masters](0620-docs-uppercase-masters/handoff.md) | docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons | feature | L2 | P2 | T-0618 | 🔵 ready |
 | T-0619 | [0619-docs-index-and-cap](0619-docs-index-and-cap/handoff.md) | docs_check: every doc listed in its home index, per-home file cap | feature | L2 | P2 | T-0618, T-0620 | 🔵 ready |
-| T-0623 | [0623-work-root-t03-tickets-py-resolution-sites-new-claim-ro](0623-work-root-t03-tickets-py-resolution-sites-new-claim-ro/handoff.md) | work_root t03: tickets.py resolution sites: new/claim/roadmap/check/tidy in the work root (ROADMAP.md, NO | chore | L2 | P2 | T-0621 | 🟡 claimed |
 | T-0624 | [0624-work-root-t04-tickets-py-close-number-archive-dot-rena](0624-work-root-t04-tickets-py-close-number-archive-dot-rena/handoff.md) | work_root t04: tickets.py close/number/archive: dot rename and citation scan under the work root | chore | L2 | P2 | T-0623 | 🔵 ready |
 | T-0626 | [0626-work-root-t06-lanes-and-fanout-untracked-work-root-tic](0626-work-root-t06-lanes-and-fanout-untracked-work-root-tic/handoff.md) | work_root t06: lanes and fanout: untracked work-root tickets are trail, not dirt; generated work-root fil | chore | L2 | P2 | T-0622 | 🟡 claimed |
 | T-0627 | [0627-work-root-t07-record-prefix-consumers-verify-scope-siz](0627-work-root-t07-record-prefix-consumers-verify-scope-siz/handoff.md) | work_root t07: record-prefix consumers: verify_scope size/protected gates, reorg freeze and digest, inven | chore | L2 | P2 | T-0621 | 🟡 claimed |
@@ -22,4 +21,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0635 | [0635-work-root-t12-tickets-py-migrate-work-root-flat-nested](0635-work-root-t12-tickets-py-migrate-work-root-flat-nested/handoff.md) | work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape | chore | L2 | P2 | T-0622, T-0625, T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634 | 🔵 ready |
 | T-0636 | [0636-work-root-t13-migrate-this-repository-to-docs-work](0636-work-root-t13-migrate-this-repository-to-docs-work/handoff.md) | work_root t13: migrate this repository to docs/work | chore | L2 | P2 | T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634, T-0635 | 🔵 ready |
 
-Closed: 584 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 585 done, 29 dropped (git log or .NNNN-* folders)
