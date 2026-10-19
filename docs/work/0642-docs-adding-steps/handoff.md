@@ -39,5 +39,5 @@ The onboard-generated "Adding a document" steps in `docs/AGENTS.md` let a person
 - `grep -q 'docs_check.py next' plugins/sdlc-lite/scripts/onboard.py`
 - `grep -q 'managed:start' docs/AGENTS.md && grep -A12 '^## Adding a document' docs/AGENTS.md | grep -qi 'outside'`
 - `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0
-- `python3 plugins/sdlc-lite/scripts/onboard.py check` exits 0
+- `python3 plugins/sdlc-lite/scripts/onboard.py check 2>&1 | grep -qx 'current docs/AGENTS.md'` (amended 2026-10-19, the ticket's one replan: plain `onboard.py check` already exits 1 on main from unadopted `docs/goals/` and `docs/kpi/`)
 - `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0
