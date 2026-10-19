@@ -5,7 +5,7 @@ type: feature        # feature | bug | chore | spike | idea
 status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
-depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+depends: [T-0642]    # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-19
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 A repository adopted with SDLC Lite stays workable by an agent or person who does not have the plugin installed: `tickets.py` generates `.sdlc/by-hand.md`, a protocol for new, claim, release and close using only git and markdown, and the router links it in one line.
 
 ## Context
-Decided with the user 2026-10-19, widened the same day to docs numbering and hook rules: a separate generated file linked from the router (plugin users read nothing extra); scope new, claim, release, close; a hand close is marked unverified and `check` warns on it.
+Decided with the user 2026-10-19, widened the same day to hook rules, with docs rules split to T-0642: a separate generated file linked from the router (plugin users read nothing extra); scope new, claim, release, close; a hand close is marked unverified and `check` warns on it.
 
 Mechanics to mirror (all in `plugins/sdlc-lite/scripts/tickets.py`):
 - New: next id is `max(folder ids incl. closed .NNNN, refs/sdlc/ids/*) + 1` (`stamp`, `id_floor`); reserve with `git update-ref refs/sdlc/ids/T-NNNN $(printf '<folder>\n' | git hash-object -w --stdin) ""` (create-only, `ref_write`); folder `NNNN-<slug>` in numbered mode; template fields from `skills/ticket/templates/<type>.md`; the `router:` front matter line.
@@ -29,7 +29,7 @@ Mechanics to mirror (all in `plugins/sdlc-lite/scripts/tickets.py`):
 
 ## Do
 - Generate `.sdlc/by-hand.md` from one constant in `tickets.py` in the same pass as the router (same placeholders: work root, folder mode, router path), wrapped as a managed block; add it to the allowed top-level entries.
-- `by-hand.md` also covers: reserving a doc number in a numbered docs home the same create-only way (only when the repo's `docs/layout.md` declares a numbered form); leaving generated `## Contents` blocks alone so the next plugin run lists the new doc; and a short "rules the plugin enforces" list from the hooks above.
+- `by-hand.md` also covers: one line linking `docs/AGENTS.md` "## Adding a document" for documents (T-0642 owns those rules; repeat none of them); and a short "rules the plugin enforces" list from the hooks above.
 - Add one router line: no plugin installed, follow `by-hand.md`.
 - The by-hand close writes the Outcome line with `verdict: closed by hand (unverified) · verifier: none · base: none`.
 - `check` prints one warning per ticket whose Outcome says `closed by hand (unverified)`.
@@ -47,6 +47,6 @@ Mechanics to mirror (all in `plugins/sdlc-lite/scripts/tickets.py`):
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap && test -f .sdlc/by-hand.md`
 - `grep -q 'by-hand.md' .sdlc/AGENTS.md`
 - `grep -q 'refs/sdlc/ids/' .sdlc/by-hand.md && grep -q 'closed by hand (unverified)' .sdlc/by-hand.md`
-- `grep -q 'refs/sdlc/doc-ids/' .sdlc/by-hand.md && grep -qi 'worktrees' .sdlc/by-hand.md`
+- `grep -q 'Adding a document' .sdlc/by-hand.md && grep -qi 'worktrees' .sdlc/by-hand.md`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0

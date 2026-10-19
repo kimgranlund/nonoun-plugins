@@ -1,0 +1,42 @@
+---
+id: T-0642
+title: "docs/AGENTS.md 'Adding a document' misleads hand edits and ignores numbered forms"
+type: bug             # feature | bug | chore | spike | idea
+status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
+priority: P2         # P1 | P2 | P3
+depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+created: 2026-10-19
+router: .sdlc/AGENTS.md  # how to claim and close this ticket
+---
+
+## Goal
+The onboard-generated "Adding a document" steps in `docs/AGENTS.md` let a person or agent without the plugin add a document correctly: the right name form (kebab-case or the numbered form `docs/layout.md` declares), a collision-free number, and a link that does not break a managed block.
+
+## Repro
+1. Read the "## Adding a document" section `plugins/sdlc-lite/scripts/onboard.py` writes (lines 472-478 at filing).
+
+## Expected
+- Step 2 names the numbered form: a home whose `docs/layout.md` `## Kinds` form is numbered (e.g. `NNNN-slug.md`) takes the next number from `docs_check.py next <folder>`, or by hand with a create-only `git update-ref refs/sdlc/doc-ids/<home>/<NNNN> <blob> ""` after reading the highest existing number and ref.
+- Step 3 says to add the link outside the `<!-- sdlc-lite:managed:start` block (D-13 accepts any link in the nearest AGENTS.md, `docs_check.py` lines 34-37), and that the onboard setup also lists it.
+
+## Actual
+- Step 2: "Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`." No numbered form.
+- Step 3: "Add a link to it in its folder's `AGENTS.md`; the onboard setup refreshes the generated Contents lists." The list it points at is a sha-stamped managed block; a hand edit inside it fails the stamp.
+
+## Context
+- Template: `plugins/sdlc-lite/scripts/onboard.py` "## Adding a document".
+- Reservation code: `docs_check.py` `DOC_ID_REFS` (line 87) and `next`; copy its exact ref layout and blob, do not invent one.
+- Split from T-0641 (2026-10-19, user decision): T-0641's `.sdlc/by-hand.md` links to this section instead of repeating docs rules.
+
+## Constraints
+- One source: the docs rules live only in this template; no copy in `.sdlc/by-hand.md`.
+- Regenerate this repo's managed blocks with `onboard.py setup --yes` (or the repo's equivalent) so `onboard.py check` stays current.
+
+## Acceptance criteria
+- `grep -q 'refs/sdlc/doc-ids/' plugins/sdlc-lite/scripts/onboard.py`
+- `grep -q 'docs_check.py next' plugins/sdlc-lite/scripts/onboard.py`
+- `grep -q 'managed:start' docs/AGENTS.md && grep -A12 '^## Adding a document' docs/AGENTS.md | grep -qi 'outside'`
+- `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0
+- `python3 plugins/sdlc-lite/scripts/onboard.py check` exits 0
+- `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0
