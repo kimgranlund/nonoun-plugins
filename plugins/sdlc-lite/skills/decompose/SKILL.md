@@ -36,7 +36,7 @@ A one-direction breakdown hides the other direction's failure. Run both planes i
 2. Outside-in: a node tree. Mark leaves. Give every pure-structure node a `justify` (`affordance`, `grouping`).
 3. Inside-out, without looking at the tree: the action set (verbs, needs, capabilities). Reading one plane off the other passes the gate trivially and finds nothing.
 4. Map each action to the node(s) hosting it. Add `edges` only for a real build-order dependency; the default is parallel.
-5. Write `.sdlc/<slug>/decompose/manifest-v1.json` (schema below) and run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/decompose/scripts/coverage_check.py <manifest>` (add `--strict` in strict mode). Never eyeball coverage.
+5. Write `<records dir>/decompose/manifest-v1.json` (the records dir `order.py records-dir <task dir>` prints) (schema below) and run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/decompose/scripts/coverage_check.py <manifest>` (add `--strict` in strict mode). Never eyeball coverage.
 6. Fix every UNHOSTED, DANGLING, EDGE-DANGLING, EDGE-CYCLE, and (plan mode) NO-ACCEPT; resolve each advisory by hosting an action, adding a `justify`, or deleting. Rerun until exit 0.
 7. Every ratified decision in `design.md` must map to an action. The script cannot see a decision nobody wrote as an action; this is a judgment step.
 8. A manifest handed to /plan is versioned: a replan writes `manifest-v<n+1>.json` with the diff and reason, never an in-place edit.
@@ -58,7 +58,7 @@ If the work will fan out to parallel builders: one writer per file, shared or ba
 ```
 
 ## Report
-Write `.sdlc/<slug>/decompose/report.md`, add `Decomposition: decompose/report.md` under the handoff's Context, and reply with the first two lines:
+Write `<records dir>/decompose/report.md`, add `Decomposition: decompose/report.md` under the handoff's Context, and reply with the first two lines:
 
 ```
 Manifest: <path> (<domain> · <mode>) · coverage_check: <clean | codes>

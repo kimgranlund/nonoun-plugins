@@ -13,7 +13,7 @@ Arguments: `$ARGUMENTS`
 
 | Argument | Meaning | Default | Example |
 |---|---|---|---|
-| `<repo>` | One repo path per word, the first is this repo | the active entries of `.sdlc/fleet.json`, else this repo | `. ../api` |
+| `<repo>` | One repo path per word, the first is this repo | the active entries of the fleet registry (`fleet.json` in `.sdlc/`, or under `work_root`), else this repo | `. ../api` |
 
 ## 1. Collect and detect
 

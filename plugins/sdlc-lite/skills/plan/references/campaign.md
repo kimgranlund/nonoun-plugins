@@ -47,7 +47,7 @@ Reference PR: <#number> (the pattern every lane copies)
 Wave 2 (bulk review): one verifier per bundle of 5 to 10 lanes on a different model family than the builders, plus a probe sweep with before and after numbers per unit (say dev server or dist).
 Wave 3 (bulk PRs): one integration branch per area, <8 to 10> PRs, one plain push each.
 
-Stop rules: stop and write state to .sdlc/notes.md at $<total> total, $<per lane> per lane, a rate or weekly limit, or three 529s in a row.
+Stop rules: stop and write state to <notes file> at $<total> total, $<per lane> per lane, a rate or weekly limit, or three 529s in a row.
 Done when: `<gate command>` exits 0 on main with an empty allowlist
 
 <a fenced /goal block, as in the goal rules: Scope, the outcome lines (Outcome, Measured by, Rubric, Negative control), How to work, Budget and stop rules, Authorization, Done when>

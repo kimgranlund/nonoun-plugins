@@ -32,7 +32,7 @@
 8. Inherited-red route: the phrase `inherited red` (a gate already red at the pre-build HEAD) appears in
    agents/builder.md, agents/verifier.md, agents/conductor.md, skills/chain/SKILL.md, scripts/steps.py, scripts/board.py,
    scripts/run.sh, scripts/fanout.py, and skills/fanout/SKILL.md.
-9. Finish-in-session: the follow-up tags `fix-now:` and `decide:` and the `notes.md` sink appear in
+9. Finish-in-session: the follow-up tags `fix-now:` and `decide:` and the `notes.md` sink (or `NOTES.md`) appear in
    agents/filer.md, scripts/tickets.py, skills/file/SKILL.md, and skills/ticket/SKILL.md; `fix-now:` also in
    skills/chain/SKILL.md and agents/conductor.md; `decide:` also there and in skills/open-questions/SKILL.md;
    `notes.md` also in skills/handoff-format/SKILL.md and agents/conductor.md; and `Loose ends` (/chain 5) in
@@ -461,14 +461,20 @@ FINISH_DOCS = {'fix-now:': FINISH_FILES + (CHAIN, CONDUCTOR),
                'Loose ends': (CHAIN, 'agents/filer.md', HANDOFF_FMT, 'skills/level-rubric/SKILL.md', CONDUCTOR),
                'sdlc-lite:fix': (CONDUCTOR,),
                'fast lane': ('skills/fix/SKILL.md', CONDUCTOR, 'skills/level-rubric/SKILL.md')}
-def finish_missing(text, word): return not re.search(re.escape(word) + r'(?![\w-])', text)
+# The notes sink is notes.md, or NOTES.md under work_root.
+FINISH_ALIASES = {'notes.md': ('notes.md', 'NOTES.md')}
+def finish_missing(text, word): return not any(re.search(re.escape(w) + r'(?![\w-])', text) for w in FINISH_ALIASES.get(word, (word,)))
+def finish_strip(text, word):
+    for w in FINISH_ALIASES.get(word, (word,)): text = text.replace(w, '')
+    return text
+if finish_missing('the NOTES.md sink', 'notes.md'): errors.append('check.py: finish-in-session notes pin rejects NOTES.md (work_root layout)')
 for word, rels in FINISH_DOCS.items():
     for rel in rels:
         f = root/rel
         if not f.is_file(): errors.append(f'{rel}: missing (finish-in-session check)'); continue
         text = f.read_text()
         if finish_missing(text, word): errors.append(f'{rel}: finish-in-session wording missing "{word}"')
-        elif not finish_missing(text.replace(word, ''), word):
+        elif not finish_missing(finish_strip(text, word), word):
             errors.append(f'{rel}: finish-in-session negative control not flagged for "{word}"')
 # Merge-step template: one block, kept identical in the planner and handoff-format, that lints clean.
 def merge_block(rel):
