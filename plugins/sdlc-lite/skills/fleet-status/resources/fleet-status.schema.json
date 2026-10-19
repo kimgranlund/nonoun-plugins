@@ -136,6 +136,7 @@
         },
         "release": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/release"}], "description": "Null for a missing directory."},
         "worktrees": {"type": "integer", "minimum": 0, "description": "Linked worktree count."},
+        "work_dir": {"type": "string", "description": "Repo-relative dir of the ticket folders: the work root under a work_root line, else .sdlc. Optional; render reads an absent key as .sdlc."},
         "pruning": {"type": "array", "items": {"type": "object", "required": ["name", "role", "level", "recorded_at", "age_s"], "additionalProperties": false,
           "properties": {"name": {"type": "string"}, "role": {"type": "string"}, "level": {"type": "string"}, "recorded_at": {"type": "string"},
                          "age_s": {"type": ["integer", "null"]}}},

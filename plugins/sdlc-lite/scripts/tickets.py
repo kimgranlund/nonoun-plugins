@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Tickets are .sdlc/<slug>/handoff.md (or .sdlc/tickets/<slug>/handoff.md) files that open with front matter.
-See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
-This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
+"""Tickets are .sdlc/<slug>/handoff.md (or .sdlc/tickets/<slug>/handoff.md, or <W>/<slug>/handoff.md) files that
+open with front matter. See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root:
+tickets` line, the <W> form when it has a `work_root: W` line (W is repo-relative, e.g. docs/work).
+This script is the only writer of the roadmap: .sdlc/roadmap.md, .sdlc/tickets/roadmap.md with `layout: topics`,
+or <W>/ROADMAP.md under a work root.
 
 Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
             and roadmap rows link tickets/<slug>/handoff.md. With `layout: topics` too (see config), roadmap.md
-            moves to <root>/tickets/roadmap.md (rows link <slug>/handoff.md) and notes.md to <root>/notes/notes.md;
-            layout_paths(root) resolves all of these, and every notes.md path below means that file
+            moves to <root>/tickets/roadmap.md (rows link <slug>/handoff.md) and notes.md to <root>/notes/notes.md.
+            With a `work_root: W` line the ticket dirs, roadmap and notes live in the work root <top>/W as
+            <top>/W/<slug>, <top>/W/ROADMAP.md and <top>/W/NOTES.md, while config, the router and _templates
+            stay at <root>. layout_paths(root) resolves all of these, and every notes.md path below means that file
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
             Numbered mode (--numbered, or a `ticket_folders: numbered` line in <root>/config) names
@@ -131,7 +135,7 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Every other close (and --dry-run) holds an exclusive flock on <root>/runtime/close.lock, so closes in
             one root run one at a time; a second one prints `waiting for <lock>: another close is running` and waits.
             A runtime/ dir the lock creates gets a `*` .gitignore, so the lock leaves git status clean
-  roadmap   regenerate the roadmap (<root>/roadmap.md, or <root>/tickets/roadmap.md with `layout: topics`) in dependency order (refuses on any ticket problem, including,
+  roadmap   regenerate the roadmap (<root>/roadmap.md, <root>/tickets/roadmap.md with `layout: topics`, or <W>/ROADMAP.md with `work_root: W`) in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule). Only open tickets get a row; done and
             dropped ones are counted in one `Closed: <n> done, <m> dropped` line after the table
   check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
@@ -273,7 +277,8 @@ when the ticket's front matter has a non-empty `claimed_by:`, then `, paused: <r
 close procedures) and
 <root>/CLAUDE.md, and with `ticket_root: tickets` also <root>/tickets/AGENTS.md (the same procedures) and
 <root>/tickets/CLAUDE.md, and with `layout: topics` also work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and
-notes/CLAUDE.md (short entry blocks); the topics router opens with a topic-folder paragraph and both procedures
+notes/CLAUDE.md (short entry blocks), and with `work_root: W` also W/AGENTS.md and W/CLAUDE.md (the work root's
+entry block, linking <root>/AGENTS.md for the procedures); the topics router opens with a topic-folder paragraph and both procedures
 send notes to `<R>/notes/notes.md`. Every command that regenerates the roadmap (new, close, roadmap, archive, number)
 regenerates them. The block uses onboard.py's managed-block format and helpers (wrap_block, find_block,
 digest, has_import, _replace_region, _append_region; same scripts/ dir, standard library only): a missing

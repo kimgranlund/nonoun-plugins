@@ -72,7 +72,8 @@ here or in scan_repo() and not in the schema fails the selftest. The notes below
                 `ps` failed. watchers: vite, nodemon, fswatch, watchman, chokidar, tsc -w, supervisor.py watch, any
                 `--watch`.
   repos[]       name, path, conductor, gh, error (a missing directory only), rows[], counts, needs_you[], prs,
-                release, worktrees (linked worktree count), unread[] (ids of the messages in
+                release, worktrees (linked worktree count), work_dir (the repo-relative dir of the ticket folders:
+                the work root under a work_root line, else .sdlc; Done since Source cells name it), unread[] (ids of the messages in
                 .sdlc/messages/new/<receiver>/, from file names only), supervisor (null, {error}, or {running,
                 age_s, receivers{name: state}} from .sdlc/supervisor/status.json)
     rows[]      one per board row (the tasks board.py shows): id, task (folder), title, ticket_status, board (the
@@ -593,6 +594,15 @@ def blocked_owner(task, root, tid):
     return 'unknown', ''
 
 
+def work_dir(repo):
+    """The repo-relative dir of the ticket folders that render's Source cells name: the work root under a
+    work_root line (T-0637), else .sdlc. A config roots.py refuses keeps .sdlc, as the board does."""
+    try:
+        return sdlc_roots.record_prefixes(repo)[-1].rstrip('/')
+    except sdlc_roots.Fail:
+        return '.sdlc'
+
+
 def board_cell(rows):
     pick = next((r for r in rows if r[2] == '\U0001F534'), None) or next((r for r in rows if r[2] == '\U0001F7E1'), None)
     r = pick or rows[0]
@@ -708,7 +718,8 @@ def scan_repo(entry, procs, now, active_s, gh, since=None):
     out = {'name': entry['name'], 'path': repo, 'conductor': entry.get('conductor'), 'gh': entry.get('gh'),
            'rows': [], 'counts': {}, 'needs_you': [], 'prs': 'skipped', 'release': release_state(repo),
            'worktrees': 0, 'tickets': {}, 'unread': unread_ids(repo),
-           'supervisor': supervisor_state(repo, now.timestamp()), 'pruning': pruning_queue(repo, now.timestamp())}
+           'supervisor': supervisor_state(repo, now.timestamp()), 'pruning': pruning_queue(repo, now.timestamp()),
+           'work_dir': work_dir(repo)}
     root = pathlib.Path(repo) / '.sdlc'
     _roots, linked = fleet_collect.worktree_roots(repo)
     linked = [w for w in linked if os.path.isdir(w)]
@@ -1184,15 +1195,16 @@ def done_items(data):
             note = ' (PR merges not checked)'
     else:
         d = data['delta']
+        wdir = {r['name']: r.get('work_dir') or '.sdlc' for r in data['repos']}
         if d['first_run']:
             return 'Done since last report: first report, nothing earlier to compare (pass --since DATE for a dated list)', []
         since = d['since']
         for c in d['closed']:
             items.append(('%s %s %s %s (closed)' % (DONE_MARK, c['repo'], c['id'], clean(c['title'], TITLE_W)),
-                          '%s/.sdlc/%s' % (c['repo'], c['task'])))
+                          '%s/%s/%s' % (c['repo'], wdir.get(c['repo'], '.sdlc'), c['task'])))
         for c in d['dropped']:
             items.append(('- %s %s %s (dropped)' % (c['repo'], c['id'], clean(c['title'], TITLE_W)),
-                          '%s/.sdlc/%s' % (c['repo'], c['task'])))
+                          '%s/%s/%s' % (c['repo'], wdir.get(c['repo'], '.sdlc'), c['task'])))
         for p in d['prs_merged']:
             items.append(('%s %s PR #%s %s (merged)' % (DONE_MARK, p['repo'], p['number'], clean(p['title'], TITLE_W)),
                           '%s PR #%s' % (p['repo'], p['number'])))
@@ -1748,6 +1760,9 @@ def selftest_collect():
         outw = collect([{'name': 'wr', 'path': wr, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
         nyw = {n['id']: n for n in outw['needs_you'] if n['kind'] == 'blocked'}
         ok('work_root: a blocked ticket owner is read from docs/work/NOTES.md', nyw.get('T-0021', {}).get('owner') == 'user')
+        ok('work_root: the collected repo names docs/work as its work dir', outw['repos'][0].get('work_dir') == 'docs/work')
+        ok('work_root: with no work_root line the collected work dir is .sdlc', out['repos'][0].get('work_dir') == '.sdlc')
+        ok('work_root: the collected repo with a work dir validates against the schema', not schema_errors(outw, schema))
 
         # release state
         rel = out['repos'][0]['release']
@@ -2355,6 +2370,14 @@ def selftest_render():
     ok('done: closed, dropped, merged and closed-unmerged are listed with their sources',
        has(dsec['Done since'], 'T-0100 closed one (closed)  [alpha/.sdlc/.0100-x]') and has(dsec['Done since'], 'T-0101 dropped one (dropped)')
        and has(dsec['Done since'], 'PR #7 merged one (merged)  [alpha PR #7]') and has(dsec['Done since'], 'PR #8 shut one (closed, not merged)'))
+    wrr = repo('beta', [])
+    wrr['work_dir'] = 'docs/work'
+    dsw = sections(render(model([wrr], delta={
+        'closed': [{'repo': 'beta', 'id': 'T-0300', 'task': '.0300-x', 'title': 'closed wr'}],
+        'dropped': [{'repo': 'beta', 'id': 'T-0301', 'task': '.0301-x', 'title': 'dropped wr'}]})))
+    ok('done: under work_root the Source cells name the work root',
+       has(dsw['Done since'], 'T-0300 closed wr (closed)  [beta/docs/work/.0300-x]')
+       and has(dsw['Done since'], 'T-0301 dropped wr (dropped)  [beta/docs/work/.0301-x]'))
     ok('done: a ticket that vanished is stuck, not done', has(dsec['Stale or stuck'], 'T-0102') and not has(dsec['Done since'], 'T-0102'))
     dm = model([repo('alpha', [], conductor='c')], report={'mode': 'date', 'at': '2026-10-01T00:00:00Z'})
     dm['repos'][0]['closed_since'] = [{'id': 'T-0200', 'title': 'dated', 'task': '.0200-x', 'sha': 'abc1234', 'when': '2026-10-02T00:00:00Z'}]

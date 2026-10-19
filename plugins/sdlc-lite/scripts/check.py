@@ -19,7 +19,8 @@
    the builder's one-criterion amend (`amend old:` and `amend new:` lines under a blocked build's
    `plan defect:` note, applied by `steps.py amend`) appears in agents/builder.md and scripts/steps.py, and the
    `steps.py amend` route appears wherever `steps.py swap` does,
-   and the build-start base `SDLC_BASE_SHA` appears in the planner, builder, verifier, run.sh, and steps.py.
+   and the build-start base `SDLC_BASE_SHA` appears in the planner, builder, verifier, run.sh, and steps.py,
+   and the planner's scope pathspec also leaves out the work root (`:(exclude)<work_root>`) under a work_root line.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
@@ -418,6 +419,7 @@ PLAN_DEFECT_DOCS = {
     'gates green': ('agents/planner.md',),
     'one Bash call': ('agents/planner.md',),
     'can go red': ('agents/planner.md',),
+    ':(exclude)<work_root>': ('agents/planner.md',),  # T-0637: scope checks leave out the work root's untracked records
     'SDLC_BASE_SHA': ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'scripts/run.sh',
                       'scripts/steps.py'),
     'membership or structure': ('agents/planner.md',),
