@@ -11,8 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0620 | [0620-docs-uppercase-masters](0620-docs-uppercase-masters/handoff.md) | docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons | feature | L2 | P2 | T-0618 | 🔵 ready |
 | T-0619 | [0619-docs-index-and-cap](0619-docs-index-and-cap/handoff.md) | docs_check: every doc listed in its home index, per-home file cap | feature | L2 | P2 | T-0618, T-0620 | 🔵 ready |
-| T-0633 | [0633-work-root-t11-agent-and-skill-prose-names-record-paths](0633-work-root-t11-agent-and-skill-prose-names-record-paths/handoff.md) | work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents | chore | L2 | P2 | T-0625, T-0632 | 🟡 claimed |
 | T-0635 | [0635-work-root-t12-tickets-py-migrate-work-root-flat-nested](0635-work-root-t12-tickets-py-migrate-work-root-flat-nested/handoff.md) | work_root t12: tickets.py migrate-work-root: flat, nested and topics sources into one docs/work shape | chore | L2 | P2 | T-0622, T-0625, T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634 | 🔵 ready |
 | T-0636 | [0636-work-root-t13-migrate-this-repository-to-docs-work](0636-work-root-t13-migrate-this-repository-to-docs-work/handoff.md) | work_root t13: migrate this repository to docs/work | chore | L2 | P2 | T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634, T-0635 | 🔵 ready |
 
-Closed: 591 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 592 done, 29 dropped (git log or .NNNN-* folders)

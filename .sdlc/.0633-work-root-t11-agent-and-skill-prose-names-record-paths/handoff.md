@@ -2,7 +2,7 @@
 id: T-0633
 title: "work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0625, T-0632]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `grep -rlE '\.sdlc/(notes\.md|roadmap\.md|evals/|proposals/|fleet\.json|<slug>/|<task>/)' plugins/sdlc-lite/agents plugins/sdlc-lite/skills | wc -l` prints 0 (red before: about 30 files), and `bash plugins/sdlc-lite/scripts/check.sh` exits 0 including generated-agent parity; the check.py notes pin accepts NOTES.md
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: no new em dashes in the diff (0 added lines contain one). | note: the red-first order is not recorded as a `redck.py` deviation (the command printed none); the failing state was reproduced by the base-sha grep (27 files) and the base regex.) · verifier: verifier-L2 (sonnet) · base: e4c243ccb1c9
+- Changed: see commits
+- Commits: 27e2543 T-0633: work_root t11: agent and skill prose names record paths layout-neutrally; regenerate Claude level agents
+- Check: 1 grep of hardcoded `.sdlc/` record paths in agents and skills prints 0; check.sh exits 0 including...: pass
