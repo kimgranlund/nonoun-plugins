@@ -34,6 +34,7 @@ import argparse, json, os, pathlib, re, subprocess, sys, tempfile, time
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import dispatch, order, plan_check, plan_doc, results, steps, tickets  # noqa: E402
+import roots  # noqa: E402  (work_root: the notes path)
 
 STATE = 'plan-state.json'
 REPLAN_CAP = 1
@@ -305,7 +306,11 @@ def notes_path(plan, root):
         text = pathlib.Path(plan).read_text(encoding='utf-8')
     except OSError:
         return None
-    m = NOTES_RE.search(plan_doc.parse(text).section('Budget and stop rules') or '')
+    budget = plan_doc.parse(text).section('Budget and stop rules') or ''
+    rel = plan_check.notes_rel(root)  # work_root: the plan names the work root's NOTES.md
+    if rel:
+        return roots.resolve(pathlib.Path(root)).notes if rel in budget else None
+    m = NOTES_RE.search(budget)
     return pathlib.Path(root) / m.group(1) if m else None
 
 
@@ -524,6 +529,16 @@ def selftest():
     state = json.loads(state_path(plan).read_text(encoding='utf-8'))
     expect('plan_done: plan-state.json holds replans and stopped and nothing else', sorted(state) == ['replans', 'stopped'] and state['replans'] == 0, state)
     expect('plan_done: stop appended one line to the notes file the plan names', (root / 'notes.md').read_text(encoding='utf-8').count('stopped: weekly limit') == 1)
+    # work_root: the plan names docs/work/NOTES.md and stop writes it there
+    tmp, root, plan = fresh()
+    (root / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+    plan.write_text(plan.read_text(encoding='utf-8').replace('.sdlc/notes.md', 'docs/work/NOTES.md'), encoding='utf-8')
+    expect('plan_done: under work_root: docs/work a Budget naming docs/work/NOTES.md is no stop-rules defect',
+           not any('stop-rules' in x for x in run_all(root, plan)['defects']), run_all(root, plan)['defects'])
+    rc, out = cli(plan, root, 'stop', str(plan), '--reason', 'weekly limit')
+    wn = tmp / 'docs' / 'work' / 'NOTES.md'
+    expect('plan_done: under work_root stop appends to docs/work/NOTES.md and writes no .sdlc/notes.md',
+           rc == 0 and wn.is_file() and 'stopped: weekly limit' in wn.read_text(encoding='utf-8') and not (root / 'notes.md').exists(), (rc, out))
     # resume (T-0438): the stop record clears without hand removal; the replan count survives
     tmp, root, plan = fresh()
     ed(root / '0413-resume' / 'handoff.md', 'status: done', 'status: ready')

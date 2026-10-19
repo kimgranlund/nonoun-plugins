@@ -57,6 +57,7 @@ import argparse, glob, json, os, pathlib, re, shlex, subprocess, sys, tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import plan_doc  # noqa: E402  (the shared plan-doc parser)
+import roots  # noqa: E402  (work_root: the notes path)
 HOT = {'check.py', 'check.sh', 'AGENTS.md', 'README.md'}  # shared files that conflict at merge: warn, not fail
 VAGUE = re.compile(r"(?i)looks? good|feels?|seems?|good enough|as needed|when (it's|it is) done|everything works|all done")
 CHECKABLE = re.compile(r"(?i)exit(s)? 0|rc=0|rc 0|\btag\b|origin/main|published|pushed|merged|closed|status: done|\.md\b|"
@@ -86,6 +87,27 @@ def sections(text):
     return out
 
 
+def notes_rel(root):
+    """The work-root notes path (posix, relative to the repo top, e.g. docs/work/NOTES.md) when <root>/config sets a
+    `work_root:` line, else None: the legacy .sdlc/notes.md and .sdlc/notes/notes.md rule applies. An unsafe config is no line."""
+    try:
+        state = pathlib.Path(root)
+        if not roots.parse(roots.read_config(state)).work_root:
+            return None
+        r = roots.resolve(state)
+        return pathlib.PurePath(os.path.relpath(r.notes, r.top)).as_posix()
+    except roots.Fail:
+        return None
+
+
+def notes_rule(root):
+    """(regex, where) for the stop-rule state path under root: the work-root NOTES.md, or the legacy .sdlc paths."""
+    rel = notes_rel(root)
+    if rel:
+        return re.escape(rel), f'{rel}, the work root\'s notes file'
+    return r'\.sdlc/notes(/notes)?\.md', '.sdlc/notes.md, or .sdlc/notes/notes.md with layout: topics'
+
+
 def check_goal(text, root='.sdlc'):
     text = unwrap(text)
     fails, warns = [], []
@@ -107,8 +129,9 @@ def check_goal(text, root='.sdlc'):
             fails.append(('stop-529', 'stop rules need the three-529s rule'))
         if not re.search(r'(?i)rate|weekly|limit', s):
             fails.append(('stop-limit', 'stop rules need the rate or weekly limit rule'))
-        if not re.search(r'\.sdlc/notes(/notes)?\.md', s):
-            fails.append(('stop-state', 'stop rules need where state is written (.sdlc/notes.md, or .sdlc/notes/notes.md with layout: topics)'))
+        nrx, nwhere = notes_rule(root)
+        if not re.search(nrx, s):
+            fails.append(('stop-state', f'stop rules need where state is written ({nwhere})'))
     if not re.search(r'(?is)verifier.{0,80}fail|fail.{0,80}verifier', text):
         fails.append(('verifier-fail', 'say that a verifier fail means fix and re-verify, never merge on a fail'))
     if 'auth' in sec:
@@ -735,7 +758,7 @@ def check_plan(text, root='.sdlc', run=False, path=None):
     else:
         for why, ok in (('a dollar cap (a number)', re.search(r'\$\s?\d+', budget)), ('the three-529s rule', '529' in budget),
                         ('the rate or weekly limit rule', re.search(r'(?i)rate|weekly|limit', budget)),
-                        ('where state is written (.sdlc/notes.md, or .sdlc/notes/notes.md)', re.search(r'\.sdlc/notes(/notes)?\.md', budget)),
+                        (f'where state is written ({notes_rule(root)[1]})', re.search(notes_rule(root)[0], budget)),
                         ('`replan cap: 1`', re.search(r'(?i)replan cap\W{0,3}1\b', budget))):
             if not ok:
                 bad('stop-rules', f'Budget and stop rules needs {why}')
@@ -1854,6 +1877,22 @@ def selftest():
         (pathlib.Path(d) / 'docs' / 'kpi' / '001-x.md').write_text('---\nid: K-001\n---\n')
         f, w = check_goal(GOOD_GOAL, root=os.path.join(d, '.sdlc'))
         expect('goal: a K id with its docs/kpi file does not warn', not f and not w)
+    with tempfile.TemporaryDirectory() as d:  # work_root: the stop rule names the work root's NOTES.md
+        (pathlib.Path(d) / '.sdlc').mkdir()
+        (pathlib.Path(d) / '.sdlc' / 'config').write_text('work_root: docs/work\n')
+        wroot = os.path.join(d, '.sdlc')
+        wgoal = GOOD_GOAL.replace('.sdlc/notes.md', 'docs/work/NOTES.md')
+        f, _ = check_goal(wgoal, root=wroot)
+        expect('goal: under work_root: docs/work a stop rule naming docs/work/NOTES.md passes stop-state', not any(r == 'stop-state' for r, _ in f))
+        f, _ = check_goal(GOOD_GOAL, root=wroot)
+        expect('goal: under work_root the legacy .sdlc/notes.md stop path fails stop-state', any(r == 'stop-state' for r, _ in f))
+        f, _ = check_goal(wgoal, root=os.path.join(d, 'none', '.sdlc'))
+        expect('goal: with no work_root line docs/work/NOTES.md still fails stop-state', any(r == 'stop-state' for r, _ in f))
+        wplan = GOOD_PLAN.replace('.sdlc/notes.md', 'docs/work/NOTES.md')
+        f, _ = check_plan(wplan, root=wroot, path=GOOD_PLAN_PATH)
+        expect('plan: under work_root: docs/work a Budget naming docs/work/NOTES.md passes stop-rules', not any(r == 'stop-rules' for r, _ in f))
+        f, _ = check_plan(GOOD_PLAN, root=wroot, path=GOOD_PLAN_PATH)
+        expect('plan: under work_root the legacy .sdlc/notes.md Budget fails stop-rules', any(r == 'stop-rules' for r, _ in f))
     muts = {
         'starts-with-goal': GOOD_GOAL.replace('/goal Overnight', 'Overnight'),
         'section-scope': GOOD_GOAL.replace('Scope (', 'Items ('),
