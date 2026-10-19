@@ -1825,6 +1825,19 @@ def compaction_selftest(expect):
 
 
 def selftest():
+    # Cases that omit root resolve the default '.sdlc' against the cwd; run them from an empty repository (clarify_foreign
+    # reads its git toplevel) so a work_root line in the live config cannot change the legacy-path fixtures.
+    here = os.getcwd()
+    with tempfile.TemporaryDirectory() as empty:
+        subprocess.run(['git', 'init', '-q', empty], stdin=subprocess.DEVNULL, check=True)
+        os.chdir(empty)
+        try:
+            return _selftest()
+        finally:
+            os.chdir(here)
+
+
+def _selftest():
     bad, n = [], [0]
 
     def expect(label, cond):
