@@ -32,7 +32,8 @@ is unchanged.
 
 A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format),
 or also .sdlc/tickets/<task>/ when .sdlc/config has a `ticket_root: tickets` line, and also
-.sdlc/work/<task>/ (tasks with no ticket) when it has `layout: topics` too (an unsupported
+.sdlc/work/<task>/ (tasks with no ticket) when it has `layout: topics` too, or instead
+<top>/<path>/<task>/ when it has a `work_root: <path>` line (roots.py; an unsupported
 ticket_root or layout value is ignored: the board lists root tasks only and never fails on config).
 A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
 and the --summary L5 check, but its cost and recorded work still count.
@@ -286,7 +287,8 @@ def task_dirs(root: pathlib.Path):
     """Dirs directly under root holding a handoff.md, plus those directly under the ticket dir
     when tickets.ticket_dir(root) is not root, plus those under the work dir when
     tickets.layout_paths(root) puts it elsewhere (`layout: topics`: ticket-less tasks live in
-    <root>/work). An unsupported ticket_root or layout value (tickets.Fail) counts root only:
+    <root>/work). With a `work_root:` line the ticket dir and the work dir are the same <top>/<work_root>,
+    whose tasks are listed once. An unsupported ticket_root or layout value (tickets.Fail) counts root only:
     the board is display-only and never fails on config."""
     def under(d):
         return [c for c in d.iterdir() if c.is_dir() and (c / 'handoff.md').exists()] if d.is_dir() else []
@@ -301,7 +303,7 @@ def task_dirs(root: pathlib.Path):
         work = tickets.layout_paths(root).work
     except tickets.Fail:
         return found
-    if work != root:
+    if work not in (root, td):
         found += under(work)
     return found
 
@@ -1475,6 +1477,32 @@ def selftest() -> int:
         proc = board_p(pr)
         expect(f'an unsupported layout still lists the tickets and never fails, got {proc.returncode} {proc.stdout!r}',
                proc.returncode == 0 and '0001-a' in proc.stdout and '| w1 |' not in proc.stdout)
+
+    # 11. work_root: docs/work: ticket folders under <top>/docs/work are listed once for --root .sdlc.
+    with tempfile.TemporaryDirectory() as wtmp:
+        wtmp = pathlib.Path(wtmp)
+        me = str(pathlib.Path(__file__).resolve())
+        env = dict(os.environ, SDLC_BOARD_STATE_DIR=str(wtmp / 'state'))
+
+        def board_w(root, *args):
+            return subprocess.run([sys.executable, me, '--root', str(root), *args],
+                                  env=env, capture_output=True, text=True)
+
+        wr = wtmp / 'proj' / '.sdlc'
+        wr.mkdir(parents=True)
+        tk = task_dir(wr.parent / 'docs' / 'work', '0001-a', front.replace('T-0042', 'T-0001'))
+        (tk / 'planner-L1.md').write_text('## Step 1: x\nlevel: L1\n')
+        (wr / 'config').write_text('work_root: docs/work\n')
+        out = board_w(wr).stdout
+        expect(f'work_root: docs/work lists the ticket under docs/work once, got {out!r}',
+               out.count('| T-0001 | 0001-a |') == 1)
+        proc = board_w(wr, '--task', '0001-a')
+        expect(f'--task finds a ticket under docs/work, got {proc.returncode} {proc.stdout!r}',
+               proc.returncode == 0 and '0001-a' in proc.stdout)
+        # Negative control: with no work_root line docs/work/<dir> is not a task.
+        (wr / 'config').write_text('# work_root: docs/work\n')
+        out = board_w(wr).stdout
+        expect(f'with no work_root line docs/work/<dir> is not a task, got {out!r}', '0001-a' not in out)
 
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)

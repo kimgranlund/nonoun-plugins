@@ -7,7 +7,8 @@ Usage: solo_stats.py stats <repo> [<repo> ...] [--since DATE] [--until DATE] [--
 Prints one table (or with --json one object) for the repos together plus a line per repo. Only each repo's own
 main checkout `.sdlc` is read: a ticket folder copied into a linked worktree is not counted. Closed `.NNNN-*`
 folders (a leading dot) are read like any other. The ticket-folder layout is the repo's (`ticket_root: tickets` in
-its `.sdlc/config`), as fleet_collect.py reads it. A runs.jsonl under `.sdlc/runtime/tasks/<key>/` (the records dir)
+its `.sdlc/config`), as fleet_collect.py reads it; with a `work_root:` line the ticket folders are read from that
+work root (records still under `.sdlc/runtime/tasks/<key>/`), under the flat layout's keys. A runs.jsonl under `.sdlc/runtime/tasks/<key>/` (the records dir)
 counts for its task folder (fleet_collect.ticket_of). Rows are deduplicated by attempt_id (a row with none, on its whole line).
 
 A solo ticket is a ticket folder whose `runs.jsonl` files hold at least one `solo` role row inside the window:
@@ -62,12 +63,13 @@ def verdict_of(text):
     return ''
 
 
-def round_verdicts(folder, round_key=None):
+def round_verdicts(folder, round_key=None, records=None):
     """[(round number, verdict)] of the verifier result files in one ticket folder, one per file, ordered by
     round number then verifier level (`verifier-L2.md`, `verifier-L3.md`, `verifier-L3-2.md`). round_key is the
     negative control: when given, the files are ordered by it applied to the file name instead. The files are read
-    from the folder's records dir (order.records_dir: `runtime/tasks/<key>/`, or the folder itself for a legacy one)."""
-    folder = str(order.records_dir(folder))
+    from the folder's records dir (order.records_dir: `runtime/tasks/<key>/`, or the folder itself for a legacy one),
+    or from records when given."""
+    folder = str(records or order.records_dir(folder))
     files = []
     try:
         names = os.listdir(folder)
@@ -84,14 +86,14 @@ def round_verdicts(folder, round_key=None):
     return [(rnd, verdict_of(fc.read_text(os.path.join(folder, n)))) for rnd, _lvl, n in files]
 
 
-def is_closed(sdlc, key):
+def is_closed(folder, key):
     """Closed = a hidden `.NNNN-*` folder (the T-0449 baseline's rule)."""
     return os.path.basename(key).startswith('.')
 
 
-def handoff_done(sdlc, key):
+def handoff_done(folder, key):
     """True when the folder's handoff.md front matter has status done or dropped."""
-    lines = fc.read_text(os.path.join(sdlc, key, 'handoff.md')).splitlines()
+    lines = fc.read_text(os.path.join(folder, 'handoff.md')).splitlines()
     if lines and lines[0].strip() == '---':
         for line in lines[1:]:
             if line.strip() == '---':
@@ -118,16 +120,17 @@ def repo_stats(repo, window, round_key=None, dedupe=True, main_only=True, closed
     if not main_only:
         roots = fc.worktree_roots(repo)[0]
     out = new_counts()
-    nested = fc.nested_tickets(os.path.join(repo, '.sdlc'))
+    nested, rel = fc.nested_tickets(os.path.join(repo, '.sdlc')), fc.work_root(os.path.join(repo, '.sdlc'))
     seen, tickets = set(), {}
     for root in roots:
         sdlc = os.path.join(root, '.sdlc')
-        for cur, dirs, files in os.walk(sdlc):
+        tops = [t for t in (sdlc, fc.work_dir(sdlc, rel)) if t]
+        for cur, dirs, files in (w for t in tops for w in os.walk(t)):
             dirs[:] = sorted(d for d in dirs if d not in fc.SKIP_DIRS)
             if 'runs.jsonl' not in files:
                 continue
             p = os.path.join(cur, 'runs.jsonl')
-            key = fc.ticket_of(sdlc, p, nested)
+            key = fc.ticket_of(sdlc, p, nested, rel)
             for line in fc.read_text(p).splitlines():
                 line = line.strip()
                 try:
@@ -146,11 +149,15 @@ def repo_stats(repo, window, round_key=None, dedupe=True, main_only=True, closed
     cost = out['cost']
     for key in sorted(tickets):
         sdlc, rows = tickets[key]
-        folder = os.path.join(sdlc, key)
+        work = fc.work_dir(sdlc, rel)
+        folder = os.path.join(work if work and os.path.isdir(os.path.join(work, key)) else sdlc, key)
+        records = None
+        if not fc.under(folder, sdlc) and os.path.isdir(os.path.join(sdlc, 'runtime', 'tasks', key.lstrip('.'))):
+            records = os.path.join(sdlc, 'runtime', 'tasks', key.lstrip('.'))  # a work-root folder's records dir
         out['tickets'] += 1
-        closed = closed_fn(sdlc, key)
+        closed = closed_fn(folder, key)
         out['closed' if closed else 'open'] += 1
-        out['open_done'] += not closed and handoff_done(sdlc, key)
+        out['open_done'] += not closed and handoff_done(folder, key)
         for rec in rows:
             c, d = fc.num(rec.get('cost_usd')), fc.num(rec.get('duration_ms'))
             cost['runs'] += 1
@@ -161,7 +168,7 @@ def repo_stats(repo, window, round_key=None, dedupe=True, main_only=True, closed
             cost['cost_usd'] += c
             cost['minutes'] += (d or 0.0) / 60000.0
         out['gate_tests_only'] += TESTS_GATE_SKIP in fc.read_text(os.path.join(folder, 'skips.md'))
-        rounds = round_verdicts(folder, round_key)
+        rounds = round_verdicts(folder, round_key, records)
         if not rounds:
             continue
         out['verified'] += 1
@@ -343,18 +350,23 @@ def selftest():
         case('control name-ordered rounds', (by_name['first_pass'], by_name['ended_pass']), (3, 1))
         with_wt = repo_stats(repo, window, main_only=False)
         case('control worktree copy', (with_wt['tickets'], with_wt['cost']['runs']), (6, 8))
-        status_only = repo_stats(repo, window, closed_fn=lambda sdlc, k: handoff_done(sdlc, k))
+        status_only = repo_stats(repo, window, closed_fn=lambda folder, k: handoff_done(folder, k))
         case('control hidden closed folder', (status_only['closed'], status_only['closed_no_pass']), (1, 0))
         case('control duplicate rows', repo_stats(repo, window, dedupe=False)['cost']['runs'], 7)
         case('verdict first word', verdict_of(verdict('inherited red: t1')), 'inherited')
         case('cli no arguments', main([]), 2)
         case('cli missing repo', main(['stats', os.path.join(tmp, 'nope')]), 2)
         case('cli bad date', main(['stats', repo, '--since', 'soon']), 2)
-        # records dir: a solo row under runtime/tasks/<key>/ counts for its closed folder; legacy reads in place.
-        for name, rt in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False)):
+        # records dir: a solo row under runtime/tasks/<key>/ counts for its closed folder; legacy reads in place;
+        # with work_root: docs/work the folder is read from docs/work and its records from .sdlc/runtime.
+        for name, rt in (('records dir: runtime-only fixture', True), ('records dir: legacy fixture', False),
+                         ('records dir: work_root fixture', 'work')):
             r2 = os.path.join(tmp, 'rr-' + str(rt))
             s2 = os.path.join(r2, '.sdlc')
-            write(os.path.join(s2, '.0001-a', 'handoff.md'), '---\nid: T-0001\nstatus: done\n---\n')
+            home = os.path.join(r2, 'docs', 'work') if rt == 'work' else s2
+            if rt == 'work':
+                write(os.path.join(s2, 'config'), 'work_root: docs/work\n')
+            write(os.path.join(home, '.0001-a', 'handoff.md'), '---\nid: T-0001\nstatus: done\n---\n')
             rec_dir = os.path.join(s2, 'runtime', 'tasks', '0001-a') if rt else os.path.join(s2, '.0001-a')
             write(os.path.join(rec_dir, 'runs.jsonl'), row('r1', '2026-10-10T10:00:00Z', 2.5, 60000))
             write(os.path.join(rec_dir, 'verifier-L2.md'), verdict('pass'))

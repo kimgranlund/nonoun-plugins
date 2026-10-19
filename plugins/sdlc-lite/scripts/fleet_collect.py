@@ -29,7 +29,8 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
   tickets         {count, items[]}: each `.sdlc/<folder>/handoff.md` (main checkout first, then worktrees; the first
                   copy of a folder wins) is counted. A ticket folder is keyed by its path under `.sdlc`: its name,
                   or `tickets/<name>` when any checkout's `.sdlc/config` sets `ticket_root: tickets` (the same key
-                  as in `runs.by_ticket`). items lists those with an `## Acceptance criteria` section as {ticket, id,
+                  as in `runs.by_ticket`). With a `work_root: <path>` line (roots.py) the folders under
+                  `<checkout>/<path>` are read too, keyed by their path under it: the flat layout's key. items lists those with an `## Acceptance criteria` section as {ticket, id,
                   size, criteria} (criteria = top-level list lines in that section). Not windowed.
   processes       chromium, hooks, claude: {count, cpu_pct, rss_mb} from one `ps` snapshot; hooks also carries
                   items[] {pid, cpu_pct, etime_s, command} (capped, busiest first)
@@ -45,8 +46,10 @@ Runs. Every `.sdlc/**/runs.jsonl` under the repo and each worktree (`git worktre
 under the worktree root and the legacy roots, wtroot.py) is read and deduplicated by attempt_id (a row with none is deduplicated on its
 whole line), the way budget.py dedupes. A worktree's `.sdlc` carries the ticket's runs, so the totals cover
 the repo's whole history, not one checkout. A record under `.sdlc/runtime/tasks/<key>/` (the records dir,
-order.py) belongs to its task folder (order.task_dir), keyed by that folder's path under `.sdlc` (`.0001-a`,
-`tickets/0001-a`), else by `<key>` when no task folder exists. The lane of a run is the effective lane of the
+order.py) belongs to its task folder (order.task_dir, else `<work_root>/<key>` or `<work_root>/.<key>`), keyed by
+that folder's path under `.sdlc` (`.0001-a`, `tickets/0001-a`) or under the work root (`.0001-a`, the same key as
+the flat layout), else by `<key>` when no task folder exists. The work root's runs, skips and handoffs are scanned
+like `.sdlc`'s. The lane of a run is the effective lane of the
 nearest ancestor `skips.md`, searched from the task folder for a records-dir record: the last `Lane: <lane> ...`
 prose line (a conductor override) wins over the last `- lane: <lane>;` line under `## Lane` (the steps.py
 record). With no skips.md the lane is read from the task folder handoff's `## Outcome` header (`lane: solo|full|fix`
@@ -72,6 +75,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import order  # noqa: E402
 import results  # noqa: E402
+import roots as sdlc_roots  # noqa: E402  (`roots` names the checkout list below)
 import wtroot  # noqa: E402
 PLUGIN_ROOT = os.path.dirname(HERE)
 UTC = datetime.timezone.utc
@@ -216,9 +220,10 @@ def worktree_roots(repo):
     return roots, linked
 
 
-def scan_sdlc(roots):
+def scan_sdlc(roots, rel=None):
     """(runs files, attempt files, limit files, skips files, refusals files, handoff files) under each root's
-    `.sdlc`, in root order."""
+    `.sdlc`, then its work root `<root>/<rel>` (rel: the repo's work_root value), in root order. Each file is
+    paired with its checkout's `.sdlc`."""
     runs, attempts, limits, skips, refusals, handoffs = [], [], [], [], [], []
     seen_dirs = set()
     for root in roots:
@@ -226,7 +231,8 @@ def scan_sdlc(roots):
         if not os.path.isdir(sd) or os.path.realpath(sd) in seen_dirs:
             continue
         seen_dirs.add(os.path.realpath(sd))
-        for cur, dirs, files in os.walk(sd):
+        tops = [t for t in (sd, work_dir(sd, rel)) if t and os.path.isdir(t)]
+        for cur, dirs, files in (w for t in tops for w in os.walk(t)):
             dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
             for n in sorted(files):
                 p = os.path.join(cur, n)
@@ -290,26 +296,38 @@ def outcome_lane(text):
     return None
 
 
-def runtime_task(sdlc, d):
-    """(True, task folder or None) when d is under `<sdlc>/runtime/tasks/<key>`, else (False, None)."""
+def runtime_task(sdlc, d, work=None):
+    """(True, task folder or None) when d is under `<sdlc>/runtime/tasks/<key>`, else (False, None). The task
+    folder is order.task_dir's, else `<work>/<key>` or `<work>/.<key>` holding a handoff.md (work: the work root)."""
     tasks = os.path.join(sdlc, 'runtime', 'tasks')
     if not d.startswith(tasks + os.sep):
         return False, None
     tf = order.task_dir(d)
+    if tf is None and work:
+        key = d[len(tasks) + 1:].split(os.sep, 1)[0]
+        tf = next((c for c in (os.path.join(work, key), os.path.join(work, '.' + key))
+                   if os.path.isfile(os.path.join(c, 'handoff.md'))), None)
     return True, (str(tf) if tf is not None else None)
+
+
+def under(path, d):
+    """True when path is d or below it."""
+    return bool(d) and (path == d or path.startswith(d + os.sep))
 
 
 class Lanes(object):
     """Effective lane per runs.jsonl dir: the nearest ancestor skips.md up to its `.sdlc` (from the task folder
-    for a records dir under `runtime/tasks/`), else the task folder handoff's `## Outcome` lane."""
-    def __init__(self):
+    for a records dir under `runtime/tasks/`), else the task folder handoff's `## Outcome` lane. rel is the repo's
+    work_root value: a folder under `<checkout>/<rel>` walks up to that work root and is named relative to it."""
+    def __init__(self, rel=None):
+        self.rel = rel
         self.cache = {}
         self.outcomes = {}
         self.overrides = {}
 
     def of_file(self, sdlc, path):
         d = os.path.dirname(path)
-        runtime, tf = runtime_task(sdlc, d)
+        runtime, tf = runtime_task(sdlc, d, work_dir(sdlc, self.rel))
         if runtime:
             if tf is None:
                 return None
@@ -325,6 +343,8 @@ class Lanes(object):
         return lane
 
     def _walk(self, sdlc, d):
+        work = work_dir(sdlc, self.rel)
+        top = work if under(d, work) else sdlc
         chain = []
         while True:
             if d in self.cache:
@@ -333,9 +353,9 @@ class Lanes(object):
             chain.append(d)
             skips = os.path.join(d, 'skips.md')
             if os.path.isfile(skips):
-                lane = self._read(sdlc, d, skips)
+                lane = self._read(top, d, skips)
                 break
-            if d == sdlc or os.path.dirname(d) == d:
+            if d == top or os.path.dirname(d) == d:
                 lane = None
                 break
             d = os.path.dirname(d)
@@ -357,17 +377,33 @@ def num(v):
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else None
 
 
-TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')   # as tickets.py reads `.sdlc/config`
-
-
 def nested_tickets(sdlc):
-    """True when `<sdlc>/config` has a `ticket_root: tickets` line (tickets.py ticket_dir): the ticket folders
-    then live in `<sdlc>/tickets/`, and any other folder under `.sdlc` is a plain task."""
-    for line in read_text(os.path.join(sdlc, 'config')).splitlines():
-        m = TICKET_ROOT_RE.fullmatch(line) if line.strip() and not line.lstrip().startswith('#') else None
-        if m and m.group(1) == 'tickets':
-            return True
-    return False
+    """True when `<sdlc>/config` has a `ticket_root: tickets` line (roots.parse): the ticket folders then live in
+    `<sdlc>/tickets/`, and any other folder under `.sdlc` is a plain task."""
+    return any(v == 'tickets' for v, _ in sdlc_roots.parse(read_text(os.path.join(sdlc, 'config'))).ticket_root)
+
+
+def work_root(sdlc):
+    """The work_root value `<sdlc>/config` sets (roots.py), as a path relative to the checkout, else None. A value
+    roots.py refuses is None too: the collector never fails on config."""
+    text = read_text(os.path.join(sdlc, 'config'))
+    if not sdlc_roots.parse(text).work_root:
+        return None
+    try:
+        return os.path.relpath(str(sdlc_roots.resolve(sdlc, text).work), os.path.dirname(sdlc))
+    except sdlc_roots.Fail:
+        return None
+
+
+def repo_work(roots):
+    """The first work_root value any checkout's `.sdlc/config` sets, else None (the layout is the repo's, as in
+    repo_nested)."""
+    return next((w for w in (work_root(os.path.join(r, '.sdlc')) for r in roots) if w), None)
+
+
+def work_dir(sdlc, rel):
+    """`<checkout>/<rel>`, the work root of the checkout whose `.sdlc` is sdlc, or None when rel is None."""
+    return os.path.join(os.path.dirname(sdlc), rel) if rel else None
 
 
 def repo_nested(roots):
@@ -376,16 +412,21 @@ def repo_nested(roots):
     return any(nested_tickets(os.path.join(r, '.sdlc')) for r in roots)
 
 
-def ticket_of(sdlc, path, nested=False):
+def ticket_of(sdlc, path, nested=False, rel=None):
     """The ticket folder a runs.jsonl belongs to, as a path under `.sdlc`: its first component, or
     `tickets/<folder>` with `ticket_root: tickets`. A record under `runtime/tasks/<key>/` belongs to its task
-    folder (order.task_dir: `.0001-a`, `tickets/0001-a`), else to `<key>` when no task folder exists."""
-    runtime, tf = runtime_task(sdlc, os.path.dirname(path))
+    folder (order.task_dir: `.0001-a`, `tickets/0001-a`), else to `<key>` when no task folder exists. With a
+    work_root value rel, a folder under `<checkout>/<rel>` is keyed by its path under that work root, the flat
+    layout's key (`0001-a`, `.0001-a`)."""
+    work = work_dir(sdlc, rel)
+    runtime, tf = runtime_task(sdlc, os.path.dirname(path), work)
     if runtime:
         if tf is not None:
-            return os.path.relpath(tf, sdlc).replace(os.sep, '/')
+            return os.path.relpath(tf, work if under(tf, work) else sdlc).replace(os.sep, '/')
         tasks = os.path.join(sdlc, 'runtime', 'tasks')
         return os.path.relpath(os.path.dirname(path), tasks).split(os.sep)[0]
+    if under(os.path.dirname(path), work):
+        return os.path.relpath(os.path.dirname(path), work).split(os.sep)[0]
     rel = os.path.relpath(os.path.dirname(path), sdlc)
     if rel == '.':
         return '.sdlc'
@@ -474,11 +515,12 @@ def collect_runs(repo, window, dedupe=True, extra=None):
     negative control: every row counts, so duplicates change the totals. extra, when a dict, receives the keys
     `results`, `plan_defects` and `attempts` that `collect` adds beside `runs`."""
     roots, _linked = worktree_roots(repo)
-    runs_files, attempt_files, limit_files, skips_files, refusal_files, handoff_files = scan_sdlc(roots)
+    rel = repo_work(roots)
+    runs_files, attempt_files, limit_files, skips_files, refusal_files, handoff_files = scan_sdlc(roots, rel)
     if not runs_files and not attempt_files and not limit_files and not skips_files:
         return 'none'
     result_rows = []                      # (role, runs.jsonl path, row) of builder and verifier rows in the window
-    lanes = Lanes()
+    lanes = Lanes(rel)
     for sdlc, p in skips_files:           # read every skips.md so overrides in runless tickets show too
         lanes.of_file(sdlc, os.path.join(os.path.dirname(p), 'x'))
     seen = set()
@@ -489,7 +531,7 @@ def collect_runs(repo, window, dedupe=True, extra=None):
     by_ticket, nested = {}, repo_nested(roots)
     for sdlc, p in runs_files:
         lane_of = lanes.of_file(sdlc, p)
-        ticket = ticket_of(sdlc, p, nested)
+        ticket = ticket_of(sdlc, p, nested, rel)
         for line in read_text(p).splitlines():
             line = line.strip()
             if not line:
@@ -690,13 +732,16 @@ def parse_handoff(text):
     return tid, size, criteria
 
 
-def ticket_folders(sdlc, nested):
+def ticket_folders(sdlc, nested, rel=None):
     """(key, dir) for each ticket or task folder under a `.sdlc`: its direct children, and when `nested` the
-    folders in `tickets/` keyed `tickets/<folder>`."""
+    folders in `tickets/` keyed `tickets/<folder>`; with a work_root value rel, then the direct children of
+    `<checkout>/<rel>` keyed by name."""
+    work = work_dir(sdlc, rel)
+    extra = [(m, os.path.join(work, m)) for m in sorted(os.listdir(work))] if work and os.path.isdir(work) else []
     try:
         names = sorted(os.listdir(sdlc))
     except OSError:
-        return []
+        return extra
     out = []
     for n in names:
         if n == 'tickets' and nested:
@@ -707,16 +752,16 @@ def ticket_folders(sdlc, nested):
             out.extend(('tickets/' + m, os.path.join(sdlc, n, m)) for m in inner)
         else:
             out.append((n, os.path.join(sdlc, n)))
-    return out
+    return out + extra
 
 
 def tickets_info(repo):
     """Every ticket folder that holds a handoff.md, main checkout first; the first copy of a folder wins."""
     roots, _linked = worktree_roots(repo)
-    nested = repo_nested(roots)
+    nested, rel = repo_nested(roots), repo_work(roots)
     seen, items = set(), []
     for root in roots:
-        for key, d in ticket_folders(os.path.join(root, '.sdlc'), nested):
+        for key, d in ticket_folders(os.path.join(root, '.sdlc'), nested, rel):
             h = os.path.join(d, 'handoff.md')
             if key in seen or not os.path.isfile(h):
                 continue
@@ -1336,6 +1381,33 @@ def selftest():
            rl['by_ticket'] == {'.0001-a': {'builder': 1, 'verifier': 1}} and rl['cost_usd'] == 2.0
            and rl['by_lane']['solo']['count'] == 2)
         shutil.rmtree(rt, ignore_errors=True)
+
+        # --- work_root (roots.py): ticket folders under <top>/<work_root> keep the flat layout's keys
+        crit = '\n## Acceptance criteria\n- one\n- two\n'
+        wt_tmp = tempfile.mkdtemp()
+        wflat, wroot, wcmt = (os.path.join(wt_tmp, n) for n in ('flat', 'work', 'cmt'))
+        for top, base, config in ((wflat, '.sdlc', None), (wroot, os.path.join('docs', 'work'), 'work_root: docs/work\n'),
+                                  (wcmt, os.path.join('docs', 'work'), '# work_root: docs/work\n')):
+            if config is not None:
+                write(os.path.join(top, '.sdlc', 'config'), config)
+            write(os.path.join(top, base, '0001-a', 'handoff.md'), fm.replace('done', 'claimed') + outcome + crit)
+            write(os.path.join(top, base, '.0002-b', 'handoff.md'), fm.replace('T-0001', 'T-0002') + crit)
+            write(os.path.join(top, '.sdlc', 'runtime', 'tasks', '0001-a', 'runs.jsonl'),
+                  rows(rec('builder', 'W1', 1.0, 1000, '2026-10-05T12:00:00Z')))
+            write(os.path.join(top, '.sdlc', 'runtime', 'tasks', '0002-b', 'runs.jsonl'),
+                  rows(rec('verifier', 'W2', 1.0, 1000, '2026-10-05T12:00:00Z')))
+        wf, ww, wc = (collect_runs(d, Window()) for d in (wflat, wroot, wcmt))
+        ok('work_root: runtime/tasks/0001-a keys to ticket 0001-a read from docs/work, as the flat layout keys it',
+           ww['by_ticket'] == wf['by_ticket'] == {'0001-a': {'builder': 1}, '.0002-b': {'verifier': 1}})
+        ok('work_root: the lane is read from the docs/work handoff Outcome, as in the flat layout',
+           ww['by_lane']['solo']['count'] == wf['by_lane']['solo']['count'] == 1)
+        ok('work_root: tickets lists the docs/work folders under the flat keys', tickets_info(wroot) == tickets_info(wflat)
+           == {'count': 2, 'items': [{'ticket': '.0002-b', 'id': 'T-0002', 'size': None, 'criteria': 2},
+                                     {'ticket': '0001-a', 'id': 'T-0001', 'size': None, 'criteria': 2}]})
+        ok('work_root control: a commented work_root line does not read docs/work',
+           wc['by_ticket'] == {'0001-a': {'builder': 1}, '0002-b': {'verifier': 1}}
+           and tickets_info(wcmt)['count'] == 0)
+        shutil.rmtree(wt_tmp, ignore_errors=True)
 
         # cli: json out, summary on stderr, repo untouched
         rc, out, err = cli('collect', repo, '--until', '2026-10-06T12:00:00Z', '--du-timeout', '5')
