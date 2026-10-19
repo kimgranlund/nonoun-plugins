@@ -2,7 +2,7 @@
 id: T-0628
 title: "work_root t08a: ticket and run readers: fleet_collect keys, solo_stats, report, board"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0621]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,10 @@ Actions this ticket hosts:
 
 ## Acceptance criteria
 - `python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest` exits 0 with the case: a repo with `work_root: docs/work` keys .sdlc/runtime/tasks/0001-a/runs.jsonl to ticket `0001-a` read from docs/work/0001-a/handoff.md, the same key as the flat layout (red before); `board.py selftest` lists docs/work tasks for `--root .sdlc`
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `redck.py deviations` printed no `process deviation:` lines, and the criterion carries no `(red)` tag; red-before was shown by the mutation controls above, not by a recorded pre-edit failure.) · verifier: verifier-L2 (sonnet) · base: 79a0f402e318
+- Changed: see commits
+- Commits: 68afb9e T-0628: work_root t08a: ticket and run readers: fleet_collect keys, solo_stats, report, board
+- Check: 1 `fleet_collect.py selftest` exits 0 with the work_root case (docs/work key equals the flat key, r...: pass
