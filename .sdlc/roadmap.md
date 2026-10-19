@@ -12,5 +12,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0620 | [0620-docs-uppercase-masters](0620-docs-uppercase-masters/handoff.md) | docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons | feature | L2 | P2 | T-0618 | 🔵 ready |
 | T-0619 | [0619-docs-index-and-cap](0619-docs-index-and-cap/handoff.md) | docs_check: every doc listed in its home index, per-home file cap | feature | L2 | P2 | T-0618, T-0620 | 🔵 ready |
 | T-0636 | [0636-work-root-t13-migrate-this-repository-to-docs-work](0636-work-root-t13-migrate-this-repository-to-docs-work/handoff.md) | work_root t13: migrate this repository to docs/work | chore | L2 | P2 | T-0626, T-0627, T-0628, T-0629, T-0630, T-0631, T-0632, T-0633, T-0634, T-0635 | 🔵 ready |
+| T-0637 | [0637-work-root-loose-ends](0637-work-root-loose-ends/handoff.md) | work_root loose ends: planner untracked exclude, fleet Source column, registry and usage text | chore | L2 | P2 | none | 🔵 ready |
 
 Closed: 593 done, 29 dropped (git log or .NNNN-* folders)
