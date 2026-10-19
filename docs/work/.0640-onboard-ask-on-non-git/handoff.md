@@ -2,7 +2,7 @@
 id: T-0640
 title: "onboard: ask instead of dead-ending outside a git work tree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,15 @@ One AskUserQuestion round: `Run git init here (Recommended)`, `Use another folde
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0
 - `python3 scripts/check-packaging.py` exits 0
 - `git diff --name-only $SDLC_BASE_SHA -- plugins/sdlc-lite/scripts/onboard.py | grep -c . | grep -qx 0`
+
+## Outcome
+
+2026-10-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0640-verifier-L2 is left as an empty directory. `git worktree remove --force` succeeded, but the permission layer denied `rm -rf` on the leftover parent directory. | note: the artifacts dir has no builder-*.md report, and `redck.py deviations` printed no lines. No criterion is marked `(red)`.) · verifier: verifier-L2 (opus) · base: b5c50b9b4deb
+- Changed: see commits
+- Commits: f2d49d5 T-0640: onboard: ask instead of dead-ending outside a git work tree
+- Check: 1 `grep -q 'Bash(git init' plugins/sdlc-lite/skills/onboard/SKILL.md`: pass
+- Check: 2 `grep -q 'Run git init here' plugins/sdlc-lite/skills/onboard/SKILL.md`: pass
+- Check: 3 `! grep -q 'writes nothing; report the reason' plugins/sdlc-lite/skills/onboard/SKILL.md`: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 5 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 6 `git diff --name-only $SDLC_BASE_SHA -- plugins/sdlc-lite/scripts/onboard.py | grep -c . | grep -...: pass
