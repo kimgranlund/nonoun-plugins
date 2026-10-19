@@ -32,7 +32,7 @@ Goal, doc and campaign carry the four parts Outcome, Measured by, Rubric and Neg
 
 - Controlled language: the goal, campaign and plan lints warn (`hedge`, `verb`, `rfc2119`) on a hedge word in the `/goal`, Goal or Outcome line, and on a How to work or step Do line whose first word is not a verb of `CLARIFY_VERBS` in `plan_check.py`.
 - Every number comes from the thread or the person's answer, never a default you invented.
-- Stop rules carry numbers: a total dollar cap, a cap per ticket, step or lane, a rate or weekly limit, and three 529s in a row. State goes to the notes file (`.sdlc/notes.md`, or `.sdlc/notes/notes.md` with `layout: topics`). No retry loops. A plan doc adds `replan cap: 1, then stop`.
+- Stop rules carry numbers: a total dollar cap, a cap per ticket, step or lane, a rate or weekly limit, and three 529s in a row. State goes to the notes file (`notes.md` in `.sdlc/`, `.sdlc/notes/notes.md` with `layout: topics`, `docs/work/NOTES.md` with `work_root: docs/work`). No retry loops. A plan doc adds `replan cap: 1, then stop`.
 - Authorization is explicit. Publish, push, tag, and external writes are never implied. Write it as `The run MUST NOT publish, push or tag.`, then `Authorized: <what is allowed, with its condition>` (`rfc2119` warns on an Authorization with no `MUST` line).
 
 ## Budget levels and the cost line

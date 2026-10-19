@@ -73,7 +73,7 @@ Before any lane, branch, or worktree, the work has a ticket: no ticket, no lane;
 - A ticket closes only after its work is merged, with a one-line result and a link to the commit or PR.
 
 ## 5. Write it down
-Write this block into the task handoff (create `.sdlc/<slug>/handoff.md` per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md` if none exists):
+Write this block into the task handoff (create `<work root>/<slug>/handoff.md`, the work root being `.sdlc` by default and `docs/work` with `work_root: docs/work`, per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md` if none exists):
 
 ```
 ## Goal

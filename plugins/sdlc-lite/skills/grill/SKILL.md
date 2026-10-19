@@ -30,7 +30,7 @@ Derive forks from both, every round. One axis alone is self-confirming.
 5. Stop at convergence: every remaining fork is defaultable without cascading, or will be settled by /decompose or /plan anyway. Default those (stated) and synthesize. Rounds past convergence waste the user's attention.
 
 ## Write it down
-Create the task handoff `.sdlc/<slug>/handoff.md` first if none exists. Write `design.md` in the task's records dir (the path `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/order.py records-dir .sdlc/<slug>` prints; git ignores it) and add `Design: <records dir>/design.md` under the handoff's Context, so the handoff stays the one committed record:
+Create the task handoff `<work root>/<slug>/handoff.md` (the work root: `.sdlc` by default, `docs/work` with `work_root: docs/work`) first if none exists. Write `design.md` in the task's records dir (the path `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/order.py records-dir <work root>/<slug>` prints; git ignores it) and add `Design: <records dir>/design.md` under the handoff's Context, so the handoff stays the one committed record:
 
 ```
 ## Decision space

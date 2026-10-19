@@ -12,7 +12,7 @@ Evidence labels: observed here (a file or transcript of this repo's work), from 
 | Scope is a numbered list verified with `tickets.py check` first | Stale or duplicate tickets waste a night | observed: `tickets.py check` gates every release in `docs/reports/` |
 | Lane first with `steps.py lane`; solo for ticket levels L1 and L2; replan cap one, then record a limit | The chain cost about ten times a solo run on the same tasks | observed: `docs/reports/solo-vs-lean-benchmark-2026-10-04.md` |
 | Scope freeze, one writer per file, at most three lanes at once, merge one at a time with main merged in first | Merge conflicts in `check.py` guard numbers, `check.sh`, root `AGENTS.md`, `docs/README.md` cost the most time | observed: the 0.20.5 to 0.20.7 lane merges |
-| Stop rules carry numbers: total cap, per-ticket cap, a rate or weekly limit, three 529s in a row; state goes to the notes file (`.sdlc/notes.md` (`.sdlc/notes/notes.md` with `layout: topics`)); no retry loops | Weekly limits stopped two build agents; a retry loop spends the cap silently | observed: this repo's build lanes; `budget.py` levels L1 $5, L2 $30, L3 $60 |
+| Stop rules carry numbers: total cap, per-ticket cap, a rate or weekly limit, three 529s in a row; state goes to the notes file (`notes.md` in `.sdlc/`, `.sdlc/notes/notes.md` with `layout: topics`, `docs/work/NOTES.md` with `work_root: docs/work`); no retry loops | Weekly limits stopped two build agents; a retry loop spends the cap silently | observed: this repo's build lanes; `budget.py` levels L1 $5, L2 $30, L3 $60 |
 | A verifier `fail` means fix and re-verify; never merge on a fail | Verifiers caught real defects on most tickets | observed: the 0.20.x verifier records |
 | Authorization is explicit, as `MUST NOT` lines then `Authorized:`; publish, push, tag, and external writes are never implied | Silent publish rights are the costly mistake | root `AGENTS.md` shared invariants; warning `rfc2119` |
 | Every status claim comes from a command or a committed file | Release records overstated until checked | observed: the 0.20.7 fact-check passes |
@@ -38,13 +38,13 @@ Negative control: the measure reads 8.3 now, above the target of 5, so it is red
 How to work: run steps.py lane first; use solo for ticket levels L1 and L2; keep one writer per file; keep the replan cap at one, then record a limit; report every status claim from a command or a committed file.
 Fix every verifier fail and re-verify; never merge on a fail.
 
-Budget and stop rules: stop and write state to .sdlc/notes.md at $40 total, $15 per ticket, a rate or weekly limit, or three 529s in a row. No retry loops.
+Budget and stop rules: stop and write state to <notes file> at $40 total, $15 per ticket, a rate or weekly limit, or three 529s in a row. No retry loops.
 
 Authorization: The run MUST NOT publish, push or tag. Authorized: none.
 
-Done when: K-001 reads <= 5 (the Measured by command), tickets.py check exits 0 and T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to .sdlc/notes.md.
+Done when: K-001 reads <= 5 (the Measured by command), tickets.py check exits 0 and T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to <notes file>.
 ```
 
-The lint warns (`hedge`, `verb`, `rfc2119`) when the `/goal` or Outcome line holds a hedge word, a How to work line does not open with a verb of `CLARIFY_VERBS`, or Authorization has no `MUST` line or writes must, shall or should in lower case; the example passes all three. It names the flat notes path; in a `layout: topics` repo write `.sdlc/notes/notes.md` instead. `plan_check.py` accepts either.
+The lint warns (`hedge`, `verb`, `rfc2119`) when the `/goal` or Outcome line holds a hedge word, a How to work line does not open with a verb of `CLARIFY_VERBS`, or Authorization has no `MUST` line or writes must, shall or should in lower case; the example passes all three. Write the repo's notes path for `<notes file>`: `notes.md` in `.sdlc/` by default, `.sdlc/notes/notes.md` with `layout: topics`, `docs/work/NOTES.md` with `work_root: docs/work`. `plan_check.py` accepts the one the repo's config gives.
 
 Migration: a goal already pasted into `/goal` is unchanged, because the stop hook holds the pasted text and `plan_check.py` runs only when a block is planned. Planning an old goal again fails `outcome-block` until it gains the block; `Measured by: none: <reason>` is the sanctioned way out and passes with a warning.

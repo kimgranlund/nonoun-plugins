@@ -19,7 +19,7 @@ Arguments: `$ARGUMENTS`
 
 ## 1. Render
 
-Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_status.py render` from the project root that holds `.sdlc/fleet.json`, passing the arguments through: `--repos A,B` (registry names), `--since last|DATE` (default `last`, the stored snapshot), `--ping`. Each call stores a snapshot, so the next `--since last` starts from this one. The script makes no model call and only reads the repos it inspects; it takes about 15 seconds on a busy machine.
+Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_status.py render` from the project root that holds the fleet registry (`fleet.json` in `.sdlc/`, `docs/work/fleet.json` with `work_root: docs/work`), passing the arguments through: `--repos A,B` (registry names), `--since last|DATE` (default `last`, the stored snapshot), `--ping`. Each call stores a snapshot, so the next `--since last` starts from this one. The script makes no model call and only reads the repos it inspects; it takes about 15 seconds on a busy machine.
 
 Exit 2 or 1: report stderr in one sentence (a bad registry, an unknown repo, a bad date, a row with no source) and stop.
 

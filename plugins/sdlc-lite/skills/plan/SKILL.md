@@ -40,7 +40,7 @@ Reserved first word: a goal whose text starts with a kind name is written with t
 | fanout | one fanout command | `references/fanout.md` |
 | compaction | one prompt for a manual `/compact` | `references/compaction.md` |
 
-Read the handoff first. When the argument is a `.sdlc/<slug>/handoff.md` written by `/clarify`, fill the slots from it and do not ask for them again: `Level:` gives the lane, the level and the cap; `Do:` gives Scope or the steps; `Non-goals:` gives the scope-held rubric line; `Done when:` and `Verify:` give Done when and the fanout gate; `## Outcome` gives the outcome block; `## Constraints` gives the Authorization lines.
+Read the handoff first. When the argument is a `<work root>/<slug>/handoff.md` (the work root: `.sdlc` by default, `docs/work` with `work_root: docs/work`) written by `/clarify`, fill the slots from it and do not ask for them again: `Level:` gives the lane, the level and the cap; `Do:` gives Scope or the steps; `Non-goals:` gives the scope-held rubric line; `Done when:` and `Verify:` give Done when and the fanout gate; `## Outcome` gives the outcome block; `## Constraints` gives the Authorization lines.
 
 ## 1. Gather
 

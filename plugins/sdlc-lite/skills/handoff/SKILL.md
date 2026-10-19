@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "Start an sdlc task: create .sdlc/<task>/handoff.md from the current discussion so clean-context agents get everything they need."
+description: "Start an sdlc task: create <work root>/<task>/handoff.md (.sdlc/ by default, docs/work/ with work_root: docs/work) from the current discussion so clean-context agents get everything they need."
 argument-hint: "<goal>"
 allowed-tools: Read, Write, Glob
 ---

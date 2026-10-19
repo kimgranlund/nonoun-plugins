@@ -21,7 +21,7 @@ Collect every item that needs the person, and cite where each came from. Look in
 
 - **The conversation:** a question asked and never answered, a decision deferred, an assumption stated and not confirmed.
 - **The task folder:** `(gap: ...; default: ...)` lines in the handoff `## Intent`, unanswered `## Plan review` entries, builder `## Notes`, a verifier `fail` or `## For the next attempt`, filer `decide:` follow-ups.
-- **Tickets and notes:** tickets with status `blocked` or a `## Deferred` note, and `.sdlc/notes.md` (`.sdlc/notes/notes.md` with `layout: topics`).
+- **Tickets and notes:** tickets with status `blocked` or a `## Deferred` note, and the notes file (`notes.md` in `.sdlc/`, `.sdlc/notes/notes.md` with `layout: topics`, `docs/work/NOTES.md` with `work_root: docs/work`).
 - **Run results:** a failed, interrupted, or `inherited red` result.
 - **External blockers the thread names:** a rate or weekly limit, a missing credential, a permission denial, a failing check.
 
@@ -29,7 +29,7 @@ Run the searches before you ask anything; the conversation alone is not the swee
 
 - `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc blockers` lists open tickets with status `blocked` or a `## Deferred` note in whatever layout the repo uses (flat, `ticket_root: tickets`, or `layout: topics`), never a closed or done one. With a task dir add `--scope <task dir>`. Read each hit. `none` means no ticket qualifies; an error naming a missing directory is a finding to report, not `Nothing open.`.
 - `grep -rl -A1 '^## Verdict' --exclude-dir='.[0-9]*' <scope>` to list result files, and read any whose verdict line is `fail` or whose status is `blocked` or `inherited red`.
-- `grep -rn --exclude-dir='.[0-9]*' 'gap:' <scope>` for unresolved gap lines, and read the notes file (`.sdlc/notes.md` (`.sdlc/notes/notes.md` with `layout: topics`)) and any `## Plan review` entries.
+- `grep -rn --exclude-dir='.[0-9]*' 'gap:' <scope>` for unresolved gap lines, and read the notes file (`notes.md` in `.sdlc/`, `.sdlc/notes/notes.md` with `layout: topics`, `docs/work/NOTES.md` with `work_root: docs/work`) and any `## Plan review` entries.
 
 Never invent an item. Drop one already answered or made stale since it was raised. If nothing qualifies, say `Nothing open.` and stop.
 
