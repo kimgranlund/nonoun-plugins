@@ -88,6 +88,10 @@ docs/work/       work root: ticket and task folders, ROADMAP.md, NOTES.md, archi
 - `ROADMAP.md` and `NOTES.md` are the work root's only UPPERCASE singletons; the ticket folders are its children.
 - The work root is flat: it refuses to sit beside `ticket_root: tickets` or `layout: topics`, and a nested or topics repo comes to the same shape when it migrates.
 - `scripts/roots.py` resolves every root path from the config, including another worktree's or branch's, so ticket ids stay unique across trees. It refuses an unsafe value (empty, `.`, absolute, any `..`, under `.sdlc`) before anything is written.
+- `tickets.py --root .sdlc migrate-work-root [--to docs/work] [--dry-run] [--rewrite-refs]` moves one repo (T-0635). Its move plan pairs each `roots.resolve` field of the old config with the same field of the new one, so a flat, nested or topics source lands in the shape above: ticket and task folders become children, `roadmap.md` becomes `ROADMAP.md` and `notes.md` becomes `NOTES.md`, and `evals/`, `proposals/`, `archive/` and `fleet.json` move too. Any other loose entry of `.sdlc` goes to `archive/`, as `tidy` would move it.
+- The command drops the `ticket_root:` and `layout:` lines, writes `work_root:`, removes the old sub-routers, regenerates the roadmap, routers and mailbox entries, and runs `check`.
+- Cites in live files are rewritten as `migrate-layout` rewrites them. A file under `docs/reports/` or inside a closed `.NNNN-slug` folder is a frozen record: it is listed as `keep` and never edited.
+- It refuses, writing nothing, on an unsafe `--to`, another `work_root` already set, a `*.running` marker, any uncommitted change, a bad ticket, or an existing target.
 
 ## Message bus
 

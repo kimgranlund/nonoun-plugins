@@ -15,7 +15,7 @@ Arguments: `$ARGUMENTS`
 
 | Argument | Meaning | Default | Example |
 |---|---|---|---|
-| `new`, `close`, `claim`, `release`, `roadmap`, `check`, `archive`, `number`, `migrate-layout`, `migrate-size`, `blockers` | The subcommand, passed to `tickets.py` as written | `check` | `roadmap` |
+| `new`, `close`, `claim`, `release`, `roadmap`, `check`, `archive`, `number`, `migrate-layout`, `migrate-work-root`, `migrate-size`, `blockers` | The subcommand, passed to `tickets.py` as written | `check` | `roadmap` |
 | `<type>` | With `new`: `feature`, `bug`, `chore`, `spike`, or `idea` | - | `new bug board-crash` |
 | `<slug>` | With `new`: the bare slug of the new folder. With `close`: the ticket folder | - | `close board-crash` |
 | `"title"` | With `new`: the title stamped into the ticket | none | `new bug board-crash "Board crashes on empty root"` |
@@ -28,13 +28,14 @@ Arguments: `$ARGUMENTS`
 | `--changed TEXT` | With `close`: the `- Changed:` line of the `## Outcome` | `see commits` | `close board-crash --changed "board renders an empty root"` |
 | `--reason TEXT` | With `close`: close a ticket finished by other work, with no verifier gate, no filer and no follow-ups; the `## Outcome` verdict reads `closed by reason (TEXT)`. With `claim --handover`: why the claim changes hands | - | `close board-crash --reason "done by T-0101"` |
 | `--ack-warnings TEXT` | With `close --filer`: close while filer Warnings are open, with the reason they no longer apply | - | `close board-crash --ack-warnings "fixed since"` |
-| `--dry-run` | With `close`, `archive`, `number`, or `migrate-layout`: list what would happen and write nothing | off | `close board-crash --dry-run` |
+| `--dry-run` | With `close`, `archive`, `number`, `migrate-layout`, or `migrate-work-root`: list what would happen and write nothing | off | `close board-crash --dry-run` |
 | `--skip N[,N...]` | With `close`: drop the follow-ups at these 1-based indices; needs `--expect` | none | `--skip 2,3` |
 | `--ticket N` | With `close`: file follow-up N, a `decide:` item, as the one ticket; needs `--expect` | no ticket filed | `--ticket 1` |
 | `--expect DIGEST` | With `close`: the digest from the last line of the dry run | - | `--expect 3fa9c1` |
-| `--rewrite-refs` | With `close`, `archive`, or `migrate-layout`: rewrite files that cite a moved folder | off | `archive --rewrite-refs` |
+| `--rewrite-refs` | With `close`, `archive`, `migrate-layout`, or `migrate-work-root`: rewrite files that cite a moved folder | off | `archive --rewrite-refs` |
 | `--preflight` | With `close`: read-only; print `ready` (exit 0) or one line per item close will demand (exit 1), writing nothing | off | `close board-crash --preflight` |
 | `--keep-refs` | With `close`: leave citing files as they are and list them on a `- Deviation:` line of the `## Outcome`, without overriding open Warnings | off | `close board-crash --keep-refs` |
+| `--to PATH` | With `migrate-work-root`: the work root the tracked records move to, relative to the repo top | `docs/work` | `migrate-work-root --to docs/work --dry-run` |
 | `--apply` | With `migrate-size`: write the rewrites; without it the run is a dry run | off | `migrate-size --apply` |
 | `--scope PATH` | With `blockers`: narrow the list to one task or ticket dir | every ticket | `blockers --scope .sdlc/add-retry` |
 
