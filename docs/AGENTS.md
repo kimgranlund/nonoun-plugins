@@ -11,13 +11,14 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 | `planning/` | Unbuilt proposals: sub-agent mode, the idle-host watcher, reorganization, the docs schema | Before building one; a built one moves into `specs/` |
 | `reports/` | Dated evidence, including the [readiness and recovery trials](reports/readiness-recovery-validation.md) | What was verified; history, not instructions |
 
-<!-- sdlc-lite:managed:start v1 sha256:7cca567ec692 -->
+<!-- sdlc-lite:managed:start v1 sha256:647403c29ef8 -->
 # Documents
 
 Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
 
 | Home | Holds | Never holds |
 |---|---|---|
+| `work/` | Ticket and task folders, the generated `ROADMAP.md` and `NOTES.md` | Designs and plans under review -> `planning/` |
 | `specs/` | What the system is and must do; edited in place | Proposals, dated evidence, steps |
 | `planning/` | Proposals, roadmaps, plans under review (`status:`) | What exists today |
 | `decisions/` | One numbered decision per file, immutable once accepted | Narrative design |
@@ -34,17 +35,18 @@ Pick one home from the table, then read one file. Placement effect unproven; see
 
 The first line that matches wins.
 
-1. Picture, diagram source or data file: `assets/`.
-2. Evidence of something that happened on a date: `reports/`.
-3. One choice with its reasons: `decisions/`.
-4. A proposal, roadmap or plan under review: `planning/`.
-5. An outcome to steer toward, with an owner and a status: `goals/`.
-6. A measure with a command that runs it, a unit and a target: `kpi/`.
-7. Steps a person follows: `guides/`.
-8. A table, listing or glossary you look things up in: `references/`.
-9. What the system is or must do: `specs/`.
-10. Retired or superseded: `archive/`.
-11. None of the above, or unsure: `other/`.
+1. A ticket or task record, or the generated roadmap or notes file: `work/`.
+2. Picture, diagram source or data file: `assets/`.
+3. Evidence of something that happened on a date: `reports/`.
+4. One choice with its reasons: `decisions/`.
+5. A proposal, roadmap or plan under review: `planning/`.
+6. An outcome to steer toward, with an owner and a status: `goals/`.
+7. A measure with a command that runs it, a unit and a target: `kpi/`.
+8. Steps a person follows: `guides/`.
+9. A table, listing or glossary you look things up in: `references/`.
+10. What the system is or must do: `specs/`.
+11. Retired or superseded: `archive/`.
+12. None of the above, or unsure: `other/`.
 
 ## Adding a document
 
