@@ -40,3 +40,7 @@ Drafts filed: none.
 ## Observation
 
 The gen-ui-kit fingerprint holds 1 run while its conductor reports 13 merged lanes in the window: lane records are lost when its lanes are swept, so this repo's spend is invisible to the collector. Most of the G1 failures above share that cause.
+
+## Late reply
+
+ui-kit-maison answered at 2026-10-19T06:08Z, after the 15 minute window and after step 5, so its 7 rows are not graded here: `.sdlc/runtime/tasks/fleet-retro-2026-10-18/ui-kit-maison-interview.md`. Its top three: nested gate worktrees need a tree-local `SDLC_TMP_WORKTREES`, a free test port and `MAISON_AXE_PATH` (T-0599, three full gates, about 3 h, [V] with gate logs); planner criteria used `git stash create`, which `verifier.md` forbids, forcing a second replan and a user override ([V]); `dispatch.py prepare` picks the wrong base on lanes with cherry-picked or WIP commits ([V]).
