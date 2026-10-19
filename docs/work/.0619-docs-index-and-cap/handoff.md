@@ -2,7 +2,7 @@
 id: T-0619
 title: "docs_check: every doc listed in its home index, per-home file cap"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0618, T-0620]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,14 @@ User decision 2026-10-19: numbers by kind plus an index, not numbers everywhere.
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (guard 33 names `D-1` to `D-14`).
 - `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` exits 0 with no D-13 finding; `docs/layout.md` raises D-13 to error and D-14 stays a warning (this repo has one: `docs/specs/sdlc-lite/`, 14 documents).
 - `grep -n "Add a link to it in its folder" plugins/sdlc-lite/scripts/onboard.py docs/AGENTS.md` prints two lines.
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: docs/AGENTS.md:55 and onboard.py:476 differ from the handoff criterion text only in the trailing clause; the grep phrase matches, so no action. | note: three existing selftest gates (numbered, uppercase, grandfather, docs_check.py:1130, 1154, 1204) now exclude D-13 findings because their stub entry files list nothing; the exclusion is commented and acceptable.) · verifier: verifier-L2 (sonnet) · base: edea2aa12578
+- Changed: see commits
+- Commits: 1ca685d T-0619: docs_check: every doc listed in its home index, per-home file cap
+- Check: 1 docs_check selftest, rules gate D-13/D-14 with drops negatives, index-cap gate: pass
+- Check: 2 onboard selftest with the Caps form case and negative: pass
+- Check: 3 check.py exits 0, guard 33 names D-1 to D-14: pass
+- Check: 4 docs_check --root . exits 0, no D-13 finding, D-13 error, D-14 warning: pass
+- Check: 5 grep prints two lines: pass
