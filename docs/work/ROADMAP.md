@@ -9,7 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L3 | P3 | none | ⏳ proposed |
 | T-0584 | [0584-tickets-inventory](0584-tickets-inventory/handoff.md) | tickets.py inventory: landed state by content and patch identity | idea | L3 | P3 | none | ⏳ proposed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0620 | [0620-docs-uppercase-masters](0620-docs-uppercase-masters/handoff.md) | docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons | feature | L2 | P2 | T-0618 | 🔵 ready |
+| T-0620 | [0620-docs-uppercase-masters](0620-docs-uppercase-masters/handoff.md) | docs: generated folder index, opt-in numbering with atomic allocation, declared UPPERCASE singletons | feature | L2 | P2 | T-0618 | 🟡 claimed |
 | T-0619 | [0619-docs-index-and-cap](0619-docs-index-and-cap/handoff.md) | docs_check: every doc listed in its home index, per-home file cap | feature | L2 | P2 | T-0618, T-0620 | 🔵 ready |
 
 Closed: 597 done, 29 dropped (git log or .NNNN-* folders)
