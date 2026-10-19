@@ -140,7 +140,7 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             dropped ones are counted in one `Closed: <n> done, <m> dropped` line after the table
   check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
             Router below). With `layout: topics` it also fails each entry directly under <root> other than
-            AGENTS.md, CLAUDE.md, config, layout.md, board.md, tickets, work, notes, messages, evals, proposals,
+            AGENTS.md, CLAUDE.md, by-hand.md, config, layout.md, board.md, tickets, work, notes, messages, evals, proposals,
             supervisor, runtime, dogfood, a _-prefixed name or a .-prefixed one (a closed-ticket .NNNN-<slug> is
             a stray: it belongs in tickets/), as `<name>: stray entry at the root`; only check runs this, so a
             loose file never blocks new or close. In the flat layout with no explicit `layout: flat` line it
@@ -158,6 +158,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Outside `layout: topics` it prints `warning: <name>: loose entry at the top of <root>; ...tidy...`
             (exit stays 0, at most 5 lines, then `<N> more loose entries`) for each entry directly under <root>
             that the layout rule does not allow (see tidy)
+            It prints `warning: <slug>: closed by hand (unverified); no verifier checked it` (exit stays 0) for
+            each done ticket whose ## Outcome holds `verdict: closed by hand (unverified)`, by-hand.md's close (T-0641)
             Inside git it prints `warning: <path>: tracked binary under <root>; keep evidence in the user cache
             (wtroot.py evidence <ticket>) and cite the path` (exit stays 0, at most 5 lines, then `<N> more`) for
             each tracked file under <root> ending .png, .jpg, .jpeg, .gif, .webp, .mp4, .mov, .webm, .zip or .pdf
@@ -170,11 +172,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             no steps, so it needs entries for planner and filer; a full ticket needs the results); no skips.md or
             no lane record (tickets closed before the guard) is exempt
   tidy      [--apply] list each entry directly under <root> the layout rule does not allow, as
-            `<name> -> archive/<name>` (`work/archive/<name>` under `layout: topics`): allowed are AGENTS.md, CLAUDE.md, config, layout.md, roadmap.md, board.md,
+            `<name> -> archive/<name>` (`work/archive/<name>` under `layout: topics`): allowed are AGENTS.md, CLAUDE.md, by-hand.md, config, layout.md, roadmap.md, board.md,
             notes.md, notes, fleet.json, gate-ledger.jsonl, messages, runtime, supervisor, evals, proposals, goals,
             tickets, work, archive, dogfood, a _- or .-prefixed name, a folder holding handoff.md or plan-doc.md,
             a name matching a `top_level_allow: a, b` glob of <root>/config, and a name git ignores. Under
-            `layout: topics` the allowed names are the ones check allows (AGENTS.md, CLAUDE.md, config, layout.md,
+            `layout: topics` the allowed names are the ones check allows (AGENTS.md, CLAUDE.md, by-hand.md, config, layout.md,
             board.md, tickets, work, notes, messages, evals, proposals, supervisor, runtime, dogfood, a _- or
             .-prefixed name, a folder holding handoff.md or plan-doc.md), so a loose root notes.md, roadmap.md or
             archive is listed; `top_level_allow:` globs still hold, so tidy never moves a name they allow (T-0586). A dry run
@@ -213,7 +215,7 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             config with the same field of the new one: ticket folders (open and closed .NNNN-<slug>) and plain task
             folders become its children, roadmap and notes become ROADMAP.md and NOTES.md, evals/, proposals/,
             archive/ and fleet.json move under it, and any other loose entry of <root> (tidy's rule) goes to
-            <to>/archive/. config, _templates, runtime/, messages/ and the router stay in <root>. The old
+            <to>/archive/. config, _templates, runtime/, messages/, the router and by-hand.md stay in <root>. The old
             sub-routers are removed (`remove <path>`), the ticket_root: and layout: lines dropped (`config drop
             <line>`), `work_root: <to>` written, the roadmap, routers and mailbox entries regenerated, and check's
             output appended. Cites are found and rewritten as migrate-layout does; a file under docs/reports/ or
@@ -278,7 +280,9 @@ close procedures) and
 <root>/CLAUDE.md, and with `ticket_root: tickets` also <root>/tickets/AGENTS.md (the same procedures) and
 <root>/tickets/CLAUDE.md, and with `layout: topics` also work/AGENTS.md, work/CLAUDE.md, notes/AGENTS.md and
 notes/CLAUDE.md (short entry blocks), and with `work_root: W` also W/AGENTS.md and W/CLAUDE.md (the work root's
-entry block, linking <root>/AGENTS.md for the procedures); the topics router opens with a topic-folder paragraph and both procedures
+entry block, linking <root>/AGENTS.md for the procedures), and always <root>/by-hand.md (T-0641: BY_HAND_TEMPLATE,
+how to create, claim, release and close a ticket with git alone when the plugin is not installed, adapted to the
+ticket dir and folder mode; every router links it in one line); the topics router opens with a topic-folder paragraph and both procedures
 send notes to `<R>/notes/notes.md`. Every command that regenerates the roadmap (new, close, roadmap, archive, number)
 regenerates them. The block uses onboard.py's managed-block format and helpers (wrap_block, find_block,
 digest, has_import, _replace_region, _append_region; same scripts/ dir, standard library only): a missing
@@ -598,7 +602,8 @@ def link_warnings(root):
 
 def ensure_numbered_config(root):
     """Persist numbered mode: append `ticket_folders: numbered` to <root>/config (created if missing)
-    unless config_numbered(root) already holds. Adds a newline first if the file lacks a trailing one."""
+    unless config_numbered(root) already holds. Adds a newline first if the file lacks a trailing one. Then rewrites
+    the router files, since by-hand.md follows the folder mode (T-0641)."""
     if config_numbered(root):
         return
     path = root / 'config'
@@ -606,6 +611,7 @@ def ensure_numbered_config(root):
     if old and not old.endswith('\n'):
         old += '\n'
     path.write_text(old + 'ticket_folders: numbered\n', encoding='utf-8')
+    write_router(root, load(layout_paths(root).tickets))
 
 
 def ensure_topics_config(root, write=True):
@@ -800,7 +806,7 @@ def strays(root):
             f'to tickets/{name}' for name, _ in load(root) if name != 'tickets']
 
 
-ROOT_ALLOWED = ('AGENTS.md', 'CLAUDE.md', 'config', 'layout.md', 'board.md', 'tickets', 'work', 'notes', 'messages',
+ROOT_ALLOWED = ('AGENTS.md', 'CLAUDE.md', 'by-hand.md', 'config', 'layout.md', 'board.md', 'tickets', 'work', 'notes', 'messages',
                 'evals', 'proposals', 'supervisor', 'runtime', 'dogfood')
 
 
@@ -818,7 +824,7 @@ def root_strays(root):
             and not (p.name.startswith('.') and not DOT_RE.fullmatch(p.name))]
 
 
-TOP_ALLOWED = ('AGENTS.md', 'CLAUDE.md', 'config', 'layout.md', 'roadmap.md', 'board.md', 'notes.md', 'notes',
+TOP_ALLOWED = ('AGENTS.md', 'CLAUDE.md', 'by-hand.md', 'config', 'layout.md', 'roadmap.md', 'board.md', 'notes.md', 'notes',
                'fleet.json', 'gate-ledger.jsonl', 'messages', 'runtime', 'supervisor', 'evals', 'proposals', 'goals',
                'tickets', 'work', 'archive', 'dogfood')
 
@@ -1914,6 +1920,22 @@ def claim_ref_warnings(root, ts):
     return out
 
 
+def hand_close_warnings(td, ts):
+    """T-0641: one `warning:` line per done ticket whose ## Outcome records `verdict: closed by hand (unverified)`, the
+    close by-hand.md describes, which no verifier checked."""
+    out = []
+    for slug, m in ts:
+        if m.get('status') != 'done':
+            continue
+        try:
+            text = (td / slug / 'handoff.md').read_text(encoding='utf-8')
+        except (OSError, UnicodeDecodeError):
+            continue
+        if 'verdict: closed by hand (unverified)' in (section(text, 'Outcome') or ''):
+            out.append(f'warning: {slug}: closed by hand (unverified); no verifier checked it')
+    return out
+
+
 def claim_by(by, env):
     """T-0588: the claimed_by holder: an explicit --by as given; else SDLC_HOST, else claude or codex from the host's
     own variables, with `:<session>` (CLAUDE_CODE_SESSION_ID or CODEX_THREAD_ID, first 8 characters) when one is
@@ -2451,17 +2473,20 @@ ROUTER_PLUGIN_LINE = ('- `<plugin-root>` is the installed sdlc-lite plugin folde
                       '`${CLAUDE_PLUGIN_ROOT}` in Claude Code; in Codex, the folder two levels above the `sdlc-lite` '
                       'skill.\n')
 
+ROUTER_BY_HAND_LINE = ('- No plugin installed: follow `<R>/by-hand.md` to create, claim, release or close a ticket with git '
+                       'alone.\n')  # T-0641
+
 ROUTER_CMD = 'python3 <plugin-root>/scripts/tickets.py --root <R>'  # <CMD> in the procedures, unless tickets_cmd: is set
 
 ROUTER_FLAT_ALLOWED = """\
 - The top of `<R>` holds only ticket and task folders (a folder with a `handoff.md` or `plan-doc.md`), \
-`AGENTS.md`, `CLAUDE.md`, `config`, `roadmap.md`, `board.md`, `notes.md`, `notes/`, `fleet.json`, \
+`AGENTS.md`, `CLAUDE.md`, `by-hand.md`, `config`, `roadmap.md`, `board.md`, `notes.md`, `notes/`, `fleet.json`, \
 `gate-ledger.jsonl`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, \
 `archive/`, and `_`- or `.`-prefixed entries. A `top_level_allow: <glob>, ...` line in `<R>/config` allows more.
 """
 
 ROUTER_TOPICS_ALLOWED = """\
-- The top of `<R>` holds only `AGENTS.md`, `CLAUDE.md`, `config`, `layout.md`, `board.md`, `tickets/`, `work/`, \
+- The top of `<R>` holds only `AGENTS.md`, `CLAUDE.md`, `by-hand.md`, `config`, `layout.md`, `board.md`, `tickets/`, `work/`, \
 `notes/`, `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `dogfood/`, and `_`- or `.`-prefixed \
 entries; ticket folders go in `tickets/`, task folders in `work/`. A `top_level_allow:` line only keeps `tidy` from moving a name; `check` still reports it.
 """
@@ -2533,6 +2558,76 @@ Ticket lifecycle:
 6. Close: `<CMD> close <folder> --changed "<one line>"`, as in Close a ticket above.
 """
 
+BY_HAND = 'by-hand.md'  # T-0641: the no-plugin protocol beside the router, one of router_files
+
+BY_HAND_TEMPLATE = """\
+# Working by hand
+
+Use this file when the SDLC Lite plugin is not installed: it creates, claims, releases and closes a ticket with git \
+and a POSIX shell. Run each block from the repository root after replacing `T-NNNN` and `NNNN` (the ticket id), \
+`<slug>`, `<title>`, `<by>` (your name), `<one line>` and `YYYY-MM-DD` (today). `tickets.py roadmap` generates this \
+block: do not edit inside it. `<HAND_ROADMAP>` and the routers stay stale until the next plugin run regenerates them.
+
+## New
+
+The first command prints the highest id in use; the new id is one above it (T-0001 when it prints nothing). The \
+second reserves the id: a non-zero exit means another worktree took it, so add one and run it again. `type:` is \
+feature, bug, chore, spike or idea. Then fill in the sections.
+
+```sh
+{ find <T> -maxdepth 2 -name handoff.md -exec sed -nE 's/^id: T-([0-9]{4}).*/\\1/p' {} +; \
+git for-each-ref --format='%(refname:strip=3)' refs/sdlc/ids/ | cut -c3-; } | sort -n | tail -1
+git update-ref refs/sdlc/ids/T-NNNN "$(printf '<HAND_FOLDER>\\n' | git hash-object -w --stdin)" ""
+mkdir <T>/<HAND_FOLDER>
+printf '%s\\n' --- 'id: T-NNNN' 'title: "<title>"' 'type: feature' 'status: proposed' 'size: L2' 'priority: P2' \
+'depends: []' 'created: YYYY-MM-DD' 'router: <HAND_ROUTER>' --- '' '## Goal' '' '## Acceptance criteria' \
+> <T>/<HAND_FOLDER>/handoff.md
+```
+
+## Claim
+
+A non-zero exit from the first command means someone holds the ticket (`git cat-file -p refs/sdlc/claims/T-NNNN` \
+names them): pick another one.
+
+```sh
+git update-ref refs/sdlc/claims/T-NNNN "$(printf '<by> YYYY-MM-DD\\n' | git hash-object -w --stdin)" ""
+awk '/^---/{n++} n==1&&/^status:/{$0="status: claimed"} {print} n==1&&/^created:/{print "claimed_by: <by> \
+YYYY-MM-DD"}' <T>/<HAND_FOLDER>/handoff.md > handoff.tmp
+mv handoff.tmp <T>/<HAND_FOLDER>/handoff.md
+```
+
+## Release
+
+```sh
+awk '/^---/{n++} n==1&&/^claimed_by:/{next} n==1&&/^status:/{$0="status: ready"} {print}' \
+<T>/<HAND_FOLDER>/handoff.md > handoff.tmp
+mv handoff.tmp <T>/<HAND_FOLDER>/handoff.md
+git update-ref -d refs/sdlc/claims/T-NNNN
+```
+
+## Close
+
+No verifier runs, so the Outcome says `closed by hand (unverified)` and `tickets.py check` warns on it.<HAND_CLOSE_NOTE>
+
+```sh
+awk '/^---/{n++} n==1&&/^status:/{$0="status: done"} {print}' <T>/<HAND_FOLDER>/handoff.md > handoff.tmp
+mv handoff.tmp <T>/<HAND_FOLDER>/handoff.md
+printf '\\n## Outcome\\n\\nYYYY-MM-DD · lane: hand · verdict: closed by hand (unverified) · verifier: none · \
+base: none\\n- Changed: <one line>\\n- Commits: see git log\\n' >> <T>/<HAND_FOLDER>/handoff.md
+git update-ref -d refs/sdlc/claims/T-NNNN
+<HAND_RENAME>```
+
+## Documents and rules
+
+- Adding a document: follow `docs/AGENTS.md` "## Adding a document".
+- Never push, tag or publish without the user.
+- Make worktrees only under `../<repo>.worktrees/`.
+- Format only the files you changed, never the whole repository.
+- Stop a process by its PID, never by a name pattern (`pkill -f`, `killall`).
+
+Lanes, verification, lint and dispatch need the plugin.
+"""
+
 ROUTER_TEMPLATE = """\
 # Work records
 
@@ -2543,7 +2638,7 @@ history: open one only when asked.
 
 <ticket folders line>
 - Mailbox: `messages/` is a git-ignored mailbox, not a record; follow `messages/AGENTS.md` to send, read, reply, ack, or expire a message with `<plugin-root>/scripts/messages.py`.
-""" + ROUTER_PLUGIN_LINE + """
+""" + ROUTER_PLUGIN_LINE + ROUTER_BY_HAND_LINE + """
 ## Stages
 
 <stage lines>
@@ -2556,7 +2651,7 @@ TICKETS_TEMPLATE = """\
 One folder per ticket: `<slug>/` or `NNNN-<slug>/` while open, `.NNNN-<slug>/` once closed. Stage counts and the \
 open tickets are in `../AGENTS.md`. `tickets.py roadmap` generates this block: do not edit inside it.
 
-""" + ROUTER_PLUGIN_LINE + '\n' + ROUTER_PROCEDURES
+""" + ROUTER_PLUGIN_LINE + ROUTER_BY_HAND_LINE + '\n' + ROUTER_PROCEDURES
 
 ROUTER_FLAT_INTRO = """\
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` \
@@ -2589,7 +2684,7 @@ when asked.
 """
 
 ROUTER_WORK_ALLOWED = """\
-- The top of `<R>` holds only `AGENTS.md`, `CLAUDE.md`, `config`, `board.md`, `fleet.json`, `gate-ledger.jsonl`, \
+- The top of `<R>` holds only `AGENTS.md`, `CLAUDE.md`, `by-hand.md`, `config`, `board.md`, `fleet.json`, `gate-ledger.jsonl`, \
 `messages/`, `runtime/`, `supervisor/`, `evals/`, `proposals/`, `goals/`, `tickets/`, `work/`, `archive/`, and `_`- \
 or `.`-prefixed entries; ticket and task folders go in `<T>/`. A \
 `top_level_allow: <glob>, ...` line in `<R>/config` allows more.
@@ -2649,7 +2744,7 @@ def router_files(root):
         for d in ('work', 'notes'):
             out += [(f'{d}/AGENTS.md', root / d / 'AGENTS.md', 'agents'),
                     (f'{d}/CLAUDE.md', root / d / 'CLAUDE.md', 'claude')]
-    return out
+    return out + [(BY_HAND, root / BY_HAND, 'agents')]
 
 
 def stage_lines(ts, prefix=''):
@@ -2678,6 +2773,24 @@ def stage_lines(ts, prefix=''):
                     line += f', branch {b.strip()}'
                 out.append(line)
     return out
+
+
+def by_hand_body(root, ts):
+    """BY_HAND_TEMPLATE for root (T-0641): <T> the ticket dir and <HAND_ROUTER> the `router:` value stamp writes, the
+    roadmap path, and the folder `NNNN-<slug>` with a closing rename to `.NNNN-<slug>` in numbered mode (the config
+    line, or every folder of ts already prefixed, as under --numbered before the line is written), else `<slug>` and
+    no rename. Paths are relative to file_base(root), as in the router."""
+    r, t = router_paths(root)
+    numbered = config_numbered(root) or (bool(ts) and all(PREFIX_RE.match(s.lstrip('.')) for s, _ in ts))
+    folder = 'NNNN-<slug>' if numbered else '<slug>'
+    roadmap = pathlib.Path(os.path.relpath(layout_paths(root).roadmap.resolve(), file_base(root).resolve())).as_posix()
+    rename, note = '', ''
+    if numbered:
+        rename = f'mv {t}/{folder} {t}/.{folder}\n'
+        note = ' The last command marks the folder closed: fix any link that cites the old path.'
+    return (BY_HAND_TEMPLATE.replace('<HAND_ROADMAP>', roadmap).replace('<HAND_FOLDER>', folder)
+            .replace('<HAND_ROUTER>', f'{r if work_dir(root) is not None else t}/AGENTS.md')
+            .replace('<HAND_RENAME>', rename).replace('<HAND_CLOSE_NOTE>', note).replace('<T>', t))
 
 
 def router_bodies(root, ts):
@@ -2720,6 +2833,7 @@ def router_bodies(root, ts):
     if topics:
         out['work/AGENTS.md'] = WORK_TEMPLATE
         out['notes/AGENTS.md'] = NOTES_TEMPLATE
+    out[BY_HAND] = by_hand_body(root, ts)
     return out
 
 
@@ -3597,6 +3711,7 @@ def cmd_check(root, numbered=False):
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
     out += claim_ref_warnings(root, ts)
+    out += hand_close_warnings(td, ts)
     out += link_warnings(root)
     out += top_level_warnings(root)
     out += delivered_warnings(root, ts)
@@ -3856,7 +3971,7 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
     return '\n'.join(lines + [checked])
 
 
-STATE_KEEP = ('AGENTS.md', 'CLAUDE.md', 'config', 'layout.md', 'board.md', 'gate-ledger.jsonl', 'messages', 'runtime',
+STATE_KEEP = ('AGENTS.md', 'CLAUDE.md', BY_HAND, 'config', 'layout.md', 'board.md', 'gate-ledger.jsonl', 'messages', 'runtime',
               'supervisor', 'goals', 'dogfood')  # what stays in <root> after migrate-work-root, besides _ and . names
 
 
@@ -3916,7 +4031,8 @@ def cmd_migrate_work_root(root, to='docs/work', dry_run=False, rewrite_refs=Fals
     router_preflight(root)
     if cur:
         return 'nothing to migrate\n' + cmd_check(root)
-    subs = [path for _, path, _ in router_files(root)][2:]  # the sub-routers; <root>/AGENTS.md and CLAUDE.md stay
+    subs = [path for label, path, _ in router_files(root)[2:] if label != BY_HAND]  # the sub-routers; <root>/AGENTS.md,
+    # CLAUDE.md and by-hand.md stay
     moves, unknown = [], []
     taken = {n for n, _ in ts}
 
@@ -6182,7 +6298,7 @@ def selftest():
         expect(f'work_root: new writes docs/work/0001-a/handoff.md, nothing under .sdlc but config, router and messages: '
                f'rc={rc} {out!r} {err!r} sdlc={tree(wr) if wr.is_dir() else None}',
                rc == 0 and out == str(ww / '0001-a' / 'handoff.md') and (ww / '0001-a' / 'handoff.md').is_file()
-               and tree(wr) == ['AGENTS.md', 'CLAUDE.md', 'config', 'messages']
+               and tree(wr) == ['AGENTS.md', 'CLAUDE.md', 'by-hand.md', 'config', 'messages']
                and '\nrouter: .sdlc/AGENTS.md ' in tr_text(ww / '0001-a' / 'handoff.md'))
         # T-0625: the router names work-root paths; docs/work/AGENTS.md is a short entry pointing to it
         fb = onboard.find_block(tr_text(wr / 'AGENTS.md'))
@@ -7384,8 +7500,8 @@ def selftest():
                    rc == 0 and got == ['.0001-a', '0002-b', 'AGENTS.md', 'CLAUDE.md', 'NOTES.md', 'ROADMAP.md',
                                        'archive', 'evals', 'fleet.json', 'plain-task', 'proposals']
                    and sorted(os.listdir(ww / 'archive')) == ['old-stuff']
-                   and sorted(os.listdir(wf)) == ['AGENTS.md', 'CLAUDE.md', '_templates', 'config', 'messages',
-                                                  'runtime']
+                   and sorted(os.listdir(wf)) == ['AGENTS.md', 'CLAUDE.md', '_templates', 'by-hand.md', 'config',
+                                                  'messages', 'runtime']
                    and (wf / 'config').read_text(encoding='utf-8') == 'ticket_folders: numbered\nwork_root: docs/work\n'
                    and rd('docs/guide.md') == ('see docs/work/0002-b/handoff.md and docs/work/ROADMAP.md and '
                                                'docs/work/NOTES.md\n')
@@ -7424,7 +7540,7 @@ def selftest():
                    f'dropped: rc={rc} {out!r} {err!r} work={got!r} sdlc={sorted(os.listdir(wt))!r}',
                    tc == 0 and rc == 0
                    and got == ['AGENTS.md', 'CLAUDE.md', 'NOTES.md', 'ROADMAP.md', 'a', 'b', 'task-x']
-                   and sorted(os.listdir(wt)) == ['AGENTS.md', 'CLAUDE.md', 'config', 'messages']
+                   and sorted(os.listdir(wt)) == ['AGENTS.md', 'CLAUDE.md', 'by-hand.md', 'config', 'messages']
                    and (wt / 'config').read_text(encoding='utf-8') == 'work_root: docs/work\n'
                    and run(wt, 'check')[0] == 0)
 
@@ -8085,6 +8201,71 @@ def selftest():
                f'rc={rc} {err!r} {rm!r}',
                rc == 0 and len(rows) == 1 and rows[0].startswith('| T-0004 | [c-open]')
                and '\nClosed: 3 done, 0 dropped (git log or .NNNN-* folders)\n' in rm)
+
+        # T-0641: replay the generated by-hand.md in a temp git repo, flat and numbered: new, claim, release, claim and
+        # close one ticket with its commands as written; then `new` stamps a higher id and check passes with one
+        # unverified warning. Controls: reserving the same id, or claiming a held ticket, with its update-ref refuses.
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the by-hand replay')
+        else:
+            genv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+            day = datetime.date.today().isoformat()
+            for numbered in (False, True):
+                hr = pathlib.Path(tmp) / f'by-hand-{int(numbered)}'
+                hr.mkdir()
+                subprocess.run(['git', '-C', str(hr), 'init', '-q', '-b', 'main'], capture_output=True, env=genv)
+                if numbered:
+                    (hr / '.sdlc').mkdir()
+                    (hr / '.sdlc' / 'config').write_text('ticket_folders: numbered\n', encoding='utf-8')
+                run(hr / '.sdlc', 'new', ('feature', 'a', 'A'))
+                run(hr / '.sdlc', 'new', ('feature', 'b', 'B'))
+                text = (hr / '.sdlc' / BY_HAND).read_text(encoding='utf-8')
+                blocks = dict(re.findall(r'^## (\w+)\n.*?^```sh\n(.*?)^```', text, re.S | re.M))
+                folder = '0003-hand' if numbered else 'hand'
+                subs = (('T-NNNN', 'T-0003'), ('NNNN', '0003'), ('<slug>', 'hand'), ('<title>', 'Hand'),
+                        ('<by>', 'hand-agent'), ('<one line>', 'replayed by the selftest'), ('YYYY-MM-DD', day))
+
+                def sh(line):
+                    for a, b in subs:
+                        line = line.replace(a, b)
+                    return subprocess.run(['sh', '-c', line], cwd=hr, capture_output=True, text=True, env=genv)
+
+                def replay(name):
+                    return [(ln, p.returncode, p.stderr) for ln in blocks.get(name, '').splitlines()
+                            for p in [sh(ln)]]
+                top = sh(blocks['New'].splitlines()[0]).stdout.strip()
+                got = {k: replay(k) for k in ('New', 'Claim', 'Release')}
+                again = sh(blocks['New'].splitlines()[1]).returncode  # control: the id is taken now
+                got['Claim2'] = replay('Claim')
+                held = sh(blocks['Claim'].splitlines()[0]).returncode  # control: a second claim of a held ticket
+                ref = sh('git cat-file -p refs/sdlc/claims/T-0003').stdout
+                h = hr / '.sdlc' / folder / 'handoff.md'
+                claimed = parse(h.read_text(encoding='utf-8')) or {}
+                got['Close'] = replay('Close')
+                closed = hr / '.sdlc' / (f'.{folder}' if numbered else folder) / 'handoff.md'
+                gone = sh('git rev-parse --verify -q refs/sdlc/claims/T-0003').returncode
+                rc_n, out_n, err_n = run(hr / '.sdlc', 'new', ('feature', 'c', 'C'))
+                rc_r, _, err_r = run(hr / '.sdlc', 'roadmap')
+                rc_k, out_k, err_k = run(hr / '.sdlc', 'check')
+                ids = {m.get('id') for _, m in load(hr / '.sdlc')}
+                bad = [g for k in got for g in got[k] if g[1] != 0]
+                expect(f'by-hand ({"numbered" if numbered else "flat"}): every command exits 0, the claim ref and '
+                       f'claimed_by agree, the close renames in numbered mode and drops the ref, new stamps T-0004, '
+                       f'check passes with one unverified warning: bad={bad!r} top={top!r} ref={ref!r} '
+                       f'claimed={claimed!r} gone={gone} new={rc_n} {err_n!r} roadmap={rc_r} {err_r!r} '
+                       f'check={rc_k} {out_k!r} {err_k!r} ids={ids!r}',
+                       set(blocks) >= {'New', 'Claim', 'Release', 'Close'} and not bad and top == '0002'
+                       and ref == f'hand-agent {day}\n' and claimed.get('status') == 'claimed'
+                       and claimed.get('claimed_by') == f'hand-agent {day}'
+                       and closed.is_file() and (parse(closed.read_text(encoding='utf-8')) or {}).get('status') == 'done'
+                       and gone != 0 and rc_n == 0 and 'T-0004' in ids and rc_r == 0 and rc_k == 0
+                       and out_k.count('closed by hand (unverified)') == 1
+                       and f'warning: {closed.parent.name}: closed by hand (unverified)' in out_k
+                       and 'refs/sdlc/claims' not in out_k)
+                expect(f'by-hand ({"numbered" if numbered else "flat"}) controls: reserving a taken id and claiming '
+                       f'a held ticket with the protocol update-ref both exit non-zero: again={again} held={held}',
+                       again != 0 and held != 0)
+            print('tickets selftest: by-hand protocol replayed (flat and numbered)')
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
