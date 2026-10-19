@@ -74,6 +74,21 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 - Name: `tickets/` keeps the vocabulary every skill, check, and script already uses and avoids confusion with GitHub issues.
 - Stage folders become optional. With two roots, option A (router plus generated stage lists) still gives progressive disclosure inside `tickets/`.
 
+## Work root: `docs/work/` (T-0618, T-0621)
+
+The user chose on 2026-10-19 to move the tracked work records out of `.sdlc/` into the docs tree. A repo opts in with one `work_root: <path>` line in `.sdlc/config`; `docs/work` is the recommended value. No line keeps every path above.
+
+```
+docs/work/       work root: ticket and task folders, ROADMAP.md, NOTES.md, archive/, evals/, proposals/, fleet.json
+  NNNN-slug/
+  .NNNN-slug/    closed
+.sdlc/           config, _templates/, runtime/, messages/, AGENTS.md router
+```
+
+- `ROADMAP.md` and `NOTES.md` are the work root's only UPPERCASE singletons; the ticket folders are its children.
+- The work root is flat: it refuses to sit beside `ticket_root: tickets` or `layout: topics`, and a nested or topics repo comes to the same shape when it migrates.
+- `scripts/roots.py` resolves every root path from the config, including another worktree's or branch's, so ticket ids stay unique across trees. It refuses an unsafe value (empty, `.`, absolute, any `..`, under `.sdlc`) before anything is written.
+
 ## Message bus
 
 Status: the mailbox core is built in T-0177 (`scripts/messages.py` and the `run.sh` notice). The `messenger` agent is built in T-0178 (`plugins/sdlc-lite/agents/messenger.md` and the generated Codex agent `sdlc-messenger-l1`). The entry files are built in T-0179: `messages.py send` and `reply` and `tickets.py roadmap` write `messages/AGENTS.md` and the three stage entry files, and the live run is in [Messages live run](../../reports/messages-live-run.md). T-0181 adds `messages.py wait`, one blocking call that returns when a message is in `new/<receiver>/` and never claims it.

@@ -342,6 +342,7 @@ import tempfile
 import onboard  # same scripts/ dir: the managed-block format and helpers the router block reuses
 import order as run_order
 import plugin_min  # same scripts/ dir: the repo's minimum plugin version (T-0593)
+import roots  # same scripts/ dir: the one resolver of every root path (T-0621)
 
 PLUGIN = pathlib.Path(__file__).resolve().parent.parent
 REQUIRED = ('id', 'title', 'type', 'status', 'size', 'priority', 'depends', 'created')
@@ -373,10 +374,10 @@ PROFILE_RE = re.compile(r'\s*profile\s*:\s*(\S+)\s*(?:#.*)?')  # T-0510: `profil
 LOCAL_GATE_RE = re.compile(r'\s*local_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
 FULL_GATE_RE = re.compile(r'\s*full_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
 HANDOFF_PROFILE_DEFAULT_RE = re.compile(r'(?m)^\s*profile\s*:\s*default\b')  # T-0510: a ticket's opt-out line
-TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
+TICKET_ROOT_RE = roots.TICKET_ROOT_RE
 TICKETS_CMD_RE = re.compile(r'\s*tickets_cmd\s*:\s*(\S.*?)\s*(?:\s#.*)?')
 MD_LINK_RE = re.compile(r'\]\(\s*<?([^)\s>]+)>?[^)]*\)')
-LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
+LAYOUT_RE = roots.LAYOUT_RE
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
 CITATION_SKIP_RE = re.compile(r'\s*citation_skip\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0535: comma-separated globs
 TOP_LEVEL_ALLOW_RE = re.compile(r'\s*top_level_allow\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0544: comma-separated globs
@@ -390,8 +391,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 """
 
 
-class Fail(Exception):
-    """A refusal: the message goes to stderr and the command exits 1. Never a traceback."""
+Fail = roots.Fail  # a refusal: the message goes to stderr and the command exits 1, never a traceback
 
 
 # ---------- parsing ----------
@@ -728,29 +728,14 @@ def inner_loop(root, handoff_text=''):
 
 
 def ticket_dir(root):
-    """The dir holding the ticket folders: <root>/tickets when <root>/config has a `ticket_root: tickets` line,
-    else root. Blank and # comment lines are ignored and a missing file is no line, as in config_numbered. Any
-    other ticket_root value raises Fail before anything is read or written: the only supported value is
-    `tickets`. config and _templates stay at <root> either way; roadmap.md and notes.md stay at <root> in the flat
-    layout and move under the topics layout (see layout_paths, which calls this, never the reverse). This function
-    never reads the `layout` line, so a bad one in another tree never breaks that tree's resolution here."""
-    path = root / 'config'
-    if not path.is_file():
-        return root
-    values = []
-    for line in path.read_text(encoding='utf-8').splitlines():
-        if not line.strip() or line.lstrip().startswith('#'):
-            continue
-        m = TICKET_ROOT_RE.fullmatch(line)
-        if m:
-            values.append(m.group(1))
-    if not values:
-        return root
-    for v in values:
-        if v != 'tickets':
-            raise Fail(f'{path}: ticket_root: {v} is not supported; the only supported value is '
-                       f'ticket_root: tickets; nothing written')
-    return root / 'tickets'
+    """The dir holding the ticket folders, from roots.ticket_dir: <top>/<work_root> with a `work_root:` line,
+    <root>/tickets with a `ticket_root: tickets` line, else root. Blank and # comment lines are ignored and a
+    missing file is no line, as in config_numbered. Any other ticket_root value, or an unsafe work_root, raises Fail
+    before anything is read or written. config and _templates stay at <root> either way; roadmap.md and notes.md
+    stay at <root> in the flat layout and move under the topics layout or the work root (see layout_paths, which
+    calls roots.resolve, never this). This never reads the `layout` line, so a bad one in another tree never breaks
+    that tree's resolution here."""
+    return roots.ticket_dir(root)
 
 
 LayoutPaths = collections.namedtuple('LayoutPaths', 'layout tickets roadmap notes work')
@@ -759,43 +744,19 @@ LayoutPaths = collections.namedtuple('LayoutPaths', 'layout tickets roadmap note
 def layout_lines(root):
     """[(value, line)] for each `layout: <value>` line in <root>/config, in file order (line stripped). Blank
     and # comment lines are ignored and a missing file is no line, as in ticket_dir."""
-    path = root / 'config'
-    if not path.is_file():
-        return []
-    out = []
-    for line in path.read_text(encoding='utf-8').splitlines():
-        if not line.strip() or line.lstrip().startswith('#'):
-            continue
-        m = LAYOUT_RE.fullmatch(line)
-        if m:
-            out.append((m.group(1), line.strip()))
-    return out
+    return list(roots.parse(roots.read_config(root)).layout)
 
 
 def layout_paths(root):
-    """LayoutPaths(layout, tickets, roadmap, notes, work) from <root>/config's `layout:` line. No line, or only
+    """LayoutPaths(layout, tickets, roadmap, notes, work) from roots.resolve(root). No line, or only
     `layout: flat` lines: ('flat', ticket_dir(root), <root>/roadmap.md, <root>/notes.md, <root>). `layout: topics`:
     ('topics', <root>/tickets, <root>/tickets/roadmap.md, <root>/notes/notes.md, <root>/work), and it needs a
     `ticket_root: tickets` line too, since other worktrees, external branches, board.py and traces resolve the
-    ticket root from ticket_root alone. Any other value, both values in one file, or topics without
-    ticket_root: tickets raises Fail before anything is read or written, as ticket_dir does."""
-    path = root / 'config'
-    found = layout_lines(root)
-    for v, line in found:
-        if v not in ('flat', 'topics'):
-            raise Fail(f'{path}: {line} is not supported; the supported values are layout: flat and layout: topics; '
-                       f'nothing written')
-    for v, line in found:
-        if v != found[0][0]:
-            raise Fail(f'{path}: {line} conflicts with {found[0][1]}; keep one layout value; nothing written')
-    tdir = ticket_dir(root)
-    if found and found[0][0] == 'topics':
-        if tdir == root:
-            raise Fail(f'{path}: layout: topics needs a ticket_root: tickets line too (other worktrees, branches, '
-                       f'board.py and traces find the ticket root from ticket_root alone); add ticket_root: tickets; '
-                       f'nothing written')
-        return LayoutPaths('topics', tdir, tdir / 'roadmap.md', root / 'notes' / 'notes.md', root / 'work')
-    return LayoutPaths('flat', tdir, root / 'roadmap.md', root / 'notes.md', root)
+    ticket root from ticket_root alone. `work_root: W` (T-0621): ('flat', <top>/W, <top>/W/ROADMAP.md,
+    <top>/W/NOTES.md, <top>/W). Any other value, both values in one file, topics without ticket_root: tickets, or
+    an unsafe work_root raises Fail before anything is read or written, as ticket_dir does."""
+    r = roots.resolve(root)
+    return LayoutPaths(r.layout, r.tickets, r.roadmap, r.notes, r.work)
 
 
 def strays(root):
