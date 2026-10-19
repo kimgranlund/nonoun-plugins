@@ -828,13 +828,14 @@ def carry_lane_records(ctx, d):
         return lines
     try:
         ltdir = tickets.ticket_dir(lroot)
+        mtdir = tickets.ticket_dir(mroot)  # T-0639: the main checkout's own ticket dir, docs/work under a work_root
         metas = tickets.load(ltdir)
     except tickets.Fail:
         return lines
     want = {str(t) for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))}
     for slug, meta in metas:
         if meta.get('id') in want:
-            dst = carry_records(ltdir / slug, mroot / ltdir.relative_to(lroot) / slug)
+            dst = carry_records(ltdir / slug, mtdir / slug)
             if dst is not None:
                 lines.append(f'records: {dst}')
     return lines
@@ -2208,6 +2209,26 @@ def case_carry(script, base):
     return fails
 
 
+def case_carry_work_root(script, base):
+    """T-0639: under `work_root: docs/work` the ticket folder sits outside .sdlc, and close still carries its runtime
+    records into the main checkout's records dir."""
+    t = Fixture(base, script, 'carrywr')
+    num = 8
+    leaf, tree, b = t.open('c8', f'T-{num}')
+    t.work(tree)
+    t.merge(b)
+    key = f'.sdlc/runtime/tasks/{num:04d}-t'
+    t.write({'.sdlc/config': 'work_root: docs/work\n'})
+    t.write({'.sdlc/config': 'work_root: docs/work\n', '.sdlc/runtime/.gitignore': '*\n', f'{key}/verifier-L2.md': 'lane\n',
+             f'docs/work/{num:04d}-t/handoff.md': f'---\nid: T-{num}\ntitle: "T8"\ntype: feature\nstatus: claimed\nsize: L1\n'
+                                                f'priority: P2\ndepends: []\ncreated: 2026-10-11\n---\n\nbody\n'}, cwd=tree)
+    rc, o = t.lanes('close', leaf)
+    carried = [ln[len('records: '):] for ln in o.splitlines() if ln.startswith('records: ')]
+    if rc or len(carried) != 1 or not samepath(carried[0], t.top / key) or not (t.top / key / 'verifier-L2.md').is_file():
+        return [f'carry work root: the lane records did not reach the main checkout: {rc}: {o}']
+    return []
+
+
 def stub_env(base, data):
     p = Path(base) / f'gh-{time.time_ns()}.json'
     p.write_text(json.dumps(data))
@@ -3372,6 +3393,8 @@ def run_selftest(script, src, base):
              'a change, a rename and a deletion the target lacks refuse')
         need('row 12', case_row12(script, base), 'close --discard closes with an archive tag')
         need('carry', case_carry(script, base), 'close carries lane records into main, keeps a newer file, a discard carries none')
+        need('carry work root', case_carry_work_root(script, base),
+             'under work_root: docs/work close carries the lane records of a docs/work ticket into main')
         print('ok: C6: every truth table row gives its outcome')
         need('C1', case_c1_nested(script, base) + case_c1_outside(script, base),
              'a stray nested tree, a record outside the lanes root and a lane really under the checkout fail')
