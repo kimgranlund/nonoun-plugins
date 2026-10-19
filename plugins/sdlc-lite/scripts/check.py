@@ -141,7 +141,9 @@
 33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
    `docs_check.py" selftest` and `docs_check.py" --root` on this repository. Negative controls: each phrase removed from each file must be flagged.
 34. Product name: live tracked files hold none of the retired spellings of SDLC Lite listed in NAME_BANNED, outside the NAME_ALLOW history paths
-   (docs/reports, closed tickets, run workspaces under .sdlc, bench results). Negative control: a planted spelling must be flagged and an allowlisted path must not.
+   (docs/reports, closed tickets, run workspaces under .sdlc, bench results), plus the same closed-ticket, verify-* and 0309 paths under the
+   `work_root` of .sdlc/config (roots.record_prefixes). Negative controls: a planted spelling must be flagged and an allowlisted path must not; under
+   `work_root: docs/work` a spelling under docs/work/.0001-a/ is allowed (flagged without the work root) and one under docs/specs/ is flagged.
 35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, `sdlc-gate-locks`, `SDLC_GATE_DIR`, and `SDLC_GATE_GRANT`; scripts/check.sh runs `gate_lock.py" selftest`;
    scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/references/sdlc-internals.md exists,
    it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
@@ -339,6 +341,7 @@ if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku
 # Role files (docstring item 2). The generated per-level definitions (agents/<role>-L<n>.md, agents/solo-<tier>.md) are not role files.
 sys.path.insert(0, str(root/'scripts'))
 import claude_roles
+import roots
 SESSION_AGENTS = {'conductor', 'messenger', 'solo'}  # all run as session agents (main session or its sub-agent), not through run.sh
 try: GENERATED = claude_roles.generated_stems(root)
 except claude_roles.TableError as e: GENERATED = set(); errors.append(f'claude_roles.py: {e}')
@@ -1195,16 +1198,32 @@ for _name, _phrases in DOCS_CHECK_NEEDS:
 # Product name guard (docstring item 34): runs only where the repository root is a git work tree.
 NAME_BANNED = ('Lean ' + 'SDLC', 'lean ' + 'SDLC', 'SDLC' + '-Lite', 'sdlc ' + 'lite')
 NAME_ALLOW = ('docs/reports/*', '.sdlc/.[0-9]*', '.sdlc/verify-*', '.sdlc/*0309*', 'plugins/sdlc-lite/bench/results/*')
-def name_bad(texts):
+NAME_ALLOW_WORK = ('{w}/.[0-9]*', '{w}/verify-*', '{w}/*0309*')  # the same history paths under a work_root
+def name_allow(prefixes):
+    # prefixes: roots.record_prefixes(top), ('.sdlc/',) plus '<work_root>/' when one is set
+    return NAME_ALLOW + tuple(g.format(w=p.rstrip('/')) for p in prefixes if p != '.sdlc/' for g in NAME_ALLOW_WORK)
+def name_bad(texts, allow=NAME_ALLOW):
     import fnmatch
-    return [f'{rel}: retired spelling "{b}"' for rel, t in sorted(texts.items()) if not any(fnmatch.fnmatchcase(rel, g) for g in NAME_ALLOW) for b in NAME_BANNED if b in t]
+    return [f'{rel}: retired spelling "{b}"' for rel, t in sorted(texts.items()) if not any(fnmatch.fnmatchcase(rel, g) for g in allow) for b in NAME_BANNED if b in t]
+def work_root_fixture(td, line):
+    (td/'.sdlc').mkdir(parents=True, exist_ok=True); (td/'.sdlc/config').write_text(line + '\n')
+    return td/'.sdlc'
+with tempfile.TemporaryDirectory() as _td:
+    _wst = work_root_fixture(pathlib.Path(_td), 'work_root: docs/work')
+    _wallow = name_allow(roots.record_prefixes(pathlib.Path(_td)))
+    _wtext = {'docs/work/.0001-a/handoff.md': 'a ' + NAME_BANNED[0] + ' b'}
+    if not name_bad(_wtext): errors.append('check.py: product name work_root control is vacuous: a closed work-root ticket is allowed without the work root')
+    if name_bad(_wtext, _wallow): errors.append('check.py: product name allowlist did not suppress a closed ticket under work_root: docs/work')
+    if not name_bad({'docs/specs/x.md': _wtext['docs/work/.0001-a/handoff.md']}, _wallow): errors.append('check.py: product name work_root control not flagged for docs/specs')
+    if roots.resolve(_wst).evals != pathlib.Path(_td)/'docs/work/evals': errors.append('check.py: roots.resolve does not give docs/work/evals under work_root: docs/work')
+    if roots.resolve(work_root_fixture(pathlib.Path(_td)/'plain', 'layout: flat')).evals != pathlib.Path(_td)/'plain/.sdlc/evals': errors.append('check.py: roots.resolve moved off .sdlc/evals with no work_root')
 if (_repo/'.git').exists():
     _names = {}
     for _rel in subprocess.run(['git', 'ls-files', '-z'], cwd=_repo, capture_output=True, text=True).stdout.split('\0'):
         if _rel and (_repo/_rel).is_file():
             try: _names[_rel] = (_repo/_rel).read_text(encoding='utf-8')
             except (UnicodeDecodeError, OSError): pass
-    errors.extend(f'check.py: product name: {m}' for m in name_bad(_names))
+    errors.extend(f'check.py: product name: {m}' for m in name_bad(_names, name_allow(roots.record_prefixes(_repo))))
     if not name_bad(dict(_names, **{'docs/x.md': 'a ' + NAME_BANNED[0] + ' b'})): errors.append('check.py: product name negative control not flagged for a planted spelling')
     if name_bad({'docs/reports/x.md': 'a ' + NAME_BANNED[1] + ' b'}): errors.append('check.py: product name allowlist did not suppress a docs/reports path')
 # Gate lock (docstring item 35): the semaphore script, its selftest wiring, the fanout wrapper, and the conductor and internals mentions.

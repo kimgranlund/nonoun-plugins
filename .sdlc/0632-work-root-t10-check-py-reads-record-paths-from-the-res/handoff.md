@@ -28,4 +28,4 @@ Actions this ticket hosts:
 - Touch only the files listed; a needed change elsewhere is a new ticket.
 
 ## Acceptance criteria
-- `python3 plugins/sdlc-lite/scripts/check.py` exits 0 with a NAME_ALLOW negative control: under `work_root: docs/work` a retired spelling under docs/work/.0001-a/ is allowed and one under docs/specs/ is flagged (red before: flagged), and the evals lock guard reads docs/work/evals/
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0 with a NAME_ALLOW negative control: under `work_root: docs/work` a retired spelling under docs/work/.0001-a/ is allowed and one under docs/specs/ is flagged (red before: flagged). (Amended 2026-10-19, the ticket's one replan: the evals guard clause moved to T-0630, because the guard reads through `evals.py`, which T-0630 changes; check.py must not claim the guard reads the work root before then.)
