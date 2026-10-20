@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1b2c38f7d534 -->
+<!-- sdlc-lite:managed:start v1 sha256:ba70e09556b7 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 22
+- proposed: 21
   - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer)
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
   - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line)
@@ -24,7 +24,6 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0660 Plan lint flags universally quantified prose criteria with no command (docs/work/0660-quantified-criteria-lint)
   - T-0661 Verifier brief carries a base..end diff range per built step (docs/work/0661-verifier-diff-range)
   - T-0662 Tracked work records hold no absolute machine paths (docs/work/0662-relative-record-paths)
-  - T-0663 onboard creates the docs folder routers that docs/AGENTS.md links (docs/work/0663-docs-folder-routers)
   - T-0664 A write-once designs home for grill output in the onboard docs table (docs/work/0664-designs-docs-home)
   - T-0665 Drop redirect stub skills and shorten level-variant agent descriptions (docs/work/0665-trim-skill-catalog)
   - T-0666 Plan lint rejects git stash and --autostash in Do text (docs/work/0666-lint-git-stash)
@@ -35,10 +34,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 3
+- claimed: 4
   - T-0645 dispatch.py advance runs record, prune, next and prepare in one call (docs/work/0645-dispatch-advance), claimed by sdlc-lite-author 2026-10-20
   - T-0647 Plan steps carry a Read first line from AGENTS.md skill routing (docs/work/0647-plan-read-first-skills), claimed by sdlc-lite-author 2026-10-20
   - T-0651 A reason close routes follow-ups like a verified close (docs/work/0651-reason-close-followups), claimed by sdlc-lite-author 2026-10-20
+  - T-0663 onboard creates the docs folder routers that docs/AGENTS.md links (docs/work/0663-docs-folder-routers), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
 - done: 609
