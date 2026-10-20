@@ -34,3 +34,8 @@ A plan with no `(red)` spans reviews exactly as before, and review never changes
 1. `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0. Its new case shows `steps.py review` on a plan whose `(red)` span is `test -f README.md` (present at base) printing `replan` and `plan defect: red-at-base: step 1`, and the same plan with `test -f absent.txt` printing `split`. The first case fails with the change reverted.
 2. After that selftest, `git worktree list` lists no worktree it created (the case asserts this too).
 3. `git diff --check` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/steps.py`: new `red_at_base(plan, task_dir)` runs every step's runnable `(red)` span once through `red_first` in a throwaway detached worktree at `base_sha` under `wtroot.tmp_root`, removed (and pruned) after. `cmd_review` calls it when `review_action` returns split or review; each span green at base is logged under `## Plan review` via `record_plan_review`, printed after the read: lines as `plan defect: red-at-base: step <n>: `<span>``, and the action becomes `replan`. `review_action` stays read-only; usage doc updated.
+- Selftest: two new `(r) red-at-base` cases (green at base -> replan + defect line + logged, no leftover worktree, tree unchanged; red at base -> split). Negative control: with the red-at-base branch disabled the first case fails.
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `git worktree list` unchanged (9 entries before and after); `git diff --check` exit 0.

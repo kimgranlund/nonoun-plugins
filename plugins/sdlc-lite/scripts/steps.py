@@ -258,6 +258,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 blocked                                  -> stop (ask its ## Missing decisions)
                 anything else                            -> review L1 (a rerun, never a replan), but
                   two consecutive verdict-less reviews after the plan -> stop
+            Red at base (T-0657): when the action is split or review L1, every step's runnable (red) span
+            (guard_skipped ones left out) runs once through red_first in a throwaway detached worktree at
+            base_sha under the worktree root tmp prefix, removed after. Each span that exits 0 there is
+            appended under ## Plan review (record_plan_review) and printed after the read: lines as
+            "plan defect: red-at-base: step <n>: `<span>`", and the action becomes replan. No git, no base,
+            or no runnable (red) span: nothing runs and review reads only.
             An invalid result prints "invalid result: <path>: <reason>", then "reason: the newest
             result does not match its results.py schema; stop and ask the user", then the read:
             lines; exit 0. next and resume print it the same way.
@@ -3537,13 +3543,66 @@ def review_action(task):
             f'{runs} consecutive plan reviews with no verdict after {pname} (newest {rname}); ask the user', read)
 
 
+def red_at_base(plan, task_dir):
+    """The runnable (red) spans of every step of plan that exit 0 at the base sha, as (n, span) in order (T-0657).
+    They run once, through red_first, in a throwaway detached worktree at base_sha under the worktree root tmp prefix
+    (wtroot.tmp_root), removed after, so the main and lane trees are never touched. No git, no base, no plan steps or
+    no runnable span: an empty list and no worktree."""
+    top = git_toplevel(task_dir)
+    base = base_sha(top)
+    if not base:
+        return []
+    try:
+        steps = parse_steps(pathlib.Path(plan))
+    except (Fail, OSError, UnicodeDecodeError):
+        return []
+    plan_timeout = plan_guard_timeout(pathlib.Path(plan))
+    items = [(n, text, step_guard_timeout(steps[n]) or plan_timeout or DEFAULT_GUARD_TIMEOUT)
+             for n in steps for text in red_spans(steps[n]) if not guard_skipped(text)]
+    if not items:
+        return []
+    import wtroot  # local, as tickets is: a copy of steps.py beside only order.py and results.py has no wtroot.py
+    tmp_root = wtroot.tmp_root(top) or pathlib.Path(tempfile.gettempdir())
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    holder = pathlib.Path(tempfile.mkdtemp(prefix='review-red-', dir=tmp_root))
+    tree = holder / 'tree'
+    ran = []
+    try:
+        r = subprocess.run(['git', '-C', top, 'worktree', 'add', '-q', '--detach', str(tree), base],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=120)
+        if r.returncode != 0:
+            print(f'steps review: red-at-base skipped: git worktree add failed: {r.stderr.strip()}', file=sys.stderr)
+            return []
+        red_first(items, str(tree), str(tree), base, ran)
+    finally:
+        subprocess.run(['git', '-C', top, 'worktree', 'remove', '--force', str(tree)], capture_output=True,
+                       stdin=subprocess.DEVNULL, timeout=120)
+        shutil.rmtree(holder, ignore_errors=True)
+        subprocess.run(['git', '-C', top, 'worktree', 'prune'], capture_output=True, stdin=subprocess.DEVNULL,
+                       timeout=120)
+    return [(n, span) for n, span, rc in ran if rc == 0]
+
+
 def cmd_review(task):
     try:
         action, level, reason, read = review_action(task)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
+    defects = []
+    if action in ('split', 'review'):
+        plan = read[0]
+        green = red_at_base(plan, task_of(task))
+        defects = [f'plan defect: red-at-base: step {n}: `{span}`' for n, span in green]
+        if defects:
+            record_plan_review(task_of(task), plan, [f'steps: {plan} step {n}: red-at-base: `{span}` is green at '
+                                                     'base; it cannot detect the change' for n, span in green])
+            action, level = 'replan', None
+            reason = (f'{len(defects)} (red) span(s) of {os.path.basename(plan)} already pass at the base commit '
+                      '(red-at-base); replan at planner L3')
     print_action(action, level, reason, read)
+    for line in defects:
+        print(line)
     return 0
 
 
@@ -6485,6 +6544,29 @@ def selftest():
         check('(r) output: the action, then reason:, then read: <plan path>',
               rc == 0 and out.splitlines()[0] == 'split' and out.splitlines()[1].startswith('reason: ')
               and out.splitlines()[2] == f'read: {d2 / "planner-L2.md"}')
+
+        # (T-0657) review runs each (red) span once at the base sha in a throwaway worktree; one green there
+        # turns split into replan with a red-at-base plan defect, and the worktree is gone after.
+        def worktree_list(d):
+            return subprocess.run(['git', '-C', str(d.parents[1]), 'worktree', 'list', '--porcelain'],
+                                  capture_output=True, text=True).stdout
+
+        d = o_repo('(red) `test -f README.md`', commit='README.md')
+        wt_before, tree_before = worktree_list(d), porcelain(d)
+        rc, out, err = run_main(['review', str(d)])
+        lines = out.splitlines()
+        check('(r) red-at-base: a (red) span green at base prints replan and the plan defect, logs it, and '
+              'leaves no worktree and an unchanged tree',
+              rc == 0 and lines[0] == 'replan' and 'plan defect: red-at-base: step 1: `test -f README.md`' in lines
+              and 'step 1: red-at-base: `test -f README.md`' in (d / 'handoff.md').read_text(encoding='utf-8')
+              and worktree_list(d) == wt_before and porcelain(d) == tree_before
+              and not list(d.parents[2].glob('*.worktrees/tmp/review-red-*')))
+        d = o_repo('(red) `test -f absent.txt`', commit='README.md')
+        wt_before = worktree_list(d)
+        rc, out, err = run_main(['review', str(d)])
+        check('(r) red-at-base negative: a (red) span red at base reviews as before (split, no defect line)',
+              rc == 0 and out.splitlines()[0] == 'split' and 'red-at-base' not in out
+              and worktree_list(d) == wt_before)
         check('(r) an unresolved: item under ## Assumptions stops, for - and * items, and the reason quotes it',
               r_first(r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: flag or positional\n')}))
               == 'stop'
