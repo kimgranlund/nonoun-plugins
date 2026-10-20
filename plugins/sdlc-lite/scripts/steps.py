@@ -1499,6 +1499,7 @@ def read_first_paths(block):
 
 
 SKILL_PATH_RE = re.compile(r'(?:^|/)(?:SKILL\.md|skills/[^/]+/?)$')
+ROUTE_CUE_RE = re.compile(r'->|\u2192|\b(?:read|reads|use|uses|using|follow|follows)\b', re.I)
 
 
 def route_path_like(text):
@@ -1524,7 +1525,9 @@ def agents_files(top):
 def repo_skill_routes(top):
     """[(glob, skill)] from the routing lines of every AGENTS.md under top, root included. A routing line is a
     list item (- or *) or table row (|) whose code spans hold exactly one skill path (a SKILL.md file or a folder
-    under a skills/ directory) and at least one other path or glob (route_path_like). Paths in a nested AGENTS.md
+    under a skills/ directory) and at least one other path or glob (route_path_like); a list item also needs a
+    routing cue (ROUTE_CUE_RE) in the text just before the skill span, so a prose bullet that merely mentions a
+    skill is no route. Paths in a nested AGENTS.md
     resolve against its folder; every pair comes back repo-relative in posix form."""
     top = pathlib.Path(top)
     routes = []
@@ -1543,11 +1546,16 @@ def repo_skill_routes(top):
                 continue
             if fenced or not (t.startswith('- ') or t.startswith('* ') or t.startswith('|')):
                 continue
-            spans = [m.group(2).strip() for m in SPAN_RE.finditer(t) if m.group(2).strip()]
+            ms = [m for m in SPAN_RE.finditer(t) if m.group(2).strip()]
+            spans = [m.group(2).strip() for m in ms]
             skills = [x for x in spans if route_path_like(x) and SKILL_PATH_RE.search(x)]
             others = [x for x in spans if route_path_like(x) and not SKILL_PATH_RE.search(x)]
             if len(skills) != 1 or not others:
                 continue
+            if not t.startswith('|'):
+                k = next(i for i, x in enumerate(spans) if x == skills[0])
+                if not ROUTE_CUE_RE.search(t[ms[k - 1].end() if k else 0:ms[k].start()]):
+                    continue
             routes += [(prefix + (g[2:] if g.startswith('./') else g), prefix + skills[0]) for g in others]
     return routes
 
@@ -5419,6 +5427,13 @@ def selftest():
               and repo_skill_routes(rt) == [('src/styles/', '.agents/skills/recipe/SKILL.md')]
               and routed_skills(rt, ['src/styles/a.css']) == ['.agents/skills/recipe/SKILL.md']
               and routed_skills(rt, ['src/other.css']) == [])
+        # (rt) T-0672: a prose bullet that names a skill beside paths without a routing cue before it is no route
+        RT_PROSE = ('# Repo\n\n- Models live in `src/a.json` (the `src/run.sh` rows mirror it), with the consumer '
+                    'explanation in `.agents/skills/recipe/SKILL.md`. `src/check.py` checks them.\n')
+        (rt / 'AGENTS.md').write_text(RT_PROSE, encoding='utf-8')
+        check('(rt) T-0672: a prose bullet that mentions a skill beside paths yields no route',
+              repo_skill_routes(rt) == [])
+        (rt / 'AGENTS.md').write_text(RT_ROUTE, encoding='utf-8')
         rc, out, err = rt_lint('rt-bad', RT_ROUTE, rt_step)
         check('(rt) lint refuses a step that edits a routed path without its skill under ### Read first',
               rc == 1 and 'plan defect: edits routed path src/styles/a.css ' + RT_MSG in err)
