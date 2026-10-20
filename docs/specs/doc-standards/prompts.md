@@ -78,7 +78,7 @@ One row per positional and per flag the skill exposes to the user. The first col
 
 ### Hint rules
 
-Checked by `plugins/sdlc-lite/scripts/check.py` item 60. Every rule runs on every skill it applies to. The four plan redirect stubs (`plan-goal`, `plan-campaign`, `plan-doc`, `plan-fanout`) are exempt from H-2 to H-6.
+Checked by `plugins/sdlc-lite/scripts/check.py` item 60. Every rule runs on every skill it applies to.
 
 - H-1: a skill that reads arguments has an `argument-hint` frontmatter line.
 - H-2: the hint parses under the grammar.

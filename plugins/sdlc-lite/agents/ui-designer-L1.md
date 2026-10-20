@@ -1,6 +1,6 @@
 ---
 name: ui-designer-L1
-description: "Use to plan, review, or generate semantic DOM and CSS that follows the project's design system. The handoff's mode line picks one of the three; generate is the only mode that edits. NOT for framework-specific code generation, visual regression tooling, or a non-UI plan step. Level L1: opus high."
+description: "ui-designer at level L1: opus high. Same role as the ui-designer agent."
 model: opus
 effort: high
 ---

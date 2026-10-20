@@ -4,7 +4,7 @@ Status: built (ticket T-0407, 2026-10-09; the build commit is the one that close
 
 ## 1. Problem
 
-[plan-goal](../../../plugins/sdlc-lite/skills/plan-goal/SKILL.md) fills five sections: Scope, How to work, Budget and stop rules, Authorization, Done when. Three gaps, all observed in the files:
+`plan-goal` (now `/sdlc-lite:plan goal`) fills five sections: Scope, How to work, Budget and stop rules, Authorization, Done when. Three gaps, all observed in the files:
 
 - No section says what the goal is for. Scope lists tickets; nothing states the outcome they serve or why.
 - Done when can be met by closing tickets. `plan_check.py` `done-uncheckable` accepts "a merged ticket" ([goal-rules](../../../plugins/sdlc-lite/skills/plan/references/goal.md), `CHECKABLE`), so a goal can end green with the outcome unmoved.

@@ -2,6 +2,16 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [Unreleased]
+
+### Changed
+
+- Each generated level-variant agent (`builder-L2`, `solo-L1`, and the rest) carries a one-line description, `<role> at level <Ln>: <model> <effort>. Same role as the <role> agent.`, instead of repeating its base role's description; the longest drops from 408 to 81 characters (T-0665).
+
+### Removed
+
+- The `plan-goal`, `plan-campaign`, `plan-doc` and `plan-fanout` redirect stubs and `check.py` item 58; run `/sdlc-lite:plan <kind>` (T-0665).
+
 ## [0.27.0] - 2026-10-19
 
 Report: [docs/reports/2026-10-19-release-0-27-0.md](docs/reports/2026-10-19-release-0-27-0.md).

@@ -1,6 +1,6 @@
 ---
 name: scout-L1
-description: "Use to locate where the code for one question lives: files, symbols, entry points, as a short Map the next role searches from. Read-only and cheap. NOT for explaining design (architect) or history (archaeologist), outside documentation (researcher), or any edit. Level L1: sonnet low."
+description: "scout at level L1: sonnet low. Same role as the scout agent."
 model: sonnet
 effort: low
 disallowedTools: Edit, NotebookEdit

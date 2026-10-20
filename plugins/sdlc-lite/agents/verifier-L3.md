@@ -1,6 +1,6 @@
 ---
 name: verifier-L3
-description: "Use to independently check one built step or ticket against its acceptance criteria and return pass or fail with evidence. Runs checks, never edits. Run it on a different model family than the builder. NOT for building or fixing, reviewing a plan (plan-reviewer), or a second opinion on its own earlier verdict. Level L3: fable xhigh."
+description: "verifier at level L3: fable xhigh. Same role as the verifier agent."
 model: fable
 effort: xhigh
 disallowedTools: Edit, NotebookEdit

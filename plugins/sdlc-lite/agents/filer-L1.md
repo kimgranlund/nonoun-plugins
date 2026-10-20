@@ -1,6 +1,6 @@
 ---
 name: filer-L1
-description: "Use after a task finishes, to draft its records (PR title and body, changelog entry, tagged follow-ups) from the plan, builder, and verifier artifacts. Drafts only, never publishes. NOT for running gh or git, filing tickets (tickets.py close does that), or work that has no artifacts yet. Level L1: sonnet low."
+description: "filer at level L1: sonnet low. Same role as the filer agent."
 model: sonnet
 effort: low
 disallowedTools: Edit, NotebookEdit

@@ -1,6 +1,6 @@
 ---
 name: researcher-L3
-description: "Use to answer one question about the outside world (docs, APIs, libraries, prior art) with cited findings. Read-only. NOT for locating code in this repo (scout), why this code is as it is (archaeologist), or choosing a design (architect). Level L3: opus high."
+description: "researcher at level L3: opus high. Same role as the researcher agent."
 model: opus
 effort: high
 disallowedTools: Edit, NotebookEdit

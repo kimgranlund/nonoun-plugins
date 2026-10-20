@@ -1,6 +1,6 @@
 ---
 name: archaeologist-L1
-description: "Use to explain why code is the way it is: past decisions, deliberate oddities, and landmines, from git history, comments, and tests. Read-only. NOT for locating code (scout), outside documentation (researcher), or designing a change (architect). Level L1: sonnet medium."
+description: "archaeologist at level L1: sonnet medium. Same role as the archaeologist agent."
 model: sonnet
 effort: medium
 disallowedTools: Edit, NotebookEdit
