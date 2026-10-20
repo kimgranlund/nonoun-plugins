@@ -3772,6 +3772,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             lines.append(f'{i}. {tag}: {title} [{base_}] skip (--skip)')
             continue
         key, nt = strip_prefix(base_), norm_title(title)
+        # T-0675: leading file paths are not the finding, so two bullets on one file are not slug duplicates
+        words = plain.split()
+        while words and (('/' in words[0]) or re.search(r'\w\.[A-Za-z]\w{0,5}[:,;]?$', words[0])):
+            words.pop(0)
+        if words and len(words) < len(plain.split()):
+            key = strip_prefix('-'.join(re.findall(r'[a-z0-9]+', ' '.join(words).lower())[:5]) or key)
         dup = next(((kid, kname) for kt, kbase, kid, kname in known if (nt and kt == nt) or kbase == key), None)
         if dup:
             if i == ticket:
@@ -5424,6 +5430,21 @@ def selftest():
         expect(f'(s) plain close notes only the non-duplicate: rc={rc} out={out!r} notes={nt!r}',
                rc == 0 and not fresh(root, {'alpha', 'beta'}) and out.count('T-0002 (beta)') == 2
                and nt.endswith('\n- decide: Add retry to fetch\n') and 'Fix #12' not in nt and 'Beta' not in nt)
+
+        # (s3) T-0675: a leading file path is not the finding; a bullet on the same file as a filed ticket is
+        # noted, while the same bullet again is still a duplicate
+        root = case(filer('filer-L1.md', 'None', '- pkg/a/b/c.ts: x is wrong'))
+        rc, out, err = run(root, 'close', ('alpha',), ticket=1, expect=follow_digest(['pkg/a/b/c.ts: x is wrong']))
+        filer('filer-L1.md', 'None', '- pkg/a/b/c.ts: y is unrelated\n- pkg/a/b/c.ts: x is wrong', slug='beta')(root)
+        rc2, out2, err2 = run(root, 'close', ('beta',), dry_run=True)
+        l2 = out2.splitlines()
+        expect(f'(s3) a path-led bullet is a duplicate only of the same finding: rc={rc} {err!r} rc2={rc2} out={out2!r} '
+               f'{err2!r}', rc == 0 and rc2 == 0 and any(x.startswith('1. decide: pkg/a/b/c.ts: y is unrelated ')
+               and x.endswith(' note') for x in l2)
+               and any(x.startswith('2. decide: pkg/a/b/c.ts: x is wrong ') and 'duplicate of T-0003' in x for x in l2))
+        rc3, out3, err3 = run(root, 'close', ('beta',))
+        expect(f'(s3) the unrelated path-led bullet reaches notes.md: rc={rc3} {err3!r} {out3!r}',
+               rc3 == 0 and '- decide: pkg/a/b/c.ts: y is unrelated\n' in (notes(root) or ''))
 
         # (s2) the ticket being closed is not a duplicate target: follow-ups that start with its own
         # title ("Alpha | one" -> "alpha one") are filed, and colliding slugs take a -2 suffix

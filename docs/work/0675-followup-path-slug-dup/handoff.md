@@ -29,3 +29,9 @@ A true duplicate (same normalized title) is still marked duplicate.
 1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with a new case: a ticket filed from a bullet starting `pkg/a/b/c.ts: x is wrong` exists, and closing another ticket with follow-up `pkg/a/b/c.ts: y is unrelated` sends that follow-up to notes.md, not "duplicate of". The case fails with the change reverted.
 2. The existing `(p)` duplicate case still passes.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+`cmd_close` in `plugins/sdlc-lite/scripts/tickets.py` now builds the duplicate key from the text after any leading path-like words (a token with `/` or a file extension), so `pkg/a/b/c.ts: y is unrelated` is no longer a slug duplicate of a ticket filed from `pkg/a/b/c.ts: x is wrong`. A true duplicate still matches by normalized title. New selftest case `(s3)`; it fails with the change reverted (both its expects) and the `(p)` and `(s)` cases pass either way.
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0
+- `git diff --check 0a7d393c1590a4baaf718a8d1174e616ec48c99a` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0
