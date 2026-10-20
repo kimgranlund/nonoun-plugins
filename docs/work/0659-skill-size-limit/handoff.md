@@ -38,3 +38,7 @@ The numbered steps and the Report heading of the chain skill stay in `skills/cha
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `python3 plugins/sdlc-lite/scripts/prompt_lint.py` exits 0.
 5. `ls plugins/sdlc-lite/skills/chain/references/` lists at least one file, and `grep -n 'references/' plugins/sdlc-lite/skills/chain/SKILL.md` shows the link to it.
 6. `git diff --check` exits 0.
+
+## Outcome
+- Changed: chain (27.3k to 13.7k), handoff-format (30.3k to 17.4k), fanout (21.7k to 17.5k) and ticket (18.8k to 16.4k) SKILL.md files moved detail verbatim into each skill's `references/` folder, each linked from the step that uses it; `scripts/check-packaging.py` fails any SKILL.md of 18,000 characters or more, naming the file, its size and the limit.
+- Check: criteria 1, 2, 4, 5, 6 exit 0; criterion 3 prints the `FAIL:` line naming `chain/SKILL.md` and `limit 18,000` with `rc=1`, and `rc=0` with the HEAD packaging script.

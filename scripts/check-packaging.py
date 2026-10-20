@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 import sys
 
+SKILL_LIMIT = 18000
+
 
 def check(root):
     errors = []
@@ -36,7 +38,10 @@ def check(root):
         require(codex['name'] == name, f'{name}: identity mismatch')
         require(codex['skills'] == './skills/', f'{name}: nonstandard skill location')
         for skill in (plugin / 'skills').glob('*/SKILL.md'):
-            require(skill.read_text().startswith('---\n'), f'{skill}: missing frontmatter')
+            text = skill.read_text()
+            require(text.startswith('---\n'), f'{skill}: missing frontmatter')
+            # The host re-injects a skill body after compaction, capped at 20,000 characters (T-0659).
+            require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
         require((plugin / 'skills' / name / 'SKILL.md').is_file(), f'{name}: missing entry point')
     sdlc = root / 'plugins/sdlc-lite'
     require(not (sdlc / 'hooks/hooks.json').exists(), 'Claude hooks leak into Codex discovery')
@@ -95,4 +100,4 @@ if __name__ == '__main__':
         print('FAIL:', error, file=sys.stderr)
     if errors:
         sys.exit(1)
-    print('PASS: catalog parity, identity, skill routes, hook isolation, context links and CI triggers')
+    print('PASS: catalog parity, identity, skill routes and sizes, hook isolation, context links and CI triggers')
