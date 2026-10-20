@@ -6,11 +6,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0675 | [0675-followup-path-slug-dup](0675-followup-path-slug-dup/handoff.md) | close drops follow-ups whose leading file path matches a filed ticket's slug | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 637 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 638 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
 - decide: plugins/sdlc-lite/skills/build/SKILL.md and 12 other skills (fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md) still say "with the sub-agent's final message on stdin", per the builder's Outcome; this needs a follow-up ticket to align them with conductor.md:41. (from T-0667: record --agent-id reads the final message from the transcript (2026-10-20))
 - decide: the handoff's Non-goals ("any script change") contradict criterion 2 as written, because item 41 had to change. Future tickets that reword a check-enforced phrase should name the check in Do. (from T-0673: Skills say record reads the transcript, not the final message on stdin (2026-10-20))
+- decide: plugins/sdlc-lite/scripts/tickets.py:3777 the path-skip regex also strips a leading word like `Node.js`, and the shorter key (e.g. `src/x.py: fix bug` -> `fix-bug`) can now match an unrelated ticket folder slugged `fix-bug`; narrow, but a new false-duplicate path. (from T-0675: close drops follow-ups whose leading file path matches a filed ticket's slug (2026-10-20))

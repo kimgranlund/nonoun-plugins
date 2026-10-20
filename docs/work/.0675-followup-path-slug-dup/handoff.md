@@ -2,7 +2,7 @@
 id: T-0675
 title: "close drops follow-ups whose leading file path matches a filed ticket's slug"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,14 @@ A true duplicate (same normalized title) is still marked duplicate.
 - `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0
 - `git diff --check 0a7d393c1590a4baaf718a8d1174e616ec48c99a` exit 0
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 0a7d393c1590
+- Changed: see commits
+- Commits: f8b61e7 T-0675: follow-up duplicate key skips leading file paths
+- Check: 1 `tickets.py selftest` exits 0 with a new case (path-led unrelated follow-up goes to notes.md, not...: pass
+- Check: 2 The existing `(p)` duplicate case still passes: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/skills/ticket/SKILL.md:51 says a follow-up is a... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/tickets.py:3777 the path-skip regex also... -> notes.md

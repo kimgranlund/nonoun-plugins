@@ -103,3 +103,8 @@
 
 - note: `plugins/sdlc-lite/scripts/dispatch.py` selftest case (b) asserts the stash stack in a fresh temporary repo whose stack is empty, so `before == after` would also hold for a stash-and-pop implementation; the real-repo stash count (1 before and after) and the code read cover it.
 - note: `plugins/sdlc-lite/scripts/dispatch.py` around line 113, the module-docstring sentence on `end-sha` was inserted mid-paragraph before "Every brief carries a Report file line", leaving that line over-long; cosmetic only.
+
+## T-0675: close drops follow-ups whose leading file path matches a filed ticket's slug (2026-10-20)
+
+- note: plugins/sdlc-lite/skills/ticket/SKILL.md:51 says a follow-up is a duplicate on "normalized title or slug"; the slug comparison now skips leading path-like words, which that sentence does not mention.
+- decide: plugins/sdlc-lite/scripts/tickets.py:3777 the path-skip regex also strips a leading word like `Node.js`, and the shorter key (e.g. `src/x.py: fix bug` -> `fix-bug`) can now match an unrelated ticket folder slugged `fix-bug`; narrow, but a new false-duplicate path.
