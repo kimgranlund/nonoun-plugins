@@ -29,3 +29,8 @@ The existing `(rt)` selftest cases keep passing unchanged.
 1. `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with a new `(rt)` case: a bullet shaped like `plugins/sdlc-lite/AGENTS.md:17` yields no route, and the case fails with the change reverted.
 2. `python3 -c "import sys; sys.path.insert(0,'plugins/sdlc-lite/scripts'); import steps; print([r for r in steps.repo_skill_routes('.') if 'level-rubric' in r[1]])"` prints `[]`.
 3. `git diff --check` exits 0.
+
+## Outcome
+`repo_skill_routes` now needs a routing cue (`->`, an arrow, read, use, uses, using, follow, follows) in the text between the previous code span and the skill span for a list item; table rows are unchanged. Added `ROUTE_CUE_RE` and one `(rt)` selftest case in `plugins/sdlc-lite/scripts/steps.py`.
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; the new case fails with the cue check disabled and passes restored.
+- The level-rubric routes query prints `[]`; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` ok.
