@@ -2,7 +2,7 @@
 id: T-0665
 title: "Drop redirect stub skills and shorten level-variant agent descriptions"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,15 @@ Built by solo (Opus) on base 9e54d63d.
 - `claude_roles.py` `variant_description()` writes `<role> at level <Ln>: <model> <effort>. Same role as the <role> agent.`; the selftest pins the builder-L2 text and asserts under 200 characters naming level, model and effort (both cases FAIL with a 250-character description planted). 23 variants regenerated; no Codex file changed.
 - Docs: `plugin-compatibility.md` retired-names note, `prompts.md` hint-rule exemption removed, CHANGELOG `[Unreleased]` entry. Links to the deleted stubs in `docs/reports/2026-10-12-sdlc-lite-astra-review.md` (docs_check S-6 errors) and two specs (D-10 warnings) became code spans naming `/sdlc-lite:plan <kind>`; these files were outside the named scope.
 - Criteria: 1 prints 0; 2 selftest PASS, generate --check 0; 3 prints 81, exit 0; 4 prints nothing; 5 codex check 0, check.py 0, prompt_lint 0; 6 packaging 0, diff --check 0. docs_check 0 errors.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: docs/specs/sdlc-lite/plan-doc-executor.md:262 and docs/specs/sdlc-lite/plan-verification.md:96-97 still name `skills/plan-doc/SKILL.md` and `skills/plan-goal/...` as plain-text file paths in historical build tables; they are design history, not links, and no check flags them.) · verifier: verifier-L2 (sonnet) · base: 9e54d63dc092
+- Changed: see commits
+- Commits: e5bb24b T-0665: Drop redirect stub skills and shorten level-variant agent descriptions
+- Check: 1 skills dir holds no plan-(campaign|doc|fanout|goal): pass
+- Check: 2 claude_roles selftest and generate --check: pass
+- Check: 3 every *-L[0-9].md description under 200 characters: pass
+- Check: 4 no model or effort line changed: pass
+- Check: 5 codex check, check.py, prompt_lint: pass
+- Check: 6 packaging and diff --check: pass
