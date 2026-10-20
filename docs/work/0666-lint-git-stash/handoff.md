@@ -36,3 +36,6 @@ A Do line that only mentions stash inside quotes as an example of what not to do
 3. `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0 and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
 4. `python3 scripts/check-packaging.py` exits 0.
 5. `git diff --check` exits 0.
+
+## Outcome
+`lint_steps` now refuses a step whose `### Do` runs `git stash` or `--autostash` (`do_stash_lines`, `STASH_RE` in `plugins/sdlc-lite/scripts/steps.py`), with `(k2s)` selftest cases for each form and a clean Do; they fail with the regex disabled. `agents/builder.md` (rule 12) and `agents/solo.md` (Loop step 3) carry the never-stash rule; level variants and Codex agents regenerated. Criteria 1 to 5 and `check.py` exit 0.

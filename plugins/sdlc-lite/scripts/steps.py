@@ -27,6 +27,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             after every other check passes and before any write. Without --supersede nothing is renamed.
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
+            It also refuses a step whose ### Do runs git stash or --autostash (T-0666).
             It also refuses a criterion span that runs git stash, checkout, reset, restore, or commit in its
             command text (agents/verifier.md rule 3; quoted text does not count; T-0617), a span that joins
             two checks with an unquoted || (see lint),
@@ -1471,6 +1472,15 @@ def unquoted_command_text(text):
     return ''.join(out)
 
 
+STASH_RE = re.compile(r'\bgit\s+stash\b|--autostash\b')
+
+
+def do_stash_lines(block):
+    """The lines of a step's ### Do section that run git stash or --autostash (the stash stack is shared across
+    sessions; T-0666), stripped."""
+    return [x.strip() for x in section_of(block, 'Do').splitlines() if STASH_RE.search(x)]
+
+
 def forbidden_git(text):
     """The git subcommand (stash, checkout, reset, restore, commit) a span runs that agents/verifier.md
     rule 3 forbids a verifier, else None. Command text only: a word in quotes does not count."""
@@ -2226,6 +2236,10 @@ def lint_steps(plan, steps, tree=None):
                     findings.append(f'steps: {plan} step {n}: plan defect: edits routed path {hit} without its '
                                     f'skill under ### Read first: {skill}')
         created |= declared_future_paths(block)
+        for line in do_stash_lines(block):
+            findings.append(f'steps: {plan} step {n}: plan defect: ### Do runs git stash or --autostash: {line}\n'
+                            '  the stash stack is shared across sessions: snapshot with a WIP commit or a '
+                            'git worktree add --detach copy instead')
         for line in quantified_prose(block):
             findings.append(f'steps: {plan} step {n}: plan defect: quantified prose criterion has no command: {line}\n'
                             '  a verifier can only pass it by reading: add a runnable check, or say to enumerate '
@@ -5070,6 +5084,14 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '- `s=$(git stash create); test -n "$s"`'))
         refused('(k2d) the refusal names git stash', ['lint', str(d / 'planner-L2.md')], d,
                 needles=('plan defect', 'git stash', 'agents/verifier.md rule 3'))
+        # (k2s) T-0666: git stash or --autostash in a step's ### Do is refused; a clean Do passes
+        for form in ('run git merge --autostash main', 'git stash push'):
+            d = task(plan=PLAN.replace('Do one.', form))
+            refused(f'(k2s) lint refuses a stash in ### Do ({form})', ['lint', str(d / 'planner-L2.md')], d,
+                    needles=('plan defect', '### Do runs git stash or --autostash', form))
+        d = task(plan=PLAN.replace('Do one.', 'run git merge main, then git status'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2s) a clean Do lints ok', rc == 0 and out.strip() == 'steps lint: ok')
         ok_git = ['git diff --check', "grep -qF 'git stash list' x", 'grep -qF "git checkout" x',
                   'git worktree add --detach "$t" HEAD', 'git log -1 && git show HEAD && git rev-parse HEAD',
                   'git status --porcelain -- x', 'git restore-x']
