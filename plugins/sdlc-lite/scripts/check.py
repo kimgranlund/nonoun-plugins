@@ -172,7 +172,7 @@
    no line of them names `run.sh` without also naming Codex (run.sh is the Codex runner there; the Claude backend dispatches sub-agents).
    Negative controls: each phrase removed from each file, and a Claude-scoped `run.sh` line added to each file, must be flagged; a
    Codex-scoped `run.sh` line must not.
-41. Record transcript flag (T-0334): no skills/*/SKILL.md spells a `dispatch.py record <dispatch_file> --` call with flags that omits `--transcript`.
+41. Record transcript flag (T-0334, inverted by T-0667/T-0673): no skills/*/SKILL.md spells a `dispatch.py record <dispatch_file> --` call with `--transcript`; with `--agent-id`, `record` finds the transcript itself.
    Negative control: a record call without it is flagged; one with it is not.
 42. Self-contained skills (T-0325): in every skills/*/ folder of this plugin, and of the sibling progressive-context plugin when it sits next to this one, no
    markdown link in any .md file (fenced blocks aside) starts with `docs/`, `plugins/`, `../`, or `/`, or resolves outside its skill folder (URLs, `#anchors`, and
@@ -1333,13 +1333,13 @@ for rel, text in _dc_texts.items():
     errors.extend(f'{rel}: names run.sh outside a Codex line: {l[:80]}' for l in claude_runsh_lines(text))
     if not claude_runsh_lines(text + '\nRun `scripts/run.sh builder L1 x.md`.\n'): errors.append(f'check.py: dispatch core negative control not flagged for a Claude run.sh line in {rel}')
     if claude_runsh_lines(text + '\nOn Codex, run `SDLC_BACKEND=codex scripts/run.sh builder L1 x.md`.\n') != claude_runsh_lines(text): errors.append(f'check.py: dispatch core flagged a Codex run.sh line in {rel}')
-# Record transcript flag (docstring item 41, T-0334): a skill that spells a `dispatch.py record` call with flags passes --transcript.
-def record_flag_bad(text): return [l.strip()[:60] for l in text.splitlines() if 'dispatch.py record <dispatch_file> --' in l and '--transcript' not in l]
+# Record transcript flag (docstring item 41, T-0334, inverted by T-0667/T-0673): a skill that spells a `dispatch.py record` call with flags leaves --transcript out, because --agent-id finds the transcript.
+def record_flag_bad(text): return [l.strip()[:60] for l in text.splitlines() if 'dispatch.py record <dispatch_file> --' in l and '--transcript' in l]
 _rt_texts = {d.parent.name: _rd(d) for d in sorted((root/'skills').glob('*/SKILL.md'))}
 for _n, _t in _rt_texts.items():
-    errors.extend(f'skills/{_n}/SKILL.md: dispatch.py record spelled without --transcript: {m}' for m in record_flag_bad(_t))
-if not record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n>`.'): errors.append('check.py: record transcript negative control not flagged for a record call without --transcript')
-if record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --transcript <t>`.'): errors.append('check.py: record transcript flagged a call that passes --transcript')
+    errors.extend(f'skills/{_n}/SKILL.md: dispatch.py record spelled with --transcript: {m}' for m in record_flag_bad(_t))
+if not record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --transcript <t>`.'): errors.append('check.py: record transcript negative control not flagged for a record call with --transcript')
+if record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n>`.'): errors.append('check.py: record transcript flagged a call that leaves --transcript out')
 # Self-contained skills (docstring item 42, T-0325): a skill reaches only its own folder and ${CLAUDE_PLUGIN_ROOT}; the other plugin's skills are checked when present.
 PLUGIN_VAR = '${CLAUDE_PLUGIN_ROOT}'
 def skill_ref_bad(text, md_dir, skill_dir, plugin_root, prose_rule=True):
