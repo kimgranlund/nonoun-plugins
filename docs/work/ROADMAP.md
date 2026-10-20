@@ -23,7 +23,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0665 | [0665-trim-skill-catalog](0665-trim-skill-catalog/handoff.md) | Drop redirect stub skills and shorten level-variant agent descriptions | feature | L2 | P3 | none | ⏳ proposed |
 | T-0666 | [0666-lint-git-stash](0666-lint-git-stash/handoff.md) | Plan lint rejects git stash and --autostash in Do text | bug | L1 | P3 | none | ⏳ proposed |
 | T-0667 | [0667-record-agent-id](0667-record-agent-id/handoff.md) | record --agent-id reads the final message from the transcript | feature | L1 | P3 | none | ⏳ proposed |
-| T-0668 | [0668-ui-designer-progressive](0668-ui-designer-progressive/handoff.md) | ui-designer reads SKILL.md first and opens references by cue | feature | L1 | P3 | none | ⏳ proposed |
+| T-0668 | [0668-ui-designer-progressive](0668-ui-designer-progressive/handoff.md) | ui-designer reads SKILL.md first and opens references by cue | feature | L1 | P3 | none | 🟡 claimed |
 | T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | ⏳ proposed |
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |

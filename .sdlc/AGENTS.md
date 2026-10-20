@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:65c12ea650c0 -->
+<!-- sdlc-lite:managed:start v1 sha256:0cb3fa6a5963 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 18
+- proposed: 17
   - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer)
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
   - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line)
@@ -25,16 +25,16 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0665 Drop redirect stub skills and shorten level-variant agent descriptions (docs/work/0665-trim-skill-catalog)
   - T-0666 Plan lint rejects git stash and --autostash in Do text (docs/work/0666-lint-git-stash)
   - T-0667 record --agent-id reads the final message from the transcript (docs/work/0667-record-agent-id)
-  - T-0668 ui-designer reads SKILL.md first and opens references by cue (docs/work/0668-ui-designer-progressive)
   - T-0669 Dispatch and skip records go to the records dir, not the work root (docs/work/0669-dispatch-records-dir)
   - T-0670 close verdict reason matches the recorded lane (docs/work/0670-close-lane-reason)
   - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 3
+- claimed: 4
   - T-0645 dispatch.py advance runs record, prune, next and prepare in one call (docs/work/0645-dispatch-advance), claimed by sdlc-lite-author 2026-10-20
   - T-0651 A reason close routes follow-ups like a verified close (docs/work/0651-reason-close-followups), claimed by sdlc-lite-author 2026-10-20
   - T-0660 Plan lint flags universally quantified prose criteria with no command (docs/work/0660-quantified-criteria-lint), claimed by sdlc-lite-author 2026-10-20
+  - T-0668 ui-designer reads SKILL.md first and opens references by cue (docs/work/0668-ui-designer-progressive), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
 - done: 614
