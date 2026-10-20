@@ -100,7 +100,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             nothing; without either flag it refuses the same way. --numbered persists the mode
             close --reason TEXT is for a ticket whose work other tickets did: it skips the verdict gate
             and the filer (warnings and follow-ups ignored), sets the ticket done, appends ## Outcome
-            with verdict `closed by reason (TEXT)`, and files no follow-ups. A ## Skipped entry the lane record
+            with verdict `closed by reason (TEXT)`, and files follow-ups as a plain close does: every verifier
+            ## Notes line, then the handoff's own ## Follow-ups bullets, go to notes.md, and --dry-run, --skip,
+            --ticket and --expect work the same. A ## Skipped entry the lane record
             still needs (below) is written as `- skip: <role>; step: <n|all>; reason: closed by reason (TEXT);
             decided: tickets.py close --reason` instead of refusing
             a TEXT matching `on main` or `landed` (case-insensitive) must name a commit sha that is an
@@ -2599,7 +2601,9 @@ items go to `notes.md`; `fix-now:` items are finished before the close. When it 
 folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
 3. Only when a filer draft was asked for (`/file`): `<CMD> close <folder> --filer`.
 4. Work already done by another ticket: \
-`<CMD> close <folder> --reason "<why>"`.
+`<CMD> close <folder> --reason "<why>"`. It skips the verdict gate but files follow-ups as step 2 does: the \
+verifier `## Notes` lines and the handoff `## Follow-ups` bullets go to `notes.md`, and `--dry-run` and \
+`--ticket <i> --expect <digest>` work the same.
 
 Ticket lifecycle:
 1. Pick and claim: `<CMD> claim <id> --by <agent>`.
@@ -3274,7 +3278,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     filer=True: read the newest filer-L*.md: refuse on open warnings (unless force or ack_warnings), and its
     Follow-ups bullets are the items. With no filer here, the refusal names every other worktree's same-relative
     <slug>/ holding a filer-L*.md (glob only, never read). No verdict gate runs.
-    reason (not None): no verdict gate and no filer; set done, file no follow-ups. A ## Skipped entry skip_missing
+    reason (not None): no verdict gate, no filer and no placeholder gate; set done. The follow-up items are the
+    ## Notes lines of every read verifier (passed or not, task level last), then the bullets of the handoff body's
+    own ## Follow-ups (T-0651), filed as on the default route. A ## Skipped entry skip_missing
     still needs is written as `- skip: <role>; step: <n|all>; reason: closed by reason (<why>); decided: tickets.py
     close --reason` instead of refusing (T-0581).
     preflight (T-0581): read-only. Run the same gates for the same route, collect each refusal flattened to one line
@@ -3347,10 +3353,6 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                    f'use one; nothing written')
     if ack_warnings is not None and not ack_warnings.strip():
         raise Fail(f'{slug}: empty --ack-warnings; give the reason the open warnings no longer apply; '
-                   f'nothing written')
-    if reason is not None and (dry_run or skip is not None or expect is not None or ticket is not None):
-        raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip, '
-                   f'--expect or --ticket; '
                    f'nothing written')
     if reason is not None:
         problem = landing_claim_problem(root, reason)
@@ -3496,23 +3498,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             if missing:
                 raise Fail('\n'.join(missing))
             return 'ready'
-        body = raw[fm.end():]
-        if body and not body.endswith('\n'):
-            body += '\n'
-        body += outcome(f'closed by reason ({why})')
-        note_docs_waiver()
-        h.write_bytes((head + body).encode('utf-8'))
-        ref_drop(root, CLAIM_REFS + pid)  # T-0588: a done ticket holds no claim
-        move_skips(d)
-        if archive:
-            d.rename(dot)
-        rewrote = rewrite_now()
-        write_roadmap(root, load(td))
-        if flag:
-            ensure_numbered_config(root)
-        moved = f'; moved to {dot.name}' if archive else ''
-        return (f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}{cite_note}'
-                + ''.join('; ' + x for x in deferred) + lane_report(root, pid))
+        verdict = f'closed by reason ({why})'
     warnings = None
     if filer:
         filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
@@ -3544,10 +3530,15 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             need(f'{src}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
                  f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
         src_name, origin = src.name, f'{final}/{src.name}'
-    else:
-        items = [re.sub(r'^[-*][ \t]+', '', ln) for p, _, ok in read if ok for ln in results.notes_lines(p)]
+    else:  # T-0651: a reason close takes every read verifier's notes, then the handoff's own ## Follow-ups
+        items = [re.sub(r'^[-*][ \t]+', '', ln) for p, _, ok in read if ok or reason is not None
+                 for ln in results.notes_lines(p)]
         items = [x for x in items if x.strip()]
         src_name, origin = 'the verifier notes', 'verifier notes'
+        own = section(raw[fm.end():], 'Follow-ups') if reason is not None else None
+        if own is not None and not is_none(own):
+            items += bullets(own)
+            src_name, origin = 'the verifier notes and the handoff Follow-ups', 'verifier notes or handoff Follow-ups'
     digest = follow_digest(items)
     if skip is not None and not dry_run and expect is None:
         raise Fail(f'{slug}: --skip needs --expect <digest> from the dry run that listed the indices '
@@ -3624,7 +3615,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         planned_at = len(follow_lines) - 1
     if not n:
         need(f'{h}: no status: line in front matter; nothing written')
-    hole = unfilled_line(root, raw)
+    hole = unfilled_line(root, raw) if reason is None else None
     if hole:
         need(f'{slug}/handoff.md:{hole[0]}: still holds {meta.get("type")} template placeholder text: '
              f'{hole[1].strip()[:60]!r}; fill it in, or close --reason "<why>" when the work was done '
@@ -3689,7 +3680,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     write_roadmap(root, load(td))
     if flag:
         ensure_numbered_config(root)
-    out = (f'{pid} done; follow-up ticket: ' + (', '.join(made) or 'none')
+    out = (f'{pid} done' + (f' (closed by reason: {reason.strip()})' if reason is not None else '')
+           + '; follow-up ticket: ' + (', '.join(made) or 'none')
            + f'; {len(notes)} follow-up(s) appended to notes.md')
     if dups:
         out += '; skipped duplicate(s): ' + ', '.join(dups)
@@ -5218,13 +5210,14 @@ def selftest():
         expect(f'(s2) a taken slug appends -2: rc={rc} out={out!r} err={err!r}',
                rc == 0 and sorted(fresh(root, {'alpha', 'beta'})) == ['alpha-one-2'])
 
-        # (t) --reason does not combine with --dry-run or --skip
-        for kw in ({'dry_run': True}, {'skip': [1]}, {'expect': 'x'}, {'ticket': 1}):
+        # (t) --reason reads no filer, and --skip, --expect and --ticket keep their own refusals (T-0651)
+        for kw, want in (({'skip': [1]}, '--skip needs --expect'), ({'expect': 'x'}, 'does not match'),
+                         ({'ticket': 1}, '--ticket needs --expect')):
             root = case(filer('filer-L1.md', 'None', three))
             before = snap(root)
             rc, _, err = run(root, 'close', ('alpha',), reason='superseded', **kw)
             expect(f'(t) --reason with {kw} refuses and writes nothing: rc={rc} {err!r}',
-                   rc == 1 and '--reason' in err and snap(root) == before)
+                   rc == 1 and want in err and snap(root) == before)
 
         # (v) --skip is tied to the dry run's list: a changed Follow-ups list refuses, unchanged closes.
         # (v4) a plain close with no --skip and no --expect needs no token; case (s) covers it too.
@@ -5329,9 +5322,6 @@ def selftest():
                  '--ticket needs --expect'),
                 ('--ticket inside --skip', '- decide: Add retry to fetch\n- decide: Split the runner',
                  {'ticket': 1, 'skip': [1]}, 'also in --skip'),
-                ('--ticket with --reason', '- decide: Add retry to fetch', {'ticket': 1, 'reason': 'x',
-                                                                            'expect': None},
-                 '--reason files no follow-ups'),
                 ('--ticket out of range', '- decide: Add retry to fetch', {'ticket': 2}, '--ticket 2 is out of range'),
                 ('--ticket 0', '- decide: Add retry to fetch', {'ticket': 0}, '--ticket 0 is out of range'),
                 ('dry run --ticket on a note: item', '- note: Add retry to fetch',
@@ -7863,6 +7853,34 @@ def selftest():
         rc, _, err = run(r, 'close', ('tk',), reason='x', filer=True)
         expect(f'(T-0543 reason) --filer with --reason refuses: rc={rc} {err!r}', rc == 1 and '--filer' in err)
 
+        # (T-0651) a reason close files the verifier notes and the handoff ## Follow-ups as a verified close does
+        def reason_fu(name):
+            r, d = oc_root(name, note='- note: a\n- decide: b')
+            with (d / 'handoff.md').open('a', encoding='utf-8') as f:
+                f.write('\n## Follow-ups\n- note: c\n')
+            return r, d
+        r, d = reason_fu('reason-fu')
+        rc, out, err = run(r, 'close', ('tk',), reason='x')
+        text, nt = handoff(d), notes(r) or ''
+        expect(f'(T-0651) --reason appends three items to notes.md and three Follow-up lines: rc={rc} {out!r} {err!r} '
+               f'{nt!r} {text!r}',
+               rc == 0 and nt.endswith('\n- note: a\n- decide: b\n- note: c\n')
+               and '\n- Follow-up: note: a -> notes.md\n- Follow-up: decide: b -> notes.md\n'
+                   '- Follow-up: note: c -> notes.md\n' in text and 'verdict: closed by reason (x)' in text
+               and '3 follow-up(s) appended to notes.md' in out)
+        r, d = reason_fu('reason-fu-dry')
+        before = snap(r)
+        rc, out, err = run(r, 'close', ('tk',), reason='x', dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 and out.splitlines()[-1].startswith('expect ') else ''
+        expect(f'(T-0651) --reason --dry-run lists three items, ends with expect, writes nothing: rc={rc} {out!r} {err!r}',
+               rc == 0 and bool(token) and '3 proposed follow-up(s)' in out and snap(r) == before)
+        rc, out, err = run(r, 'close', ('tk',), reason='x', ticket=2, expect=token)
+        made = fresh(r, {'tk'})
+        text = handoff(d)
+        expect(f'(T-0651) --reason --ticket 2 --expect files item 2 as a ticket: rc={rc} {out!r} {err!r} {made!r}',
+               rc == 0 and list(made) == ['b'] and '\n- Follow-up: decide: b -> T-0002\n' in text
+               and (notes(r) or '').endswith('\n- note: a\n- note: c\n'))
+
         # (T-0529) a bug handoff still holding the template Repro prompt refuses; the filled-in one closes
         r, d = oc_root('ph', kind='bug', slug='bg')
         lines = (d / 'handoff.md').read_text(encoding='utf-8').split('\n')
@@ -8554,7 +8572,8 @@ def main(argv):
     p.add_argument('--reason', metavar='TEXT',
                    help='close with no verdict gate and no filer (work done elsewhere): set done, append ## Outcome '
                         'with verdict `closed by reason (TEXT)`, write any ## Skipped entry the lane record still '
-                        'needs, file no follow-ups (refuses with --dry-run, --skip, --expect, --ticket or --filer)')
+                        'needs, and file the verifier notes and the handoff ## Follow-ups bullets as a plain close '
+                        'does (combines with --dry-run, --skip, --ticket and --expect; refuses with --filer)')
     p.add_argument('--ack-warnings', metavar='TEXT',
                    help='with --filer: close while the filer warnings are open: each warning line becomes an Outcome '
                         '`- Deviation: acknowledged warning (TEXT): <line>`, follow-ups file as normal (refuses '
