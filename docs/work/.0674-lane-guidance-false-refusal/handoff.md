@@ -2,7 +2,7 @@
 id: T-0674
 title: "prepare refuses a guidance path that is missing everywhere, not only in the lane"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0655]    # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,14 @@ The T-0655 refusal for real drift is unchanged.
 
 ## Outcome
 `lane_guidance` in `plugins/sdlc-lite/scripts/dispatch.py` now appends to `missing` only when the path is held by the main checkout or the lane's `into` branch; a path held nowhere no longer refuses. Docstring and the `guidance` header paragraph updated. New selftest case: a handoff naming `skills/nowhere/SKILL.md` prepares with exit 0 and no refusal line. Checks: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (the new case FAILs with the change reverted), `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check da4d03e3` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: da4d03e38580
+- Changed: see commits
+- Commits: 1db66ff T-0674: lane guidance check skips paths missing everywhere
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case, and the new c...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
+- Check: 4 Brief extra, live prepare on this lane's handoff: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:77 the header paragraph now... -> notes.md

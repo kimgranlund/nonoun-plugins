@@ -89,3 +89,7 @@
 ## T-0670: close verdict reason matches the recorded lane (2026-10-20)
 
 - note: plugins/sdlc-lite/scripts/tickets.py:3552 also refuses `delivered by the solo agent` when the recorded lane is `fix` (or any other value that maps to `full`), slightly wider than the Do's solo vs full/lean wording; no criterion covers it and no producer writes that combination today.
+
+## T-0674: prepare refuses a guidance path that is missing everywhere, not only in the lane (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:77 the header paragraph now breaks after "An" with a short line, so it is ragged next to its neighbours. This is cosmetic only.
