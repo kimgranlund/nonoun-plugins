@@ -15,10 +15,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
 | T-0662 | [0662-relative-record-paths](0662-relative-record-paths/handoff.md) | Tracked work records hold no absolute machine paths | bug | L2 | P2 | none | ⏳ proposed |
-| T-0666 | [0666-lint-git-stash](0666-lint-git-stash/handoff.md) | Plan lint rejects git stash and --autostash in Do text | bug | L1 | P3 | none | 🟡 claimed |
 | T-0667 | [0667-record-agent-id](0667-record-agent-id/handoff.md) | record --agent-id reads the final message from the transcript | feature | L1 | P3 | none | ⏳ proposed |
 | T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | ⏳ proposed |
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 
-Closed: 621 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 622 done, 29 dropped (git log or .NNNN-* folders)

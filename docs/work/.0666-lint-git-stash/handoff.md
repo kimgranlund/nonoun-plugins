@@ -2,7 +2,7 @@
 id: T-0666
 title: "Plan lint rejects git stash and --autostash in Do text"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,14 @@ A Do line that only mentions stash inside quotes as an example of what not to do
 
 ## Outcome
 `lint_steps` now refuses a step whose `### Do` runs `git stash` or `--autostash` (`do_stash_lines`, `STASH_RE` in `plugins/sdlc-lite/scripts/steps.py`), with `(k2s)` selftest cases for each form and a clean Do; they fail with the regex disabled. `agents/builder.md` (rule 12) and `agents/solo.md` (Loop step 3) carry the never-stash rule; level variants and Codex agents regenerated. Criteria 1 to 5 and `check.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: f82c32d4c9a5
+- Changed: see commits
+- Commits: c8e1908 T-0666: plan lint rejects git stash and --autostash in Do text
+- Check: 1 `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, with new (k2s) cases for `--autost...: pass
+- Check: 2 `grep -n 'git stash' plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/solo.md` prints...: pass
+- Check: 3 `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0: pass
+- Check: 4 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 5 `git diff --check` exits 0: pass
