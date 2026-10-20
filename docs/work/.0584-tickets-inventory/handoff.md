@@ -2,7 +2,7 @@
 id: T-0584
 title: "tickets.py inventory: landed state by content and patch identity"
 type: idea            # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -53,3 +53,10 @@ Columns: id, status, branch (or `-`), landed state, newest verifier role-level, 
 
 ### Follow-up
 Build ticket: `tickets.py inventory` as above, with selftests for a `-2` verifier, a cherry-picked branch, a stale sibling and a legacy records path.
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: the `process deviation:` check (`redck.py deviations`) printed nothing; no `(red)` criterion exists. | note: handoff Outcome "Output" says the verdict is read "as `results.py` parses it". I did not verify that parser's name or entry point, since the ticket is design only and the build ticket will settle it.) · verifier: verifier-L2 (sonnet) · base: ab9c6afd1857
+- Changed: see commits
+- Commits: 1ffbca1 T-0584: tickets.py inventory design and order.py ordering check
+- Check: 1 The Outcome holds the output format, the functions reused, and the `order.py` ordering result wit...: pass
