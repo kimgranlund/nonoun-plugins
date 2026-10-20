@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:980b30b48d7a -->
+<!-- sdlc-lite:managed:start v1 sha256:46da54a85ed5 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 21
+- proposed: 20
   - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer)
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
   - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line)
@@ -19,7 +19,6 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0655 prepare checks lane guidance against main and named guidance paths (docs/work/0655-lane-guidance-check)
   - T-0656 settle --forward refuses while a lane attempt is running (docs/work/0656-settle-refuses-running)
   - T-0657 steps.py review reports red criteria already green at base (docs/work/0657-review-red-at-base)
-  - T-0658 redck ignores record files when judging the tree dirty (docs/work/0658-redck-ignore-records)
   - T-0659 Every SKILL.md stays under 18,000 characters (docs/work/0659-skill-size-limit)
   - T-0660 Plan lint flags universally quantified prose criteria with no command (docs/work/0660-quantified-criteria-lint)
   - T-0661 Verifier brief carries a base..end diff range per built step (docs/work/0661-verifier-diff-range)
@@ -34,9 +33,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 3
+- claimed: 4
   - T-0645 dispatch.py advance runs record, prune, next and prepare in one call (docs/work/0645-dispatch-advance), claimed by sdlc-lite-author 2026-10-20
   - T-0651 A reason close routes follow-ups like a verified close (docs/work/0651-reason-close-followups), claimed by sdlc-lite-author 2026-10-20
+  - T-0658 redck ignores record files when judging the tree dirty (docs/work/0658-redck-ignore-records), claimed by sdlc-lite-author 2026-10-20
   - T-0672 Skill-route lint treats prose bullets that mention a skill as routes (docs/work/0672-skill-route-prose-false-positive), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
