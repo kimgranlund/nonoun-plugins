@@ -35,3 +35,8 @@ A criterion line with a command span is never flagged by this rule. Other lint f
 2. `grep -n -i 'enumerat' plugins/sdlc-lite/skills/checking-rules/SKILL.md` prints the new rule.
 3. `python3 scripts/check-packaging.py` exits 0.
 4. `git diff --check` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/steps.py`: `quantified_prose` (a criterion list item plus its indented continuation lines) and a `lint_steps` finding `plan defect: quantified prose criterion has no command` for an item with no command span whose prose (code spans removed) holds the whole word every, all or each, unless it names an enumeration or sample (`enumerat`, `sampl`, `k of N`, `12 of 12`). A numeric count such as `all 12 tests pass` stays with the existing `count_warnings` warning, so the (t0347) case and the (k2) `for each changed file` code-span case are unchanged. Selftest cases `(k2q)` cover the refused line, a quantified line with a command, and an enumeration line; with the finding loop removed the refusal case does not hold.
+- `plugins/sdlc-lite/skills/checking-rules/SKILL.md`: rule 4, enumerate quantified prose as `k of N` with a source pointer per item, never a bare pass; intro and Procedure now say four rules. Codex verifier TOMLs regenerated (`codex_roles.py generate`), Claude agents unchanged.
+- Checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `grep -n -i 'enumerat' plugins/sdlc-lite/skills/checking-rules/SKILL.md` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.

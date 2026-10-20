@@ -16,17 +16,18 @@ user-invocable: true
 # Verifier discipline
 
 A pass that holds only because nobody checked the dismissal is worse than no verification: it
-turns a false "all clear" into a verdict with a verifier's name on it. This skill sets three
+turns a false "all clear" into a verdict with a verifier's name on it. This skill sets four
 rules a verifier applies to every criterion and every concern: a dismissal needs the same
 evidence as a confirmation, a builder's claim is checked against the artifact instead of taken
-from its summary, and every fail reason survives one self-directed rebuttal before it is filed.
+from its summary, every fail reason survives one self-directed rebuttal before it is filed, and
+a quantified prose criterion is answered item by item.
 
 It complements the `checks-that-bite` skill, which a verifier also loads. That skill makes each
 check able to go red; this one governs how the verifier treats claims, dismissals, and findings.
 
 ## Procedure
 
-Every verification runs all three rules. No precondition skips one.
+Every verification runs all four rules. No precondition skips one.
 
 1. Evidentiary symmetry: a dismissal ("this is fine", "out of scope, harmless", "not a real
    issue") costs the same evidence as a confirmation. Name the check performed: a command run, a
@@ -39,6 +40,9 @@ Every verification runs all three rules. No precondition skips one.
    builder would write back. If that rebuttal would hold (the finding rests on a wrong assumption,
    or misses something the change actually handles), revise or drop the finding now. Filing the
    weak version and leaving the next attempt to discover it wastes a build cycle.
+4. Enumerate quantified prose: a criterion that claims every, all, or each item of a set with no
+   command to run is answered with an enumeration, `k of N` with a source pointer (file:line) per
+   item, never a bare pass. Any k below N fails the criterion and names the missing items.
 
 ## Output contract
 
