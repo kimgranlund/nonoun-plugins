@@ -56,3 +56,7 @@
 
 - note: redck.py deviations printed no process deviation lines. The artifacts dir has no builder-*.md, so I took the builder's claims from the handoff `## Outcome` and checked each one myself.
 - note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0671-verifier-L2/.owner.json is still there. The prefix's rm -rf was denied and the file belongs to the harness. Both throwaway worktrees were removed with `git worktree remove`.
+
+## T-0646: Every role writes its result file and ends with a one-line pointer (2026-10-20)
+
+- note: `plugins/sdlc-lite/scripts/hook-selftest.sh:471` and `:521` still use the old "Your final message is saved verbatim as y." in their fixture prompts. This is harmless because no hook parses that string, but the fixtures no longer match what `prepare` emits.

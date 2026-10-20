@@ -2,7 +2,7 @@
 id: T-0646
 title: "Every role writes its result file and ends with a one-line pointer"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,16 @@ No model or effort change. Result formats and `results.py` validation are unchan
 - Role files (the nine listed plus `verifier.md`): conditional output paragraph; level variants regenerated (Claude and Codex).
 - `conductor.md` step 3 and `skills/chain/SKILL.md`: the result is the file, read only when the status needs action. `hooks/block-role-write.sh` message names `Report file: <path>`.
 - Checks: dispatch selftest, claude/codex generate --check, claude_roles selftest, run-selftest, hook-selftest, check.py, git diff --check, check-packaging all exit 0; criterion 4 grep -L prints nothing (BSD grep exit 1).
+
+## Outcome
+
+2026-10-20 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 88ba54751462
+- Changed: see commits
+- Commits: 6a09df7 T-0646: Every role writes its result file and ends with a one-line pointer
+- Check: 1 dispatch selftest with new cases: pass
+- Check: 2 `claude_roles.py generate --check` and `codex_roles.py generate --check`: pass
+- Check: 3 `claude_roles.py selftest`: pass
+- Check: 4 `grep -L 'Report file'` over the nine role files: pass
+- Check: 5 `bash plugins/sdlc-lite/scripts/run-selftest.sh`: pass
+- Check: 6 `git diff --check` and `python3 scripts/check-packaging.py`: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/hook-selftest.sh:471 and :521 still use... -> notes.md
