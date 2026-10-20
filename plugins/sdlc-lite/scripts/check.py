@@ -758,7 +758,7 @@ for phrase, rels in CARRY_FORWARD.items():
         elif not carry_forward_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: carry-forward negative control not flagged')
 # UI designer role (docstring item 61, T-0520): the role file names its modes, passes, and edit rule; both write layers agree it writes.
-UI_DESIGNER_PHRASES = ('mode: plan', 'mode: review', 'mode: generate', 'Inside out', 'Outside in', 'only mode that edits')
+UI_DESIGNER_PHRASES = ('mode: plan', 'mode: review', 'mode: generate', 'Inside out', 'Outside in', 'only mode that edits', 'open a reference only when its cue')
 def ui_designer_bad(agent, writers, role_sh):
     bad = [f'agents/ui-designer.md missing "{p}"' for p in UI_DESIGNER_PHRASES if p not in agent]
     if 'ui-designer' not in writers: bad.append('ui-designer is not in claude_roles.WRITERS')

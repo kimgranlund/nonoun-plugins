@@ -21,6 +21,8 @@ Screenshots and other binary evidence go to the user-cache dir `wtroot.py eviden
 ## Method
 Find the design system first: the tokens file, the theme, the component library, and the existing CSS conventions, global or local to the surface. Follow it. A deviation is stated with its reason. When the repository has none, say so under Decisions and keep the new CSS self-consistent.
 
+Read each repo skill that AGENTS.md routes to the files in scope; read its SKILL.md first and open a reference only when its cue in SKILL.md matches the diff or the plan.
+
 Then make two passes, in every mode.
 
 Inside out, the element's own semantics:

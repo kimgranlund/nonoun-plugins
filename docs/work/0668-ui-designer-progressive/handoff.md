@@ -35,3 +35,10 @@ No other change to the ui-designer contract. No model or effort change.
 2. `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite` exits 0, and with the sentence removed from `ui-designer.md` it reports `agents/ui-designer.md missing "open a reference only when its cue"` (the case fails with the change reverted).
 3. `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0 and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
 4. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+Added the repo-skill sentence to `## Method` in `plugins/sdlc-lite/agents/ui-designer.md`, pinned `open a reference only when its cue` in `UI_DESIGNER_PHRASES` (`plugins/sdlc-lite/scripts/check.py`), and regenerated `agents/ui-designer-L1.md` and `adapters/codex/agents/sdlc-ui-designer-l1.toml`.
+- `grep -c 'open a reference only when its cue' plugins/sdlc-lite/agents/ui-designer.md plugins/sdlc-lite/agents/ui-designer-L1.md` exit 0, 1 per file.
+- `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite` exit 0; with the sentence altered it reports `agents/ui-designer.md missing "open a reference only when its cue"`.
+- `claude_roles.py generate --check` exit 0, `codex_roles.py generate --check` exit 0.
+- `git diff --check` exit 0, `python3 scripts/check-packaging.py` exit 0.
