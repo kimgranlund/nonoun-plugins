@@ -41,3 +41,9 @@
 ## T-0645: dispatch.py advance runs record, prune, next and prepare in one call (2026-10-20)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py advance(): a solo dispatch prints `next: a solo ticket...` and skips the prune and TaskStop step, though the Intent does not mention solo dispatches (fanout.py prep solo dispatches are a stated non-goal).
+
+## T-0656: settle --forward refuses while a lane attempt is running (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:5111 the existing comment `# negative control: a red gate keeps main where it is ...` now sits above the new T-0656 block, not above the `settle-fwd-red` case it describes.
+- note: plugins/sdlc-lite/scripts/fanout.py:2701 no selftest covers the `lanes.discover` branch of running_roles (a marker in a lane worktree whose `into` is the integration branch). Only the integration-worktree marker is tested.
+- note: plugins/sdlc-lite/scripts/fanout.py:2648 the running check only runs on the diverged path that calls settle_forward. A `--forward` settle that is already a fast-forward skips it. This fits the Goal, since that path does not move the integration branch.
