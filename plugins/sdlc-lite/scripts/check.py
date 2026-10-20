@@ -261,7 +261,7 @@
    text with one extra flag; H-6 a reader without the heading, and one with two headings; H-7 a reference skill with a hint. Positive controls: the five must-parse
    hints, a clean reader, and a usage flag carried by the `## Arguments` table under `[options]` add no finding.
 61. UI designer role (T-0520): agents/ui-designer.md names `mode: plan`, `mode: review`, `mode: generate`, `Inside out`, `Outside in`, and
-   `only mode that edits`. The role is one role with a mode that holds the builder's write allowances, so `ui-designer` is in
+   `only mode that edits`, and `open a reference only when its cue` (T-0668). The role is one role with a mode that holds the builder's write allowances, so `ui-designer` is in
    `claude_roles.WRITERS` and absent from the `SDLC_READONLY_ROLES` line of hooks/_role.sh; the two must agree, else one host layer
    lets the generate mode edit and the other denies it. No hook holds the rule that plan and review never edit: the role
    contract does, which is why the phrase is required here. Negative controls: each phrase removed, the role removed from
