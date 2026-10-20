@@ -2155,11 +2155,36 @@ def order_findings(plan, steps, base):
     return findings
 
 
+QUANTIFIER_RE = re.compile(r'\b(?:every|all|each)\b', re.I)
+ENUMERATION_RE = re.compile(r'\benumerat|\bsampl|\b(?:\d+|[kn]) of (?:\d+|n)\b', re.I)
+
+
+def quantified_prose(block):
+    """The criterion items of a step block (a list item joined with its indented continuation lines) that hold
+    no command span (line_spans) yet quantify over a set in prose (the whole word every, all or each) without
+    naming an enumeration or sample (enumerate, k of N, sample): a verifier can only pass them by reading. Words
+    inside a code span are not prose, and a numeric count (COUNT_RE) is left to count_warnings."""
+    items = []
+    for line in criteria_lines(block):
+        if list_item(line):
+            items.append(line.strip())
+        elif items and line.startswith((' ', '\t')) and line.strip():
+            items[-1] += ' ' + line.strip()
+    out = []
+    for x in items:
+        prose = SPAN_RE.sub(' ', x)
+        if (not line_spans(x) and QUANTIFIER_RE.search(prose) and not ENUMERATION_RE.search(prose)
+                and not COUNT_RE.search(x)):
+            out.append(x)
+    return out
+
+
 def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one per forbidden git command (forbidden_git), one for a pinned commit sha, one for a count over a changing
     set compared with a fixed number, and one for a span that reads its own step's verifier result on a
-    line with no held clause (reads_own_verifier); one per ### Read first path that does not exist, resolved against
+    line with no held clause (reads_own_verifier); one per quantified prose criterion with no command
+    (quantified_prose); one per ### Read first path that does not exist, resolved against
     the git toplevel of the plan's folder (else that folder); one per skill an AGENTS.md routes a scoped path
     to that ### Read first leaves out (repo_skill_routes); one per path a verifier or builder result
     beside the plan named on a `plan defect:` line that no step names (defect_dependents); [] when
@@ -2195,6 +2220,10 @@ def lint_steps(plan, steps, tree=None):
                     findings.append(f'steps: {plan} step {n}: plan defect: edits routed path {hit} without its '
                                     f'skill under ### Read first: {skill}')
         created |= declared_future_paths(block)
+        for line in quantified_prose(block):
+            findings.append(f'steps: {plan} step {n}: plan defect: quantified prose criterion has no command: {line}\n'
+                            '  a verifier can only pass it by reading: add a runnable check, or say to enumerate '
+                            'the set as k of N with a source pointer per item')
         for line, text in [(x, t) for x in criteria_lines(block) for t in line_spans(x)]:
             if text in full_gates and is_guard_line(line):
                 findings.append(f'steps: {plan} step {n}: plan defect: full gate `{text}` owned by the merge gate; '
@@ -4961,6 +4990,17 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '- `! cat x | grep -E "a|b"`\n- `! python3 -c "import sys; sys.exit(0)"`\n- `grep -c P x`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k2b) portable guard forms lint ok', rc == 0 and out.strip() == 'steps lint: ok')
+        # (k2q) T-0660: a quantified prose criterion with no command is refused; one with a command span or one
+        # naming an enumeration passes
+        d = task(plan=PLAN.replace('- one works', '- meta.ts lists every public prop'))
+        refused('(k2q) lint refuses a quantified prose criterion with no command', ['lint', str(d / 'planner-L2.md')],
+                d, needles=('plan defect', 'quantified prose criterion has no command', 'every public prop'))
+        for form in ('- every prop is listed: `node check.mjs`',
+                     '- enumerate every public prop as k of N with a source line'):
+            d = task(plan=PLAN.replace('- one works', form))
+            rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+            check(f'(k2q) lint passes a quantified criterion with a command or an enumeration ({form})',
+                  rc == 0 and out.strip() == 'steps lint: ok')
         # (k2d) T-0617: a git command agents/verifier.md rule 3 forbids is refused in command text; quoted
         # text, read-only git, and git worktree add --detach pass
         for form in ('s=$(git stash create); test -n "$s"', 'git -C x checkout main', 'git reset --hard HEAD',
