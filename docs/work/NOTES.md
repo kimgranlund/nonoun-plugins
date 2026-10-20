@@ -51,3 +51,8 @@
 ## T-0653: Roadmap renders an Open follow-ups section from NOTES.md (2026-10-20)
 
 - note: plugins/sdlc-lite/scripts/tickets.py:2518 `FOLLOW_RE` is a `fullmatch` on a `- ` prefixed line, so an indented or `*` bullet in NOTES.md is not counted; matches the `append_notes` writer format, so no action needed.
+
+## T-0671: onboard entry text agrees with the docs table on where plans go (2026-10-20)
+
+- note: redck.py deviations printed no process deviation lines. The artifacts dir has no builder-*.md, so I took the builder's claims from the handoff `## Outcome` and checked each one myself.
+- note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0671-verifier-L2/.owner.json is still there. The prefix's rm -rf was denied and the file belongs to the harness. Both throwaway worktrees were removed with `git worktree remove`.

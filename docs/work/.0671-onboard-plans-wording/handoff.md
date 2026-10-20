@@ -2,7 +2,7 @@
 id: T-0671
 title: "onboard entry text agrees with the docs table on where plans go"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,16 @@ The router's `## Stages` list is unchanged. Both blocks keep their managed-block
 2026-10-20 · lane: solo · verdict: built, unverified · verifier: none · base: c743325e
 - Changed: `ROOT_AGENTS_TEMPLATE` says "tickets and their task plans (plan docs under review go to `docs/planning/`)"; `WORK_ROOT_TEMPLATE` renders `Stages: proposed N, ready N, ...` via `stage_count_line`; selftest cases in `onboard.py` and `tickets.py` (the tickets case fails with the replacement removed); `docs/work/AGENTS.md` regenerated.
 - Checks: `onboard.py selftest` exit 0, `tickets.py selftest` exit 0, `tickets.py --root .sdlc roadmap` and `check` exit 0, `git diff --check` exit 0. `check.py` shows 3 FAIL lines (fanout `--force`/`--forward` hints) that also fail on main; not touched here.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: c743325ec707
+- Changed: see commits
+- Commits: ef9a0c4 T-0671: onboard text and work-root entry agree on where plans go
+- Check: 1 `grep -n 'tickets and plans'` finds nothing in onboard.py and `grep -n 'tickets and their task pl...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/onboard.py selftest` exits 0: pass
+- Check: 3 `tickets.py selftest` exits 0 with a work-root stage-count case that fails with the change reverted: pass
+- Check: 4 after `tickets.py --root .sdlc roadmap`, `grep -n 'proposed' docs/work/AGENTS.md` prints the stag...: pass
+- Check: 5 `git diff --check` exits 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines -> notes.md
+- Follow-up: note: /Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0671-ver... -> notes.md
