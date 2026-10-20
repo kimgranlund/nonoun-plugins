@@ -2,7 +2,7 @@
 id: T-0648
 title: "prepare appends the repo skills for a step's file scope"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0647]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,16 @@ A prompt for a repo with no routing lines is byte-identical to today. The run.sh
 - `dispatch.py selftest`: new repo skills case (routed scope gets the line, unrouted scope does not); the routed case fails with the append removed.
 - Checks: criteria 1 to 5 exit 0; `solo_run.py selftest` exit 0; `check.py` exit 0.
 - Open: the Codex `run.sh` prompt does not carry the line (out of this ticket's scope).
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a6f7d4bfa9f9
+- Changed: see commits
+- Commits: 6825096 T-0648: prepare appends the repo skills for a step's file scope
+- Check: 1 dispatch.py selftest exits 0 with a new repo skills case; the routed case fails with the change r...: pass
+- Check: 2 `Repo skills for this step` appears in builder.md and solo.md: pass
+- Check: 3 claude_roles.py and codex_roles.py `generate --check` exit 0: pass
+- Check: 4 check-packaging.py exits 0: pass
+- Check: 5 git diff --check exits 0: pass
+- Follow-up: note: the handoff Outcome says solo_run.py selftest exits 0; I ran it and... -> notes.md
+- Follow-up: note: the dispatch.py selftest takes longer than 5 minutes under load; a... -> notes.md

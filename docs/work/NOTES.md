@@ -65,3 +65,8 @@
 
 - note: `redck.py deviations` printed no `process deviation:` lines, and the criteria carry no `(red)` tag.
 - note: `fanout.py:3017` and `:3022` (cmd_sync): when `--regen` runs, `git add -A -- <hash_bound specs>` stages every change under those globs, including untracked files the regen command creates. This matches "stages its output". The `sync` gate runs only after the commit, as specified.
+
+## T-0648: prepare appends the repo skills for a step's file scope (2026-10-20)
+
+- note: the handoff Outcome says `solo_run.py selftest` exits 0; I ran it and it printed `solo_run selftest: PASS`. The solo brief line itself (solo_run.py:201-204) has no dedicated selftest case, and criterion 1 does not require one.
+- note: the dispatch.py selftest takes longer than 5 minutes under load; a loaded host may need a foreground timeout of 600000 ms.
