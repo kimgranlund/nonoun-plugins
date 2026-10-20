@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | ⏳ proposed |
+| T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | 🟡 claimed |
 | T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | ⏳ proposed |
 | T-0653 | [0653-roadmap-open-followups](0653-roadmap-open-followups/handoff.md) | Roadmap renders an Open follow-ups section from NOTES.md | feature | L2 | P1 | none | 🟡 claimed |
 | T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | ⏳ proposed |
