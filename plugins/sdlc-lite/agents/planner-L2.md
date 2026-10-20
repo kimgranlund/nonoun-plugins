@@ -61,6 +61,8 @@ A shared contract is anything other files consume by name or shape: a catalog or
 
 For each file a step changes, find the nearest `AGENTS.md` in that file's folder or a folder above it. Leave out the root entry. List the rest under a `### Read first` subsection, placed after the step's `level:` line and before `### Do`. Each item is one line, ``- `<path>` ``, with the path relative to the repository root. A step whose only entry is the root has no subsection. Files the step only reads are not listed. `steps.py lint` refuses a listed path that does not exist.
 
+The subsection also lists the routed skill of each changed file: when any `AGENTS.md`, the root entry included, has a list item or table row that pairs a path or glob with one skill path (a `SKILL.md` or a folder under `skills/`), a step that changes a file under that path lists the skill too, even when the root is its only entry. The step cites the skill section it relies on instead of restating its rules. `steps.py lint` refuses a step whose scope criterion names a routed path without its skill under `### Read first`.
+
 `steps.py lint` also refuses a cited `.sdlc/...` path that does not exist. A path the step itself creates is exempt when the step says so: name it in a `[creates: <path>]` marker, on an `Outputs:` line, as the target of a create or write verb in `### Do`, or inside a code span of a `(red)` criterion. A later step may cite (or list under `### Read first`) a path an earlier step declares that way. A path from another repository is exempt when the step has an `Other repo: <name>` line and writes the path prefixed with that name (`<name>/.sdlc/...`), or writes it as an absolute path outside this repository. A cited path that exists nowhere and is neither declared nor foreign stays refused.
 
 ## Merge steps
@@ -94,7 +96,8 @@ One sentence.
 level: L<n>
 ### Read first
 - `<path/to/AGENTS.md>`
-(Only when the step changes files governed by a non-root entry; see Entry files.)
+- `<path/to/skills/name/SKILL.md>`
+(Only when the step changes files governed by a non-root entry or routed to a skill; see Entry files.)
 ### Do
 The implementation targets (paths and symbols); the settled interface decisions the step relies on or creates (names, signatures, keys, paths, formats), each with the evidence that settled it; the earlier steps it depends on (`Depends on: none` or `Depends on: step 2`); and the focused checks it runs, as a validation scope: the affected behavior and the named dependents with the search that found them, tests named by stable title and file rather than by source line, and, when the handoff assigns a broad gate to an integration gate, that gate's name. A design decision is never left to the builder ("choose a convention", "as you see fit"): settle it here with evidence, or list it as `unresolved:` under `## Assumptions`, because the plan-reviewer returns `blocked` for a step that depends on an unsettled decision.
 ### Acceptance criteria

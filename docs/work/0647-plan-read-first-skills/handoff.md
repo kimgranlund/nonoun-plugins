@@ -37,3 +37,10 @@ A repository with no routing lines lints exactly as before. Existing `### Read f
 3. `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0 and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
 4. `python3 scripts/check-packaging.py` exits 0.
 5. `git diff --check` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/steps.py`: `repo_skill_routes(top)` parses routing lines (list item or table row, one backticked skill path plus at least one other path or glob) from every AGENTS.md, root included; paths in a nested AGENTS.md resolve against its folder. `routed_skills(top, paths)` returns the matching skills (trailing `/` is a folder prefix, else fnmatch). `lint_steps` adds `plan defect: edits routed path <p> without its skill under ### Read first: <skill>` for a scoped path whose skill is not listed (a skill folder and its `SKILL.md` count as the same). Selftest cases `(rt)` added; the refusal case fails with the lint check disabled.
+- `agents/planner.md` (Entry files rule, template) and `skills/handoff-format/SKILL.md` (`### Read first` paragraph) state the routed-skill rule; planner L1 to L3 and Codex planner agents regenerated.
+- Checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `grep -n 'routed' plugins/sdlc-lite/agents/planner.md plugins/sdlc-lite/skills/handoff-format/SKILL.md` exit 0; `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exit 0; `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
+- Open: this repo's `plugins/sdlc-lite/AGENTS.md:17` prose line now parses as a route (levels.json, run.sh, check.py, models.json, evals/ to `skills/level-rubric/SKILL.md`), so a step scoping `scripts/check.py` must list that skill. Reword that line if the route is unintended.
+- verify: needed
