@@ -5,7 +5,7 @@ tickets` line, the <W> form when it has a `work_root: W` line (W is repo-relativ
 This script is the only writer of the roadmap: .sdlc/roadmap.md, .sdlc/tickets/roadmap.md with `layout: topics`,
 or <W>/ROADMAP.md under a work root.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | inventory [--into BRANCH]... [--days N] [--json] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--lessons TEXT]... [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | inventory [--into BRANCH]... [--days N] [--json] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -126,7 +126,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             else none), one `- Check:` line per verifier criterion, `- Deviation:` lines (a step covered by
             a skip entry, recorded process deviations, the waiver, acknowledged warnings, kept stale refs,
             deferred criteria) and one `- Follow-up: <tag>: <title> -> <T-NNNN | notes.md>` line per filed
-            item. verdict is `closed by reason (<why>)`, pass, `skipped (<reason>)` (a skip entry or the
+            item, then one `- Lessons: <TEXT>` line per repeatable --lessons TEXT (T-0652; none without the
+            flag; an empty TEXT refuses, writing nothing; route each lesson to a named repo skill or NOTES.md).
+            verdict is `closed by reason (<why>)`, pass, `skipped (<reason>)` (a skip entry or the
             waiver covers a step), or `skipped (filer route)`. After the Outcome (before any rename) a
             task-folder skips.md moves into the records dir (T-0560), so the closed folder tracks only
             handoff.md; a legacy ticket whose records stay in place keeps it
@@ -2595,7 +2597,9 @@ made by hand: run `<CMD> branch <id> <branch> --worktree <path>`.
 Close a ticket:
 1. Run `<CMD> close <folder> --dry-run`. It checks the verifier verdict, lists each verifier `## Notes` line as \
 `<i>. <tag>: <title>`, and ends with `expect <digest>`.
-2. Run `<CMD> close <folder> --changed "<one line>"`. It appends `## Outcome` to the handoff. To file the one \
+2. Run `<CMD> close <folder> --changed "<one line>"`. It appends `## Outcome` to the handoff; add \
+`--lessons "<lesson>"` (repeatable) for a reusable lesson, one `- Lessons:` line each: route it to a named repo \
+skill or NOTES.md. To file the one \
 `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` \
 items go to `notes.md`; `fix-now:` items are finished before the close. When it refuses because files cite the \
 folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
@@ -3250,9 +3254,9 @@ def outcome_commits(d, base, pid):
     return '; '.join(got) or 'none'
 
 
-def outcome_section(meta, lane, verdict, verifier, base, changed, commits, checks, deviations, follow):
+def outcome_section(meta, lane, verdict, verifier, base, changed, commits, checks, deviations, follow, lessons=()):
     """The `## Outcome` block close appends to the handoff body (every route): one header line, then Changed and
-    Commits always, then one Check, Deviation and Follow-up line each."""
+    Commits always, then one Check, Deviation, Follow-up and Lessons line each."""
     size = size_level(str(meta.get('size', ''))) or '?'
     lines = [f'{datetime.date.today().isoformat()} · lane: {lane} {size} · verdict: {verdict} · '
              f'verifier: {verifier or "none"} · base: {base[:12] if base else "none"}',
@@ -3261,12 +3265,13 @@ def outcome_section(meta, lane, verdict, verifier, base, changed, commits, check
     lines += [f'- Check: {c}' for c in checks]
     lines += [f'- Deviation: {x}' for x in deviations]
     lines += [f'- Follow-up: {x}' for x in follow]
+    lines += [f'- Lessons: {" ".join(x.split())}' for x in lessons]
     return '\n## Outcome\n\n' + '\n'.join(lines) + '\n'
 
 
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
               ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False, filer=False, changed=None,
-              preflight=False):
+              preflight=False, lessons=None):
     """Close a ticket and append its ## Outcome. Three routes; every refusal writes nothing.
     Default (no filer, no reason): the verdict gate. Each live step-<n> dir in the records dir (else the task level)
     needs its newest verifier (run_order.newest) to say pass, or a counting `- skip: verifier; step: <n|all>;
@@ -3304,7 +3309,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     verifier from the result header, base from recorded_base), Changed (changed, else "see commits"), Commits
     (outcome_commits), one Check line per criterion of each read verifier, Deviation lines (steps covered by a skip
     entry, redck.deviation_lines, the waiver, acknowledged warnings, kept stale refs, deferred criteria) and one
-    Follow-up line per item filed as a ticket or appended to notes.md. The verdict: `closed by reason (<why>)`;
+    Follow-up line per item filed as a ticket or appended to notes.md, then one Lessons line per lessons value
+    (T-0652; a list, none by default; an empty value refuses on every route). The verdict: `closed by reason (<why>)`;
     pass when every gated verifier passed; `skipped (<reason>)` when a skip entry (its reason:) or the waiver (its
     class) covers a step; `skipped (filer route)` on the filer route with an uncovered non-pass.
     ack_warnings (not None, filer route only): pass the open-warnings gate with a recorded reason instead of force;
@@ -3351,6 +3357,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if filer and reason is not None:
         raise Fail(f'{slug}: --filer closes through the filer and --reason skips it, so they do not combine; '
                    f'use one; nothing written')
+    if any(not x.strip() for x in lessons or ()):
+        raise Fail(f'{slug}: empty --lessons; give the lesson text or drop the flag; nothing written')
     if ack_warnings is not None and not ack_warnings.strip():
         raise Fail(f'{slug}: empty --ack-warnings; give the reason the open warnings no longer apply; '
                    f'nothing written')
@@ -3483,7 +3491,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     def outcome(v, follow=(), warn_lines=()):
         devs = deviations + [f'acknowledged warning ({ack_warnings.strip()}): {ln.strip()}' for ln in warn_lines
                              if ln.strip()] + ([kept] if kept else []) + deferred
-        return outcome_section(meta, lane, v, who, base, changed, commits, checks, devs, follow)
+        return outcome_section(meta, lane, v, who, base, changed, commits, checks, devs, follow, lessons or ())
 
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
@@ -7881,6 +7889,26 @@ def selftest():
                rc == 0 and list(made) == ['b'] and '\n- Follow-up: decide: b -> T-0002\n' in text
                and (notes(r) or '').endswith('\n- note: a\n- note: c\n'))
 
+        # (T-0652) --lessons writes one `- Lessons:` line each after the Follow-up lines; none without the flag
+        r, d = reason_fu('lessons')
+        before = snap(r)
+        rc, out, err = run(r, 'close', ('tk',), reason='x', lessons=['focus rings need forced-colors', ' '])
+        expect(f'(T-0652) an empty --lessons refuses and writes nothing: rc={rc} {err!r}',
+               rc == 1 and '--lessons' in err and snap(r) == before)
+        rc, out, err = run(r, 'close', ('tk',), reason='x',
+                           lessons=['focus rings need forced-colors', 'rtl: logical props'])
+        text = handoff(d)
+        outcome_tail = text.split('\n## Outcome\n', 1)[-1]
+        expect(f'(T-0652) --reason --lessons twice writes two Lessons lines after the Follow-up lines: rc={rc} '
+               f'{out!r} {err!r} {text!r}',
+               rc == 0 and outcome_tail.count('- Lessons:') == 2
+               and outcome_tail.endswith('- Follow-up: note: c -> notes.md\n'
+                                         '- Lessons: focus rings need forced-colors\n- Lessons: rtl: logical props\n'))
+        r, d = reason_fu('no-lessons')
+        rc, out, err = run(r, 'close', ('tk',), reason='x')
+        expect(f'(T-0652) a close without --lessons writes no Lessons line: rc={rc} {err!r}',
+               rc == 0 and '- Lessons:' not in handoff(d))
+
         # (T-0529) a bug handoff still holding the template Repro prompt refuses; the filled-in one closes
         r, d = oc_root('ph', kind='bug', slug='bg')
         lines = (d / 'handoff.md').read_text(encoding='utf-8').split('\n')
@@ -8569,6 +8597,10 @@ def main(argv):
                         'instead of the verifier verdict gate and the verifier notes')
     p.add_argument('--changed', metavar='TEXT',
                    help='the one-line `- Changed:` text of the ## Outcome (default: see commits)')
+    p.add_argument('--lessons', metavar='TEXT', action='append',
+                   help='repeatable: one `- Lessons: TEXT` line of the ## Outcome per use, after the Follow-up '
+                        'lines (default: none; empty TEXT refuses); name the repo skill or NOTES.md each lesson '
+                        'belongs in')
     p.add_argument('--reason', metavar='TEXT',
                    help='close with no verdict gate and no filer (work done elsewhere): set done, append ## Outcome '
                         'with verdict `closed by reason (TEXT)`, write any ## Skipped entry the lane record still '
@@ -8725,6 +8757,7 @@ def main(argv):
         kw['keep_refs'] = a.keep_refs
         kw['filer'] = a.filer
         kw['changed'] = a.changed
+        kw['lessons'] = a.lessons
         kw['preflight'] = a.preflight
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)

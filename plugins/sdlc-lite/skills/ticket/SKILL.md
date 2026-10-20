@@ -26,6 +26,7 @@ Arguments: `$ARGUMENTS`
 | `--force` | With `close`: close over open Warnings and leave citing files. With `archive`: archive and leave citing files | off | `close board-crash --force` |
 | `--filer` | With `close`: close through the filer's draft (warnings and follow-ups from `filer-L*.md`) instead of the verifier `## Notes`; run only when a filer draft was asked for (`/file`) | off | `close board-crash --filer` |
 | `--changed TEXT` | With `close`: the `- Changed:` line of the `## Outcome` | `see commits` | `close board-crash --changed "board renders an empty root"` |
+| `--lessons TEXT` | With `close`, repeatable: one `- Lessons:` line of the `## Outcome` per use; route each lesson to a named repo skill or NOTES.md | none | `close board-crash --lessons "rtl: logical props"` |
 | `--reason TEXT` | With `close`: close a ticket finished by other work, with no verifier gate and no filer; follow-ups file as on a plain close; the `## Outcome` verdict reads `closed by reason (TEXT)`. With `claim --handover`: why the claim changes hands | - | `close board-crash --reason "done by T-0101"` |
 | `--ack-warnings TEXT` | With `close --filer`: close while filer Warnings are open, with the reason they no longer apply | - | `close board-crash --ack-warnings "fixed since"` |
 | `--dry-run` | With `close`, `archive`, `number`, `migrate-layout`, or `migrate-work-root`: list what would happen and write nothing | off | `close board-crash --dry-run` |

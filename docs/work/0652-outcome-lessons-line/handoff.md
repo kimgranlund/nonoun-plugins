@@ -34,3 +34,10 @@ An Outcome written without `--lessons` is byte-identical to today's. An empty `-
 1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with a new case: `close --reason x --lessons "focus rings need forced-colors" --lessons "rtl: logical props"` writes exactly two `- Lessons:` lines after the Follow-up lines, and a close without the flag writes none. The case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/tickets.py close --help 2>&1 | grep -c -- '--lessons'` prints at least 1.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1
+- Changed: `tickets.py close` takes a repeatable `--lessons TEXT` on every route; `outcome_section` writes one `- Lessons:` line per value after the Follow-up lines, none without the flag, empty refuses; usage, docstring, `ROUTER_TEMPLATE`, `.sdlc/AGENTS.md` and the ticket skill's Arguments table name it.
+- Check: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0 with the new (T-0652) cases; the Lessons case fails with the write line removed.
+- Check: `python3 plugins/sdlc-lite/scripts/tickets.py close --help 2>&1 | grep -c -- '--lessons'` prints 2; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
