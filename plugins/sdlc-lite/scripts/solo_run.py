@@ -198,6 +198,10 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
     else:
         mark_live(task_dir, attempt)
+    where = d['tree'] if tree and os.path.isdir(d['tree']) else str(tdir)
+    skills = dispatch.repo_skills_line(dispatch.git('rev-parse', '--show-toplevel', cwd=where).stdout.strip() or where, handoff)
+    if skills:  # T-0648: the repo skills for the ticket's file scope, resolved against the tree the solo builds in
+        d['prompt'] += '\n' + skills
     if d['verifier']:  # T-0550: a sub-agent cannot spawn the verifier; the parent runs this command after the report
         d['prompt'] += (f'\nVerifier: do not start one (a sub-agent cannot spawn agents); the parent runs {d["verifier"]} after your report.')
     (records(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')

@@ -36,3 +36,11 @@ A prompt for a repo with no routing lines is byte-identical to today. The run.sh
 3. `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0 and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
 4. `python3 scripts/check-packaging.py` exits 0.
 5. `git diff --check` exits 0.
+
+## Outcome
+- `dispatch.py`: new `repo_skills_line(top, handoff)` resolves the step's file scope (`steps.scope_entries`, else existing repo-relative code-span paths under a ticket's `## Intent` and `## Context`) through `steps.routed_skills` against Tree; `prepare` appends `Repo skills for this step: ...` to a builder prompt. No routing match, no line, so a repo without routing lines gets a byte-identical prompt.
+- `solo_run.py`: `dispatch_json` appends the same line to the solo brief, resolved against the lane tree when there is one.
+- `agents/builder.md` and `agents/solo.md` say to open those skills before the first edit to a routed path; level variants and Codex agents regenerated.
+- `dispatch.py selftest`: new repo skills case (routed scope gets the line, unrouted scope does not); the routed case fails with the append removed.
+- Checks: criteria 1 to 5 exit 0; `solo_run.py selftest` exit 0; `check.py` exit 0.
+- Open: the Codex `run.sh` prompt does not carry the line (out of this ticket's scope).
