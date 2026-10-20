@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4fd84a43d27b -->
+<!-- sdlc-lite:managed:start v1 sha256:ea54ab59dd64 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,34 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 0
+- proposed: 27
+  - T-0645 dispatch.py advance runs record, prune, next and prepare in one call (docs/work/0645-dispatch-advance)
+  - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer)
+  - T-0647 Plan steps carry a Read first line from AGENTS.md skill routing (docs/work/0647-plan-read-first-skills)
+  - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
+  - T-0649 ui-designer review writes a verdict, blocking flags and rule provenance (docs/work/0649-ui-review-verdict)
+  - T-0650 Aggregate recurring Rule gap findings into a guidance ticket proposal (docs/work/0650-guidance-gap-rollup)
+  - T-0651 A reason close routes follow-ups like a verified close (docs/work/0651-reason-close-followups)
+  - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line)
+  - T-0653 Roadmap renders an Open follow-ups section from NOTES.md (docs/work/0653-roadmap-open-followups)
+  - T-0654 fanout.py sync brings a lane up to date with the integration branch (docs/work/0654-fanout-sync-lane)
+  - T-0655 prepare checks lane guidance against main and named guidance paths (docs/work/0655-lane-guidance-check)
+  - T-0656 settle --forward refuses while a lane attempt is running (docs/work/0656-settle-refuses-running)
+  - T-0657 steps.py review reports red criteria already green at base (docs/work/0657-review-red-at-base)
+  - T-0658 redck ignores record files when judging the tree dirty (docs/work/0658-redck-ignore-records)
+  - T-0659 Every SKILL.md stays under 18,000 characters (docs/work/0659-skill-size-limit)
+  - T-0660 Plan lint flags universally quantified prose criteria with no command (docs/work/0660-quantified-criteria-lint)
+  - T-0661 Verifier brief carries a base..end diff range per built step (docs/work/0661-verifier-diff-range)
+  - T-0662 Tracked work records hold no absolute machine paths (docs/work/0662-relative-record-paths)
+  - T-0663 onboard creates the docs folder routers that docs/AGENTS.md links (docs/work/0663-docs-folder-routers)
+  - T-0664 A write-once designs home for grill output in the onboard docs table (docs/work/0664-designs-docs-home)
+  - T-0665 Drop redirect stub skills and shorten level-variant agent descriptions (docs/work/0665-trim-skill-catalog)
+  - T-0666 Plan lint rejects git stash and --autostash in Do text (docs/work/0666-lint-git-stash)
+  - T-0667 record --agent-id reads the final message from the transcript (docs/work/0667-record-agent-id)
+  - T-0668 ui-designer reads SKILL.md first and opens references by cue (docs/work/0668-ui-designer-progressive)
+  - T-0669 Dispatch and skip records go to the records dir, not the work root (docs/work/0669-dispatch-records-dir)
+  - T-0670 close verdict reason matches the recorded lane (docs/work/0670-close-lane-reason)
+  - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
 - claimed: 0

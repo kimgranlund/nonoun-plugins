@@ -6,5 +6,32 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
+| T-0645 | [0645-dispatch-advance](0645-dispatch-advance/handoff.md) | dispatch.py advance runs record, prune, next and prepare in one call | feature | L2 | P1 | none | ⏳ proposed |
+| T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | ⏳ proposed |
+| T-0647 | [0647-plan-read-first-skills](0647-plan-read-first-skills/handoff.md) | Plan steps carry a Read first line from AGENTS.md skill routing | feature | L2 | P1 | none | ⏳ proposed |
+| T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | ⏳ proposed |
+| T-0649 | [0649-ui-review-verdict](0649-ui-review-verdict/handoff.md) | ui-designer review writes a verdict, blocking flags and rule provenance | feature | L2 | P1 | none | ⏳ proposed |
+| T-0650 | [0650-guidance-gap-rollup](0650-guidance-gap-rollup/handoff.md) | Aggregate recurring Rule gap findings into a guidance ticket proposal | feature | L2 | P1 | T-0649 | ⏳ proposed |
+| T-0651 | [0651-reason-close-followups](0651-reason-close-followups/handoff.md) | A reason close routes follow-ups like a verified close | bug | L2 | P1 | none | ⏳ proposed |
+| T-0652 | [0652-outcome-lessons-line](0652-outcome-lessons-line/handoff.md) | Outcome gains an optional Lessons line | feature | L1 | P1 | none | ⏳ proposed |
+| T-0653 | [0653-roadmap-open-followups](0653-roadmap-open-followups/handoff.md) | Roadmap renders an Open follow-ups section from NOTES.md | feature | L2 | P1 | none | ⏳ proposed |
+| T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | ⏳ proposed |
+| T-0655 | [0655-lane-guidance-check](0655-lane-guidance-check/handoff.md) | prepare checks lane guidance against main and named guidance paths | bug | L2 | P2 | none | ⏳ proposed |
+| T-0656 | [0656-settle-refuses-running](0656-settle-refuses-running/handoff.md) | settle --forward refuses while a lane attempt is running | bug | L1 | P2 | none | ⏳ proposed |
+| T-0657 | [0657-review-red-at-base](0657-review-red-at-base/handoff.md) | steps.py review reports red criteria already green at base | feature | L2 | P2 | none | ⏳ proposed |
+| T-0658 | [0658-redck-ignore-records](0658-redck-ignore-records/handoff.md) | redck ignores record files when judging the tree dirty | bug | L1 | P2 | none | ⏳ proposed |
+| T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
+| T-0660 | [0660-quantified-criteria-lint](0660-quantified-criteria-lint/handoff.md) | Plan lint flags universally quantified prose criteria with no command | feature | L2 | P2 | none | ⏳ proposed |
+| T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
+| T-0662 | [0662-relative-record-paths](0662-relative-record-paths/handoff.md) | Tracked work records hold no absolute machine paths | bug | L2 | P2 | none | ⏳ proposed |
+| T-0663 | [0663-docs-folder-routers](0663-docs-folder-routers/handoff.md) | onboard creates the docs folder routers that docs/AGENTS.md links | bug | L2 | P2 | none | ⏳ proposed |
+| T-0664 | [0664-designs-docs-home](0664-designs-docs-home/handoff.md) | A write-once designs home for grill output in the onboard docs table | feature | L2 | P2 | none | ⏳ proposed |
+| T-0665 | [0665-trim-skill-catalog](0665-trim-skill-catalog/handoff.md) | Drop redirect stub skills and shorten level-variant agent descriptions | feature | L2 | P3 | none | ⏳ proposed |
+| T-0666 | [0666-lint-git-stash](0666-lint-git-stash/handoff.md) | Plan lint rejects git stash and --autostash in Do text | bug | L1 | P3 | none | ⏳ proposed |
+| T-0667 | [0667-record-agent-id](0667-record-agent-id/handoff.md) | record --agent-id reads the final message from the transcript | feature | L1 | P3 | none | ⏳ proposed |
+| T-0668 | [0668-ui-designer-progressive](0668-ui-designer-progressive/handoff.md) | ui-designer reads SKILL.md first and opens references by cue | feature | L1 | P3 | none | ⏳ proposed |
+| T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | ⏳ proposed |
+| T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
+| T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 
 Closed: 607 done, 29 dropped (git log or .NNNN-* folders)
