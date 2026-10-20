@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:561efcd28b67 -->
+<!-- sdlc-lite:managed:start v1 sha256:3081e777331c -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,14 +10,12 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 16
+- proposed: 14
   - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer)
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
-  - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line)
   - T-0653 Roadmap renders an Open follow-ups section from NOTES.md (docs/work/0653-roadmap-open-followups)
   - T-0654 fanout.py sync brings a lane up to date with the integration branch (docs/work/0654-fanout-sync-lane)
   - T-0655 prepare checks lane guidance against main and named guidance paths (docs/work/0655-lane-guidance-check)
-  - T-0656 settle --forward refuses while a lane attempt is running (docs/work/0656-settle-refuses-running)
   - T-0657 steps.py review reports red criteria already green at base (docs/work/0657-review-red-at-base)
   - T-0659 Every SKILL.md stays under 18,000 characters (docs/work/0659-skill-size-limit)
   - T-0661 Verifier brief carries a base..end diff range per built step (docs/work/0661-verifier-diff-range)
@@ -29,8 +27,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 2
+- claimed: 4
   - T-0645 dispatch.py advance runs record, prune, next and prepare in one call (docs/work/0645-dispatch-advance), claimed by sdlc-lite-author 2026-10-20
+  - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line), claimed by sdlc-lite-author 2026-10-20
+  - T-0656 settle --forward refuses while a lane attempt is running (docs/work/0656-settle-refuses-running), claimed by sdlc-lite-author 2026-10-20
   - T-0660 Plan lint flags universally quantified prose criteria with no command (docs/work/0660-quantified-criteria-lint), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
@@ -69,7 +69,7 @@ Close a ticket:
 1. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --dry-run`. It checks the verifier verdict, lists each verifier `## Notes` line as `<i>. <tag>: <title>`, and ends with `expect <digest>`.
 2. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --changed "<one line>"`. It appends `## Outcome` to the handoff. To file the one `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to `docs/work/NOTES.md`; `fix-now:` items are finished before the close. When it refuses because files cite the folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
 3. Only when a filer draft was asked for (`/file`): `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --filer`.
-4. Work already done by another ticket: `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --reason "<why>"`.
+4. Work already done by another ticket: `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --reason "<why>"`. It skips the verdict gate but files follow-ups as step 2 does: the verifier `## Notes` lines and the handoff `## Follow-ups` bullets go to `docs/work/NOTES.md`, and `--dry-run` and `--ticket <i> --expect <digest>` work the same.
 
 Ticket lifecycle:
 1. Pick and claim: `python3 <plugin-root>/scripts/tickets.py --root .sdlc claim <id> --by <agent>`.
