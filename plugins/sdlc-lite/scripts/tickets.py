@@ -144,9 +144,13 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             A runtime/ dir the lock creates gets a `*` .gitignore, so the lock leaves git status clean
   roadmap   regenerate the roadmap (<root>/roadmap.md, <root>/tickets/roadmap.md with `layout: topics`, or <W>/ROADMAP.md with `work_root: W`) in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule). Only open tickets get a row; done and
-            dropped ones are counted in one `Closed: <n> done, <m> dropped` line after the table
+            dropped ones are counted in one `Closed: <n> done, <m> dropped` line after the table. An
+            `## Open follow-ups` section follows it, one line per notes.md `- decide:` (or `- source-fix:`) line
+            with no `-> T-NNNN` marker, naming its `## ` block; no section when there are none. Mark an item
+            routed by adding ` -> T-NNNN` to its notes.md line
   check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
-            Router below). With `layout: topics` it also fails each entry directly under <root> other than
+            Router below). It prints `open follow-ups: <n> unrouted in <notes path>` when the roadmap lists any
+            (exit stays 0). With `layout: topics` it also fails each entry directly under <root> other than
             AGENTS.md, CLAUDE.md, by-hand.md, config, layout.md, board.md, tickets, work, notes, messages, evals, proposals,
             supervisor, runtime, dogfood, a _-prefixed name or a .-prefixed one (a closed-ticket .NNNN-<slug> is
             a stray: it belongs in tickets/), as `<name>: stray entry at the root`; only check runs this, so a
@@ -2502,8 +2506,28 @@ def render(ts, root):
         area = ' ' + area_of(m).replace('|', '\\|') + ' |' if with_area else ''
         rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} |{area} {m['size']} | "
                     f"{m['priority']} | {deps} | {status} |")
+    follow = open_followups(lp.notes)
+    tail = ('\n## Open follow-ups\n\n' + ''.join(f'- {line}\n' for line in follow)) if follow else ''
     return (HEADER + '\n' + '\n'.join(rows) + '\n\n'
-            + f"Closed: {closed['done']} done, {closed['dropped']} dropped (git log or .NNNN-* folders)\n")
+            + f"Closed: {closed['done']} done, {closed['dropped']} dropped (git log or .NNNN-* folders)\n" + tail)
+
+
+FOLLOW_RE = re.compile(r'- ((?:decide|source-fix):.*)')
+ROUTED_RE = re.compile(r'->\s*T-\d{4}\b')
+
+
+def open_followups(notes):
+    """One `<tag>: <text> (from <heading>)` string per unrouted NOTES.md line (T-0653): a `- decide:` or literal
+    `- source-fix:` line with no `-> T-NNNN` marker, sourced from the `## ` heading above it. [] with no file."""
+    if not notes.is_file():
+        return []
+    out, head = [], None
+    for line in notes.read_text(encoding='utf-8').splitlines():
+        if line.startswith('## '):
+            head = line[3:].strip()
+        elif (m := FOLLOW_RE.fullmatch(line.rstrip())) and not ROUTED_RE.search(line):
+            out.append(m.group(1) + (f' (from {head})' if head else ''))
+    return out
 
 
 def write_roadmap(root, ts):
@@ -2601,7 +2625,8 @@ Close a ticket:
 `--lessons "<lesson>"` (repeatable) for a reusable lesson, one `- Lessons:` line each: route it to a named repo \
 skill or NOTES.md. To file the one \
 `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` \
-items go to `notes.md`; `fix-now:` items are finished before the close. When it refuses because files cite the \
+items go to `notes.md`, where adding ` -> T-NNNN` to an item's line marks it routed (the roadmap lists the rest \
+under Open follow-ups); `fix-now:` items are finished before the close. When it refuses because files cite the \
 folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
 3. Only when a filer draft was asked for (`/file`): `<CMD> close <folder> --filer`.
 4. Work already done by another ticket: \
@@ -3853,6 +3878,9 @@ def cmd_check(root, numbered=False):
     if errs:
         raise Fail('\n'.join(errs))
     out = [f'ok: {len(ts)} tickets, roadmap current']
+    follow = open_followups(layout_paths(root).notes)
+    if follow:
+        out.append(f'open follow-ups: {len(follow)} unrouted in {layout_paths(root).notes}')
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
     out += claim_ref_warnings(root, ts)
@@ -4436,6 +4464,19 @@ def selftest():
                and out.splitlines()[1:] == [f"warning: {base} uses the flat layout; tickets.py migrate-layout moves it "
                                             f"to topic folders (add 'layout: flat' to {base}/config to keep it and "
                                             f"silence this)"])
+        expect('no notes.md renders no Open follow-ups heading (T-0653)', '## Open follow-ups' not in rm)
+        with tempfile.TemporaryDirectory() as ftmp:
+            fr = pathlib.Path(ftmp) / '.sdlc'
+            run(fr, 'new', ('feature', 'gamma', 'Gamma'))
+            (fr / 'notes.md').write_text('# Notes\n\n## T-0001: Gamma (2026-10-20)\n\n- decide: a\n'
+                                         '- decide: b -> T-0009\n- note: c\n', encoding='utf-8')
+            run(fr, 'roadmap')
+            frm = (fr / 'roadmap.md').read_text(encoding='utf-8')
+            rc, out, err = run(fr, 'check')
+            expect(f'notes.md renders only the unrouted decide: under Open follow-ups (T-0653): {frm!r}',
+                   frm.endswith('\n## Open follow-ups\n\n- decide: a (from T-0001: Gamma (2026-10-20))\n'))
+            expect(f'check counts the unrouted follow-up (T-0653): rc={rc} {out!r} {err!r}',
+                   rc == 0 and f"open follow-ups: 1 unrouted in {fr / 'notes.md'}" in out.splitlines())
 
         before = (base / 'alpha' / 'handoff.md').read_bytes()
         rc, _, err = run(base, 'new', ('idea', 'alpha'))
