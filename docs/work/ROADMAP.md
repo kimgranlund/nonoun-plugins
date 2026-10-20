@@ -8,7 +8,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0645 | [0645-dispatch-advance](0645-dispatch-advance/handoff.md) | dispatch.py advance runs record, prune, next and prepare in one call | feature | L2 | P1 | none | 🟡 claimed |
 | T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | ⏳ proposed |
-| T-0647 | [0647-plan-read-first-skills](0647-plan-read-first-skills/handoff.md) | Plan steps carry a Read first line from AGENTS.md skill routing | feature | L2 | P1 | none | 🟡 claimed |
 | T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | ⏳ proposed |
 | T-0651 | [0651-reason-close-followups](0651-reason-close-followups/handoff.md) | A reason close routes follow-ups like a verified close | bug | L2 | P1 | none | 🟡 claimed |
 | T-0652 | [0652-outcome-lessons-line](0652-outcome-lessons-line/handoff.md) | Outcome gains an optional Lessons line | feature | L1 | P1 | none | ⏳ proposed |
@@ -32,4 +31,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 
-Closed: 609 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 610 done, 29 dropped (git log or .NNNN-* folders)

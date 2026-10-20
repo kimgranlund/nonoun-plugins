@@ -2,7 +2,7 @@
 id: T-0647
 title: "Plan steps carry a Read first line from AGENTS.md skill routing"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,14 @@ A repository with no routing lines lints exactly as before. Existing `### Read f
 - Checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `grep -n 'routed' plugins/sdlc-lite/agents/planner.md plugins/sdlc-lite/skills/handoff-format/SKILL.md` exit 0; `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exit 0; `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
 - Open: this repo's `plugins/sdlc-lite/AGENTS.md:17` prose line now parses as a route (levels.json, run.sh, check.py, models.json, evals/ to `skills/level-rubric/SKILL.md`), so a step scoping `scripts/check.py` must list that skill. Reword that line if the route is unintended.
 - verify: needed
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: decide: plugins/sdlc-lite/AGENTS.md:17 now parses as six routes to skills/level-rubric/SKILL.md (levels.json, run.sh, check.py, models.json, evals/); any later step scoping `scripts/check.py` must list that skill. The builder flagged this under Open; reword the line if the route is unintended.) · verifier: verifier-L2 (sonnet) · base: 92b2df57cd83
+- Changed: see commits
+- Commits: f512a4b T-0647: plan steps carry a Read first line from AGENTS.md skill routing
+- Check: 1 steps.py selftest exits 0 with the new (rt) cases: pass
+- Check: 2 grep 'routed' in planner.md and handoff-format SKILL.md: pass
+- Check: 3 claude_roles.py and codex_roles.py generate --check: pass
+- Check: 4 scripts/check-packaging.py: pass
+- Check: 5 git diff --check: pass
