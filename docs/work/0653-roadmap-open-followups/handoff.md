@@ -36,3 +36,7 @@ A repo with no NOTES.md, or with no open `decide:` item in it, renders the roadm
 2. The same selftest asserts a fixture with no NOTES.md renders no `## Open follow-ups` heading.
 3. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap` then `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0 in this repo.
 4. `git diff --check` exits 0.
+
+## Outcome
+- Changed: `plugins/sdlc-lite/scripts/tickets.py`: `open_followups` reads NOTES.md `- decide:` / `- source-fix:` lines with no `-> T-NNNN` marker; `render` appends `## Open follow-ups` (each line names its `## ` block) only when there are any; `cmd_check` prints `open follow-ups: <n> unrouted in <notes path>` (exit unchanged); usage text for roadmap and check plus router close step 2 say how to mark an item routed. Router `.sdlc/AGENTS.md` regenerated. This repo's NOTES.md has no tagged `decide:` lines, so `docs/work/ROADMAP.md` is unchanged.
+- Checks: `tickets.py selftest` exit 0 (new T-0653 cases; with the reader disabled both fail); `tickets.py --root .sdlc roadmap` exit 0, `tickets.py --root .sdlc check` exit 0; `git diff --check` exit 0; `check.py` exit 0.
