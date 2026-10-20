@@ -12,5 +12,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0667 | [0667-record-agent-id](0667-record-agent-id/handoff.md) | record --agent-id reads the final message from the transcript | feature | L1 | P3 | none | 🟡 claimed |
 | T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | ⏳ proposed |
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
+| T-0673 | [0673-record-stdin-wording](0673-record-stdin-wording/handoff.md) | Skills say record reads the transcript, not the final message on stdin | chore | L1 | P2 | T-0667 | ⏳ proposed |
 
 Closed: 629 done, 29 dropped (git log or .NNNN-* folders)
