@@ -2779,8 +2779,10 @@ WORK_ROOT_TEMPLATE = """\
 # Work records
 
 This folder is the SDLC Lite work root: ticket and task folders, the generated `<ROADMAP>`, and `<NOTES>`. How to \
-create, claim, and close a ticket, and the stage counts, are in [`<R>/AGENTS.md`](<UP>/AGENTS.md). `tickets.py \
+create, claim, and close a ticket, and the ticket list, are in [`<R>/AGENTS.md`](<UP>/AGENTS.md). `tickets.py \
 roadmap` generates this block: do not edit inside it.
+
+<stage counts>
 """
 
 NOTES_TEMPLATE = """\
@@ -2860,6 +2862,12 @@ def stage_lines(ts, prefix=''):
     return out
 
 
+def stage_count_line(ts):
+    """`Stages: proposed 27, ready 0, ...` in ENUMS order, the counts of the router's `## Stages` lines (T-0671)."""
+    return 'Stages: ' + ', '.join(f"{st} {sum(1 for _, m in ts if m.get('status') == st)}"
+                                  for st in ENUMS['status']) + '.'
+
+
 def by_hand_body(root, ts):
     """BY_HAND_TEMPLATE for root (T-0641): <T> the ticket dir and <HAND_ROUTER> the `router:` value stamp writes, the
     roadmap path, and the folder `NNNN-<slug>` with a closing rename to `.NNNN-<slug>` in numbered mode (the config
@@ -2914,7 +2922,7 @@ def router_bodies(root, ts):
         up = pathlib.Path(os.path.relpath(root.resolve(), wd.resolve())).as_posix()
         out[f'{t}/AGENTS.md'] = (WORK_ROOT_TEMPLATE.replace('<ROADMAP>', layout_paths(root).roadmap.name)
                                  .replace('<NOTES>', layout_paths(root).notes.name).replace('<UP>', up)
-                                 .replace('<R>', r))
+                                 .replace('<R>', r).replace('<stage counts>', stage_count_line(ts)))
     if topics:
         out['work/AGENTS.md'] = WORK_TEMPLATE
         out['notes/AGENTS.md'] = NOTES_TEMPLATE
@@ -6522,6 +6530,11 @@ def selftest():
                and 'Notes go to `docs/work/NOTES.md`' in rb and '`roadmap.md`' not in rb and '`notes.md`' not in rb
                and '](../../.sdlc/AGENTS.md)' in eb and '`ROADMAP.md`' in eb
                and tr_text(ww / 'CLAUDE.md') == '@AGENTS.md\n' if (ww / 'CLAUDE.md').is_file() else False)
+        # T-0671: the work-root entry carries one stage-count line, the numbers of the router's ## Stages
+        rcounts = ', '.join(f'{m.group(1)} {m.group(2)}' for m in re.finditer(r'^- (\w+): (\d+)$', rb, re.M))
+        expect(f'work_root entry: docs/work/AGENTS.md holds the router link and a stage-count line matching the '
+               f'router: {rcounts!r} {eb!r}',
+               bool(rcounts) and f'Stages: {rcounts}.\n' in eb and '](../../.sdlc/AGENTS.md)' in eb)
         (ww / 'ROADMAP.md').unlink()
         rc, out, err = run(wr, 'roadmap')
         names = sorted(os.listdir(ww)) if ww.is_dir() else []
