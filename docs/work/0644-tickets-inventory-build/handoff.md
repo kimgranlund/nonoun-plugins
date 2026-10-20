@@ -31,3 +31,10 @@ Design, output format and reused functions: `docs/work/.0584-tickets-inventory/h
 2. `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0, and its orphans case still passes using `patch_landed`.
 3. `python3 plugins/sdlc-lite/scripts/tickets.py inventory --json` in this repo exits 0 and prints valid JSON (`| python3 -m json.tool >/dev/null`).
 4. `git diff --check` exits 0.
+
+## Outcome
+Built by solo L2.
+- `plugins/sdlc-lite/scripts/lanes.py`: new `patch_landed(top, into, ref)` (the set of ref commits with no patch-equivalent in into, None when `git cherry` fails); `orphans` uses it with unchanged output; `landed(..., patch=False)` checks it between `pr merged` and the file compare and returns `patch` only when a caller passes `patch=True`, so close, sweep and list keep their states and truth table.
+- `plugins/sdlc-lite/scripts/tickets.py`: read-only `inventory [--into BRANCH]... [--days N] [--json]`, one row per ticket and branch (its `branch:` line, lane records naming it, local branches holding its id), landed via `lanes.landed(patch=True)`, newest verifier via `order.newest` in `order.records_dir` (the branch's worktree copy when it has one), verdict via `results.key_value`. Usage docstring updated. Selftest cases: `-2` verifier newest, cherry-pick `landed:main(patch)` with a later content change, stale sibling `not landed (b.txt)`, legacy in-folder records, the `--days` window, and a control showing `landed` without the patch test says `not landed`.
+- Checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/tickets.py inventory --json | python3 -m json.tool >/dev/null` exit 0; `git diff --check` exit 0.
+- Note: criterion 1 pins the exact string `landed:main(patch)`; `steps.py verifier-level` prints L2.

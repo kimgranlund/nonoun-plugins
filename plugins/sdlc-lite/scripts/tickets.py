@@ -5,7 +5,7 @@ tickets` line, the <W> form when it has a `work_root: W` line (W is repo-relativ
 This script is the only writer of the roadmap: .sdlc/roadmap.md, .sdlc/tickets/roadmap.md with `layout: topics`,
 or <W>/ROADMAP.md under a work root.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | inventory [--into BRANCH]... [--days N] [--json] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -197,6 +197,15 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             or absolute, resolved from the cwd, never from <root>) keeps only tickets whose folder holds PATH or
             sits under it; it never changes where the root or ticket dir is found. Prints `none` when nothing
             qualifies; a ticket dir or scope that does not exist is an error naming the path, not `none`
+  inventory read-only (T-0644): one row per ticket that is open, or done or dropped with an Outcome dated in the
+            last --days N days (default 7), and per branch of that ticket: `<id> <status> <branch|-> <landed>
+            <verifier-L<n>|-> <verdict|-> <file|->`. A ticket's branches are its `branch:` line, the lanes whose
+            record names it (lanes.discover), and every local branch whose name holds its id, so a stale sibling or a
+            pointer branch is its own row. landed is `landed:<into>(ancestor|pr merged|patch|content)` for the first
+            --into that lands it (default: the default branch, then each integration lane branch), else the first
+            into's `not landed (<first differing path>)` or `cannot decide (<why>)` (lanes.landed with patch=True).
+            The verifier is order.newest in order.records_dir of the ticket folder (the branch's worktree copy when
+            it has one, else the local one), its verdict results.key_value. --json prints the rows as a JSON list
   migrate-layout  move a flat root to the topics layout: each ticket folder directly under <root> (load's rule,
             or a .NNNN-<slug> name) to tickets/<name>, each other dir not in check's allowed list and not _ or .
             prefixed to work/<name>, roadmap.md to tickets/roadmap.md and notes.md to notes/notes.md (Path.rename,
@@ -3694,6 +3703,97 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     return out + rewrote + cite_note + lane_report(root, pid)
 
 
+OUTCOME_DATE_RE = re.compile(r'^(\d{4}-\d{2}-\d{2}) · lane:', re.M)
+
+
+def outcome_date(text):
+    """The date of the last `<YYYY-MM-DD> · lane:` Outcome line, or None."""
+    got = OUTCOME_DATE_RE.findall(text)
+    try:
+        return datetime.date.fromisoformat(got[-1]) if got else None
+    except ValueError:
+        return None
+
+
+def cmd_inventory(root, into=(), days=7, as_json=False):
+    """T-0644: each open or recently closed ticket's branches, landed state and newest verifier (see Usage)."""
+    import lanes  # local: lanes imports this module
+    import results
+    td = layout_paths(root).tickets
+    if not td.is_dir():
+        raise Fail(f'{td}: ticket dir does not exist (the root is {root}; run from the repository root or pass --root)')
+    cutoff = datetime.date.today() - datetime.timedelta(days=days)
+    picked = []
+    for name, meta in load(td):
+        tid = meta.get('id')
+        if not isinstance(tid, str):
+            continue
+        if meta.get('status') in ('done', 'dropped'):
+            when = outcome_date((td / name / 'handoff.md').read_text(encoding='utf-8'))
+            if when is None or when < cutoff:
+                continue
+        picked.append((name, meta))
+    try:
+        ctx = lanes.Ctx(str(file_base(root)))
+    except Exception:  # not in git: every ticket gets one branchless row
+        ctx = None
+    heads, lane_list, wt_dirs, intos = [], [], {}, []
+    if ctx is not None:
+        heads = [h for h in (lanes.out(ctx.top, 'for-each-ref', '--format=%(refname:short)', 'refs/heads') or '').splitlines() if h]
+        lane_list = lanes.discover(ctx)
+        branch_tree = {w['branch']: w['path'] for w in ctx.wts if w['branch']}
+        trees = {os.path.realpath(str(w)): t for w, t in other_ticket_dirs(root)}
+        wt_dirs = {b: trees[os.path.realpath(p)] for b, p in branch_tree.items() if os.path.realpath(p) in trees}
+        names = list(into) or [default_branch(file_base(root))] + [d['branch'] for d in lane_list
+                                                                   if d['kind'] == 'integration' and d['branch']]
+        for n in dict.fromkeys(x for x in names if x):
+            ref, _ = lanes.resolve_into(ctx, n, fetch=False)
+            intos.append((n, ref))
+
+    def landed_state(b):
+        first = None
+        for n, ref in intos:
+            how, detail = lanes.landed(ctx.top, f'refs/heads/{b}', ref, branch=b, patch=True) if ref else \
+                ('cannot decide', f'into {n} does not resolve')
+            if how in ('ancestor', 'pr merged', 'patch', 'content'):
+                return f'landed:{n}({how})'
+            first = first or (f'not landed ({detail})' if how == 'not landed' else f'cannot decide ({detail})')
+        return first or 'cannot decide (no into branch)'
+
+    def verifier(folder):
+        try:
+            path = run_order.newest(str(folder), 'verifier')
+        except OSError:
+            path = None
+        if not path:
+            return '-', '-', '-'
+        mo = run_order.RESULT.match(os.path.basename(path))
+        return (f'verifier-L{mo.group(2)}' if mo else os.path.basename(path)[:-3],
+                results.key_value(path, 'verifier') or '-', os.path.basename(path))
+
+    rows = []
+    for name, meta in picked:
+        tid = meta['id']
+        id_re = re.compile(rf'(?<![0-9A-Za-z]){re.escape(tid)}(?![0-9])', re.I)
+        own = meta.get('branch') if isinstance(meta.get('branch'), str) else ''
+        branches = [own.strip()] if own.strip() else []
+        branches += [d['branch'] for d in lane_list if tid in d['tickets'] and d['branch']]
+        branches += [h for h in heads if id_re.search(h)]
+        branches = [b for b in dict.fromkeys(branches) if b in heads]
+        for b in branches or [None]:
+            folder = wt_dirs[b] / name if b in wt_dirs and (wt_dirs[b] / name).is_dir() else td / name
+            role, verdict, file = verifier(folder)
+            rows.append({'id': tid, 'status': meta.get('status'), 'branch': b or '-',
+                         'landed': landed_state(b) if b else '-', 'verifier': role, 'verdict': verdict, 'file': file})
+    if as_json:
+        return json.dumps(rows, indent=2)
+    if not rows:
+        return 'none'
+    keys = ('id', 'status', 'branch', 'landed', 'verifier', 'verdict', 'file')
+    width = {k: max(len(str(r[k])) for r in rows) for k in keys}
+    return '\n'.join('  '.join(str(r[k]).ljust(width[k]) for k in keys).rstrip() for r in rows)
+
+
 def cmd_blockers(root, scope=None):
     """The open-question inventory: blocked or `## Deferred` tickets still open, from the configured ticket dir.
     The scope filter applies after discovery and never changes where tickets are found."""
@@ -4235,6 +4335,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_migrate_size(root, **kw), ''
         if cmd == 'blockers':
             return 0, cmd_blockers(root, **kw), ''
+        if cmd == 'inventory':
+            return 0, cmd_inventory(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
@@ -8338,6 +8440,79 @@ def selftest():
                        again != 0 and held != 0)
             print('tickets selftest: by-hand protocol replayed (flat and numbered)')
 
+    # T-0644: inventory on a temp repo: a -2 verifier, a cherry-picked branch, a stale sibling, a legacy records path
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = pathlib.Path(tmp) / 'inv'
+        repo.mkdir()
+        env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+        def g(*args):
+            return subprocess.run(['git', '-C', str(repo), *args], env=env, capture_output=True, text=True)
+
+        def commit(path, body, msg):
+            (repo / path).write_text(body, encoding='utf-8')
+            g('add', path)
+            g('commit', '-qm', msg)
+
+        g('init', '-q', '-b', 'main')
+        g('config', 'user.email', 'selftest@example.com')
+        g('config', 'user.name', 'selftest')
+        g('config', 'commit.gpgsign', 'false')
+        commit('a.txt', 'one\n', 'base')
+        g('checkout', '-qb', 'lane/T-0001-a')
+        commit('a.txt', 'two\n', 'T-0001: a')
+        g('checkout', '-q', 'main')
+        g('checkout', '-qb', 'T-0001-old')
+        commit('b.txt', 'stale\n', 'T-0001: old try')
+        g('checkout', '-q', 'main')
+        g('cherry-pick', '-x', 'lane/T-0001-a')
+        commit('a.txt', 'three\n', 'later edit')  # content now differs, so only the patch test can land the lane
+        inv = repo / '.sdlc'
+        today = datetime.date.today()
+        for folder, tid, status, outcome in (('0001-a', 'T-0001', 'claimed', ''), ('0002-b', 'T-0002', 'ready', ''),
+                                             ('.0003-c', 'T-0003', 'done', f'{today.isoformat()} · lane: solo L1'),
+                                             ('.0004-d', 'T-0004', 'done',
+                                              f'{(today - datetime.timedelta(days=30)).isoformat()} · lane: solo L1')):
+            (inv / folder).mkdir(parents=True)
+            (inv / folder / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "{folder}"\ntype: feature\nstatus: {status}\nsize: L1\npriority: P2\n'
+                f'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n' + (f'\n## Outcome\n\n{outcome}\n' if outcome else ''),
+                encoding='utf-8')
+        (inv / 'config').write_text('ticket_folders: numbered\n', encoding='utf-8')
+        rec = inv / 'runtime' / 'tasks' / '0001-a'
+        rec.mkdir(parents=True)
+        for name, verdict in (('verifier-L3.md', 'fail'), ('verifier-L3-2.md', 'pass')):
+            (rec / name).write_text(f'<!-- role=verifier level=L3 model=m effort=e -->\n## Verdict\n{verdict}\n',
+                                    encoding='utf-8')
+        (inv / '0002-b' / 'verifier-L2.md').write_text(  # legacy: records in the ticket folder itself
+            '<!-- role=verifier level=L2 model=m effort=e -->\n## Verdict\nfail\n', encoding='utf-8')
+        rc_i, out_i, err_i = run(inv, 'inventory', as_json=True)
+        try:
+            rows = {(r['id'], r['branch']): r for r in json.loads(out_i)}
+        except ValueError:
+            rows = {}
+        pick = lambda tid, b: {k: rows.get((tid, b), {}).get(k) for k in ('landed', 'verifier', 'verdict', 'file')}
+        expect(f'inventory: a cherry-picked lane is landed:main(patch) and its newest verifier is the -2 file: '
+               f'{rc_i} {out_i!r} {err_i!r}',
+               rc_i == 0 and pick('T-0001', 'lane/T-0001-a') == {'landed': 'landed:main(patch)', 'verifier': 'verifier-L3',
+                                                                   'verdict': 'pass', 'file': 'verifier-L3-2.md'})
+        expect(f'inventory: a stale sibling branch is its own not-landed row: {out_i!r}',
+               pick('T-0001', 'T-0001-old')['landed'] == 'not landed (b.txt)')
+        expect(f'inventory: legacy records in the ticket folder give the verdict of a branchless row: {out_i!r}',
+               pick('T-0002', '-') == {'landed': '-', 'verifier': 'verifier-L2', 'verdict': 'fail', 'file': 'verifier-L2.md'})
+        expect(f'inventory: a ticket closed today is listed, one closed 30 days ago is not: {sorted(rows)!r}',
+               ('T-0003', '-') in rows and not any(k[0] == 'T-0004' for k in rows))
+        rc_t, out_t, _ = run(inv, 'inventory')
+        expect(f'inventory: the text form prints one row per ticket and branch: {out_t!r}',
+               rc_t == 0 and len(out_t.splitlines()) == 4
+               and any(l.split()[:4] == ['T-0001', 'claimed', 'lane/T-0001-a', 'landed:main(patch)'] for l in out_t.splitlines()))
+        import lanes
+        expect('inventory control: without the patch test the cherry-picked lane is not landed',
+               lanes.landed(str(repo), 'refs/heads/lane/T-0001-a', 'refs/heads/main', pr=False)[0] == 'not landed'
+               and lanes.patch_landed(str(repo), 'refs/heads/main', 'refs/heads/T-0001-old') == {
+                   g('rev-parse', 'T-0001-old').stdout.strip()})
+        print('tickets selftest: inventory cases run')
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -8481,6 +8656,13 @@ def main(argv):
     p = sub.add_parser('blockers', help='list open blocked or ## Deferred tickets in the configured layout')
     p.add_argument('--scope', metavar='PATH',
                    help='keep only tickets whose folder holds PATH or sits under it; never changes root resolution')
+    p = sub.add_parser('inventory', help='read-only: each open or recently closed ticket with its branches, landed '
+                                         'state and newest verifier verdict')
+    p.add_argument('--into', action='append', default=[], metavar='BRANCH',
+                   help='a branch the landed test reads, first that lands wins (default: the default branch, then '
+                        'each integration lane branch)')
+    p.add_argument('--days', type=int, default=7, help='keep done and dropped tickets closed in the last N days')
+    p.add_argument('--json', action='store_true', help='print the rows as a JSON list')
     sub.add_parser('selftest', help='prove every check failure fires')
     a = ap.parse_args(argv)
     cmd = a.cmd or 'check'
@@ -8508,6 +8690,8 @@ def main(argv):
         kw['apply'] = a.apply
     if cmd == 'blockers':
         kw['scope'] = a.scope
+    if cmd == 'inventory':
+        kw.update(into=a.into, days=a.days, as_json=a.json)
     if cmd == 'archive':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs

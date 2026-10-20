@@ -17,7 +17,7 @@
   lanes.py selftest
 
 Design: docs/specs/sdlc-lite/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
-open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, config, host_record. open_lane and close_lane
+open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, patch_landed, config, host_record. open_lane and close_lane
 return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc); finish returns the exit code
 and prints through its say= callable. open_lane takes
 keyword-only path= (the tree; the leaf is its basename), branch= (used verbatim) and check_claim=False (skip the claim
@@ -74,6 +74,8 @@ refs/remotes/pr/1 is never ambiguous.
   2. ancestor: git merge-base --is-ancestor refs/heads/<b> <into> exit 0.
   3. pr merged: gh pr list --state merged --head <b> --json headRefOid reports the tip sha (read only; skipped when
      gh or a remote is absent).
+  3a. patch (tickets.py inventory only, landed(patch=True)): git cherry <into> <b> <merge base> prints no `+`
+     line, so every branch commit has a patch-equivalent in into (patch_landed, shared with orphans).
   4. content: m = git merge-base <into> refs/heads/<b>; git diff --no-renames --name-only m refs/heads/<b>; either
      command failing is `cannot decide`, never an empty list. Landed when every listed path has the same blob at
      the branch and at into, absent on both counting as equal.
@@ -538,8 +540,19 @@ def pr_merged(cwd, branch, tip):
     return bool(data) and any(isinstance(x, dict) and x.get('headRefOid') == tip for x in data)
 
 
-def landed(cwd, ref, into, branch=None, pr=True):
-    """('ancestor' | 'pr merged' | 'content' | 'not landed' | 'cannot decide', detail) for a full ref against into."""
+def patch_landed(top, into, ref):
+    """The set of ref's commits (since its merge base with into) that git cherry finds no patch-equivalent of in
+    into; empty means every commit landed by patch. None when git cherry fails."""
+    mb = out(top, 'merge-base', into, ref)
+    c = git(top, 'cherry', into, ref, *([mb] if mb else []))
+    if c.returncode:
+        return None
+    return {l[2:].strip() for l in c.stdout.splitlines() if l.startswith('+ ')}
+
+
+def landed(cwd, ref, into, branch=None, pr=True, patch=False):
+    """('ancestor' | 'pr merged' | 'patch' | 'content' | 'not landed' | 'cannot decide', detail) for a full ref
+    against into. 'patch' only with patch=True (tickets.py inventory); close and sweep never ask for it."""
     if git(cwd, 'rev-parse', '--verify', '-q', into + '^{commit}').returncode:
         return 'cannot decide', f'into {into} does not resolve'
     tip = out(cwd, 'rev-parse', '--verify', '-q', ref + '^{commit}')
@@ -552,6 +565,8 @@ def landed(cwd, ref, into, branch=None, pr=True):
         return 'cannot decide', f'git merge-base --is-ancestor failed: {err(r)}'
     if pr and branch and pr_merged(cwd, branch, tip):
         return 'pr merged', ''
+    if patch and patch_landed(cwd, into, ref) == set():
+        return 'patch', ''
     m = git(cwd, 'merge-base', into, ref)
     mb = m.stdout.strip()
     d = git(cwd, 'diff', '--no-renames', '--name-only', '-z', mb, ref)  # NO-RENAMES
@@ -1844,9 +1859,7 @@ def orphans(cwd='.'):
     for sha, ref in cands:
         unique = None
         for b in branches:
-            mb = out(top, 'merge-base', b, sha)
-            c = git(top, 'cherry', b, sha, *([mb] if mb else []))
-            plus = {l[2:].strip() for l in c.stdout.splitlines() if l.startswith('+ ')} if c.returncode == 0 else set()
+            plus = patch_landed(top, b, sha) or set()
             unique = plus if unique is None else unique & plus
             if not unique:
                 break
