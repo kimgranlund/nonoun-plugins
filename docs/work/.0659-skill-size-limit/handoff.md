@@ -2,7 +2,7 @@
 id: T-0659
 title: "Every SKILL.md stays under 18,000 characters"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ The numbered steps and the Report heading of the chain skill stay in `skills/cha
 ## Outcome
 - Changed: chain (27.3k to 13.7k), handoff-format (30.3k to 17.4k), fanout (21.7k to 17.5k) and ticket (18.8k to 16.4k) SKILL.md files moved detail verbatim into each skill's `references/` folder, each linked from the step that uses it; `scripts/check-packaging.py` fails any SKILL.md of 18,000 characters or more, naming the file, its size and the limit.
 - Check: criteria 1, 2, 4, 5, 6 exit 0; criterion 3 prints the `FAIL:` line naming `chain/SKILL.md` and `limit 18,000` with `rc=1`, and `rc=0` with the HEAD packaging script.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: b0e41c7774b7
+- Changed: see commits
+- Commits: 517a315 T-0659: drop trailing blank line in fanout main reference; 37e2c74 T-0659: keep every SKILL.md under 18,000 characters
+- Check: 1 no SKILL.md at 18,000 characters or more: pass
+- Check: 2 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 3 negative control: pass
+- Check: 4 check.py and prompt_lint.py exit 0: pass
+- Check: 5 chain references exist and are linked: pass
+- Check: 6 `git diff --check` exits 0: pass
