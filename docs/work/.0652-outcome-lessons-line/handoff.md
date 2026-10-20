@@ -2,7 +2,7 @@
 id: T-0652
 title: "Outcome gains an optional Lessons line"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ An Outcome written without `--lessons` is byte-identical to today's. An empty `-
 - Changed: `tickets.py close` takes a repeatable `--lessons TEXT` on every route; `outcome_section` writes one `- Lessons:` line per value after the Follow-up lines, none without the flag, empty refuses; usage, docstring, `ROUTER_TEMPLATE`, `.sdlc/AGENTS.md` and the ticket skill's Arguments table name it.
 - Check: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0 with the new (T-0652) cases; the Lessons case fails with the write line removed.
 - Check: `python3 plugins/sdlc-lite/scripts/tickets.py close --help 2>&1 | grep -c -- '--lessons'` prints 2; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 304826836604
+- Changed: see commits
+- Commits: 55a1a2e T-0652: Outcome gains an optional Lessons line
+- Check: 1 `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with a new case (two `- Lessons:`...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/tickets.py close --help 2>&1 | grep -c -- '--lessons'` prints ...: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:3268 collapses runs of... -> notes.md
+- Follow-up: note: the selftest covers only the --reason route -> notes.md
