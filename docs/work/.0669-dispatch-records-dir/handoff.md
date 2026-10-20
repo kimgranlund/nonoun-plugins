@@ -2,7 +2,7 @@
 id: T-0669
 title: "Dispatch and skip records go to the records dir, not the work root"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ Built by solo (Opus 5.5), verify: needed.
 - `tickets.py close`: one close path now (the verified and reason routes share it; the handoff's two rename sites were unified before this ticket). New `move_records` moves untracked `*.dispatch.json` and `*.attempt.json` into the records dir before the rename, then every untracked file of an undotted folder left after it, removing the empty folder; one `moved <folder>/<name> to <records dir>` line per move. Tracked files stay; a legacy in-place task dir is left alone.
 - `tickets.py check` warns `warning: <folder>: undotted folder with no handoff.md`.
 - Checks: fanout.py selftest exit 0, tickets.py selftest exit 0 (fails with move_records and the warning neutralized), hook-selftest.sh PASS (new solo Artifacts-dir case), check.py exit 0, git diff --check exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 2bb7a1a320e7
+- Changed: see commits
+- Commits: 0a42ac7 T-0669: Dispatch and skip records go to the records dir, not the work root
+- Check: 1 fanout.py selftest exits 0 with a prep case, red when reverted: pass
+- Check: 2 tickets.py selftest exits 0 with close and check cases, red when reverted: pass
+- Check: 3 hook-selftest.sh exits 0 with a spawn-gate case finding a solo record in the Artifacts dir: pass
+- Check: 4 git diff --check exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:3846-3852 the post-rename... -> notes.md
+- Follow-up: note: the criterion 2 close case puts the dispatch record in the ticket... -> notes.md

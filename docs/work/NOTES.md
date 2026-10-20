@@ -93,3 +93,8 @@
 ## T-0674: prepare refuses a guidance path that is missing everywhere, not only in the lane (2026-10-20)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:77 the header paragraph now breaks after "An" with a short line, so it is ragged next to its neighbours. This is cosmetic only.
+
+## T-0669: Dispatch and skip records go to the records dir, not the work root (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/tickets.py:3846-3852 the post-rename `moved += move_records(d, every=True)` plus `d.rmdir()` is unreachable through close: `d.rename(dot)` removes `d`, so `move_records` returns [] on `not d.is_dir()`. I removed the call in the throwaway worktree and tickets.py selftest still passed. The undotted-leftover move is exercised only by a direct `move_records(left, every=True)` call in the selftest. Close's real effect is the pre-rename move of `*.dispatch.json` / `*.attempt.json`; leftovers created after a close are handled only by check's new warning.
+- note: the criterion 2 close case puts the dispatch record in the ticket folder itself (pre-rename), not in a separate undotted sibling; it satisfies the criterion text and bites, but does not model a leftover sibling.

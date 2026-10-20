@@ -7,9 +7,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | 🟡 claimed |
-| T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | 🟡 claimed |
 
-Closed: 635 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 636 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
