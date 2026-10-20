@@ -27,3 +27,31 @@ None.
 
 ## Acceptance criteria
 1. The Outcome holds the design: mechanism, files, and the metric to measure.
+
+## Outcome
+
+Design note, 2026-10-19. No code in this ticket; the build is a follow-up ticket.
+
+### Where the waste comes from
+- The wake channel already exists. On Claude Code a background Agent or background Bash re-invokes the session when it ends (`plugins/sdlc-lite/agents/conductor.md:40`), and `conductor.md:79` already forbids timed status polling. A headless driver (`run-plan`, fanout under `SDLC_HEADLESS=1`) blocks in the foreground and has no timer either.
+- The gap is the layer on top. `plan-loop` still sells "a status loop" in its description, `skills/plan-loop/references/loop-rules.md:16` uses `/loop 20m a status update ...` as its example, and `plan_check.py check_loop` (`plugins/sdlc-lite/scripts/plan_check.py:244`) passes any fixed-interval status prompt. maison's 10-minute check is that pattern: each fire re-rendered an unchanged board.
+- No new event source is needed. `messages.py wait` is itself a 1 to 5 second poller capped at 600 s, and `supervisor.py watch` wakes a headless host for mailbox mail; neither is a conductor wake, and adding a third poller would move the waste, not remove it.
+
+### Mechanism (smallest change)
+1. Guard: `check_loop` gains a FAIL `status-polls-running-work` when the loop has a fixed interval and the prompt reads as a status or driver loop (`status|board|progress|moved|waiting on|land|dispatch`). The message says: end the turn, the role's completion notification wakes you; for a plan, use the driver prompt below.
+2. Built-in driver prompt: `plan-loop` and `run-plan` name one interactive driver turn, in words: "run `plan_done.py <plan>`; exit 1: dispatch the first open item in the background, then end the turn; exit 0, 2 or 4: stop and report". It has no interval: the completion notification is the only wake. `/board` prints once per wake, after `dispatch.py record`, not on a clock.
+3. State-change no-op (optional, only if a dynamic loop must stay, for example to watch lanes another session owns): `board.py --changed` exits 0 when any row differs from the per-root state file `board.py` already keeps (`board.py:68`, `state_path` at `board.py:442`) and 3 when nothing changed, printing nothing. A fire that gets 3 ends in one tool call with no report.
+
+### Files the build ticket touches
+- `plugins/sdlc-lite/scripts/plan_check.py` (`check_loop`, plus a selftest case and its negative control)
+- `plugins/sdlc-lite/skills/plan-loop/SKILL.md` and `references/loop-rules.md` (drop the status-loop example, route "watch a running wave" to the driver prompt)
+- `plugins/sdlc-lite/skills/run-plan/SKILL.md` (the interactive driver turn)
+- `plugins/sdlc-lite/scripts/board.py` (`--changed`, only with item 3)
+- `plugins/sdlc-lite/scripts/traces/detectors/cost.py` (new finding `idle-wakes`, next to `polling-loop`)
+- Unchanged: `supervisor.py`, `messages.py`, `conductor.md:79` (the rule already in force).
+
+### Metric
+- Idle wakes per wave: conductor turns started by a loop or cron fire whose `board.py --summary` line equals the previous turn's and that make no dispatch, record, land or close call. The `idle-wakes` detector counts them per wave from the conductor transcript.
+- Turns per wave: all conductor turns from the first dispatch to the last close in the wave.
+- Before: maison's 0597 wave, measured by running the detector over its conductor transcript (the lesson says "dozens"; no exact count is recorded). After: 0 idle wakes per wave, and turns per wave at most dispatches plus completions plus one close-out turn.
+- Negative control: `/loop 10m status update since the last run; stop when all lanes landed` piped to `plan_check.py loop` must FAIL with `status-polls-running-work`; the same prompt with no interval and a non-status loop (`/loop 1h rotate logs; stop when ...`) must still pass.
