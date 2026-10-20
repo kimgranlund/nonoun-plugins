@@ -29,3 +29,6 @@ None.
 1. `grep -rln "final message on stdin" plugins/sdlc-lite/skills` prints nothing.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and `python3 scripts/check-packaging.py` exits 0.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+Reworded the `record` sentence in the 13 named files (12 skills and `skills/plan/references/steps.md`) to the T-0667 wording: `record` with the figures from the completion notice, nothing on stdin, stdin only when the role's transcript is missing; dropped `--transcript <sub-agent transcript jsonl>` from those command lines. `check.py` item 41 (T-0334) required `--transcript` in every skill `record` call, which contradicts T-0667, so it now forbids it (negative controls swapped); this is the one script edit, forced by criterion 2. Criteria 1 to 3 pass; role generation is unchanged.
