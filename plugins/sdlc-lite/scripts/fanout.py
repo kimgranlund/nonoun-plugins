@@ -969,13 +969,21 @@ def driver_for(ctx, t, kind='full'):
     return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
 
 
-def close_reason(ctx, t, gate=None, has_filer=True):
+def close_reason(ctx, t, gate=None, has_filer=True, folder=None):
     """The `tickets.py close --reason` text for a ticket a solo agent delivered, or for any other lane with has_filer
     False (the full chain lane runs no filer by default, lean records); else None, and land closes a lane with a filer
     result through `close --filer`. Land checks the lane's verdict before it merges (branch_verdict), so the close
     by reason carries the merge's gate class (T-0481) into the Outcome verdict: gate adds `; gate: <class>`. The
-    verifier's `## Notes` lines stay out of the reason: close --reason files them to notes.md (T-0651)."""
+    verifier's `## Notes` lines stay out of the reason: close --reason files them to notes.md (T-0651).
+    folder: the ticket's folder; a solo lane recorded in its skips.md wins over ctx['kinds'] (T-0670), so the reason
+    never contradicts the Outcome header's lane, which close reads from the same record."""
     kind, tier = ctx['kinds'].get(t.id, ('', None))
+    if folder is not None and kind != 'solo':
+        sk = tickets.skips_path(pathlib.Path(folder))
+        text = sk.read_text(encoding='utf-8') if sk.is_file() else ''
+        if tickets.last_lane(text) == 'solo':
+            lv = re.search(r'level (L\d)', text)
+            kind, tier = 'solo', tier or (lv.group(1) if lv else None)
     if kind != 'solo':
         if has_filer:
             return None
@@ -1750,8 +1758,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         rec = order.records_dir(folder)
         has_filer = any(rec.glob('filer-L*.md')) or any(folder.glob('filer-L*.md'))
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
-        if close_reason(ctx, t, has_filer=has_filer):
-            argv += ['--reason', close_reason(ctx, t, cls, has_filer)]
+        if close_reason(ctx, t, has_filer=has_filer, folder=folder):
+            argv += ['--reason', close_reason(ctx, t, cls, has_filer, folder)]
         elif has_filer:
             argv.append('--filer')
         if ctx['rewrite_refs']:
@@ -4082,6 +4090,16 @@ def selftest():
         expect('case 15 close: a chain ticket with no filer closes with the lean-records reason (bridge until T-0543)',
                (close_reason(fake, Ticket('T-3', 'x', 't'), 'full', False) or '').startswith(
                    'delivered by the full chain lane; no filer by default (lean records); gate: full'))
+        k670 = tmp / 'k670'
+        k670.mkdir()
+        (k670 / 'skips.md').write_text('# Skips\n\n## Lane\n- lane: solo; point: p; reasons: sub-agent lane: level L2 ran as '
+                                       'one solo sub-agent\n', encoding='utf-8')
+        got670 = close_reason({'kinds': {}}, Ticket('T-9', 'x', 't'), folder=k670) or ''
+        expect(f'case 15 T-0670: a ticket absent from kinds with a solo lane record gets a solo agent reason, got {got670!r}',
+               'solo agent (level L2)' in got670 and 'full chain' not in got670)
+        expect('case 15 T-0670 negative control: with no lane record the reason stays the full chain text',
+               'full chain lane' in (close_reason({'kinds': {}}, Ticket('T-9', 'x', 't'), has_filer=False,
+                                                  folder=tmp / 'no-such-dir') or ''))
         expect('case 15 close: verifier notes stay out of the close reason (close --reason files them, T-0651)',
                'verifier notes:' not in close_reason(fake, Ticket('T-2', 'x', 't'), 'full'))
         # the solo verifier gate reads only a result that is new since the driver started

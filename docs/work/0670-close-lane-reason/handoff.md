@@ -34,3 +34,9 @@ A reason with no lane wording (for example `done elsewhere`) closes as today. A 
 1. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with a new case: a ticket whose `skips.md` records `- lane: solo` closed with `--reason "delivered by the full chain lane; x"` exits 1 naming `solo` and `full`, and writes nothing; the same with `--reason "done elsewhere"` closes. The refusal case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a case-15 assertion that a ticket absent from `kinds` but with a solo lane record gets a `solo agent` reason.
 3. `git diff --check` exits 0.
+
+## Outcome
+
+- `tickets.py close --reason` refuses (nothing written) when the reason says `delivered by the full chain lane` or `delivered by the solo agent` and the lane recorded in skips.md differs; no lane wording or no record closes as before. New `reason_lane` helper, selftest case (k4).
+- `fanout.py close_reason` takes the ticket folder and reads a solo lane from its skips.md before `ctx['kinds']`; case 15 gains two assertions.
+- Checks: tickets.py selftest exit 0 (case (k4) fails with the refusal disabled), fanout.py selftest exit 0, check.py exit 0, `git diff --check` exit 0.
