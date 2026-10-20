@@ -29,3 +29,6 @@ The T-0655 refusal for real drift is unchanged.
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case, and the new case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+`lane_guidance` in `plugins/sdlc-lite/scripts/dispatch.py` now appends to `missing` only when the path is held by the main checkout or the lane's `into` branch; a path held nowhere no longer refuses. Docstring and the `guidance` header paragraph updated. New selftest case: a handoff naming `skills/nowhere/SKILL.md` prepares with exit 0 and no refusal line. Checks: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (the new case FAILs with the change reverted), `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check da4d03e3` exit 0.
