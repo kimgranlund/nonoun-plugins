@@ -2,7 +2,7 @@
 id: T-0645
 title: "dispatch.py advance runs record, prune, next and prepare in one call"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,15 @@ Source: GitHub issue #9, ui-kit-neue audit 2026-10-20.
 - Selftest: three `T-0645 advance` cases (verifier fail, pass, invalid); all three fail with the `advance` subcommand removed.
 - Docs: `agents/conductor.md` steps 3 and 4, `skills/chain/SKILL.md` (dispatch paragraph, section 4 action list, item 4.4), `skills/fanout/SKILL.md` (solo verifier, full lane); regenerated `adapters/codex/agents/sdlc-conductor-l1.toml`.
 - Checks: `dispatch.py selftest` exit 0; `dispatch.py advance --help` exit 0; the criterion 3 grep prints 2, 3, 2; `steps.py selftest` exit 0; `git diff --check` exit 0; `scripts/check-packaging.py` exit 0; `check.py` ok.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 92b2df57cd83
+- Changed: see commits
+- Commits: 71508be T-0645: dispatch.py advance runs record, prune, next and prepare in one call
+- Check: 1 selftest with new advance cases: pass
+- Check: 2 `advance --help`: pass
+- Check: 3 doc grep: pass
+- Check: 4 steps selftest: pass
+- Check: 5 diff check and packaging: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py advance: a solo dispatch... -> notes.md
