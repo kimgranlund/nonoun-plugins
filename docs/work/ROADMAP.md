@@ -6,13 +6,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0645 | [0645-dispatch-advance](0645-dispatch-advance/handoff.md) | dispatch.py advance runs record, prune, next and prepare in one call | feature | L2 | P1 | none | ⏳ proposed |
+| T-0645 | [0645-dispatch-advance](0645-dispatch-advance/handoff.md) | dispatch.py advance runs record, prune, next and prepare in one call | feature | L2 | P1 | none | 🟡 claimed |
 | T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | ⏳ proposed |
-| T-0647 | [0647-plan-read-first-skills](0647-plan-read-first-skills/handoff.md) | Plan steps carry a Read first line from AGENTS.md skill routing | feature | L2 | P1 | none | ⏳ proposed |
+| T-0647 | [0647-plan-read-first-skills](0647-plan-read-first-skills/handoff.md) | Plan steps carry a Read first line from AGENTS.md skill routing | feature | L2 | P1 | none | 🟡 claimed |
 | T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | ⏳ proposed |
-| T-0649 | [0649-ui-review-verdict](0649-ui-review-verdict/handoff.md) | ui-designer review writes a verdict, blocking flags and rule provenance | feature | L2 | P1 | none | ⏳ proposed |
+| T-0649 | [0649-ui-review-verdict](0649-ui-review-verdict/handoff.md) | ui-designer review writes a verdict, blocking flags and rule provenance | feature | L2 | P1 | none | 🟡 claimed |
 | T-0650 | [0650-guidance-gap-rollup](0650-guidance-gap-rollup/handoff.md) | Aggregate recurring Rule gap findings into a guidance ticket proposal | feature | L2 | P1 | T-0649 | ⏳ proposed |
-| T-0651 | [0651-reason-close-followups](0651-reason-close-followups/handoff.md) | A reason close routes follow-ups like a verified close | bug | L2 | P1 | none | ⏳ proposed |
+| T-0651 | [0651-reason-close-followups](0651-reason-close-followups/handoff.md) | A reason close routes follow-ups like a verified close | bug | L2 | P1 | none | 🟡 claimed |
 | T-0652 | [0652-outcome-lessons-line](0652-outcome-lessons-line/handoff.md) | Outcome gains an optional Lessons line | feature | L1 | P1 | none | ⏳ proposed |
 | T-0653 | [0653-roadmap-open-followups](0653-roadmap-open-followups/handoff.md) | Roadmap renders an Open follow-ups section from NOTES.md | feature | L2 | P1 | none | ⏳ proposed |
 | T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | ⏳ proposed |
