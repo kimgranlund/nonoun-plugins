@@ -32,3 +32,9 @@ A dirty source path outside the ticket folder and the ticket root still makes th
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/redck.py selftest` exits 0 with a new case: a fixture with `work_root: docs/work` in `.sdlc/config`, ticket folder `docs/work/0001-x/`, and a step handoff with a (red) criterion in `.sdlc/runtime/tasks/0001-x/step-1/`; after editing `docs/work/0001-x/handoff.md` and adding `docs/work/0001-x/skips.md`, `redck.py record` on the step records phase `pre-edit` with `dirty` empty, and with `src.txt` also edited it records `retrospective` with `dirty == ['src.txt']`. The pre-edit half fails with the change reverted (observed negative control, recorded in the Outcome).
 2. `git diff --check` exits 0.
+
+## Outcome
+- `dirty_paths` in `plugins/sdlc-lite/scripts/redck.py` now also leaves out the ticket folder of the handoff (`order.task_dir`, `work_root` included); the `record` docstring and `dirty_paths` docstring name it.
+- New selftest case (T-0658): `work_root: docs/work` fixture; ticket-folder `handoff.md` edit plus new `skips.md` records `pre-edit` with `dirty == []`; adding a `src.txt` edit records `retrospective` with `dirty == ['src.txt']`.
+- Negative control: with the `ticket` prefix removed from the filter the new case fails (`redck selftest: FAIL`, only that case); restored, `redck.py selftest` exits 0.
+- `git diff --check` exit 0.

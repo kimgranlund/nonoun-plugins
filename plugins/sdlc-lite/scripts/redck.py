@@ -10,7 +10,7 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
             key an audit matches on, T-0425), base_sha (the dir's base-sha, else HEAD), criterion (the exact line), span, exit,
             result (red, green, or timeout), phase, dirty, at_sha (HEAD at record time, None outside git). phase is
             read against the working tree at HEAD, not base_sha (T-0473): pre-edit only when no source path differs
-            from HEAD (git diff against HEAD plus untracked files, paths under .sdlc/ and the handoff dir left out),
+            from HEAD (git diff against HEAD plus untracked files, paths under .sdlc/, the handoff dir and its ticket folder left out, T-0658),
             so a resumed builder on a branch that already holds earlier commits records pre-edit; otherwise
             retrospective, with the changed paths in dirty. The phase is derived from the tree, never claimed by
             the caller. Test prelude (T-0395): a dirty path that the
@@ -121,7 +121,8 @@ def git_lines(top, *args):
 
 def dirty_paths(top, d):
     """Paths that differ from HEAD (tracked diff plus untracked, T-0473: the working tree, not the base, so a
-    resumed builder on a branch holding earlier commits sees a clean tree), .sdlc/ and the handoff dir left out;
+    resumed builder on a branch holding earlier commits sees a clean tree), .sdlc/, the handoff dir and its ticket
+    folder (order.task_dir, work_root included; T-0658) left out;
     None when git cannot say. Splitting off the declared test prelude is split_prelude's job."""
     if not top:
         return None
@@ -129,10 +130,13 @@ def dirty_paths(top, d):
     untracked = git_lines(top, 'ls-files', '--others', '--exclude-standard')
     if tracked is None or untracked is None:
         return None
-    here = os.path.relpath(os.path.realpath(d), os.path.realpath(top)).replace(os.sep, '/') + '/'
+    rel = lambda x: os.path.relpath(os.path.realpath(x), os.path.realpath(top)).replace(os.sep, '/') + '/'
+    here = rel(d)
+    # T-0658: a step handoff lives in the records dir; its ticket folder (handoff.md, skips.md) is a record, not source
+    ticket = rel(order.task_dir(d) or d)
     # T-0486: a root-level `<role>.out` or `<role>.err` is a launcher's stdout/stderr capture, not an edit
     untracked = [p for p in untracked if not (p.count('/') == 0 and p.endswith(('.out', '.err')))]
-    return sorted(p for p in set(tracked + untracked) if not p.startswith('.sdlc/') and not p.startswith(here))
+    return sorted(p for p in set(tracked + untracked) if not p.startswith(('.sdlc/', here, ticket)))
 
 
 def split_prelude(top, handoff, dirty):
@@ -569,6 +573,30 @@ def selftest():
               rc == 0 and e[0]['phase'] == 'pre-edit' and e[0]['dirty'] == [])
         (repo / 'builder.out').unlink(); (repo / 'builder.err').unlink()
         clean()
+
+        # T-0658: with work_root, the ticket folder's handoff.md and skips.md are records, not source edits
+        wr = pathlib.Path(tmp).resolve() / 'wrrepo'
+        (wr / 'docs' / 'work' / '0001-x').mkdir(parents=True)
+        (wr / '.sdlc').mkdir()
+        (wr / '.sdlc' / 'config').write_text('work_root: docs/work\n')
+        (wr / 'docs' / 'work' / '0001-x' / 'handoff.md').write_text(ticket(red), encoding='utf-8')
+        sd = wr / '.sdlc' / 'runtime' / 'tasks' / '0001-x' / 'step-1'
+        sd.mkdir(parents=True)
+        (sd / 'handoff.md').write_text(ticket(red), encoding='utf-8')
+        (wr / 'src.txt').write_text('s\n')
+        git(wr, 'init', '-q')
+        git(wr, 'config', 'user.email', 't@t')
+        git(wr, 'config', 'user.name', 't')
+        git(wr, 'add', '-A')
+        git(wr, 'commit', '-qm', 'base')
+        (wr / 'docs' / 'work' / '0001-x' / 'handoff.md').write_text(ticket(red) + 'edited\n', encoding='utf-8')
+        (wr / 'docs' / 'work' / '0001-x' / 'skips.md').write_text('skip\n')
+        run_main(['record', str(sd), '--attempt-id', 'A1'])
+        (wr / 'src.txt').write_text('edited\n')
+        run_main(['record', str(sd), '--attempt-id', 'A2'])
+        e = entries(sd)
+        check('T-0658: work_root ticket folder edits (handoff.md, skips.md) leave the step control pre-edit; with src.txt also edited it is retrospective with only src.txt dirty',
+              len(e) == 2 and e[0]['phase'] == 'pre-edit' and e[0]['dirty'] == [] and e[1]['phase'] == 'retrospective' and e[1]['dirty'] == ['src.txt'])
 
         # T-0425: the control keys to its own criterion and span, not to the whole handoff hash
         (repo / 'out.txt').unlink(missing_ok=True)
