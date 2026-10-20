@@ -2,7 +2,7 @@
 id: T-0668
 title: "ui-designer reads SKILL.md first and opens references by cue"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,13 @@ Added the repo-skill sentence to `## Method` in `plugins/sdlc-lite/agents/ui-des
 - `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite` exit 0; with the sentence altered it reports `agents/ui-designer.md missing "open a reference only when its cue"`.
 - `claude_roles.py generate --check` exit 0, `codex_roles.py generate --check` exit 0.
 - `git diff --check` exit 0, `python3 scripts/check-packaging.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: fix-now: plugins/sdlc-lite/scripts/check.py:263-264 docstring item 61 still lists the role's required phrases ending at `only mode that edits`. It does not name the newly pinned `open a reference only when its cue`, so the record no longer matches UI_DESIGNER_PHRASES at :761.) · verifier: verifier-L2 (opus) · base: 480b57e2ca84
+- Changed: see commits
+- Commits: 4c40f7a T-0668: ui-designer reads SKILL.md first and opens references by cue
+- Check: 1 `grep -c 'open a reference only when its cue'` prints 1 for ui-designer.md and ui-designer-L1.md: pass
+- Check: 2 `check.py plugins/sdlc-lite` exits 0, and with the sentence removed it reports the missing phrase: pass
+- Check: 3 `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0: pass
+- Check: 4 `git diff --check` and `check-packaging.py` exit 0: pass
