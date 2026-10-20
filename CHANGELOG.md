@@ -2,6 +2,14 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.28.1] - 2026-10-20
+
+Report: [docs/reports/2026-10-20-release-0-28-1.md](docs/reports/2026-10-20-release-0-28-1.md).
+
+### Fixed
+
+- `tickets.py close` no longer drops a follow-up as a duplicate because it starts with the same file path as a filed ticket: the slug key skips leading path-like words, and a same-title follow-up is still a duplicate (T-0675, reported by agent-ui).
+
 ## [0.28.0] - 2026-10-20
 
 Report: [docs/reports/2026-10-20-release-0-28-0.md](docs/reports/2026-10-20-release-0-28-0.md). All 23 open GitHub issues (#9 to #31, a context-routing audit of a ui-kit-neue session) are addressed.
