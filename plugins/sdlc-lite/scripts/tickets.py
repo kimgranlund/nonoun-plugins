@@ -63,6 +63,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Files under <root>/runtime/ never cite. A file matching a glob on a `citation_skip: a, b` line of
             <root>/config (the lines accumulate) is skipped too: the output adds `; citation scan skipped
             (citation_skip): <files>` and --dry-run prints `skip-cite <file>` (T-0535).
+            A citing file under a frozen path (the `## Frozen paths` list of <top>/docs/layout.md, plus the
+            globs on `rewrite_skip: a, b` lines of <root>/config) is never rewritten and does not refuse:
+            close, archive, number and migrate-layout list it as `kept frozen: <file>` (T-0577).
             With --filer and no filer-L*.md here, close refuses and, when another git worktree's same-relative
             <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
             this tree, then rerun close.
@@ -403,6 +406,7 @@ MD_LINK_RE = re.compile(r'\]\(\s*<?([^)\s>]+)>?[^)]*\)')
 LAYOUT_RE = roots.LAYOUT_RE
 AREAS_RE = re.compile(r'\s*areas\s*:\s*([^#]*?)\s*(?:#.*)?')
 CITATION_SKIP_RE = re.compile(r'\s*citation_skip\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0535: comma-separated globs
+REWRITE_SKIP_RE = re.compile(r'\s*rewrite_skip\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0577: comma-separated globs
 TOP_LEVEL_ALLOW_RE = re.compile(r'\s*top_level_allow\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0544: comma-separated globs
 SUCCESSOR_RE = re.compile(r'(?:([A-Za-z0-9][A-Za-z0-9._-]*):)?(T-\d{4})')  # T-0528: T-NNNN or <repo>:T-NNNN
 SUBJECT_ID_RE = re.compile(r'(T-\d{4}):')  # T-0528: a commit subject that starts with a ticket id
@@ -538,6 +542,40 @@ def config_citation_skip(root):
         if mo:
             out += [g.strip() for g in mo.group(1).split(',') if g.strip() and g.strip() not in out]
     return out
+
+
+def config_rewrite_skip(root):
+    """The globs on every `rewrite_skip: a, b` line of <root>/config, collected as config_citation_skip does."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        mo = REWRITE_SKIP_RE.fullmatch(line)
+        if mo:
+            out += [g.strip() for g in mo.group(1).split(',') if g.strip() and g.strip() not in out]
+    return out
+
+
+def frozen_globs(top, base):
+    """The frozen path patterns a --rewrite-refs never writes into (T-0577): the `## Frozen paths` list of
+    <top>/docs/layout.md, read with onboard.parse_layout as onboard does, then the rewrite_skip: globs of
+    <base>/config. A missing layout gives only the config globs; a malformed one raises Fail naming its line."""
+    layout = pathlib.Path(top) / onboard.LAYOUT_PATH
+    globs = []
+    if layout.is_file():
+        try:
+            globs = list(onboard.parse_layout(layout).frozen)
+        except onboard.LayoutError as e:
+            raise Fail(f'cannot read the frozen paths: {e}; nothing written')
+    return globs + [g for g in config_rewrite_skip(pathlib.Path(base)) if g not in globs]
+
+
+def is_frozen(globs, f):
+    """True when toplevel-relative f is under a frozen pattern (onboard's rule: a folder pattern ends in /)."""
+    return onboard._frozen(globs, f)
 
 
 def tickets_cmd(root):
@@ -1089,7 +1127,7 @@ def literal_re(old):
     return re.compile(r'(?<![^\s\'"`()<>\[\]])' + re.escape(old) + r'(?![A-Za-z0-9_-])')
 
 
-def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
+def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None, frozen=None):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
     finds candidate files; each is kept only when it holds a reference: the literal old (the original
@@ -1111,7 +1149,9 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
     Files under <base>/runtime/ (the runtime records, never a citation; base is scan when given, else root) are always
     left out, and so are files matching a citation_skip: glob of <base>/config (config_citation_skip, fnmatch on the
     toplevel-relative path, T-0535). Under a work root the generated router blocks (router_files of base) are left
-    out of the text checked, since close regenerates them (T-0625). skipped, a list, collects the citation_skip files that held a reference."""
+    out of the text checked, since close regenerates them (T-0625). skipped, a list, collects the citation_skip files that held a reference.
+    frozen, a list, collects the files under a frozen path (frozen_globs of toplevel and base) that held a
+    reference and leaves them out of files, so --rewrite-refs never writes them (T-0577)."""
     try:
         here = root.resolve()
         anchor = here
@@ -1146,6 +1186,7 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
         cbase = (scan if scan is not None else root).resolve()
         runtime = (cbase.relative_to(top) / 'runtime').as_posix() + '/'
         globs = config_citation_skip(cbase)
+        cold = frozen_globs(top, cbase) if frozen is not None else []
         # under a work root the generated router lists (<work_root>/<slug>) and close regenerates it (T-0625)
         routers = ({p.resolve().relative_to(top).as_posix() for _l, p, k in router_files(cbase) if k == 'agents'}
                    if work_dir(cbase) is not None else set())
@@ -1165,7 +1206,9 @@ def outside_refs(root, slug, own=False, roadmap=None, scan=None, skipped=None):
                 if fb.status == 'block':
                     text = text.replace(fb.block.text, '', 1)
             if lit.search(text) or ref_tokens(text, top, f, old):
-                if not marked:
+                if not marked and is_frozen(cold, f):
+                    frozen.append(f)
+                elif not marked:
                     files.append(f)
                 elif skipped is not None:
                     skipped.append(f)
@@ -3379,9 +3422,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if docs_base:
             add_skip_line(skips_f, f'- skip: verifier; step: all; reason: {docs_base[1]} diff against {docs_base[0][:12]} '
                                    f'(verify_scope.py); decided: tickets.py close')
-    cite_skipped = []
+    cite_skipped, kept = [], []
     top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=layout_paths(root).roadmap, scan=root,
-                                                skipped=cite_skipped) if archive else (None, '', '', []))
+                                                skipped=cite_skipped, frozen=kept) if archive else (None, '', '', []))
     if refs and not rewrite_refs and not force and not keep_refs:
         via_force = (f' or --keep-refs (close, leave them and record them in the Outcome)'
                      + ('' if ack_warnings is not None else ' or --force (close anyway, leaving them)'))
@@ -3390,6 +3433,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
              + f'rerun with --rewrite-refs (rewrite them to {new_ref}){via_force}; nothing written')
     rewrite = refs if rewrite_refs else []
     cite_note = f'; citation scan skipped (citation_skip): {", ".join(cite_skipped)}' if cite_skipped else ''
+    cite_note += ''.join(f'; kept frozen: {f}' for f in kept)
 
     def rewrite_now():
         rewrite_files(top, rewrite, old_ref, new_ref)
@@ -3605,6 +3649,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + [f'rewrite {f}' for f in rewrite]
                          + ([f'keep {f}' for f in refs] if keep_refs else [])
                          + [f'skip-cite {f}' for f in cite_skipped]
+                         + [f'kept frozen: {f}' for f in kept]
                          + [f'expect {digest}'])
 
     note_docs_waiver()
@@ -3749,8 +3794,11 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     taken = [f'.{n}' for n in names if (td / f'.{n}').exists()]
     if taken:
         raise Fail(f'archive: {", ".join(taken)} already exist(s); nothing written')
+    kept = []
     hits = [(name, top, old, new, files) for name in names
-            for top, old, new, files in [outside_refs(td, name, roadmap=layout_paths(root).roadmap, scan=root)] if files]
+            for top, old, new, files in [outside_refs(td, name, roadmap=layout_paths(root).roadmap, scan=root,
+                                                      frozen=kept)] if files]
+    kept = [f'kept frozen: {f}' for f in sorted(set(kept))]
     if hits and not rewrite_refs and not force:
         raise Fail('archive would rename these folders, but other files reference them:\n'
                    + ''.join(f'{old}:\n' + ''.join(f'  {f}\n' for f in files) for _, _, old, _, files in hits)
@@ -3760,7 +3808,7 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     if dry_run:
         if not names:
             return 'nothing to archive'
-        return '\n'.join([f'{n} -> .{n}' for n in names] + [f'rewrite {f}' for f in rewrite])
+        return '\n'.join([f'{n} -> .{n}' for n in names] + [f'rewrite {f}' for f in rewrite] + kept)
     if not names:
         return 'nothing to archive'
     if rewrite_refs:
@@ -3772,7 +3820,8 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     if flag:
         ensure_numbered_config(root)
     rewrote = f'; rewrote refs in {", ".join(rewrite)}' if rewrite else ''
-    return f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names) + rewrote
+    return '\n'.join([f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names) + rewrote]
+                     + kept)
 
 
 def cmd_migrate_size(root, apply=False):
@@ -3826,16 +3875,17 @@ def cmd_number(root, dry_run=False):
     taken = [new for _, new in moves if (td / new).exists() or (td / f'.{new}').exists()]
     if taken:
         raise Fail(f'number: {", ".join(taken)} already exist(s); nothing written')
-    hits = []
+    hits, kept = [], []
     for n, new in moves:
-        top, old, _, files = outside_refs(td, n, own=True, roadmap=layout_paths(root).roadmap, scan=root)
+        top, old, _, files = outside_refs(td, n, own=True, roadmap=layout_paths(root).roadmap, scan=root, frozen=kept)
         if files:
             hits.append((n, new, top, old, old.rsplit('/', 1)[0] + '/' + new if '/' in old else new, files))
     rewrite = sorted({f for *_, files in hits for f in files})
+    kept = [f'kept frozen: {f}' for f in sorted(set(kept))]
     if dry_run:
         if not moves:
             return 'nothing to number'
-        return '\n'.join([f'{n} -> {new}' for n, new in moves] + [f'rewrite {f}' for f in rewrite])
+        return '\n'.join([f'{n} -> {new}' for n, new in moves] + [f'rewrite {f}' for f in rewrite] + kept)
     for n, new, top, old, dest, files in hits:
         rewrite_files(top, files, old, dest)
     for n, new in moves:
@@ -3845,8 +3895,8 @@ def cmd_number(root, dry_run=False):
     if not moves:
         return 'nothing to number; numbered mode on'
     rewrote = f'; rewrote refs in {len(rewrite)} file(s)' if rewrite else ''
-    return (f'numbered {len(moves)} folder(s){rewrote}; run `archive --rewrite-refs` to hide done and dropped '
-            'ones')
+    return '\n'.join([f'numbered {len(moves)} folder(s){rewrote}; run `archive --rewrite-refs` to hide done and '
+                      'dropped ones'] + kept)
 
 
 def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
@@ -3930,7 +3980,7 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
             raise Fail(f'migrate-layout: cite scan failed (git grep): {p.stderr.strip()}; nothing written')
         cands.update(f for f in p.stdout.split('\0') if f)
     cands.discard(old_roadmap)
-    rewrites, keeps, unreadable = {}, [], []
+    rewrites, keeps, unreadable, cold, kept = {}, [], [], frozen_globs(top, root), []
     for f in sorted(cands):
         try:
             text = (top / f).read_bytes().decode('utf-8', 'surrogateescape')
@@ -3942,6 +3992,8 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
             continue
         if f.startswith('docs/reports/'):
             keeps.append(f)
+        elif is_frozen(cold, f):
+            kept.append(f)
         else:
             rewrites[f] = new
     if unreadable:
@@ -3954,6 +4006,7 @@ def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
     lines = ([f'move {s} -> {d}' for s, d in moves]
              + [f'rewrite {f}' if f in rewrites else f'keep {f} (dated record under docs/reports/)'
                 for f in sorted(list(rewrites) + keeps)]
+             + [f'kept frozen: {f}' for f in kept]
              + [f'config {x}' for x in config])
     if dry_run:
         return '\n'.join(lines)
@@ -5711,6 +5764,24 @@ def selftest():
                    and (root / '.0002-beta').is_dir()
                    and spec.read_text(encoding='utf-8') == 'see .sdlc/.0001-alpha/handoff.md\n'
                    and run(root, 'check')[0] == 0)
+
+            # T-0577: a citing file under a docs/layout.md frozen path is kept as it is and listed
+            cite = 'see .sdlc/0001-alpha/handoff.md\n'
+            root, adr = arch_ref(where='docs/adr/0001.md', text=cite, git=False)
+            spec = root.parent / 'docs' / 'spec.md'
+            spec.write_text(cite, encoding='utf-8')
+            (root.parent / 'docs' / 'layout.md').write_text('## Homes\n\n## Frozen paths\n\n- `docs/adr/**`\n',
+                                                            encoding='utf-8')
+            rgit(root.parent, 'init', '-q')
+            rgit(root.parent, 'add', '-A')
+            rgit(root.parent, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                 'commit', '--no-verify', '-qm', 'x')
+            rc, out, err = run(root, 'archive', rewrite_refs=True)
+            expect(f'archive refs: --rewrite-refs keeps a frozen file and rewrites the other: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'kept frozen: docs/adr/0001.md' in out.splitlines()
+                   and 'rewrote refs in docs/spec.md' in out and 'docs/adr' not in out.splitlines()[0]
+                   and adr.read_text(encoding='utf-8') == cite
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/.0001-alpha/handoff.md\n')
 
             root, spec = arch_ref()
             rc, out, err = run(root, 'archive', force=True)

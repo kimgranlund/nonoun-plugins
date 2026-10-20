@@ -223,7 +223,8 @@ def _parse_layout_text(text, path, skip=frozenset(), docs=True):
                     continue
                 if 'legacy-form' in skip and section in (LEGACY, GRANDFATHERED):
                     continue
-                raise LayoutError(path, n, 'list line under %r is not one `<glob>`' % section)
+                raise LayoutError(path, n, 'list line under %r is not one `<glob>`: write one backticked glob per '
+                                           'line, such as - `docs/adr/**`' % section)
             {FROZEN: frozen, LEGACY: legacy, GRANDFATHERED: grandfathered}[section].append(m.group(1))
     if docs:
         for head in SECTIONS:
@@ -1188,6 +1189,8 @@ def gate_layout_parsing(parse):
             except LayoutError as e:
                 expect(e.line == line, '%s: error at line %s, expected %d' % (label, e.line, line))
                 expect(e.path == path, '%s: error names %r, expected %r' % (label, e.path, path))
+                if label == 'frozen without backticks':  # T-0577: the refusal names the expected form
+                    expect('one backticked glob per line' in e.reason, '%s: reason %r' % (label, e.reason))
                 continue
             raise GateFailure('%s: parsed without an error' % label)
 
