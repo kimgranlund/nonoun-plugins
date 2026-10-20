@@ -53,7 +53,7 @@ Task folders, the roadmap, the notes, `evals/`, `proposals/`, and `fleet.json` l
 
 A task folder that already holds records (runs.jsonl, an attempt, a role result, or a step dir with one) keeps them in place; `${CLAUDE_PLUGIN_ROOT}/scripts/order.py records-dir <task dir>` prints the records dir for any task.
 
-A role dispatched as a sub-agent on Claude (`dispatch.py prepare <role> <level> <handoff.md>`, an `Agent` spawn with the printed `name`, `model`, and `run_in_background`, then `dispatch.py record <dispatch_file>`) writes `<role>-<level>.md` in the records dir of the handoff it is given; on Codex, `scripts/run.sh <role> <level> <handoff.md>` writes the same `<role>-<level>.md` and `.log`. `prepare` also writes `<role>-<level>.attempt.json` and `<role>-<level>.dispatch.json` (the brief and paths the spawn gate matches), and `record` writes the header line, validates the result, and appends the `runs.jsonl` line with `transport: subagent`. A rerun of the same role and level writes `<role>-<level>-<k>.md` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (both writers record `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
+A role dispatched as a sub-agent on Claude (`dispatch.py prepare <role> <level> <handoff.md>`, an `Agent` spawn with the printed `name`, `model`, and `run_in_background`, then `dispatch.py record <dispatch_file>`) writes `<role>-<level>.md` in the records dir of the handoff it is given; on Codex, `scripts/run.sh <role> <level> <handoff.md>` writes the same `<role>-<level>.md` and `.log`. Run state files, rerun names (`<role>-<level>-<k>.md`), and how `scripts/order.py` picks the newest result: `references/records.md`. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
 A live step dir is exactly `step-<digits>`; a replan renames replaced dirs to `step-<n>.superseded-<k>/` (k is the first free number); the board and scripts do not count these as steps.
 
@@ -78,7 +78,7 @@ The task folder (`handoff.md`, `skips.md`) is committed; records are local and i
 
 ## Ticket front matter (optional)
 
-In numbered mode, `close` renames the folder `NNNN-<slug>` to `.NNNN-<slug>`; tools still treat it as a closed ticket. Before the rename, `close` refuses, writing nothing, when files outside the folder cite `<root>/NNNN-<slug>` (found with `git grep`), naming each; `--rewrite-refs` rewrites them to the dot path with the rename, and `--force` closes and leaves them.
+In numbered mode, `close` renames the folder `NNNN-<slug>` to `.NNNN-<slug>` and refuses while other files cite the old path (`references/ticket-fields.md`).
 
 `<work root>/<task>/handoff.md` may open with a YAML front matter block that makes the handoff double as a ticket:
 
@@ -104,17 +104,7 @@ router: .sdlc/AGENTS.md   # stamped by new: the folder rules (.sdlc/tickets/AGEN
 ---
 ```
 
-A `file:` depends entry is repo-relative and met once the path exists; it never orders tickets. A `cap:` entry is met once a `done` ticket provides it, and orders the ticket after every provider. `check` fails a malformed entry or an unprovided `cap:`.
-
-A `successor:` names the one ticket that took this one over: it superseded it, delivered it, verified it in an integration ticket, or fixed it in another repository (`<repo>:T-NNNN`). While this ticket is open and a local successor is `done`, `check` prints the ready-to-run `close <folder> --reason "..."` line; a successor in another repository is shown, never resolved. `check` fails a malformed value or a local id no ticket has.
-
-Front matter is purely additive: a handoff with no front matter keeps working unchanged, and no runner requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
-
-`size` is the ticket level, on the same L1 to L5 scale as the role levels: L1 and L2 go to the `solo` lane by default, L3 and above to the chain (`steps.py lane` decides). A ticket written by an older plugin version may still carry the one-letter size names; `tickets.py` reads each as its level and stores the level whenever it writes the front matter, and `tickets.py migrate-size --apply` rewrites them all at once.
-
-`status` here is a person's decision (proposed, ready to build, claimed by someone working on it, paused with a reason, blocked, done, dropped), not build progress. `claimed` requires `claimed_by:` and `paused` requires `paused_reason:`; `area:` must name one of the `areas: a, b, c` names in `.sdlc/config`. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
-
-Origin: this convention comes from the `.sdlc/_templates/` and `CONTEXT.md` of the gen-ui-system-svelte-lite project. The ticket templates this plugin ships are in `skills/ticket/templates/`.
+The rules for `depends` entries (`file:`, `cap:`), `successor:`, how scripts read front matter, `size`, and `status`: `references/ticket-fields.md`. Front matter is purely additive: a handoff with no front matter keeps working unchanged. `size` is the ticket level (L1 and L2 go to the `solo` lane by default); `status` is a person's decision, not build progress. The ticket templates this plugin ships are in `skills/ticket/templates/`.
 
 ## Task handoff (`<work root>/<task>/handoff.md`)
 
@@ -143,11 +133,9 @@ Written by `tickets.py close`, never by hand: one header line (`<date> · lane: 
 
 ## Step handoff (`<records dir>/step-<n>/handoff.md`)
 
-`scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand, and it refuses a new text whose bracket clause differs from the old line's. `steps.py amend` rewrites one criterion line the same way from a blocked builder's `amend old:`/`amend new:` pair on an unbuilt step (/chain 4.10) and itself appends `amend applied: step <n>: ...` under `## Plan review`, the task's one replan. `steps.py widen` widens the scope criterion with conductor-allowed paths (/chain 4.9) and appends one item per path to a `## Scope widened` section at the end of the step handoff: ``- `<path>`: allowed by a conductor scope decision (steps.py widen)`` (with `--reason "<why>"`, `: <why>` follows; a step with no scope criterion takes the paths and reason as the recorded allow-list only with `--reason`).
+`scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` (a verifier `swap old:`/`swap new:` pair, /chain 4.8), `steps.py amend` (a blocked builder's `amend old:`/`amend new:` pair, /chain 4.10), and `steps.py widen` (conductor-allowed paths under `## Scope widened`, /chain 4.9) rewrite one part of a step handoff, never by hand (`references/step-handoff-rules.md`).
 
-A step handoff may name the commit its build starts from with a line `base: <sha>` (a bare line or a list item); it must be a commit that is an ancestor of HEAD. The runner, `dispatch.py prepare`, and `steps.py` take the step's `SDLC_BASE_SHA` in this order: the named base, else the sha recorded in `base-sha` at the step's first dispatch (so a rework keeps its original base), else HEAD of the execution tree (the owned lane worktree when the handoff is in the main checkout and the cwd is that lane), never the main checkout's HEAD. In a lane, `dispatch.py prepare verifier` with nothing named or recorded (a lane resumed after its driver died) takes the lane start instead (its `.lane.json` `base_sha`, else its fork point), since the lane HEAD is then the driver's own WIP commit. A caller-supplied `SDLC_BASE_SHA` that differs from that pick is refused with a `SDLC_BASE_SHA refused:` line; naming it in the handoff is the way to use it.
-
-A step handoff with a `(red)` criterion may declare the regression tests the build writes first with a line `tests: <path>, <path>` (a bare line or a list item; exact repo-relative files, no directory, glob, absolute path, or `..`; `steps.py lint` refuses those). `redck.py record` hashes a declared test that is dirty into the control as a prelude (sha256 per path) and still records `pre-edit` when no other path differs from the base; any other dirty path, an undeclared test file included, makes it `retrospective`. `redck.py audit` reports `prelude-changed` (a process deviation) when a declared test no longer matches its stored hash, so the test cannot be edited to fit the implementation after the red control.
+The `base: <sha>` line, the `tests: <path>` line for a `(red)` criterion, `(parity)` styling criteria, where evidence goes, `### Read first` entries, and which cited `.sdlc/...` paths `steps.py lint` accepts: `references/step-handoff-rules.md`.
 
 A plan may hold a `guard timeout: <seconds>` line (in `## Goal` for the whole plan, or right after a step's `level:` line for that step); `steps.py split --only` uses it as the `--guard-timeout` default, an explicit `--guard-timeout` wins, and `specgate.py check` refuses a `(guard)` that runs `check.sh` without one.
 
@@ -178,17 +166,11 @@ A criterion line may end with one bracket clause, outside any code span, that le
 
 Keys: `stage` (the stage that normally checks it, informational), `owner` (a lowercase kebab stage word or a `T-NNNN`; makes the criterion deferrable), `needs` (comma separated `T-NNNN`, `file:<path>` or `cap:<name>`; makes it unmet-dependency eligible). An unknown or repeated key, an empty value, or a malformed owner or subject is a `steps.py lint` refusal ending in `plan defect:`; a line with no clause behaves as before.
 
-A styling approval is a `(parity)` criterion: ``- (parity) `<capture command>` writes `<real.png>`; against `<mock.png>`: <property>, <property>`` (the project's own capture command and mockup; at most five named properties such as column count, gutter, a filled primary button, the heading order, never "matches"). `steps.py lint` refuses a `(parity)` line with fewer than two image paths or no property list. The verifier runs the capture as an observed run, reads both images, and records pass or fail per property; a difference no property names is a note. A styling ticket writes `verifier: L3` when the owner wants it.
-
-Evidence. Screenshots, captures and other binary evidence (png, jpg, jpeg, gif, webp, mp4, mov, webm, zip, pdf), a `(parity)` capture included, go to the user-cache dir `wtroot.py evidence <ticket>` prints (`<user cache>/sdlc-lite/<repo key>/evidence/<ticket>/`, kept across reboots and never swept), never into the repo or `.sdlc/`; the Outcome or the notes cite the path. Traces are kept only when the ticket asks for them or a failure needs them, as text under the records dir. `tickets.py check` warns on each tracked binary under `.sdlc/`.
-
 Never write `grep -P` in a criterion or guard: BSD grep on macOS has no -P, so a negated pipeline passes vacuously and `steps.py lint` refuses it; use `python3 -c` or `grep -E` with a literal byte sequence.
 
 The step's `### Do` states its validation scope (see `agents/planner.md`): the affected behavior and named dependents, tests named by stable title and file rather than by source line, and the integration gate that owns broad coverage when the handoff assigns one.
 
-`### Read first` is optional. For each file the step changes, it lists the nearest `AGENTS.md` in that file's folder or a folder above it, leaving out the root entry, one ``- `<path>` `` line each, relative to the repository root. A step whose only entry is the root has no `### Read first`. It also lists the routed skill of each changed file: a list item or table row in any `AGENTS.md`, root included, that pairs a path or glob with one skill path (a `SKILL.md` or a folder under `skills/`) routes files under that path to the skill, listed even when the root is the only entry. The step cites the skill section instead of restating its rules. `steps.py lint` refuses a listed path that does not exist, and a step whose scope criterion names a routed path without its skill listed.
-
-`steps.py lint` refuses any cited `.sdlc/...` path that does not exist, except a path the step creates or one from another repository. A created path is declared by a ``[creates: <path>]`` marker, an `Outputs: <path>` line, a create or write verb on a `### Do` line, or a code span of a `(red)` criterion; a path an earlier step declares that way is also exempt in later steps, in a cited path and in `### Read first`. A foreign path is declared by an `Other repo: <name>` line with the path written as `<name>/.sdlc/...`; an absolute path outside the repository needs no line.
+`### Read first` is optional: the nearest non-root `AGENTS.md` and the routed skill of each file the step changes (`references/step-handoff-rules.md`).
 
 ### Merge step
 
@@ -207,39 +189,21 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 - (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add --detach <tmp> HEAD^1` copy and compare.
 ```
 
-The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
+The conflict-marker guard flags only `++` lines; why that miss is accepted: `references/step-handoff-rules.md`.
 
-`## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to. A swapped plan defect (a `plan defect:` fail whose criterion `steps.py swap` replaced) rebuilds at the same level without `## Previous attempt`.
+`## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (`references/step-handoff-rules.md`).
 
 ## Batched verifier result (task dir)
 
-A verifier launched at the task dir writes `verifier-L<k>.md` in the task dir, not in a step dir. After `## For the next attempt` it adds a `## Verified` section with one item per builder result it verified, the path relative to the task dir, bare or in a code span:
-
-```
-## Verified
-- step-<n>/builder-L<k>[-j].md
-```
-
-`steps.py next` and `resume` treat a listed step as verified while the listed path is still that step's newest builder result by `order.py` (a rebuild after the batch is not listed, so the step goes back to `verify`), and `board.py` renders it. The newest task-dir verifier result (by `order.py`) that lists the build decides: it counts only with Verdict `pass` and no `results.structure_error`, so a later `fail` on the same build overrides an earlier `pass`, and two batches over disjoint steps both stay valid. A step-dir verifier result that counts after the build still decides first. A step is never batch-verified when its newest builder Status is not `done`, its build is L4 or L5, its title starts with `Merge ` or holds `gates green` (any case), it is the highest-numbered live `step-<n>/` in the task dir, or a `step-<n>.superseded-<k>/` sibling exists; those steps take a per-step verifier. `## Verified` is not a declared verifier section, which is fine: `results.structure_error` ignores undeclared headings. A task-dir result may also carry `## Settles` beside it (see Held criteria); it is undeclared too. `steps.batch_verified` does not count a result that has a held or failing `## Criteria` line.
+A verifier launched at the task dir writes `verifier-L<k>.md` in the task dir and adds a `## Verified` section listing each builder result it verified (`step-<n>/builder-L<k>[-j].md`). Which steps a batch may verify, and which result decides: `references/verifier-results.md`.
 
 ## Held criteria
 
-A criterion has four states, not two: `pass`, `fail`, `unmet-dependency <subject>` (its check cannot run until a declared prerequisite is met) and `deferred <owner>` (a later stage owns it). The verifier writes them on `## Criteria` lines, `- #<k> <criterion>: <state>. Evidence: ...`, where `<k>` is the 1-based ordinal of the bullet line (blank lines are not counted) under `### Acceptance criteria` of the step handoff, or under `## Acceptance criteria` of the task handoff (a solo ticket). A full ref is `step-<n>#<k>` or `ticket#<k>`: in a step-dir result a bare `#<k>` is that step's criterion, in a task-dir result a bare `#<k>` is `ticket#<k>`, and `#step-<n>#<k>` names a step from the task dir. The verifier may hold only a criterion whose bracket clause declares it (`needs:` or `owner:`) and only when the check is red or cannot run now; a green check is `pass` whatever it declares.
-
-The Verdict keeps its three values and is `pass` only when every criterion is `pass`, so a held criterion makes it `fail` (`results.py validate` refuses Verdict `pass` beside any held or failing criterion line, and a held line with no `#<ref>` or no Evidence text). The first line of `## For the next attempt` is then `unmet-dependency: <subject>` or `deferred: <owner>`, and `steps.py next` routes it by re-deriving the claim from the handoff clause and the ticket state, not from the report: `wait` while no declared subject is met, `reverify` once one is, `deferred` for an owner stage, never a rebuild, bump or replan. A hold the handoff does not declare is an ordinary `fail`. `steps.py resume` skips a `wait` or `deferred` step for the next unfinished one.
-
-`steps.py open <task dir> [--explain]` lists the criteria still held, one `<ref> TAB <state> TAB <subject or owner>` line each; nothing and exit 0 when none. The newest verifier result that names a ref decides (by the run record's `ts`, then step dir before task dir, then `order.py`): `pass` settles it. The owner stage settles a deferred criterion by running a verifier over the listed refs; its task-dir result has Verdict `pass`, a `pass` Criteria line per ref, and a `## Settles` section listing them, one per line: ``- step-1#4`` or ``- ticket#2``. No ticket closes while a criterion is held: `tickets.py close` refuses with `criteria still held: <ref> <state> <who>`, `--reason` and `--force` included, and writes nothing. The exception is a `deferred` criterion owned by a stage word: the close succeeds and records it as a `deferred: <ref> -> <owner>` Deviation line of the `## Outcome`. The other exit is a visible handoff edit (the clause removed, or the criterion replaced in a replan or `swap`). A `deferred` criterion owned by a ticket id whose owner never runs keeps the ticket open, which is intended. A cross-ticket owner (`owner: T-0310`) is settled by the conductor placing that ticket's settling verifier result in the holder's task dir; no script reads across tickets.
-
-Results written before this feature carry only `pass` and `fail` lines and handoffs without a clause declare nothing held, so both validate, route and close exactly as before and nothing is rewritten. A runner older than this version reads a held result as an ordinary `fail` (a rebuild), never as `pass`; run one version in every lane before a handoff uses a clause.
+A criterion has four states: `pass`, `fail`, `unmet-dependency <subject>`, and `deferred <owner>`. The verifier may hold only a criterion whose bracket clause declares it and whose check is red or cannot run now; a held criterion makes the Verdict `fail`, `steps.py open <task dir>` lists what is still held, and no ticket closes while a criterion is held. Refs, routing, settling, and the close exceptions: `references/verifier-results.md`.
 
 ## Numbered records across worktrees (ADR numbers)
 
-Sibling worktrees each see only their own tree. Two lanes that each take "the next ADR number" from their own folder take the same one, and nothing notices until the merge (one repository's T-0012 and T-0014 both took ADR-0235). `tickets.py new` avoids this for ticket ids; SDLC Lite ships no allocator for ADRs or any other numbered record, because the numbering scheme and its folder belong to the consumer repository. A repository that numbers ADRs owns the rule, and this is the minimum it should state:
-
-- The next number is the highest across every `git worktree list` tree and the integration branch, plus one. A scan of the current tree alone is not enough.
-- If the repository has an allocator script, a handoff and a plan call it. If not, the conductor picks the number from that tree-wide view before a lane starts and writes it into the ticket's `## Context` as `ADR number: NNNN`; the plan and builder use that number and never pick one.
-- A plan step never says "the next ADR number". It names the number, or names the allocator.
-- A repository check that fails on a duplicate number in the ADR folder catches a clash that slipped past, the way `tickets.py check` does for ticket ids.
+Lanes that each take "the next ADR number" from their own tree collide. A plan step never says "the next ADR number": it names the number, picked from every worktree and the integration branch, or names the repository's allocator. The full rule: `references/numbered-records.md`.
 
 ## Free-text arguments
 
