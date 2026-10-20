@@ -27,3 +27,29 @@ None.
 
 ## Acceptance criteria
 1. The Outcome holds the output format, the functions reused, and the `order.py` ordering result with the command that showed it.
+
+## Outcome
+Design only; nothing built.
+
+### Ordering check
+`order.py` already sorts `verifier-L3-2` after `verifier-L3`; maison's lexical-sort bug does not exist here. Shown with a temp records dir holding empty `verifier-L3.md` and `verifier-L3-2.md`:
+`python3 plugins/sdlc-lite/scripts/order.py newest <tmp>/.sdlc/runtime/tasks/x verifier` printed `.../verifier-L3-2.md` both with no `runs.jsonl` (unrecorded key `(0, level, k, name)`, so k=2 > k=1) and with a `runs.jsonl` listing L3 then L3-2 (recorded rank wins).
+
+### Output
+`tickets.py inventory [--into <branch>]... [--days N] [--json]`, read-only, one row per ticket that is open or closed in the last N days (default 7):
+```
+T-0584  claimed  lane/T-0584-t0584  landed:main(ancestor)    verifier-L2  pass  verifier-L2-2.md
+T-0590  ready    -                  -                          -            -     -
+T-0577  claimed  lane/T-0577-x      not landed (scripts/a.py)  verifier-L3  fail  verifier-L3.md
+```
+Columns: id, status, branch (or `-`), landed state, newest verifier role-level, its verdict, its file. Landed state is `landed:<into>(ancestor|pr merged|patch|content)`, `not landed (<first differing path>)`, or `cannot decide (<why>)`; the first `--into` that lands wins, default the default branch then any named integration branch. Several branches for one ticket print one row each, so a stale sibling or a pointer branch shows as its own row rather than hiding the real one. `--json` emits the same fields per row.
+
+### Functions reused
+- Tickets and status: `tickets.load`, `tickets.problems` filtering as `delivered_warnings` does (open ids).
+- Ticket to branch: `tickets.worktree_pairs` and `tickets.branch_tickets` (inverted), plus `lanes.discover` for lane records.
+- Landed: `lanes.landed(cwd, ref, into, branch)` (ancestor, merged PR, equal files). Add one step between `pr merged` and the file compare: the `git cherry` patch-identity test from `lanes.orphans`, factored into a shared `patch_landed(top, into, ref)` helper so both callers use it.
+- Default branch: `tickets.default_branch`.
+- Records under any path: `order.records_dir(task_dir)` (handles runtime, legacy and step dirs), then `order.newest(dir, 'verifier')`; verdict from the result file's verdict line as `results.py` parses it.
+
+### Follow-up
+Build ticket: `tickets.py inventory` as above, with selftests for a `-2` verifier, a cherry-picked branch, a stale sibling and a legacy records path.
