@@ -175,7 +175,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             with the plan defect last line. A step with no ### Read first stays valid.
             Skill routing (T-0647): a list item or table row of any AGENTS.md under the tree (root included) whose
             code spans hold one skill path (a SKILL.md file or a folder under skills/) and at least one other path
-            or glob routes those paths to that skill (repo_skill_routes; paths in a nested AGENTS.md resolve against
+            or glob routes those paths to that skill; a list item also needs a routing cue (ROUTE_CUE_RE: ->, read,
+            use, follow) just before the skill span, T-0672 (repo_skill_routes; paths in a nested AGENTS.md resolve against
             its folder). A step whose scope allow-list (scope_entries) names a routed path (a trailing / matches the
             folder prefix, else fnmatch) and whose ### Read first does not list the skill is a finding "steps: <plan>
             step <n>: plan defect: edits routed path <p> without its skill under ### Read first: <skill>". A repo
