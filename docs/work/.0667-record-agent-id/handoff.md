@@ -2,7 +2,7 @@
 id: T-0667
 title: "record --agent-id reads the final message from the transcript"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ Source: GitHub issue #27, ui-kit-neue audit 2026-10-20.
 - Rewrote `agents/conductor.md` "How you run roles" step 3, `skills/chain/SKILL.md:20` and the `advance` sentence in `skills/fanout/SKILL.md`: `record --agent-id <id>` with the notice figures, nothing on stdin, stdin only for a role whose transcript is missing, never extract the final message. Regenerated `adapters/codex/agents/sdlc-conductor-l1.toml`.
 - Left open (out of scope): 13 other skills still say "with the sub-agent's final message on stdin" (build, fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md); a follow-up ticket should align them.
 - Checks: selftest exit 0, check.py exit 0, `git diff --check` exit 0, `check-packaging.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 67123bd857b3
+- Changed: see commits
+- Commits: ffd2ee5 T-0667: record --agent-id reads the final message from the transcript
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case `record --agen...: pass
+- Check: 2 `grep -n 'quoted here-doc' plugins/sdlc-lite/agents/conductor.md` finds nothing, and `grep -n 're...: pass
+- Check: 3 `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/skills/build/SKILL.md and 12 other skills fix... -> notes.md
+- Follow-up: note: the scratch dir... -> notes.md

@@ -70,3 +70,8 @@
 
 - note: the handoff Outcome says `solo_run.py selftest` exits 0; I ran it and it printed `solo_run selftest: PASS`. The solo brief line itself (solo_run.py:201-204) has no dedicated selftest case, and criterion 1 does not require one.
 - note: the dispatch.py selftest takes longer than 5 minutes under load; a loaded host may need a foreground timeout of 600000 ms.
+
+## T-0667: record --agent-id reads the final message from the transcript (2026-10-20)
+
+- decide: plugins/sdlc-lite/skills/build/SKILL.md and 12 other skills (fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md) still say "with the sub-agent's final message on stdin", per the builder's Outcome; this needs a follow-up ticket to align them with conductor.md:41.
+- note: the scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0667-verifier-L2 still holds the mutation copies (plug, plug2, *.out); the permission system denied rm there.
