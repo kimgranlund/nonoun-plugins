@@ -60,3 +60,8 @@
 ## T-0646: Every role writes its result file and ends with a one-line pointer (2026-10-20)
 
 - note: `plugins/sdlc-lite/scripts/hook-selftest.sh:471` and `:521` still use the old "Your final message is saved verbatim as y." in their fixture prompts. This is harmless because no hook parses that string, but the fixtures no longer match what `prepare` emits.
+
+## T-0654: fanout.py sync brings a lane up to date with the integration branch (2026-10-20)
+
+- note: `redck.py deviations` printed no `process deviation:` lines, and the criteria carry no `(red)` tag.
+- note: `fanout.py:3017` and `:3022` (cmd_sync): when `--regen` runs, `git add -A -- <hash_bound specs>` stages every change under those globs, including untracked files the regen command creates. This matches "stages its output". The `sync` gate runs only after the commit, as specified.

@@ -7,7 +7,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | 🟡 claimed |
-| T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | 🟡 claimed |
 | T-0655 | [0655-lane-guidance-check](0655-lane-guidance-check/handoff.md) | prepare checks lane guidance against main and named guidance paths | bug | L2 | P2 | none | ⏳ proposed |
 | T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
@@ -16,4 +15,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | ⏳ proposed |
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 
-Closed: 626 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 627 done, 29 dropped (git log or .NNNN-* folders)

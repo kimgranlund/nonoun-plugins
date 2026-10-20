@@ -2,7 +2,7 @@
 id: T-0654
 title: "fanout.py sync brings a lane up to date with the integration branch"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,15 @@ Source: GitHub issue #14, ui-kit-neue audit 2026-10-20.
 - Negative control (observed): with `cmd_sync` calling `merge_generated(wt, sha, root)` (no hash-bound resolution) the selftest failed: `T-0654 sync: exit 0, ... got rc=2 out='sync conflict: gen/out.txt\n'`. Restored, it passes.
 - Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/fanout.py sync --help` exit 0 (names --paths, --regen, --gate); `grep -n 'sync --paths' plugins/sdlc-lite/skills/fanout/SKILL.md` exit 0; `git diff --check` exit 0; `python3 scripts/check-packaging.py` exit 0.
 - Open: `check.py` on this lane's base still reports H-5 for `--force` and `--forward`; main fixed that in 28ba049c (Arguments rows), so it clears when the lane lands. No other check.py finding.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 8c3d194c9a50
+- Changed: see commits
+- Commits: cafd5be T-0654: assert the merged roadmap in the sync selftest; 8462558 T-0654: fanout.py sync brings a lane up to date with the integration branch
+- Check: 1 fanout.py selftest exits 0 with the new sync cases (a), (b), (c), and (a) fails with the hash-bou...: pass
+- Check: 2 `sync --help` exits 0 and names `--paths`, `--regen` and `--gate`: pass
+- Check: 3 `grep -n 'sync --paths' plugins/sdlc-lite/skills/fanout/SKILL.md` finds the post-land line: pass
+- Check: 4 `git diff --check` and `python3 scripts/check-packaging.py` exit 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines, and the... -> notes.md
+- Follow-up: note: fanout.py:3017 and :3022 cmd_sync: when --regen runs, git add -A... -> notes.md
