@@ -2067,6 +2067,44 @@ def _cost_poll_pattern():
         assert _cost_detect(repo, 'polling-loop')[0] == [], 'four polls fired'
 
 
+def _session(turns):
+    """A conductor session .jsonl: turns are (fired, [(tool name, command, result text)])."""
+    ev = []
+    for i, (fired, calls) in enumerate(turns):
+        prompt = {'type': 'user', 'promptId': f'p{i}', 'message': {'content': 'check the wave'}}
+        if fired:
+            prompt['scheduledTaskId'] = 'loop-1'
+        ev.append(prompt)
+        for j, (name, cmd, text) in enumerate(calls):
+            tid = f't{i}-{j}'
+            ev.append({'type': 'assistant', 'message': {'content': [
+                {'type': 'tool_use', 'id': tid, 'name': name, 'input': {'command': cmd}}]}})
+            ev.append({'type': 'user', 'promptId': f'p{i}', 'message': {'content': [
+                {'type': 'tool_result', 'tool_use_id': tid, 'content': text}]}})
+    return ''.join(json.dumps(e) + '\n' for e in ev)
+
+
+@case('cost: idle-wakes fires on two unchanged fired turns and is silent when a turn dispatches')
+def _cost_idle_wakes():
+    from .detectors import cost
+    board = ('Bash', 'python3 scripts/board.py --summary', '3 running, 0 done')
+    idle = [(False, [board]), (True, [board]), (True, [board]), (True, [])]
+    with tempfile.TemporaryDirectory() as tmp:
+        _write(tmp, 'idle.jsonl', _session(idle))
+        _write(tmp, 'acts.jsonl', _session(
+            idle[:2] + [(True, [board, ('Bash', 'python3 scripts/dispatch.py prepare solo L2 t', '{}')])]))
+        _write(tmp, 'moved.jsonl', _session(
+            idle[:2] + [(True, [('Bash', 'python3 scripts/board.py --summary', '2 running, 1 done')])]))
+        aux = {'repo': tmp, 'conductor_transcripts': ['idle.jsonl', 'acts.jsonl', 'moved.jsonl']}
+        got = [f for f in cost.detect([], aux, None)[0] if f['detector'] == 'idle-wakes']
+        assert len(got) == 1, got
+        f = got[0]
+        assert f['evidence'] == [{'path': 'idle.jsonl', 'line': 4}, {'path': 'idle.jsonl', 'line': 7},
+                                 {'path': 'idle.jsonl', 'line': 10}], f['evidence']
+        assert f['cause_hint']['file'] == 'skills/plan-loop/references/loop-rules.md', f
+        assert cost.detect([], {'repo': tmp}, None)[0] == [], 'fired with no conductor transcript'
+
+
 # --- corpus regression ------------------------------------------------------------------------
 
 _CORPUS = '.sdlc/.0109-make-the-fixed-count-lint'

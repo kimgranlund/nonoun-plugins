@@ -1,5 +1,5 @@
-"""Cost and transcript detectors: expensive steps, repeated builds, polling loops, background
-denials, and rate limits.
+"""Cost and transcript detectors: expensive steps, repeated builds, polling loops, idle loop
+wakes, background denials, and rate limits.
 
 detect(rows, aux, thresholds) returns (findings, notes): a list of findings (findings.make,
 family "cost") over the persisted rows (events.jsonl dicts) and aux.json, and a list of note
@@ -28,13 +28,23 @@ Detectors (cause_hint files are plugin-relative):
                         aux["load_series"] (a list of [iso timestamp, load1] pairs, ingest's
                         load_series) nearest the first call, else "unknown". Cause
                         agents/conductor.md.
+  idle-wakes            a conductor session transcript (a Claude Code session .jsonl named in
+                        aux["conductor_transcripts"], ingest's --conductor-transcript) with at
+                        least idle_wakes_turns idle fired turns. A turn starts at a user event
+                        whose promptId differs from the current turn's; it is fired when that
+                        event carries scheduledTaskId (a /loop or cron fire). A fired turn is
+                        idle when it makes no Agent call and no Bash call matching ACTION_RE
+                        (dispatch, record, land, close), and its board output (the tool results
+                        of Bash calls matching BOARD_RE) is absent or equals the last board
+                        output seen. Evidence one {path, line} per idle turn, line the 1-based
+                        line of its fired event. Cause skills/plan-loop/references/loop-rules.md.
   background-denial     a transcript with hook denials whose stderr names run_in_background,
                         Agent, or Monitor; evidence {attempt_id, count}. Cause
                         hooks/block-background.sh.
   rate-limit            a row with rate_limits of at least 1; evidence {attempt_id, count}.
                         Layer host, cause file None.
 """
-import datetime, os, re
+import datetime, json, os, re
 
 import order  # same scripts/ dir: newest-result ordering
 
@@ -46,6 +56,9 @@ FAMILY = 'cost'
 LAYER = 'sdlc-lite'
 
 POLL_RE = re.compile(r'^(sleep|kill -0|ls .*\.running|test -e .*\.running)')
+ACTION_RE = re.compile(r'\b(dispatch\.py\s+(prepare|record)|solo_run\.py|fanout\.py\s+(prep|land|run)'
+                       r'|lanes\.py\s+(open|land|ready)|tickets\.py\s+close)\b')
+BOARD_RE = re.compile(r'\b(rag)?board\.py\b')
 BACKGROUND_RE = re.compile(r'\b(run_in_background|Agent|Monitor)\b')
 NO_BASELINE = 'cost-over-baseline: no baseline'
 
@@ -209,6 +222,76 @@ def transcript_detectors(ctx, aux):
     return out
 
 
+def _result_text(block):
+    c = block.get('content')
+    if isinstance(c, list):
+        return '\n'.join(b.get('text', '') for b in c if isinstance(b, dict))
+    return c if isinstance(c, str) else ''
+
+
+def _conductor_turns(path):
+    """The turns of a session .jsonl: {line, fired, acted, board}; [] when unreadable."""
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            lines = f.read().splitlines()
+    except (OSError, TypeError):
+        return []
+    turns, board_ids, cur = [], set(), None
+    for n, line in enumerate(lines, 1):
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(ev, dict) or ev.get('type') not in ('user', 'assistant'):
+            continue
+        msg = ev.get('message')
+        content = msg.get('content') if isinstance(msg, dict) else None
+        blocks = [b for b in content if isinstance(b, dict)] if isinstance(content, list) else []
+        if ev['type'] == 'user':
+            pid = ev.get('promptId')
+            if pid and (cur is None or pid != cur['pid']):
+                cur = {'pid': pid, 'line': n, 'fired': bool(ev.get('scheduledTaskId')),
+                       'acted': False, 'board': []}
+                turns.append(cur)
+            for b in blocks:
+                if cur and b.get('type') == 'tool_result' and b.get('tool_use_id') in board_ids:
+                    cur['board'].append(_result_text(b))
+            continue
+        for b in blocks:
+            if cur is None or b.get('type') != 'tool_use':
+                continue
+            inp = b.get('input') if isinstance(b.get('input'), dict) else {}
+            cmd = inp.get('command') if b.get('name') == 'Bash' else None
+            if b.get('name') == 'Agent' or (isinstance(cmd, str) and ACTION_RE.search(cmd)):
+                cur['acted'] = True
+            if isinstance(cmd, str) and BOARD_RE.search(cmd):
+                board_ids.add(b.get('id'))
+    return turns
+
+
+def idle_wakes(ctx, aux):
+    out = []
+    paths = aux.get('conductor_transcripts') if isinstance(aux, dict) else None
+    for path in paths if isinstance(paths, list) else []:
+        idle, last, fired = [], None, 0
+        for turn in _conductor_turns(ctx.abs(path)):
+            board = '\n'.join(turn['board']) or None
+            changed = board is not None and board != last
+            if board is not None:
+                last = board
+            if not turn['fired']:
+                continue
+            fired += 1
+            if not turn['acted'] and not changed:
+                idle.append(turn['line'])
+        if len(idle) >= ctx.t['idle_wakes_turns']:
+            out.append(_make(ctx, 'idle-wakes', LAYER, 'skills/plan-loop/references/loop-rules.md',
+                             'wake on role completion, never on a clock',
+                             [{'path': path, 'line': n} for n in idle],
+                             f'{path}: {len(idle)} of {fired} fired turns changed nothing'))
+    return out
+
+
 def rate_limit(ctx):
     out = []
     for r in ctx.rows:
@@ -220,7 +303,7 @@ def rate_limit(ctx):
     return out
 
 
-DETECTORS = ('cost-over-baseline', 'many-builder-attempts', 'polling-loop',
+DETECTORS = ('cost-over-baseline', 'many-builder-attempts', 'polling-loop', 'idle-wakes',
              'background-denial', 'rate-limit')
 
 
@@ -230,5 +313,6 @@ def detect(rows, aux, thresholds=None):
     out = cost_over_baseline(ctx, aux, notes)
     out += many_builder_attempts(ctx)
     out += transcript_detectors(ctx, aux)
+    out += idle_wakes(ctx, aux)
     out += rate_limit(ctx)
     return out, notes

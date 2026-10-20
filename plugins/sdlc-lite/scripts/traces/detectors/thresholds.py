@@ -26,6 +26,8 @@ THRESHOLDS = {
     'many_builder_attempts': 3,
     # cost: polling-loop fires at this many identical (or polling-pattern) Bash calls.
     'polling_loop_calls': 5,
+    # cost: idle-wakes fires at this many fired conductor turns that changed nothing.
+    'idle_wakes_turns': 2,
     'severity': {
         'replan-loop': 2,
         'replan-loop-high': 3,
@@ -53,6 +55,7 @@ THRESHOLDS = {
         'cost-over-baseline': 2,
         'many-builder-attempts': 2,
         'polling-loop': 2,
+        'idle-wakes': 2,
         'background-denial': 2,
         'rate-limit': 1,
     },

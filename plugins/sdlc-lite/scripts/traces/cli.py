@@ -2,7 +2,7 @@
 
   selftest [-k FAMILY]
   ingest <repo> [--lanes-dir DIR]... [--out DIR] [--bench-dir DIR] [--rerun-criteria]
-         [--load-series PATH]
+         [--load-series PATH] [--conductor-transcript PATH]...
       runs ingest.run and prints the events.jsonl path.
   detect [--repo REPO] [--out DIR]
       reads <out>/events.jsonl and aux.json, runs the four detector families, merges the
@@ -52,9 +52,11 @@ def _ingest(rest):
     p.add_argument('--bench-dir')
     p.add_argument('--rerun-criteria', action='store_true')
     p.add_argument('--load-series')
+    p.add_argument('--conductor-transcript', action='append', default=[])
     a = p.parse_args(rest)
     out = ingest.run(a.repo, lanes_dirs=a.lanes_dir, out=a.out, bench_dir=a.bench_dir,
-                     rerun_criteria=a.rerun_criteria, load_series=a.load_series)
+                     rerun_criteria=a.rerun_criteria, load_series=a.load_series,
+                     conductor_transcripts=a.conductor_transcript)
     print(os.path.join(out, store.EVENTS))
     return 0
 

@@ -225,6 +225,8 @@ def kpi_unresolved(text, root):
 UNIT = {'s': 1, 'sec': 1, 'secs': 1, 'second': 1, 'seconds': 1, 'm': 60, 'min': 60, 'mins': 60, 'minute': 60,
         'minutes': 60, 'h': 3600, 'hr': 3600, 'hrs': 3600, 'hour': 3600, 'hours': 3600, 'd': 86400, 'day': 86400,
         'days': 86400}
+# A fixed-interval prompt that watches running work: the role's completion notification is the wake, not a clock.
+STATUS_LOOP_RE = re.compile(r'(?i)\b(status|board|progress|moved|waiting on|land(?:s|ed|ing)?|dispatch(?:es|ed|ing)?)\b')
 
 
 def parse_loop(text):
@@ -253,6 +255,10 @@ def check_loop(text):
     if not prompt.strip():
         fails.append(('prompt-empty', 'the loop prompt is empty'))
     if secs is not None:
+        if STATUS_LOOP_RE.search(prompt):
+            fails.append(('status-polls-running-work', 'a fixed-interval status or driver loop wakes on a clock while work runs: '
+                          'end the turn and let the role\'s completion notification wake you; for a plan doc use the driver '
+                          'turn in skills/run-plan/SKILL.md (run plan_done.py, dispatch in the background, end the turn)'))
         if not re.search(r'(?i)\b(stop|no-op|ends? the loop|until|cancel)\b', prompt):
             fails.append(('stop-condition', 'a recurring loop prompt needs a stop or no-op condition'))
         if secs < 60:
@@ -1381,7 +1387,7 @@ Done when: `python3 scripts/census-page-css.py` prints 0 and `python3 scripts/ch
 """
 GOOD_ROWS = '| lane | directory | units |\n|---|---|---|\n' + '\n'.join(f'| p{i:02d} | site/pages/a{i:02d} | 3 |' for i in range(50))
 GOOD_CAMPAIGN = GOOD_CAMPAIGN.replace('__ROWS__', GOOD_ROWS)
-GOOD_LOOP = "/loop 20m a status update with progress since the last run; stop when .sdlc/notes.md says done"
+GOOD_LOOP = "/loop 20m check the deploy health and report what changed since the last run; stop when .sdlc/notes.md says done"
 
 
 def plan_selftest(expect):
@@ -1938,6 +1944,10 @@ def _selftest():
     expect('loop: 7m warns uneven', any(r == 'uneven' for r, _ in check_loop('/loop 7m x; stop when done; since the last run')[1]))
     expect('loop: 30s warns seconds', any(r == 'seconds' for r, _ in check_loop('/loop 30s x; stop when done')[1]))
     expect('loop: a block without /loop is flagged', any(r == 'starts-with-loop' for r, _ in check_loop('20m x')[0]))
+    status_loop = '/loop 10m status update since the last run; stop when all lanes landed'
+    expect('loop: a fixed-interval status loop is flagged', any(r == 'status-polls-running-work' for r, _ in check_loop(status_loop)[0]))
+    expect('loop: the same status prompt with no interval passes', not check_loop(status_loop.replace(' 10m', ''))[0])
+    expect('loop: "upland" is not a status word', not check_loop('/loop 1h rotate logs on the upland host; stop when done')[0])
     with tempfile.TemporaryDirectory() as d:
         root = os.path.join(d, '.sdlc')
         for tid, status, body in (('T-0001', 'ready', 'edits plugins/sdlc-lite/scripts/a.py'),

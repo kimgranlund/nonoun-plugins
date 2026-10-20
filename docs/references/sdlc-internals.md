@@ -214,6 +214,7 @@ Detector families (`traces/detectors/`) are escalation, plan, hygiene, and cost.
 | `cost_over_baseline_ratio` | 2.0 | cost: cost-over-baseline (vs the bench median per passed step) |
 | `many_builder_attempts` | 3 | cost: many-builder-attempts (builder rows in one step dir) |
 | `polling_loop_calls` | 5 | cost: polling-loop (identical Bash calls) |
+| `idle_wakes_turns` | 2 | cost: idle-wakes (loop or cron fired conductor turns that changed nothing, from `ingest --conductor-transcript`) |
 
 `THRESHOLDS['severity']` maps each finding kind to 1..3. `selftest` proves each detector on fixtures, and its corpus case ingests this repo's own `.sdlc` traces whole and checks the known findings (skipping a sub-check whose source, such as a fanout logs dir, is absent). `--rerun-criteria` is opt-in: it reruns each passed step's non-guard acceptance criterion spans at the step's `base-sha` (feeding criteria-never-red) in detached throwaway worktrees under `$SDLC_TMP_WORKTREES/traces-rerun-<pid>` when set, else a temp dir outside the repo; each is removed with `git worktree remove --force` and pruned, so `git worktree list` is unchanged. Ingest also walks `tickets/<name>` task dirs, and the ticket reader reads `<root>/tickets` when the config sets `ticket_root: tickets`.
 

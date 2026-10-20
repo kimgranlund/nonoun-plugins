@@ -1,7 +1,7 @@
 """Ingest: walk one repo's sdlc trace sources into <out>/events.jsonl, aux.json, and cursor.json.
 
 run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresholds=None,
-    load_series=None) returns the out dir (store.out_dir). It walks:
+    load_series=None, conductor_transcripts=()) returns the out dir (store.out_dir). It walks:
   handoff dirs  each task dir directly under <repo>/.sdlc/ (closed .NNNN-<slug> folders and
                 other `.`-prefixed folders holding a handoff.md included; `_templates`,
                 `runtime`, other `_`- or `.`-prefixed names, and plain files skipped; when
@@ -39,6 +39,8 @@ again (never cached; without the flag aux has no such key and no span runs).
 With load_series (a path to a JSON list of [iso timestamp, load1] pairs, the CLI's
 --load-series), aux also gets `load_series`: those pairs (a pair that is not a two-item list
 with a string timestamp and a numeric load is dropped; an unreadable file gives []).
+With conductor_transcripts (paths of conductor session .jsonl files, the CLI's repeatable
+--conductor-transcript), aux also gets `conductor_transcripts`: those paths made absolute.
 """
 import contextlib, json, os, pathlib
 
@@ -232,7 +234,7 @@ def read_load_series(path):
 
 
 def run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresholds=None,
-        load_series=None):
+        load_series=None, conductor_transcripts=()):
     store.READS = 0
     repo = os.path.abspath(repo)
     out = store.out_dir(repo, out)
@@ -297,6 +299,8 @@ def run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thr
         aux['criteria_reruns'] = rerun.run(repo, rows, thresholds)
     if load_series:
         aux['load_series'] = read_load_series(load_series)
+    if conductor_transcripts:
+        aux['conductor_transcripts'] = [os.path.abspath(p) for p in conductor_transcripts]
     store.write_events(out, rows)
     store.write_aux(out, aux)
     store.write_cursor(out, cursor)
