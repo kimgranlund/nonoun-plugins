@@ -19,7 +19,7 @@ case "$tool" in
 esac
 
 block() {
-  echo "Blocked for sdlc role '$role': $1. A read-only role writes no file except its dispatch result path, the one its brief names ('saved verbatim as <path>'); put everything else in your final message." >&2
+  echo "Blocked for sdlc role '$role': $1. A read-only role writes no file except its dispatch result path, the one its brief names ('Report file: <path>'); put everything else in your final message." >&2
   exit 2
 }
 

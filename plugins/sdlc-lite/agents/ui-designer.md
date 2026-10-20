@@ -42,7 +42,7 @@ Outside in, the context it lives in:
 - Responsive container behavior.
 
 ## Output
-Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role ui-designer` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role ui-designer --headerless`, fix any defect it prints, and make your whole final message one line, `ui-designer <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role ui-designer` and fix any defect it prints.
 
 ## Mode
 plan | review | generate | blocked: <question>

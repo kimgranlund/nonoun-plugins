@@ -95,15 +95,16 @@ runs; record clears it when it closes the attempt completed or failed (a no-resu
 clears it when it marks the attempt interrupted (T-0505). --dry-run prints the JSON and writes nothing (no marker
 either), takes no lock, and skips recovery.
 
-Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format sentence) plus a Tree line, a
+Brief. The run.sh prompt (Handoff, Artifacts dir), then a Report file line and a one-line pointer line (T-0646), then a Tree line, a
 throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root), a scratch line
 ($TMPDIR/sdlc-lite/<repo key>/<Agent name>), and for builder and verifier a Base sha line,
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier for a ticket with a ready ref
 (refs/sdlc/ready/<id>, lanes.py ready, T-0590) also gets `Review sha: <its sha>`, stored as review_sha, and takes Base sha
 from the `Lane-Base:` line of that snapshot commit when it is an ancestor; prepare says so on stderr when the tree has
-moved since the pin (stale). A verifier brief also carries a Report file line:
-the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.
-The line also says the file carries no header (record adds it, T-0538) and names `results.py validate <file> --role verifier --headerless`.
+moved since the pin (stale). Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
+the result path the role writes with the Write tool before it ends; record fails the run with a message naming that path when it is missing,
+also when stdin is only the pointer. The line also says the file carries no header (record adds it, T-0538) and names
+`results.py validate <file> --role <role> --headerless`. The pointer line asks for a final message of one line, `<role> <status> <path>`.
 The prefix line says rm of scratch output under that prefix is allowed and refused elsewhere (hooks/block-role-rm.sh).
 The last line is the role's wall-clock budget (T-0555), `Time budget: <n>m wall clock for <role> <level>`, from ROLE_MINUTES
 (3x the median recorded duration of that role and level, floor 10 minutes; 60 for a row with no record); prepare stores it
@@ -1117,17 +1118,19 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             if not dry_run and base != stored:
                 (records / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
-        prompt = ('%s\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your '
-                  'instructions define: start with its first heading, with nothing before it and nothing after the last section.\n'
+        # T-0646: every role writes its result to the Report file and ends with a one-line pointer, so the completion notice stays short
+        prompt = ('%s\nHandoff: %s\nArtifacts dir: %s\nReport file: %s (before you end, write your result to exactly this path with the Write '
+                  'tool: exactly the output format your instructions define, starting with its first heading, with nothing before it and nothing '
+                  'after the last section, and no <!-- role=... --> header line: dispatch.py record adds it, so check the file with results.py '
+                  'validate <file> --role %s --headerless; dispatch.py record reads the file, and a missing one fails the run)\n'
+                  'End with one line: `%s <status> %s` (status is your Status or Verdict value, else done), nothing else.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
                   'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.\n'
                   'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).'
-                  % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix, scratch))
+                  % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, role, role, result,
+                     toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix, scratch))
         if role == 'verifier':
-            prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
-                       'as your final message, with no <!-- role=... --> header line: dispatch.py record adds it, so check the file with '
-                       'results.py validate <file> --role verifier --headerless; dispatch.py record reads the file, and a missing one fails the run)' % result)
             # T-0591: run rules every verifier gets, so the conductor stops adding them by hand
             prompt += ('\nThe build may be uncommitted: diff against Base sha, not HEAD. Run every command in the foreground with an explicit '
                        'Bash timeout under 600000 ms; never run_in_background or Monitor. Never run the full check.sh; run the checks the '
@@ -1569,6 +1572,9 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
             print('dispatch.py: no result yet at %s; the attempt stays running: record again once the %s writes it, or pass --no-result to close it failed'
                   % (result, role), file=sys.stderr)
             return 2
+        elif said.strip() and '\n' not in said.strip() and said.split()[0] == role:  # T-0646: a pointer line with no file behind it
+            text, error = '', 'no result file at %s (the %s ended with the pointer "%s" but must write its report there before it ends)' % (
+                result, role, said.strip())
         else:
             text, error = '', said.strip() or 'no result file at %s (the %s must write its report there before it ends)' % (result, role)
     if not text.strip():
@@ -2497,9 +2503,10 @@ def selftest():
         head = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
         case('a builder gets its base sha, in the dispatch, base-sha, and the brief',
              got['base_sha'] == head and (R(w) / 'base-sha').read_text() == head + '\n' and 'Base sha: ' + head in got['prompt'])
-        case('the brief is the run.sh prompt plus the tree and tmp prefix lines',
-             got['prompt'].startswith('w | builder L1\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
-                                      'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', R(w), R(w) / 'builder-L1.md'))
+        case('the brief is the run.sh Handoff and Artifacts dir lines, then the Report file and pointer lines (T-0646), then the tree and tmp prefix lines',
+             got['prompt'].startswith('w | builder L1\nHandoff: %s\nArtifacts dir: %s\nReport file: %s (before you end, write your result to exactly this path '
+                                      % (w / 'handoff.md', R(w), R(w) / 'builder-L1.md'))
+             and '\nEnd with one line: `builder <status> %s` (status is your Status or Verdict value, else done), nothing else.\nTree: ' % (R(w) / 'builder-L1.md') in got['prompt']
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
         own = json.loads((Path(got['tmp_prefix']) / '.owner.json').read_text())
         case('T-0550 the tmp prefix and the scratch dir hold an owner marker: the session pid, the running marker, the role',
@@ -3118,6 +3125,24 @@ def selftest():
              and 'dispatch.py record adds it' in got['prompt'] and '--role verifier --headerless' in got['prompt'])
         case('every brief says rm under the tmp prefix is allowed and elsewhere refused, once',
              got['prompt'].count('rm is allowed there and refused elsewhere') == 1)
+        # T-0646: every role writes its result to the Report file and ends with a one-line pointer; record reads the file.
+        for name, role, rel in (('pb', 'builder', '.sdlc/pb/handoff.md'), ('pp', 'planner', '.sdlc/pp/handoff.md'), ('ps', 'scout', '.sdlc/ps/handoff.md')):
+            put(rb / '.sdlc' / name / 'handoff.md')
+            prc, pgot, _ = prep(rb, role, 'L1', rel, '--dry-run')
+            case('T-0646 a prepared %s brief carries Report file: <its result path> and the one-line pointer instruction' % role,
+                 prc == 0 and '\nReport file: %s (before you end' % pgot['result'] in pgot['prompt']
+                 and '--role %s --headerless' % role in pgot['prompt']
+                 and '\nEnd with one line: `%s <status> %s`' % (role, pgot['result']) in pgot['prompt'] and 'saved verbatim' not in pgot['prompt'])
+        put(rb / '.sdlc' / 'pr' / 'handoff.md')
+        rc, pgot, err, out = go(rb, 'builder', 'L1', '.sdlc/pr/handoff.md', body=BODY['builder'], said='builder done %s' % (R(rb / '.sdlc' / 'pr') / 'builder-L1.md'))
+        case('T-0646 record with the result file written and a one-line stdin pointer exits 0 and validates the file',
+             rc == 0 and out.strip().splitlines()[0] == pgot['result'] and validate_result('builder', pgot['result']) is None
+             and Path(pgot['result']).read_text().splitlines()[1:4] == ['## Status', 'done', ''])
+        put(rb / '.sdlc' / 'pn' / 'handoff.md')
+        rc, pgot, err, out = go(rb, 'scout', 'L1', '.sdlc/pn/handoff.md', said='scout done %s' % (R(rb / '.sdlc' / 'pn') / 'scout-L1.md'))
+        case('T-0646 record with no file and a one-line stdin pointer exits non-zero naming the result path',
+             rc == 1 and 'no result file at %s' % pgot['result'] in attempt_of(pgot)['error'] and 'pointer' in attempt_of(pgot)['error']
+             and lines_of(rb / '.sdlc' / 'pn') == [])
         case('a verifier with no report on disk is rejected: exit 1, a message naming the path, no runs.jsonl line',
              rc == 1 and 'no result file at %s' % got['result'] in attempt_of(got)['error'] and 'must write its report there' in attempt_of(got)['error']
              and lines_of(rb / '.sdlc' / 'v1') == [])
