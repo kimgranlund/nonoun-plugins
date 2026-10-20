@@ -37,3 +37,10 @@ Source: GitHub issue #9, ui-kit-neue audit 2026-10-20.
 3. `grep -c 'dispatch.py advance' plugins/sdlc-lite/agents/conductor.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/skills/fanout/SKILL.md` prints a non-zero count for each file.
 4. `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0.
 5. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+- `dispatch.py advance [record flags] <dispatch.json>`: runs `record` (a non-zero record returns its code and prepares nothing), drops a queued role with `prune_done` plus `prune_lane` and prints `TaskStop task_id=<name>`, runs `steps.next_action` on the step dir, and prepares `build`, `rebuild`, `verify` or `reverify` (printing the dispatch JSON); any other action prints `stop: <action> <reason>`, a handoff outside a step dir prints `next: <hint>`. Before a rebuild after a verifier fail it appends that verifier's `## For the next attempt` to the step handoff under `## Previous attempt` (/chain 4.4), so the prepared brief and handoff sha already carry it. The lane tree is kept with `--tree` when the old dispatch ran in another tree.
+- `bump` is left to the conductor (`stop: bump ...`): it needs the recurring-finding check first.
+- Selftest: three `T-0645 advance` cases (verifier fail, pass, invalid); all three fail with the `advance` subcommand removed.
+- Docs: `agents/conductor.md` steps 3 and 4, `skills/chain/SKILL.md` (dispatch paragraph, section 4 action list, item 4.4), `skills/fanout/SKILL.md` (solo verifier, full lane); regenerated `adapters/codex/agents/sdlc-conductor-l1.toml`.
+- Checks: `dispatch.py selftest` exit 0; `dispatch.py advance --help` exit 0; the criterion 3 grep prints 2, 3, 2; `steps.py selftest` exit 0; `git diff --check` exit 0; `scripts/check-packaging.py` exit 0; `check.py` ok.

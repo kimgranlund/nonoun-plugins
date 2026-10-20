@@ -3,6 +3,9 @@
 
   dispatch.py prepare [--dry-run] [--approved "<who: why>"] <role> <level> <handoff.md>
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
+  dispatch.py advance [record flags] <dispatch.json>   record, then drop a pruned role from the queue (prints TaskStop task_id=<name>),
+                                          then steps.py next on its step dir: prepare the next builder or verifier and print its
+                                          dispatch JSON, or print `stop: <action> <reason>`; outside a step dir `next: <hint>` (T-0645)
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME | --forget-stale]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
@@ -1736,6 +1739,77 @@ def solo_dispatch(path):
     return d if ok else None
 
 
+ADVANCE_ROLE = {'build': 'builder', 'rebuild': 'builder', 'verify': 'verifier', 'reverify': 'verifier'}
+
+
+def previous_attempt(steps, step_dir, handoff):
+    """Before advance prepares a rebuild after a verifier fail: append that verifier's ## For the next attempt to the step
+    handoff under ## Previous attempt (/chain 4.4), made when missing, earlier lines kept. Any other rebuild (no Status,
+    an applied amend) has no newer verifier and adds nothing."""
+    rd = steps.records_of(step_dir)
+    v, b = order.newest(rd, 'verifier'), order.newest(rd, 'builder')
+    if v is None or b is None or not order.counts_after(v, b) or steps.verdict_or_none(v) != 'fail':
+        return
+    notes = [l for l in (steps.section(v, 'For the next attempt') or []) if l.strip()]
+    if not notes:
+        return
+    lines = handoff.read_text(encoding='utf-8').splitlines()
+    at = next((i for i, l in enumerate(lines) if l.rstrip() == '## Previous attempt'), None)
+    if at is None:
+        lines += ([''] if lines and lines[-1].strip() else []) + ['## Previous attempt']
+        end = len(lines)
+    else:
+        end = next((i for i in range(at + 1, len(lines)) if lines[i].startswith('## ')), len(lines))
+        while end > at + 1 and not lines[end - 1].strip():
+            end -= 1
+    lines[end:end] = ['From %s:' % os.path.basename(v)] + notes
+    handoff.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    print('previous attempt: %s' % handoff)
+
+
+def advance(dispatch_file, rec):
+    """One call per role completion (T-0645): rec() records the dispatch and returns its exit code; a non-zero record stops
+    here with that code. Then a pruned role leaves the queue the way prune --done does and prints its TaskStop line, and
+    steps.py next on the dispatch's step dir picks the next role: a builder or verifier action is prepared and its
+    dispatch JSON printed, any other action prints `stop: <action> <reason>`. Outside a step dir: `next: <hint>`."""
+    rc = rec()
+    if rc != 0:
+        return rc
+    d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
+    if solo_dispatch(dispatch_file):
+        print('next: a solo ticket; run its verifier or close it (tickets.py close)')
+        return 0
+    attempt = read_attempt(d['attempt_file'])
+    name, root = attempt.get('agent_name') or d.get('name'), attempt.get('project') or d['tree']
+    if name and prune_done(root, name):
+        print('TaskStop task_id=' + name)
+        lane_line = prune_lane(root, name)
+        if lane_line:
+            print(lane_line)
+    handoff = Path(d['handoff'])
+    if not re.fullmatch(r'step-\d+', handoff.parent.name):
+        print('next: %s is not a step dir; read %s and pick the next role' % (handoff.parent, d['result']))
+        return 0
+    import steps
+    try:
+        action, level, reason, _ = steps.next_action(handoff.parent)
+    except steps.Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    role = ADVANCE_ROLE.get(action)
+    if role is None or level is None:
+        print('stop: %s %s' % (action, reason))
+        return 0
+    if action == 'rebuild':
+        previous_attempt(steps, handoff.parent, handoff)
+    os.environ.setdefault('SDLC_ROUTING_REASON', 'dispatch.py advance: steps.py next %s L%d: %s' % (action, level, reason))
+    top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
+    tree = d['tree'] if top and os.path.realpath(d['tree']) != os.path.realpath(top) else ''
+    out = prepare(role, 'L%d' % level, str(handoff), tree=tree)
+    print(json.dumps(out, indent=2))
+    return 0
+
+
 def read_stdin():
     try:
         return '' if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()
@@ -1765,14 +1839,15 @@ def main(argv):
                         'it must be a worktree of this repository, else exit 2 (T-0413)')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
-    r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
-    r.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
-    r.add_argument('--agent-id', help='the sub-agent id the Agent tool returned')
-    r.add_argument('--tokens', type=int, help='subagent_tokens from the completion notice')
-    r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
-    r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run (default with --agent-id: found under ~/.claude/projects)')
-    r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
-    r.add_argument('--no-result', action='store_true', help='close the attempt failed when no result file, stdin, or transcript result exists (default: exit 2 and leave it running)')
+    for r in (sub.add_parser('record', help='validate and record a dispatched role, and close its attempt'),
+              sub.add_parser('advance', help='record, drop the pruned role from the queue, run steps.py next, and prepare the next role (T-0645)')):
+        r.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
+        r.add_argument('--agent-id', help='the sub-agent id the Agent tool returned')
+        r.add_argument('--tokens', type=int, help='subagent_tokens from the completion notice')
+        r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
+        r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run (default with --agent-id: found under ~/.claude/projects)')
+        r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
+        r.add_argument('--no-result', action='store_true', help='close the attempt failed when no result file, stdin, or transcript result exists (default: exit 2 and leave it running)')
     dl = sub.add_parser('deliver', help='send (or confirm sent) the verdict message a dispatch asked for with --notify; idempotent')
     dl.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
     sd = sub.add_parser('started', help='store the spawned sub-agent id in the running attempt, so status can show its last activity')
@@ -1868,14 +1943,14 @@ def main(argv):
             return 2
         print('\n'.join(out))
         return 0
-    if args.cmd == 'record':
+    if args.cmd in ('record', 'advance'):
         if args.agent_id and not args.transcript:  # T-0446: no flag, find the sub-agent's own transcript; none found keeps the unpriced line
             args.transcript = find_subagent_transcript(args.agent_id)
         used = {k: v for k, v in (('subagent_tokens', args.tokens), ('tool_uses', args.tool_uses)) if v is not None}
         if args.transcript:  # T-0328: the notice count excludes cache reads; the transcript usage does not
             used = {**(cost_estimate.transcript_usage(args.transcript) or {}), **{k: v for k, v in used.items() if k != 'subagent_tokens'}} \
                 if cost_estimate.transcript_usage(args.transcript) else used
-        try:
+        def rec():
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
                 import solo_run
@@ -1886,6 +1961,8 @@ def main(argv):
             return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms,
                           resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None,
                           transcript=args.transcript, no_result=args.no_result)
+        try:
+            return advance(args.dispatch, rec) if args.cmd == 'advance' else rec()
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -3438,6 +3515,41 @@ def selftest():
             requeued = queue_prune(d7, a7, 'ag-z')
         case('prune record: an agent with another attempt still open is not queued', requeued is False and again.getvalue() == '')
         sib.unlink()
+
+        # T-0645 advance: record, drop the pruned verifier, steps.py next, then prepare the next role or print stop.
+        def adv(tag, vbody):
+            repo = mk(tmp / ('adv-' + tag))
+            go(repo, 'builder', 'L2', step + '/handoff.md', body=BODY['builder'], agent_id='ag-b')
+            rc, vgot, err = prep(repo, 'verifier', 'L1', step + '/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+            Path(vgot['result']).write_text(vbody, encoding='utf-8')
+            before = sorted(Path(vgot['artifacts_dir']).glob('*.dispatch.json'))
+            e, o = io.StringIO(), io.StringIO()
+            with clean_env(SDLC_DISPATCH_PARENT_PID=live_pid), cwd(repo), contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+                try:
+                    rc = main(['advance', vgot['dispatch_file'], '--agent-id', 'ag-v'])
+                except SystemExit as x:  # no advance subcommand: a usage error, so each case fails rather than the run
+                    rc = x.code
+            after = sorted(Path(vgot['artifacts_dir']).glob('*.dispatch.json'))
+            js = o.getvalue()[o.getvalue().find('\n{') + 1:] if '\n{' in o.getvalue() else ''
+            return rc, vgot, o.getvalue(), json.loads(js) if js else None, before, after, prune_read(str(repo))
+        def section_of(path, heading):
+            import steps
+            return [l for l in (steps.section(path, heading) or []) if l.strip()]
+        fail_body = BODY['verifier'].replace('## Verdict\npass', '## Verdict\nfail').replace('## For the next attempt\nNone', '## For the next attempt\nfix x')
+        rc, vgot, out, nxt, before, after, q = adv('fail', fail_body)
+        case('T-0645 advance on a verifier fail records, prints TaskStop task_id=<verifier>, drops it from prune.json, and prints a builder dispatch JSON whose file exists',
+             rc == 0 and 'TaskStop task_id=%s' % vgot['name'] in out.splitlines() and vgot['name'] not in [x['name'] for x in q]
+             and attempt_of(vgot)['status'] == 'completed' and nxt is not None and nxt['role'] == 'builder' and nxt['level'] == 'L2'
+             and Path(nxt['dispatch_file']).is_file() and len(after) == len(before) + 1
+             and section_of(Path(vgot['handoff']), 'Previous attempt') == ['From %s:' % Path(vgot['result']).name, 'fix x'])
+        rc, vgot, out, nxt, before, after, q = adv('pass', BODY['verifier'])
+        case('T-0645 advance on a verifier pass prints stop: done and writes no new dispatch file',
+             rc == 0 and any(l.startswith('stop: done') for l in out.splitlines()) and nxt is None and after == before
+             and '## Previous attempt' not in Path(vgot['handoff']).read_text()
+             and attempt_of(vgot)['status'] == 'completed')
+        rc, vgot, out, nxt, before, after, q = adv('invalid', 'not a report\n')
+        case('T-0645 advance on an invalid result exits 3 and prepares nothing',
+             rc == 3 and nxt is None and after == before and 'TaskStop' not in out and 'stop:' not in out)
         names = [e['name'] for e in queued(rp)]
         shown = prune_lines(str(rp))
         case('prune list: one TaskStop task_id=<name> line per queued agent', len(shown) == 4
