@@ -127,8 +127,9 @@ cover (T-0481)
   tip through gate_argv and run_logged (logs <lanes-dir>/logs/cover-<run_id>-<k>.log; the first red one stops; a
   vacuous gate is red unless --allow-empty-gate), appends one line to <tree>/<rel>/gate-ledger.jsonl with at, run_id,
   integration, from (the previous entry's `to`, else `git merge-base <integration> HEAD`), to (the tip), gates, rc,
-  log and merges ([{sha, ticket}] from the first-parent `Merge <branch>: <id>` commits in from..to), and commits it
-  there (`git add -f`, message `cover <to7>: rc=<rc>`); the primary checkout is never written. Red prints
+  log (gates and log with no absolute path: tickets.relative_paths, the log as `logs:cover-<run_id>-<k>.log` under
+  the lanes dir, T-0662) and merges ([{sha, ticket}] from the first-parent `Merge <branch>: <id>` commits in
+  from..to), and commits it there (`git add -f`, message `cover <to7>: rc=<rc>`); the primary checkout is never written. Red prints
   `git bisect start <to> <from> --first-parent` and exits 1; green exits 0.
 
 sync (T-0654)
@@ -2903,9 +2904,11 @@ def cover_at(a, cwd, wt, lpath, logs, ctx):
             if m:
                 merges.append({'sha': sha, 'ticket': m.group(2)})
     merges.reverse()  # oldest first
+    bases = tickets.path_bases(wt)  # T-0662: the tracked ledger holds no machine path; the log is `<lanes dir>:<rest>`
+    rel = lambda x: tickets.relative_paths(x, bases=bases, extra_lanes=[logs.parent])
     entry = {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'), 'run_id': ctx['run_id'],
-             'integration': a.integration, 'from': frm, 'to': to, 'gates': list(a.gate), 'rc': rc, 'log': log,
-             'merges': merges}
+             'integration': a.integration, 'from': frm, 'to': to, 'gates': [rel(g) for g in a.gate], 'rc': rc,
+             'log': rel(log), 'merges': merges}
     ledger.parent.mkdir(parents=True, exist_ok=True)
     with open(ledger, 'a', encoding='utf-8') as f:
         f.write(json.dumps(entry) + '\n')
@@ -5552,6 +5555,7 @@ def selftest():
                cv.returncode == 0 and entry.get('rc') == 0 and entry.get('to') == lg_tip0 and entry.get('from') == main_lg
                and [m.get('ticket') for m in entry.get('merges') or []] == ['T-0001']
                and entry.get('gates') == ['true'] and entry.get('integration') == lg_integ
+               and entry.get('log', '/').startswith('logs:cover-') and not os.path.isabs(entry.get('log', '/'))
                and sh(lg, 'log', '-1', '--format=%s', lg_integ).stdout.strip() == f'cover {lg_tip0[:7]}: rc=0'
                and not (lg / '.sdlc' / 'gate-ledger.jsonl').exists())
         sc = verb(lg, 'settle', lg_integ, '--require-covered')

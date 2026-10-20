@@ -175,6 +175,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             (wtroot.py evidence <ticket>) and cite the path` (exit stays 0, at most 5 lines, then `<N> more`) for
             each tracked file under <root> ending .png, .jpg, .jpeg, .gif, .webp, .mp4, .mov, .webm, .zip or .pdf
             (T-0568)
+            Inside git it prints `warning: <file>:<line>: absolute path in a tracked work record` (exit stays 0,
+            at most 5 lines, then `<N> more`) for each line holding /Users/, /home/, /var/folders/ or /private/tmp/
+            in a tracked notes.md, open ticket handoff.md or <root>/gate-ledger.jsonl; closed handoffs are not
+            scanned. close writes every path under the repo as repo-relative and under the lanes root as
+            `<lane>:<rest>` in notes.md and ## Outcome (T-0662)
             It prints `warning: plugin_min: ...` (exit stays 0) when a `plugin_min:` line in <root>/config is
             above the running plugin's manifest version, or malformed (scripts/plugin_min.py, T-0593)
             Last, it fails each done ticket whose skips.md records lane solo, lean, fix, or full (the last
@@ -1794,6 +1799,36 @@ def binary_warnings(root):
     return out
 
 
+def abs_path_warnings(root, ts):
+    """T-0662: one `warning: <file>:<line>: absolute path in a tracked work record` line per line of a tracked
+    notes.md, open (undotted, not done or dropped) ticket handoff or <root>/gate-ledger.jsonl holding ABS_PATH_RE;
+    at most PLACEHOLDER_SHOWN lines, then one count line. Closed handoffs are history and never scanned. Nothing
+    outside git."""
+    base = file_base(root)
+    files = [layout_paths(root).notes, root / 'gate-ledger.jsonl']
+    files += [layout_paths(root).tickets / slug / 'handoff.md' for slug, m in ts
+              if not DOT_RE.fullmatch(slug) and m.get('status') not in ('done', 'dropped')]
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    try:
+        p = subprocess.run(['git', '-C', str(base), 'ls-files', '-z', '--full-name', '--',
+                            *(str(f.resolve()) for f in files)], env=env, capture_output=True, text=True)
+    except OSError:
+        return []
+    if p.returncode:
+        return []
+    out = []
+    for f in sorted(x for x in p.stdout.split('\0') if x):
+        try:
+            text = (base / f).read_text(encoding='utf-8')
+        except (OSError, UnicodeError):
+            continue
+        out += [f'warning: {f}:{i}: absolute path in a tracked work record'
+                for i, ln in enumerate(text.splitlines(), 1) if ABS_PATH_RE.search(ln)]
+    if len(out) > PLACEHOLDER_SHOWN:
+        out[PLACEHOLDER_SHOWN:] = [f'warning: {len(out) - PLACEHOLDER_SHOWN} more absolute paths in tracked work records']
+    return out
+
+
 def successor_lines(root, ts):
     """T-0528: for each open ticket with `successor:`, the ready-to-run close line when the local successor is
     done, or a note naming a successor in another repository, which is never resolved."""
@@ -3194,10 +3229,54 @@ def follow_tag(item):
     return (m.group(1), item[m.end():]) if m else ('decide', item)
 
 
+ABS_PATH_RE = re.compile(r'/Users/|/home/|/var/folders/|/private/tmp/')
+
+
+def path_spellings(xs):
+    """Each path of xs as given, as its realpath, and without a leading /private when that names the same place
+    (macOS /var and /tmp), longest first."""
+    out = {v for x in xs if x for v in (str(x), os.path.realpath(x))}
+    out |= {v[8:] for v in out if v.startswith('/private/') and os.path.realpath(v[8:]) == os.path.realpath(v)}
+    return sorted(out, key=len, reverse=True)
+
+
+def path_bases(root):
+    """(tops, lanes) for relative_paths: the git toplevel of root and its main checkout, and the lanes root
+    (wtroot.root), each in every path_spellings form. Empty lanes outside git."""
+    import wtroot  # same scripts/ dir
+    top = file_base(root)
+    tops = [top, wtroot.main_top(top)]
+    return path_spellings(tops), path_spellings([wtroot.root(top)] if tops[1] else [])
+
+
+def relative_paths(text, root=None, bases=None, extra_lanes=()):
+    """T-0662: text with every absolute path under the repo toplevel (or its main checkout) made repo-relative and
+    every one under the lanes root (path_bases, plus extra_lanes) written `<lane>:<rest>`, the longest prefix first.
+    Text with no such path comes back unchanged."""
+    if not text or '/' not in text:
+        return text
+    tops, lanes = bases if bases is not None else path_bases(root)
+    lanes = lanes + path_spellings(extra_lanes)
+    keys = sorted([(t.rstrip('/') + '/', False) for t in tops] + [(x.rstrip('/') + '/', True) for x in lanes],
+                  key=lambda k: len(k[0]), reverse=True)
+    if not keys:
+        return text
+    lane_of = {k: is_lane for k, is_lane in keys}
+    pat = re.compile('(' + '|'.join(re.escape(k) for k, _ in keys) + r')([^/\s:`\'")\]]+/?)?')
+
+    def sub(m):
+        rest = m.group(2) or ''
+        if not lane_of[m.group(1)]:
+            return rest
+        return rest[:-1] + ':' if rest.endswith('/') else rest
+    return pat.sub(sub, text)
+
+
 def append_notes(root, pid, title, entries):
     """Append one `## <id>: <title> (<date>)` block with a `- <tag>: <text>` line per entry to layout_paths(root).notes
     (<root>/notes.md, or <root>/notes/notes.md under `layout: topics`), creating its folder and the file with a
-    heading first. Never a folder path, so the numbered reference scan never hits it."""
+    heading first. Never a folder path, so the numbered reference scan never hits it, and never an absolute machine
+    path (relative_paths, T-0662)."""
     p = layout_paths(root).notes
     p.parent.mkdir(parents=True, exist_ok=True)
     old = p.read_text(encoding='utf-8') if p.is_file() else (
@@ -3205,7 +3284,7 @@ def append_notes(root, pid, title, entries):
     if not old.endswith('\n'):
         old += '\n'
     block = f'\n## {pid}: {title} ({datetime.date.today().isoformat()})\n\n' + ''.join(
-        f'- {tag}: {text}\n' for tag, text in entries)
+        f'- {tag}: {relative_paths(text, root)}\n' for tag, text in entries)
     p.write_text(old + block, encoding='utf-8')
 
 
@@ -3287,9 +3366,11 @@ def outcome_commits(d, base, pid):
     return '; '.join(got) or 'none'
 
 
-def outcome_section(meta, lane, verdict, verifier, base, changed, commits, checks, deviations, follow, lessons=()):
+def outcome_section(meta, lane, verdict, verifier, base, changed, commits, checks, deviations, follow, lessons=(),
+                    root=None):
     """The `## Outcome` block close appends to the handoff body (every route): one header line, then Changed and
-    Commits always, then one Check, Deviation, Follow-up and Lessons line each."""
+    Commits always, then one Check, Deviation, Follow-up and Lessons line each. With root, every absolute path under
+    the repo or the lanes root is made relative (relative_paths, T-0662)."""
     size = size_level(str(meta.get('size', ''))) or '?'
     lines = [f'{datetime.date.today().isoformat()} · lane: {lane} {size} · verdict: {verdict} · '
              f'verifier: {verifier or "none"} · base: {base[:12] if base else "none"}',
@@ -3299,7 +3380,8 @@ def outcome_section(meta, lane, verdict, verifier, base, changed, commits, check
     lines += [f'- Deviation: {x}' for x in deviations]
     lines += [f'- Follow-up: {x}' for x in follow]
     lines += [f'- Lessons: {" ".join(x.split())}' for x in lessons]
-    return '\n## Outcome\n\n' + '\n'.join(lines) + '\n'
+    text = '\n'.join(lines)
+    return '\n## Outcome\n\n' + (relative_paths(text, root) if root is not None else text) + '\n'
 
 
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
@@ -3524,7 +3606,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     def outcome(v, follow=(), warn_lines=()):
         devs = deviations + [f'acknowledged warning ({ack_warnings.strip()}): {ln.strip()}' for ln in warn_lines
                              if ln.strip()] + ([kept] if kept else []) + deferred
-        return outcome_section(meta, lane, v, who, base, changed, commits, checks, devs, follow, lessons or ())
+        return outcome_section(meta, lane, v, who, base, changed, commits, checks, devs, follow, lessons or (), root)
 
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
@@ -3580,6 +3662,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if own is not None and not is_none(own):
             items += bullets(own)
             src_name, origin = 'the verifier notes and the handoff Follow-ups', 'verifier notes or handoff Follow-ups'
+    bases = path_bases(root) if any('/' in x for x in items) else ([], [])
+    items = [relative_paths(x, bases=bases) for x in items]  # T-0662: no machine path reaches a tracked record
     digest = follow_digest(items)
     if skip is not None and not dry_run and expect is None:
         raise Fail(f'{slug}: --skip needs --expect <digest> from the dry run that listed the indices '
@@ -3898,6 +3982,7 @@ def cmd_check(root, numbered=False):
     out += delivered_warnings(root, ts)
     out += worktree_warnings(root, ts)
     out += binary_warnings(root)
+    out += abs_path_warnings(root, ts)
     out += successor_lines(root, ts)
     pm = plugin_min.refusal(root)  # T-0593: a warning here; dispatch.py prepare, run.sh and lanes.py open refuse
     if pm:
@@ -7824,6 +7909,28 @@ def selftest():
             return ''
 
         have_git = shutil.which('git') is not None
+        if have_git:  # (T-0662) verifier notes naming repo and lane paths reach NOTES.md and the Outcome relative
+            rtop = pathlib.Path(tmp) / 'oc-rel'
+            rlanes = rtop.parent / (rtop.name + '.worktrees')
+            r, d = oc_root('rel', git=True, note=f'- note: see {rtop}/src/a.py:3\n- note: see {rlanes}/wave6/b.py')
+            rc, out, err = run(r, 'close', ('tk',), filer=False)
+            notes_t = layout_paths(r).notes.read_text(encoding='utf-8') if layout_paths(r).notes.is_file() else ''
+            otext = handoff(d).partition('\n## Outcome\n')[2]
+            expect(f'(T-0662) close writes src/a.py:3 and wave6:b.py into NOTES.md and the Outcome, no absolute '
+                   f'prefix: rc={rc} {err!r} notes={notes_t!r} outcome={otext!r}',
+                   rc == 0 and all('src/a.py:3' in x and 'wave6:b.py' in x and str(rtop) not in x
+                                   and os.path.realpath(rtop) not in x and str(rlanes) not in x
+                                   for x in (notes_t, otext)))
+            dirty = layout_paths(r).notes
+            for body, want in (('# Notes\n\n- note: see /Users/x/repo/a.py\n', True), ('# Notes\n\n- note: clean\n', False)):
+                dirty.write_text(body, encoding='utf-8')
+                g(r.parent, 'add', '-A')
+                g(r.parent, 'commit', '-qm', 'notes')
+                rc, out, err = run(r, 'check')
+                expect(f'(T-0662) check {"warns on" if want else "is silent for"} a tracked notes.md '
+                       f'{"holding /Users/x/repo/a.py" if want else "with no absolute path"}: rc={rc} {out!r} {err!r}',
+                       rc == 0 and ('absolute path in a tracked work record' in out) == want
+                       and (not want or '.sdlc/notes.md:3: absolute path' in out))
         # (T-0543 outcome) a close over a passing verifier appends ## Outcome: lane, verdict, Check and Commits lines
         r, d = oc_root('outcome', git=have_git)
         if have_git:

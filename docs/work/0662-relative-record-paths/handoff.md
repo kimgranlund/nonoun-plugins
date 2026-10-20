@@ -35,3 +35,9 @@ Text with no absolute path is written byte-identical to today. `check` keeps exi
 2. The same selftest asserts `check` prints `absolute path in a tracked work record` for a NOTES.md line holding `/Users/x/repo/a.py` and prints no such line for a clean NOTES.md (the negative control).
 3. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and its cover case asserts the ledger line's `log` is not absolute.
 4. `git diff --check` exits 0.
+
+## Outcome
+
+- Changed: `tickets.py` gains `relative_paths` and `path_bases` (repo toplevel and main checkout become repo-relative, the lanes root becomes `<lane>:<rest>`, each in its realpath and macOS `/private`-less spelling); close relativizes every follow-up item before the digest, `append_notes` and `outcome_section` pass their text through it; `check` adds `abs_path_warnings` over tracked NOTES.md, open undotted handoffs and `gate-ledger.jsonl`. `fanout.py` `cover_at` writes `gates` and `log` through it, the log as `logs:cover-<run_id>-<k>.log` under the lanes dir.
+- Checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0 (new T-0662 cases; the close case failed before the fix, when only the realpath spelling was matched); `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0 (cover asserts `log` starts `logs:cover-` and is not absolute); `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
+- This repo: `tickets.py --root .sdlc check` prints 5 absolute-path warnings, 3 in this handoff (its own prose naming the patterns) and 2 in `docs/work/NOTES.md` (lines 34 and 58, verifier notes naming lanes-root tmp paths).
