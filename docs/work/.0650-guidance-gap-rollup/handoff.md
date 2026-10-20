@@ -2,7 +2,7 @@
 id: T-0650
 title: "Aggregate recurring Rule gap findings into a guidance ticket proposal"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0649]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,13 @@ Existing plan-family detectors and their findings are unchanged. Stages 1 and 2 
 - `plugins/sdlc-lite/skills/review-traces/SKILL.md`: `guidance-gap` skips stages 2 to 4 and is offered in the stage 5 round as a `chore` ticket in the reviewed repo; headless writes it to `report.md`.
 - `plugins/sdlc-lite/scripts/traces/selftest.py`: fires case (three tickets, one differing in case and spacing, one read from Findings only) and quiet case (two gaps in one ticket plus one more ticket). Negative control: with `guidance-gap` removed from `DETECTORS` the fires case fails ("want 1 finding, got 0").
 - Checks: `traces.py selftest` exit 0, both greps exit 0, `git diff --check` exit 0, `check-packaging.py` exit 0, `check.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: plan.py:262 `detect` now filters findings to kinds named in `DETECTORS`; the full selftest still passes, so existing plan detectors are unchanged.) · verifier: verifier-L2 (sonnet) · base: 3c2db939fb05
+- Changed: see commits
+- Commits: 92d883f T-0650: roll up recurring ui-designer guidance gaps into a guidance-gap finding
+- Check: 1 selftest exit 0 with new guidance-gap cases: pass
+- Check: 2 grep guidance_gap_tickets in thresholds.py and sdlc-internals.md: pass
+- Check: 3 grep guidance-gap in review-traces SKILL.md: pass
+- Check: 4 git diff --check and check-packaging: pass
