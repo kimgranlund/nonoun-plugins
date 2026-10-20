@@ -2,15 +2,42 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
-## [Unreleased]
+## [0.28.0] - 2026-10-20
+
+Report: [docs/reports/2026-10-20-release-0-28-0.md](docs/reports/2026-10-20-release-0-28-0.md). All 23 open GitHub issues (#9 to #31, a context-routing audit of a ui-kit-neue session) are addressed.
+
+### Added
+
+- `dispatch.py advance`: record, prune, `steps.py next` and the next `prepare` in one call per role completion; it prints the TaskStop id and the next Agent JSON (T-0645, #9).
+- Every role writes its result to the `Report file:` its brief names and ends with one line `<role> <status> <path>`; `record` reads the file (T-0646, #10).
+- Plan steps carry routed repo skills under `### Read first`, and `steps.py lint` refuses a step that edits a routed path without its skill; a list item routes only with a cue such as `->`, read, use or follow (T-0647, T-0672, #11).
+- `prepare` adds `Repo skills for this step:` to builder and solo briefs from the repo's skill routing (T-0648, #11).
+- ui-designer review writes `## Verdict pass | pass-with-notes | changes-required`, marks each finding blocking or advisory with `Rule: <skill>#<section>` or `Rule: gap`, and lists `## Guidance gaps`; `results.py` refuses a pass beside a blocking finding (T-0649, #12).
+- `traces` finding `guidance-gap`: a proposed rule recurring in 3 or more tickets, offered by `/review-traces` as a chore ticket (T-0650, #12).
+- `tickets.py close --lessons TEXT` writes `- Lessons:` lines; the roadmap lists unrouted `decide:` and `source-fix:` NOTES.md items under `## Open follow-ups`, and `check` counts them (T-0652, T-0653, #13).
+- `fanout.py sync <lane>` merges the integration branch into a running lane, takes generated and hash-bound files from it, and `--paths` copies guidance only (T-0654, #14).
+- `prepare` warns when a lane's AGENTS.md or CLAUDE.md differs from main, and refuses (exit 5) a named guidance path present on main or the integration branch but missing in the lane (T-0655, T-0674, #15).
+- `steps.py review` runs each `(red)` criterion at the base commit and reports one already green as a plan defect (T-0657, #17).
+- A verifier brief carries `Diff range: <base>..<end>` from the `end-sha` that `record` writes after a build (T-0661, #21).
+- A write-once `designs/` docs home for grill output with `supersedes:`; docs_check D-15 flags a missing superseded file (T-0664, #24).
 
 ### Changed
 
-- Each generated level-variant agent (`builder-L2`, `solo-L1`, and the rest) carries a one-line description, `<role> at level <Ln>: <model> <effort>. Same role as the <role> agent.`, instead of repeating its base role's description; the longest drops from 408 to 81 characters (T-0665).
+- A `--reason` close files follow-ups like a verified close, and refuses a reason that names a different lane from the recorded one (T-0651, T-0670, #13, #30).
+- `settle --forward` refuses while a role runs against the integration branch; `--force` skips the check (T-0656, #16).
+- `redck` ignores the ticket folder under the work root when judging the tree dirty (T-0658, #18).
+- Every SKILL.md stays under 18,000 characters, with detail moved word for word into `references/`; `check-packaging.py` fails a larger one (T-0659, #19).
+- Plan lint flags an every, all or each criterion with no command, and `git stash` or `--autostash` in Do text; the verifier answers a quantified criterion as k of N (T-0660, T-0666, #20, #26).
+- NOTES.md, the Outcome and the gate ledger hold repo- or lane-relative paths; `check` warns on an absolute machine path in a tracked record (T-0662, #22).
+- Conductor guidance and every skill say `record --agent-id <id>` finds the transcript, with nothing on stdin; `check.py` item 41 now forbids `--transcript` in skill record calls (T-0667, T-0673, #27).
+- The ui-designer reads a repo skill's SKILL.md first and opens a reference only when its cue matches (T-0668, #28).
+- Solo dispatch records go to the records dir; close moves leftover untracked files out of the ticket folder, and `check` warns on an undotted folder with no handoff (T-0669, #29).
+- Onboard's AGENTS.md block says `.sdlc/` holds tickets and their task plans, plan docs under review go to `docs/planning/`, and `docs/work/AGENTS.md` shows the stage counts; `docs/AGENTS.md` links a frozen home's router only when it exists (T-0663, T-0671, #23, #31).
+- Each generated level-variant agent carries a one-line description, `<role> at level <Ln>: <model> <effort>. Same role as the <role> agent.`; the longest drops from 408 to 81 characters (T-0665, #25).
 
 ### Removed
 
-- The `plan-goal`, `plan-campaign`, `plan-doc` and `plan-fanout` redirect stubs and `check.py` item 58; run `/sdlc-lite:plan <kind>` (T-0665).
+- The `plan-goal`, `plan-campaign`, `plan-doc` and `plan-fanout` redirect stubs and `check.py` item 58; run `/sdlc-lite:plan <kind>` (T-0665, #25).
 
 ## [0.27.0] - 2026-10-19
 
