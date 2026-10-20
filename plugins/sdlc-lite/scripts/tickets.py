@@ -106,7 +106,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             still needs (below) is written as `- skip: <role>; step: <n|all>; reason: closed by reason (TEXT);
             decided: tickets.py close --reason` instead of refusing
             a TEXT matching `on main` or `landed` (case-insensitive) must name a commit sha that is an
-            ancestor of the default branch, else the close refuses
+            ancestor of the default branch, else the close refuses; a TEXT saying `delivered by the full chain lane`
+            or `delivered by the solo agent` must match the lane skips.md records (lean reads as full), else it
+            refuses naming both lanes (T-0670)
             close --filer --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
             longer apply: follow-ups, duplicates, --dry-run, --skip/--expect and the numbered rename work
             as for a plain close, and each Warnings line becomes an Outcome line `- Deviation:
@@ -2247,6 +2249,15 @@ def last_lane(text):
     return lanes[-1] if lanes else None
 
 
+def reason_lane(reason):
+    """The lane a close --reason names in fanout's own wording (T-0670): `solo` for `delivered by the solo agent`, `full`
+    for `delivered by the full chain lane`, else None, so a reason with no lane wording closes as before."""
+    low = reason.lower()
+    if 'delivered by the full chain lane' in low:
+        return 'full'
+    return 'solo' if 'delivered by the solo agent' in low else None
+
+
 def skip_missing(d, covered=()):
     """(lane, [missing roles]) for ticket dir d's skips.md (skips_path), or None when exempt: no skips.md, no ## Lane
     section, no `- lane:` line in it, or a last lane other than solo, lean, fix, or full. The full chain's planner and
@@ -3536,6 +3547,11 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
              f'them; nothing written')
     skips_text = skips_f.read_text(encoding='utf-8') if skips_f.is_file() else ''
     lane = {'lean': 'full', 'solo': 'solo', 'fix': 'fix'}.get(last_lane(skips_text), 'full')
+    if reason is not None:  # T-0670: the reason text never names a lane other than the recorded one
+        named = reason_lane(reason)
+        if named and last_lane(skips_text) and named != lane:
+            need(f'{slug}: --reason says the {named} lane delivered it, but {skips_f.name} records lane {lane}; '
+                 f'reword the reason; nothing written')
     rows = gated_verifiers(d, [kv for role, kv in skip_entries(skips_text) if role == 'verifier'])
     if not filer and reason is None:  # the verdict gate
         if docs_base is None and any(r['verdict'] != 'pass' and not r['cover'] for r in rows):
@@ -5173,6 +5189,31 @@ def selftest():
                         os.environ.pop(k, None)
                     else:
                         os.environ[k] = saved_env[k]
+        # (k4) T-0670: a --reason naming a lane other than the one skips.md records refuses, naming both lanes
+        def lane_case(lane_line):
+            def setup(r):
+                (r / 'alpha' / 'skips.md').write_text(f'# Skips\n\n## Lane\n- lane: {lane_line}; point: p; reasons: r\n',
+                                                      encoding='utf-8')
+            return case(setup)
+        for rec, why, ok in (('solo', 'delivered by the full chain lane; x', False),
+                             ('solo', 'done elsewhere', True),
+                             ('solo', 'delivered by the solo agent (level L1); x', True),
+                             ('full', 'delivered by the solo agent (level L1); x', False),
+                             ('lean', 'delivered by the solo agent (level L1); x', False),
+                             ('full', 'delivered by the full chain lane; x', True)):
+            root = lane_case(rec)
+            before = snap(root)
+            rc, out, err = run(root, 'close', ('alpha',), reason=why)
+            if ok:
+                expect(f'(k4) lane {rec} with reason {why!r} closes: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+            else:
+                other = 'solo' if rec == 'solo' else 'full'
+                expect(f'(k4) lane {rec} with reason {why!r} refuses naming both lanes, writing nothing: rc={rc} {err!r}',
+                       rc == 1 and 'solo' in err and 'full' in err and f'records lane {other}' in err
+                       and snap(root) == before and status(root) != 'done')
+        root = case(lambda r: None)
+        rc, out, err = run(root, 'close', ('alpha',), reason='delivered by the full chain lane; x')
+        expect(f'(k4) no lane record keeps the reason as written: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
         # (l) --reason ignores a filer with open warnings and follow-ups
         root = case(filer('filer-L1.md', 'step-1 verifier fail', '- Add retry to fetch'))
         rc, out, err = run(root, 'close', ('alpha',), reason='superseded')
