@@ -12,6 +12,6 @@ Labels: from the host (the `/loop` skill and tool descriptions in Claude Code), 
 | Events over polling | A monitor streams events and wakes the loop; it expires after at most 30 minutes | from the host |
 | Prompt shape | Self-contained, idempotent, reads state from files or commands, reports progress since the last run, ends on a stop condition | observed: the status loop in this repo's thread restated progress each fire |
 | Cost | Each fire is a model turn: choose the longest interval that fits the need | inferred |
-| No status loops | A fixed-interval prompt that watches running work (status, board, progress, waiting on, land, dispatch) fails `status-polls-running-work`: a background role's completion notification already wakes the session. For a plan doc use the driver turn in [run-plan](../../run-plan/SKILL.md) | observed: maison's 10-minute check reported "nothing moved" dozens of times |
+| No status loops | A fixed-interval prompt that watches running work (status, board, progress, waiting on, land, dispatch) fails `status-polls-running-work`: a background role's completion notification already wakes the session. For a plan doc use the driver turn in the `run-plan` skill | observed: maison's 10-minute check reported "nothing moved" dozens of times |
 
 Example: `/loop 20m check the deploy health and report what changed since the last run; stop when the notes file says done` (`notes.md` in `.sdlc/`, `.sdlc/notes/notes.md` with `layout: topics`, `docs/work/NOTES.md` with `work_root: docs/work`)

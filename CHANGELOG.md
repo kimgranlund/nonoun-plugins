@@ -2,6 +2,23 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.27.0] - 2026-10-19
+
+Report: [docs/reports/2026-10-19-release-0-27-0.md](docs/reports/2026-10-19-release-0-27-0.md).
+
+### Added
+
+- `tickets.py inventory [--into BRANCH]... [--days N] [--json]`: a read-only row per open or recently closed ticket and branch with its landed state (`ancestor`, `pr merged`, `patch`, `content`, `not landed`, `cannot decide`) and its newest verifier verdict. `lanes.patch_landed` holds the `git cherry` test that `orphans` and `inventory` share; `lanes.landed` checks it only when called with `patch=True` (T-0644, design T-0584).
+- `traces` finding `idle-wakes`: conductor turns fired by a loop or cron that changed nothing; `traces.py ingest --conductor-transcript` feeds it (T-0643).
+
+### Changed
+
+- `plan_check.py loop` fails a fixed-interval status loop with `status-polls-running-work`. `plan-loop` no longer offers status loops, and `run-plan` names the interval-free driver turn: run `plan_done.py`, dispatch the first open item in the background, end the turn (T-0643, design T-0583).
+
+### Fixed
+
+- `--rewrite-refs` on `close`, `archive`, `number` and `migrate-layout` leaves files under the `docs/layout.md` Frozen paths (and `rewrite_skip:` globs in `.sdlc/config`) unchanged and lists each as `kept frozen:`. The `onboard.py` refusal for a malformed Frozen paths list names the one-backticked-glob-per-line form (T-0577).
+
 ## [0.26.0] - 2026-10-19
 
 Report: [docs/reports/2026-10-19-release-0-26-0.md](docs/reports/2026-10-19-release-0-26-0.md).

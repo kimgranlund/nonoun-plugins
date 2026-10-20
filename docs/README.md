@@ -59,6 +59,7 @@
 - [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC Lite, with verifier history and known limits.
 - [Haiku 5.5 pin](reports/2026-10-07-haiku-5-5.md): dated record of moving the scout L1 row and the messenger to `claude-haiku-5-5` (T-0353): the sites changed, the grep inventory, the eval and lock, the live scout proof (the alias `haiku` resolved to `claude-haiku-5-5`), and the unrefit haiku price rate.
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
+- [Release 0.27.0](reports/2026-10-19-release-0-27-0.md): `tickets.py inventory`; status loops rejected for an interval-free driver turn; `--rewrite-refs` keeps frozen files.
 - [Release 0.26.0](reports/2026-10-19-release-0-26-0.md): `.sdlc/by-hand.md` for working without the plugin; docs numbering steps.
 - [Release 0.25.1](reports/2026-10-19-release-0-25-1.md): onboard asks before `git init` outside a Git work tree.
 - [Release 0.25.0](reports/2026-10-19-release-0-25-0.md): opt-in `docs/work` work root with a migrate command, docs index, numbering and cap rules.

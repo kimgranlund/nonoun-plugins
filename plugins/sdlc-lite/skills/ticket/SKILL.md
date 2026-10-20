@@ -15,7 +15,7 @@ Arguments: `$ARGUMENTS`
 
 | Argument | Meaning | Default | Example |
 |---|---|---|---|
-| `new`, `close`, `claim`, `release`, `roadmap`, `check`, `archive`, `number`, `migrate-layout`, `migrate-work-root`, `migrate-size`, `blockers` | The subcommand, passed to `tickets.py` as written | `check` | `roadmap` |
+| `new`, `close`, `claim`, `release`, `roadmap`, `check`, `archive`, `number`, `migrate-layout`, `migrate-work-root`, `migrate-size`, `blockers`, `inventory` | The subcommand, passed to `tickets.py` as written | `check` | `roadmap` |
 | `<type>` | With `new`: `feature`, `bug`, `chore`, `spike`, or `idea` | - | `new bug board-crash` |
 | `<slug>` | With `new`: the bare slug of the new folder. With `close`: the ticket folder | - | `close board-crash` |
 | `"title"` | With `new`: the title stamped into the ticket | none | `new bug board-crash "Board crashes on empty root"` |
@@ -36,6 +36,9 @@ Arguments: `$ARGUMENTS`
 | `--preflight` | With `close`: read-only; print `ready` (exit 0) or one line per item close will demand (exit 1), writing nothing | off | `close board-crash --preflight` |
 | `--keep-refs` | With `close`: leave citing files as they are and list them on a `- Deviation:` line of the `## Outcome`, without overriding open Warnings | off | `close board-crash --keep-refs` |
 | `--to PATH` | With `migrate-work-root`: the work root the tracked records move to, relative to the repo top | `docs/work` | `migrate-work-root --to docs/work --dry-run` |
+| `--into BRANCH` | With `inventory`: a branch to test landing against; repeat it for more | the default branch | `inventory --into integration` |
+| `--days N` | With `inventory`: also list tickets closed in the last N days | `7` | `inventory --days 14` |
+| `--json` | With `inventory`: print the rows as JSON | off | `inventory --json` |
 | `--apply` | With `migrate-size`: write the rewrites; without it the run is a dry run | off | `migrate-size --apply` |
 | `--scope PATH` | With `blockers`: narrow the list to one task or ticket dir | every ticket | `blockers --scope .sdlc/add-retry` |
 
