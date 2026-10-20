@@ -2,7 +2,7 @@
 id: T-0655
 title: "prepare checks lane guidance against main and named guidance paths"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,14 @@ A dispatch from the main checkout, or from a lane whose guidance matches main an
 - Selftest: five `lane guidance:` cases in their own block (matching lane, differing AGENTS.md, missing skill exit 5 with no record, skill present passes, main checkout unchecked).
 - Negative control observed: with the refusal disabled (`if missing and False:`), `dispatch.py selftest` exits 1 with `FAIL: lane guidance: a handoff naming a skill on main but not in the lane refuses, exit 5, and writes no record`; restored, it passes.
 - Checks: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (run.sh dry-run parity cases all ok); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 67123bd857b3
+- Changed: see commits
+- Commits: 231a82a T-0655: prepare checks lane guidance against main and named guidance paths
+- Check: 1 selftest exits 0 with the lane guidance cases (a), (b), (c) and a bitten negative control: pass
+- Check: 2 main-checkout parity cases unchanged: pass
+- Check: 3 `git diff --check`: pass
+- Follow-up: note: the redck.py deviations run printed no process deviation: lines... -> notes.md
+- Follow-up: note: the harness denied rm -rf of the scratch dirs tmp:0655-verifier-L2... -> notes.md

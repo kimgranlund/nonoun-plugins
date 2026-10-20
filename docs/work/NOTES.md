@@ -75,3 +75,8 @@
 
 - decide: plugins/sdlc-lite/skills/build/SKILL.md and 12 other skills (fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md) still say "with the sub-agent's final message on stdin", per the builder's Outcome; this needs a follow-up ticket to align them with conductor.md:41.
 - note: the scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0667-verifier-L2 still holds the mutation copies (plug, plug2, *.out); the permission system denied rm there.
+
+## T-0655: prepare checks lane guidance against main and named guidance paths (2026-10-20)
+
+- note: the `redck.py deviations` run printed no `process deviation:` lines, and criterion #1 is not marked `(red)`.
+- note: the harness denied `rm -rf` of the scratch dirs `tmp:0655-verifier-L2` and `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0655-verifier-L2`; the throwaway worktree `neg` was removed with `git worktree remove`, only the plain scratch repos `r` and `r-lane` remain in the second path.
