@@ -2,7 +2,7 @@
 id: T-0660
 title: "Plan lint flags universally quantified prose criteria with no command"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,13 @@ A criterion line with a command span is never flagged by this rule. Other lint f
 - `plugins/sdlc-lite/scripts/steps.py`: `quantified_prose` (a criterion list item plus its indented continuation lines) and a `lint_steps` finding `plan defect: quantified prose criterion has no command` for an item with no command span whose prose (code spans removed) holds the whole word every, all or each, unless it names an enumeration or sample (`enumerat`, `sampl`, `k of N`, `12 of 12`). A numeric count such as `all 12 tests pass` stays with the existing `count_warnings` warning, so the (t0347) case and the (k2) `for each changed file` code-span case are unchanged. Selftest cases `(k2q)` cover the refused line, a quantified line with a command, and an enumeration line; with the finding loop removed the refusal case does not hold.
 - `plugins/sdlc-lite/skills/checking-rules/SKILL.md`: rule 4, enumerate quantified prose as `k of N` with a source pointer per item, never a bare pass; intro and Procedure now say four rules. Codex verifier TOMLs regenerated (`codex_roles.py generate`), Claude agents unchanged.
 - Checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `grep -n -i 'enumerat' plugins/sdlc-lite/skills/checking-rules/SKILL.md` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: e58bd29c8519
+- Changed: see commits
+- Commits: 16208bf T-0660: plan lint flags universally quantified prose criteria with no command
+- Check: 1 selftest exits 0 with the new cases: pass
+- Check: 2 enumeration rule in checking-rules: pass
+- Check: 3 packaging check: pass
+- Check: 4 diff check: pass
