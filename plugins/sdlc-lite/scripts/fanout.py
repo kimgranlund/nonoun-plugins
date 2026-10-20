@@ -5296,8 +5296,10 @@ def selftest():
                 for fname, body in files_.items():
                     (tree_ / fname).parent.mkdir(parents=True, exist_ok=True)
                     (tree_ / fname).write_text(body, encoding='utf-8')
-            subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'new', 'chore', 'third',
-                            'Ticket t3'], cwd=str(lt_), env=ENV, capture_output=True, text=True)
+            tn_ = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'new', 'chore', 'third',
+                                  'Ticket t3'], cwd=str(lt_), env=ENV, capture_output=True, text=True)
+            expect(f'T-0654 fixture {name}: tickets.py new files T-0003 on the lane, got rc={tn_.returncode} '
+                   f'err={tn_.stderr!r}', tn_.returncode == 0)
             for tree_ in (iwt_, lt_):
                 sh(tree_, 'add', '-A')
                 sh(tree_, 'commit', '-q', '-m', 'diverge')
@@ -5305,6 +5307,9 @@ def selftest():
 
         ya, lta = sync_fixture('sync-a', {'gen/out.txt': 'lane\n'}, {'gen/out.txt': 'integ\n'})
         sa = verb(ya, 'sync', 'fanout/x-b', '--regen', 'echo regen > gen/out.txt', '--gate', 'true')
+        ya_rows = sh(ya, 'show', 'fanout/x-b:.sdlc/roadmap.md').stdout.splitlines()
+        expect(f'T-0654 sync: the merged roadmap counts T-0001 closed and lists T-0003, got {ya_rows!r}',
+               any(x.startswith('Closed: 1 done') for x in ya_rows) and any(x.startswith('| T-0003 |') for x in ya_rows))
         expect(f'T-0654 sync: exit 0, the lane tip a merge whose second parent is the fanout/x tip, gen/out.txt '
                f'regenerated, the lane tree clean, got rc={sa.returncode} out={sa.stdout[-400:]!r} err={sa.stderr[-400:]!r}',
                sa.returncode == 0
