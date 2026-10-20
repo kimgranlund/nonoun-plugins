@@ -15,7 +15,7 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
        fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]...
                       [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
                       [--gate-need [PREFIX::]RES=N]...
-       fanout.py settle <integration> [--root .sdlc] [--require-covered]
+       fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--force]]
        fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]...
                        [--no-gate-lock] [--allow-empty-gate]
        fanout.py selftest
@@ -100,6 +100,10 @@ settle (T-0438, T-0452)
   .sdlc/config does not stop it) and the branch deleted, and the close message prints. A close that refuses (not a
   plugin lane, lanes still open into the branch, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
   keeps the branch and exits 1.
+  --forward (T-0489) refuses (exit 2, nothing merged) while a role is running against the integration branch (T-0656):
+  a `<role>-<level>.running` marker under `<root>/runtime/tasks/` in the integration worktree or in a worktree whose lane
+  record has `into` equal to the branch prints `settle: running in <tree>: <role>-<level> (<task>)` per marker; check
+  `dispatch.py status`, and `dispatch.py recover` clears a stale one. --force skips the check.
   --require-covered (T-0481; --root, default .sdlc, names the ledger <rel>/gate-ledger.jsonl) runs before the
   fast-forward: it reads the ledger with `git show <integration>:<rel>/gate-ledger.jsonl` and refuses (exit 2, branch
   kept, nothing merged, the uncovered range `<from-or-to>..<tip>` printed) unless the newest entry has rc 0 and either
@@ -2629,7 +2633,9 @@ def cmd_settle(a):
     keeps the branch and exits 1. Local only, never a push. --require-covered (T-0481) first reads the newest
     gate-ledger.jsonl entry on the branch (require_covered) and refuses (exit 2, nothing merged) an uncovered tip.
     --forward (T-0489, needs --gate) first brings a diverged branch level with the current branch through settle_forward
-    (merge, regenerate, cover under the merge lock); green continues into the fast-forward above, red exits 1."""
+    (merge, regenerate, cover under the merge lock); green continues into the fast-forward above, red exits 1. Before
+    that merge it refuses (exit 2, nothing merged) while a role is running against the branch (running_roles, T-0656)
+    unless --force."""
     cwd = pathlib.Path.cwd()
     try:
         if a.forward and not a.gate:
@@ -2641,6 +2647,12 @@ def cmd_settle(a):
         head = git_out(cwd, 'symbolic-ref', '--short', '-q', 'HEAD')
         if a.forward and git(cwd, 'merge-base', '--is-ancestor', a.integration, 'HEAD').returncode \
                 and git(cwd, 'merge-base', '--is-ancestor', 'HEAD', a.integration).returncode:
+            if not a.force:
+                busy = running_roles(a, cwd)
+                if busy:
+                    raise Refuse('settle --forward: a role is running against ' + a.integration + '; nothing merged; '
+                                 'dispatch.py status lists the attempts, dispatch.py recover clears a stale marker, '
+                                 '--force settles anyway:\n' + '\n'.join(busy))
             rc = settle_forward(a, cwd, head)
             if rc:
                 return rc
@@ -2673,6 +2685,26 @@ def cmd_settle(a):
     print(r['message'])
     print(f'settled: {a.integration} is in {head or "HEAD"}; its worktree and branch are removed (archive {r.get("archive")})')
     return 0
+
+
+def running_roles(a, cwd):
+    """One `settle: running in <tree>: <role>-<level> (<task>)` line per `<role>-<level>.running` marker (T-0656) under
+    <root>/runtime/tasks/<task>/ in the worktree that has the integration branch checked out and in every worktree whose
+    lane record has `into` equal to it (lanes.discover)."""
+    lpath, _top = ledger_rel(cwd, a.root)
+    rel = pathlib.PurePosixPath(lpath).parent
+    trees = []
+    for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+        if line.startswith('worktree '):
+            cur = line[len('worktree '):]
+        elif line == f'branch refs/heads/{a.integration}':
+            trees.append(cur)
+    trees += [d['path'] for d in lanes.discover(lanes.Ctx(str(cwd))) if d.get('into') == a.integration]
+    found = []
+    for tree in dict.fromkeys(os.path.realpath(t) for t in trees):
+        for m in sorted(pathlib.Path(tree, *rel.parts, 'runtime', 'tasks').glob('*/*.running')):
+            found.append(f'settle: running in {tree}: {m.stem} ({m.parent.name})')
+    return found
 
 
 def settle_forward(a, cwd, head):
@@ -5077,6 +5109,21 @@ def selftest():
         expect(f'T-0489 plain settle negative control: a diverged branch without --forward exits 2, got rc={fp.returncode} '
                f'err={fp.stderr!r}', fp.returncode == 2 and 'not a fast-forward' in fp.stderr)
         # negative control: a red gate keeps main where it is and leaves the forward merge on the integration branch
+        # T-0656: a running role against the integration branch refuses the forward merge; --force settles anyway
+        sk = forward_fixture('settle-fwd-running', {'f1.txt': 'one\n'})
+        wtk = tree_of(sk, 'fanout/x')
+        mk = wtk / '.sdlc' / 'runtime' / 'tasks' / 't' / 'verifier-L1.running'
+        mk.parent.mkdir(parents=True, exist_ok=True)
+        mk.write_text('1\n', encoding='utf-8')
+        mainK, tipK = sh(sk, 'rev-parse', 'main').stdout.strip(), sh(sk, 'rev-parse', 'fanout/x').stdout.strip()
+        fk = verb(sk, 'settle', 'fanout/x', '--forward', '--gate', 'true')
+        expect(f'T-0656 settle --forward running role: exit 2 naming verifier-L1, main and fanout/x unmoved, got '
+               f'rc={fk.returncode} out={fk.stdout!r} err={fk.stderr!r}',
+               fk.returncode == 2 and 'verifier-L1' in fk.stderr + fk.stdout and sh(sk, 'rev-parse', 'main').stdout.strip() == mainK
+               and sh(sk, 'rev-parse', 'fanout/x').stdout.strip() == tipK)
+        ff = verb(sk, 'settle', 'fanout/x', '--forward', '--gate', 'true', '--force')
+        expect(f'T-0656 settle --forward --force: exit 0 and settled, got rc={ff.returncode} out={ff.stdout[-400:]!r} '
+               f'err={ff.stderr[-400:]!r}', ff.returncode == 0 and 'settled' in ff.stdout)
         sg = forward_fixture('settle-fwd-red', {'f1.txt': 'one\n'})
         main3 = sh(sg, 'rev-parse', 'main').stdout.strip()
         fg = verb(sg, 'settle', 'fanout/x', '--forward', '--gate', 'false')
@@ -5362,7 +5409,7 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
          '[--gate-need [PREFIX::]RES=N]... | '
          'fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]... '
          '[--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
-         'fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--lanes-dir DIR] '
+         'fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--force] [--lanes-dir DIR] '
          '[--gate-need ...] [--no-gate-lock] [--allow-empty-gate]] | '
          'fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]... '
          '[--no-gate-lock] [--allow-empty-gate] | '
@@ -5390,6 +5437,9 @@ def main(argv):
         sp.add_argument('--forward', action='store_true', help='a diverged integration branch (T-0489): merge the current '
                         'branch into it under the merge lock, regenerate the roadmap and router files, union notes.md, '
                         'run cover with --gate at the new tip, and fast-forward only when it is green (needs --gate)')
+        sp.add_argument('--force', action='store_true', help='with --forward: skip the running-role check (T-0656), which '
+                        'otherwise refuses (exit 2, nothing merged) while a `<role>-<level>.running` marker is under the '
+                        'integration worktree or a lane into it')
         sp.add_argument('--gate', action='append', metavar='CMD', help='with --forward: the full gate set cover runs '
                         'in the integration worktree (repeatable, in order; the first red one stops)')
         sp.add_argument('--lanes-dir', help='with --forward: where merge.lock and logs/ are (default: the integration '

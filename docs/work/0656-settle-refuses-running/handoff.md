@@ -33,3 +33,9 @@ Source: GitHub issue #16, ui-kit-neue audit 2026-10-20.
 1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a new case: in the `forward_fixture` repo, a `verifier-L1.running` marker under the integration worktree's `.sdlc/runtime/tasks/t/` makes `settle fanout/x --forward --gate true` exit 2, print `verifier-L1`, and leave main and `fanout/x` unmoved; the same command with `--force` exits 0 and settles. The case fails with the running check removed (observed negative control, recorded in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/fanout.py settle --help` names `--force`.
 3. `git diff --check` exits 0.
+
+## Outcome
+- `cmd_settle` now calls `running_roles` (new, `plugins/sdlc-lite/scripts/fanout.py`) before `settle_forward`: it globs `<root>/runtime/tasks/*/*.running` in the integration worktree and in every `lanes.discover` lane whose `into` is the branch, and refuses with exit 2 (nothing merged) printing `settle: running in <tree>: <role>-<level> (<task>)` per marker plus a `dispatch.py status`/`recover` hint. `--force` skips it. Module docstring, usage line (both) and the settle parser document `--force`.
+- New selftest case `T-0656 settle --forward running role` (plus the `--force` case) in `forward_fixture` `settle-fwd-running`.
+- `fanout.py selftest` exit 0. `fanout.py settle --help` names `--force`. `git diff --check` exit 0.
+- Observed negative control: with the check bypassed (`if not a.force:` replaced by `if False:`), the selftest fails both new cases (rc=0 and the branch settled instead of exit 2); restored afterwards.
