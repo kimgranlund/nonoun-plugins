@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e1fcc2eafc8c -->
+<!-- sdlc-lite:managed:start v1 sha256:0e0860c0b7fd -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,13 +10,13 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 2
-  - T-0643 plan_check fails fixed-interval status loops; driver prompt replaces them (docs/work/0643-status-loop-guard)
-  - T-0644 tickets.py inventory: build the T-0584 design (docs/work/0644-tickets-inventory-build)
+- proposed: 0
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 1
+- claimed: 3
   - T-0577 --rewrite-refs rewrites citations inside frozen records (docs/work/0577-rewrite-refs-frozen-paths), claimed by sdlc-lite-author 2026-10-19
+  - T-0643 plan_check fails fixed-interval status loops; driver prompt replaces them (docs/work/0643-status-loop-guard), claimed by sdlc-lite-author 2026-10-19
+  - T-0644 tickets.py inventory: build the T-0584 design (docs/work/0644-tickets-inventory-build), claimed by sdlc-lite-author 2026-10-19
 - paused: 0
 - blocked: 0
 - done: 604
