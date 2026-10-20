@@ -8,7 +8,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | 🟡 claimed |
 | T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | ⏳ proposed |
-| T-0653 | [0653-roadmap-open-followups](0653-roadmap-open-followups/handoff.md) | Roadmap renders an Open follow-ups section from NOTES.md | feature | L2 | P1 | none | 🟡 claimed |
 | T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | 🟡 claimed |
 | T-0655 | [0655-lane-guidance-check](0655-lane-guidance-check/handoff.md) | prepare checks lane guidance against main and named guidance paths | bug | L2 | P2 | none | ⏳ proposed |
 | T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
@@ -19,4 +18,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 
-Closed: 623 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 624 done, 29 dropped (git log or .NNNN-* folders)

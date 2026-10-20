@@ -2,7 +2,7 @@
 id: T-0653
 title: "Roadmap renders an Open follow-ups section from NOTES.md"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ A repo with no NOTES.md, or with no open `decide:` item in it, renders the roadm
 ## Outcome
 - Changed: `plugins/sdlc-lite/scripts/tickets.py`: `open_followups` reads NOTES.md `- decide:` / `- source-fix:` lines with no `-> T-NNNN` marker; `render` appends `## Open follow-ups` (each line names its `## ` block) only when there are any; `cmd_check` prints `open follow-ups: <n> unrouted in <notes path>` (exit unchanged); usage text for roadmap and check plus router close step 2 say how to mark an item routed. Router `.sdlc/AGENTS.md` regenerated. This repo's NOTES.md has no tagged `decide:` lines, so `docs/work/ROADMAP.md` is unchanged.
 - Checks: `tickets.py selftest` exit 0 (new T-0653 cases; with the reader disabled both fail); `tickets.py --root .sdlc roadmap` exit 0, `tickets.py --root .sdlc check` exit 0; `git diff --check` exit 0; `check.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a0d0b2fdaeb6
+- Changed: see commits
+- Commits: 8d93117 T-0653: Roadmap renders an Open follow-ups section from NOTES.md
+- Check: 1 selftest exits 0 with a new case (a, b -> T-0009, note c renders only `a`; check prints `open fol...: pass
+- Check: 2 a fixture with no NOTES.md renders no `## Open follow-ups` heading: pass
+- Check: 3 `tickets.py --root .sdlc roadmap` then `check` exits 0 in this repo: pass
+- Check: 4 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:2518 FOLLOW_RE is a fullmatch... -> notes.md
