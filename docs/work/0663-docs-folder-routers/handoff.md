@@ -35,3 +35,9 @@ Homes with a written router keep their link. Changing the managed block text cha
 3. `grep -n 'The onboard setup also lists it' plugins/sdlc-lite/scripts/onboard.py docs/AGENTS.md` finds nothing, and step 3 in `onboard.py` names the `docs/AGENTS.md` Contents fallback.
 4. `python3 plugins/sdlc-lite/scripts/onboard.py check 2>&1 | grep 'docs/AGENTS.md'` prints `current docs/AGENTS.md`, and `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` exits 0.
 5. `git diff --check` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/onboard.py`: `build_model` marks a home as having an entry only when its `AGENTS.md` is not frozen or already exists, so Contents shows the plain folder line for a frozen home with no router (this repo's hand-written `docs/reports/AGENTS.md` keeps its link). Step 3 of `DOCS_AGENTS_TEMPLATE` now names the `docs/AGENTS.md` Contents fallback.
+- Selftest: `gate_nested_entries` asserts the frozen `reports/` home renders as `` `reports/` `` with no `reports/AGENTS.md` link; new negative variant `links the entry of a frozen home`. With the fix reverted the gate fails (`docs/AGENTS.md links the entry of the frozen reports/ home`).
+- `docs/AGENTS.md` refreshed with `onboard.py setup` (step 3 text and stamp).
+- Criteria: 1 exit 0; 2 prints 0; 3 grep finds nothing; 4 prints `current docs/AGENTS.md`, docs_check selftest exit 0; 5 exit 0. Repo `docs_check.py` D-10 count unchanged (72, same as main).

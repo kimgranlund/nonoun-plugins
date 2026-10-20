@@ -474,7 +474,7 @@ The first line that matches wins.
 
 1. Pick the home above; [the layout](layout.md) lists any extra homes.
 2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`. A home whose `## Kinds` form in [the layout](layout.md) is numbered (such as `NNNN-slug.md`) takes the next number from `docs_check.py next docs/<home>`, or by hand: read the highest existing number and held ref, then run `git update-ref refs/sdlc/doc-ids/<home>/<NNNN> "$(printf 'docs/<home>/<NNNN>\\n' | git hash-object -w --stdin)" ""`, which is create-only.
-3. Add a link to it in its folder's `AGENTS.md`, outside the generated managed block, since a hand edit inside the block fails its stamp. The onboard setup also lists it.
+3. When its folder has an `AGENTS.md`, add a link to it there, outside the generated managed block, since a hand edit inside the block fails its stamp. When the folder has none, the onboard setup lists it in the Contents of `docs/AGENTS.md`.
 4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
 5. Find the document's type in `specs/doc-standards/README.md`, when this repository has it, and follow the card its row names.
 
@@ -754,7 +754,9 @@ def build_model(root, layout, documents):
                         os.path.isfile(os.path.join(root, 'docs', name, 'README.md')))
                   for name in sorted(topics)]
     nested = _nested_topics(root, layout, documents)
-    entries = {t.name + '/' for t in nested}
+    # plan never writes a frozen home's entry, so Contents links one only when it already exists.
+    entries = {t.name + '/' for t in nested if not _frozen(layout.frozen, 'docs/%s/AGENTS.md' % t.name)
+               or os.path.isfile(os.path.join(root, 'docs', t.name, 'AGENTS.md'))}
     home_list = [Home(h, os.path.isfile(os.path.join(root, 'docs', h, 'README.md')), h in entries)
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
@@ -1497,6 +1499,11 @@ def _render_without_nested(model):
     return render_templates(model._replace(nested=()))
 
 
+def _render_linking_frozen_entries(model):
+    nested = {t.name + '/' for t in model.nested}
+    return render_templates(model._replace(homes=[h._replace(entry=h.path in nested) for h in model.homes]))
+
+
 def _render_nested_for_every_home(model):
     extra = [Topic(h.path.rstrip('/'), ['x.md'], False) for h in model.homes]
     return render_templates(model._replace(nested=list(model.nested) + extra))
@@ -1517,6 +1524,8 @@ def gate_nested_entries(impl):
                'nested fixture: the home entry block is %r' % block.text)
         _, block, _ = _parts(_text(root, 'docs/AGENTS.md'), 'docs/AGENTS.md')
         expect('- [guides/](guides/AGENTS.md)' in block.text, 'nested fixture: docs/AGENTS.md does not link the home entry')
+        expect('reports/AGENTS.md' not in block.text and '- `reports/`' in block.text,
+               'nested fixture: docs/AGENTS.md links the entry of the frozen reports/ home')
         rc, out, err = _call(run_check, root, impl)
         expect(rc == 0, 'nested fixture: check after setup exited %d: %s %s' % (rc, out.strip(), err.strip()))
 
@@ -1930,6 +1939,7 @@ GATES = [
     ('nested-entries', gate_nested_entries, REAL, [
         ('creates no entry for a home or a topic under a home', REAL._replace(render=_render_without_nested)),
         ('creates an entry for a home with one document', REAL._replace(render=_render_nested_for_every_home)),
+        ('links the entry of a frozen home', REAL._replace(render=_render_linking_frozen_entries)),
     ]),
     ('preserve', gate_preserve, REAL, [
         ('template variant writes outside the markers', REAL._replace(wrap=_wrap_writing_outside)),
