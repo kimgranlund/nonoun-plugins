@@ -108,7 +108,9 @@ throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier for a ticket with a ready ref
 (refs/sdlc/ready/<id>, lanes.py ready, T-0590) also gets `Review sha: <its sha>`, stored as review_sha, and takes Base sha
 from the `Lane-Base:` line of that snapshot commit when it is an ancestor; prepare says so on stderr when the tree has
-moved since the pin (stale). Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
+moved since the pin (stale). A verifier whose records dir holds end-sha (written by record for a completed builder: the
+tree's HEAD when clean, else a tree hash built with a temporary index, T-0661) also gets `Diff range: <base>..<end>`
+(`git diff <base> <tree>` for a tree hash; base..Review sha when it has one), stored as diff_range. Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
 the result path the role writes with the Write tool before it ends; record fails the run with a message naming that path when it is missing,
 also when stdin is only the pointer. The line also says the file carries no header (record adds it, T-0538) and names
 `results.py validate <file> --role <role> --headerless`. The pointer line asks for a final message of one line, `<role> <status> <path>`.
@@ -560,6 +562,34 @@ def ready_review(directory, tree, base):
         say('%s%s is stale: %s has moved since lanes.py ready pinned %s; the verifier reviews the pinned sha'
             % (READY_REFS, tid, tree, sha[:12]))
     return sha, base
+
+
+def build_end(tree):
+    """Where a build ended (T-0661): HEAD of tree when it is clean, else the hash of its working tree, built with a
+    temporary index (GIT_INDEX_FILE), never git stash or the shared index. '' when git cannot say."""
+    st = git('status', '--porcelain', cwd=tree)
+    head = git('rev-parse', '-q', '--verify', 'HEAD^{commit}', cwd=tree).stdout.strip()
+    if st.returncode != 0 or not head:
+        return ''
+    if not st.stdout.strip():
+        return head
+    with tempfile.TemporaryDirectory() as td:
+        env = dict(os.environ, GIT_INDEX_FILE=os.path.join(td, 'index'))
+        for args in (['read-tree', 'HEAD'], ['add', '-A']):
+            if subprocess.run(['git'] + args, cwd=tree, env=env, capture_output=True).returncode != 0:
+                return ''
+        p = subprocess.run(['git', 'write-tree'], cwd=tree, env=env, capture_output=True, text=True)
+    return p.stdout.strip() if p.returncode == 0 else ''
+
+
+def step_end(records, tree):
+    """(end, kind) from the end-sha a recorded builder left in records: kind is commit or tree; ('', '') when absent
+    or when tree no longer holds the object."""
+    f = Path(records) / 'end-sha'
+    lines = f.read_text(encoding='utf-8', errors='replace').split() if f.is_file() else []
+    end = lines[0] if lines else ''
+    kind = git('cat-file', '-t', end, cwd=tree).stdout.strip() if re.fullmatch(r'[0-9a-f]{7,64}', end) else ''
+    return (end, kind) if kind in ('commit', 'tree') else ('', '')
 
 
 def lane_gate(role, directory, plugin):
@@ -1200,11 +1230,29 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         tmp_prefix = str((wtroot.tmp_root(toplevel) or wtroot.default_root(toplevel) / 'tmp') / name)
         scratch = str(wtroot.scratch_dir(name, toplevel))
 
-        base, review = None, ''
+        base, review, diff_range, range_line = None, '', None, ''
         if role in ('builder', 'verifier'):
             stored, base = build_base(directory, records, run_tree, role)
             if role == 'verifier':
                 review, base = ready_review(directory, toplevel, base)
+                # T-0661: the end a recorded builder left in end-sha bounds the diff, so later steps or merges stay out of it
+                end, kind = step_end(records, toplevel)
+                if review and end:
+                    diff_range = '%s..%s' % (base, review)
+                    range_line = ('Diff range: %s (the Review sha wins over the end this step\'s builder recorded, %s; '
+                                  'later commits in Tree are not this step\'s)' % (diff_range, end))
+                elif kind == 'commit' and git('merge-base', '--is-ancestor', base, end, cwd=toplevel).returncode == 0:
+                    diff_range = '%s..%s' % (base, end)
+                    range_line = ('Diff range: %s (where this step\'s build ended, recorded by its builder\'s record: '
+                                  'git diff %s; later commits in Tree are not this step\'s)' % (diff_range, diff_range))
+                elif kind == 'tree':
+                    diff_range = '%s %s' % (base, end)
+                    range_line = ('Diff range: git diff %s (the build ended uncommitted: %s is a tree hash of its working tree, '
+                                  'recorded by its builder\'s record; later edits in Tree are not this step\'s)' % (diff_range, end))
+                elif end:
+                    say('end-sha %s is not a descendant of Base sha %s: no Diff range line' % (end[:12], base[:12]))
+            elif not dry_run:
+                (records / 'end-sha').unlink(missing_ok=True)  # a new build: the last attempt's end is stale
             if not dry_run and base != stored:
                 (records / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
@@ -1222,11 +1270,14 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                      toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix, scratch))
         if role == 'verifier':
             # T-0591: run rules every verifier gets, so the conductor stops adding them by hand
-            prompt += ('\nThe build may be uncommitted: diff against Base sha, not HEAD. Run every command in the foreground with an explicit '
+            prompt += ('\n' + ('Diff only the Diff range below, not Base sha against HEAD.' if range_line else
+                                'The build may be uncommitted: diff against Base sha, not HEAD.') + ' Run every command in the foreground with an explicit '
                        'Bash timeout under 600000 ms; never run_in_background or Monitor. Never run the full check.sh; run the checks the '
                        'criteria name. Never use git stash; the stash stack is shared across sessions.')
         if base:
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
+        if range_line:
+            prompt += '\n' + range_line
         if review:
             prompt += ('\nReview sha: %s (%s%s, the state the worker marked ready with lanes.py ready: review that commit; when Tree '
                        'no longer holds it, check it out under the throwaway prefix above)' % (review, READY_REFS, ticket_label(directory)[0]))
@@ -1248,7 +1299,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
                         prune=role in PRUNE_ROLES if prune is None else bool(prune),
                         role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix, scratch=scratch,
-                        base_sha=base, review_sha=review or None, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
+                        base_sha=base, review_sha=review or None, diff_range=diff_range, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
                         handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate, time_budget_min=minutes,
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
                         attempt_file=str(records / (stem + '.attempt.json')),
@@ -1732,6 +1783,9 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     if role == 'builder':  # T-0378: a completed build without its pre-edit (red) controls leaves a process deviation
         subprocess.run([sys.executable, str(HERE / 'redck.py'), 'audit', d['handoff'], '--attempt-id', d['attempt_id']],
                        stdout=subprocess.DEVNULL, check=False)
+        end = build_end(tree)  # T-0661: where this step's build ended, the verifier's Diff range end
+        if end:
+            (result.parent / 'end-sha').write_text(end + '\n', encoding='utf-8')
     report_strays(found)
     close('completed', 0, result_sha256=result_sha)
     print(result)
@@ -3583,6 +3637,64 @@ def selftest():
         case('the dispatch tmp prefix is removed, its worktree unregistered, and it is not reported as a stray',
              not Path(got['tmp_prefix']).exists() and str(own) not in listed and str(own) not in err)
         case('the outside worktrees are only reported, never removed', outside.is_dir() and str(outside) in listed)
+
+        # T-0661: a recorded builder leaves end-sha; the verifier's Diff range ends there, not at a later HEAD.
+        re_ = mk(tmp / 'E')
+        for name in ('e1', 'e2', 'e3'):
+            put(re_ / '.sdlc' / name / 'handoff.md')
+        eci = ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm']
+        git('add', '-A', cwd=re_)
+        git(*eci, 'handoffs', cwd=re_)
+        ebase = git('rev-parse', 'HEAD', cwd=re_).stdout.strip()
+        ends = lambda name: (lambda f: f.read_text() if f.is_file() else '')(R(re_ / '.sdlc' / name) / 'end-sha')
+
+        def built(rel):
+            """prepare a builder on rel; the caller edits the tree, then calls the returned record."""
+            rc, got, err = prep(re_, 'builder', 'L1', rel, SDLC_DISPATCH_PARENT_PID=live_pid)
+            if rc != 0:
+                raise AssertionError('prepare failed in the end-sha selftest: ' + err)
+
+            def rec():
+                Path(got['result']).write_text(BODY['builder'], encoding='utf-8')
+                with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                    return record(got['dispatch_file'])
+            return rec
+        rec = built('.sdlc/e1/handoff.md')
+        (re_ / 'step1.txt').write_text('one\n')
+        git('add', 'step1.txt', cwd=re_)
+        git(*eci, 'step 1', cwd=re_)
+        end1 = git('rev-parse', 'HEAD', cwd=re_).stdout.strip()
+        erc = rec()
+        (re_ / 'step2.txt').write_text('two\n')
+        git('add', 'step2.txt', cwd=re_)
+        git(*eci, 'step 2', cwd=re_)
+        head2 = git('rev-parse', 'HEAD', cwd=re_).stdout.strip()
+        vrc, dv, _ = prep(re_, 'verifier', 'L1', '.sdlc/e1/handoff.md', '--dry-run')
+        case('(a) a builder recorded on a committed step writes end-sha equal to the tree HEAD',
+             erc == 0 and ends('e1') == end1 + '\n')
+        case('(a) a verifier prepared after a later commit gets Diff range base..that end sha, not the new HEAD',
+             vrc == 0 and dv['diff_range'] == '%s..%s' % (ebase, end1) and 'Diff range: %s..%s' % (ebase, end1) in dv['prompt']
+             and head2 not in dv['prompt'] and 'Diff only the Diff range below' in dv['prompt'] and 'Base sha: ' + ebase in dv['prompt'])
+        stash = lambda: (git('stash', 'list', cwd=re_).stdout, git('rev-parse', '-q', '--verify', 'refs/stash', cwd=re_).stdout)
+        rec = built('.sdlc/e2/handoff.md')
+        (re_ / 'step3.txt').write_text('uncommitted\n')
+        (re_ / 'f.txt').write_text('edited\n')
+        before, staged = stash(), git('diff', '--cached', '--name-only', cwd=re_).stdout
+        erc = rec()
+        after = stash()
+        tree2 = ends('e2').strip() or 'none'
+        vrc, dv, _ = prep(re_, 'verifier', 'L1', '.sdlc/e2/handoff.md', '--dry-run')
+        case('(b) an uncommitted build writes a tree hash holding its edits, and the brief names git diff <base> <tree>',
+             erc == 0 and git('cat-file', '-t', tree2, cwd=re_).stdout.strip() == 'tree'
+             and git('diff', '--name-only', head2, tree2, cwd=re_).stdout.split() == ['f.txt', 'step3.txt']
+             and vrc == 0 and 'git diff %s %s' % (head2, tree2) in dv['prompt'] and dv['diff_range'] == '%s %s' % (head2, tree2))
+        case('(b) the stash stack and the shared index are unchanged by the tree hash',
+             before == after and git('diff', '--cached', '--name-only', cwd=re_).stdout == staged
+             and git('status', '--porcelain', '--', 'step3.txt', cwd=re_).stdout.startswith('??'))
+        vrc, dv, _ = prep(re_, 'verifier', 'L1', '.sdlc/e3/handoff.md', '--dry-run')
+        case('(c) a verifier with no end-sha gets no Diff range line and keeps the Base sha rule',
+             vrc == 0 and 'Diff range' not in dv['prompt'] and dv['diff_range'] is None
+             and 'diff against Base sha, not HEAD' in dv['prompt'])
 
         # Guards on a tampered dispatch file: nothing outside the tmp root is removed, nothing outside the artifacts dir is written.
         keep = tmp / 'keep-me'

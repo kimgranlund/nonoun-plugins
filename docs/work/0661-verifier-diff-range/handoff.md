@@ -36,3 +36,9 @@ Source: GitHub issue #21, ui-kit-neue audit 2026-10-20.
 2. `git stash list` is unchanged by `dispatch.py selftest` (the selftest asserts the stash stack is the same before and after case (b)).
 3. `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0.
 4. `git diff --check` exits 0, and `python3 scripts/check-packaging.py` exits 0 if a skill changed.
+
+## Outcome
+- `dispatch.py record` for a completed builder writes `end-sha` in the step's records dir (`build_end`: HEAD when the tree is clean, else `git write-tree` over a temporary `GIT_INDEX_FILE` seeded from HEAD; no stash, shared index untouched). A builder `prepare` removes a stale `end-sha`.
+- `dispatch.py prepare verifier` reads it (`step_end`) and adds `Diff range: <base>..<end>` (commit), `Diff range: git diff <base> <tree>` (tree hash), or `<base>..<Review sha>` when a ready ref exists too; stored as `diff_range`; the run rule then reads "Diff only the Diff range below, not Base sha against HEAD." A commit end that does not descend from Base sha is skipped with a stderr note. No `end-sha` keeps today's brief.
+- `skills/handoff-format/SKILL.md` names `end-sha` in the records layout.
+- Checks: `dispatch.py selftest` exit 0 (new cases (a), (b), (c); with the end-sha write disabled, (a) and (b) FAIL); `git stash list` unchanged across the selftest; `run-selftest.sh` exit 0; `git diff --check` exit 0; `check-packaging.py` exit 0; `check.py` exit 0.
