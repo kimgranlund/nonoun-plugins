@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:12b87ad6b981 -->
+<!-- sdlc-lite:managed:start v1 sha256:d7a21e79f876 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 21
+- proposed: 22
   - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer)
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
   - T-0652 Outcome gains an optional Lessons line (docs/work/0652-outcome-lessons-line)
@@ -32,6 +32,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0669 Dispatch and skip records go to the records dir, not the work root (docs/work/0669-dispatch-records-dir)
   - T-0670 close verdict reason matches the recorded lane (docs/work/0670-close-lane-reason)
   - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
+  - T-0672 Skill-route lint treats prose bullets that mention a skill as routes (docs/work/0672-skill-route-prose-false-positive)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
 - claimed: 3

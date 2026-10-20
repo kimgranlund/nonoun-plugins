@@ -30,5 +30,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | ⏳ proposed |
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
+| T-0672 | [0672-skill-route-prose-false-positive](0672-skill-route-prose-false-positive/handoff.md) | Skill-route lint treats prose bullets that mention a skill as routes | bug | L1 | P1 | T-0647 | ⏳ proposed |
 
 Closed: 610 done, 29 dropped (git log or .NNNN-* folders)
