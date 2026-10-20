@@ -2,7 +2,7 @@
 id: T-0651
 title: "A reason close routes follow-ups like a verified close"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,14 @@ A reason close still skips the verdict gate and the filer, and still refuses an 
 - Changed: `cmd_close --reason` now runs the default follow-up path: items are every read verifier's `## Notes` lines (task level last) plus the handoff's own `## Follow-ups` bullets, appended to NOTES.md or filed with `--ticket N --expect DIGEST`; `--dry-run`, `--skip`, `--ticket`, `--expect` combine with `--reason`. Placeholder and verdict gates stay skipped. `fanout.close_reason` no longer appends `; verifier notes: ...` (param and unused `results` import removed). Usage, docstring, `--reason` help, router step 4 (regenerated `.sdlc/AGENTS.md`) and `skills/ticket/SKILL.md` updated.
 - Checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0 (new T-0651 cases; red control: same selftest with HEAD's `cmd_close` fails the three T-0651 cases with `--reason files no follow-ups`); `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0 (case 15 asserts no `verifier notes:`); `grep -n 'no follow-ups' plugins/sdlc-lite/scripts/tickets.py` exit 1 (no match); `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
 - Scope note: `plugins/sdlc-lite/skills/ticket/SKILL.md` was outside the named files but stated the old behavior, so it was repaired.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/fanout.py:3912 case 15 calls `close_reason` without notes, so the old code would also have passed this assertion. The real guard is the removed parameter and the call site in `merge_gate_close`. Consider an assertion on the argv built in the land path if one is cheap.) · verifier: verifier-L2 (sonnet) · base: 92b2df57cd83
+- Changed: see commits
+- Commits: f88fc37 T-0651: A reason close routes follow-ups like a verified close
+- Check: 1 tickets.py selftest exits 0 with the new three-item reason case, and fails with the change reverted: pass
+- Check: 2 `--reason --dry-run` prints `expect <digest>` and `--reason --ticket 2 --expect` files item 2: pass
+- Check: 3 fanout.py selftest exits 0 and case 15 asserts no `verifier notes:`: pass
+- Check: 4 `grep -n 'no follow-ups' plugins/sdlc-lite/scripts/tickets.py` finds no reason-close claim: pass
+- Check: 5 `git diff --check` exits 0: pass
