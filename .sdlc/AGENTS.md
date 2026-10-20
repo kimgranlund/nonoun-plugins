@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ced12ee0f0ea -->
+<!-- sdlc-lite:managed:start v1 sha256:5a327b7ea62f -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,18 +10,18 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 7
+- proposed: 5
   - T-0655 prepare checks lane guidance against main and named guidance paths (docs/work/0655-lane-guidance-check)
-  - T-0659 Every SKILL.md stays under 18,000 characters (docs/work/0659-skill-size-limit)
   - T-0661 Verifier brief carries a base..end diff range per built step (docs/work/0661-verifier-diff-range)
-  - T-0662 Tracked work records hold no absolute machine paths (docs/work/0662-relative-record-paths)
   - T-0667 record --agent-id reads the final message from the transcript (docs/work/0667-record-agent-id)
   - T-0669 Dispatch and skip records go to the records dir, not the work root (docs/work/0669-dispatch-records-dir)
   - T-0670 close verdict reason matches the recorded lane (docs/work/0670-close-lane-reason)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 1
+- claimed: 3
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills), claimed by sdlc-lite-author 2026-10-20
+  - T-0659 Every SKILL.md stays under 18,000 characters (docs/work/0659-skill-size-limit), claimed by sdlc-lite-author 2026-10-20
+  - T-0662 Tracked work records hold no absolute machine paths (docs/work/0662-relative-record-paths), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
 - done: 627
