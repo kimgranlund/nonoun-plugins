@@ -34,3 +34,9 @@ Source: GitHub issue #27, ui-kit-neue audit 2026-10-20.
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case named `record --agent-id alone reads the result from the found transcript`. It passes before any script change (this confirms the mechanism); its negative control, the same call with an id that has no transcript, exits 2 and prints `no result yet`.
 2. `grep -n 'quoted here-doc' plugins/sdlc-lite/agents/conductor.md` finds nothing, and `grep -n 'record --agent-id' plugins/sdlc-lite/agents/conductor.md plugins/sdlc-lite/skills/chain/SKILL.md` finds a line in each.
 3. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+- Added the `dispatch.py` selftest case `record --agent-id alone reads the result from the found transcript` and its negative control (an id with no transcript exits 2, `no result yet`, no result written). Both pass with no `record` change, confirming the T-0446/T-0343 mechanism.
+- Rewrote `agents/conductor.md` "How you run roles" step 3, `skills/chain/SKILL.md:20` and the `advance` sentence in `skills/fanout/SKILL.md`: `record --agent-id <id>` with the notice figures, nothing on stdin, stdin only for a role whose transcript is missing, never extract the final message. Regenerated `adapters/codex/agents/sdlc-conductor-l1.toml`.
+- Left open (out of scope): 13 other skills still say "with the sub-agent's final message on stdin" (build, fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md); a follow-up ticket should align them.
+- Checks: selftest exit 0, check.py exit 0, `git diff --check` exit 0, `check-packaging.py` exit 0.
