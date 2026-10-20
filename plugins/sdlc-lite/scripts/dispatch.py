@@ -25,7 +25,8 @@
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
-goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, time gate, then the one write section.
+goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, time gate, lane guidance
+check, then the one write section.
 Records dir (T-0540): every record prepare and record write (result, attempt, dispatch record, .running, .limit,
 base-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <nearest .sdlc>/runtime/tasks/<task>/ (a legacy
 task dir that already holds records keeps them in place); the brief's Artifacts dir line names it. The handoff gates
@@ -69,6 +70,12 @@ dir to its records dir.
                SDLC_TIME_APPROVED, lets the role through and appends `time budget approved: <used>m of <ceiling>m: <who: why>`
                to the ticket folder's skips.md; each such line raises the ceiling to <used> plus one budget. A dry run writes
                nothing. No ticket or no size proceeds.
+  guidance     (T-0655) any role whose execution tree is a linked (lane) worktree: each backticked repo-relative path in the
+               handoff that ends in SKILL.md, AGENTS.md or CLAUDE.md or starts with .agents/ or .claude/skills/ must exist in
+               that tree, else exit 5 with one `guidance missing in lane: <path>` line each, ending `(present on <branch> at
+               <sha7>)` when the main checkout or the lane's .lane.json `into` branch holds it; no record is written. An
+               AGENTS.md or CLAUDE.md that differs from the main checkout's prints `lane guidance differs: <file>` on stderr
+               and adds a Guidance line to the brief. The main checkout is never checked.
   lock         replaces run_lifecycle.py's directory lock. Under a brief file lock, every running attempt
                record in the records dir whose parent pid is dead is marked interrupted and recovered; one
                whose parent is alive refuses, exit 2. A second prepare therefore cannot start while a
@@ -109,6 +116,9 @@ The prefix line says rm of scratch output under that prefix is allowed and refus
 A builder whose step scope names a path an AGENTS.md routes to a repo skill (steps.routed_skills against Tree, T-0648) also
 gets `Repo skills for this step: <path>, ...` (repo_skills_line; solo_run.py adds the same line to a solo brief); a repo with
 no routing lines gets no such line.
+A role whose Tree is a lane worktree whose AGENTS.md or CLAUDE.md differs from the main checkout's gets one line per file,
+`Guidance: read <Tree>/<file>; it overrides the auto-attached main checkout copy` (T-0655), since the host auto-attaches
+the main checkout copy.
 The last line is the role's wall-clock budget (T-0555), `Time budget: <n>m wall clock for <role> <level>`, from ROLE_MINUTES
 (3x the median recorded duration of that role and level, floor 10 minutes; 60 for a row with no record); prepare stores it
 as time_budget_min in the dispatch and the attempt, and status and recover flag a running attempt past it. Nothing is killed.
@@ -569,6 +579,55 @@ def lane_gate(role, directory, plugin):
         return None
     size = (tickets.parse(handoff.read_text(encoding='utf-8', errors='replace')) or {}).get('size')
     return lane_dir, size if size in ('L1', 'L2', 'L3') else 'L2'
+
+
+GUIDANCE_FILES = ('AGENTS.md', 'CLAUDE.md')
+
+
+def lane_guidance(top, handoff):
+    """T-0655: for a linked (lane) worktree top, (differing, missing): the GUIDANCE_FILES whose bytes differ from the main
+    checkout's copy, and one refusal line per backticked repo-relative guidance path in the handoff (a SKILL.md, AGENTS.md
+    or CLAUDE.md, or a path under .agents/ or .claude/skills/) absent from top, naming the main checkout's branch or the
+    lane's `into` branch (.lane.json) when that holds it. ([], []) in the main checkout."""
+    gd = git('rev-parse', '--git-dir', cwd=top).stdout.strip()
+    common = git('rev-parse', '--git-common-dir', cwd=top).stdout.strip()
+    if not gd or not common:
+        return [], []
+    common = os.path.realpath(os.path.join(top, common))
+    if os.path.realpath(os.path.join(top, gd)) == common:
+        return [], []
+    main_top = Path(os.path.dirname(common))
+    top = Path(top)
+
+    def read(p):
+        try:
+            return p.read_bytes()
+        except OSError:
+            return None
+    differing = [f for f in GUIDANCE_FILES if read(top / f) != read(main_top / f)]
+    import steps  # same scripts/ dir
+    paths = []
+    for m in steps.SPAN_RE.finditer(Path(handoff).read_text(encoding='utf-8', errors='replace')):
+        p = re.sub(r'^(?:\./)+|:\d+$', '', m.group(2).strip())  # not steps.trim_path_token: it strips the leading dot
+        if (p and not os.path.isabs(p) and '..' not in Path(p).parts and not re.search(r'[\s*<>?$]', p) and p not in paths
+                and (p.rsplit('/', 1)[-1] in ('SKILL.md',) + GUIDANCE_FILES or p.startswith(('.agents/', '.claude/skills/')))):
+            paths.append(p)
+    try:
+        into = json.loads((top / '.lane.json').read_text(encoding='utf-8')).get('into') or ''
+    except (OSError, ValueError, AttributeError):
+        into = ''
+    missing = []
+    for p in paths:
+        if (top / p).exists():
+            continue
+        where = ''
+        if (main_top / p).exists():
+            branch = git('rev-parse', '--abbrev-ref', 'HEAD', cwd=main_top).stdout.strip()
+            where = (branch, git('rev-parse', '--short=7', 'HEAD', cwd=main_top).stdout.strip())
+        elif into and git('cat-file', '-e', '%s:%s' % (into, p), cwd=top).returncode == 0:
+            where = (into, git('rev-parse', '--short=7', into, cwd=top).stdout.strip())
+        missing.append('guidance missing in lane: %s%s' % (p, ' (present on %s at %s)' % where if where else ''))
+    return differing, missing
 
 
 def mailbox(role):
@@ -1110,6 +1169,15 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                 raise Refuse(2, 'dispatch.py: time budget: --approved takes "<who: why>": who approved, a colon, and why')
             time_approved = 'time budget approved: %dm of %dm: %s' % (tt[0], tt[1], time_approved)
 
+    guidance_differs = []
+    if 'guidance' not in skip:  # T-0655: a lane role reads the lane's guidance; refused before the lock, so no record is written
+        lane_top = git('rev-parse', '--show-toplevel', cwd=run_tree).stdout.strip()
+        guidance_differs, missing = lane_guidance(lane_top, handoff) if lane_top else ([], [])
+        if missing:
+            raise Refuse(5, *missing, 'dispatch.py: sync the guidance into the lane (fanout.py sync --paths) or fix the handoff, then rerun prepare')
+        for f in guidance_differs:
+            say('lane guidance differs: ' + f)
+
     lock = None
     try:
         if not dry_run:
@@ -1165,6 +1233,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         skills = repo_skills_line(toplevel, handoff) if role == 'builder' else ''
         if skills:
             prompt += '\n' + skills
+        for f in guidance_differs:
+            prompt += '\nGuidance: read %s; it overrides the auto-attached main checkout copy' % os.path.join(toplevel, f)
         minutes = role_minutes(role, level)
         prompt += ('\nTime budget: %dm wall clock for %s %s; past it, dispatch.py status flags this attempt and the conductor checks on you'
                    % (minutes, role, level))
@@ -2364,6 +2434,39 @@ def selftest():
             line = '\nRepo skills for this step: .agents/skills/recipe/SKILL.md\n'
             case('repo skills: a builder scoped to %s %s the Repo skills line' % (path, 'gets' if want else 'does not get'),
                  rc == 0 and ((line in got['prompt']) if want else 'Repo skills for this step' not in got['prompt']))
+
+        # lane guidance (T-0655): in a linked worktree, an AGENTS.md that differs from the main checkout's adds a Guidance
+        # line, and a handoff naming a guidance path absent from the lane refuses, exit 5, before any record is written
+        gm = tmp / 'gm'
+        init_repo(gm)
+        put(gm / 'AGENTS.md', '# Repo\n')
+        subprocess.run(['git', '-C', str(gm), 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', str(gm), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                        'commit', '-qm', 'guidance'], check=True)
+        gl = tmp / 'gm-lane'
+        subprocess.run(['git', '-C', str(gm), 'worktree', 'add', '-q', '-b', 'lane-g', str(gl), 'HEAD'], check=True, capture_output=True)
+        put(gm / '.agents' / 'skills' / 'x' / 'SKILL.md', 'x\n')
+        put(gl / '.sdlc' / 'g' / 'handoff.md')
+        rc, got, err = prep(gl, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: a lane whose AGENTS.md matches main gets no Guidance line and no differs line',
+             rc == 0 and 'Guidance: ' not in got['prompt'] and 'lane guidance differs' not in err)
+        put(gl / 'AGENTS.md', '# Repo\n\nlane rule\n')
+        rc, got, err = prep(gl, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: a lane AGENTS.md that differs from main adds the Guidance line and says so on stderr',
+             rc == 0 and '\nGuidance: read %s/AGENTS.md; it overrides the auto-attached main checkout copy' % os.path.realpath(str(gl)) in got['prompt']
+             and 'lane guidance differs: AGENTS.md' in err and 'differs: CLAUDE.md' not in err)
+        put(gl / '.sdlc' / 'g' / 'handoff.md', '## Goal\nx\n\n## Context\n- Read `.agents/skills/x/SKILL.md` first.\n')
+        rc, _, err = prep(gl, 'scout', 'L1', '.sdlc/g/handoff.md')
+        written = [p.name for p in (gl / '.sdlc').rglob('*') if p.name.endswith(('.attempt.json', '.dispatch.json', '.running'))]
+        case('lane guidance: a handoff naming a skill on main but not in the lane refuses, exit 5, and writes no record',
+             rc == 5 and 'guidance missing in lane: .agents/skills/x/SKILL.md (present on' in err and not written)
+        put(gl / '.agents' / 'skills' / 'x' / 'SKILL.md', 'x\n')
+        rc, _, err = prep(gl, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: the same handoff with the skill present in the lane passes', rc == 0 and 'guidance missing' not in err)
+        put(gm / '.sdlc' / 'g' / 'handoff.md', '## Goal\nx\n\n## Context\n- Read `.claude/skills/none/SKILL.md` first.\n')
+        rc, got, err = prep(gm, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: the main checkout is never checked', rc == 0 and 'Guidance: ' not in got['prompt'] and 'guidance' not in err)
+        subprocess.run(['git', '-C', str(gm), 'worktree', 'remove', '--force', str(gl)], capture_output=True)
 
         put(sdlc / 'sg' / 'handoff.md')  # spec gate
         put(R(sdlc / 'sg') / 'planner-L1.md', SGPLAN)
