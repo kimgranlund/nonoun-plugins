@@ -28,3 +28,7 @@
 
 - note: check.sh was not run by this verifier; the conductor's separate run is the evidence for that part of #1.
 - note: `docs/reports/2026-10-12-ceremony-audit.md` has one `.sdlc/.0356-...` path turned into an absolute GitHub permalink; its sha was not checked.
+
+## T-0657: steps.py review reports red criteria already green at base (2026-10-20)
+
+- note: my throwaway worktree is removed and its scratch dirs cleaned (a combined rm command was denied by the permission system, so the rm of `/Users/kimgranlund/Projects/nonoun/sdlc-lite.worktrees/tmp/0657-verifier-L2` and the scratch dir under /var/folders may remain; the worktree itself is gone from `git worktree list`).

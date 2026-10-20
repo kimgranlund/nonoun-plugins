@@ -2,7 +2,7 @@
 id: T-0657
 title: "steps.py review reports red criteria already green at base"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,13 @@ A plan with no `(red)` spans reviews exactly as before, and review never changes
 - `plugins/sdlc-lite/scripts/steps.py`: new `red_at_base(plan, task_dir)` runs every step's runnable `(red)` span once through `red_first` in a throwaway detached worktree at `base_sha` under `wtroot.tmp_root`, removed (and pruned) after. `cmd_review` calls it when `review_action` returns split or review; each span green at base is logged under `## Plan review` via `record_plan_review`, printed after the read: lines as `plan defect: red-at-base: step <n>: `<span>``, and the action becomes `replan`. `review_action` stays read-only; usage doc updated.
 - Selftest: two new `(r) red-at-base` cases (green at base -> replan + defect line + logged, no leftover worktree, tree unchanged; red at base -> split). Negative control: with the red-at-base branch disabled the first case fails.
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `git worktree list` unchanged (9 entries before and after); `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: ffea5d1b8bfb
+- Changed: see commits
+- Commits: d6ed746 T-0657: steps.py review reports red criteria already green at base
+- Check: 1 `steps.py selftest` exits 0; new case shows review on a `(red)` span `test -f README.md` printing...: pass
+- Check: 2 After the selftest, `git worktree list` lists no worktree it created: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: my throwaway worktree is removed and its scratch dirs cleaned a... -> notes.md

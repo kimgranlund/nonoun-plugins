@@ -14,7 +14,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | ⏳ proposed |
 | T-0655 | [0655-lane-guidance-check](0655-lane-guidance-check/handoff.md) | prepare checks lane guidance against main and named guidance paths | bug | L2 | P2 | none | ⏳ proposed |
 | T-0656 | [0656-settle-refuses-running](0656-settle-refuses-running/handoff.md) | settle --forward refuses while a lane attempt is running | bug | L1 | P2 | none | 🟡 claimed |
-| T-0657 | [0657-review-red-at-base](0657-review-red-at-base/handoff.md) | steps.py review reports red criteria already green at base | feature | L2 | P2 | none | 🟡 claimed |
 | T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
 | T-0662 | [0662-relative-record-paths](0662-relative-record-paths/handoff.md) | Tracked work records hold no absolute machine paths | bug | L2 | P2 | none | ⏳ proposed |
@@ -24,4 +23,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 
-Closed: 618 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 619 done, 29 dropped (git log or .NNNN-* folders)
