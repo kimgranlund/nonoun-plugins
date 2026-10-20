@@ -21,7 +21,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0660 | [0660-quantified-criteria-lint](0660-quantified-criteria-lint/handoff.md) | Plan lint flags universally quantified prose criteria with no command | feature | L2 | P2 | none | ⏳ proposed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
 | T-0662 | [0662-relative-record-paths](0662-relative-record-paths/handoff.md) | Tracked work records hold no absolute machine paths | bug | L2 | P2 | none | ⏳ proposed |
-| T-0663 | [0663-docs-folder-routers](0663-docs-folder-routers/handoff.md) | onboard creates the docs folder routers that docs/AGENTS.md links | bug | L2 | P2 | none | 🟡 claimed |
 | T-0664 | [0664-designs-docs-home](0664-designs-docs-home/handoff.md) | A write-once designs home for grill output in the onboard docs table | feature | L2 | P2 | none | ⏳ proposed |
 | T-0665 | [0665-trim-skill-catalog](0665-trim-skill-catalog/handoff.md) | Drop redirect stub skills and shorten level-variant agent descriptions | feature | L2 | P3 | none | ⏳ proposed |
 | T-0666 | [0666-lint-git-stash](0666-lint-git-stash/handoff.md) | Plan lint rejects git stash and --autostash in Do text | bug | L1 | P3 | none | ⏳ proposed |
@@ -32,4 +31,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 | T-0672 | [0672-skill-route-prose-false-positive](0672-skill-route-prose-false-positive/handoff.md) | Skill-route lint treats prose bullets that mention a skill as routes | bug | L1 | P1 | T-0647 | 🟡 claimed |
 
-Closed: 610 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 611 done, 29 dropped (git log or .NNNN-* folders)

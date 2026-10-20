@@ -2,7 +2,7 @@
 id: T-0663
 title: "onboard creates the docs folder routers that docs/AGENTS.md links"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ Homes with a written router keep their link. Changing the managed block text cha
 - Selftest: `gate_nested_entries` asserts the frozen `reports/` home renders as `` `reports/` `` with no `reports/AGENTS.md` link; new negative variant `links the entry of a frozen home`. With the fix reverted the gate fails (`docs/AGENTS.md links the entry of the frozen reports/ home`).
 - `docs/AGENTS.md` refreshed with `onboard.py setup` (step 3 text and stamp).
 - Criteria: 1 exit 0; 2 prints 0; 3 grep finds nothing; 4 prints `current docs/AGENTS.md`, docs_check selftest exit 0; 5 exit 0. Repo `docs_check.py` D-10 count unchanged (72, same as main).
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `redck.py deviations` printed no process deviation lines. I did not run the full `check.sh`, per the brief.) · verifier: verifier-L2 (sonnet) · base: a417e2b46f62
+- Changed: see commits
+- Commits: 266e06c T-0663: onboard creates the docs folder routers that docs/AGENTS.md links
+- Check: 1 `onboard.py selftest` exits 0 with a new frozen-reports case that fails when the change is reverted: pass
+- Check: 2 The repro prints 0 D-10 warnings: pass
+- Check: 3 The old step 3 text is gone and the new step 3 names the Contents fallback: pass
+- Check: 4 `check` prints `current docs/AGENTS.md` and `docs_check.py selftest` exits 0: pass
+- Check: 5 `git diff --check` exits 0: pass
