@@ -3396,6 +3396,21 @@ def selftest():
             else:
                 case('a truncated transcript message is rejected with a clear error and no result',
                      q.returncode == 1 and 'truncated' in attempt_of(got)['error'] and not Path(got['result']).exists())
+        # T-0667: --agent-id alone (no result file, no stdin, no --transcript) reads the result from the found transcript; an id with none exits 2.
+        (proj / '-p1/s1/subagents/agent-ag-solo.jsonl').write_text(json.dumps(good) + '\n')
+        alone = {}
+        for nm, aid in (('a1', 'ag-solo'), ('a2', 'ag-missing')):
+            put(rb / '.sdlc' / nm / 'handoff.md')
+            rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
+            q = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--agent-id', aid, got['dispatch_file']],
+                               capture_output=True, text=True, env=env_find, stdin=subprocess.DEVNULL)
+            alone[nm] = (q, got)
+        case('record --agent-id alone reads the result from the found transcript',
+             alone['a1'][0].returncode == 0 and Path(alone['a1'][1]['result']).read_text().startswith('<!-- role=builder')
+             and len(lines_of(rb / '.sdlc' / 'a1')) == 1)
+        case('negative control: record --agent-id with an id that has no transcript exits 2 no result yet and writes no result',
+             alone['a2'][0].returncode == 2 and 'no result yet' in alone['a2'][0].stderr and not Path(alone['a2'][1]['result']).exists()
+             and lines_of(rb / '.sdlc' / 'a2') == [])
         # T-0349: truncated stdin, error stdin beside an interim heading, tool-use turns before the final text.
         def amsg(text, stop='end_turn', tool=False):
             c = ([{'type': 'tool_use', 'id': 't', 'name': 'Bash', 'input': {}}] if tool else []) + ([{'type': 'text', 'text': text}] if text else [])
