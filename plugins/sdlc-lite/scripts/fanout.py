@@ -442,7 +442,6 @@ import argparse, contextlib, datetime, fcntl, json, os, pathlib, re, shlex, shut
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
-import results  # same scripts/ dir: the verifier Notes section
 import order  # same scripts/ dir: newest result file of a role
 import wtroot  # same scripts/ dir: the worktree root under the main checkout (T-0550)
 import lanes  # same scripts/ dir: the lane lifecycle (open, close, sweep)
@@ -948,12 +947,12 @@ def driver_for(ctx, t, kind='full'):
     return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
 
 
-def close_reason(ctx, t, gate=None, notes=None, has_filer=True):
+def close_reason(ctx, t, gate=None, has_filer=True):
     """The `tickets.py close --reason` text for a ticket a solo agent delivered, or for any other lane with has_filer
     False (the full chain lane runs no filer by default, lean records); else None, and land closes a lane with a filer
     result through `close --filer`. Land checks the lane's verdict before it merges (branch_verdict), so the close
-    by reason carries the merge's gate class (T-0481) into the Outcome verdict: gate adds `; gate: <class>`. notes,
-    the verifier's `## Notes` lines, add `; verifier notes: ...`."""
+    by reason carries the merge's gate class (T-0481) into the Outcome verdict: gate adds `; gate: <class>`. The
+    verifier's `## Notes` lines stay out of the reason: close --reason files them to notes.md (T-0651)."""
     kind, tier = ctx['kinds'].get(t.id, ('', None))
     if kind != 'solo':
         if has_filer:
@@ -963,8 +962,6 @@ def close_reason(ctx, t, gate=None, notes=None, has_filer=True):
         why = (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
                if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
     why += f'; gate: {gate}' if gate else ''
-    if notes:
-        why += '; verifier notes: ' + ' | '.join(n.lstrip('-* ').strip() for n in notes)
     return why
 
 
@@ -1725,8 +1722,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         has_filer = any(rec.glob('filer-L*.md')) or any(folder.glob('filer-L*.md'))
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
         if close_reason(ctx, t, has_filer=has_filer):
-            vf = sorted(rec.glob('verifier-L*.md')) or sorted(folder.glob('verifier-L*.md'))
-            argv += ['--reason', close_reason(ctx, t, cls, results.notes_lines(vf[-1]) if vf else None, has_filer)]
+            argv += ['--reason', close_reason(ctx, t, cls, has_filer)]
         elif has_filer:
             argv.append('--filer')
         if ctx['rewrite_refs']:
@@ -3913,10 +3909,10 @@ def selftest():
         expect('case 15 close negative control: a chain or driver ticket closes through its filer, no --reason',
                close_reason(fake, Ticket('T-3', 'x', 't')) is None and close_reason(fake, Ticket('T-4', 'x', 't')) is None)
         expect('case 15 close: a chain ticket with no filer closes with the lean-records reason (bridge until T-0543)',
-               (close_reason(fake, Ticket('T-3', 'x', 't'), 'full', None, False) or '').startswith(
+               (close_reason(fake, Ticket('T-3', 'x', 't'), 'full', False) or '').startswith(
                    'delivered by the full chain lane; no filer by default (lean records); gate: full'))
-        expect('case 15 close: verifier notes ride in the close reason',
-               'verifier notes: a.py:3 em dash' in close_reason(fake, Ticket('T-2', 'x', 't'), None, ['- a.py:3 em dash']))
+        expect('case 15 close: verifier notes stay out of the close reason (close --reason files them, T-0651)',
+               'verifier notes:' not in close_reason(fake, Ticket('T-2', 'x', 't'), 'full'))
         # the solo verifier gate reads only a result that is new since the driver started
         vd = tmp / 'verdict-task'
         vd.mkdir()
