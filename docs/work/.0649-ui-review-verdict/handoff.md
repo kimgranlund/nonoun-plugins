@@ -2,7 +2,7 @@
 id: T-0649
 title: "ui-designer review writes a verdict, blocking flags and rule provenance"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,15 @@ Lane solo. ui-designer review results now open with `## Verdict` (pass, pass-wit
 - `plugins/sdlc-lite/scripts/results.py`: schema gains Verdict and Guidance gaps; `_ui_review_error` refuses a review with no or an unknown Verdict, and pass or pass-with-notes beside a blocking finding; 7 selftest cases plus a stub negative control. With the rule removed, the pass-beside-blocking case misses (observed).
 - `plugins/sdlc-lite/skills/handoff-format/references/writing-rules.md`: "UI review criterion" pattern row.
 - Checks: every acceptance criterion exit 0 (results selftest, greps, claude_roles and codex_roles `generate --check`, check.py, `git diff --check`, check-packaging).
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: no `red-checkpoint` process deviation line was printed by redck.py, and no `(red)` criteria exist in the handoff.) · verifier: verifier-L2 (sonnet) · base: 92b2df57cd83
+- Changed: see commits
+- Commits: 24452f0 T-0649: ui-designer review writes a verdict, blocking flags and rule provenance
+- Check: 1 results.py selftest exits 0 with the new cases: pass
+- Check: 2 Rule: gap count and Guidance gaps section: pass
+- Check: 3 generate --check for both: pass
+- Check: 4 UI review criterion row: pass
+- Check: 5 check.py: pass
+- Check: 6 diff --check and packaging: pass
