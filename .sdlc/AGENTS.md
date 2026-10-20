@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:53c888c57bcf -->
+<!-- sdlc-lite:managed:start v1 sha256:e4d08f4320c3 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 9
+- proposed: 8
   - T-0648 prepare appends the repo skills for a step's file scope (docs/work/0648-prepare-repo-skills)
   - T-0655 prepare checks lane guidance against main and named guidance paths (docs/work/0655-lane-guidance-check)
   - T-0659 Every SKILL.md stays under 18,000 characters (docs/work/0659-skill-size-limit)
@@ -19,12 +19,12 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0667 record --agent-id reads the final message from the transcript (docs/work/0667-record-agent-id)
   - T-0669 Dispatch and skip records go to the records dir, not the work root (docs/work/0669-dispatch-records-dir)
   - T-0670 close verdict reason matches the recorded lane (docs/work/0670-close-lane-reason)
-  - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 2
+- claimed: 3
   - T-0646 Every role writes its result file and ends with a one-line pointer (docs/work/0646-role-result-pointer), claimed by sdlc-lite-author 2026-10-20
   - T-0654 fanout.py sync brings a lane up to date with the integration branch (docs/work/0654-fanout-sync-lane), claimed by sdlc-lite-author 2026-10-20
+  - T-0671 onboard entry text agrees with the docs table on where plans go (docs/work/0671-onboard-plans-wording), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
 - done: 624
@@ -60,7 +60,7 @@ Open a lane:
 
 Close a ticket:
 1. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --dry-run`. It checks the verifier verdict, lists each verifier `## Notes` line as `<i>. <tag>: <title>`, and ends with `expect <digest>`.
-2. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --changed "<one line>"`. It appends `## Outcome` to the handoff; add `--lessons "<lesson>"` (repeatable) for a reusable lesson, one `- Lessons:` line each: route it to a named repo skill or NOTES.md. To file the one `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to `docs/work/NOTES.md`; `fix-now:` items are finished before the close. When it refuses because files cite the folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
+2. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --changed "<one line>"`. It appends `## Outcome` to the handoff; add `--lessons "<lesson>"` (repeatable) for a reusable lesson, one `- Lessons:` line each: route it to a named repo skill or NOTES.md. To file the one `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to `docs/work/NOTES.md`, where adding ` -> T-NNNN` to an item's line marks it routed (the roadmap lists the rest under Open follow-ups); `fix-now:` items are finished before the close. When it refuses because files cite the folder, add `--rewrite-refs` to rewrite them to the closed `.<folder>` path.
 3. Only when a filer draft was asked for (`/file`): `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --filer`.
 4. Work already done by another ticket: `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --reason "<why>"`. It skips the verdict gate but files follow-ups as step 2 does: the verifier `## Notes` lines and the handoff `## Follow-ups` bullets go to `docs/work/NOTES.md`, and `--dry-run` and `--ticket <i> --expect <digest>` work the same.
 
