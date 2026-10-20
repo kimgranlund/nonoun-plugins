@@ -21,6 +21,7 @@ A ticket's committed record is its task `handoff.md`: the brief a role reads, an
 | Decision | `- Decided (<who>, <YYYY-MM-DD>): <decision>` | `## Context` |
 | Status line | the front matter `status:`, plus `paused_reason:` or `claimed_by:` when the status needs one; never a status sentence in the body | front matter |
 | Open question | `- Open: <question>? Default: <what happens without an answer>` | `## Context` |
+| UI review criterion | ``grep -A1 '^## Verdict' <review result>`` prints `pass` or `pass-with-notes`: name the ui-designer `## Verdict` field, never "a review passes" | `## Acceptance criteria`, Done-when |
 | Lane | recorded by `steps.py lane` in `skips.md` and on the Outcome header; never hand-written in the handoff | `skips.md`, `## Outcome` |
 
 ## Outcome

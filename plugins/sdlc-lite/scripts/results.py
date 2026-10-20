@@ -33,6 +33,8 @@ or no Evidence text. criteria_states and settled_refs read those lines for steps
 
 The ui-designer key section `Mode` names the mode the run took (T-0520): plan, review, or generate, or
 `blocked: <question>` when the handoff's `mode:` line is missing or unknown (the same shape as `inherited red: <tests>`).
+A review-mode result also needs `## Verdict` pass, pass-with-notes or changes-required (T-0649); validate refuses pass or
+pass-with-notes beside a `## Findings` line marked `blocking`. Plan and generate results need no Verdict.
 
 Importable from the same scripts/ dir: SCHEMA, ROLES, validate, structure_error, key_value, attempt_reported,
 criteria_states, settled_refs.
@@ -79,9 +81,11 @@ SCHEMA = {
     'ui-designer': {
         'key': 'Mode',
         'allowed': (('plan', r'plan', 'plan'), ('review', r'review', 'review'), ('generate', r'generate', 'generate'), _BLOCKED_Q),
-        'sections': ('Mode', 'Decisions', 'Findings', 'Changes', 'Context used', 'Carry forward'),
+        'sections': ('Mode', 'Verdict', 'Decisions', 'Findings', 'Guidance gaps', 'Changes', 'Context used', 'Carry forward'),
     },
 }
+UI_VERDICTS = ('pass', 'pass-with-notes', 'changes-required')
+BLOCKING_RE = re.compile(r'^\s*[-*]\s*.+?:\s*blocking:', re.I)
 ROLES = tuple(SCHEMA)
 
 HEADER = re.compile(r'^<!-- role=([a-z-]+) level=(L[1-5]) model=(\S+) effort=(\S+)((?: [a-z_]+=\S+)*) -->$')
@@ -173,6 +177,8 @@ def _check(path, role, value_checks, headerless=False):
             return f'## {above} comes before ## {cur}'
     if value_checks and role == 'verifier':
         return _criteria_error(lines)
+    if value_checks and role == 'ui-designer':
+        return _ui_review_error(lines)
     return None
 
 
@@ -292,6 +298,21 @@ def _criteria_error(lines):
         for c in states:
             if c['state'] != 'pass':
                 return f"## Verdict pass but {_ref_text(c)} is {c['state']}" + (f" {c['who']}" if c['who'] else '')
+    return None
+
+
+def _ui_review_error(lines):
+    """The reason a ui-designer review result breaks the verdict rules, else None: review mode needs a ## Verdict
+    from UI_VERDICTS, and pass or pass-with-notes cannot sit beside a finding marked blocking."""
+    if _token('ui-designer', _key_body_value(lines, 'Mode')[1]) != 'review':
+        return None
+    present, value = _key_body_value(lines, 'Verdict')
+    if not present:
+        return f'review mode lacks ## Verdict ({"|".join(UI_VERDICTS)})'
+    if value.lower() not in UI_VERDICTS:
+        return f'## Verdict first line "{value}" is not one of {"|".join(UI_VERDICTS)}'
+    if value.lower() != 'changes-required' and any(BLOCKING_RE.match(l) for l in _section_lines(lines, 'Findings')):
+        return f'## Verdict {value} beside a blocking finding (want changes-required)'
     return None
 
 
@@ -433,6 +454,27 @@ def selftest():
          'lacks ## Mode (plan|review|generate|blocked: <question>)')
     case('ui-designer accepts blocked: <question>',
          validate(write('ui-blocked.md', head('ui-designer') + '## Mode\nblocked: which surface is this for?\n')), None)
+    uhead = head('ui-designer') + '## Mode\nreview\n\n'
+    blocking = '## Findings\n- a.css:3: blocking: no focus ring: add :focus-visible. Rule: ui#states\n'
+    case('a ui-designer review with Verdict changes-required and a blocking finding validates',
+         validate(write('ui-rev-ok.md', uhead + '## Verdict\nchanges-required\n\n' + blocking
+                        + '\n## Guidance gaps\nNone\n')), None)
+    case('a ui-designer review with no Verdict is refused',
+         validate(write('ui-rev-nov.md', uhead + blocking)), 'review mode lacks ## Verdict (pass|pass-with-notes|changes-required)')
+    case('a ui-designer review with Verdict maybe is refused',
+         validate(write('ui-rev-maybe.md', uhead + '## Verdict\nmaybe\n')),
+         '## Verdict first line "maybe" is not one of pass|pass-with-notes|changes-required')
+    case('a ui-designer review with Verdict pass beside a blocking finding is refused',
+         validate(write('ui-rev-pass.md', uhead + '## Verdict\npass\n\n' + blocking)),
+         '## Verdict pass beside a blocking finding (want changes-required)')
+    case('a ui-designer review with Verdict pass-with-notes and advisory findings validates',
+         validate(write('ui-rev-notes.md', uhead + '## Verdict\npass-with-notes\n\n## Findings\n- a.css:3: advisory: x: y. '
+                        'Rule: gap (proposed: "z")\n\n## Guidance gaps\n- z\n')), None)
+    case('a ui-designer plan result with no Verdict validates',
+         validate(write('ui-plan-nov.md', head('ui-designer') + '## Mode\nplan\n\n## Findings\nNone\n')), None)
+    case('a ui-designer Verdict after Findings is refused',
+         validate(write('ui-rev-order.md', uhead + blocking + '\n## Verdict\nchanges-required\n')),
+         '## Findings comes before ## Verdict')
     case('a missing scout Map fails', validate(write('nomap.md', head('scout') + '## Entry points\ne\n')), 'lacks ## Map')
     case('an empty planner Goal body passes', validate(write('emptygoal.md', head('planner') + '## Goal\n\n## Risks\nr\n')), None)
     for role in ('builder', 'verifier', 'plan-reviewer', 'ui-designer'):
@@ -555,6 +597,11 @@ def selftest():
         f.write(src[:cut] + '\n_criteria_error = lambda lines: None\n' + src[cut:])
     p = subprocess.run([sys.executable, stub, 'validate', os.path.join(tmp, 'held-pass.md')], capture_output=True, text=True)
     case('negative control: a results.py with the criteria rule removed validates Verdict pass with a deferred line',
+         p.returncode, 0)
+    with open(stub, 'w', encoding='utf-8') as f:
+        f.write(src[:cut] + '\n_ui_review_error = lambda lines: None\n' + src[cut:])
+    p = subprocess.run([sys.executable, stub, 'validate', os.path.join(tmp, 'ui-rev-pass.md')], capture_output=True, text=True)
+    case('negative control: a results.py with the ui review rule removed validates Verdict pass beside a blocking finding',
          p.returncode, 0)
 
     # solo report detect rule (T-0471): verify: needed needs one exit-code line per criterion span.

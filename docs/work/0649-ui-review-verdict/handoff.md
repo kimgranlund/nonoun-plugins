@@ -38,3 +38,10 @@ Existing plan and generate mode results keep validating unchanged. Existing ui-d
 4. `grep -n 'UI review criterion' plugins/sdlc-lite/skills/handoff-format/references/writing-rules.md` finds the row naming `## Verdict`.
 5. `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite` exits 0.
 6. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+Lane solo. ui-designer review results now open with `## Verdict` (pass, pass-with-notes, changes-required), mark each finding blocking or advisory with a `Rule:` provenance or `Rule: gap (proposed: ...)`, and list gaps under `## Guidance gaps`.
+- `plugins/sdlc-lite/agents/ui-designer.md`: Verdict, finding form, Guidance gaps; review mode line names the verdict. Regenerated `agents/ui-designer-L1.md` and `adapters/codex/agents/sdlc-ui-designer-l1.toml`.
+- `plugins/sdlc-lite/scripts/results.py`: schema gains Verdict and Guidance gaps; `_ui_review_error` refuses a review with no or an unknown Verdict, and pass or pass-with-notes beside a blocking finding; 7 selftest cases plus a stub negative control. With the rule removed, the pass-beside-blocking case misses (observed).
+- `plugins/sdlc-lite/skills/handoff-format/references/writing-rules.md`: "UI review criterion" pattern row.
+- Checks: every acceptance criterion exit 0 (results selftest, greps, claude_roles and codex_roles `generate --check`, check.py, `git diff --check`, check-packaging).
