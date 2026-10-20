@@ -9,7 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0645 | [0645-dispatch-advance](0645-dispatch-advance/handoff.md) | dispatch.py advance runs record, prune, next and prepare in one call | feature | L2 | P1 | none | 🟡 claimed |
 | T-0646 | [0646-role-result-pointer](0646-role-result-pointer/handoff.md) | Every role writes its result file and ends with a one-line pointer | feature | L2 | P1 | none | ⏳ proposed |
 | T-0648 | [0648-prepare-repo-skills](0648-prepare-repo-skills/handoff.md) | prepare appends the repo skills for a step's file scope | feature | L2 | P1 | T-0647 | ⏳ proposed |
-| T-0653 | [0653-roadmap-open-followups](0653-roadmap-open-followups/handoff.md) | Roadmap renders an Open follow-ups section from NOTES.md | feature | L2 | P1 | none | ⏳ proposed |
+| T-0653 | [0653-roadmap-open-followups](0653-roadmap-open-followups/handoff.md) | Roadmap renders an Open follow-ups section from NOTES.md | feature | L2 | P1 | none | 🟡 claimed |
 | T-0654 | [0654-fanout-sync-lane](0654-fanout-sync-lane/handoff.md) | fanout.py sync brings a lane up to date with the integration branch | feature | L2 | P2 | none | ⏳ proposed |
 | T-0655 | [0655-lane-guidance-check](0655-lane-guidance-check/handoff.md) | prepare checks lane guidance against main and named guidance paths | bug | L2 | P2 | none | ⏳ proposed |
 | T-0656 | [0656-settle-refuses-running](0656-settle-refuses-running/handoff.md) | settle --forward refuses while a lane attempt is running | bug | L1 | P2 | none | 🟡 claimed |
