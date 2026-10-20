@@ -84,7 +84,7 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 ```
 
 ## Output
-Your final message is the only thing the parent receives: exactly this format, one block per step, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role planner` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly this format, one block per step, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role planner --headerless`, fix any defect it prints, and make your whole final message one line, `planner <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role planner` and fix any defect it prints.
 
 ## Goal
 One sentence.

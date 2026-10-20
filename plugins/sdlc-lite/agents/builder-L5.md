@@ -52,7 +52,7 @@ The Stop rules ceiling above, restated: about 60 tool calls or 25 minutes for th
 - Before the first edit, read every earlier `builder-*.md` and `verifier-*.md` in the step dir; when there are any, write the root cause of the earlier failure in one Notes line.
 
 ## Output
-Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder --headerless`, fix any defect it prints, and make your whole final message one line, `builder <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder` and fix any defect it prints.
 
 ## Status
 done | blocked | inherited red: <tests>

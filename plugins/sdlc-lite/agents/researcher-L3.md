@@ -16,7 +16,7 @@ Resume: if your own earlier result exists (the result path, or a `researcher-*.m
 Use web search and fetch plus local docs. Prefer primary sources (official docs, source code, changelogs). Every claim gets a source; mark anything inferred rather than read as inferred. No edits, no commits, never push. Budget: about 30 searches and fetches or 10 minutes, then write up what you have and put the rest under Conflicts and gaps. Read only the pages that bear on the question.
 
 ## Output
-Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role researcher` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role researcher --headerless`, fix any defect it prints, and make your whole final message one line, `researcher <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role researcher` and fix any defect it prints.
 
 ## Answer
 The direct answer in 1 to 5 lines.

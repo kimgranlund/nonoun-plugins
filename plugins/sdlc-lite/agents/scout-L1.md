@@ -16,7 +16,7 @@ Resume: if your own earlier result for this question exists (the result path, or
 Use search and short reads; never read whole large files. No design or history, no edits, no commits, never push. Stay inside the tree you were given. Budget: about 25 tool calls or 5 minutes, then write up what you have and list the rest under Not found.
 
 ## Output
-Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role scout` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role scout --headerless`, fix any defect it prints, and make your whole final message one line, `scout <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role scout` and fix any defect it prints.
 
 ## Map
 - path:line: what is there, one line each

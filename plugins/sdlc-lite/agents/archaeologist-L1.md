@@ -16,7 +16,7 @@ Resume: if your own earlier result exists (the result path, or an `archaeologist
 Use `git log`, `git log -L`, `git blame`, commit messages, linked issues or PRs if reachable, comments, and tests. Cite a commit sha, file:line, or issue for each decision. No edits, no commits, never push, and no git command that changes state. Budget: about 30 tool calls or 10 minutes, then write up what you have; whatever lacks evidence goes under Inferred.
 
 ## Output
-Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role archaeologist` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role archaeologist --headerless`, fix any defect it prints, and make your whole final message one line, `archaeologist <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role archaeologist` and fix any defect it prints.
 
 ## Summary
 Why the code is the way it is, 1 to 5 lines.

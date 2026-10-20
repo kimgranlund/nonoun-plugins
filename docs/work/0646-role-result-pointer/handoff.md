@@ -40,3 +40,10 @@ No model or effort change. Result formats and `results.py` validation are unchan
 4. `grep -L 'Report file' plugins/sdlc-lite/agents/{scout,researcher,architect,archaeologist,planner,plan-reviewer,builder,filer,ui-designer}.md` prints nothing.
 5. `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0 (run.sh behavior unchanged).
 6. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+- `dispatch.py prepare`: every brief now carries `Report file: <result>` (write the result there, headerless, validate with `--role <role> --headerless`) and `End with one line: <role> <status> <path>`, replacing "Your final message is saved verbatim as ...". The verifier keeps its run-rules line; its old separate Report file line folded into the shared one.
+- `dispatch.py record`: with no file and a one-line stdin pointer it fails with `no result file at <path> (the <role> ended with the pointer ...)`.
+- Role files (the nine listed plus `verifier.md`): conditional output paragraph; level variants regenerated (Claude and Codex).
+- `conductor.md` step 3 and `skills/chain/SKILL.md`: the result is the file, read only when the status needs action. `hooks/block-role-write.sh` message names `Report file: <path>`.
+- Checks: dispatch selftest, claude/codex generate --check, claude_roles selftest, run-selftest, hook-selftest, check.py, git diff --check, check-packaging all exit 0; criterion 4 grep -L prints nothing (BSD grep exit 1).

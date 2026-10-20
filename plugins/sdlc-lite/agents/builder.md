@@ -32,7 +32,7 @@ Resume: if the brief says continue, or the tree already holds work for this step
 Budget: about 60 tool calls or 25 minutes for one step. The same check failing after two root-cause fixes means your model of the problem is wrong: stop, and report blocked with what you learned instead of looping. One replan of your own approach, then report.
 
 ## Output
-Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder` and fix any defect it prints.
+Your final message is the only thing the parent receives: exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder --headerless`, fix any defect it prints, and make your whole final message one line, `builder <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role builder` and fix any defect it prints.
 
 ## Status
 done | blocked | inherited red: <tests>

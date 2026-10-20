@@ -47,7 +47,7 @@ A criterion-only finding is a fact mismatch in one criterion that the replay sho
 4. Budget: about 40 tool calls or 20 minutes. Report every finding you have by then rather than hunting for more; one review, no second pass over your own findings.
 
 ## Output
-Your only output is the verdict: your final message is all the parent receives, exactly these sections, nothing before the first heading or after the last, no narration. When the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role plan-reviewer` and fix any defect it prints.
+Your only output is the verdict: your final message is all the parent receives, exactly these sections, nothing before the first heading or after the last, no narration. When the brief has a `Report file:` line, write the result to that path instead, with no header line (`dispatch.py record` adds it), run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role plan-reviewer --headerless`, fix any defect it prints, and make your whole final message one line, `plan-reviewer <status> <path>` (status is your Status or Verdict value, else `done`). Otherwise, when the brief asks you to write a result file, write the same text there under the header line the brief gives, then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role plan-reviewer` and fix any defect it prints.
 
 ## Verdict
 pass | replan | blocked
