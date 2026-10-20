@@ -35,3 +35,10 @@ The spawn gate still finds every solo record. Tracked files in a folder are neve
 2. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with cases: close of a ticket with an undotted sibling holding a `*.dispatch.json` leaves no undotted folder and the file in the records dir; `check` on a work root with an undotted folder and no `handoff.md` prints `undotted folder with no handoff.md`. Both fail with the change reverted.
 3. `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0, including a case where the spawn gate finds a solo record in the Artifacts dir.
 4. `git diff --check` exits 0.
+
+## Outcome
+Built by solo (Opus 5.5), verify: needed.
+- `fanout.py prep` writes the solo `<name>.dispatch.json` to `order.records_dir(taskdir, create=True)`; `SOLO_SUBAGENT_PROMPT` gains an `Artifacts dir:` line (top-relative, quoted when spaced) so the spawn gate finds it; `branch_base` docstring says the fork-point fallback is now the norm.
+- `tickets.py close`: one close path now (the verified and reason routes share it; the handoff's two rename sites were unified before this ticket). New `move_records` moves untracked `*.dispatch.json` and `*.attempt.json` into the records dir before the rename, then every untracked file of an undotted folder left after it, removing the empty folder; one `moved <folder>/<name> to <records dir>` line per move. Tracked files stay; a legacy in-place task dir is left alone.
+- `tickets.py check` warns `warning: <folder>: undotted folder with no handoff.md`.
+- Checks: fanout.py selftest exit 0, tickets.py selftest exit 0 (fails with move_records and the warning neutralized), hook-selftest.sh PASS (new solo Artifacts-dir case), check.py exit 0, git diff --check exit 0.

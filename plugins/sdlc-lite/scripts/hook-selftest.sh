@@ -542,6 +542,20 @@ for st in L1 L2 L3 S M L; do
   run "$rs" "$(gj "sdlc-lite:solo-$st" "solo-$st-no-record" sonnet "$gh")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "spawn gate denies a solo-$st spawn with no dispatch record: exit $rc, want 2"
 done
+# T-0669: fanout prep writes a solo record to the records dir its prompt's Artifacts dir line names; the gate finds it
+# there with the handoff dir empty of records, and denies once it is gone.
+sah="$gate/solo-art-h"; sad="$gate/solo-art-r"; mkdir -p "$sah" "$sad"; : >"$sah/handoff.md"
+printf '%s' '{"subagent_type":"sdlc-lite:solo-L2","name":"T-0001-solo","model":"opus","role":"solo","level":"L2"}' >"$sad/T-0001-solo.dispatch.json"
+gjs() {
+  jq -n --arg h "$sah/handoff.md" --arg r "$sad" --arg cwd "$gate" '{tool_name:"Agent",agent_type:"sdlc-lite:conductor",cwd:$cwd,
+    tool_input:{subagent_type:"sdlc-lite:solo-L2",name:"T-0001-solo",model:"opus",
+    prompt:("T-0001 t | solo L2\nHandoff: " + $h + "\nArtifacts dir: " + $r + "\nBrief: b")}}'
+}
+run "$rs" "$(gjs)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a solo record in the Artifacts dir (T-0669): exit $rc, want 0"
+rm -f "$sad/T-0001-solo.dispatch.json"
+run "$rs" "$(gjs)" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a solo spawn once the Artifacts dir holds no record (T-0669): exit $rc, want 2"
 # Negative controls: no other solo name passes condition 1, even with a record.
 for st in L4 L0 XL X; do
   printf '%s' "{\"name\":\"solo-$st-gate-task\",\"model\":\"sonnet\"}" >"$gate/solo-$st-gate-task.dispatch.json"

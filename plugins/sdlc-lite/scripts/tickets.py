@@ -133,7 +133,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             verdict is `closed by reason (<why>)`, pass, `skipped (<reason>)` (a skip entry or the
             waiver covers a step), or `skipped (filer route)`. After the Outcome (before any rename) a
             task-folder skips.md moves into the records dir (T-0560), so the closed folder tracks only
-            handoff.md; a legacy ticket whose records stay in place keeps it
+            handoff.md; a legacy ticket whose records stay in place keeps it. Untracked run records
+            (*.dispatch.json, *.attempt.json) move there too, and after the dot-rename every untracked file in an
+            undotted <NNNN>-<slug> folder left behind moves there and the empty folder goes, one `moved <folder>/<name>
+            to <records dir>` line each (T-0669)
             On every path but --reason (plain, --filer, --ack-warnings, --dry-run) close refuses, writing nothing,
             when the ticket's skips.md records lane solo, lean, fix, or full but lacks a result or a ## Skipped
             entry for the planner or a step verifier, as check does; no skips.md or no lane record is exempt
@@ -171,6 +174,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Outside `layout: topics` it prints `warning: <name>: loose entry at the top of <root>; ...tidy...`
             (exit stays 0, at most 5 lines, then `<N> more loose entries`) for each entry directly under <root>
             that the layout rule does not allow (see tidy)
+            It prints `warning: <folder>: undotted folder with no handoff.md` (exit stays 0) for each NNNN-<slug>
+            folder in the ticket root that holds no handoff.md, a run-record leftover of a closed ticket (T-0669)
             It prints `warning: <slug>: closed by hand (unverified); no verifier checked it` (exit stays 0) for
             each done ticket whose ## Outcome holds `verdict: closed by hand (unverified)`, by-hand.md's close (T-0641)
             Inside git it prints `warning: <path>: tracked binary under <root>; keep evidence in the user cache
@@ -2215,6 +2220,44 @@ def move_skips(d):
     src.unlink()
 
 
+RECORD_GLOBS = ('*.dispatch.json', '*.attempt.json')  # run records a dispatch writes beside a handoff (T-0669)
+
+
+def move_records(d, every=False):
+    """T-0669: move ticket dir d's untracked run records (RECORD_GLOBS, or with every=True every untracked entry, for
+    an undotted folder a dot-rename left behind) into its runtime records dir; a tracked file stays. Returns one
+    `moved <name> to <records dir>` line per move. [] when d is no dir or a legacy ticket keeps records in place."""
+    if not d.is_dir():
+        return []
+    dst = run_order.records_dir(d)
+    if dst.resolve() == d.resolve():
+        return []
+    names = sorted(p.name for p in d.iterdir() if every or any(fnmatch.fnmatch(p.name, g) for g in RECORD_GLOBS))
+    try:
+        t = subprocess.run(['git', '-C', str(d), 'ls-files', '-z', '--', *names], capture_output=True, text=True,
+                           env={k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}) if names else None
+        tracked = {f.split('/', 1)[0] for f in t.stdout.split('\0') if f} if t and t.returncode == 0 else set()
+    except OSError:
+        tracked = set()
+    out = []
+    for n in names:
+        if n in tracked or n == 'handoff.md':
+            continue
+        dst = run_order.records_dir(d, create=True)
+        shutil.move(str(d / n), str(dst / n))
+        out.append(f'moved {d.name}/{n} to {dst}')
+    return out
+
+
+def undotted_warnings(td):
+    """T-0669: check's warning per NNNN-<slug> folder in the ticket root with no handoff.md, a closed ticket's run-record
+    leftover that close now moves into the records dir."""
+    if not td.is_dir():
+        return []
+    return [f'warning: {p.name}: undotted folder with no handoff.md' for p in sorted(td.iterdir())
+            if p.is_dir() and PREFIX_RE.match(p.name) and not (p / 'handoff.md').is_file()]
+
+
 def live_steps(d):
     """[(n, step-<n> dir)] of the live step dirs in d's records dir, by n."""
     r = records_of(d)
@@ -3442,7 +3485,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     ack_warnings (not None, filer route only): pass the open-warnings gate with a recorded reason instead of force;
     each Warnings line becomes a Deviation line `acknowledged warning (<why>): <line>`. It refuses with force, with
     reason, without filer, when empty, and when the filer's Warnings is None.
-    After writing the handoff, move_skips moves a task-folder skips.md into the records dir (T-0560).
+    After writing the handoff, move_skips moves a task-folder skips.md into the records dir (T-0560), and move_records
+    its untracked run records, then any untracked file left in an undotted folder after the rename (T-0669).
     Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap.
     Before archiving, outside_refs lists files outside the folder that reference it, as the literal <rel>/<slug>
     (ending at `/`, the end of a token, or punctuation, never running on into a longer folder name) or as a path token resolving to it relative to the citing file, from the toplevel, or absolute: with hits,
@@ -3815,8 +3859,14 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     h.write_bytes((head + body).encode('utf-8'))
     ref_drop(root, CLAIM_REFS + pid)  # T-0588: a done ticket holds no claim
     move_skips(d)
+    moved = move_records(d)  # T-0669: run records leave the ticket folder; an undotted leftover empties and goes
     if archive:
         d.rename(dot)
+        moved += move_records(d, every=True)
+        try:
+            d.rmdir()
+        except OSError:  # gone with the rename, or a tracked file stays
+            pass
     rewrote = rewrite_now()
     write_roadmap(root, load(td))
     if flag:
@@ -3833,7 +3883,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if ack_warnings is not None:
         out += f'; warnings acknowledged: {ack_warnings.strip()}'
     out += ''.join('; ' + x for x in deferred)
-    return out + rewrote + cite_note + lane_report(root, pid)
+    return out + rewrote + cite_note + lane_report(root, pid) + ''.join('\n' + m for m in moved)
 
 
 OUTCOME_DATE_RE = re.compile(r'^(\d{4}-\d{2}-\d{2}) · lane:', re.M)
@@ -3992,6 +4042,7 @@ def cmd_check(root, numbered=False):
     out += placeholder_problems(root, td, ts)
     out += claim_warnings(root, td, ts)
     out += claim_ref_warnings(root, ts)
+    out += undotted_warnings(td)
     out += hand_close_warnings(td, ts)
     out += link_warnings(root)
     out += top_level_warnings(root)
@@ -8162,6 +8213,33 @@ def selftest():
                    f'rc={rc} {err!r} {tracked}',
                    rc == 0 and tracked == [f'.sdlc/{cd.name}/handoff.md'] and sk.is_file()
                    and '- lane: full;' in sk.read_text(encoding='utf-8') and '· lane: full ' in handoff(d))
+
+        # (T-0669) close moves an untracked solo dispatch record into the records dir and leaves no undotted folder; an
+        # undotted leftover with no handoff.md empties into the records dir (a tracked file stays); check warns on one
+        r, d = oc_root('dmv', numbered=True, git=have_git)
+        (d / 'T-0001-solo.dispatch.json').write_text('{"name": "T-0001-solo"}\n', encoding='utf-8')
+        rc, out, err = run(r, 'close', (d.name,), filer=False)
+        rd = r / 'runtime' / 'tasks' / d.name
+        expect(f'(T-0669) close moves the dispatch record to the records dir and leaves no undotted folder: rc={rc} {out!r} {err!r}',
+               rc == 0 and not d.exists() and not list((r / ('.' + d.name)).glob('*.dispatch.json'))
+               and (rd / 'T-0001-solo.dispatch.json').is_file() and f'moved {d.name}/T-0001-solo.dispatch.json to {rd}' in out)
+        left = r / '0001-tk'
+        left.mkdir()
+        (left / 'T-0009-solo.dispatch.json').write_text('{}\n', encoding='utf-8')
+        rc, out, err = run(r, 'check')
+        expect(f'(T-0669) check warns on an undotted folder with no handoff.md: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'warning: 0001-tk: undotted folder with no handoff.md' in out)
+        moved = move_records(left, every=True)
+        expect(f'(T-0669) an undotted leftover empties into the records dir: {moved}',
+               moved == [f'moved 0001-tk/T-0009-solo.dispatch.json to {rd}'] and (rd / 'T-0009-solo.dispatch.json').is_file()
+               and not list(left.iterdir()))
+        left.rmdir()
+        if have_git:
+            left.mkdir()
+            (left / 'keep.md').write_text('kept\n', encoding='utf-8')
+            g(r.parent, 'add', '--', left.relative_to(r.parent).as_posix())
+            expect('(T-0669) a tracked file in an undotted folder never moves',
+                   move_records(left, every=True) == [] and (left / 'keep.md').is_file())
 
         if have_git:
             # (T-0543 runtime) a cite under runtime/ is no citation; the same cite outside runtime/ is one

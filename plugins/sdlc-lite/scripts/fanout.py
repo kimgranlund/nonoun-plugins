@@ -517,7 +517,7 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
 HOST_WORKTREES = '.claude/worktrees'  # host-owned, not a lanes root
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
 HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
-SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\n{sync}Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
+SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nArtifacts dir: {artifacts}\n{sync}Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and after a fix rerun the checks that fix can affect (every check when unsure), keeping any `(red)` control, and report files changed, each check '
                         'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
@@ -1983,6 +1983,9 @@ def subagent_dispatch(ctx, t, tier):
     model, effort, _ = SOLO_TIERS[tier]
     name = subagent_name(t.id)
     handoff = (ctx['trel'] / t.slug / 'handoff.md').as_posix()
+    import dispatch  # same scripts/ dir: handoff_locator quotes a spaced path for the spawn gate
+    # T-0669: the records dir holds the dispatch record; the spawn gate reads it from this prompt line
+    artifacts = os.path.relpath(order.records_dir(tickets.ticket_dir(ctx['root']) / t.slug), ctx['top'])
     base_sha = subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None
     verifier = None
     if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports; the level is the ticket's at prep
@@ -1992,6 +1995,7 @@ def subagent_dispatch(ctx, t, tier):
     return {'subagent_type': f'sdlc-lite:solo-{tier}', 'name': name, 'description': ' '.join(([t.id, 'solo', tier] + t.title.split())[:5]),  # 3 to 5 words
             'model': model, 'effort': effort,
             'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title,
+                                                  artifacts=dispatch.handoff_locator(pathlib.Path(artifacts).as_posix()),
                                                   sync=SOLO_SYNC.format(sha=base_sha) if base_sha else ''),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
@@ -2063,7 +2067,7 @@ def write_host_record(ctx, name, branch, tid, base=None):
 def print_prep(ctx):
     """The prep plan: per ticket the lane, then the dispatch JSON of a solo ticket or the tree commands of a full one.
     Returns 4 when a ticket stops at the budget gate, else 0."""
-    out = ['fanout prep (sub-agent lanes: creates only each solo ticket\'s <name>.dispatch.json, the record the spawn gate checks, '
+    out = ['fanout prep (sub-agent lanes: creates only each solo ticket\'s <name>.dispatch.json in its records dir, the record the spawn gate checks, '
            'and its host lane record <lanes root>/host/<name>.lane.json)']
     if ctx['reuse']:
         out.append(f"integration branch {ctx['integration']} exists at {ctx['start']}: land reuses it")
@@ -2096,8 +2100,9 @@ def print_prep(ctx):
                     continue
                 d = subagent_dispatch(ctx, t, tier)
                 d['attempt_id'] = write_solo_row(taskdir, tier)  # the unpriced row `land --transcript` prices (T-0331)
-                # The spawn gate (hooks/block-role-spawn.sh) finds this record beside the prompt's Handoff line (T-0326).
-                (taskdir / f"{d['name']}.dispatch.json").write_text(
+                # The spawn gate (hooks/block-role-spawn.sh) finds this record in the prompt's Artifacts dir, the records
+                # dir, as solo_run.dispatch_json writes it (T-0669); the task folder keeps only tracked records.
+                (order.records_dir(taskdir, create=True) / f"{d['name']}.dispatch.json").write_text(
                     json.dumps({**d, 'role': 'solo', 'level': solo_run.TIERS[tier][2]}, indent=2) + '\n', encoding='utf-8')
                 out.append(f"    branch: {d['branch']}; worktree: {d['worktree']} (host-made at the spawn)")
                 out.append(f"    host record: {write_host_record(ctx, d['name'], d['branch'], t.id)}")
@@ -2539,7 +2544,8 @@ def cmd_land(a):
 def branch_base(ctx, ref, t):
     """The lane's recorded base sha, read from git objects on ref in the order the ledger reads a lane tree: the task
     dir's base-sha, else a solo *.dispatch.json base_sha; '' when neither is committed (the lane is then based at its
-    fork point from main, an ancestor by construction)."""
+    fork point from main, an ancestor by construction). prep writes the dispatch record to the git-ignored records
+    dir (T-0669), so the dispatch branch only reads a record a pre-T-0669 lane committed; the fallback is the norm."""
     prefix = (ctx['trel'] / t.slug).as_posix()
 
     def show(name):
@@ -4568,6 +4574,13 @@ def selftest():
                d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'
                and 'prepare --solo-model opus verifier L2 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or '')  # host-owned
                and 'verifier L3' not in (d2.get('verifier') or ''))
+        # T-0669: prep writes the dispatch record to the records dir, which the prompt's Artifacts dir line names, not the task folder
+        t1_dir = p1 / '.sdlc' / 't1'
+        t1_rd = sys.modules['order'].records_dir(t1_dir)  # `order` is a local list in this selftest
+        expect(f'case 22 prep: no *.dispatch.json in the task folder, one in its records dir named by the Artifacts dir line, '
+               f'got {sorted(p.name for p in t1_dir.glob("*.dispatch.json"))} {sorted(p.name for p in t1_rd.glob("*.dispatch.json"))}',
+               not list(t1_dir.glob('*.dispatch.json')) and [p.name for p in t1_rd.glob('*.dispatch.json')] == ['T-0001-solo.dispatch.json']
+               and t1_rd != t1_dir and f'\nArtifacts dir: {os.path.relpath(t1_rd, p1)}\n' in d1.get('prompt', ''))
         # T-0356: the positive control: a `verifier: L3` line in the handoff prepares verifier L3; the others stay L2
         pv = tmp / 'prep-verifier'
         sized_repo(pv, ['L2', 'L2', 'L2'], {'.gitignore': gi})
