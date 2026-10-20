@@ -17,7 +17,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0656 | [0656-settle-refuses-running](0656-settle-refuses-running/handoff.md) | settle --forward refuses while a lane attempt is running | bug | L1 | P2 | none | ⏳ proposed |
 | T-0657 | [0657-review-red-at-base](0657-review-red-at-base/handoff.md) | steps.py review reports red criteria already green at base | feature | L2 | P2 | none | ⏳ proposed |
 | T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
-| T-0660 | [0660-quantified-criteria-lint](0660-quantified-criteria-lint/handoff.md) | Plan lint flags universally quantified prose criteria with no command | feature | L2 | P2 | none | ⏳ proposed |
+| T-0660 | [0660-quantified-criteria-lint](0660-quantified-criteria-lint/handoff.md) | Plan lint flags universally quantified prose criteria with no command | feature | L2 | P2 | none | 🟡 claimed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
 | T-0662 | [0662-relative-record-paths](0662-relative-record-paths/handoff.md) | Tracked work records hold no absolute machine paths | bug | L2 | P2 | none | ⏳ proposed |
 | T-0664 | [0664-designs-docs-home](0664-designs-docs-home/handoff.md) | A write-once designs home for grill output in the onboard docs table | feature | L2 | P2 | none | 🟡 claimed |
