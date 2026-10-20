@@ -36,3 +36,10 @@ No model or effort changes. Agent names, `levels.json`, `models.json` and every 
 4. `git diff <base> -U0 -- plugins/sdlc-lite/agents plugins/sdlc-lite/adapters | grep -E '^[-+](model|effort|model_reasoning_effort)'` prints nothing (base: the build-start sha).
 5. `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0, `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `python3 plugins/sdlc-lite/scripts/prompt_lint.py` exits 0.
 6. `python3 scripts/check-packaging.py` exits 0 and `git diff --check` exits 0.
+
+## Outcome
+Built by solo (Opus) on base 9e54d63d.
+- Deleted `plugins/sdlc-lite/skills/plan-{campaign,doc,fanout,goal}/`. `check.py` item 58 is now a retired line; its code, `PLAN_STUB_KINDS`, `HINT_STUBS` and the H-2 to H-6 exemption are gone; the planted-budget negative control points at `skills/plan/references/fanout.md`.
+- `claude_roles.py` `variant_description()` writes `<role> at level <Ln>: <model> <effort>. Same role as the <role> agent.`; the selftest pins the builder-L2 text and asserts under 200 characters naming level, model and effort (both cases FAIL with a 250-character description planted). 23 variants regenerated; no Codex file changed.
+- Docs: `plugin-compatibility.md` retired-names note, `prompts.md` hint-rule exemption removed, CHANGELOG `[Unreleased]` entry. Links to the deleted stubs in `docs/reports/2026-10-12-sdlc-lite-astra-review.md` (docs_check S-6 errors) and two specs (D-10 warnings) became code spans naming `/sdlc-lite:plan <kind>`; these files were outside the named scope.
+- Criteria: 1 prints 0; 2 selftest PASS, generate --check 0; 3 prints 81, exit 0; 4 prints nothing; 5 codex check 0, check.py 0, prompt_lint 0; 6 packaging 0, diff --check 0. docs_check 0 errors.

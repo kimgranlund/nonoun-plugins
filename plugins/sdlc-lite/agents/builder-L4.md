@@ -1,6 +1,6 @@
 ---
 name: builder-L4
-description: "Use to implement exactly one plan step from a handoff, running the checks its acceptance criteria name. Edits code in the current tree. NOT for planning, widening a step, judging its own work (verifier), or publishing. Level L4: opus high."
+description: "builder at level L4: opus high. Same role as the builder agent."
 model: opus
 effort: high
 ---

@@ -1,6 +1,6 @@
 ---
 name: solo-L2
-description: "Use to deliver one ticket of level L1 or L2 end to end in a single session or one named background sub-agent: read, change, run the checks, report. The default lane for ticket levels L1 and L2 (steps.py lane); solo level L3 for a large ticket. NOT for a ticket that needs a plan or a merge step (chain), a question with no change to make (scout, researcher), or judging its own work. Level L2: opus medium."
+description: "solo at level L2: opus medium. Same role as the solo agent."
 model: opus
 effort: medium
 ---

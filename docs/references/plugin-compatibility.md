@@ -21,9 +21,9 @@ Both repository catalogs point to the same two plugin roots. Both host manifests
 
 These checks demonstrate packaging, discovery, and the covered script behavior. They do not demonstrate model adherence to every workflow, installed-session implicit routing, browser portability, or comparative effectiveness against ICM Architect.
 
-## Retired skill names (T-0467, T-0468)
+## Retired skill names (T-0467, T-0468, T-0665)
 
-Changelog: `plan-goal`, `plan-campaign`, `plan-doc`, and `plan-fanout` are merged into `/sdlc-lite:plan <kind>` (kinds `steps`, `doc`, `goal`, `campaign`, `fanout`). For one release each old name stays as a redirect stub of under 15 lines that tells the model to run `/sdlc-lite:plan <kind>`; the stubs are removed in the next minor (ticket D of the plan-merge design). `plan-loop`, `plan-verification`, and `run-plan` keep their names. A typed old name still resolves; the old trigger phrases now route to `plan`. `scripts/check.py` item 58 pins the stubs. Codex reads the same skill folders (`skills: ./skills/`), so no Codex manifest change is needed; whether the host picks `plan` over a stub from the description alone is unmeasured (no routing corpus).
+Changelog: `plan-goal`, `plan-campaign`, `plan-doc`, and `plan-fanout` are merged into `/sdlc-lite:plan <kind>` (kinds `steps`, `doc`, `goal`, `campaign`, `fanout`). For one release each old name stayed as a redirect stub; T-0665 deleted the stubs and `scripts/check.py` item 58, so a typed old name no longer resolves and the old trigger phrases route to `plan`. `plan-loop`, `plan-verification`, and `run-plan` keep their names. Codex reads the same skill folders (`skills: ./skills/`), so no Codex manifest change is needed.
 
 ## Remaining behavioral qualification
 

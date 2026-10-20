@@ -137,10 +137,10 @@ For the Claude-based author, items 1–3 are directly reproducible without Codex
 | [onboard](../../plugins/sdlc-lite/skills/onboard/SKILL.md) | Entry-file setup, managed blocks, preserving repository instructions; no user config changed. |
 | [open-questions](../../plugins/sdlc-lite/skills/open-questions/SKILL.md) | Task-local close-out and unresolved defaults; distinct from broader ask sweep. |
 | [plan](../../plugins/sdlc-lite/skills/plan/SKILL.md) | Planner dispatch, ordered steps, readiness and review routing. |
-| [plan-campaign](../../plugins/sdlc-lite/skills/plan-campaign/SKILL.md) | Wave planning, lane partition and outcome constraints; planning-only scope. |
-| [plan-doc](../../plugins/sdlc-lite/skills/plan-doc/SKILL.md) | Executable plan structure, authorization and lint routing. |
-| [plan-fanout](../../plugins/sdlc-lite/skills/plan-fanout/SKILL.md) | Nonoverlap, lane caps, gate/budget command construction and dry run. |
-| [plan-goal](../../plugins/sdlc-lite/skills/plan-goal/SKILL.md) | Done condition, numeric stops, authority and goal-block generation. |
+| `plan-campaign` (now `/sdlc-lite:plan campaign`) | Wave planning, lane partition and outcome constraints; planning-only scope. |
+| `plan-doc` (now `/sdlc-lite:plan doc`) | Executable plan structure, authorization and lint routing. |
+| `plan-fanout` (now `/sdlc-lite:plan fanout`) | Nonoverlap, lane caps, gate/budget command construction and dry run. |
+| `plan-goal` (now `/sdlc-lite:plan goal`) | Done condition, numeric stops, authority and goal-block generation. |
 | [plan-loop](../../plugins/sdlc-lite/skills/plan-loop/SKILL.md) | Idempotence, cadence and stop condition; host loop syntax remains a live-check limitation. |
 | [plan-verification](../../plugins/sdlc-lite/skills/plan-verification/SKILL.md) | Outcome, measure/baseline, rubric and negative control; distinct from step verifier. |
 | [report](../../plugins/sdlc-lite/skills/report/SKILL.md) | Thread views, structured record/output, evidence and context reporting. |

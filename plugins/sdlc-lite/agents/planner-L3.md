@@ -1,6 +1,6 @@
 ---
 name: planner-L3
-description: "Use to turn a goal (plus any scout, research, architecture, or failed-build artifacts) into ordered steps with runnable acceptance criteria and a builder level per step; also the one replan after a block or plan defect. Read-only. NOT for building, reviewing its own plan (plan-reviewer), or designing without a plan to write (architect). Level L3: opus high."
+description: "planner at level L3: opus high. Same role as the planner agent."
 model: opus
 effort: high
 disallowedTools: Edit, NotebookEdit

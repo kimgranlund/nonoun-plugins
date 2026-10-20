@@ -1,6 +1,6 @@
 ---
 name: builder-L2
-description: "Use to implement exactly one plan step from a handoff, running the checks its acceptance criteria name. Edits code in the current tree. NOT for planning, widening a step, judging its own work (verifier), or publishing. Level L2: sonnet high."
+description: "builder at level L2: sonnet high. Same role as the builder agent."
 model: sonnet
 effort: high
 ---

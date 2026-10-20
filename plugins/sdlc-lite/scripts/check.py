@@ -241,11 +241,7 @@
    references/goal.md, references/campaign.md, references/fanout.md, and evals/README.md exist in that folder; skills/sdlc-lite/SKILL.md routes to
    `plan <kind>`. Negative controls: each phrase removed, each kind reference removed, a harness reference added, the entry row removed, and each
    file reported missing must be flagged.
-58. Plan redirect stubs (T-0468): each of skills/plan-goal, plan-campaign, plan-doc, and plan-fanout holds one SKILL.md of under 15 lines with the name of its folder, a
-   description that starts `Redirect: run `/sdlc-lite:plan <kind>`` and ends `removed in the next minor.`, the path `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md`, its kind token,
-   and the Codex route path `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md`, no `## 1. Gather`, and no `references/` folder. Negative controls: a stub that regrows
-   `## 1. Gather`, a stub without its kind token, a stub without the redirect description, a stub of 15 lines, a stub with a references folder, and a missing stub must be flagged.
-   Ticket D deletes the stubs and this item.
+58. Retired (T-0665): the plan redirect stubs it pinned are deleted.
 59. Verifier parity line (T-0513): agents/verifier.md and its generated verifier-L1, L2 and L3 files each hold the `(parity)` rule line (`a `(parity)` criterion passes per named property`,
    `Read the real and the mockup image`). Negative control: each phrase removed from a file must be flagged.
 60. Argument hints (T-0463): the standard is docs/specs/doc-standards/prompts.md `## Skill arguments and questions`. A skill reads arguments when its SKILL.md has a line
@@ -254,7 +250,7 @@
    script map (ticket, board, report, fleet-status, fanout, onboard, review-traces, fleet-retro), in that script's usage text. H-5: for a skill in the script map, every
    `--flag` in the script's usage text is in the hint, or in the first column of the skill's `## Arguments` table when the hint holds `[options]`, or in the allowlist.
    H-6: a reader has exactly one `## Arguments` heading whose next non-blank line is the row `| Argument | Meaning | Default | Example |`. H-7: a reference skill
-   (checking-rules, checks-that-bite, handoff-format, level-rubric) has no `argument-hint`. The four plan redirect stubs of item 58 are exempt from H-2 to H-6. Usage text
+   (checking-rules, checks-that-bite, handoff-format, level-rubric) has no `argument-hint`. Usage text
    is a script's lines from the first `usage:` line to the next blank line; flags are prompt_lint.FLAG matches. Every rule runs on every skill it applies to. Negative
    controls, each a mutant that must add a finding for its rule: H-1 a reader without its hint line; H-2 braces, two dots, free text, a space inside angle brackets, an
    unbalanced bracket, and a double quote; H-3 a hint of 101 characters; H-4 a hint flag absent from the body, and a hint flag absent from the mapped script; H-5 a usage
@@ -1400,7 +1396,7 @@ if len(_rv_files) < 30: errors.append(f'one level system: only {len(_rv_files)} 
 for _why, _rel, _bad in (('a planted tier S line', 'agents/solo.md', 'Start at tier S.'), ('a planted solo-M name', 'skills/agent/SKILL.md', 'spawn sdlc-lite:solo-M'),
                          ('a planted size XL', 'adapters/codex/instructions.md', 'a size XL ticket'), ('a planted S/M/L list', 'agents/conductor.md', 'tiers are S/M/L'),
                          ('an ALIAS_OK line outside ALIAS_FILES', 'skills/fix/SKILL.md', 'solo-S still works  # ALIAS_OK'),
-                         ('a planted budget list', 'skills/plan-fanout/SKILL.md', 'caps S $5, M $30, L $60')):
+                         ('a planted budget list', 'skills/plan/references/fanout.md', 'caps S $5, M $30, L $60')):
     if not retired_vocab_bad(_rel, 'clean line\n' + _bad + '\n'): errors.append(f'check.py: one level system negative control not flagged for {_why}')
 if retired_vocab_bad('hooks/_role.sh', "re_solo='^(solo)-[SML]$'  # solo-S|M|L ALIAS_OK\n") or retired_vocab_bad('agents/solo.md', 'level L1, L2, L3; size L4; solo-L1\n'):
     errors.append('check.py: one level system flagged an allowed line')
@@ -1545,29 +1541,6 @@ if not plan_kinds_bad(dict(_pk, skill=_pk['skill'] + ' harness:x')): errors.appe
 if not plan_kinds_bad(dict(_pk, entry=_pk['entry'].replace('plan <kind>', ''))): errors.append('check.py: plan kinds negative control not flagged for a missing entry route')
 for _f in PLAN_KIND_FILES:
     if not plan_kinds_bad(dict(_pk, **{_f: ''})): errors.append(f'check.py: plan kinds negative control not flagged for a missing {_f}')
-# Plan redirect stubs (docstring item 58, T-0468): the four retired plan names redirect to the plan skill for one release; ticket D deletes them and this item.
-PLAN_STUB_KINDS = ('goal', 'campaign', 'doc', 'fanout')
-def plan_stubs_bad(texts, refs=()):
-    """Findings for {kind: its SKILL.md text or '' when missing}; refs names the stub folders that still hold a references/ folder."""
-    out = []
-    for k in PLAN_STUB_KINDS:
-        t, f = texts.get(k, ''), f'skills/plan-{k}/SKILL.md'
-        if not t: out.append(f'{f} is missing'); continue
-        if len(t.splitlines()) >= 15: out.append(f'{f} has {len(t.splitlines())} lines, expected under 15')
-        out += [f'{f} missing "{ph}"' for ph in (f'name: plan-{k}', f'plan {k}', '${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md', '${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md') if ph not in t]
-        if not re.search(rf'^description: "Redirect: run `/sdlc-lite:plan {k}`; removed in the next minor\."$', t, re.M): out.append(f'{f} description is not the redirect line')
-        if '## 1. Gather' in t: out.append(f'{f} regrew ## 1. Gather')
-        if k in refs: out.append(f'skills/plan-{k}/references still exists')
-    return out
-_stubs = {k: _rd(root/f'skills/plan-{k}/SKILL.md') for k in PLAN_STUB_KINDS}
-errors.extend(f'check.py: plan stubs: {m}' for m in plan_stubs_bad(_stubs, [k for k in PLAN_STUB_KINDS if (root/f'skills/plan-{k}/references').exists()]))
-for _k in PLAN_STUB_KINDS:
-    for _why, _mut in (('a regrown ## 1. Gather', _stubs[_k] + '\n## 1. Gather\n'), ('a missing kind token', _stubs[_k].replace(f'plan {_k}', 'plan x')),
-                       ('a description without the redirect', _stubs[_k].replace('Redirect: run', 'Plan: run')), ('a missing plan path', _stubs[_k].replace('skills/plan/SKILL.md', 'skills/x.md')),
-                       ('a missing Codex route', _stubs[_k].replace('skills/sdlc-lite/SKILL.md', 'skills/x.md')), ('15 lines', _stubs[_k] + '\n' * 15)):
-        if not plan_stubs_bad(dict(_stubs, **{_k: _mut})): errors.append(f'check.py: plan stubs negative control not flagged for {_why} in plan-{_k}')
-    if not plan_stubs_bad(dict(_stubs, **{_k: ''})): errors.append(f'check.py: plan stubs negative control not flagged for a missing plan-{_k} stub')
-    if not plan_stubs_bad(_stubs, [_k]): errors.append(f'check.py: plan stubs negative control not flagged for a references folder in plan-{_k}')
 # Argument hints (docstring item 60, T-0463): every argument-reading skill carries a hint in one grammar, an ## Arguments table, and flags that agree with its script.
 HINT_SCRIPTS = {'ticket': 'scripts/tickets.py', 'board': 'scripts/board.py', 'report': 'scripts/report.py', 'fleet-status': 'scripts/fleet_status.py',
                 'fanout': 'scripts/fanout.py', 'onboard': 'scripts/onboard.py', 'review-traces': 'scripts/traces.py', 'fleet-retro': 'scripts/fleet_collect.py'}
@@ -1588,7 +1561,6 @@ HINT_ALLOW = {
     'fleet-retro': ('--gh', '--days', '--du-timeout'),
 }
 HINT_REF_SKILLS = ('checking-rules', 'checks-that-bite', 'handoff-format', 'level-rubric')
-HINT_STUBS = tuple(f'plan-{k}' for k in PLAN_STUB_KINDS)
 HINT_MAX = 100
 HINT_TABLE = '| Argument | Meaning | Default | Example |'
 _H_LOWER = r'[a-z][a-z0-9-]*'
@@ -1644,7 +1616,6 @@ def hints_bad(skills, usage):
             continue
         if not re.search(r'^Arguments: `\$ARGUMENTS`', t, re.M): continue
         if hint is None: out.append(f'{f}: H-1 reads $ARGUMENTS but has no argument-hint line')
-        if name in HINT_STUBS: continue
         script = HINT_SCRIPTS.get(name)
         uflags = set(prompt_lint.FLAG.findall(usage.get(script, ''))) if script else set()
         hflags = set(prompt_lint.FLAG.findall(hint or ''))

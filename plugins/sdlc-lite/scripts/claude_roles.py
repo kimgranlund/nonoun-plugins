@@ -177,6 +177,11 @@ def insert_overlay(body, level, text):
     return body[:m.start()] + block + body[m.start():]
 
 
+def variant_description(role, level, model, effort):
+    """One short line for a level variant; the base role file carries the full description."""
+    return '%s at level %s: %s %s. Same role as the %s agent.' % (role, level, model, effort, role)
+
+
 def definitions(plugin):
     """{file name: text} for every row of the table."""
     out = {}
@@ -190,7 +195,7 @@ def definitions(plugin):
         for level, (model, effort) in levels.items():
             name = '%s-%s' % (role, level)
             lines = ['---', 'name: ' + name,
-                     'description: ' + json.dumps('%s Level %s: %s %s.' % (desc, level, model, effort), ensure_ascii=False),
+                     'description: ' + json.dumps(variant_description(role, level, model, effort), ensure_ascii=False),
                      'model: ' + model, 'effort: ' + effort]
             if role not in WRITERS:
                 lines.append('disallowedTools: ' + DISALLOWED)
@@ -293,9 +298,12 @@ def selftest(plugin):
             case('%s disallowedTools only for a read-only role' % name,
                  ('disallowedTools: ' + DISALLOWED in head) == (role not in WRITERS))
         built = (d / 'agents' / 'builder-L2.md').read_text(encoding='utf-8')
-        want_desc = source(d, 'builder')[0] + ' Level L2: %s %s.' % tuple(data['builder']['L2'])
-        case('builder-L2 description is one quoted scalar holding the whole text, level included',
+        want_desc = 'builder at level L2: %s %s. Same role as the builder agent.' % tuple(data['builder']['L2'])
+        case('builder-L2 description is one quoted scalar holding the short level line',
              SOURCE_RE.fullmatch(built).group(1).split('\n')[1] == 'description: ' + json.dumps(want_desc))
+        got_desc = json.loads(SOURCE_RE.fullmatch(built).group(1).split('\n')[1][len('description: '):])
+        case('builder-L2 description is under 200 characters and names the level, model and effort',
+             len(got_desc) < 200 and all(w in got_desc for w in ['L2'] + list(data['builder']['L2'])))
         case('a double-quoted source description is decoded once (no quote characters kept)', not source(d, 'builder')[0].startswith('"'))
         skills = (d / 'agents' / 'verifier-L3.md').read_text(encoding='utf-8')
         case('verifier-L3 carries the role skills', 'skills:\n  - checks-that-bite\n  - checking-rules\n---\n' in skills)
