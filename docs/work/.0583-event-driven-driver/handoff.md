@@ -2,7 +2,7 @@
 id: T-0583
 title: "Driver loop wakes on role completion or state change, not timed polling"
 type: idea            # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -55,3 +55,10 @@ Design note, 2026-10-19. No code in this ticket; the build is a follow-up ticket
 - Turns per wave: all conductor turns from the first dispatch to the last close in the wave.
 - Before: maison's 0597 wave, measured by running the detector over its conductor transcript (the lesson says "dozens"; no exact count is recorded). After: 0 idle wakes per wave, and turns per wave at most dispatches plus completions plus one close-out turn.
 - Negative control: `/loop 10m status update since the last run; stop when all lanes landed` piped to `plan_check.py loop` must FAIL with `status-polls-running-work`; the same prompt with no interval and a non-status loop (`/loop 1h rotate logs; stop when ...`) must still pass.
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: docs/work/0583-event-driven-driver/handoff.md Metric: the "before" baseline is a measurement procedure (run the idle-wakes detector over maison's 0597 transcript), not a recorded number; acceptable for a design ticket, and the build ticket should record the figure. | note: docs/work/0583-event-driven-driver/handoff.md Mechanism item 1: the proposed regex term `land` also matches "landed"/"upland"; the build ticket's selftest should include a non-status loop containing such a word to check it does not over-fire.) · verifier: verifier-L2 (sonnet) · base: ab9c6afd1857
+- Changed: see commits
+- Commits: ad6d50c T-0583: design note for an event-driven driver loop
+- Check: 1 The Outcome holds the design: mechanism, files, and the metric to measure: pass

@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0577 | [0577-rewrite-refs-frozen-paths](0577-rewrite-refs-frozen-paths/handoff.md) | --rewrite-refs rewrites citations inside frozen records | bug | L2 | P2 | none | 🟡 claimed |
-| T-0583 | [0583-event-driven-driver](0583-event-driven-driver/handoff.md) | Driver loop wakes on role completion or state change, not timed polling | idea | L2 | P3 | none | 🟡 claimed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 
-Closed: 603 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 604 done, 29 dropped (git log or .NNNN-* folders)
