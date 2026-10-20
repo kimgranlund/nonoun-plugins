@@ -11,7 +11,7 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 | `planning/` | Unbuilt proposals: sub-agent mode, the idle-host watcher, reorganization, the docs schema | Before building one; a built one moves into `specs/` |
 | `reports/` | Dated evidence, including the [readiness and recovery trials](reports/readiness-recovery-validation.md) | What was verified; history, not instructions |
 
-<!-- sdlc-lite:managed:start v1 sha256:b5a2d5be18b8 -->
+<!-- sdlc-lite:managed:start v1 sha256:8e990b923eab -->
 # Documents
 
 Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
@@ -52,7 +52,7 @@ The first line that matches wins.
 
 1. Pick the home above; [the layout](layout.md) lists any extra homes.
 2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`. A home whose `## Kinds` form in [the layout](layout.md) is numbered (such as `NNNN-slug.md`) takes the next number from `docs_check.py next docs/<home>`, or by hand: read the highest existing number and held ref, then run `git update-ref refs/sdlc/doc-ids/<home>/<NNNN> "$(printf 'docs/<home>/<NNNN>\n' | git hash-object -w --stdin)" ""`, which is create-only.
-3. Add a link to it in its folder's `AGENTS.md`, outside the generated managed block, since a hand edit inside the block fails its stamp. The onboard setup also lists it.
+3. When its folder has an `AGENTS.md`, add a link to it there, outside the generated managed block, since a hand edit inside the block fails its stamp. When the folder has none, the onboard setup lists it in the Contents of `docs/AGENTS.md`.
 4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
 5. Find the document's type in `specs/doc-standards/README.md`, when this repository has it, and follow the card its row names.
 
