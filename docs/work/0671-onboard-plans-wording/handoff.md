@@ -34,3 +34,9 @@ The router's `## Stages` list is unchanged. Both blocks keep their managed-block
 3. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with a case: after `new`, the work-root `AGENTS.md` block holds the router link and a stage-count line whose numbers match the router's `## Stages`. The case fails with the change reverted.
 4. After `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap`, `grep -n 'proposed' docs/work/AGENTS.md` prints the stage-count line, and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
 5. `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-20 · lane: solo · verdict: built, unverified · verifier: none · base: c743325e
+- Changed: `ROOT_AGENTS_TEMPLATE` says "tickets and their task plans (plan docs under review go to `docs/planning/`)"; `WORK_ROOT_TEMPLATE` renders `Stages: proposed N, ready N, ...` via `stage_count_line`; selftest cases in `onboard.py` and `tickets.py` (the tickets case fails with the replacement removed); `docs/work/AGENTS.md` regenerated.
+- Checks: `onboard.py selftest` exit 0, `tickets.py selftest` exit 0, `tickets.py --root .sdlc roadmap` and `check` exit 0, `git diff --check` exit 0. `check.py` shows 3 FAIL lines (fanout `--force`/`--forward` hints) that also fail on main; not touched here.

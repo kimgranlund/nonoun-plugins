@@ -413,7 +413,7 @@ Managed by SDLC Lite onboard, template <N>.
 
 ## Work records
 
-`.sdlc/` holds SDLC Lite tickets and plans; run records live in the git-ignored `.sdlc/runtime/tasks/<folder>/`, and a closed ticket keeps only its `handoff.md` with its `## Outcome`.
+`.sdlc/` holds SDLC Lite tickets and their task plans (plan docs under review go to `docs/planning/`); run records live in the git-ignored `.sdlc/runtime/tasks/<folder>/`, and a closed ticket keeps only its `handoff.md` with its `## Outcome`.
 
 - Pick the lane first with `steps.py lane <task dir>` (in the plugin's `scripts/` folder): `solo` is the default for ticket levels L1 and L2, `/sdlc-lite:fix` runs only when asked or when the lane script prints `fix`, and the full chain (`/sdlc-lite:chain`) needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). Roles launch with `run.sh`. Do not spawn another plugin's builder, planner, or reviewer agent in their place.
 - Worktrees: lanes live in `../<repo>.worktrees/` (`wtroot.py root`, in the plugin's `scripts/` folder). Lane open, the solo and verifier runs in a lane, land and close write `.git` or the lane tree outside the checkout, so under Codex run them with full access, not the `workspace-write` sandbox.
@@ -1882,6 +1882,8 @@ def gate_block_paths(impl):
         block = _root_block(root, impl)
         expect('`%s`' % DEFAULT_LANES in block and '`.sdlc/` holds SDLC Lite tickets' in block,
                'a default repo block does not name ../<repo>.worktrees/ and .sdlc/')
+        expect('holds SDLC Lite tickets and their task plans (plan docs under review go to `docs/planning/`)' in block,
+               'the block does not say where plans go')
         # a bare clone with lanes beside it (gen-ui-kit: <dir>/.bare, <dir>/lanes/<lane>)
         _git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'x')
         kit = os.path.join(os.path.dirname(root), 'kit')
