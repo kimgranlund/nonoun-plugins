@@ -85,3 +85,7 @@
 
 - note: plugins/sdlc-lite/skills/agent/SKILL.md:36 tells the solo `record` call to add "`--transcript` when you have it". That is still optional and correct, but the guidance differs from the other skills; item 41 does not match it because it has no `<dispatch_file> --` form.
 - decide: the handoff's Non-goals ("any script change") contradict criterion 2 as written, because item 41 had to change. Future tickets that reword a check-enforced phrase should name the check in Do.
+
+## T-0670: close verdict reason matches the recorded lane (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/tickets.py:3552 also refuses `delivered by the solo agent` when the recorded lane is `fix` (or any other value that maps to `full`), slightly wider than the Do's solo vs full/lean wording; no criterion covers it and no producer writes that combination today.

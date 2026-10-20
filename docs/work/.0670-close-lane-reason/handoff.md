@@ -2,7 +2,7 @@
 id: T-0670
 title: "close verdict reason matches the recorded lane"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,13 @@ A reason with no lane wording (for example `done elsewhere`) closes as today. A 
 - `tickets.py close --reason` refuses (nothing written) when the reason says `delivered by the full chain lane` or `delivered by the solo agent` and the lane recorded in skips.md differs; no lane wording or no record closes as before. New `reason_lane` helper, selftest case (k4).
 - `fanout.py close_reason` takes the ticket folder and reads a solo lane from its skips.md before `ctx['kinds']`; case 15 gains two assertions.
 - Checks: tickets.py selftest exit 0 (case (k4) fails with the refusal disabled), fanout.py selftest exit 0, check.py exit 0, `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 2bb7a1a320e7
+- Changed: see commits
+- Commits: 340c275 T-0670: close verdict reason matches the recorded lane
+- Check: 1 `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0 with a new case (solo record + fu...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a case-15 assertion that a ti...: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:3552 also refuses delivered by... -> notes.md
