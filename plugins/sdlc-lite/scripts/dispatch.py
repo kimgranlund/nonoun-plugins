@@ -106,6 +106,9 @@ the result path the role writes with the Write tool before it ends; record fails
 also when stdin is only the pointer. The line also says the file carries no header (record adds it, T-0538) and names
 `results.py validate <file> --role <role> --headerless`. The pointer line asks for a final message of one line, `<role> <status> <path>`.
 The prefix line says rm of scratch output under that prefix is allowed and refused elsewhere (hooks/block-role-rm.sh).
+A builder whose step scope names a path an AGENTS.md routes to a repo skill (steps.routed_skills against Tree, T-0648) also
+gets `Repo skills for this step: <path>, ...` (repo_skills_line; solo_run.py adds the same line to a solo brief); a repo with
+no routing lines gets no such line.
 The last line is the role's wall-clock budget (T-0555), `Time budget: <n>m wall clock for <role> <level>`, from ROLE_MINUTES
 (3x the median recorded duration of that role and level, floor 10 minutes; 60 for a row with no record); prepare stores it
 as time_budget_min in the dispatch and the attempt, and status and recover flag a running attempt past it. Nothing is killed.
@@ -383,6 +386,25 @@ def next_stem(directory, role, level):
         k += 1
         stem = '%s-%s-%d' % (role, level, k)
     return stem, k
+
+
+def repo_skills_line(top, handoff):
+    """T-0648: 'Repo skills for this step: <path>, ...' for the skills an AGENTS.md under top routes the handoff's file
+    scope to (steps.routed_skills), else ''. The scope is a step handoff's scope_entries, else the existing repo-relative
+    paths in code spans under a ticket handoff's ## Intent and ## Context."""
+    import steps  # same scripts/ dir
+    handoff = Path(handoff)
+    paths = steps.scope_entries(handoff.read_text(encoding='utf-8'))
+    if paths is None:
+        paths = []
+        for heading in ('Intent', 'Context'):
+            for line in steps.section(handoff, heading) or []:
+                for m in steps.SPAN_RE.finditer(line):
+                    p = steps.trim_path_token(m.group(2).strip())
+                    if p and not os.path.isabs(p) and '..' not in Path(p).parts and (Path(top) / p).exists():
+                        paths.append(p)
+    skills = steps.routed_skills(top, paths) if paths else []
+    return 'Repo skills for this step: ' + ', '.join(skills) if skills else ''
 
 
 def exec_tree(directory):
@@ -1140,6 +1162,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         if review:
             prompt += ('\nReview sha: %s (%s%s, the state the worker marked ready with lanes.py ready: review that commit; when Tree '
                        'no longer holds it, check it out under the throwaway prefix above)' % (review, READY_REFS, ticket_label(directory)[0]))
+        skills = repo_skills_line(toplevel, handoff) if role == 'builder' else ''
+        if skills:
+            prompt += '\n' + skills
         minutes = role_minutes(role, level)
         prompt += ('\nTime budget: %dm wall clock for %s %s; past it, dispatch.py status flags this attempt and the conductor checks on you'
                    % (minutes, role, level))
@@ -2322,6 +2347,23 @@ def selftest():
         err = refused('link check absent path', 2, 'builder', 'L1', '.sdlc/lk/step-3/handoff.md', 'links')
         case('link check names an absent path', 'does not exist' in err and 'builder-L9.md' in err)
         shutil.rmtree(lk)
+
+        # repo skills (T-0648): a builder whose step scope names a path an AGENTS.md routes to a repo skill gets the
+        # Repo skills line; a step scoped to an unrouted path gets none
+        rs = tmp / 'rs'
+        init_repo(rs)
+        put(rs / 'AGENTS.md', '# Repo\n\n- `src/styles/` uses `.agents/skills/recipe/SKILL.md`\n')
+        put(rs / '.agents' / 'skills' / 'recipe' / 'SKILL.md', 'x\n')
+        put(rs / '.sdlc' / 'rs' / 'handoff.md')
+        for path, want in (('src/styles/a.css', True), ('src/other.css', False)):
+            put(rs / '.sdlc' / 'rs' / 'step-1' / 'handoff.md',
+                '## Task goal\ng\n\n## Step 1: First thing\nlevel: L2\n### Read first\n- `.agents/skills/recipe/SKILL.md`\n'
+                '### Do\nDo one.\n\n### Acceptance criteria\n- `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; '
+                'git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e %s | { ! grep -q .; }`\n' % path)
+            rc, got, err = prep(rs, 'builder', 'L1', '.sdlc/rs/step-1/handoff.md', '--dry-run')
+            line = '\nRepo skills for this step: .agents/skills/recipe/SKILL.md\n'
+            case('repo skills: a builder scoped to %s %s the Repo skills line' % (path, 'gets' if want else 'does not get'),
+                 rc == 0 and ((line in got['prompt']) if want else 'Repo skills for this step' not in got['prompt']))
 
         put(sdlc / 'sg' / 'handoff.md')  # spec gate
         put(R(sdlc / 'sg') / 'planner-L1.md', SGPLAN)
