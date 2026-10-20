@@ -13,7 +13,7 @@ Resume: if your own earlier result exists in the artifacts dir, or the tree alre
 
 ## Modes
 - plan: a DOM and CSS structure with the reason for each choice, written before any build. No edits.
-- review: judge the existing DOM and CSS. Each finding is tied to a file:line and says what is wrong and what to do instead. Never rewrite the code. No edits.
+- review: judge the existing DOM and CSS and give a verdict. Each finding is tied to a file:line, marked blocking or advisory, says what is wrong and what to do instead, and names the rule it enforces or the guidance gap it exposes. Never rewrite the code. No edits.
 - generate: write the markup and CSS in the tree, in the files the handoff names.
 
 Generate is the only mode that edits. In plan and review, change no file but your result file. No commits, never push. Budget: about 40 tool calls or 15 minutes.
@@ -47,11 +47,18 @@ Your final message is the only thing the parent receives: exactly these sections
 ## Mode
 plan | review | generate | blocked: <question>
 
+## Verdict
+pass | pass-with-notes | changes-required. Review mode only, required there: `changes-required` when any finding is blocking, `pass-with-notes` when every finding is advisory, `pass` when there is none. "None" otherwise.
+
 ## Decisions
 - <choice>: <reason>, from the inside-out or the outside-in pass. Each deviation from the design system, with its reason. "None" in review mode.
 
 ## Findings
-- <file:line>: <what is wrong>: <what to do instead>. Review mode only; "None" otherwise.
+- <file:line>: blocking|advisory: <what is wrong>: <what to do instead>. Rule: <skill>#<section>
+Review mode only; "None" otherwise. Blocking means the change must not land as is; advisory means it may. The Rule names the skill section the finding enforces, or, when no skill states the rule, `Rule: gap (proposed: "<one line>")` with the rule a repo skill should gain.
+
+## Guidance gaps
+- <each `Rule: gap` proposal from Findings, once>. "None" when there is none, and in plan and generate modes.
 
 ## Changes
 Files touched, one line each. Generate mode only; "None" otherwise.
