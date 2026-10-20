@@ -9,10 +9,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | 🟡 claimed |
 | T-0669 | [0669-dispatch-records-dir](0669-dispatch-records-dir/handoff.md) | Dispatch and skip records go to the records dir, not the work root | bug | L2 | P3 | none | 🟡 claimed |
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | 🟡 claimed |
-| T-0673 | [0673-record-stdin-wording](0673-record-stdin-wording/handoff.md) | Skills say record reads the transcript, not the final message on stdin | chore | L1 | P2 | T-0667 | 🟡 claimed |
 
-Closed: 632 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 633 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
 - decide: plugins/sdlc-lite/skills/build/SKILL.md and 12 other skills (fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md) still say "with the sub-agent's final message on stdin", per the builder's Outcome; this needs a follow-up ticket to align them with conductor.md:41. (from T-0667: record --agent-id reads the final message from the transcript (2026-10-20))
+- decide: the handoff's Non-goals ("any script change") contradict criterion 2 as written, because item 41 had to change. Future tickets that reword a check-enforced phrase should name the check in Do. (from T-0673: Skills say record reads the transcript, not the final message on stdin (2026-10-20))

@@ -80,3 +80,8 @@
 
 - note: the `redck.py deviations` run printed no `process deviation:` lines, and criterion #1 is not marked `(red)`.
 - note: the harness denied `rm -rf` of the scratch dirs `tmp:0655-verifier-L2` and `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0655-verifier-L2`; the throwaway worktree `neg` was removed with `git worktree remove`, only the plain scratch repos `r` and `r-lane` remain in the second path.
+
+## T-0673: Skills say record reads the transcript, not the final message on stdin (2026-10-20)
+
+- note: plugins/sdlc-lite/skills/agent/SKILL.md:36 tells the solo `record` call to add "`--transcript` when you have it". That is still optional and correct, but the guidance differs from the other skills; item 41 does not match it because it has no `<dispatch_file> --` form.
+- decide: the handoff's Non-goals ("any script change") contradict criterion 2 as written, because item 41 had to change. Future tickets that reword a check-enforced phrase should name the check in Do.
