@@ -41,6 +41,7 @@ Rules:
 - The script writes every file. Write no file text yourself, and never hand-edit the managed blocks or `docs/layout.md` output to work around a report.
 - On a parse error (exit 1 naming a file and line), report the file and line and stop. Do not retry or patch the file.
 - The default homes include `goals/` and `kpi/`; setup lists them in `docs/AGENTS.md` and never creates either folder empty, and `docs_check.py` rules G-1 to G-5 check the files a repository puts there.
+- The default homes include `designs/` for write-once grill designs. A `docs/layout.md` that lists its homes gains `designs/` only when the repository adds it under `## Homes` (and its `## Kinds` row, when the layout has that table); setup does not rewrite an existing `docs/layout.md`.
 
 ## Standing authorization: managed-block refresh
 

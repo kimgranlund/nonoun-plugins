@@ -52,4 +52,6 @@ Mechanisms: <primitives, semantics, fidelity>
 
 A ratified design is write-once. When a constraint or the scope shifts, re-grill the affected forks into a new design file; never patch the old one.
 
+A design worth keeping is copied from the records dir to `docs/designs/<slug>.md`, the write-once designs home. A re-grill writes a new `docs/designs/<new-slug>.md` with `supersedes: <old file>` in its front matter instead of editing the old one; `docs_check.py` warns (D-15) when that file does not exist.
+
 Done when: decisions exist on both axes, every option was grounded, every deferred fork carries a default, and /decompose could run from design.md without another round.

@@ -139,7 +139,7 @@
    from its file, the reference reported empty, a harness reference added, and the entry row removed must be flagged.
 32. Broken-link baseline: the broken relative Markdown links that rename_refs.py `links` reports (code fences and inline code excluded)
    equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
-33. Docs check: scripts/docs_check.py names rules `D-1` to `D-14`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
+33. Docs check: scripts/docs_check.py names rules `D-1` to `D-15`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
    `docs_check.py" selftest` and `docs_check.py" --root` on this repository. Negative controls: each phrase removed from each file must be flagged.
 34. Product name: live tracked files hold none of the retired spellings of SDLC Lite listed in NAME_BANNED, outside the NAME_ALLOW history paths
    (docs/reports, closed tickets, run workspaces under .sdlc, bench results), plus the same closed-ticket, verify-* and 0309 paths under the
@@ -1194,7 +1194,7 @@ if (_repo/'.git').exists() and (_repo/'docs/reports/broken-links-allowlist.md').
     if not links_bad(_broken + [('x.md', 'nope.md')], _allowed): errors.append('check.py: broken links negative control not flagged for an extra broken link')
     if not links_bad(_broken, _allowed + [('x.md', 'nope.md')]): errors.append('check.py: broken links negative control not flagged for a stale allowlist row')
 # Docs check (docstring item 33): the docs schema checker, its rule ids, and its selftest wiring.
-DOCS_CHECK_NEEDS = (('docs_check.py', tuple(f'D-{i}' for i in range(1, 15)) + ('B-1a', 'B-2a', 'B-3a', '--root', '--only', 'Legacy')),
+DOCS_CHECK_NEEDS = (('docs_check.py', tuple(f'D-{i}' for i in range(1, 16)) + ('B-1a', 'B-2a', 'B-3a', '--root', '--only', 'Legacy')),
                     ('check.sh', ('docs_check.py" selftest', 'docs_check.py" --root')))
 def docs_check_bad(texts):
     return [f'{name} missing "{ph}"' for name, phrases in DOCS_CHECK_NEEDS for ph in phrases if ph not in texts[name]]
