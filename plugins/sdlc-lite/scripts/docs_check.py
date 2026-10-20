@@ -18,7 +18,7 @@ registry. S-2, S-4, S-5 and S-6 apply only to a file that opts in with a `doc-ty
 is silent without the registry.
 
 The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without that file the
-twelve default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
+thirteen default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
 D-11, D-12, D-13 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
 belong to onboard.py check, not to this script.
 
@@ -42,6 +42,9 @@ kinds, report evidence folders and frozen paths.
 A home of kind `work` holds ticket and task records, not documents: D-7, D-9, D-12 and B-1a skip it, and the
 record rule B-2a applies instead, as it does under .sdlc/ (ticket and task folders, the record folders, the
 entry files and the ROADMAP.md and NOTES.md singletons named by roots.py).
+
+D-15 (T-0664): a home of kind `designs` holds write-once grill designs; a `supersedes:` naming a file that does not
+exist (relative to the design's folder, or a `docs/` path) is a warning.
 """
 import argparse
 import datetime
@@ -56,7 +59,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import onboard  # noqa: E402
 import roots  # noqa: E402
 
-DEFAULT_HOMES = ('work', 'specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
+DEFAULT_HOMES = ('work', 'specs', 'planning', 'decisions', 'designs', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 ENTRY_FILES = ('AGENTS.md', 'CLAUDE.md', 'README.md')
 TOP_FILES = ENTRY_FILES + ('layout.md',)
 TOPIC_KINDS = ('specs', 'planning', 'references', 'guides', 'decisions')
@@ -305,7 +308,7 @@ def run(root, only=None, today=None, disable=()):
             seen.add(top)
             if any(not legacy_match(layout, r) for r in files if r.startswith(top + '/')):
                 out.append(Finding('error', 'D-1', 'docs/' + top + '/',
-                                   'not one of the twelve default homes or a listed home with a ## Kinds row'))
+                                   'not one of the thirteen default homes or a listed home with a ## Kinds row'))
         for name, kind in custom:
             out.append(Finding('info', 'D-1', 'docs/' + name + '/', 'custom home bound to kind %s' % kind))
     for rel in files:
@@ -335,6 +338,11 @@ def run(root, only=None, today=None, disable=()):
                         add('error', 'D-5', rel, 'review-by is more than %d days ahead' % OTHER_MAX_AHEAD_DAYS)
                 if on('D-6') and rb and rb < today:
                     add('error', 'D-6', rel, 'past its review-by date %s' % rb.isoformat())
+            if on('D-15') and kind == 'designs' and fm.get('supersedes'):
+                old = fm['supersedes']
+                old = os.path.normpath(old if old.startswith('docs/') else os.path.join('docs', os.path.dirname(rel), old))
+                if old not in repo.files:
+                    add('warning', 'D-15', rel, 'supersedes: names %s, which does not exist' % old)
             if on('D-8') and kind == 'planning' and fm.get('status') in CLOSED_STATUS:
                 stamp = _dates(fm.get('date')) or _mtime(root, 'docs/' + rel)
                 if stamp and (today - stamp).days > PLANNING_AGE_DAYS:
@@ -972,6 +980,19 @@ def gate_rules(runner):
                 raise GateFailure('%s: no finding for %s' % (rule, path))
 
 
+def gate_designs(runner):
+    """A design whose supersedes: names a missing file warns; with that file present it does not."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, 'docs/designs/b.md', '---\nsupersedes: a.md\n---\n# B\n')
+        if not any(f.rule == 'D-15' and f.path == 'docs/designs/b.md' for f in runner(tmp)):
+            raise GateFailure('a supersedes: naming a missing docs/designs/a.md did not warn')
+        _write(tmp, 'docs/designs/a.md', '# A\n')
+        got = [f.line() for f in runner(tmp) if f.rule == 'D-15']
+        if got:
+            raise GateFailure('a supersedes: naming an existing file warned: %r' % got)
+
+
 def gate_legacy(runner):
     """A Legacy glob exempts D-3 but never D-5."""
     layout = ('## Homes\n\n- `reports/`\n- `other/`\n\n## Frozen paths\n\n## Legacy\n\n- `reports/old/**`\n- `other/**`\n')
@@ -1219,6 +1240,7 @@ def _without(rule):
 def selftest():
     failed = 0
     gates = [('rules', gate_rules, _real, [('drops %s' % r, _without(r)) for r in sorted({c[0] for c in _cases()})]),
+             ('designs', gate_designs, _real, [('drops D-15', _without('D-15'))]),
              ('legacy', gate_legacy, _real, [('drops D-3', _without('D-3')), ('drops D-5', _without('D-5'))]),
              ('boundary', gate_boundary, _real, [('drops B-1a', _without('B-1a')), ('drops B-3a', _without('B-3a')),
                                                  ('drops B-2a', _without('B-2a')),

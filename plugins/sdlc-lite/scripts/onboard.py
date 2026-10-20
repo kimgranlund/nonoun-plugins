@@ -50,7 +50,7 @@ LEVELS = '## Levels'
 GRANDFATHERED = '## Grandfathered'
 CAPS = '## Caps'
 OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY, LEVELS, GRANDFATHERED, CAPS)
-DOC_KINDS = ('work', 'specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
+DOC_KINDS = ('work', 'specs', 'planning', 'decisions', 'designs', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 KIND_COLUMNS = ('id', 'kind', 'holds', 'not', 'why', 'writer', 'form', 'life', 'entry', 'read', 'owner')
 KIND_REQUIRED = ('id', 'kind', 'holds', 'not', 'why', 'form', 'read')
 
@@ -444,6 +444,7 @@ Pick one home from the table, then read one file. Placement effect unproven; see
 | `specs/` | What the system is and must do; edited in place | Proposals, dated evidence, steps |
 | `planning/` | Proposals, roadmaps, plans under review (`status:`) | What exists today |
 | `decisions/` | One numbered decision per file, immutable once accepted | Narrative design |
+| `designs/` | Ratified grill designs, one file per round, write-once; `supersedes:` names the design a re-grill replaces | Edits to a ratified design, single decisions -> `decisions/` |
 | `goals/` | One intended outcome per file (`G-NNN`): owner, status, the KPIs that show it is met | Change plans, tickets, result values |
 | `kpi/` | One measure per file (`K-NNN`): command, unit, target, the goals it serves | Values over time, thresholds nobody can run |
 | `references/` | Lookup tables, listings, glossaries | Procedures, opinions |
@@ -466,9 +467,10 @@ The first line that matches wins.
 7. A measure with a command that runs it, a unit and a target: `kpi/`.
 8. Steps a person follows: `guides/`.
 9. A table, listing or glossary you look things up in: `references/`.
-10. What the system is or must do: `specs/`.
-11. Retired or superseded: `archive/`.
-12. None of the above, or unsure: `other/`.
+10. A ratified design from a grill round, kept write-once: `designs/`.
+11. What the system is or must do: `specs/`.
+12. Retired or superseded: `archive/`.
+13. None of the above, or unsure: `other/`.
 
 ## Adding a document
 
@@ -498,6 +500,7 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 - `specs/`
 - `planning/`
 - `decisions/`
+- `designs/`
 - `goals/`
 - `kpi/`
 - `references/`
@@ -515,6 +518,7 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 | `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | - | defining the system | `docs_check.py` |
 | `planning/` | planning | proposals and plans under review | built facts -> `specs/` | decisions need a place | people | `status:` front matter | accept, then `archive/` | - | deciding or scheduling | `docs_check.py` |
 | `decisions/` | decisions | one numbered decision per file | narrative -> `specs/` | reasons outlive people | people | `NNNN-slug.md`, `status:` | supersede | - | asking why | `docs_check.py` |
+| `designs/` | designs | ratified grill designs, one file per round | edits in place -> a new file with `supersedes:` | a design stays as ratified | grill | kebab-case, `supersedes:` | write-once; a re-grill adds a new file | - | asking what a design settled | `docs_check.py` |
 | `goals/` | goals | one intended outcome per file | change plans -> `planning/` | steering needs a record | people | `NNN-slug.md`, `status:` | achieve or drop, then `archive/` | - | steering the work | `docs_check.py` |
 | `kpi/` | kpi | one measure per file | values over time -> `reports/` | a number needs a command | people | `NNN-slug.md`, `measure:` | edit in place | - | measuring an outcome | `docs_check.py` |
 | `references/` | references | lookup tables and listings | steps -> `guides/` | fast lookup | people | kebab-case | edit in place | - | looking something up | `docs_check.py` |
@@ -535,8 +539,9 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 7. Is it a measure with a command that runs it, a unit and a target? yes -> `kpi/`
 8. Is it steps a person follows? yes -> `guides/`
 9. Is it a table, listing or glossary you look things up in? yes -> `references/`
-10. Does it describe what the system is or must do? yes -> `specs/`
-11. Is it retired or superseded? yes -> `archive/`
+10. Is it a ratified design from a grill round, kept write-once? yes -> `designs/`
+11. Does it describe what the system is or must do? yes -> `specs/`
+12. Is it retired or superseded? yes -> `archive/`
 otherwise -> `other/`
 
 ## Frozen paths
@@ -1442,11 +1447,11 @@ def gate_create(impl):
         _expect_hash(block, 'docs/AGENTS.md')
         expect(block.text.startswith('# Documents\n\nPick one home from the table, then read one file.'),
                'docs/AGENTS.md: block starts %r' % block.text[:60])
-        for home in ('work', 'specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other'):
+        for home in ('work', 'specs', 'planning', 'decisions', 'designs', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other'):
             expect('| `%s/` |' % home in block.text, 'docs/AGENTS.md: the table lacks the home %s/' % home)
         expect('| `work/` | Ticket and task folders, the generated `ROADMAP.md` and `NOTES.md` | '
                'Designs and plans under review -> `planning/` |' in block.text, 'docs/AGENTS.md: the work/ row is wrong')
-        expect('otherwise' not in block.text and '12. None of the above, or unsure: `other/`.' in block.text,
+        expect('otherwise' not in block.text and '13. None of the above, or unsure: `other/`.' in block.text,
                'docs/AGENTS.md: the decision list is missing or malformed')
         expect(re.search(r'^1\. .*: `work/`\.$', block.text, re.M), 'docs/AGENTS.md: work/ is not first in Which home')
         expect(block.text.endswith('## Contents\n\n'), 'docs/AGENTS.md: contents in an empty fixture: %r'

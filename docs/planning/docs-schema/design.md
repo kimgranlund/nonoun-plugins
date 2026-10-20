@@ -74,6 +74,7 @@ All names are plural, lowercase and kebab-case. **(user may change)** Plural mat
 | `specs/` | specs | What the system is and must do: requirements, contracts, interface and behavior descriptions, designs that were accepted. Living documents, edited in place. | Proposals under review, dated evidence, how-to steps | none; `status: draft\|active\|deprecated` optional |
 | `planning/` | planning | Documents whose purpose is to decide or schedule future work: proposals, RFCs, designs for review, roadmaps, plans. | Anything describing what exists | `status: proposed\|accepted\|rejected\|superseded` |
 | `decisions/` | decisions | One decision per file, numbered, immutable once accepted. | Narrative design, evidence | `status: proposed\|accepted\|superseded`, number in the file name |
+| `designs/` | designs | Ratified grill designs, one file per round, write-once (added by T-0664). | Edits to a ratified design, single decisions | `supersedes:` when it replaces an earlier design (docs_check D-15) |
 | `references/` | references | Lookup material: API and schema listings, glossaries, tables, how a component is wired. No narrative and no steps. | Procedures, opinions | none |
 | `guides/` | guides | How-to and operating procedures: setup, release, maintenance, runbooks. Steps a person follows. | Lookup tables, design | none |
 | `reports/` | reports | Dated evidence: validation records, reviews, audits, benchmarks, release records. Immutable. | Instructions, living specs | date in the file name (new files) or `date:` |

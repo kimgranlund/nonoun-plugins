@@ -11,7 +11,7 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 | `planning/` | Unbuilt proposals: sub-agent mode, the idle-host watcher, reorganization, the docs schema | Before building one; a built one moves into `specs/` |
 | `reports/` | Dated evidence, including the [readiness and recovery trials](reports/readiness-recovery-validation.md) | What was verified; history, not instructions |
 
-<!-- sdlc-lite:managed:start v1 sha256:8e990b923eab -->
+<!-- sdlc-lite:managed:start v1 sha256:2a2402f27120 -->
 # Documents
 
 Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
@@ -22,6 +22,7 @@ Pick one home from the table, then read one file. Placement effect unproven; see
 | `specs/` | What the system is and must do; edited in place | Proposals, dated evidence, steps |
 | `planning/` | Proposals, roadmaps, plans under review (`status:`) | What exists today |
 | `decisions/` | One numbered decision per file, immutable once accepted | Narrative design |
+| `designs/` | Ratified grill designs, one file per round, write-once; `supersedes:` names the design a re-grill replaces | Edits to a ratified design, single decisions -> `decisions/` |
 | `goals/` | One intended outcome per file (`G-NNN`): owner, status, the KPIs that show it is met | Change plans, tickets, result values |
 | `kpi/` | One measure per file (`K-NNN`): command, unit, target, the goals it serves | Values over time, thresholds nobody can run |
 | `references/` | Lookup tables, listings, glossaries | Procedures, opinions |
@@ -44,9 +45,10 @@ The first line that matches wins.
 7. A measure with a command that runs it, a unit and a target: `kpi/`.
 8. Steps a person follows: `guides/`.
 9. A table, listing or glossary you look things up in: `references/`.
-10. What the system is or must do: `specs/`.
-11. Retired or superseded: `archive/`.
-12. None of the above, or unsure: `other/`.
+10. A ratified design from a grill round, kept write-once: `designs/`.
+11. What the system is or must do: `specs/`.
+12. Retired or superseded: `archive/`.
+13. None of the above, or unsure: `other/`.
 
 ## Adding a document
 
