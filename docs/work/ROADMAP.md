@@ -6,6 +6,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0644 | [0644-tickets-inventory-build](0644-tickets-inventory-build/handoff.md) | tickets.py inventory: build the T-0584 design | feature | L2 | P2 | none | 🟡 claimed |
 
-Closed: 606 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 607 done, 29 dropped (git log or .NNNN-* folders)
