@@ -173,6 +173,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             created (declared_future_paths: a [creates: <path>] marker, an Outputs: line, a ### Do create
             verb, a (red) span; T-0533), and lint and split refuse
             with the plan defect last line. A step with no ### Read first stays valid.
+            Skill routing (T-0647): a list item or table row of any AGENTS.md under the tree (root included) whose
+            code spans hold one skill path (a SKILL.md file or a folder under skills/) and at least one other path
+            or glob routes those paths to that skill (repo_skill_routes; paths in a nested AGENTS.md resolve against
+            its folder). A step whose scope allow-list (scope_entries) names a routed path (a trailing / matches the
+            folder prefix, else fnmatch) and whose ### Read first does not list the skill is a finding "steps: <plan>
+            step <n>: plan defect: edits routed path <p> without its skill under ### Read first: <skill>". A repo
+            with no routing lines, or a step with no scope span, gets no such finding.
             It also checks the plan's contract dependents (T-0271): every line that starts
             "plan defect:" (after leading blanks) in a step-*/verifier-*.md or step-*/builder-*.md
             beside the plan, superseded step-<n>.superseded-<k>/ folders included, is split on
@@ -482,6 +489,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
 """
 import argparse
 import contextlib
+import fnmatch
 import io
 import json
 import os
@@ -1490,6 +1498,82 @@ def read_first_paths(block):
     return out
 
 
+SKILL_PATH_RE = re.compile(r'(?:^|/)(?:SKILL\.md|skills/[^/]+/?)$')
+
+
+def route_path_like(text):
+    """True when a code span reads as a path or glob: no whitespace, and a / or * or a file extension."""
+    return not re.search(r'\s', text) and ('/' in text or '*' in text or PATH_EXT_RE.search(text) is not None)
+
+
+def agents_files(top):
+    """Every AGENTS.md under top, the root one included: git ls-files (tracked and untracked, ignored left
+    out) inside a work tree, else a walk."""
+    top = pathlib.Path(top)
+    try:
+        r = subprocess.run(['git', '-C', str(top), 'ls-files', '-co', '--exclude-standard', '--',
+                            'AGENTS.md', '**/AGENTS.md'], capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL, timeout=60)
+        if r.returncode == 0:
+            return sorted({top / x for x in r.stdout.splitlines() if x.strip()})
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return sorted(top.rglob('AGENTS.md'))
+
+
+def repo_skill_routes(top):
+    """[(glob, skill)] from the routing lines of every AGENTS.md under top, root included. A routing line is a
+    list item (- or *) or table row (|) whose code spans hold exactly one skill path (a SKILL.md file or a folder
+    under a skills/ directory) and at least one other path or glob (route_path_like). Paths in a nested AGENTS.md
+    resolve against its folder; every pair comes back repo-relative in posix form."""
+    top = pathlib.Path(top)
+    routes = []
+    for f in agents_files(top):
+        try:
+            rel_dir = f.parent.relative_to(top).as_posix()
+            text = f.read_text(encoding='utf-8')
+        except (OSError, UnicodeDecodeError, ValueError):
+            continue
+        prefix = '' if rel_dir == '.' else rel_dir + '/'
+        fenced = False
+        for line in text.splitlines():
+            t = line.lstrip()
+            if t.startswith('```'):
+                fenced = not fenced
+                continue
+            if fenced or not (t.startswith('- ') or t.startswith('* ') or t.startswith('|')):
+                continue
+            spans = [m.group(2).strip() for m in SPAN_RE.finditer(t) if m.group(2).strip()]
+            skills = [x for x in spans if route_path_like(x) and SKILL_PATH_RE.search(x)]
+            others = [x for x in spans if route_path_like(x) and not SKILL_PATH_RE.search(x)]
+            if len(skills) != 1 or not others:
+                continue
+            routes += [(prefix + (g[2:] if g.startswith('./') else g), prefix + skills[0]) for g in others]
+    return routes
+
+
+def route_matches(glob, path):
+    """True when a repo-relative path falls under a route glob: a trailing / matches the folder prefix,
+    otherwise fnmatch."""
+    return path.startswith(glob) if glob.endswith('/') else fnmatch.fnmatch(path, glob)
+
+
+def skill_key(path):
+    """A skill path compared by its folder: a trailing / and a final /SKILL.md left out."""
+    path = path.rstrip('/')
+    return path[:-len('/SKILL.md')] if path.endswith('/SKILL.md') else path
+
+
+def routed_skills(top, paths, routes=None):
+    """The skill paths whose route globs (repo_skill_routes) match any of the repo-relative paths, in route order,
+    each once."""
+    out = []
+    for glob, skill in (repo_skill_routes(top) if routes is None else routes):
+        if skill not in out and any(route_matches(glob, p) for p in paths):
+            out.append(skill)
+    return out
+
+
 PLAN_DEFECT_PREFIX = 'plan defect:'
 PATH_TRIM = '`\'"()[]{}<>,;:.*'
 PATH_LINENO_RE = re.compile(r':\d+(?::\d+)?$')
@@ -2067,13 +2151,15 @@ def lint_steps(plan, steps, tree=None):
     parses, one per unquoted || join, one per forbidden git command (forbidden_git), one for a pinned commit sha, one for a count over a changing
     set compared with a fixed number, and one for a span that reads its own step's verifier result on a
     line with no held clause (reads_own_verifier); one per ### Read first path that does not exist, resolved against
-    the git toplevel of the plan's folder (else that folder); one per path a verifier or builder result
+    the git toplevel of the plan's folder (else that folder); one per skill an AGENTS.md routes a scoped path
+    to that ### Read first leaves out (repo_skill_routes); one per path a verifier or builder result
     beside the plan named on a `plan defect:` line that no step names (defect_dependents); [] when
     clean. bash -n parses and never executes."""
     findings = []
     base = None
     full_gates = full_gate_commands_for(plan)
     created = set()
+    routes = None
     roots = repo_roots(pathlib.Path(plan).resolve().parent)
     for n, block in steps.items():
         paths = read_first_paths(block)
@@ -2084,6 +2170,21 @@ def lint_steps(plan, steps, tree=None):
             if (not (base / rel).exists() and not covered_by(rel, created)
                     and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel)):
                 findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
+        scoped = scope_entries(block)
+        if scoped:
+            if routes is None:
+                folder = pathlib.Path(plan).resolve().parent
+                try:
+                    routes = repo_skill_routes(lane_tree(folder, tree) or folder)
+                except Fail:
+                    routes = repo_skill_routes(folder)
+            listed = {skill_key(p) for p in paths}
+            for glob, skill in routes:
+                hit = next((p for p in scoped if route_matches(glob, p)), None)
+                if hit and skill_key(skill) not in listed:
+                    listed.add(skill_key(skill))
+                    findings.append(f'steps: {plan} step {n}: plan defect: edits routed path {hit} without its '
+                                    f'skill under ### Read first: {skill}')
         created |= declared_future_paths(block)
         for line, text in [(x, t) for x in criteria_lines(block) for t in line_spans(x)]:
             if text in full_gates and is_guard_line(line):
@@ -5290,6 +5391,42 @@ def selftest():
                 check('(r) T-0533 control: with no create marker lint, split --only, and step lint still refuse',
                       rc == 1 and 'does not exist: sub/new.md' in err and rc2 == 1 and 'sub/new.md' in err2
                       and rc3 == 1 and f'.sdlc/{tag}/notes.md' in err3)
+
+        # (rt) T-0647: a step whose scope names a path an AGENTS.md routes to a repo skill lists that skill under
+        # ### Read first, else lint refuses; a repo with no routing lines lints as before (the control)
+        rt = tmp / 'rt-repo'
+        (rt / '.agents' / 'skills' / 'recipe').mkdir(parents=True)
+        subprocess.run(['git', 'init', '-q', str(rt)], check=True, capture_output=True)
+        (rt / '.agents' / 'skills' / 'recipe' / 'SKILL.md').write_text('x\n', encoding='utf-8')
+        RT_SCOPE = ('- `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; '
+                    'git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } '
+                    '| grep -vxF -e src/styles/a.css | { ! grep -q .; }`')
+        rt_step = STEP1.replace('- one works', RT_SCOPE)
+        rt_read = rt_step.replace('### Do', '### Read first\n- `.agents/skills/recipe/SKILL.md`\n### Do')
+        RT_MSG = 'without its skill under ### Read first: .agents/skills/recipe/SKILL.md'
+
+        def rt_lint(tag, agents, step):
+            (rt / 'AGENTS.md').write_text(agents, encoding='utf-8')
+            d = rt / '.sdlc' / tag
+            d.mkdir(parents=True)
+            (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace(STEP1, step)), encoding='utf-8')
+            return run_main(['lint', str(d)])
+
+        RT_ROUTE = '# Repo\n\n- `src/styles/` uses `.agents/skills/recipe/SKILL.md`\n'
+        check('(rt) repo_skill_routes reads the root routing line; routed_skills matches a path under it',
+              repo_skill_routes(rt) == [] and (rt / 'AGENTS.md').write_text(RT_ROUTE, encoding='utf-8') > 0
+              and repo_skill_routes(rt) == [('src/styles/', '.agents/skills/recipe/SKILL.md')]
+              and routed_skills(rt, ['src/styles/a.css']) == ['.agents/skills/recipe/SKILL.md']
+              and routed_skills(rt, ['src/other.css']) == [])
+        rc, out, err = rt_lint('rt-bad', RT_ROUTE, rt_step)
+        check('(rt) lint refuses a step that edits a routed path without its skill under ### Read first',
+              rc == 1 and 'plan defect: edits routed path src/styles/a.css ' + RT_MSG in err)
+        rc, out, err = rt_lint('rt-ok', RT_ROUTE, rt_read)
+        check('(rt) lint accepts the same step listing the routed skill', rc == 0 and 'steps lint: ok' in out)
+        rc, out, err = rt_lint('rt-none', '# Repo\n\n- `src/styles/` holds styles.\n', rt_step)
+        check('(rt) control: a repo with no routing lines lints the same step clean',
+              rc == 0 and 'steps lint: ok' in out)
 
         # (s) T-0271: a path a verifier or builder result named on a `plan defect:` line must appear in
         # a ## Step block of the plan, else lint and split refuse (the contract dependents rule)
