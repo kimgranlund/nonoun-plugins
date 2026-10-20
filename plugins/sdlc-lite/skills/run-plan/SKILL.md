@@ -22,4 +22,6 @@ You are the driver. You route by exit codes and run printed commands; you do not
 3. Loop: run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_done.py <plan-doc.md>` and print its output as it is. Exit 0 or 4: stop and report. Exit 2: stop, plan defect. Exit 1: take the first open item and work it with the run rules, then loop.
 4. When a script says stop (exit 2, 4 or 5 of `dispatch.py prepare`, a second replan, a spend limit, a merge conflict, inherited red), run `plan_done.py stop <plan-doc.md> --reason "<the script's words>"` and end. Never retry, never guess, never invent a budget ack.
 
+Interactive driver turn (a session that is not headless, watching a plan while roles run): run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_done.py <plan-doc.md>`; exit 1: dispatch the first open item in the background and end the turn; exit 0, 2 or 4: stop and report. The turn has no interval and no `/loop`: the role's completion notification is the only wake, and `/board` prints once per wake, after `dispatch.py record`.
+
 You edit no product file. A verifier is a separate sub-agent started only by the printed dispatch; you never choose its model or level and never grade a step yourself.

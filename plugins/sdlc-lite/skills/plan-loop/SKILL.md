@@ -1,6 +1,6 @@
 ---
 name: plan-loop
-description: "Plan a /loop: pick the interval or dynamic mode, write a self-contained idempotent prompt with a stop condition, check it with plan_check.py, and return one copy/paste /loop line. Use for \"check this every 20 minutes\", \"keep watching X\", or a status loop. NOT for running the loop."
+description: "Plan a /loop: pick the interval or dynamic mode, write a self-contained idempotent prompt with a stop condition, check it with plan_check.py, and return one copy/paste /loop line. Use for \"check this every 20 minutes\" or \"keep watching X\". NOT for running the loop, or for watching running roles or lanes (the run-plan driver turn wakes on their completion)."
 argument-hint: "[<task>] [<interval>]"
 allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), AskUserQuestion
 ---
@@ -25,6 +25,7 @@ Take the task, the cadence, and the end condition from the thread first. Ask onl
 ## 2. Choose the mode
 
 - A fixed cadence: a leading token `20m`, `1h`, `30s`, or `2d`, or a trailing `every 20m`. A token like `20mins:` or `20 minutes:` is NOT an interval: the loop would fall into dynamic mode and ignore the cadence.
+- No loop: when the thing watched is running roles or lanes. A fixed-interval status or driver prompt fails `status-polls-running-work`; return the driver turn from `${CLAUDE_PLUGIN_ROOT}/skills/run-plan/SKILL.md` instead, which the completion notification wakes.
 - Dynamic mode (no interval): when the next run depends on the work finishing. Prefer an event monitor over polling when the thing waited on has a signal.
 
 ## 3. Write the prompt
