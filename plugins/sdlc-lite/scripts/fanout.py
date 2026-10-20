@@ -18,6 +18,8 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
        fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--force]]
        fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]...
                        [--no-gate-lock] [--allow-empty-gate]
+       fanout.py sync <lane branch or tree> [--integration BRANCH] [--root .sdlc] [--lanes-dir DIR] [--gate CMD]...
+                      [--regen CMD] [--paths P,...]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
@@ -128,6 +130,21 @@ cover (T-0481)
   log and merges ([{sha, ticket}] from the first-parent `Merge <branch>: <id>` commits in from..to), and commits it
   there (`git add -f`, message `cover <to7>: rc=<rc>`); the primary checkout is never written. Red prints
   `git bisect start <to> <from> --first-parent` and exits 1; green exits 0.
+
+sync (T-0654)
+  `sync <lane>` brings a running lane level with its integration branch. The lane is a branch or a worktree path from
+  `git worktree list --porcelain`; the integration branch is --integration or the `into` of the lane's record
+  (lanes.discover: its .lane.json or host record; none refuses with exit 2). Under <lanes-dir>/merge.lock (default the
+  integration worktree's parent) merge_generated merges the integration tip into the lane tree: the generated files
+  as for land, and a conflict in a path a `hash_bound:` glob matches takes the integration side; when the merge
+  touched a hash-bound path, --regen CMD runs in the lane tree and its output under those globs is staged. The merge
+  commits as `sync: <integration> <sha7> into <lane branch>`; any other conflict aborts the merge, prints
+  `sync conflict: <paths>` (the conductor hands them to an L2 builder) and exits 2 with the lane tip and tree as they
+  were. Each --gate then runs in the lane tree through gate_argv; red prints `red: <gate> rc=<n>` and exits 1 with the
+  merge kept. --paths .agents/,AGENTS.md,.claude/ is the guidance-only form: `git checkout <integration> -- <paths>`
+  (a path the integration branch lacks is skipped) and one `sync guidance: <integration> <sha7>` commit, no merge; any
+  uncommitted change under those paths refuses (exit 2). A dirty lane, a missing branch or worktree is exit 2. Local
+  only: never a push, never main.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
   the lane and appends its record to the task's skips.md (committed with the lane, untracked by the close commit): `solo` (ticket level L1 and
@@ -1578,13 +1595,15 @@ def generated_files(wt, root):
     return {p.relative_to(wt).as_posix(): p for p in files}, lp.notes.relative_to(wt).as_posix()
 
 
-def merge_generated(wt, ref, root):
+def merge_generated(wt, ref, root, theirs=()):
     """`git merge --no-ff --no-commit <ref>` in wt, resolving conflicts only in the generated files (notes.md by a
     union of its three stages, the roadmap, router and mailbox files by --ours), then `tickets.py roadmap` regenerates
-    them for the merged tree and they are staged for the caller's commit (T-0489, T-0565). Returns None with the merge
-    staged; 'up to date' when ref brought nothing (no MERGE_HEAD, nothing staged); else (kind, detail) with the merge
-    still in progress for the caller to abort: 'failed' (git merge failed with no conflicted path), 'conflict' (the
-    conflicted paths outside the generated files), 'merge-file' or 'roadmap' (the failing command's output)."""
+    them for the merged tree and they are staged for the caller's commit (T-0489, T-0565). A conflict in a path the
+    `theirs` pathspecs match (fanout sync's hash-bound globs, T-0654; empty for every other caller) takes ref's side.
+    Returns None with the merge staged; 'up to date' when ref brought nothing (no MERGE_HEAD, nothing staged); else
+    (kind, detail) with the merge still in progress for the caller to abort: 'failed' (git merge failed with no
+    conflicted path), 'conflict' (the conflicted paths outside the generated files and `theirs`), 'merge-file' or
+    'roadmap' (the failing command's output)."""
     try:
         gen, notes_rel = generated_files(wt, root)
     except tickets.Fail as e:
@@ -1594,11 +1613,16 @@ def merge_generated(wt, ref, root):
         conflicted = [x for x in git(wt, 'diff', '--name-only', '--diff-filter=U').stdout.splitlines() if x]
         if not conflicted:
             return 'failed', first_line((p.stderr or p.stdout).strip(), str(p.returncode))
-        outside = [x for x in conflicted if x not in gen]
+        taken = set(git(wt, 'diff', '--name-only', '--diff-filter=U', '--', *theirs).stdout.splitlines()) if theirs else set()
+        outside = [x for x in conflicted if x not in gen and x not in taken]
         if outside:
             return 'conflict', ' '.join(outside)
         for path in conflicted:
-            if path == notes_rel:
+            if path not in gen:
+                if git(wt, 'checkout', '--theirs', '--', path).returncode:
+                    git(wt, 'rm', '-q', '-f', '--', path)  # deleted on ref's side
+                    continue
+            elif path == notes_rel:
                 with tempfile.TemporaryDirectory() as td:
                     names = []
                     for n in (2, 1, 3):  # git merge-file <current> <base> <other>
@@ -2897,6 +2921,118 @@ def cover_report(a, rc, to, frm, merges, ledger):
     if rc:
         print(f'git bisect start {to} {frm} --first-parent')
         return 1
+    return 0
+
+
+def cmd_sync(a):
+    """Bring a running lane level with its integration branch (T-0654). The lane is a branch or a tree path, found in
+    `git worktree list --porcelain`; the integration branch is --integration or the lane record's `into`
+    (lanes.discover). --paths P,... is the guidance-only form: `git checkout <integration> -- <paths>` in the lane tree
+    and one `sync guidance: <integration> <sha7>` commit, refused (exit 2) while a tracked or untracked change sits under
+    those paths. Otherwise, under <lanes dir>/merge.lock, merge_generated merges the integration tip into the lane with
+    the hash-bound globs taking the integration side, --regen runs when the merge touched a hash-bound path and its
+    output there is staged, and the merge commits as `sync: <integration> <sha7> into <lane branch>`; any other conflict
+    is aborted, prints `sync conflict: <paths>` and exits 2. Each --gate then runs in the lane tree; red exits 1 with
+    the merge kept. Local only: never a push, never main."""
+    cwd = pathlib.Path.cwd()
+    try:
+        trees, cur = {}, None  # {branch: worktree path}
+        for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+            if line.startswith('worktree '):
+                cur = line[len('worktree '):]
+            elif line.startswith('branch refs/heads/'):
+                trees[line[len('branch refs/heads/'):]] = pathlib.Path(cur)
+        want = os.path.realpath(a.lane)
+        branch = next((b for b, t in trees.items() if b == a.lane or os.path.realpath(t) == want), None)
+        wt = trees.get(branch)
+        if wt is None:
+            raise Refuse(f'sync: no worktree has {a.lane} checked out on a branch; nothing synced')
+        integ = a.integration
+        if not integ:
+            try:
+                rec = next((d for d in lanes.discover(lanes.Ctx(str(cwd)))
+                            if os.path.realpath(d['path']) == os.path.realpath(wt) and d.get('owner') in ('record', 'host')), None)
+            except lanes.LaneError as e:
+                raise Refuse(f'sync: lanes.py could not read the lanes: {e}')
+            integ = rec and rec.get('into')
+            if not integ:
+                raise Refuse(f'sync: {wt} has no lane record naming its integration branch: pass --integration')
+        if integ == branch:
+            raise Refuse(f'sync: {branch} is the integration branch itself')
+        sha = git(cwd, 'rev-parse', '--verify', '-q', f'refs/heads/{integ}^{{commit}}').stdout.strip()
+        if not sha:
+            raise Refuse(f'sync: no branch {integ}; nothing synced')
+        if a.paths:
+            specs = [x for x in a.paths.split(',') if x]
+            if git_out(wt, 'status', '--porcelain', '--', *specs):
+                raise Refuse(f'sync --paths: {wt} has uncommitted changes under {" ".join(specs)}: commit or discard '
+                             f'them first; nothing synced')
+            present = [x for x in specs if git_out(wt, 'ls-tree', '-r', '--name-only', sha, '--', x)]
+            if present:
+                c = git(wt, 'checkout', sha, '--', *present)
+                if c.returncode:
+                    raise Refuse(f'sync --paths: git checkout failed in {wt}: {(c.stderr or c.stdout).strip()}')
+            if git(wt, 'diff', '--cached', '--quiet').returncode == 0:
+                print(f'sync guidance: {branch} already has {" ".join(specs)} from {integ} {sha[:7]}')
+                return 0
+            git_out(wt, 'commit', '-q', '-m', f'sync guidance: {integ} {sha[:7]}')
+            print(f'sync guidance: {integ} {sha[:7]} into {branch}')
+            return 0
+        if git_out(wt, 'status', '--porcelain', '--untracked-files=no'):
+            raise Refuse(f'sync: {wt} has uncommitted tracked changes: commit or discard them first; nothing synced')
+        lpath, _top = ledger_rel(cwd, a.root)
+        root = wt / pathlib.PurePosixPath(lpath).parent
+        specs = [':(top,glob)' + g for g in tickets.hash_bound_globs(root)]
+        lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else (trees.get(integ) or wt).parent
+        logs = lanes_dir / 'logs'
+        logs.mkdir(parents=True, exist_ok=True)
+
+        def abort(why):
+            if in_merge(wt):
+                git(wt, 'merge', '--abort')
+            if in_merge(wt):
+                why += f'; git merge --abort left MERGE_HEAD in {wt}: run it there by hand'
+            raise Refuse(why)
+
+        with MergeLock(lanes_dir / 'merge.lock'):
+            m = merge_generated(wt, sha, root, theirs=specs)
+            if m == 'up to date':
+                print(f'sync: {branch} already has {integ} {sha[:7]}')
+                return 0
+            if m:
+                kind, detail = m
+                if kind == 'conflict':
+                    if in_merge(wt):
+                        git(wt, 'merge', '--abort')
+                    print(f'sync conflict: {detail}')
+                    return 2
+                abort({'failed': f'sync: git merge {sha[:7]} failed in {wt}: {detail}',
+                       'merge-file': f'sync: git merge-file --union {detail}',
+                       'roadmap': f'sync: tickets.py roadmap failed in {wt}, the merge is aborted: {detail}'}[kind])
+            if a.regen and specs and git_out(wt, 'diff', '--cached', '--name-only', 'HEAD', '--', *specs):
+                r = subprocess.run(['bash', '-c', a.regen], cwd=str(wt), env=ENV, stdin=subprocess.DEVNULL,
+                                   capture_output=True, text=True)
+                if r.returncode:
+                    abort(f'sync: --regen {a.regen} failed rc={r.returncode} in {wt}, the merge is aborted: '
+                          f'{first_line((r.stderr or r.stdout).strip())}')
+                git(wt, 'add', '-A', '--', *specs)
+            c = git(wt, 'commit', '-q', '-m', f'sync: {integ} {sha[:7]} into {branch}')
+            if c.returncode:
+                abort(f'sync: the merge commit failed in {wt}: {(c.stderr or c.stdout).strip() or c.returncode}')
+    except Refuse as e:
+        print(f'fanout: {e}', file=sys.stderr)
+        return 2
+    ctx = {'gate_needs': gate_needs_of(a), 'gate_lock': not a.no_gate_lock and not gate_slots_off(),
+           'run_id': 'fanout-' + uuid.uuid4().hex[:12]}
+    who = types.SimpleNamespace(name='sync')
+    for k, gate in enumerate(a.gate or [], 1):
+        glog = logs / f"sync-{ctx['run_id']}-{k}.log"
+        rc = run_logged(gate_argv(ctx, who, types.SimpleNamespace(id=branch), gate), str(wt),
+                        dict(ENV, FANOUT_RUN_ID=ctx['run_id']), glog, ctx['run_id'])
+        if rc:
+            print(f'red: {gate} rc={rc} (log {glog}); the sync merge is kept on {branch}')
+            return 1
+    print(f'synced: {integ} {sha[:7]} into {branch}')
     return 0
 
 
@@ -5139,6 +5275,66 @@ def selftest():
         expect(f'T-0489 settle --forward without --gate exits 2 naming --gate, got rc={fn.returncode} err={fn.stderr!r}',
                fn.returncode == 2 and '--gate' in fn.stderr)
 
+        # T-0654: sync merges the integration branch into a running lane opened with prep's `lanes.py open` line, so
+        # the integration branch comes from the lane record; the roadmap and a `hash_bound: gen/*` file change on both
+        def sync_fixture(name, lane_files, integ_files):
+            r_, lanes_ = tmp / name, tmp / f'{name}-lanes'
+            sized_repo(r_, ['L1', 'L1'], {'.gitignore': gi, '.sdlc/config': 'hash_bound: gen/*\n'})
+            make_branch(r_, 'worktree-T-0001-solo', {'f1.txt': 'one\n'}, 'T-0001: Ticket t1')
+            ld_ = verb(r_, 'land', 'worktree-T-0001-solo', '--integration', 'fanout/x', '--lanes-dir', str(lanes_),
+                       '--base', 'main', '--gate', 'true')
+            iwt_, lt_ = tree_of(r_, 'fanout/x'), lanes_ / 'b'
+            op_ = subprocess.run([sys.executable, str(SCRIPTS / 'lanes.py'), 'open', 'b', '--kind', 'fanout', '--ticket',
+                                  'T-0002', '--base', 'main', '--into', 'fanout/x', '--path', str(lt_), '--branch',
+                                  'fanout/x-b', '--no-claim'], cwd=str(r_), env=ENV, capture_output=True, text=True)
+            expect(f'T-0654 fixture {name}: land and lanes.py open succeed, got land rc={ld_.returncode} open '
+                   f'rc={op_.returncode} err={op_.stderr[-300:]!r}', ld_.returncode == 0 and op_.returncode == 0
+                   and iwt_ is not None)
+            if iwt_ is None or op_.returncode:
+                return r_, lt_
+            for tree_, files_ in ((iwt_, integ_files), (lt_, lane_files)):
+                for fname, body in files_.items():
+                    (tree_ / fname).parent.mkdir(parents=True, exist_ok=True)
+                    (tree_ / fname).write_text(body, encoding='utf-8')
+            subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'new', 'chore', 'third',
+                            'Ticket t3'], cwd=str(lt_), env=ENV, capture_output=True, text=True)
+            for tree_ in (iwt_, lt_):
+                sh(tree_, 'add', '-A')
+                sh(tree_, 'commit', '-q', '-m', 'diverge')
+            return r_, lt_
+
+        ya, lta = sync_fixture('sync-a', {'gen/out.txt': 'lane\n'}, {'gen/out.txt': 'integ\n'})
+        sa = verb(ya, 'sync', 'fanout/x-b', '--regen', 'echo regen > gen/out.txt', '--gate', 'true')
+        expect(f'T-0654 sync: exit 0, the lane tip a merge whose second parent is the fanout/x tip, gen/out.txt '
+               f'regenerated, the lane tree clean, got rc={sa.returncode} out={sa.stdout[-400:]!r} err={sa.stderr[-400:]!r}',
+               sa.returncode == 0
+               and sh(ya, 'rev-parse', 'fanout/x-b^2').stdout.strip() == sh(ya, 'rev-parse', 'fanout/x').stdout.strip()
+               and sh(ya, 'show', 'fanout/x-b:gen/out.txt').stdout == 'regen\n'
+               and sh(lta, 'status', '--porcelain', '--untracked-files=no').stdout == '')
+        # negative control: a conflict in a file that is neither generated nor hash-bound aborts and changes nothing
+        yb, ltb = sync_fixture('sync-b', {'README.md': 'lane\n'}, {'README.md': 'integ\n'})
+        tipb = sh(yb, 'rev-parse', 'fanout/x-b').stdout.strip()
+        sb = verb(yb, 'sync', 'fanout/x-b', '--gate', 'true')
+        expect(f'T-0654 sync conflict: exit 2 naming README.md, the lane tip and tree unchanged, got rc={sb.returncode} '
+               f'out={sb.stdout!r} err={sb.stderr[-400:]!r}',
+               sb.returncode == 2 and 'sync conflict:' in sb.stdout and 'README.md' in sb.stdout
+               and sh(yb, 'rev-parse', 'fanout/x-b').stdout.strip() == tipb
+               and sh(ltb, 'status', '--porcelain', '--untracked-files=no').stdout == ''
+               and sh(ltb, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode != 0)
+        # --paths: a skill file added on the integration branch reaches the lane as one commit touching only it
+        yc, ltc = sync_fixture('sync-c', {}, {'.agents/skills/x/SKILL.md': 'skill\n'})
+        tipc = sh(yc, 'rev-parse', 'fanout/x-b').stdout.strip()
+        sc = verb(yc, 'sync', 'fanout/x-b', '--paths', '.agents/')
+        expect(f'T-0654 sync --paths: exit 0, one `sync guidance: fanout/x` commit touching only the skill file, got '
+               f'rc={sc.returncode} out={sc.stdout!r} err={sc.stderr[-400:]!r}',
+               sc.returncode == 0 and sh(yc, 'rev-parse', 'fanout/x-b^').stdout.strip() == tipc
+               and sh(yc, 'log', '-1', '--format=%s', 'fanout/x-b').stdout.startswith('sync guidance: fanout/x ')
+               and sh(yc, 'diff', '--name-only', tipc, 'fanout/x-b').stdout.split() == ['.agents/skills/x/SKILL.md'])
+        (ltc / '.agents' / 'mine.md').write_text('wip\n', encoding='utf-8')
+        sd = verb(yc, 'sync', 'fanout/x-b', '--paths', '.agents/')
+        expect(f'T-0654 sync --paths negative control: an uncommitted file under .agents/ refuses with exit 2, got '
+               f'rc={sd.returncode} err={sd.stderr!r}', sd.returncode == 2 and 'uncommitted' in sd.stderr)
+
         # 29. Lane lifecycle (T-0452): the run sweeps landed plugin lanes at its start (unless lane_sweep: off), opens
         # each lane through lanes.py with a port from lane_ports:, closes a lane whose every ticket merged (its archive
         # ref first), and keeps a stopped lane with its report line.
@@ -5413,6 +5609,8 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
          '[--gate-need ...] [--no-gate-lock] [--allow-empty-gate]] | '
          'fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]... '
          '[--no-gate-lock] [--allow-empty-gate] | '
+         'fanout.py sync <lane> [--integration BRANCH] [--root .sdlc] [--lanes-dir DIR] [--gate CMD]... [--regen CMD] '
+         '[--paths P,...] | '
          'fanout.py selftest\n'
          '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
          '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
@@ -5422,7 +5620,7 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
 def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
-    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover']):
+    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover'], ['sync']):
         print(USAGE, file=sys.stderr)
         return 2
     if argv[0] == 'settle':
@@ -5448,6 +5646,25 @@ def main(argv):
         sp.add_argument('--no-gate-lock', action='store_true', help='as for run')
         sp.add_argument('--allow-empty-gate', action='store_true', help='as for run')
         return cmd_settle(sp.parse_args(argv[1:]))
+    if argv[0] == 'sync':
+        yp = argparse.ArgumentParser(prog='fanout.py sync', description='Bring a running lane level with its integration '
+                                     'branch (T-0654): merge it in under the merge lock, resolve the generated and '
+                                     'hash-bound files, run the light gates; or, with --paths, copy guidance files only.')
+        yp.add_argument('lane', help='the lane branch or its worktree path')
+        yp.add_argument('--integration', metavar='BRANCH', help='the branch to sync from (default: the lane record\'s `into`)')
+        yp.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc): its config '
+                        'declares the hash_bound globs and `tickets.py roadmap` regenerates its generated files')
+        yp.add_argument('--lanes-dir', help='where merge.lock and logs/ are (default: the integration worktree\'s parent, '
+                        'else the lane tree\'s)')
+        yp.add_argument('--gate', action='append', metavar='CMD', help='a light gate run in the lane tree after the merge '
+                        'commit; red exits 1 and keeps the merge (repeatable, in order)')
+        yp.add_argument('--regen', metavar='CMD', help='run in the lane tree when the merge touched a hash_bound path, '
+                        'after those conflicts took the integration side; its output under those globs is staged')
+        yp.add_argument('--paths', metavar='P,...', help='guidance-only sync, for example .agents/,AGENTS.md,.claude/: '
+                        'check those paths out from the integration branch and commit them, no merge')
+        yp.add_argument('--gate-need', action='append', metavar='[PREFIX::]RES=N', help='as for run')
+        yp.add_argument('--no-gate-lock', action='store_true', help='as for run')
+        return cmd_sync(yp.parse_args(argv[1:]))
     if argv[0] == 'cover':
         cp = argparse.ArgumentParser(prog='fanout.py cover', description='Run the full gate set at the integration tip '
                                      f'under the merge lock and append one <root>/{LEDGER} entry, committed on the '

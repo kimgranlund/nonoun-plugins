@@ -36,3 +36,13 @@ Source: GitHub issue #14, ui-kit-neue audit 2026-10-20.
 2. `python3 plugins/sdlc-lite/scripts/fanout.py sync --help` exits 0 and names `--paths`, `--regen` and `--gate`.
 3. `grep -n 'sync --paths' plugins/sdlc-lite/skills/fanout/SKILL.md` finds the post-land line.
 4. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+- `fanout.py sync <lane> [--integration BRANCH] [--root] [--lanes-dir] [--gate CMD]... [--regen CMD] [--paths P,...]` added (`cmd_sync`), with the module docstring usage line and a `sync (T-0654)` section, the `USAGE` string, and the `main()` parser. The integration branch comes from `--integration` or the lane record's `into` (lanes.discover, so host records work too).
+- Deviation from the Non-goal "no change to merge_generated": it returns `conflict` before it resolves the generated files, so hash-bound resolution could not be layered on top without copying its notes.md and roadmap logic. It gained an optional `theirs=()` pathspec argument (conflicts it matches take ref's side); every existing caller passes nothing and behaves as before.
+- `--regen` runs only when the merge staged a hash-bound path; its output under the `hash_bound:` globs is staged into the merge commit.
+- `skills/fanout/SKILL.md`: the post-land `sync --paths .agents/,AGENTS.md,.claude/ <lane>` line in step 4, and Arguments rows for `--paths` and `--regen` (check.py H-5).
+- Selftest: T-0654 cases (a) merge with roadmap and `gen/out.txt` changed on both sides, (b) README.md conflict exits 2 with the lane unchanged, (c) `--paths .agents/` one commit touching only the skill file, plus an uncommitted-file refusal for `--paths`.
+- Negative control (observed): with `cmd_sync` calling `merge_generated(wt, sha, root)` (no hash-bound resolution) the selftest failed: `T-0654 sync: exit 0, ... got rc=2 out='sync conflict: gen/out.txt\n'`. Restored, it passes.
+- Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/fanout.py sync --help` exit 0 (names --paths, --regen, --gate); `grep -n 'sync --paths' plugins/sdlc-lite/skills/fanout/SKILL.md` exit 0; `git diff --check` exit 0; `python3 scripts/check-packaging.py` exit 0.
+- Open: `check.py` on this lane's base still reports H-5 for `--force` and `--forward`; main fixed that in 28ba049c (Arguments rows), so it clears when the lane lands. No other check.py finding.
