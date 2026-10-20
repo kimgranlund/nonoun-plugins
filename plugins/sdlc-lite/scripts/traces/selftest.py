@@ -1636,6 +1636,54 @@ def _plan_scope_step_section():
         assert _plan_detect(repo, 'scope-prose') == [], 'fired on a single blocked build'
 
 
+def _ui_review(*gaps, findings_only=False):
+    found = ''.join(f'- src/a.css:{i}: advisory: x: y. Rule: gap (proposed: "{g}")\n'
+                    for i, g in enumerate(gaps, 1)) or 'None\n'
+    listed = 'None\n' if findings_only or not gaps else ''.join(f'- {g}\n' for g in gaps)
+    return (f'{_hd("Mode")}\nreview\n\n{_hd("Verdict")}\npass-with-notes\n\n'
+            f'{_hd("Findings")}\n{found}\n{_hd("Guidance gaps")}\n{listed}')
+
+
+_GAP = 'Every interactive state has a forced-colors style.'
+
+
+def _gap_repo(root, texts):
+    """A repo with one task dir per entry of texts, each with a ui-designer review result."""
+    repo = os.path.join(root, 'repo')
+    for n, text in enumerate(texts, 1):
+        d = f'.sdlc/{n:04d}-ui'
+        _write(repo, f'{d}/handoff.md', '# task\n')
+        _write(repo, f'{d}/ui-designer-L1.attempt.json',
+               json.dumps(_attempt('ui-designer-L1', f'u{n}')))
+        _write(repo, f'{d}/ui-designer-L1.md', text)
+        _write(repo, f'{d}/runs.jsonl', json.dumps(
+            {'role': 'ui-designer', 'level': 'L1', 'file': 'ui-designer-L1.md',
+             'attempt_id': f'u{n}', 'turns': 1, 'cost_usd': 0.1}) + '\n')
+    return repo
+
+
+@case('plan: guidance-gap fires on one proposed rule in three tickets')
+def _plan_guidance_gap_fires():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _gap_repo(tmp, [_ui_review(_GAP, _GAP), _ui_review('  EVERY interactive  state has '
+                                                                    'a forced-colors style'),
+                               _ui_review(_GAP, findings_only=True)])
+        got = _plan_detect(repo, 'guidance-gap')
+        assert len(got) == 1, f'guidance-gap: want 1 finding, got {len(got)}: {got}'
+        f = got[0]
+        assert (f['family'], f['layer']) == ('plan', 'project'), f
+        assert [e['path'] for e in f['evidence']] == [
+            f'.sdlc/000{n}-ui/ui-designer-L1.md' for n in (1, 2, 3)], f['evidence']
+
+
+@case('plan: guidance-gap quiet on two tickets')
+def _plan_guidance_gap_quiet():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _gap_repo(tmp, [_ui_review(_GAP, _GAP), _ui_review(_GAP), _ui_review()])
+        got = _plan_detect(repo, 'guidance-gap')
+        assert got == [], f'guidance-gap fired on two tickets: {got}'
+
+
 # --- hygiene ------------------------------------------------------------------------------------
 
 _NEST = ('.worktrees', 'x', '.worktrees', 'tmp', 'builder-1')

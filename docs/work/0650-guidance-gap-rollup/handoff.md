@@ -35,3 +35,10 @@ Existing plan-family detectors and their findings are unchanged. Stages 1 and 2 
 2. `grep -n 'guidance_gap_tickets' plugins/sdlc-lite/scripts/traces/detectors/thresholds.py docs/references/sdlc-internals.md` finds both.
 3. `grep -n 'guidance-gap' plugins/sdlc-lite/skills/review-traces/SKILL.md` finds the stage 5 route.
 4. `git diff --check` exits 0 and `python3 scripts/check-packaging.py` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/traces/detectors/plan.py`: new `guidance-gap` detector over ui-designer results (`## Guidance gaps` bullets, else `Rule: gap` items under `## Findings`), grouped by normalized proposal per distinct ticket (row ticket, else task_dir), layer `project`, no cause file, the proposal as `cause_hint.rule`. `detect` now returns only the kinds `DETECTORS` names, so removing an entry silences it.
+- `plugins/sdlc-lite/scripts/traces/detectors/thresholds.py`: `guidance_gap_tickets: 3`, severity `guidance-gap: 2`; `docs/references/sdlc-internals.md` thresholds table row.
+- `plugins/sdlc-lite/skills/review-traces/SKILL.md`: `guidance-gap` skips stages 2 to 4 and is offered in the stage 5 round as a `chore` ticket in the reviewed repo; headless writes it to `report.md`.
+- `plugins/sdlc-lite/scripts/traces/selftest.py`: fires case (three tickets, one differing in case and spacing, one read from Findings only) and quiet case (two gaps in one ticket plus one more ticket). Negative control: with `guidance-gap` removed from `DETECTORS` the fires case fails ("want 1 finding, got 0").
+- Checks: `traces.py selftest` exit 0, both greps exit 0, `git diff --check` exit 0, `check-packaging.py` exit 0, `check.py` exit 0.

@@ -19,6 +19,8 @@ THRESHOLDS = {
     # plan: criteria-never-red reruns each acceptance criterion span at base-sha with this
     # timeout in seconds (rerun.run).
     'rerun_timeout_secs': 60,
+    # plan: guidance-gap fires when one proposed rule appears in this many distinct tickets.
+    'guidance_gap_tickets': 3,
     # cost: cost-over-baseline fires when a passed step costs at least this multiple of the
     # bench median cost per passed step.
     'cost_over_baseline_ratio': 2.0,
@@ -43,6 +45,7 @@ THRESHOLDS = {
         'criteria-never-red': 2,
         'contract-dependents': 2,
         'scope-prose': 2,
+        'guidance-gap': 2,
         'stray-worktree': 2,
         'tracked-runtime-file': 2,
         'integration-reset': 3,
