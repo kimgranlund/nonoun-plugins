@@ -2,7 +2,7 @@
 id: T-0643
 title: "plan_check fails fixed-interval status loops; driver prompt replaces them"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ Loops that are not status loops keep passing. Existing `polling-loop` behavior i
 - `idle-wakes` (cost family, threshold `idle_wakes_turns` 2, severity 2) reads conductor session .jsonl paths from `aux["conductor_transcripts"]`, fed by the new repeatable `traces.py ingest --conductor-transcript`. A fired turn (user event with `scheduledTaskId`) is idle with no Agent call, no dispatch/record/land/close Bash call, and board output absent or unchanged. `docs/references/sdlc-internals.md` thresholds table updated.
 - Before figure: maison conductor session `ca97ad65-e94c-43bc-acbb-e67c0fbd2022.jsonl` is readable. Whole session: 464 idle of 716 fired turns. Between the first and last T-0597 mention (lines 55722 to 138015): 359 idle of 575 fired turns. The definition does not count SendMessage or ad hoc edits as acting, so this is an upper bound.
 - Checks: criterion 1 exit 1 with the FAIL line; plan_check selftest PASS (342); traces selftest PASS; criterion 4 greps as required; `git diff --check` 0; check-packaging PASS.
+
+## Outcome
+
+2026-10-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: redck.py deviations printed no `process deviation:` lines. The ticket has no `(red)` criteria. | note: the `--conductor-transcript` plumbing (cli.py, ingest.py) has no end-to-end selftest through `traces.py ingest`. The selftest feeds `aux["conductor_transcripts"]` directly into `cost.detect`. | note: I did not re-run the builder's maison before-figure (464 of 716 idle fired turns); it is a Do-side recorded figure, not a criterion.) · verifier: verifier-L2 (sonnet) · base: e7c2ab2ccfaf
+- Changed: see commits
+- Commits: 725b215 T-0643: plan_check fails fixed-interval status loops; driver prompt replaces them
+- Check: 1 status loop fails with status-polls-running-work: pass
+- Check: 2 plan_check selftest: pass
+- Check: 3 traces selftest idle-wakes: pass
+- Check: 4 greps: pass
+- Check: 5 diff check and packaging: pass
