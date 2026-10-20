@@ -26,6 +26,8 @@ Arguments: `$ARGUMENTS`
 | `--rewrite-refs` | Rewrite files that cite a closed ticket folder to its `.NNNN-<slug>` path; added only when the user picks it in step 2 | off | `--rewrite-refs` |
 | `--lane auto\|solo\|full` | The lane of every ticket; `auto` follows `steps.py lane` per ticket | `auto` | `--lane full` |
 | `--max-lanes N` | The most lanes running at once | 4 | `--max-lanes 2` |
+| `--forward` | With `settle`: bring the integration branch into main by fast-forward, first merging main into it when it diverged (step 6) | off | `settle fanout/wave3 --forward` |
+| `--force` | With `settle --forward`: skip the running-role check, which otherwise refuses (exit 2) while a role runs against the integration branch | off | `settle fanout/wave3 --forward --force` |
 | `--stagger SECS` | The seconds between lane starts | 20 | `--stagger 60` |
 
 Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. An integration worktree with uncommitted tracked changes is refused before the merge with the outcome `integration dirty: <path>`; nothing is merged or reset, so the edit survives. Inspect a stopped lane's `wip(` commit on its lane branch.
