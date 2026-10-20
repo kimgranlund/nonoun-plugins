@@ -2,7 +2,7 @@
 id: T-0664
 title: "A write-once designs home for grill output in the onboard docs table"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,15 @@ The managed block changes its stamp; refresh this repo's `docs/AGENTS.md` with `
 - `skills/onboard/SKILL.md`: a note that an existing `docs/layout.md` gains `designs/` only when the repository adds it.
 - `docs/planning/docs-schema/design.md`: one `designs/` row in the homes table. `docs/AGENTS.md` refreshed by `onboard.py setup`.
 - Checks: onboard selftest exit 0, docs_check selftest exit 0, `onboard.py check` prints `current docs/AGENTS.md`, check-packaging exit 0, check.py exit 0, `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full; verifier notes: note: `redck.py deviations` printed no `process deviation:` lines. No `(red)` criterion is declared, and criterion 2's negative control was observed in the selftest and against the base copy. | note: `git grep -i twelve` over plugins, docs and scripts, excluding reports and `.sdlc`, shows no stale home count outside historical ticket records. | note: `docs_check.py --root .` on the repo reports 0 errors and 82 warnings, none of them D-15 or D-1. These are warnings that exist at base.) · verifier: verifier-L2 (sonnet) · base: 37f785dc7925
+- Changed: see commits
+- Commits: 40e5ff2 T-0664: a write-once designs home for grill output in the onboard docs table
+- Check: 1 onboard selftest exits 0 and `grep -n 'designs/' onboard.py` shows the docs table row, the Kinds ...: pass
+- Check: 2 `docs_check.py selftest` exits 0 with a new case that warns when `supersedes:` names a missing fi...: pass
+- Check: 3 `grep -n 'docs/designs/' grill/SKILL.md` names the target path and `supersedes:`: pass
+- Check: 4 `onboard.py check 2>&1 | grep 'docs/AGENTS.md'` prints `current docs/AGENTS.md`: pass
+- Check: 5 `check-packaging.py` exits 0 and `check.py` exits 0: pass
+- Check: 6 `git diff --check` exits 0: pass

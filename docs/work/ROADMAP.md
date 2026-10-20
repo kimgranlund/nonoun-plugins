@@ -20,7 +20,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0660 | [0660-quantified-criteria-lint](0660-quantified-criteria-lint/handoff.md) | Plan lint flags universally quantified prose criteria with no command | feature | L2 | P2 | none | 🟡 claimed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
 | T-0662 | [0662-relative-record-paths](0662-relative-record-paths/handoff.md) | Tracked work records hold no absolute machine paths | bug | L2 | P2 | none | ⏳ proposed |
-| T-0664 | [0664-designs-docs-home](0664-designs-docs-home/handoff.md) | A write-once designs home for grill output in the onboard docs table | feature | L2 | P2 | none | 🟡 claimed |
 | T-0665 | [0665-trim-skill-catalog](0665-trim-skill-catalog/handoff.md) | Drop redirect stub skills and shorten level-variant agent descriptions | feature | L2 | P3 | none | ⏳ proposed |
 | T-0666 | [0666-lint-git-stash](0666-lint-git-stash/handoff.md) | Plan lint rejects git stash and --autostash in Do text | bug | L1 | P3 | none | ⏳ proposed |
 | T-0667 | [0667-record-agent-id](0667-record-agent-id/handoff.md) | record --agent-id reads the final message from the transcript | feature | L1 | P3 | none | ⏳ proposed |
@@ -29,4 +28,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0670 | [0670-close-lane-reason](0670-close-lane-reason/handoff.md) | close verdict reason matches the recorded lane | bug | L1 | P3 | none | ⏳ proposed |
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 
-Closed: 613 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 614 done, 29 dropped (git log or .NNNN-* folders)
