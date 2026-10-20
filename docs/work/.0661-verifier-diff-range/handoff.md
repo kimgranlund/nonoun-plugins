@@ -2,7 +2,7 @@
 id: T-0661
 title: "Verifier brief carries a base..end diff range per built step"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ Source: GitHub issue #21, ui-kit-neue audit 2026-10-20.
 - `dispatch.py prepare verifier` reads it (`step_end`) and adds `Diff range: <base>..<end>` (commit), `Diff range: git diff <base> <tree>` (tree hash), or `<base>..<Review sha>` when a ready ref exists too; stored as `diff_range`; the run rule then reads "Diff only the Diff range below, not Base sha against HEAD." A commit end that does not descend from Base sha is skipped with a stderr note. No `end-sha` keeps today's brief.
 - `skills/handoff-format/SKILL.md` names `end-sha` in the records layout.
 - Checks: `dispatch.py selftest` exit 0 (new cases (a), (b), (c); with the end-sha write disabled, (a) and (b) FAIL); `git stash list` unchanged across the selftest; `run-selftest.sh` exit 0; `git diff --check` exit 0; `check-packaging.py` exit 0; `check.py` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a13e995de126
+- Changed: see commits
+- Commits: ab01653 T-0661: verifier brief carries a base..end diff range per built step
+- Check: 1 dispatch.py selftest exit 0 with new cases (a), (b), (c); (a) and (b) fail with the change reverted: pass
+- Check: 2 git stash list unchanged by the selftest: pass
+- Check: 3 run-selftest.sh exits 0: pass
+- Check: 4 git diff --check exits 0, and check-packaging.py exits 0 since a skill changed: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py selftest case b asserts the... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py around line 113, the... -> notes.md

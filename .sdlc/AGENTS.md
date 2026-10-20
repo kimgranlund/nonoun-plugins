@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:03f4775761e6 -->
+<!-- sdlc-lite:managed:start v1 sha256:9df1013b60e9 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,11 +13,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 - proposed: 0
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 1
-  - T-0661 Verifier brief carries a base..end diff range per built step (docs/work/0661-verifier-diff-range), claimed by sdlc-lite-author 2026-10-20
+- claimed: 0
 - paused: 0
 - blocked: 0
-- done: 636
+- done: 637
 - dropped: 29
 
 ## Procedures

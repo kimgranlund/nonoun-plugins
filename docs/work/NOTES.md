@@ -98,3 +98,8 @@
 
 - note: plugins/sdlc-lite/scripts/tickets.py:3846-3852 the post-rename `moved += move_records(d, every=True)` plus `d.rmdir()` is unreachable through close: `d.rename(dot)` removes `d`, so `move_records` returns [] on `not d.is_dir()`. I removed the call in the throwaway worktree and tickets.py selftest still passed. The undotted-leftover move is exercised only by a direct `move_records(left, every=True)` call in the selftest. Close's real effect is the pre-rename move of `*.dispatch.json` / `*.attempt.json`; leftovers created after a close are handled only by check's new warning.
 - note: the criterion 2 close case puts the dispatch record in the ticket folder itself (pre-rename), not in a separate undotted sibling; it satisfies the criterion text and bites, but does not model a leftover sibling.
+
+## T-0661: Verifier brief carries a base..end diff range per built step (2026-10-20)
+
+- note: `plugins/sdlc-lite/scripts/dispatch.py` selftest case (b) asserts the stash stack in a fresh temporary repo whose stack is empty, so `before == after` would also hold for a stash-and-pop implementation; the real-repo stash count (1 before and after) and the code read cover it.
+- note: `plugins/sdlc-lite/scripts/dispatch.py` around line 113, the module-docstring sentence on `end-sha` was inserted mid-paragraph before "Every brief carries a Report file line", leaving that line over-long; cosmetic only.

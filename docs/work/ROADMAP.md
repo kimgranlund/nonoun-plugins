@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | 🟡 claimed |
 
-Closed: 636 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 637 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
