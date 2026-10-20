@@ -1,10 +1,11 @@
 """Plan-quality detectors: acceptance criteria that never went red, steps that break an earlier
-step's contract, and scope widened in prose instead of in the plan.
+step's contract, scope widened in prose instead of in the plan, and a ui-designer guidance gap
+that recurs across tickets.
 
-detect(rows, aux, thresholds) returns a list of findings (findings.make, family "plan") over the
-persisted rows (events.jsonl dicts) and aux.json. Paths in rows are relative to aux["repo"]; the
-raw files opened are result files a row's sources names, the task <task_dir>/handoff.md, and a
-step dir's handoff.md.
+detect(rows, aux, thresholds) returns a list of findings (findings.make, family "plan", of the
+kinds DETECTORS names) over the persisted rows (events.jsonl dicts) and aux.json. Paths in rows
+are relative to aux["repo"]; the raw files opened are result files a row's sources names, the
+task <task_dir>/handoff.md, and a step dir's handoff.md.
 
 A path a note names: each code-span text in it, and each whitespace token holding `/` (with
 surrounding quotes, brackets, and trailing punctuation stripped). A builder's note is the first
@@ -26,6 +27,13 @@ Detectors (cause_hint files are plugin-relative):
                        ## Plan review and the step handoff has no ## Scope widened section;
                        evidence each such builder result at its note line. Cause
                        skills/chain/SKILL.md.
+  guidance-gap         a ui-designer proposal `Rule: gap (proposed: "<text>")` (each bullet of
+                       ## Guidance gaps, the quoted text when the bullet holds the form, else
+                       the bullet; else each such item under ## Findings) seen in at least
+                       guidance_gap_tickets distinct tickets (a row's ticket, else its task_dir),
+                       grouped by the text lowercased, whitespace collapsed, and trailing
+                       punctuation stripped. Layer project, no cause file, the proposal as the
+                       rule; evidence the first result and line per ticket.
 """
 import re
 
@@ -40,6 +48,7 @@ LAYER = 'sdlc-lite'
 SCOPE_WIDENED_RE = re.compile(r'^\s*(?:[-*+]\s+)?scope widened:', re.IGNORECASE)
 STRIP = '`\'"()[]{}<>'
 TRAIL = '.,;:!?'
+GAP_RE = re.compile(r'Rule:\s*gap\s*\(proposed:\s*"([^"]*)"\)', re.IGNORECASE)
 
 
 def _make(ctx, detector, cause, rule, evidence, summary):
@@ -193,7 +202,56 @@ def scope_prose(ctx):
     return out
 
 
-DETECTORS = ('criteria-never-red', 'contract-dependents', 'scope-prose')
+def _gap_key(text):
+    return ' '.join(text.lower().split()).rstrip(TRAIL + ' ')
+
+
+def _gaps(lines):
+    """[(line number, proposed text)] of a ui-designer result's Rule: gap proposals."""
+    out, section = {'Guidance gaps': [], 'Findings': []}, None
+    for i, line in enumerate(lines, 1):
+        if line.startswith('## '):
+            section = line[3:].strip()
+            continue
+        if section not in out:
+            continue
+        hits = GAP_RE.findall(line)
+        if hits:
+            out[section] += [(i, h) for h in hits]
+        elif section == 'Guidance gaps' and line.lstrip().startswith(('- ', '* ')):
+            text = line.lstrip()[2:].strip().strip('`"\'')
+            if text and text.lower() != 'none':
+                out[section].append((i, text))
+    return out['Guidance gaps'] or out['Findings']
+
+
+def guidance_gap(ctx):
+    groups = {}
+    for r in ctx.rows:
+        rel = _result(r)
+        if r.get('role') != 'ui-designer' or r.get('superseded') or not rel:
+            continue
+        ticket = r.get('ticket') or r.get('task_dir')
+        if not ticket:
+            continue
+        for line, text in _gaps(ctx.lines(rel)):
+            key = _gap_key(text)
+            if key:
+                groups.setdefault(key, {}).setdefault(ticket, []).append((rel, line, text))
+    out = []
+    for key, by_ticket in sorted(groups.items()):
+        if len(by_ticket) < ctx.t['guidance_gap_tickets']:
+            continue
+        first = [min(hits) for _, hits in sorted(by_ticket.items())]
+        out.append(findings.make('guidance-gap', FAMILY, ctx.sev('guidance-gap'), 'project',
+                                 None, first[0][2],
+                                 [{'path': rel, 'line': line} for rel, line, _ in first],
+                                 f'{len(by_ticket)} tickets report the guidance gap '
+                                 f'"{first[0][2]}"'))
+    return out
+
+
+DETECTORS = ('criteria-never-red', 'contract-dependents', 'scope-prose', 'guidance-gap')
 
 
 def detect(rows, aux, thresholds=None):
@@ -201,4 +259,5 @@ def detect(rows, aux, thresholds=None):
     out = criteria_never_red(ctx, aux)
     out += contract_dependents(ctx)
     out += scope_prose(ctx)
-    return out
+    out += guidance_gap(ctx)
+    return [f for f in out if f['detector'] in DETECTORS]

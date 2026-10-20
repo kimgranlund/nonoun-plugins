@@ -33,6 +33,8 @@ If no clusters come back, report that and stop.
 
 ## 2. Diagnose
 
+A `guidance-gap` finding (layer project) is mechanical: it skips stages 2 to 4 and goes straight to stage 5.
+
 For each cluster k, write `R/cluster-<k>/handoff.md` from this template:
 
 ```cluster-question
@@ -113,7 +115,7 @@ Dispatch the planner at L2 on `<propose handoff.md>` once. Each `## Step` of the
 
 Model-call cap: at most `clusters + findings + 1` role runs per review (one archaeologist or scout per cluster, one verifier per finding, one planner), bounded by `--max N`. The ingest and detect stages spend none.
 
-Findings whose layer is not sdlc-lite, and findings dropped in stage 3, go to `R/report.md`, one section per finding: layer, evidence, diagnose summary (and the drop reason, if any). They are never filed.
+Findings whose layer is not sdlc-lite (other than `guidance-gap`), and findings dropped in stage 3, go to `R/report.md`, one section per finding: layer, evidence, diagnose summary (and the drop reason, if any). They are never filed.
 
 A session with no person present (`SDLC_HEADLESS=1`, a fanout lane, or `claude -p`) writes every draft to `report.md` and files nothing.
 
@@ -126,6 +128,8 @@ Otherwise ask one AskUserQuestion round over the drafts: at most 4 options per q
    - Actual: the draft's quoted actual behavior.
    - Context: the evidence paths, the diagnose result path, and the verify result path.
    - Constraints: the red check lands before or with the fix.
+
+Each `guidance-gap` finding is offered in the same round as a draft `chore` ticket in the reviewed repo: its Goal names the proposed rule (the finding's `cause_hint.rule`) and the repo skill to add it to, its Context lists the evidence paths. An approved one is filed with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py new chore <slug> "<title>"` run in the reviewed repo. A headless run writes it to `report.md` with the other drafts.
 
 Drafts not approved go to `report.md`.
 

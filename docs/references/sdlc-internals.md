@@ -211,6 +211,7 @@ Detector families (`traces/detectors/`) are escalation, plan, hygiene, and cost.
 | `bump_levels` | 1 | escalation: unchanged-verdict-bump |
 | `exit_code_missing_section` | 3 | escalation: exit-3-result |
 | `rerun_timeout_secs` | 60 | plan: criteria-never-red, per span |
+| `guidance_gap_tickets` | 3 | plan: guidance-gap (distinct tickets whose ui-designer results propose the same `Rule: gap`) |
 | `cost_over_baseline_ratio` | 2.0 | cost: cost-over-baseline (vs the bench median per passed step) |
 | `many_builder_attempts` | 3 | cost: many-builder-attempts (builder rows in one step dir) |
 | `polling_loop_calls` | 5 | cost: polling-loop (identical Bash calls) |
