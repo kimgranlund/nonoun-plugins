@@ -5,9 +5,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
-| T-0577 | [0577-rewrite-refs-frozen-paths](0577-rewrite-refs-frozen-paths/handoff.md) | --rewrite-refs rewrites citations inside frozen records | bug | L2 | P2 | none | 🟡 claimed |
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0643 | [0643-status-loop-guard](0643-status-loop-guard/handoff.md) | plan_check fails fixed-interval status loops; driver prompt replaces them | feature | L2 | P2 | none | 🟡 claimed |
 | T-0644 | [0644-tickets-inventory-build](0644-tickets-inventory-build/handoff.md) | tickets.py inventory: build the T-0584 design | feature | L2 | P2 | none | 🟡 claimed |
 
-Closed: 604 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 605 done, 29 dropped (git log or .NNNN-* folders)
