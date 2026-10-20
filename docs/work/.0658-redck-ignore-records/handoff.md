@@ -2,7 +2,7 @@
 id: T-0658
 title: "redck ignores record files when judging the tree dirty"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,11 @@ A dirty source path outside the ticket folder and the ticket root still makes th
 - New selftest case (T-0658): `work_root: docs/work` fixture; ticket-folder `handoff.md` edit plus new `skips.md` records `pre-edit` with `dirty == []`; adding a `src.txt` edit records `retrospective` with `dirty == ['src.txt']`.
 - Negative control: with the `ticket` prefix removed from the filter the new case fails (`redck selftest: FAIL`, only that case); restored, `redck.py selftest` exits 0.
 - `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full; verifier notes: note: plugins/sdlc-lite/scripts/redck.py:13 the edited docstring line runs past the surrounding lines' wrap width (cosmetic).) · verifier: verifier-L2 (opus) · base: cca50c9140e6
+- Changed: see commits
+- Commits: 3d7e939 T-0658: redck ignores the ticket folder when judging the tree dirty
+- Check: 1 `python3 plugins/sdlc-lite/scripts/redck.py selftest` exits 0 with the new T-0658 work_root case,...: pass
+- Check: 2 `git diff --check` exits 0: pass

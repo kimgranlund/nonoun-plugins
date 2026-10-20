@@ -16,7 +16,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0655 | [0655-lane-guidance-check](0655-lane-guidance-check/handoff.md) | prepare checks lane guidance against main and named guidance paths | bug | L2 | P2 | none | ⏳ proposed |
 | T-0656 | [0656-settle-refuses-running](0656-settle-refuses-running/handoff.md) | settle --forward refuses while a lane attempt is running | bug | L1 | P2 | none | ⏳ proposed |
 | T-0657 | [0657-review-red-at-base](0657-review-red-at-base/handoff.md) | steps.py review reports red criteria already green at base | feature | L2 | P2 | none | ⏳ proposed |
-| T-0658 | [0658-redck-ignore-records](0658-redck-ignore-records/handoff.md) | redck ignores record files when judging the tree dirty | bug | L1 | P2 | none | 🟡 claimed |
 | T-0659 | [0659-skill-size-limit](0659-skill-size-limit/handoff.md) | Every SKILL.md stays under 18,000 characters | bug | L2 | P2 | none | ⏳ proposed |
 | T-0660 | [0660-quantified-criteria-lint](0660-quantified-criteria-lint/handoff.md) | Plan lint flags universally quantified prose criteria with no command | feature | L2 | P2 | none | ⏳ proposed |
 | T-0661 | [0661-verifier-diff-range](0661-verifier-diff-range/handoff.md) | Verifier brief carries a base..end diff range per built step | bug | L2 | P2 | none | ⏳ proposed |
@@ -31,4 +30,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0671 | [0671-onboard-plans-wording](0671-onboard-plans-wording/handoff.md) | onboard entry text agrees with the docs table on where plans go | bug | L1 | P3 | none | ⏳ proposed |
 | T-0672 | [0672-skill-route-prose-false-positive](0672-skill-route-prose-false-positive/handoff.md) | Skill-route lint treats prose bullets that mention a skill as routes | bug | L1 | P1 | T-0647 | 🟡 claimed |
 
-Closed: 611 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 612 done, 29 dropped (git log or .NNNN-* folders)
