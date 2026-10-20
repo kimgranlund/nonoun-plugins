@@ -2,7 +2,7 @@
 id: T-0662
 title: "Tracked work records hold no absolute machine paths"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,13 @@ Text with no absolute path is written byte-identical to today. `check` keeps exi
 - Changed: `tickets.py` gains `relative_paths` and `path_bases` (repo toplevel and main checkout become repo-relative, the lanes root becomes `<lane>:<rest>`, each in its realpath and macOS `/private`-less spelling); close relativizes every follow-up item before the digest, `append_notes` and `outcome_section` pass their text through it; `check` adds `abs_path_warnings` over tracked NOTES.md, open undotted handoffs and `gate-ledger.jsonl`. `fanout.py` `cover_at` writes `gates` and `log` through it, the log as `logs:cover-<run_id>-<k>.log` under the lanes dir.
 - Checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0 (new T-0662 cases; the close case failed before the fix, when only the realpath spelling was matched); `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0 (cover asserts `log` starts `logs:cover-` and is not absolute); `git diff --check` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
 - This repo: `tickets.py --root .sdlc check` prints 5 absolute-path warnings, 3 in this handoff (its own prose naming the patterns) and 2 in `docs/work/NOTES.md` (lines 34 and 58, verifier notes naming lanes-root tmp paths).
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: b0e41c7774b7
+- Changed: see commits
+- Commits: 5718a40 T-0662: tracked work records hold no absolute machine paths
+- Check: 1 tickets selftest exits 0 with a new close case (src/a.py:3 and wave6:b.py in NOTES.md and Outcome): pass
+- Check: 2 check prints the warning for NOTES.md holding /Users/x/repo/a.py and nothing for a clean NOTES.md: pass
+- Check: 3 fanout selftest exits 0 and its cover case asserts the ledger `log` is not absolute: pass
+- Check: 4 git diff --check exits 0: pass
