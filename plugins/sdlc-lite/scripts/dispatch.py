@@ -72,8 +72,9 @@ dir to its records dir.
                nothing. No ticket or no size proceeds.
   guidance     (T-0655) any role whose execution tree is a linked (lane) worktree: each backticked repo-relative path in the
                handoff that ends in SKILL.md, AGENTS.md or CLAUDE.md or starts with .agents/ or .claude/skills/ must exist in
-               that tree, else exit 5 with one `guidance missing in lane: <path>` line each, ending `(present on <branch> at
-               <sha7>)` when the main checkout or the lane's .lane.json `into` branch holds it; no record is written. An
+               that tree but held by the main checkout or the lane's .lane.json `into` branch, else exit 5 with one `guidance
+               missing in lane: <path> (present on <branch> at <sha7>)` line each; a path held nowhere does not refuse
+               (T-0674); no record is written. An
                AGENTS.md or CLAUDE.md that differs from the main checkout's prints `lane guidance differs: <file>` on stderr
                and adds a Guidance line to the brief. The main checkout is never checked.
   lock         replaces run_lifecycle.py's directory lock. Under a brief file lock, every running attempt
@@ -587,8 +588,8 @@ GUIDANCE_FILES = ('AGENTS.md', 'CLAUDE.md')
 def lane_guidance(top, handoff):
     """T-0655: for a linked (lane) worktree top, (differing, missing): the GUIDANCE_FILES whose bytes differ from the main
     checkout's copy, and one refusal line per backticked repo-relative guidance path in the handoff (a SKILL.md, AGENTS.md
-    or CLAUDE.md, or a path under .agents/ or .claude/skills/) absent from top, naming the main checkout's branch or the
-    lane's `into` branch (.lane.json) when that holds it. ([], []) in the main checkout."""
+    or CLAUDE.md, or a path under .agents/ or .claude/skills/) absent from top but held by the main checkout or the lane's
+    `into` branch (.lane.json), naming that branch; a path held nowhere is skipped. ([], []) in the main checkout."""
     gd = git('rev-parse', '--git-dir', cwd=top).stdout.strip()
     common = git('rev-parse', '--git-common-dir', cwd=top).stdout.strip()
     if not gd or not common:
@@ -626,7 +627,8 @@ def lane_guidance(top, handoff):
             where = (branch, git('rev-parse', '--short=7', 'HEAD', cwd=main_top).stdout.strip())
         elif into and git('cat-file', '-e', '%s:%s' % (into, p), cwd=top).returncode == 0:
             where = (into, git('rev-parse', '--short=7', into, cwd=top).stdout.strip())
-        missing.append('guidance missing in lane: %s%s' % (p, ' (present on %s at %s)' % where if where else ''))
+        if where:  # T-0674: a path held nowhere is not lane drift (a plugin-relative spelling), so it does not refuse
+            missing.append('guidance missing in lane: %s (present on %s at %s)' % ((p,) + where))
     return differing, missing
 
 
@@ -2463,6 +2465,10 @@ def selftest():
         put(gl / '.agents' / 'skills' / 'x' / 'SKILL.md', 'x\n')
         rc, _, err = prep(gl, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
         case('lane guidance: the same handoff with the skill present in the lane passes', rc == 0 and 'guidance missing' not in err)
+        put(gl / '.sdlc' / 'g' / 'handoff.md', '## Goal\nx\n\n## Context\n- Read `skills/nowhere/SKILL.md` first.\n')
+        rc, _, err = prep(gl, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: a guidance path absent from the lane, main and into branch does not refuse (T-0674)',
+             rc == 0 and 'guidance missing' not in err)
         put(gm / '.sdlc' / 'g' / 'handoff.md', '## Goal\nx\n\n## Context\n- Read `.claude/skills/none/SKILL.md` first.\n')
         rc, got, err = prep(gm, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
         case('lane guidance: the main checkout is never checked', rc == 0 and 'Guidance: ' not in got['prompt'] and 'guidance' not in err)
