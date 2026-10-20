@@ -5108,7 +5108,6 @@ def selftest():
         fp = verb(sr2, 'settle', 'fanout/x')
         expect(f'T-0489 plain settle negative control: a diverged branch without --forward exits 2, got rc={fp.returncode} '
                f'err={fp.stderr!r}', fp.returncode == 2 and 'not a fast-forward' in fp.stderr)
-        # negative control: a red gate keeps main where it is and leaves the forward merge on the integration branch
         # T-0656: a running role against the integration branch refuses the forward merge; --force settles anyway
         sk = forward_fixture('settle-fwd-running', {'f1.txt': 'one\n'})
         wtk = tree_of(sk, 'fanout/x')
@@ -5124,6 +5123,7 @@ def selftest():
         ff = verb(sk, 'settle', 'fanout/x', '--forward', '--gate', 'true', '--force')
         expect(f'T-0656 settle --forward --force: exit 0 and settled, got rc={ff.returncode} out={ff.stdout[-400:]!r} '
                f'err={ff.stderr[-400:]!r}', ff.returncode == 0 and 'settled' in ff.stdout)
+        # negative control: a red gate keeps main where it is and leaves the forward merge on the integration branch
         sg = forward_fixture('settle-fwd-red', {'f1.txt': 'one\n'})
         main3 = sh(sg, 'rev-parse', 'main').stdout.strip()
         fg = verb(sg, 'settle', 'fanout/x', '--forward', '--gate', 'false')
