@@ -18,7 +18,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0691 | [0691-tickets-csv-flag](0691-tickets-csv-flag/handoff.md) | accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim | feature | L1 | P3 | none | ⏳ proposed |
 | T-0692 | [0692-lane-setup-config](0692-lane-setup-config/handoff.md) | lane_setup config commands run by lanes.py open | feature | L1 | P3 | none | ⏳ proposed |
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
-| T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
+| T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | 🟡 claimed |
 
 Closed: 645 done, 29 dropped (git log or .NNNN-* folders)
 
