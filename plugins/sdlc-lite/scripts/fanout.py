@@ -447,6 +447,10 @@ selftest
   merges it; a branch with no commits is `no changes`; a size L2 ticket with no verifier result, then a failing one, is
   refused and with a passing one merges; a missing branch, a branch naming no ticket and the integration branch refuse
   with exit 2. Case 24 (T-0285): a `--driver true` stub that commits nothing gives `no changes`.
+  Reuse (T-0689): `prep` and `land` take an integration branch already checked out in a worktree other than the main
+  checkout (as `lanes.py open --kind integration` leaves it) as the integration worktree: prep prints `integration worktree:
+  <path> (reused)`, land merges there, merge.lock stays under the lanes dir; a branch checked out in the main checkout, and
+  `run`, still refuse. Case 23 reuse proves it (red with the change reverted) and the main-checkout refusal.
   A lane lifecycle case (case 29, T-0452): a fixture whose .sdlc/config has `lane_ports: 47400-47499` and
   `lane_min_age_hours: 0`, holding a plugin lane T-0003-pre made with `lanes.py open` and merged into main, runs
   `alpha=T-0001 beta=T-0002` with a driver that writes $SDLC_LANE_PORT to a file and exits 3 for T-0002, and a gate
@@ -764,9 +768,11 @@ def resolve_lanes_dir(a, cwd, top):
     return lanes_dir
 
 
-def preflight(a, copy_ignored=False):
+def preflight(a, copy_ignored=False, reuse_integ=False):
     """Every check before any write. Returns the run context; raises Refuse. copy_ignored (run only, T-0477):
-    an uncommitted ticket folder that git ignores is not refused; ctx['copy_dirs'] names the ones to copy."""
+    an uncommitted ticket folder that git ignores is not refused; ctx['copy_dirs'] names the ones to copy.
+    reuse_integ (prep only, T-0689): an integration branch checked out in a worktree other than the main checkout
+    is reused as integ_dir (ctx['integ_reused']) instead of refused."""
     cwd = pathlib.Path.cwd()
     p = git(cwd, 'rev-parse', '--is-inside-work-tree')
     if p.returncode or p.stdout.strip() != 'true':
@@ -879,15 +885,18 @@ def preflight(a, copy_ignored=False):
     if lanes_dir.exists() and not lanes_dir.is_dir():
         raise Refuse(f'--lanes-dir {lanes_dir} exists and is not a dir')
     wts = git_out(cwd, 'worktree', 'list', '--porcelain').splitlines()
-    wt_path = None
+    wt_path, main_wt, integ_reused = None, None, False
+    integ_dir = lanes_dir / 'integration'
     for line in wts:
         if line.startswith('worktree '):
             wt_path = line[len("worktree "):]
+            main_wt = main_wt or pathlib.Path(wt_path).resolve()  # git lists the main checkout first
         elif line == f'branch refs/heads/{integration}':
-            raise Refuse(f'integration branch {integration} is checked out in {wt_path}; '
-                         f'git worktree add cannot check it out twice')
-    integ_dir = lanes_dir / 'integration'
-    if integ_dir.exists():
+            if not reuse_integ or pathlib.Path(wt_path).resolve() == main_wt:
+                raise Refuse(f'integration branch {integration} is checked out in {wt_path}; '
+                             f'git worktree add cannot check it out twice')
+            integ_dir, integ_reused = pathlib.Path(wt_path).resolve(), True
+    if integ_dir.exists() and not integ_reused:
         raise Refuse(f'{integ_dir} exists (an earlier run?); remove it with git worktree remove, '
                      f'or pass another --lanes-dir')
     for lane in lanes:
@@ -933,7 +942,7 @@ def preflight(a, copy_ignored=False):
         raise Refuse('--stagger must be 0 or more seconds')
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'copy_dirs': copy_dirs, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
-            'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
+            'integ_dir': integ_dir, 'integ_reused': integ_reused, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
             'light_gates': list(getattr(a, 'light_gate', None) or []), 'gate_needs': gate_needs_of(a),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
             'numbered': tickets.config_numbered(root), 'lane_mode': getattr(a, 'lane', 'auto') or 'auto',
@@ -2122,7 +2131,10 @@ def print_prep(ctx):
     else:
         out.append(f"base: {ctx['start']} ({ctx['base']})")
         out.append(f"integration branch: {ctx['integration']} (the first land creates it at the base)")
-    out.append(f"integration worktree: {ctx['integ_dir']} (the first land creates it)")
+    if ctx.get('integ_reused'):
+        out.append(f"integration worktree: {ctx['integ_dir']} (reused)")
+    else:
+        out.append(f"integration worktree: {ctx['integ_dir']} (the first land creates it)")
     out.append(f"ticket root in each worktree: {ctx['rel'].as_posix()}")
     n_reg = sum(1 for x in ctx['lanes'] if not x.external)
     out.append(f"lane cap: {n_reg} lane(s) of at most {ctx['max_lanes']} (--max-lanes); stagger: {ctx['stagger']} s "
@@ -2188,7 +2200,7 @@ def print_prep(ctx):
 
 def cmd_prep(a):
     try:
-        ctx = preflight(a)
+        ctx = preflight(a, reuse_integ=True)
         probe = git(ctx['top'], 'check-ignore', '-q', f'{HOST_WORKTREES}/x')
         if probe.returncode == 1:
             raise Refuse(f'{HOST_WORKTREES}/ is not gitignored: the host puts each sub-agent worktree there; add '
@@ -2383,9 +2395,12 @@ def land_preflight(a):
         elif line.startswith('branch refs/heads/'):
             checked_out[line[len('branch refs/heads/'):]] = wt_path
     where = checked_out.get(integration)
+    if where is not None and where == (main or top):
+        raise Refuse(f'integration branch {integration} is checked out in the main checkout {where}; '
+                     f'land works in a worktree, not there')
     if where is not None and where != integ_dir.resolve():
-        raise Refuse(f'integration branch {integration} is checked out in {where}; land works in {integ_dir}')
-    if integ_dir.exists() and where is None:
+        integ_dir = where  # T-0689: an integration worktree opened by lanes.py; merge.lock stays under lanes_dir
+    elif integ_dir.exists() and where is None:
         raise Refuse(f'{integ_dir} exists but is not a worktree on {integration}; remove it with git worktree remove, '
                      f'or pass another --lanes-dir')
     lane = Lane(land_lane_name(branch, tid), [tid], branch)
@@ -5063,6 +5078,33 @@ def selftest():
         expect(f'case 23 land host records: the agent_id in the worktree runtime records dir makes a solo lane, got '
                f'rc={lhr1.returncode} out={lhr1.stdout[-400:]!r} err={lhr1.stderr!r}',
                lhr1.returncode == 0 and 'T-0001 | merged |' in lhr1.stdout and '- Lane for `T-0001`: solo' in lhr1.stdout)
+        # case 23 reuse (T-0689): an integration worktree opened by `lanes.py open --kind integration` is reused by prep and land
+        ri, ri_tree, ri_lanes = tmp / 'reuse-integ', tmp / 'reuse-integ-tree', tmp / 'reuse-integ-lanes'
+        sized_repo(ri, ['L1', 'L1'], {'.gitignore': gi})
+        ri_open = subprocess.run([sys.executable, str(SCRIPTS / 'lanes.py'), 'open', 'fanout/ri', '--kind', 'integration',
+                                  '--base', 'main', '--path', str(ri_tree)], cwd=str(ri), env=ENV, capture_output=True, text=True)
+        expect(f'case 23 reuse fixture: lanes.py open --kind integration leaves fanout/ri checked out in its own tree, got '
+               f'rc={ri_open.returncode} err={ri_open.stderr[-300:]!r}',
+               ri_open.returncode == 0 and (ri_tree / '.git').exists())
+        ri_prep = verb(ri, 'prep', 'alpha=T-0001', '--integration', 'fanout/ri', '--lanes-dir', str(ri_lanes), '--stagger', '0')
+        expect(f'case 23 reuse prep: exits 0 and names the reused integration worktree, got rc={ri_prep.returncode} '
+               f'out={ri_prep.stdout[-300:]!r} err={ri_prep.stderr[-300:]!r}',
+               ri_prep.returncode == 0 and f'integration worktree: {ri_tree.resolve()} (reused)' in ri_prep.stdout)
+        make_branch(ri, 'worktree-T-0001-solo', {'f1.txt': 'one\n'}, 'T-0001: Ticket t1')
+        ri_land = verb(ri, 'land', 'worktree-T-0001-solo', '--integration', 'fanout/ri', '--lanes-dir', str(ri_lanes),
+                       '--base', 'main', '--gate', 'test -e f1.txt')
+        expect(f'case 23 reuse land: merges into the reused worktree and creates no <lanes-dir>/integration, got '
+               f'rc={ri_land.returncode} out={ri_land.stdout[-400:]!r} err={ri_land.stderr[-300:]!r}',
+               ri_land.returncode == 0 and 'T-0001 | merged |' in ri_land.stdout and (ri_tree / 'f1.txt').is_file()
+               and not (ri_lanes / 'integration').exists()
+               and sh(ri_tree, 'log', '-1', '--format=%s').stdout.strip() == 'close T-0001')
+        # control: an integration branch checked out in the main checkout is still refused by prep
+        rm_ = tmp / 'reuse-integ-main'
+        sized_repo(rm_, ['L1'], {'.gitignore': gi})
+        sh(rm_, 'checkout', '-q', '-b', 'fanout/rm')
+        rm_prep = verb(rm_, 'prep', 'alpha=T-0001', '--integration', 'fanout/rm', '--lanes-dir', str(tmp / 'rm-lanes'), '--stagger', '0')
+        expect(f'case 23 reuse control: prep refuses a branch checked out in the main checkout, got rc={rm_prep.returncode} '
+               f'err={rm_prep.stderr[-300:]!r}', rm_prep.returncode == 2 and 'is checked out in' in rm_prep.stderr)
         # refusals, each exit 2 with nothing created
         sh(ld, 'branch', 'weird-branch', 'main')
         for label, args_, want in (('a branch that does not exist', ('no-such-branch',), 'not a local branch'),
