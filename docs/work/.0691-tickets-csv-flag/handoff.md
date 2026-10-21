@@ -2,7 +2,7 @@
 id: T-0691
 title: "accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ Source: GitHub issue #43, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 ## Outcome
 - Changed: `--tickets T-1,T-2` on `lanes.py open` (merged after `--ticket`, duplicates dropped) and `tickets.py claim` (each id tried in order, exit 1 if any fails); docstring and usage lines, `--tickets` row in the ticket skill Arguments, one `bash -c` sentence in `agents/conductor.md` (Codex conductor toml regenerated). `fanout.py land` untouched per the non-goal.
 - Checks: `lanes.py selftest` exit 0 (new case plus mutant TICKETS-CSV), `tickets.py selftest` exit 0 (new claim cases); with the flag ignored in a scratch copy the new tickets cases fail; `check.py` exit 0; `git diff --check aff32475` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: aff32475fabc
+- Changed: see commits
+- Commits: ad3092b T-0691: accept --tickets T-1,T-2 on lanes.py open and tickets.py claim
+- Check: 1 `lanes.py selftest` and `tickets.py selftest` exit 0 with the new cases, and each case fails with...: pass
+- Check: 2 `git grep -n -- "--tickets" plugins/sdlc-lite/skills/ticket/SKILL.md` shows the Arguments row and...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lit... -> notes.md
