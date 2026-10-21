@@ -29,3 +29,9 @@ Closing a lane recorded on main behaves as before.
 1. `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with a new case: after open `--into` an integration branch and close, the integration tree's ticket has no `branch:` or `worktree:` line; the case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+Reproduced: after `open --into <integration branch>` and a close, the integration tree's ticket still held `branch:` and `worktree:`. Added `clear_integration_record` in `plugins/sdlc-lite/scripts/lanes.py`, called from `do_close`: it clears the lane's lines (only while `branch:` is the lane branch) in the worktree holding the lane's into branch when that is not main, and commits them there as `<ids>: clear lane record <leaf>`, leaving paths dirty before the close alone. Closes recorded on main are unchanged. New selftest case `close integration record`; it fails with the call removed and passes with it.
+- `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0
+- `git diff --check 64b57c74` exit 0
