@@ -34,3 +34,10 @@ The ready ref, unlock and exit codes are unchanged; a registered mailbox still g
 2. `python3 plugins/sdlc-lite/scripts/lanes.py ready --help` lists `--notify-cmd`.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `lanes.py ready` prints the no-mailbox warning in full once per session (key `CLAUDE_CODE_SESSION_ID`, else parent pid; marker under `<git common dir>/sdlc/ready-warned/`), then `not sent: no <receiver> mailbox (warned once)`.
+- `ready --notify-cmd <cmd>` runs after the pin in the main checkout with `SDLC_READY_TICKET`, `SDLC_READY_SHA`, `SDLC_READY_PATH`; prints `notified: <cmd> rc=<n>`; a non-zero rc is a warning, exit stays 0; the mailbox warning is not printed.
+- Selftest case `ready once` added; it fails with the once-marker or the notify call removed (observed with mutated copies).
+- Docs: lanes.py docstring and the Hosts bullet in `plugins/sdlc-lite/AGENTS.md`.
+- Checks: `lanes.py selftest` exit 0, `lanes.py ready --help` lists `--notify-cmd`, `check.py` exit 0, `git diff --check 65579ba8` exit 0.
