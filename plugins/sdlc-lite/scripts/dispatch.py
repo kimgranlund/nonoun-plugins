@@ -1913,6 +1913,25 @@ def solo_dispatch(path):
     return d if ok else None
 
 
+def solo_report_file(sd, transcript=None):
+    """The report of a recorded solo whose dispatch names a result (T-0682): the file when it holds text, else the
+    transcript's final message written there (a lone `solo ...` pointer line is no report). Prints the path and returns
+    0; with neither, returns 2 and changes nothing, so the row stays unpriced and the live marker stays."""
+    result = Path(sd['result'])
+    if result.is_file() and result.read_text(encoding='utf-8', errors='replace').strip():
+        print('solo report: %s' % result)
+        return 0
+    fin = cost_estimate.transcript_final(transcript) if transcript else None
+    text = fin[0].strip() if fin and fin[1] != 'max_tokens' else ''
+    if text and not ('\n' not in text and text.split()[0] == 'solo'):
+        result.write_text(text + '\n', encoding='utf-8')
+        print('solo report: %s (from the transcript\'s final message)' % result)
+        return 0
+    print('dispatch.py: no solo report at %s and no transcript final message to take; the row and live marker are unchanged: '
+          'record again once the solo writes it, or pass --transcript' % result, file=sys.stderr)
+    return 2
+
+
 ADVANCE_ROLE = {'build': 'builder', 'rebuild': 'builder', 'verify': 'verifier', 'reverify': 'verifier'}
 
 
@@ -2166,6 +2185,8 @@ def main(argv):
         def rec():
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
+                if sd.get('result') and solo_report_file(sd, args.transcript):
+                    return 2
                 import solo_run
                 cost = solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens,
                                          agent_id=args.agent_id, tool_uses=args.tool_uses, duration_ms=args.duration_ms)
@@ -3955,6 +3976,37 @@ def selftest():
         case('T-0688 advance on an L2 solo dispatch prints a ticket verifier dispatch JSON whose dispatch_file exists',
              rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == 'L2' and Path(nxt['dispatch_file']).is_file()
              and len(after) == len(before) + 1)
+        # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
+        # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
+        import solo_run
+        def solo_rec(tag, *extra):
+            sdir = tmp / ('solo-report-' + tag)
+            sdir.mkdir()
+            (sdir / 'handoff.md').write_text('x\n', encoding='utf-8')
+            with clean_env(), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                sdisp = solo_run.dispatch_json(str(sdir), 'L1', 'brief')[1]
+            def go():
+                o = io.StringIO()
+                with clean_env(), contextlib.redirect_stdout(o), contextlib.redirect_stderr(io.StringIO()):
+                    rc = main(['record', str(order.records_dir(sdir) / ('%s.dispatch.json' % sdisp['name']))] + list(extra))
+                rows = [json.loads(l) for l in (order.records_dir(sdir) / 'runs.jsonl').read_text().splitlines()]
+                return rc, o.getvalue(), rows[-1]
+            return sdisp, go
+        sdisp, go = solo_rec('file', '--tokens', '5000')
+        rc0, _, row0 = go()
+        Path(sdisp['result']).write_text('## Report\ndone\n', encoding='utf-8')
+        rc1, out1, row1 = go()
+        case('T-0682 record on a solo dispatch: no report file exits 2 with the row unpriced; with the file it prints its path, '
+             'prices the row, and the runs row file names it', rc0 == 2 and row0['cost_usd'] is None and row1['cost_usd']
+             and rc1 == 0 and ('solo report: %s\n' % sdisp['result']) in out1 and 'live marker cleared' in out1
+             and row1['file'] == Path(sdisp['result']).name)
+        stx = tmp / 'solo-report.jsonl'
+        stx.write_text(json.dumps({'message': {'role': 'assistant', 'stop_reason': 'end_turn',
+                                               'content': [{'type': 'text', 'text': '## Report\nfrom the transcript'}]}}) + '\n', encoding='utf-8')
+        sdisp, go = solo_rec('transcript', '--transcript', str(stx))
+        rc2, out2, _ = go()
+        case('T-0682 record on a solo dispatch with no report file takes the transcript final message and writes it there',
+             rc2 == 0 and Path(sdisp['result']).read_text() == '## Report\nfrom the transcript\n' and 'solo report: ' in out2)
         for tag, vbody, want in (('pass', BODY['verifier'], 'next: close'), ('fail', fail_body, 'stop: fail')):
             vr = mk(tmp / ('adv-t-' + tag))
             _, vgot, _ = prep(vr, 'verifier', 'L2', '.sdlc/t/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)

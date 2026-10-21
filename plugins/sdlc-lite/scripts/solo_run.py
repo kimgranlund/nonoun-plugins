@@ -160,6 +160,15 @@ def refuse_template(task_dir):
         raise Refuse(f'{handoff}: still the unfilled {kind.group(1)} template; write its Goal, Intent and Context first')
 
 
+def report_lines(result, handoff):
+    """The Report file and pointer lines of a solo brief (T-0682), as dispatch.py prepare writes them for every other role
+    (T-0646): the solo writes its report to result and ends with one short line, so the completion notice stays short."""
+    return (f'Report file: {result} (before you end, write your report to exactly this path with the Write tool; when it says '
+            f'`verify: needed`, check it with python3 {SCRIPTS / "results.py"} solo-report <file> --handoff {handoff}; '
+            'dispatch.py record reads the file)\n'
+            f'End with one line: `solo <status> {result}` (status is done, blocked, or already-fixed), nothing else.')
+
+
 def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284). tree (run --cwd)
     is the tree the solo builds in: base_sha is its HEAD and the prompt carries its Tree line, not the session checkout's (T-0546);
@@ -187,7 +196,9 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
              role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(records(tdir)),
              attempt_id=attempt, base_sha=head_sha(worktree or tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
-    d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: {dispatch.handoff_locator(d["artifacts_dir"])}\n{brief}'
+    d['result'] = str(records(tdir) / f'{d["name"]}.md')  # T-0682: the solo's report file, which dispatch.py record reads
+    d['prompt'] = (f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: '
+                   f'{dispatch.handoff_locator(d["artifacts_dir"])}\n{report_lines(d["result"], dispatch.handoff_locator(d["handoff"]))}\n{brief}')
     tree = worktree or tree  # T-0550: a --worktree lane gets the same Tree line dispatch.py prepare writes; the lane wins
     if tree:
         d['tree'] = os.path.realpath(str(tree))
@@ -206,7 +217,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
         d['prompt'] += (f'\nVerifier: do not start one (a sub-agent cannot spawn agents); the parent runs {d["verifier"]} after your report.')
     (records(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
     rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
-    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
+    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None, file=pathlib.Path(d['result']).name)
     append(task_dir, rec)
     return 0, d
 
@@ -1220,6 +1231,7 @@ def selftest():
             # T-0350: recording a finished sub-agent solo (dispatch.py record) clears its marker, so the next solo stays here.
             c5, j5 = disp('par5')
             expect('recorded solo: before the record, a live marker forces the next solo into a worktree', c5.returncode == 0 and j5.get('worktree'))
+            pathlib.Path(j4['result']).write_text('## Report\ndone\n', encoding='utf-8')  # T-0682: record reads the solo's report file
             rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(wr2 / 'par4') / f'{j4["name"]}.dispatch.json')],
                                 capture_output=True, text=True, timeout=60)
             c6, j6 = disp('par6')
@@ -1284,6 +1296,20 @@ def selftest():
         d = pathlib.Path(tmp)
         (d / 'handoff.md').write_text('x\n')
         rc, disp = dispatch_json(str(d), 'M', 'brief')
+        # T-0682: the brief carries the Report file and pointer lines right after Artifacts dir; the row names the report file
+        lines = disp['prompt'].splitlines()
+        expect('T-0682 the solo brief carries Report file: <result> and End with one line: `solo <status> <result>` after Artifacts dir, '
+               'and the runs row file names the report', lines[2].startswith('Artifacts dir: ')
+               and lines[3].startswith(f"Report file: {disp['result']} (before you end") and 'results.py solo-report' in lines[3]
+               and lines[4].startswith(f"End with one line: `solo <status> {disp['result']}`")
+               and pathlib.Path(disp['result']).name == f"{disp['name']}.md" and pathlib.Path(disp['result']).parent.samefile(order.records_dir(d))
+               and json.loads((order.records_dir(d) / 'runs.jsonl').read_text().splitlines()[0])['file'] == f"{disp['name']}.md")
+        rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json')],
+                            capture_output=True, text=True, timeout=60)
+        r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
+        expect('T-0682 record with no report file and no transcript exits 2 and leaves the row unrecorded',
+               rp.returncode == 2 and 'no solo report' in rp.stderr and r0[0].get('agent_id') is None)
+        pathlib.Path(disp['result']).write_text('## Report\ndone\n', encoding='utf-8')
         rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json'),
                              '--tokens', '5000', '--agent-id', 'ag-9', '--duration-ms', '4321'], capture_output=True, text=True, timeout=60)
         r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
