@@ -1,0 +1,33 @@
+---
+id: T-0687
+title: "document merge.lock land queueing and add fanout.py queue"
+type: feature        # feature | bug | chore | spike | idea
+status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
+priority: P2         # P1 | P2 | P3
+depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+created: 2026-10-20
+router: .sdlc/AGENTS.md  # how to claim and close this ticket
+---
+
+## Goal
+The conductor knows concurrent `fanout.py land` calls queue on `merge.lock` and can see the land order with one command, so it stops building `pgrep -f 'fanout.py land'` waiters.
+
+## Intent
+- Do: (1) in `plugins/sdlc-lite/skills/fanout/SKILL.md:53` and `plugins/sdlc-lite/skills/fanout/references/land.md:11`, replace "Land one branch at a time" with a sentence that concurrent `land` calls are safe and queue on `<lanes-dir>/merge.lock` in arrival order, so start each as its own background call and never poll with `pgrep`; keep every check.py item 24 and item 56 (Merge ops) phrase in those files, including `fanout.py land <branch>`. (2) Add `fanout.py queue [--lanes-dir DIR] [--integration BRANCH]` in `plugins/sdlc-lite/scripts/fanout.py`: `MergeLock.__enter__` (near line 1287) writes `<lanes-dir>/merge.lock.holder` (pid, branch, ticket, start time) and `__exit__` removes it; `queue` prints the holder line and one `waiting` line per other live `fanout.py land` process for that lanes dir (excluding its own pid), or `queue: empty`; add its row to the `## Arguments` table of `plugins/sdlc-lite/skills/fanout/SKILL.md`. (3) A selftest case: with a holder file written by a live process, `queue` prints it as `landing`; with none and no land running it prints `queue: empty`.
+- Non-goals: `land --after T-NNNN`; changing lock order or the merge itself.
+- Done when: the criteria pass.
+
+## Context
+Source: GitHub issue #37, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
+The conductor built `while pgrep -f 'fanout.py land'; do sleep 20; done` waiters; each matched its own command line, so 3 background waiters started 22:39Z to 22:43Z sat 14 to 18 minutes until stopped by hand at 22:57Z. 37 queue waits and polls in 0.27.
+On main, part of the doc claim is already fixed: `plugins/sdlc-lite/agents/conductor.md:56` says "the merge lock orders the lands", and `skills/fanout/references/land.md:11` says the background call lets "the merge lock order the lands". But the same land.md line and `skills/fanout/SKILL.md:53` still say "Land one branch at a time", which reads as "wait for one before starting the next". `land` takes `MergeLock(ctx['lanes_dir'] / 'merge.lock')` at fanout.py:2510; `MergeLock` (fanout.py:1287) is an fcntl flock, which records no holder, so `queue` needs the holder file.
+
+## Constraints
+The lock semantics are unchanged; a stale holder file (dead pid) is reported as `stale holder` and never blocks a land.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with the new case, and the case fails with the change reverted.
+2. `grep -c "Land one branch at a time" plugins/sdlc-lite/skills/fanout/SKILL.md plugins/sdlc-lite/skills/fanout/references/land.md` prints 0 for both files, and `grep -n "merge.lock" plugins/sdlc-lite/skills/fanout/SKILL.md` prints a line.
+3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+4. `git diff --check 8624f984` exits 0.
