@@ -381,6 +381,17 @@ def handoff_locator(path):
     return '"%s"' % path if re.search(r'\s', path) and '"' not in path else path
 
 
+def ports_line(tree):
+    """The brief's `Ports:` line, with a trailing newline, when tree is a lane that holds a port (lanes.port_of, T-0693); else ''."""
+    try:
+        import lanes  # local like host_lanes: lanes imports nothing from here
+        port = lanes.port_of(tree)[0]
+    except Exception:  # not a lane, or lanes unreadable: the brief stays as it was
+        return ''
+    return ('Ports: SDLC_LANE_PORT=%d (this lane\'s own port; start any server on it or on a port derived from it, never a fixed one)\n' % port
+            if port else '')
+
+
 def list_title(directory, role, level, k, limit=50):
     """The first prompt line, at most limit characters: `T-0153 harness coverage | builder L3 | try 2`."""
     tid, title = ticket_label(directory)
@@ -1281,11 +1292,11 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                   'validate <file> --role %s --headerless; dispatch.py record reads the file, and a missing one fails the run)\n'
                   'End with one line: `%s <status> %s` (status is your Status or Verdict value, else done), nothing else.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
-                  'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
+                  '%sThrowaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
                   'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.\n'
                   'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).'
                   % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, role, role, result,
-                     toplevel, shlex.quote(toplevel), tmp_prefix, tmp_prefix, scratch))
+                     toplevel, shlex.quote(toplevel), ports_line(toplevel), tmp_prefix, tmp_prefix, scratch))
         if role == 'verifier':
             # T-0591: run rules every verifier gets, so the conductor stops adding them by hand
             prompt += ('\n' + ('Diff only the Diff range below, not Base sha against HEAD.' if range_line else
@@ -2915,6 +2926,19 @@ def selftest():
              rcl == 0 and dl['tree'] == os.path.realpath(str(lw)) and 'Tree: %s ' % dl['tree'] in dl['prompt']
              and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(os.path.realpath(str(rr)) + '.worktrees/tmp/'))
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
+        # T-0693: a lane tree holding a port gets a Ports line after Tree; a tree with no port, or a lane record without one, gets none.
+        (rr / '.lane.json').write_text('{"lane": "x", "port": 47410}\n')
+        rcp, dp, _ = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', '--dry-run')
+        pl = [ln for ln in dp['prompt'].splitlines() if ln.startswith('Ports:')] if rcp == 0 else []
+        case('a lane tree with port 47410 in .lane.json: the prompt carries one Ports line naming SDLC_LANE_PORT=47410, right after Tree (T-0693)',
+             rcp == 0 and len(pl) == 1 and pl[0].startswith('Ports: SDLC_LANE_PORT=47410 (') and 'never a fixed one' in pl[0]
+             and dp['prompt'].splitlines()[dp['prompt'].splitlines().index(pl[0]) - 1].startswith('Tree: '))
+        (rr / '.lane.json').write_text('{"lane": "x"}\n')
+        rcp, dp, _ = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', '--dry-run')
+        (rr / '.lane.json').unlink()
+        rcq, dq, _ = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', '--dry-run')
+        case('negative control: a lane record with no port, and a tree with no .lane.json, get no Ports line (T-0693)',
+             rcp == 0 and rcq == 0 and 'Ports:' not in dp['prompt'] and 'Ports:' not in dq['prompt'])
         # T-0376: a lane forked from a commit newer than a stale stored base records its fork point, so a scope guard lists only the lane.
         def gt(where, *a):
             return subprocess.run(['git', '-C', str(where), '-c', 'user.name=t', '-c', 'user.email=t@t', *a], capture_output=True, text=True).stdout.strip()

@@ -36,3 +36,11 @@ A brief for a tree with no lane port is unchanged byte for byte.
 2. `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 with the new case, and the case fails with the change reverted.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+Briefs for a tree that is a lane holding a port now carry `Ports: SDLC_LANE_PORT=<n> (...)` right after `Tree:`. `dispatch.py` gets `ports_line(tree)` (wraps `lanes.port_of`, empty string when no port or no lane) used by the `prepare` prompt; `solo_run.py` `dispatch_json` uses it for its Tree insertion. Selftest cases added in both scripts (positive plus no-port negative control); each positive case was observed failing with the line removed. `docs/references/sdlc-internals.md` prompt description updated.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0
+- `git diff --check 0333bdfc301b03d162e20747a8cc6defb392dfa4` exit 0
+- `python3 scripts/check-packaging.py` exit 0
