@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d32c1bdc6efc -->
+<!-- sdlc-lite:managed:start v1 sha256:9256b0b718b9 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -28,12 +28,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0695 lanes.py close leaves a lane record written in an integration tree (docs/work/0695-lane-close-integration-record)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 2
-  - T-0683 merge_union config: land union-merges listed paths behind one light gate (docs/work/0683-merge-union-config), claimed by sdlc-lite-author 2026-10-20
+- claimed: 1
   - T-0688 dispatch.py advance handles ticket-level completions (docs/work/0688-advance-ticket-level), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
-- done: 641
+- done: 642
 - dropped: 29
 
 ## Procedures

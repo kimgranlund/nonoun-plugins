@@ -10,7 +10,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
 | T-0681 | [0681-integration-merge-regenerates-router](0681-integration-merge-regenerates-router/handoff.md) | merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md | bug | L2 | P1 | none | ⏳ proposed |
 | T-0682 | [0682-solo-brief-report-file](0682-solo-brief-report-file/handoff.md) | solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file | bug | L2 | P2 | none | ⏳ proposed |
-| T-0683 | [0683-merge-union-config](0683-merge-union-config/handoff.md) | merge_union config: land union-merges listed paths behind one light gate | feature | L2 | P2 | none | 🟡 claimed |
 | T-0684 | [0684-settle-held-criterion](0684-settle-held-criterion/handoff.md) | settle a deferred: conductor held criterion so land reads it as pass | feature | L2 | P2 | none | ⏳ proposed |
 | T-0685 | [0685-record-ignore-placeholder-stdin](0685-record-ignore-placeholder-stdin/handoff.md) | record --agent-id ignores short heading-less stdin when the transcript holds a complete result | bug | L1 | P2 | none | ⏳ proposed |
 | T-0686 | [0686-review-record-relative-line](0686-review-record-relative-line/handoff.md) | record prints a repo-relative Review record line; lint warns on absolute home paths in criteria | bug | L2 | P2 | none | ⏳ proposed |
@@ -24,7 +23,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
 | T-0695 | [0695-lane-close-integration-record](0695-lane-close-integration-record/handoff.md) | lanes.py close leaves a lane record written in an integration tree | bug | L1 | P2 | T-0680 | ⏳ proposed |
 
-Closed: 641 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 642 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -34,3 +33,4 @@ Closed: 641 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/lanes.py:69: the docstring line "A path already dirty before the open ..." is now 187 characters, joined onto the added text instead of re-wrapped like the surrounding ~120-column lines. (from T-0680: lanes.py open --into an integration branch writes the claim and lane record there, not on main (2026-10-20))
 - decide: `/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.28.1/scripts/redck.py deviations` printed no process deviations. (from T-0678: record judges a result by the plugin version that prepared it (2026-10-20))
 - decide: Selftest mutation runs take several minutes each (three sequential runs exceeded the 600 s foreground cap). (from T-0678: record judges a result by the plugin version that prepared it (2026-10-20))
+- decide: plugins/sdlc-lite/scripts/fanout.py:1719: the force-full-gate-class behavior on a union land (`gate: full (union-merged)`, gates chosen at line 1735) has no selftest case; no criterion names it, so it is unverified by a run. (from T-0683: merge_union config: land union-merges listed paths behind one light gate (2026-10-20))

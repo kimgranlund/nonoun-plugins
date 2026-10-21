@@ -2,7 +2,7 @@
 id: T-0683
 title: "merge_union config: land union-merges listed paths behind one light gate"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,15 @@ Base: merged main into the lane first (`git merge --no-edit main` fast-forwarded
 - `plugins/sdlc-lite/scripts/fanout.py`: `merge_generated` takes `union` globs and an `unioned` out-list and union-merges a matching conflicted path through the notes.md three-stage `git merge-file -p --union`; `merge_gate_close` passes the repo's globs, prints `union-merged: <paths>`, forces the full gate class for that land, and runs `merge_union_gate` before the merge commit, resetting to the pre-merge commit as `union gate red: <cmd>` on a non-zero exit. Other callers (settle, sync, lanes.py) are unchanged. Three selftest cases: union lands merged with both lines; no `merge_union` line still stops as `merge conflict`; a gate exiting 1 leaves fanout/g at `close T-0001`.
 - `plugins/sdlc-lite/skills/fanout/references/land.md`: documents both keys.
 Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; with the land's union globs replaced by `()` it exits 1 on exactly the T-0683 union and union gate cases. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0. `grep -n "merge_union" plugins/sdlc-lite/skills/fanout/references/land.md` exit 0. `python3 plugins/sdlc-lite/scripts/check.py` exit 0. `git diff --check 8624f984` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9dc347f22c55
+- Changed: see commits
+- Commits: d66619d T-0683: merge_union config: land union-merges listed paths behind one light gate
+- Check: 1 fanout selftest exits 0 with the three new cases, union case fails with the change reverted: pass
+- Check: 2 tickets selftest exits 0 with a merge_union_globs case: pass
+- Check: 3 land.md mentions merge_union: pass
+- Check: 4 check.py exits 0: pass
+- Check: 5 git diff --check 8624f984 exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1719: the force-full-gate-class... -> notes.md

@@ -123,3 +123,7 @@
 
 - decide: `/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.28.1/scripts/redck.py deviations` printed no process deviations.
 - decide: Selftest mutation runs take several minutes each (three sequential runs exceeded the 600 s foreground cap).
+
+## T-0683: merge_union config: land union-merges listed paths behind one light gate (2026-10-20)
+
+- decide: plugins/sdlc-lite/scripts/fanout.py:1719: the force-full-gate-class behavior on a union land (`gate: full (union-merged)`, gates chosen at line 1735) has no selftest case; no criterion names it, so it is unverified by a run.
