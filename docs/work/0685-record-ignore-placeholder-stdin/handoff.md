@@ -32,3 +32,6 @@ The T-0646 pointer-with-no-file case and the T-0412 empty-stdin case keep their 
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case, and the new case fails with the change reverted.
 2. The existing `record t2` and `record r6` cases still pass.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+`record` (`plugins/sdlc-lite/scripts/dispatch.py`) now ignores a one-line stdin under 40 characters with no heading, no `LIMIT_RE` match and no error word when the transcript's final message is complete and holds a `## ` heading: it prints `dispatch.py: ignored stdin "<text>" (no heading, under 40 chars); recorded the transcript's final message` and records the transcript. Module doc and `record` docstring name the exception. New selftest case `record --agent-id with placeholder stdin x ...` beside the T-0667 cases; it fails with the code change reverted (observed) and passes with it. `dispatch.py selftest` exit 0 (t2, r6 still pass); `check.py` exit 0; `git diff --check a3147a26` exit 0.
