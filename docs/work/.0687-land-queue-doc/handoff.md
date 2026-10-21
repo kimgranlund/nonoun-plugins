@@ -2,7 +2,7 @@
 id: T-0687
 title: "document merge.lock land queueing and add fanout.py queue"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,15 @@ Base: `git merge --no-edit main` was already up to date at 9e8e77c6; `git diff -
 - Conductor-added item (T-0659 defect on main): SKILL.md was 18,631 characters, over the 18,000 limit. Moved the "Lane lifecycle" paragraph word for word into new `references/lane-lifecycle.md` and the `rolling` roll paragraph into a `## Roll` section of `references/land.md`, each linked from its old place. SKILL.md is now 17,757 characters; every check.py phrase stays.
 Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0 (PASS); with the base fanout.py, `queue` exits 2 (usage) and `MergeLock(..., branch=...)` raises TypeError, so the case fails reverted. `grep -c "Land one branch at a time" ...` 0 and 0; `grep -n "merge.lock" .../SKILL.md` prints lines; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 8624f984` exit 0.
 Open: flock wakeup order is not strictly FIFO, so the docs say the lands queue and merge one at a time, and `queue` lists waiters by start time.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (sonnet) · base: 9e8e77c6ac48
+- Changed: see commits
+- Commits: e456944 T-0687: document merge.lock land queueing and add fanout.py queue
+- Check: 1 fanout.py selftest exits 0 with the new case, and the case fails with the change reverted: pass
+- Check: 2 "Land one branch at a time" absent from SKILL.md and land.md, and SKILL.md has a merge.lock line: pass
+- Check: 3 check.py exits 0: pass
+- Check: 4 `git diff --check 8624f984` exits 0: pass
+- Check: 5 Conductor note, SKILL.md under 18,000 characters and moved text word for word: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1297 MergeLock: the holder file... -> notes.md

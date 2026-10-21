@@ -163,3 +163,7 @@
 ## T-0686: record prints a repo-relative Review record line; lint warns on absolute home paths in criteria (2026-10-20)
 
 - decide: plugins/sdlc-lite/scripts/steps.py:1746: `ABS_HOME_RE` copies the `tickets.ABS_PATH_RE` pattern as a literal, not an import, so the two can drift. The handoff said to reuse the pattern, and this is acceptable.
+
+## T-0687: document merge.lock land queueing and add fanout.py queue (2026-10-20)
+
+- decide: plugins/sdlc-lite/scripts/fanout.py:1297 (MergeLock): the holder file is written after the flock is taken and removed before release, so a land killed with SIGKILL leaves a stale file; `queue` reports it as `stale holder`, as the Constraints require.
