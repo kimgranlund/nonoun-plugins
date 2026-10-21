@@ -21,6 +21,7 @@ Arguments: `$ARGUMENTS`
 | `"title"` | With `new`: the title stamped into the ticket | none | `new bug board-crash "Board crashes on empty root"` |
 | `--numbered` | With `new`, `close`, `roadmap`, `check`, or `archive`: use `NNNN-<slug>` folders for this call | the `ticket_folders:` line in `.sdlc/config` | `new bug board-crash --numbered` |
 | `<id>` | With `claim` or `release`: the ticket id (`T-NNNN`) or folder name | - | `claim T-0042 --by claude` |
+| `--tickets ID,ID` | With `claim`: claim these comma-separated ids in order after any `<id>`, duplicates dropped; every id is tried and the exit is 1 if any claim fails. `lanes.py open` takes the same flag | none | `claim --tickets T-0042,T-0043 --by claude` |
 | `--by AGENT` | With `claim`: the agent taking the ticket, written as `claimed_by: <agent> <YYYY-MM-DD>`. In git the claim also creates `refs/sdlc/claims/<id>` (create only if absent), so a second claim from any worktree refuses naming the holder; release and close delete it | `$SDLC_HOST`, else `claude` or `codex` with `:<session>` from the host | `--by codex` |
 | `--handover` | With `claim`: take over a held claim, replacing the value and appending one dated body line; needs `--reason` | off | `claim T-0042 --by codex --handover --reason "claude session ended"` |
 | `--force` | With `close`: close over open Warnings and leave citing files. With `archive`: archive and leave citing files | off | `close board-crash --force` |

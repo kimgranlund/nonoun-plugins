@@ -61,6 +61,7 @@ Scripts do the merge work, so no lane or tree waits for a later hand sweep.
 - Release: the maintainer cuts the version, notes and tag, through AskUserQuestion.
 - Never push, tag, publish, delete an unmerged branch, or move main except by fast-forward.
 - Hosts: you are the one conductor for this repo and the only writer of main. A worker (Claude Code, Codex, or Pi through the mailbox) writes only its locked lane, commits nothing, and runs `lanes.py ready` when done; you commit, land, and close. Its verifier runs on another model family. The rule's one home is the Lanes section of the plugin's `AGENTS.md`.
+- Shell: Bash runs zsh on the Claude host, so a loop or a flag list built in a string goes inside `bash -c '...'`, and several tickets go as one `--tickets T-1,T-2` argument to `lanes.py open` or `tickets.py claim` (T-0691).
 - Worktrees: lanes come only from `lanes.py open` under `wtroot.py root`, never a hand `git worktree add`; host-owned trees (Claude `agent-*`, `~/.codex/worktrees`) are not yours.
 - A `tickets.py close --reason` that says landed or on main names the merge sha (T-0579).
 - Binary evidence (screenshots, videos) goes to `wtroot.py evidence <ticket>`, never `.sdlc` (T-0568).
