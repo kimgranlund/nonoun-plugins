@@ -34,3 +34,9 @@ Output lines for attempts in the dir itself are unchanged; exit code stays 0.
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with new cases: (a) status on a task folder whose only attempt sits in `step-1/` of its records dir prints a line starting `step-1/`; (b) status on a dir with no attempts prints a line starting `no attempts in`. Both cases fail with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/dispatch.py status docs/work/.0675-followup-path-slug-dup` still prints a `verifier-L2 completed` line.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+`dispatch.py status` now lists `step-*/*.attempt.json` under the dir with the stem prefixed `step-<n>/` (report and delivery files resolved beside each attempt), and prints `no attempts in <dir>` plus `; try <records dir>` when that differs, unless `--orphans` is set. Two selftest cases (step-1 listing, empty-dir line) plus a `--orphans` negative control; both new cases FAIL with the status hunk reverted (red run saved), and the full dispatch selftest passes with the change.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/dispatch.py status docs/work/.0675-followup-path-slug-dup` run from the main checkout prints `verifier-L2 completed verifier-L2 parent_pid=3218`, exit 0 (the lane tree has no runtime records, so there it prints the new `no attempts in ...` line)
+- `git diff --check af79c749` exit 0; `check.py` and `check-packaging.py` pass

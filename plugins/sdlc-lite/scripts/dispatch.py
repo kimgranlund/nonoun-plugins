@@ -926,14 +926,18 @@ def ticket_time(ticket):
 
 def status(directory, orphans_only=False):
     """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones.
+    Attempts in the dir's `step-*/` folders are listed too, stem prefixed `step-<n>/`; a dir with none prints `no attempts in <dir>` and its records dir when that differs (T-0690).
     A running attempt with a stored agent id and one sub-agent transcript adds `last activity <age>` (the transcript's mtime) and `silent` at 30 minutes or more (T-0476)."""
     lines = []
-    for path in sorted(Path(directory).glob('*.attempt.json')):
+    base = Path(directory)
+    found = sorted(base.glob('*.attempt.json')) + sorted(base.glob('step-*/*.attempt.json'))  # T-0690: a task's step attempts too
+    for path in found:
         data = read_attempt(path)
         state = attempt_state(data)
         if orphans_only and state != 'orphaned':
             continue
-        stem = path.name[:-len('.attempt.json')]
+        sub = path.parent.name + '/' if path.parent != base else ''
+        stem = sub + path.name[:-len('.attempt.json')]
         line = '%s %s %s-%s parent_pid=%s' % (stem, state, data.get('role'), data.get('level'), data.get('parent_pid') or data.get('owner_pid'))
         if state == 'running':
             transcript = find_subagent_transcript(data.get('agent_id'))
@@ -946,11 +950,11 @@ def status(directory, orphans_only=False):
             hit = over_budget(data)
             if hit:
                 line += ' over-budget %s (budget %dm)' % (age_text(hit[0]), hit[1])
-        report = Path(directory) / (stem + '.md')
+        report = path.parent / (path.name[:-len('.attempt.json')] + '.md')
         if state in ('running', 'orphaned') and report.is_file() and report.stat().st_size:
             line += ' report-written-unrecorded'  # T-0383: the role reported but nobody recorded it, so no verdict was delivered
         lines.append(line)
-        sent = Path(directory) / (stem + '.delivery.json')
+        sent = path.parent / (path.name[:-len('.attempt.json')] + '.delivery.json')
         if sent.is_file():
             try:
                 dv = json.loads(sent.read_text(encoding='utf-8'))
@@ -958,6 +962,9 @@ def status(directory, orphans_only=False):
                 dv = {}
             if dv.get('state') != 'sent':
                 lines.append('%s verdict-delivery-%s to %s%s' % (stem, dv.get('state', 'unreadable'), dv.get('receiver'), ': ' + dv['error'] if dv.get('error') else ''))
+    if not found and not orphans_only:
+        where = order.records_dir(base)
+        lines.append('no attempts in %s' % directory + ('; try %s' % where if where != Path(os.path.abspath(directory)) else ''))
     return lines
 
 
@@ -2739,6 +2746,20 @@ def selftest():
         rec = at(16 * 60, recover_root, str(tr))
         case('time budget: recover --root names it too', any(l.startswith('over-budget: ') and 'builder-L2' in l for l in rec))
         case('negative control: recover --root flags nothing inside the budget', not any('over-budget' in l for l in recover_root(str(tr))))
+
+        # T-0690: status from a task folder lists the step-<n> attempts in its records dir, and says so when a dir holds none.
+        put(tr / '.sdlc' / 'sx' / 'handoff.md')
+        put(R(tr / '.sdlc' / 'sx') / 'step-1' / 'verifier-L2.attempt.json', json.dumps({'attempt_id': 'sx1', 'status': 'completed', 'role': 'verifier', 'level': 'L2'}))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            rc = main(['status', str(tr / '.sdlc' / 'sx')])
+        case('status: a task folder lists the attempt in its records step-1 dir as step-1/<stem>',
+             rc == 0 and out.getvalue().splitlines() == ['step-1/verifier-L2 completed verifier-L2 parent_pid=None'])
+        (tr / '.sdlc' / 'none').mkdir()
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            rc = main(['status', str(tr / '.sdlc' / 'none')])
+        case('status: a dir with no attempts prints no attempts in <dir> and names the records dir',
+             rc == 0 and out.getvalue().startswith('no attempts in %s; try %s' % (tr / '.sdlc' / 'none', R(tr / '.sdlc' / 'none'))))
+        case('negative control: status --orphans on a dir with no attempts prints no such line', status(str(tr / '.sdlc' / 'none'), True) == [])
 
         # preflight: handoff, row, git work tree, commit, generated definition, skills.
         case('preflight: a missing handoff exits 2 like run.sh', prep(repo, 'builder', 'L1', '.sdlc/none/handoff.md')[0] == 2
