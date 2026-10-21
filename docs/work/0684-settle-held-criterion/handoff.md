@@ -33,3 +33,11 @@ A held criterion with no owner settle still blocks land and close as today. `res
 3. `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with a case where `steps.py open` prints nothing for a settled ref.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check 8624f984` exits 0.
+
+## Outcome
+Built by solo L2 on lane T-0684-t0684. Main merged into the lane first (a fast-forward to `169c36f5`), the base for `git diff --check`.
+- `dispatch.py settle-held <result> --by <owner> --evidence <path> [--ref <ref>]...` appends `## Settled by owner` (`- <ref> <owner>: <evidence> at <sha7>`); exit 2 and the file unchanged for another owner, a missing or absolute evidence path, a review record whose Verdict is not pass or pass-with-notes, a non-held fail and an unmet-dependency hold. The settled result still validates (`results.py validate --role verifier`). The edit stays out of `cmd_status`.
+- `results.owner_settled` parses the section; `steps.held_items` reads a ref settled by its declared owner as pass; `steps.owner_settled_hold` lets `fanout.branch_verdict` read a fully settled held-only `deferred:` fail as `pass` (both return sites), so land merges and `merge_class` stops printing `held`.
+- Docs: verify SKILL.md Arguments row, land.md outcome sentence, spec section 5.6.
+- Checks: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0, `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0, `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0, `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check 8624f984` exit 0, `git diff --check 169c36f5` exit 0, `python3 scripts/check-packaging.py` exit 0.
+- Reverted proof: with the `branch_verdict` override and the `held_items` settle line removed, the fanout case `case 23 land level L2 (T-0684): verifier-L3-2.md gives ... merged` and the steps case `held: T-0684 a ref settled by conductor empties open` both failed; restored after.
