@@ -172,3 +172,7 @@
 
 - note: plugins/sdlc-lite/scripts/fanout.py:2398 adds a main-checkout refusal to land_preflight, but no selftest case covers it. The reuse control only exercises the prep refusal.
 - note: plugins/sdlc-lite/scripts/fanout.py:2402 has land_preflight reuse whichever non-main worktree holds the integration branch. Prep is gated by reuse_integ, while land has no flag of its own (the handoff asked for this).
+
+## T-0679: scripts warn once on stderr when a newer plugin version is installed (2026-10-20)
+
+- note: scripts/check-packaging.py fails on plugins/sdlc-lite/skills/fanout/SKILL.md (18631 characters, limit 18,000) on both the tree and base 5032b547 with the identical message, so it is inherited and not a criterion here; main fixed it in T-0687.

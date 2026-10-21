@@ -2,7 +2,7 @@
 id: T-0679
 title: "scripts warn once on stderr when a newer plugin version is installed"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,15 @@ Selftest runs set `SDLC_PLUGIN_CACHE` to a temp dir, so a newer real install on 
 
 ## Outcome
 Built. `plugin_min.newer_installed`, `stale_line` and `warn_stale` (skips `.orphaned_at` folders); `warn_stale()` runs once at the start of `main` in `dispatch.py`, `solo_run.py` and `fanout.py` (after the selftest branch), exit codes unchanged. One sentence added to `agents/conductor.md` step 1; Codex conductor definition regenerated. Five dispatch selftest cases added; the newer-version case fails with the `main` call removed (control run). dispatch, solo_run and fanout selftests and `check.py` exit 0; `git diff --check 5032b547` exit 0. `scripts/check-packaging.py` reports `skills/fanout/SKILL.md` over its 18,000 character limit (18631), from T-0681, untouched here.
+
+## Outcome
+
+2026-10-20 · lane: full L1 · verdict: pass · verifier: verifier-L2 (opus) · base: 5032b547783a
+- Changed: see commits
+- Commits: fa2713b T-0679: scripts warn once on stderr when a newer plugin version is installed
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new cases, and the newe...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` and `python3 plugins/sdlc-lite/scripts/f...: pass
+- Check: 3 `grep -n "reload-plugins" plugins/sdlc-lite/agents/conductor.md` prints the new sentence: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 5 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: scripts/check-packaging.py fails on... -> notes.md
