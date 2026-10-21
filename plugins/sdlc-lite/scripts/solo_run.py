@@ -204,7 +204,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
     if tree:
         d['tree'] = os.path.realpath(str(tree))
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nTree: {d["tree"]} (run every Bash call as cd {shlex.quote(d["tree"])} && ...; '
-                                          'the shell keeps no working directory between calls)\nArtifacts dir:', 1)
+                                          f'the shell keeps no working directory between calls)\n{dispatch.ports_line(d["tree"])}Artifacts dir:', 1)  # T-0693: Ports line for a lane with a port
     if worktree:
         d['worktree'] = worktree
         d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
@@ -923,6 +923,18 @@ def selftest():
             expect('subagent: with a worktree the title is line 1, Handoff line 2, Tree line 3 (T-0550), Worktree line 4 (T-0363)',
                    [ln.split(':')[0] for ln in dw['prompt'].splitlines()[1:5]] == ['Handoff', 'Tree', 'Worktree', 'Artifacts dir'] and len(dw['prompt'].splitlines()[0]) <= 50
                    and 'Tree: %s (run every Bash call as cd ' % os.path.realpath('lane-x') in dw['prompt'])
+            lp = pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix='solo-lane-port-')))
+            (lp / '.lane.json').write_text('{"lane": "x", "port": 47410}\n')
+            _, dlp = dispatch_json(str(dsub), 'L2', 'b', None, str(lp))
+            expect('subagent: a tree that is a lane with port 47410 gets one Ports: SDLC_LANE_PORT=47410 line right after Tree (T-0693)',
+                   [ln for ln in dlp['prompt'].splitlines() if ln.startswith('Ports:')] == [ln for ln in dlp['prompt'].splitlines() if ln.startswith('Ports: SDLC_LANE_PORT=47410 (')]
+                   and dlp['prompt'].count('\nPorts: SDLC_LANE_PORT=47410 (') == 1
+                   and dlp['prompt'].splitlines()[[ln.startswith('Ports:') for ln in dlp['prompt'].splitlines()].index(True) - 1].startswith('Tree: '))
+            (lp / '.lane.json').write_text('{"lane": "x"}\n')
+            _, dnp = dispatch_json(str(dsub), 'L2', 'b', None, str(lp))
+            expect('subagent: negative control: a lane record with no port, and the plain worktree case above, carry no Ports line (T-0693)',
+                   'Ports:' not in dnp['prompt'] and 'Ports:' not in dw['prompt'])
+            shutil.rmtree(lp, ignore_errors=True)
             expect('subagent: level L1 carries no Verifier line; L2 says the parent runs the verifier (T-0550)',
                    '\nVerifier:' not in pj(dsub, 'L1', 'b')[1]['prompt'] and '\nVerifier: do not start one' in dw['prompt'])
             # The deprecated 0.21.x tier names are aliases: each dispatches as its level (same model and effort).
