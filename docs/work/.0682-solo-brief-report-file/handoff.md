@@ -2,7 +2,7 @@
 id: T-0682
 title: "solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,17 @@ The spawn gate finds the dispatch record from the `Handoff` line on line 2 of th
 - `dispatch.py record` on a solo dispatch with a `result` (`solo_report_file`): the file present prints `solo report: <path>`; missing, it writes the transcript's final message there (a lone `solo ...` pointer or a max_tokens stop is no report); with neither it exits 2 before pricing, so the row and live marker are unchanged. A dispatch with no `result` (older records) records as before.
 - `agents/solo.md` Output and the record sentence updated; Claude and Codex agents regenerated.
 - Checks: `solo_run.py selftest`, `fanout.py selftest`, `dispatch.py selftest` exit 0; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `check.py` exit 0; `git diff --check 1b6dc243` exit 0. With the code changes reverted (tests kept) the new solo_run, fanout and dispatch cases fail.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 1b6dc243ab0b
+- Changed: see commits
+- Commits: 3ab43d9 T-0682: solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file
+- Check: 1 `solo_run.py selftest` exits 0 with the new prompt case and fails with the prompt change reverted: pass
+- Check: 2 `fanout.py selftest` exits 0 with the new prep case: pass
+- Check: 3 `dispatch.py selftest` exits 0 with the new solo record case: pass
+- Check: 4 `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0: pass
+- Check: 5 `check.py` exits 0: pass
+- Check: 6 `git diff --check 1b6dc243` exits 0: pass
+- Follow-up: note: the throwaway scratch dirs tmp:0682-verifier-L2 and... -> notes.md
+- Follow-up: note: no builder-.md report existed in the artifacts dir, and redck.py... -> notes.md

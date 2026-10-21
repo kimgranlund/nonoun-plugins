@@ -142,3 +142,8 @@
 
 - note: docs/specs/sdlc-lite/lane-lifecycle.md:220 still says a failed setup records `setup: failed rc=<n>`. The record now appends ` (<cmd>)`, and the spec does not mention repeated lines.
 - note: the contract changed from `config()['lane_setup']` as a str or None to a list. `git grep lane_setup` and `git grep "'setup'"` across plugins/ and scripts/ find no consumer outside lanes.py, and fanout.py selftest passes.
+
+## T-0682: solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file (2026-10-20)
+
+- note: the throwaway scratch dirs `tmp:0682-verifier-L2` and `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0682-verifier-L2` hold only leftover logs; the negative-control worktree itself was removed, but `rm` was denied in this session so the two dirs remain.
+- note: no builder-*.md report existed in the artifacts dir, and `redck.py deviations` printed no `red-checkpoint` line.

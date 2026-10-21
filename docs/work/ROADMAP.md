@@ -8,7 +8,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
 | T-0681 | [0681-integration-merge-regenerates-router](0681-integration-merge-regenerates-router/handoff.md) | merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md | bug | L2 | P1 | none | ⏳ proposed |
-| T-0682 | [0682-solo-brief-report-file](0682-solo-brief-report-file/handoff.md) | solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file | bug | L2 | P2 | none | 🟡 claimed |
 | T-0684 | [0684-settle-held-criterion](0684-settle-held-criterion/handoff.md) | settle a deferred: conductor held criterion so land reads it as pass | feature | L2 | P2 | none | ⏳ proposed |
 | T-0685 | [0685-record-ignore-placeholder-stdin](0685-record-ignore-placeholder-stdin/handoff.md) | record --agent-id ignores short heading-less stdin when the transcript holds a complete result | bug | L1 | P2 | none | ⏳ proposed |
 | T-0686 | [0686-review-record-relative-line](0686-review-record-relative-line/handoff.md) | record prints a repo-relative Review record line; lint warns on absolute home paths in criteria | bug | L2 | P2 | none | ⏳ proposed |
@@ -18,7 +17,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0691 | [0691-tickets-csv-flag](0691-tickets-csv-flag/handoff.md) | accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim | feature | L1 | P3 | none | 🟡 claimed |
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
 
-Closed: 647 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 648 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
