@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0684 | [0684-settle-held-criterion](0684-settle-held-criterion/handoff.md) | settle a deferred: conductor held criterion so land reads it as pass | feature | L2 | P2 | none | 🟡 claimed |
 
-Closed: 657 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 658 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -24,3 +23,6 @@ Closed: 657 done, 29 dropped (git log or .NNNN-* folders)
 - decide: `settle --forward` was refactored (`settle_forward` now calls `merge_into_integration`); its messages, commit subject and exit codes read as unchanged in the diff and the existing T-0489 selftest cases still pass in the green selftest run. (from T-0681: merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md (2026-10-20))
 - decide: plugins/sdlc-lite/scripts/steps.py:1746: `ABS_HOME_RE` copies the `tickets.ABS_PATH_RE` pattern as a literal, not an import, so the two can drift. The handoff said to reuse the pattern, and this is acceptable. (from T-0686: record prints a repo-relative Review record line; lint warns on absolute home paths in criteria (2026-10-20))
 - decide: plugins/sdlc-lite/scripts/fanout.py:1297 (MergeLock): the holder file is written after the flock is taken and removed before release, so a land killed with SIGKILL leaves a stale file; `queue` reports it as `stale holder`, as the Constraints require. (from T-0687: document merge.lock land queueing and add fanout.py queue (2026-10-20))
+- decide: plugins/sdlc-lite/scripts/steps.py:2877 `owner_settled_hold`: a Criteria line that `results.criteria_states` cannot parse (for example `- #2 y FAILED no evidence`, no `: fail. Evidence:`) is ignored, so a result with such a line plus a settled `deferred:` hold reads as `pass` (probe returned True, and `results.py validate` accepts the file). The gap is the existing parser's, and a validated verifier result normally has no such line; decide: whether `settle-held` or `owner_settled_hold` should refuse a result with unparsed Criteria lines. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1883: evidence with no `## Verdict` heading is accepted unchecked (only a review record's Verdict is judged); that matches the handoff but any existing repo-relative file settles a hold. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
+- decide: Cleanup: the throwaway worktree was removed with `git worktree remove`; `rm -rf` of the empty prefix dir `tmp:0684-verifier-L2` was denied by the permission system and may remain empty. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))

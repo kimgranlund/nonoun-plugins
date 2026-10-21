@@ -2,7 +2,7 @@
 id: T-0684
 title: "settle a deferred: conductor held criterion so land reads it as pass"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,17 @@ Built by solo L2 on lane T-0684-t0684. Main merged into the lane first (a fast-f
 - Docs: verify SKILL.md Arguments row, land.md outcome sentence, spec section 5.6.
 - Checks: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0, `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0, `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0, `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check 8624f984` exit 0, `git diff --check 169c36f5` exit 0, `python3 scripts/check-packaging.py` exit 0.
 - Reverted proof: with the `branch_verdict` override and the `held_items` settle line removed, the fanout case `case 23 land level L2 (T-0684): verifier-L3-2.md gives ... merged` and the steps case `held: T-0684 a ref settled by conductor empties open` both failed; restored after.
+
+## Outcome
+
+2026-10-21 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 118e9161ebbe
+- Changed: see commits
+- Commits: 079d175 T-0684: settle a deferred: conductor held criterion so land reads it as pass
+- Check: 1 dispatch.py selftest exits 0 with the new settle-held cases: pass
+- Check: 2 fanout.py selftest exits 0 with a settled `deferred: conductor` L2 lane landing merged, and the c...: pass
+- Check: 3 steps.py selftest exits 0 with a case where `steps.py open` prints nothing for a settled ref: pass
+- Check: 4 check.py exits 0: pass
+- Check: 5 `git diff --check 8624f984` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:2877 owner_settled_hold: a... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:1883: evidence with no ##... -> notes.md
+- Follow-up: decide: Cleanup: the throwaway worktree was removed with git worktree... -> notes.md

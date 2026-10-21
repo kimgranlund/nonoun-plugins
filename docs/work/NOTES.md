@@ -185,3 +185,9 @@
 ## T-0693: briefs carry a Ports line from lanes.py port (2026-10-21)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:384 `ports_line` returns '' when no port is found, so a brief for a tree without a lane port keeps the old prompt byte for byte. This was checked by reading the code (the `%s` slot gets ''), and the selftest negative controls also show no `Ports:` line.
+
+## T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21)
+
+- decide: plugins/sdlc-lite/scripts/steps.py:2877 `owner_settled_hold`: a Criteria line that `results.criteria_states` cannot parse (for example `- #2 y FAILED no evidence`, no `: fail. Evidence:`) is ignored, so a result with such a line plus a settled `deferred:` hold reads as `pass` (probe returned True, and `results.py validate` accepts the file). The gap is the existing parser's, and a validated verifier result normally has no such line; decide: whether `settle-held` or `owner_settled_hold` should refuse a result with unparsed Criteria lines.
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1883: evidence with no `## Verdict` heading is accepted unchecked (only a review record's Verdict is judged); that matches the handoff but any existing repo-relative file settles a hold.
+- decide: Cleanup: the throwaway worktree was removed with `git worktree remove`; `rm -rf` of the empty prefix dir `tmp:0684-verifier-L2` was denied by the permission system and may remain empty.
