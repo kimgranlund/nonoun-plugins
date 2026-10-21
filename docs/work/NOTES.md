@@ -167,3 +167,8 @@
 ## T-0687: document merge.lock land queueing and add fanout.py queue (2026-10-20)
 
 - decide: plugins/sdlc-lite/scripts/fanout.py:1297 (MergeLock): the holder file is written after the flock is taken and removed before release, so a land killed with SIGKILL leaves a stale file; `queue` reports it as `stale holder`, as the Constraints require.
+
+## T-0689: fanout.py prep --integration reuses an existing integration worktree (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:2398 adds a main-checkout refusal to land_preflight, but no selftest case covers it. The reuse control only exercises the prep refusal.
+- note: plugins/sdlc-lite/scripts/fanout.py:2402 has land_preflight reuse whichever non-main worktree holds the integration branch. Prep is gated by reuse_integ, while land has no flag of its own (the handoff asked for this).

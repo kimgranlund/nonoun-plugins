@@ -2,7 +2,7 @@
 id: T-0689
 title: "fanout.py prep --integration reuses an existing integration worktree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,14 @@ A run with no existing integration worktree behaves as today, creating `<lanes-d
 
 ## Outcome
 `fanout.py prep` and `land` now reuse an integration branch checked out in a worktree other than the main checkout. `preflight(reuse_integ=True)` (prep only) sets `integ_dir` to that worktree and `integ_reused`; `print_prep` prints `integration worktree: <path> (reused)`; `land_preflight` accepts the same worktree as `integ_dir` (merge.lock stays under the lanes dir). A branch checked out in the main checkout still refuses, and `run` is unchanged. New selftest case `case 23 reuse` (lanes.py open --kind integration, then prep exit 0 naming the reused path, then land merges into that tree with no `<lanes-dir>/integration`; plus the main-checkout prep refusal). Verified: the selftest passes (exit 0); a copy with prep and land reverted fails exactly the two reuse cases. `check.py`, `check-packaging.py` and `git diff --check 8624f984` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 9fb99d1fb79d
+- Changed: see commits
+- Commits: 1954461 T-0689: fanout prep and land reuse an existing integration worktree
+- Check: 1 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with the new case, and the case fa...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 3 `git diff --check 8624f984` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2398 adds a main-checkout... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2402 has land_preflight reuse... -> notes.md
