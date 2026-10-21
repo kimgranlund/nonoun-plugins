@@ -2,7 +2,7 @@
 id: T-0693
 title: "briefs carry a Ports line from lanes.py port"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: [T-0682]    # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,14 @@ Briefs for a tree that is a lane holding a port now carry `Ports: SDLC_LANE_PORT
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0
 - `git diff --check 0333bdfc301b03d162e20747a8cc6defb392dfa4` exit 0
 - `python3 scripts/check-packaging.py` exit 0
+
+## Outcome
+
+2026-10-21 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 0333bdfc301b
+- Changed: see commits
+- Commits: e2a0614 T-0693: briefs carry a Ports line from lanes.port_of
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case, and the case ...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 with the new case, and the case ...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:384 ports_line returns ''... -> notes.md

@@ -181,3 +181,7 @@
 
 - note: plugins/sdlc-lite/scripts/board.py:249 now also receives orphaned `step-*/` attempts from `dispatch.status(rd, True)`, though its guard at board.py:247 still returns early when the records dir itself holds no `*.attempt.json`; display-only, no criterion covers it.
 - note: no builder-*.md report was in the artifacts dir; the handoff Outcome section served as the builder claim, and every claim was checked independently above.
+
+## T-0693: briefs carry a Ports line from lanes.py port (2026-10-21)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:384 `ports_line` returns '' when no port is found, so a brief for a tree without a lane port keeps the old prompt byte for byte. This was checked by reading the code (the `%s` slot gets ''), and the selftest negative controls also show no `Ports:` line.
