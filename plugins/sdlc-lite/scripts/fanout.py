@@ -472,6 +472,7 @@ import steps  # same scripts/ dir: next_action and section read step results
 import order  # same scripts/ dir: newest result file of a role
 import wtroot  # same scripts/ dir: the worktree root under the main checkout (T-0550)
 import lanes  # same scripts/ dir: the lane lifecycle (open, close, sweep)
+import plugin_min  # same scripts/ dir: the stale-install warning (T-0679)
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
@@ -5804,6 +5805,7 @@ def main(argv):
     if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover'], ['sync']):
         print(USAGE, file=sys.stderr)
         return 2
+    plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
     if argv[0] == 'settle':
         sp = argparse.ArgumentParser(prog='fanout.py settle', description='Fast-forward the current branch to a landed '
                                      'integration branch, then close its worktree through lanes.py: the archive ref '

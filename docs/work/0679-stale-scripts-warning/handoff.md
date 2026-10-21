@@ -34,3 +34,6 @@ Selftest runs set `SDLC_PLUGIN_CACHE` to a temp dir, so a newer real install on 
 3. `grep -n "reload-plugins" plugins/sdlc-lite/agents/conductor.md` prints the new sentence.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check <base sha>` exits 0.
+
+## Outcome
+Built. `plugin_min.newer_installed`, `stale_line` and `warn_stale` (skips `.orphaned_at` folders); `warn_stale()` runs once at the start of `main` in `dispatch.py`, `solo_run.py` and `fanout.py` (after the selftest branch), exit codes unchanged. One sentence added to `agents/conductor.md` step 1; Codex conductor definition regenerated. Five dispatch selftest cases added; the newer-version case fails with the `main` call removed (control run). dispatch, solo_run and fanout selftests and `check.py` exit 0; `git diff --check 5032b547` exit 0. `scripts/check-packaging.py` reports `skills/fanout/SKILL.md` over its 18,000 character limit (18631), from T-0681, untouched here.

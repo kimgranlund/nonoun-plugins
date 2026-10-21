@@ -68,6 +68,7 @@ SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
 sys.path.insert(0, str(SCRIPTS))
 import order  # noqa: E402  same scripts/ dir: the records dir rule (records_dir)
+import plugin_min  # noqa: E402  same scripts/ dir: the repo's minimum plugin version (T-0596) and the stale-install warning (T-0679)
 
 
 def records(task_dir):
@@ -1450,6 +1451,7 @@ def main():
     a = p.parse_args()
     if a.cmd == 'selftest':
         return selftest()
+    plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
     if a.tier in TIER_ALIASES:
         print(f'solo_run.py: --tier {a.tier} is deprecated; use --tier {tier_of(a.tier)}', file=sys.stderr)
         a.tier = tier_of(a.tier)
@@ -1471,7 +1473,6 @@ def main():
     if a.backend == 'claude' and a.exec and os.environ.get('SDLC_CLAUDE_EXEC') != '1':
         print('solo_run.py: the Claude headless start is retired: use fanout.py prep and land or dispatch.py prepare (sub-agent), or SDLC_CLAUDE_EXEC=1', file=sys.stderr)
         return 2
-    import plugin_min  # same scripts/ dir: the repo's minimum plugin version, before any folder, worktree or record (T-0596)
     refused = plugin_min.refusal(a.task_dir or a.cwd or '.', PLUGIN, a.backend if a.backend in plugin_min.MANIFEST else None)
     if refused:
         print(refused, file=sys.stderr)

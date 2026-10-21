@@ -101,6 +101,43 @@ def hook_plugin():
     return (max(found, key=lambda d: parts(d.name)), 'plugin cache') if found else (None, None)
 
 
+def newer_installed(plugin=PLUGIN):
+    """(have, newest, path) when a version folder in the plugin cache ($SDLC_PLUGIN_CACHE, default CACHE) is above the
+    running manifest version, else None. A folder holding an .orphaned_at file is a superseded install and is skipped (T-0679)."""
+    have = running(plugin, 'claude')[0]
+    if have is None:
+        return None
+    cache = Path(os.environ.get('SDLC_PLUGIN_CACHE') or CACHE)
+    try:
+        found = [d for d in cache.iterdir() if VERSION_RE.fullmatch(d.name) and (d / MANIFEST['claude']).is_file()
+                 and not (d / '.orphaned_at').exists()]
+    except OSError:
+        return None
+    if not found:
+        return None
+    top = max(found, key=lambda d: parts(d.name))
+    return (have, top.name, top) if below(have, top.name) else None
+
+
+def stale_line(plugin=PLUGIN):
+    """The one stderr line telling a session on an older scripts path that a newer version is installed, or None (T-0679)."""
+    got = newer_installed(plugin)
+    if got is None:
+        return None
+    have, newest, path = got
+    return 'sdlc-lite %s in use; %s installed: re-resolve the scripts path (%s/scripts)' % (have, newest, path)
+
+
+def warn_stale(plugin=PLUGIN):
+    """Print stale_line on stderr when there is one; never raises and never changes an exit code."""
+    try:
+        line = stale_line(plugin)
+    except Exception:  # noqa: BLE001 a warning must not break a script call
+        return
+    if line:
+        print(line, file=sys.stderr)
+
+
 def host_of(host=None):
     h = host or os.environ.get('SDLC_BACKEND') or 'claude'
     return h if h in MANIFEST else 'claude'
