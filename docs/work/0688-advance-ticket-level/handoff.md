@@ -37,3 +37,8 @@ The step-dir behavior of `advance` and its existing selftest cases are unchanged
 2. `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0.
 3. `grep -n "advance" plugins/sdlc-lite/agents/conductor.md` shows the sentence naming ticket-level completions, and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `dispatch.py advance` now handles ticket-level completions (`advance_solo`, `advance_ticket`): an L2 or L3 solo prepares the ticket verifier at the `steps.ticket_verifier` level against the solo's tree (passing the solo model for the family rule) and prints its dispatch JSON; an L1 solo or a ticket verifier `pass` prints `next: close <task dir> (python3 <scripts>/tickets.py close <task dir>)`; a verifier `fail` prints `stop: fail <result>; ...`; a ui-designer review prints `next: <verdict> <result>` or `stop: changes-required <result>`; other roles keep `next: <hint>`. Step-dir behavior unchanged.
+- Usage lines, `agents/conductor.md` (and the regenerated Codex conductor TOML), and `skills/fanout/SKILL.md` step 3 updated.
+- Checks: `dispatch.py selftest` exit 0 with three new T-0688 cases, all three FAIL with the advance change reverted (T-0645 cases stay ok); `solo_run.py selftest` exit 0; `check.py` exit 0; `git diff --check e67c028d` exit 0.

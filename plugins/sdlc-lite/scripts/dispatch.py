@@ -5,7 +5,10 @@
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
   dispatch.py advance [record flags] <dispatch.json>   record, then drop a pruned role from the queue (prints TaskStop task_id=<name>),
                                           then steps.py next on its step dir: prepare the next builder or verifier and print its
-                                          dispatch JSON, or print `stop: <action> <reason>`; outside a step dir `next: <hint>` (T-0645)
+                                          dispatch JSON, or print `stop: <action> <reason>` (T-0645); a ticket-level completion (T-0688):
+                                          an L2 or L3 solo prepares the ticket verifier and prints its JSON, an L1 solo or a verifier pass
+                                          prints `next: close <task dir> (...)`, a verifier fail `stop: fail <result>; ...`, a ui-designer
+                                          review `next: <verdict> <result>` or `stop: changes-required <result>`; any other role `next: <hint>`
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME | --forget-stale]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
@@ -1942,14 +1945,14 @@ def advance(dispatch_file, rec):
     """One call per role completion (T-0645): rec() records the dispatch and returns its exit code; a non-zero record stops
     here with that code. Then a pruned role leaves the queue the way prune --done does and prints its TaskStop line, and
     steps.py next on the dispatch's step dir picks the next role: a builder or verifier action is prepared and its
-    dispatch JSON printed, any other action prints `stop: <action> <reason>`. Outside a step dir: `next: <hint>`."""
+    dispatch JSON printed, any other action prints `stop: <action> <reason>`. Outside a step dir a ticket-level completion
+    moves the ticket on (T-0688): see advance_ticket."""
     rc = rec()
     if rc != 0:
         return rc
     d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
     if solo_dispatch(dispatch_file):
-        print('next: a solo ticket; run its verifier or close it (tickets.py close)')
-        return 0
+        return advance_solo(d)
     attempt = read_attempt(d['attempt_file'])
     name, root = attempt.get('agent_name') or d.get('name'), attempt.get('project') or d['tree']
     if name and prune_done(root, name):
@@ -1959,8 +1962,7 @@ def advance(dispatch_file, rec):
             print(lane_line)
     handoff = Path(d['handoff'])
     if not re.fullmatch(r'step-\d+', handoff.parent.name):
-        print('next: %s is not a step dir; read %s and pick the next role' % (handoff.parent, d['result']))
-        return 0
+        return advance_ticket(d, attempt)
     import steps
     try:
         action, level, reason, _ = steps.next_action(handoff.parent)
@@ -1978,6 +1980,46 @@ def advance(dispatch_file, rec):
     tree = d['tree'] if top and os.path.realpath(d['tree']) != os.path.realpath(top) else ''
     out = prepare(role, 'L%d' % level, str(handoff), tree=tree)
     print(json.dumps(out, indent=2))
+    return 0
+
+
+def close_line(task_dir):
+    return 'next: close %s (python3 %s close %s)' % (task_dir, HERE / 'tickets.py', task_dir)
+
+
+def advance_solo(d):
+    """A recorded solo (T-0688): an L2 or L3 solo carries a `verifier` command, so prepare the ticket verifier at the
+    steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line."""
+    handoff = Path(d['handoff'])
+    if not d.get('verifier'):
+        print(close_line(handoff.parent))
+        return 0
+    import steps
+    level, reason = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))
+    os.environ.setdefault('SDLC_ROUTING_REASON', 'dispatch.py advance: solo %s done; ticket verifier %s: %s' % (d.get('tier') or d.get('level'), level, reason))
+    top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
+    tree = d.get('tree') or ''
+    if tree and top and os.path.realpath(tree) == os.path.realpath(top):
+        tree = ''
+    model = d.get('model') if d.get('model') in ('sonnet', 'opus', 'fable', 'haiku') else ''
+    print(json.dumps(prepare('verifier', level, str(handoff), solo=model, tree=tree), indent=2))
+    return 0
+
+
+def advance_ticket(d, attempt):
+    """A recorded role whose handoff is outside a step-<n>/ dir (T-0688): a ticket verifier pass prints the close line,
+    a fail prints stop: fail; a ui-designer review prints its verdict; any other role keeps the next: <hint> line."""
+    task, result = Path(d['handoff']).parent, d['result']
+    word = verdict_word(d, attempt)
+    if d['role'] == 'verifier' and word == 'pass':
+        print(close_line(task))
+    elif d['role'] == 'verifier' and word == 'fail':
+        print('stop: fail %s; send its ## For the next attempt to the solo by name, then advance the solo\'s dispatch again' % result)
+    elif d['role'] == 'ui-designer' and word == 'review':
+        verdict = results._key_body_value(results._lines(result), 'Verdict')[1].lower()
+        print('next: %s %s' % (verdict, result) if verdict in ('pass', 'pass-with-notes') else 'stop: changes-required %s' % result)
+    else:
+        print('next: %s is not a step dir; read %s and pick the next role' % (task, result))
     return 0
 
 
@@ -3892,6 +3934,34 @@ def selftest():
         rc, vgot, out, nxt, before, after, q = adv('invalid', 'not a report\n')
         case('T-0645 advance on an invalid result exits 3 and prepares nothing',
              rc == 3 and nxt is None and after == before and 'TaskStop' not in out and 'stop:' not in out)
+        # T-0688 advance on a ticket-level completion: an L2 solo prepares the ticket verifier, a ticket verifier pass or fail
+        # prints the close or stop line.
+        def adv_ticket(tag, dispatch_file, repo):
+            ad = Path(json.loads(Path(dispatch_file).read_text())['artifacts_dir'])
+            before = sorted(ad.glob('*.dispatch.json'))
+            o = io.StringIO()
+            with clean_env(SDLC_DISPATCH_PARENT_PID=live_pid), cwd(repo), contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(o):
+                rc = main(['advance', dispatch_file])
+            js = o.getvalue()[o.getvalue().find('{'):] if '{' in o.getvalue() else ''
+            return rc, o.getvalue(), json.loads(js) if js else None, before, sorted(ad.glob('*.dispatch.json'))
+        sr = mk(tmp / 'adv-solo')
+        sh = (sr / '.sdlc' / 't' / 'handoff.md').resolve()
+        srd = order.records_dir(sh.parent)
+        srd.mkdir(parents=True, exist_ok=True)
+        sdf = srd / 'solo-L2-t.dispatch.json'
+        sdf.write_text(json.dumps(dict(role='solo', tier='L2', level='L2', model='opus', name='solo-L2-t', attempt_id='a' * 32,
+                                       artifacts_dir=str(srd), handoff=str(sh), verifier='python3 dispatch.py prepare verifier L2 %s' % sh)))
+        rc, out, nxt, before, after = adv_ticket('solo', str(sdf), sr)
+        case('T-0688 advance on an L2 solo dispatch prints a ticket verifier dispatch JSON whose dispatch_file exists',
+             rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == 'L2' and Path(nxt['dispatch_file']).is_file()
+             and len(after) == len(before) + 1)
+        for tag, vbody, want in (('pass', BODY['verifier'], 'next: close'), ('fail', fail_body, 'stop: fail')):
+            vr = mk(tmp / ('adv-t-' + tag))
+            _, vgot, _ = prep(vr, 'verifier', 'L2', '.sdlc/t/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+            Path(vgot['result']).write_text(vbody, encoding='utf-8')
+            rc, out, nxt, before, after = adv_ticket(tag, vgot['dispatch_file'], vr)
+            case('T-0688 advance on a ticket-level verifier %s prints a line starting %s and writes no new dispatch file' % (tag, want),
+                 rc == 0 and any(l.startswith(want) for l in out.splitlines()) and nxt is None and after == before)
         names = [e['name'] for e in queued(rp)]
         shown = prune_lines(str(rp))
         case('prune list: one TaskStop task_id=<name> line per queued agent', len(shown) == 4
