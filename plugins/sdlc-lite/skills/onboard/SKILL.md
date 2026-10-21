@@ -16,7 +16,7 @@ Arguments: `$ARGUMENTS`
 | `setup` | Refresh only: show the diff of every managed block the repository already holds, then write it on approval | the default | `setup` |
 | `--init` | With `setup`: also create missing entry files and `docs/layout.md`, and append a block to an unmanaged entry file. Only when the user asks to onboard the repository | off | `setup --init` |
 | `--force` | With `setup`: also replace a managed block edited by hand | off | `setup --force` |
-| `check` | Report the state of each managed file and write nothing | - | `check` |
+| `check` | Report the state of each managed file and write nothing. When an AGENTS.md names a `.agents/skills/<name>/SKILL.md` path yet no skill route resolves, it also prints `warning: AGENTS.md names <skill path> but no skill route resolves; see steps.py routes` on stderr; the exit code does not change | - | `check` |
 
 Commands, all run from the repository root:
 - `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup --dry-run [--init]` prints a unified diff of every change and writes nothing.
