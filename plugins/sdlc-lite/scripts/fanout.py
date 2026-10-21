@@ -519,7 +519,7 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
 HOST_WORKTREES = '.claude/worktrees'  # host-owned, not a lanes root
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
 HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
-SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nArtifacts dir: {artifacts}\n{sync}Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
+SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nArtifacts dir: {artifacts}\n{report}\n{sync}Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and after a fix rerun the checks that fix can affect (every check when unsure), keeping any `(red)` control, and report files changed, each check '
                         'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
@@ -2010,6 +2010,9 @@ def subagent_dispatch(ctx, t, tier):
     import dispatch  # same scripts/ dir: handoff_locator quotes a spaced path for the spawn gate
     # T-0669: the records dir holds the dispatch record; the spawn gate reads it from this prompt line
     artifacts = os.path.relpath(order.records_dir(tickets.ticket_dir(ctx['root']) / t.slug), ctx['top'])
+    # T-0682: the report goes to the records dir of this checkout (absolute, outside the host worktree), where the parent reads it
+    result = str(pathlib.Path(ctx['top'], artifacts, f'{name}.md').resolve())
+    import solo_run  # same scripts/ dir: the shared Report file and pointer lines
     base_sha = subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None
     verifier = None
     if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports; the level is the ticket's at prep
@@ -2020,20 +2023,22 @@ def subagent_dispatch(ctx, t, tier):
             'model': model, 'effort': effort,
             'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title,
                                                   artifacts=dispatch.handoff_locator(pathlib.Path(artifacts).as_posix()),
+                                                  report=solo_run.report_lines(result, handoff),
                                                   sync=SOLO_SYNC.format(sha=base_sha) if base_sha else ''),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
-            'handoff': handoff, 'verifier': verifier,
+            'handoff': handoff, 'verifier': verifier, 'result': result,
             'base_sha': base_sha}
 
 
-def write_solo_row(taskdir, tier):
-    """Append the unpriced `role solo` row of a sub-agent lane to the ticket's runs.jsonl; returns its attempt_id (T-0331)."""
+def write_solo_row(taskdir, tier, file=''):
+    """Append the unpriced `role solo` row of a sub-agent lane to the ticket's runs.jsonl; returns its attempt_id (T-0331).
+    file is the name of the solo's report file in the records dir (T-0682)."""
     import solo_run
     model, effort, _ = solo_run.TIERS[solo_run.tier_of(tier)]
     attempt = uuid.uuid4().hex
     rec = solo_run.build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
-    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
+    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None, file=file)
     solo_run.append(taskdir, rec)
     return attempt
 
@@ -2123,7 +2128,7 @@ def print_prep(ctx):
                     rc = 4
                     continue
                 d = subagent_dispatch(ctx, t, tier)
-                d['attempt_id'] = write_solo_row(taskdir, tier)  # the unpriced row `land --transcript` prices (T-0331)
+                d['attempt_id'] = write_solo_row(taskdir, tier, pathlib.Path(d['result']).name)  # the unpriced row `land --transcript` prices (T-0331)
                 # The spawn gate (hooks/block-role-spawn.sh) finds this record in the prompt's Artifacts dir, the records
                 # dir, as solo_run.dispatch_json writes it (T-0669); the task folder keeps only tracked records.
                 (order.records_dir(taskdir, create=True) / f"{d['name']}.dispatch.json").write_text(
@@ -4605,6 +4610,15 @@ def selftest():
                f'got {sorted(p.name for p in t1_dir.glob("*.dispatch.json"))} {sorted(p.name for p in t1_rd.glob("*.dispatch.json"))}',
                not list(t1_dir.glob('*.dispatch.json')) and [p.name for p in t1_rd.glob('*.dispatch.json')] == ['T-0001-solo.dispatch.json']
                and t1_rd != t1_dir and f'\nArtifacts dir: {os.path.relpath(t1_rd, p1)}\n' in d1.get('prompt', ''))
+        # T-0682: the solo brief carries the Report file and pointer lines after Artifacts dir; the solo row names the report file
+        t1_rows = [json.loads(ln) for ln in (t1_rd / 'runs.jsonl').read_text().splitlines()]
+        r1 = d1.get('result') or ''
+        expect(f'case 22 prep: the solo brief carries Report file: <records dir>/T-0001-solo.md and End with one line: `solo <status> <it>` '
+               f'right after Artifacts dir, and the solo runs row file names it, got {r1!r} {[r.get("file") for r in t1_rows]}',
+               pathlib.Path(r1).name == 'T-0001-solo.md' and pathlib.Path(r1).parent.samefile(t1_rd)
+               and f'\nArtifacts dir: {os.path.relpath(t1_rd, p1)}\nReport file: {r1} (before you end' in d1.get('prompt', '')
+               and f'\nEnd with one line: `solo <status> {r1}`' in d1.get('prompt', '')
+               and [r.get('file') for r in t1_rows if r.get('role') == 'solo'] == ['T-0001-solo.md'])
         # T-0356: the positive control: a `verifier: L3` line in the handoff prepares verifier L3; the others stay L2
         pv = tmp / 'prep-verifier'
         sized_repo(pv, ['L2', 'L2', 'L2'], {'.gitignore': gi})

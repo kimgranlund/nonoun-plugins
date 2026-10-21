@@ -35,3 +35,9 @@ The spawn gate finds the dispatch record from the `Handoff` line on line 2 of th
 4. `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
 5. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 6. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `solo_run.report_lines` is the shared helper: `solo_run.dispatch_json` and `fanout.subagent_dispatch` (`SOLO_SUBAGENT_PROMPT`) add `Report file: <records dir>/<name>.md` and `End with one line: solo <status> <path>` right after the Artifacts dir line; the dispatch JSON stores the path as `result` and the solo `runs.jsonl` row as `file` (fanout: `write_solo_row(..., file)`, an absolute path in the prep checkout's records dir).
+- `dispatch.py record` on a solo dispatch with a `result` (`solo_report_file`): the file present prints `solo report: <path>`; missing, it writes the transcript's final message there (a lone `solo ...` pointer or a max_tokens stop is no report); with neither it exits 2 before pricing, so the row and live marker are unchanged. A dispatch with no `result` (older records) records as before.
+- `agents/solo.md` Output and the record sentence updated; Claude and Codex agents regenerated.
+- Checks: `solo_run.py selftest`, `fanout.py selftest`, `dispatch.py selftest` exit 0; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `check.py` exit 0; `git diff --check 1b6dc243` exit 0. With the code changes reverted (tests kept) the new solo_run, fanout and dispatch cases fail.
