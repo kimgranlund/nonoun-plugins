@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0677 | [0677-routes-command-onboard-warn](0677-routes-command-onboard-warn/handoff.md) | steps.py routes prints resolved skill routes; onboard check warns on zero routes | feature | L2 | P2 | T-0676 | 🟡 claimed |
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
 | T-0681 | [0681-integration-merge-regenerates-router](0681-integration-merge-regenerates-router/handoff.md) | merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md | bug | L2 | P1 | none | ⏳ proposed |
 | T-0682 | [0682-solo-brief-report-file](0682-solo-brief-report-file/handoff.md) | solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file | bug | L2 | P2 | none | 🟡 claimed |
@@ -22,7 +21,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
 | T-0695 | [0695-lane-close-integration-record](0695-lane-close-integration-record/handoff.md) | lanes.py close leaves a lane record written in an integration tree | bug | L1 | P2 | T-0680 | ⏳ proposed |
 
-Closed: 643 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 644 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

@@ -2,7 +2,7 @@
 id: T-0677
 title: "steps.py routes prints resolved skill routes; onboard check warns on zero routes"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0676]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,14 @@ Source: GitHub issue #11, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 - `onboard.py check` writes `warning: AGENTS.md names <skill path> but no skill route resolves; see steps.py routes` on stderr (`route_warnings`); exit code unchanged. New gate `route-warning`: positive is the T-0672 prose form, control a routing bullet; the negative variant (no warning) is rejected.
 - Docs: the onboard skill `check` row and the `steps.py` entry of `docs/references/sdlc-internals.md`.
 - Checks: `steps.py selftest` exit 0, `onboard.py selftest` exit 0, `steps.py routes` exit 0, `check.py` exit 0, `git diff --check 425258e3` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 425258e305a8
+- Changed: see commits
+- Commits: 5e06816 T-0677: steps.py routes prints resolved skill routes; onboard check warns on zero routes
+- Check: 1 `steps.py selftest` exits 0 with the two `routes` cases: pass
+- Check: 2 `onboard.py selftest` exits 0 with the new warning gate, and the positive case fails with the war...: pass
+- Check: 3 `steps.py routes` in this repo exits 0: pass
+- Check: 4 `check.py` exits 0: pass
+- Check: 5 `git diff --check 425258e305a883ed1642770cab730f361c62ca13` exits 0: pass
