@@ -135,7 +135,8 @@ Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, replan cap, time budget, s
 record is the post-launch half (T-0278, design section 3). It takes <stem>.dispatch.json and the sub-agent's
 result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty,
 else (with --transcript) the transcript's last assistant message; a max_tokens stop is refused as truncated (T-0343)
-(stdin with a "## " heading line is a result, any other stdin is the sub-agent's error text). In run.sh's order
+(stdin with a "## " heading line is a result, any other stdin is the sub-agent's error text, except a one-line placeholder under 40
+characters with no error word, which yields to a complete transcript result, T-0685). In run.sh's order
 it then does the following.
   header       writes <!-- role= level= model= effort= --> from the dispatch over any header the role wrote, then
                the body, to the result path.
@@ -1666,7 +1667,8 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused or no result yet, 3 invalid result).
 
     The result is the file the role wrote at the dispatch's result path, else stdin() (a callable) when the file is
-    missing or empty. stdin text with a ## heading line is a result unless it is a truncation of the transcript's final message (T-0349); any other text is the sub-agent's error text.
+    missing or empty. stdin text with a ## heading line is a result unless it is a truncation of the transcript's final message (T-0349); any other text is the sub-agent's error text,
+    except a one-line placeholder under 40 characters with no error word that is not a limit message, which yields to a complete transcript result with a ## heading (T-0685).
     validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control.
     With transcript (a jsonl path), a result missing from both the file and stdin is taken from the transcript's last
     assistant message; one that stopped on max_tokens is refused as truncated (T-0343).
@@ -1716,6 +1718,11 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         cut = said.strip().rstrip('.\u2026').rstrip()
         fin = cost_estimate.transcript_final(transcript) if transcript else None
         is_err = bool(said.strip()) and not has_head and not (fin and fin[0].strip().startswith(cut))
+        # T-0685: a short one-line placeholder (such as `echo x |`) is not error text when the transcript holds a complete result.
+        if (is_err and fin and fin[1] != 'max_tokens' and re.search(r'^## ', fin[0], re.M) and '\n' not in said.strip() and len(said.strip()) < 40
+                and not LIMIT_RE.search(said) and not re.search(r'error|terminated|fail|abort|killed|exception|timeout', said, re.I)):
+            print('dispatch.py: ignored stdin "%s" (no heading, under 40 chars); recorded the transcript\'s final message' % said.strip(), file=sys.stderr)
+            is_err = False
         if is_err:
             fin = None
         if fin and has_head and not (len(fin[0].strip()) > len(cut) and fin[0].strip().startswith(cut)):
@@ -3676,6 +3683,14 @@ def selftest():
         case('negative control: record --agent-id with an id that has no transcript exits 2 no result yet and writes no result',
              alone['a2'][0].returncode == 2 and 'no result yet' in alone['a2'][0].stderr and not Path(alone['a2'][1]['result']).exists()
              and lines_of(rb / '.sdlc' / 'a2') == [])
+        # T-0685: --agent-id with a short placeholder stdin (`echo x |`) and a complete transcript ignores the stdin with a warning; the transcript is the result.
+        put(rb / '.sdlc' / 'a3' / 'handoff.md')
+        rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/a3/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        q = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--agent-id', 'ag-solo', got['dispatch_file']],
+                           capture_output=True, text=True, env=env_find, input='x\n')
+        case('record --agent-id with placeholder stdin x and a complete transcript ignores the stdin and records the transcript',
+             q.returncode == 0 and 'ignored stdin' in q.stderr and Path(got['result']).read_text().startswith('<!-- role=builder')
+             and len(lines_of(rb / '.sdlc' / 'a3')) == 1)
         # T-0349: truncated stdin, error stdin beside an interim heading, tool-use turns before the final text.
         def amsg(text, stop='end_turn', tool=False):
             c = ([{'type': 'tool_use', 'id': 't', 'name': 'Bash', 'input': {}}] if tool else []) + ([{'type': 'text', 'text': text}] if text else [])
