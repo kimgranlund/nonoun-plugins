@@ -5,7 +5,7 @@
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
-  lanes.py ready [<name|path>] [--ticket ID]   pin the review sha, unlock, and tell the conductor (default: the current lane)
+  lanes.py ready [<name|path>] [--ticket ID] [--notify-cmd CMD]   pin the review sha, unlock, and tell the conductor (default: the current lane)
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
   lanes.py list --ready [--json]           one line per ready ref: ticket, lane, sha, path, and stale when the lane moved
@@ -186,8 +186,14 @@ commit on HEAD (subject `sdlc ready snapshot: <id> in <lane>`, a `Lane-Base: <ba
      --follow-up false with the body `<sha> <lane path>` and a line naming ticket, lane and branch. The receiver is the
      .sdlc/config conductor: line, else conductor. A receiver with no registered mailbox prints a `warning: not
      sent to <receiver>` line naming `lanes.py list --ready` and `messages.py register --name <receiver>` and exits 0
-     (the ref is pinned and the lane unlocked, T-0610); any other refused send prints `not sent to <receiver>: <why>;
+     (the ref is pinned and the lane unlocked, T-0610); that warning prints in full once per session (the session is
+     CLAUDE_CODE_SESSION_ID, else the parent pid; marker files under <git common dir>/sdlc/ready-warned/), and later
+     readies print `not sent: no <receiver> mailbox (warned once)` (T-0694); any other refused send prints `not sent to <receiver>: <why>;
      tell the conductor yourself` and exits 1 with the ref kept.
+  --notify-cmd CMD (T-0694): once the ref is pinned, run CMD through the shell in the main checkout with
+  SDLC_READY_TICKET, SDLC_READY_SHA and SDLC_READY_PATH set; print `notified: CMD rc=<n>`. A non-zero rc prints a
+  warning and the ready still exits 0. With it the missing-mailbox warning is not printed; a registered mailbox still
+  gets the message.
 list --ready reads refs/sdlc/ready/* and joins each to the lane whose record lists the ticket. A row is stale when the
 lane's HEAD differs from the pinned HEAD (a snapshot's parent, else the sha) or its state's tree from the sha's tree,
 or when no lane holds the ticket. dispatch.py prepare verifier reads the same ref: `Review sha: <sha>`, and Base sha
@@ -1625,9 +1631,38 @@ def pin(path, tid, name, base, state=None):
     return sha, f'snapshot: {sha[:12]} holds the uncommitted work on HEAD {head[:12]}'
 
 
-def ready(target=None, ticket=None, cwd='.'):
+def warned_before(ctx):
+    """True when this session already saw the missing-mailbox warning; else records it. The session is
+    CLAUDE_CODE_SESSION_ID when set, else the parent pid; the marker lives under the git common dir (T-0694)."""
+    key = re.sub(r'[^A-Za-z0-9_.-]+', '-', os.environ.get('CLAUDE_CODE_SESSION_ID') or f'ppid-{os.getppid()}')
+    marker = ctx.common / 'sdlc' / 'ready-warned' / key
+    if marker.exists():
+        return True
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(f'{utcnow().isoformat()}\n')
+    except OSError:
+        pass
+    return False
+
+
+def notify(cmd, cwd, tid, sha, path):
+    """Run cmd through the shell in the main checkout with SDLC_READY_TICKET, SDLC_READY_SHA and SDLC_READY_PATH set;
+    the lines to print (T-0694)."""
+    env = dict(os.environ, SDLC_READY_TICKET=tid, SDLC_READY_SHA=sha, SDLC_READY_PATH=str(path))
+    try:
+        r = subprocess.run(cmd, shell=True, cwd=str(cwd), env=env, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        return [f'warning: --notify-cmd did not run: {e}']
+    lines = [f'notified: {cmd} rc={r.returncode}']
+    if r.returncode:
+        lines.append(f'warning: --notify-cmd exited {r.returncode}: {err(r)}')
+    return lines
+
+
+def ready(target=None, ticket=None, cwd='.', notify_cmd=None):
     """Pin refs/sdlc/ready/<ticket> at the lane's state, unlock the lane's own lock, and send the conductor a ready
-    message (see Ready in the docstring). Returns a result dict."""
+    message (see Ready in the docstring); notify_cmd runs after the pin. Returns a result dict."""
     ctx = Ctx(cwd)
     lanes = discover(ctx)
     if target is None:
@@ -1667,6 +1702,8 @@ def ready(target=None, ticket=None, cwd='.'):
         lines.append(f'unlocked: {d["lock"]}' if r.returncode == 0 else f'not unlocked: {err(r)}')
     elif d['locked'] is not None:
         lines.append(f'still locked: {d["locked"] or "no reason"} (not the lock open set)')
+    if notify_cmd:
+        lines += notify(notify_cmd, ctx.top, tid, sha, path)
     receiver = ctx.cfg['conductor'] or 'conductor'
     sender = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')[:40].rstrip('-') or 'lane'
     body = f'{sha} {path}\nticket {tid}, lane {name}, branch {d["branch"] or "none"}: review this sha; lanes.py list --ready flags it stale once the lane moves'
@@ -1674,9 +1711,15 @@ def ready(target=None, ticket=None, cwd='.'):
     r = run([sys.executable, str(Path(tickets.__file__).resolve().parent / 'messages.py'), 'send', '--receiver', receiver, '--sender', sender, '--kind', 'handoff',
              '--topic', f'ready {tid}', '--follow-up', 'false', body], ctx.top)
     if r is not None and r.returncode and f'receiver {receiver} is not registered' in err(r):
-        # the ref is pinned and the lane unlocked, so a missing mailbox is a warning, not a failure (T-0610)
-        lines.append(f'warning: not sent to {receiver}: no {receiver} mailbox is registered; the ready ref is pinned, '
-                     f'`lanes.py list --ready` shows it; to mail it, run `messages.py register --name {receiver} --harness claude|codex|human`')
+        # the ref is pinned and the lane unlocked, so a missing mailbox is a warning, not a failure (T-0610); full
+        # once per session, one short line after, none with --notify-cmd (T-0694)
+        if notify_cmd:
+            pass
+        elif warned_before(ctx):
+            lines.append(f'not sent: no {receiver} mailbox (warned once)')
+        else:
+            lines.append(f'warning: not sent to {receiver}: no {receiver} mailbox is registered; the ready ref is pinned, '
+                         f'`lanes.py list --ready` shows it; to mail it, run `messages.py register --name {receiver} --harness claude|codex|human`')
         return result(0, '\n'.join(lines), lane=name, path=path, branch=d['branch'], sha=sha, ref=ref)
     if r is None or r.returncode:
         lines.append(f'not sent to {receiver}: {err(r) if r is not None else "messages.py did not run"}; tell the conductor yourself')
@@ -1966,6 +2009,7 @@ def main(argv=None):
     p = sub.add_parser('ready')
     p.add_argument('target', nargs='?')
     p.add_argument('--ticket')
+    p.add_argument('--notify-cmd', metavar='CMD', help='shell command run in the main checkout after the pin, with SDLC_READY_TICKET, SDLC_READY_SHA, SDLC_READY_PATH')
     p = sub.add_parser('sweep')
     p.add_argument('--apply', action='store_true')
     p = sub.add_parser('list')
@@ -2008,7 +2052,7 @@ def main(argv=None):
         if a.cmd == 'finish':
             return finish(a.target, backup=a.backup, transcript=a.transcript, verifier_transcript=a.verifier_transcript)
         if a.cmd == 'ready':
-            r = ready(a.target, ticket=a.ticket)
+            r = ready(a.target, ticket=a.ticket, notify_cmd=a.notify_cmd)
             print(r['message'])
             return r['rc']
         if a.cmd == 'list' and a.ready:
@@ -3239,6 +3283,42 @@ def case_ready_unregistered(script, base):
     return fails
 
 
+def case_ready_once(script, base):
+    """T-0694: with no conductor mailbox, two readies in one session print the full warning once and then
+    `not sent: no conductor mailbox (warned once)`; a new session warns in full again; --notify-cmd runs in the main
+    checkout with the ticket, sha and lane path in its environment, prints `notified:`, replaces the warning, and a
+    failing command is a warning that leaves the exit code 0."""
+    t = Fixture(base, script, 'readyonce')
+    t.ticket(93, 'warn once', claimed=True)
+    hp = t.top / '.sdlc' / '0093-t' / 'handoff.md'
+    hp.write_text(hp.read_text() + '\n## Acceptance criteria\n1. `true` exits 0.\n')
+    lane, tree, _ = t.open('once', 'T-93', keep_lock=True)
+    (tree / 'keep.txt').write_text('edited\n')
+    sess = {'CLAUDE_CODE_SESSION_ID': 'once-a'}
+    full, short = 'warning: not sent to conductor', 'not sent: no conductor mailbox (warned once)'
+    fails = []
+    rc1, o1 = t.lanes('ready', cwd=tree, env=sess)
+    (tree / 'keep.txt').write_text('edited again\n')
+    rc2, o2 = t.lanes('ready', cwd=tree, env=sess)
+    if rc1 or rc2 or full not in o1 or short in o1 or full in o2 or short not in o2.splitlines():
+        fails.append(f'ready once: want the full warning then the short line in one session, got {rc1}: {o1} / {rc2}: {o2}')
+    rc3, o3 = t.lanes('ready', cwd=tree, env={'CLAUDE_CODE_SESSION_ID': 'once-b'})
+    if rc3 or full not in o3:
+        fails.append(f'ready once: a new session did not warn in full: {rc3}: {o3}')
+    mark = t.dir / 'notified.txt'
+    cmd = f'echo "$SDLC_READY_TICKET $SDLC_READY_SHA $SDLC_READY_PATH $(pwd -P)" > {mark}'
+    rc4, o4 = t.lanes('ready', '--notify-cmd', cmd, cwd=tree, env={'CLAUDE_CODE_SESSION_ID': 'once-c'})
+    sha = t.g('rev-parse', '--verify', '-q', 'refs/sdlc/ready/T-93')
+    want = f'T-93 {sha} {os.path.realpath(tree)} {os.path.realpath(t.top)}'
+    if rc4 or f'notified: {cmd} rc=0' not in o4 or full in o4 or short in o4 or not mark.exists() \
+            or mark.read_text().strip() != want:
+        fails.append(f'ready once: --notify-cmd want {want!r} written and no mailbox warning, got {rc4}: {o4}')
+    rc5, o5 = t.lanes('ready', '--notify-cmd', 'exit 3', cwd=tree, env={'CLAUDE_CODE_SESSION_ID': 'once-d'})
+    if rc5 or 'notified: exit 3 rc=3' not in o5 or 'warning: --notify-cmd exited 3' not in o5:
+        fails.append(f'ready once: a failing --notify-cmd did not warn with exit 0: {rc5}: {o5}')
+    return fails
+
+
 def case_sweep_mergelock(script, base):
     t = Fixture(base, script, 'mlock')
     lanes_dir = t.top / '.worktrees' / 'fanout'
@@ -3582,6 +3662,9 @@ def run_selftest(script, src, base):
              'mails the conductor; list --ready shows it, stale after an edit; close deletes the ref')
         need('ready unregistered', case_ready_unregistered(script, base),
              'with no conductor registered ready pins the ref, unlocks, warns naming list --ready and the register step, and exits 0')
+        need('ready once', case_ready_once(script, base),
+             'with no conductor mailbox the warning prints in full once per session; --notify-cmd runs with the ticket, sha '
+             'and lane path, replaces the warning, and a failing command still exits 0')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
         need('finish pass', case_finish_pass(script, base),
