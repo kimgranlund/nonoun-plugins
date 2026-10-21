@@ -2,7 +2,7 @@
 id: T-0695
 title: "lanes.py close leaves a lane record written in an integration tree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0680]    # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,12 @@ Reproduced: after `open --into <integration branch>` and a close, the integratio
 - `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0
 - `git diff --check 64b57c74` exit 0
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 64b57c746ed4
+- Changed: see commits
+- Commits: 746727f T-0695: lanes close clears the lane record in the integration tree
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with a new case that fails with the...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
