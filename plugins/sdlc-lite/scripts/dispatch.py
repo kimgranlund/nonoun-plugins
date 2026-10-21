@@ -4006,7 +4006,7 @@ def selftest():
         sdisp, go = solo_rec('transcript', '--transcript', str(stx))
         rc2, out2, _ = go()
         case('T-0682 record on a solo dispatch with no report file takes the transcript final message and writes it there',
-             rc2 == 0 and Path(sdisp['result']).read_text() == '## Report\nfrom the transcript\n' and 'solo report: ' in out2)
+             rc2 == 0 and Path(sdisp['result']).is_file() and Path(sdisp['result']).read_text() == '## Report\nfrom the transcript\n' and 'solo report: ' in out2)
         for tag, vbody, want in (('pass', BODY['verifier'], 'next: close'), ('fail', fail_body, 'stop: fail')):
             vr = mk(tmp / ('adv-t-' + tag))
             _, vgot, _ = prep(vr, 'verifier', 'L2', '.sdlc/t/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
