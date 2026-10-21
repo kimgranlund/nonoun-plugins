@@ -31,3 +31,6 @@ A run with no existing integration worktree behaves as today, creating `<lanes-d
 1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with the new case, and the case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 3. `git diff --check 8624f984` exits 0.
+
+## Outcome
+`fanout.py prep` and `land` now reuse an integration branch checked out in a worktree other than the main checkout. `preflight(reuse_integ=True)` (prep only) sets `integ_dir` to that worktree and `integ_reused`; `print_prep` prints `integration worktree: <path> (reused)`; `land_preflight` accepts the same worktree as `integ_dir` (merge.lock stays under the lanes dir). A branch checked out in the main checkout still refuses, and `run` is unchanged. New selftest case `case 23 reuse` (lanes.py open --kind integration, then prep exit 0 naming the reused path, then land merges into that tree with no `<lanes-dir>/integration`; plus the main-checkout prep refusal). Verified: the selftest passes (exit 0); a copy with prep and land reverted fails exactly the two reuse cases. `check.py`, `check-packaging.py` and `git diff --check 8624f984` exit 0.
