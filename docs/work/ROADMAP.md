@@ -14,7 +14,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0685 | [0685-record-ignore-placeholder-stdin](0685-record-ignore-placeholder-stdin/handoff.md) | record --agent-id ignores short heading-less stdin when the transcript holds a complete result | bug | L1 | P2 | none | ⏳ proposed |
 | T-0686 | [0686-review-record-relative-line](0686-review-record-relative-line/handoff.md) | record prints a repo-relative Review record line; lint warns on absolute home paths in criteria | bug | L2 | P2 | none | ⏳ proposed |
 | T-0687 | [0687-land-queue-doc](0687-land-queue-doc/handoff.md) | document merge.lock land queueing and add fanout.py queue | feature | L1 | P2 | none | ⏳ proposed |
-| T-0688 | [0688-advance-ticket-level](0688-advance-ticket-level/handoff.md) | dispatch.py advance handles ticket-level completions | feature | L2 | P1 | none | 🟡 claimed |
 | T-0689 | [0689-prep-reuse-integration-tree](0689-prep-reuse-integration-tree/handoff.md) | fanout.py prep --integration reuses an existing integration worktree | bug | L1 | P3 | none | ⏳ proposed |
 | T-0690 | [0690-status-recurse-records](0690-status-recurse-records/handoff.md) | dispatch.py status finds attempts in step folders and the records dir | bug | L1 | P3 | none | ⏳ proposed |
 | T-0691 | [0691-tickets-csv-flag](0691-tickets-csv-flag/handoff.md) | accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim | feature | L1 | P3 | none | ⏳ proposed |
@@ -23,7 +22,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
 | T-0695 | [0695-lane-close-integration-record](0695-lane-close-integration-record/handoff.md) | lanes.py close leaves a lane record written in an integration tree | bug | L1 | P2 | T-0680 | ⏳ proposed |
 
-Closed: 642 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 643 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -34,3 +33,5 @@ Closed: 642 done, 29 dropped (git log or .NNNN-* folders)
 - decide: `/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.28.1/scripts/redck.py deviations` printed no process deviations. (from T-0678: record judges a result by the plugin version that prepared it (2026-10-20))
 - decide: Selftest mutation runs take several minutes each (three sequential runs exceeded the 600 s foreground cap). (from T-0678: record judges a result by the plugin version that prepared it (2026-10-20))
 - decide: plugins/sdlc-lite/scripts/fanout.py:1719: the force-full-gate-class behavior on a union land (`gate: full (union-merged)`, gates chosen at line 1735) has no selftest case; no criterion names it, so it is unverified by a run. (from T-0683: merge_union config: land union-merges listed paths behind one light gate (2026-10-20))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:2013: the L1 solo close line, the ui-designer branches (`next: <verdict>` / `stop: changes-required`) and the "other role keeps `next: <hint>`" branch have no selftest case; read-only inspection only, `results.key_value` for ui-designer is keyed on `## Mode` (results.py:81, 307) so `verdict_word == 'review'` matches. note: not a criterion. (from T-0688: dispatch.py advance handles ticket-level completions (2026-10-20))
+- decide: Scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0688-verifier-L2 (a copy of the plugin plus selftest logs) could not be removed: the permission layer denied `rm -rf` on it. note: harmless, outside the repo; the detached worktree was already removed. (from T-0688: dispatch.py advance handles ticket-level completions (2026-10-20))

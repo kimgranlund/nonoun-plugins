@@ -2,7 +2,7 @@
 id: T-0688
 title: "dispatch.py advance handles ticket-level completions"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ The step-dir behavior of `advance` and its existing selftest cases are unchanged
 - `dispatch.py advance` now handles ticket-level completions (`advance_solo`, `advance_ticket`): an L2 or L3 solo prepares the ticket verifier at the `steps.ticket_verifier` level against the solo's tree (passing the solo model for the family rule) and prints its dispatch JSON; an L1 solo or a ticket verifier `pass` prints `next: close <task dir> (python3 <scripts>/tickets.py close <task dir>)`; a verifier `fail` prints `stop: fail <result>; ...`; a ui-designer review prints `next: <verdict> <result>` or `stop: changes-required <result>`; other roles keep `next: <hint>`. Step-dir behavior unchanged.
 - Usage lines, `agents/conductor.md` (and the regenerated Codex conductor TOML), and `skills/fanout/SKILL.md` step 3 updated.
 - Checks: `dispatch.py selftest` exit 0 with three new T-0688 cases, all three FAIL with the advance change reverted (T-0645 cases stay ok); `solo_run.py selftest` exit 0; `check.py` exit 0; `git diff --check e67c028d` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: e67c028d319b
+- Changed: see commits
+- Commits: af373e7 T-0688: dispatch.py advance handles ticket-level completions
+- Check: 1 dispatch.py selftest exits 0 with new cases (a) L2 solo prints verifier dispatch JSON, (b) verifi...: pass
+- Check: 2 solo_run.py selftest exits 0: pass
+- Check: 3 conductor.md advance sentence names ticket-level completions and check.py exits 0: pass
+- Check: 4 `git diff --check e67c028d319b709729f877717575b95da3b21f5c` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:2013: the L1 solo close line... -> notes.md
+- Follow-up: decide: Scratch dir... -> notes.md
