@@ -30,3 +30,6 @@ A result whose criteria all parse, with every hold settled, still reads as pass.
 2. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+`steps.owner_settled_hold` now returns False when any `## Criteria` bullet line does not match `results.CRITERION_RE`; `fanout.branch_verdict` already calls that helper, so it needed no change. New selftest cases (fully parsed result True, plus `- #2 y FAILED no evidence` False); the False case fails with the guard disabled. `steps.py selftest`, `fanout.py selftest`, `check.py`, `check-packaging.py` and `git diff --check 7f60309a` exit 0.
