@@ -9,7 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
 | T-0684 | [0684-settle-held-criterion](0684-settle-held-criterion/handoff.md) | settle a deferred: conductor held criterion so land reads it as pass | feature | L2 | P2 | none | ⏳ proposed |
 | T-0686 | [0686-review-record-relative-line](0686-review-record-relative-line/handoff.md) | record prints a repo-relative Review record line; lint warns on absolute home paths in criteria | bug | L2 | P2 | none | 🟡 claimed |
-| T-0687 | [0687-land-queue-doc](0687-land-queue-doc/handoff.md) | document merge.lock land queueing and add fanout.py queue | feature | L1 | P2 | none | ⏳ proposed |
+| T-0687 | [0687-land-queue-doc](0687-land-queue-doc/handoff.md) | document merge.lock land queueing and add fanout.py queue | feature | L1 | P2 | none | 🟡 claimed |
 | T-0689 | [0689-prep-reuse-integration-tree](0689-prep-reuse-integration-tree/handoff.md) | fanout.py prep --integration reuses an existing integration worktree | bug | L1 | P3 | none | ⏳ proposed |
 | T-0690 | [0690-status-recurse-records](0690-status-recurse-records/handoff.md) | dispatch.py status finds attempts in step folders and the records dir | bug | L1 | P3 | none | ⏳ proposed |
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |

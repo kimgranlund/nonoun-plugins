@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:999d740069c1 -->
+<!-- sdlc-lite:managed:start v1 sha256:c69b0c6e532d -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,17 +10,17 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 6
+- proposed: 5
   - T-0679 scripts warn once on stderr when a newer plugin version is installed (docs/work/0679-stale-scripts-warning)
   - T-0684 settle a deferred: conductor held criterion so land reads it as pass (docs/work/0684-settle-held-criterion)
-  - T-0687 document merge.lock land queueing and add fanout.py queue (docs/work/0687-land-queue-doc)
   - T-0689 fanout.py prep --integration reuses an existing integration worktree (docs/work/0689-prep-reuse-integration-tree)
   - T-0690 dispatch.py status finds attempts in step folders and the records dir (docs/work/0690-status-recurse-records)
   - T-0693 briefs carry a Ports line from lanes.py port (docs/work/0693-brief-ports-line)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 1
+- claimed: 2
   - T-0686 record prints a repo-relative Review record line; lint warns on absolute home paths in criteria (docs/work/0686-review-record-relative-line), claimed by sdlc-lite-author 2026-10-20
+  - T-0687 document merge.lock land queueing and add fanout.py queue (docs/work/0687-land-queue-doc), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
 - done: 651
