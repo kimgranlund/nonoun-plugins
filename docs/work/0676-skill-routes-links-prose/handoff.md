@@ -23,7 +23,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Context
 Source: GitHub issue #11, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
-- ui-kit-neue routes skills in two forms: root `AGENTS.md` bullets with markdown links ("follows the repo skills [token-authoring](.agents/skills/token-authoring/SKILL.md)") and package `AGENTS.md` prose ("Before editing `src/`, read `.agents/skills/recipe-authoring/SKILL.md`"). `repo_skill_routes` returns `[]` for both, so all 11 solo briefs under 0.28.1 lacked the `Repo skills` line (T-0192 edits `packages/styles/src`), and `repo_skill_routes(<lane>)` returned `[]` in four lanes.
+- ui-kit-neue routes skills in two forms: root `AGENTS.md` bullets with markdown links (``follows the repo skills [token-authoring](.agents/skills/token-authoring/SKILL.md)``) and package `AGENTS.md` prose ("Before editing `src/`, read `.agents/skills/recipe-authoring/SKILL.md`"). `repo_skill_routes` returns `[]` for both, so all 11 solo briefs under 0.28.1 lacked the `Repo skills` line (T-0192 edits `packages/styles/src`), and `repo_skill_routes(<lane>)` returned `[]` in four lanes.
 - Confirmed on main: `repo_skill_routes` (`steps.py:1542`) skips any line that is not a `- `, `* ` or `|` line, and reads skill paths only from code spans (`SPAN_RE`, `steps.py:522`; `SKILL_PATH_RE`, `steps.py:1518`). It also prefixes every span in a nested AGENTS.md with that folder, so a root-relative `.agents/skills/...` cited from a nested file resolves to a path that does not exist.
 - Callers: `routed_skills` (`steps.py:1592`), `repo_skills_line` in `plugins/sdlc-lite/scripts/dispatch.py:404` (prepare and solo_run.py briefs), and the lint routing check near `steps.py:2228`.
 - The T-0672 negative case (`steps.py` near line 5552: a prose bullet that mentions a skill beside paths with no cue before it) must still yield no route.
@@ -37,3 +37,9 @@ The T-0647 and T-0672 `(rt)` cases keep passing unchanged. A root AGENTS.md pros
 3. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `repo_skill_routes` (`plugins/sdlc-lite/scripts/steps.py`) reads a markdown link whose target is a skill path as a skill span (`SKILL_LINK_RE`; code spans inside the link text are left out), accepts a prose line with a cue in a nested AGENTS.md (root prose stays no route), and resolves a nested file's skill path against its folder only when it exists there, else against the repo root. Docstring and lint help text updated.
+- Two `(rt) T-0676` selftest cases beside the T-0647 and T-0672 ones; with the old function body both print no `ok:` line (both miss), with the change both pass.
+- The Context example link above is wrapped in a code span: as a live link it pointed at a skill this repo lacks and check.py failed on it as an unlisted broken link.
+- Checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1 | grep -F 'ok: (rt) T-0672'` prints one line; `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check 9dc347f2` exit 0.
