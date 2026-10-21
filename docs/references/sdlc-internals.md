@@ -144,7 +144,7 @@ The open record (T-0599, T-0609): `open --ticket` writes the ticket's `branch:` 
 
 - `lanes_root: <path>`, default `wtroot.py root`: the sibling `<main checkout parent>/<repo>.worktrees` (T-0563; the legacy `.claude/worktrees` and `.worktrees` are read for one release), or a `worktree_root:` line, or a bare clone's `<bare parent>/lanes` (T-0561); a set path is relative to the main worktree's toplevel.
 - `lane_into: <ref>`, default none (main).
-- `lane_setup: <cmd>`, default none; runs in a new tree.
+- `lane_setup: <cmd>`, default none; runs in a new tree. A repeated line adds a command; they run in order and the first failure stops the rest (T-0692).
 - `lane_ports: <lo>-<hi>`, default off.
 - `lane_stale_days: <n>`, default 10.
 - `lane_min_age_hours: <n>`, default 2.

@@ -205,7 +205,7 @@ Record fields. .lane.json at the tree root, written by open, added to <git commo
   lane      the lane name (the tree leaf)          kind      fanout, integration or solo (host for a host record)
   branch    the lane branch                        base      the --base ref          base_sha  its sha at open
   into      the ref the landed test reads          tickets   the ticket ids          port      a port, or null
-  opened    UTC time of open                       run_id    $SDLC_RUN_ID, or null   setup     ok, failed rc=<n>, or null
+  opened    UTC time of open                       run_id    $SDLC_RUN_ID, or null   setup     ok, failed rc=<n> (<cmd>), or null
   lock      the reason open locked the tree with, or null
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
   Lock (T-0589): the CLI open of a fanout or solo lane (the Python open_lane only with lock=True) runs git worktree lock
@@ -219,7 +219,8 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
                             in 0.23 and .worktrees before, both still read for one release), or a bare clone's <bare parent>/lanes
                             or a worktree_root: line (T-0561); a set path is relative to the main worktree's toplevel
   lane_into: <ref>          default none (main)
-  lane_setup: <cmd>         run in a new tree; a failure records setup: failed rc=<n> and keeps the lane
+  lane_setup: <cmd>         run in a new tree; repeat the line for several commands, run in order, the first failure stops the rest;
+                            open prints and records setup: ok or setup: failed rc=<n> (<cmd>) and keeps the lane (T-0692)
   lane_ports: <lo>-<hi>     off when absent; open picks the lowest free port under a flock on <lanes root>/lanes.lock
   lane_stale_days: <n>      default 10        lane_min_age_hours: <n>  default 2
   lane_keep: <branch>...    sweep keeps these  lane_names:, lane_sweep:  read and returned only (fanout owns them)
@@ -334,7 +335,7 @@ def flock(path):
 def config(toplevel):
     """The lane keys of <toplevel>/.sdlc/config with their defaults (see the docstring)."""
     top = Path(toplevel)
-    vals, keep = {}, []
+    vals, keep, setups = {}, [], []
     path = top / '.sdlc' / 'config'
     lines = path.read_text(encoding='utf-8').splitlines() if path.is_file() else []
     for line in lines:
@@ -346,6 +347,9 @@ def config(toplevel):
         k, v = m.groups()
         if k == 'lane_keep':
             keep += [x for x in re.split(r'[\s,]+', v) if x]
+        elif k == 'lane_setup':  # T-0692: every line counts, in order
+            if v:
+                setups.append(v)
         else:
             vals[k] = v
     ports = None
@@ -362,7 +366,7 @@ def config(toplevel):
     # of the main checkout, T-0563, else a bare clone's <bare parent>/lanes), never a path under the current lane
     root = os.path.expanduser(vals.get('lanes_root') or str(wtroot.root(top) or wtroot.default_root(top)))
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
-                lane_setup=vals.get('lane_setup') or None, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
+                lane_setup=setups, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
                 lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None, conductor=vals.get('conductor') or None)
 
@@ -1541,14 +1545,17 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     if rec['port']:
         lines.append(f'port {rec["port"]}')
     if ctx.cfg['lane_setup']:
-        try:
-            s = subprocess.run(ctx.cfg['lane_setup'], shell=True, cwd=str(tree))
-            rec['setup'] = 'ok' if s.returncode == 0 else f'failed rc={s.returncode}'
-        except OSError as e:
-            rec['setup'] = f'failed rc=127 ({e})'
+        rec['setup'] = 'ok'
+        for cmd in ctx.cfg['lane_setup']:  # T-0692: in order, the first failure stops the rest
+            try:
+                rc = subprocess.run(cmd, shell=True, cwd=str(tree)).returncode
+            except OSError:
+                rc = 127
+            if rc:
+                rec['setup'] = f'failed rc={rc} ({cmd})'
+                break
         write_record(tree, rec)
-        if rec['setup'] != 'ok':
-            lines.append(f'setup: {rec["setup"]}')
+        lines.append(f'setup: {rec["setup"]}')
     return result(0, '\n'.join(lines), lane=leaf, path=tree, branch=branch, port=rec['port'])
 
 
@@ -3111,6 +3118,33 @@ def case_local_settings(script, base):
     return fails
 
 
+def case_lane_setup(script, base):
+    """T-0692: two lane_setup: lines both run in order in the new tree; a failing first line records failed and skips the second."""
+    t = Fixture(base, script, 'lsetup')
+    t.ticket(7, 'Seven', claimed=True)
+    t.write({'.sdlc/config': 'lane_setup: echo one >> marker.txt\nlane_setup: echo two >> marker.txt\n'})
+    fails = []
+    leaf, wt, _ = t.open('a', 'T-7')
+    marker = wt / 'marker.txt'
+    got = marker.read_text().split() if marker.is_file() else None
+    rec = read_json(wt / RECORD) or {}
+    if got != ['one', 'two'] or rec.get('setup') != 'ok':
+        fails.append(f'lane_setup: two lines want marker [one, two] and setup ok, got {got} and {rec.get("setup")!r}')
+    rc, o = t.lanes('open', 'b', '--ticket', 'T-7', '--root', '.none')
+    if rc or 'setup: ok' not in o.splitlines():
+        fails.append(f'lane_setup: a successful open want a setup: ok line, got {rc}: {o}')
+    t.write({'.sdlc/config': 'lane_setup: echo first >> marker.txt; exit 3\nlane_setup: echo second >> marker.txt\n'})
+    rc, o = t.lanes('open', 'c', '--ticket', 'T-7', '--root', '.none')
+    m = re.search(r'opened (\S+) at (.+?) \(branch', o)
+    wc = Path(m.group(2)) if m else None
+    got = wc.joinpath('marker.txt').read_text().split() if wc and wc.joinpath('marker.txt').is_file() else None
+    rec = read_json(wc / RECORD) if wc else {}
+    want = 'failed rc=3 (echo first >> marker.txt; exit 3)'
+    if rc or got != ['first'] or (rec or {}).get('setup') != want or f'setup: {want}' not in o.splitlines():
+        fails.append(f'lane_setup: a failing first line want marker [first], the lane kept and {want!r}, got {rc} {got} {(rec or {}).get("setup")!r}: {o}')
+    return fails
+
+
 def case_host_record(script, base):
     t = Fixture(base, script, 'hostrec')
     t.write({'.sdlc/config': 'lane_ports: 47110-47130\n'})
@@ -3618,6 +3652,8 @@ def run_selftest(script, src, base):
         need('C9', case_c9(script, base), 'clashing names and a missing ticket refuse with nothing left; lane/T-1-a opens')
         need('plugin_min', case_plugin_min(script, base),
              'plugin_min above the manifest refuses open with exit 2 and the host command, nothing left; equal opens')
+        need('lane_setup', case_lane_setup(script, base),
+             'two lane_setup: lines run in order; a failing first line records failed with its command and skips the second (T-0692)')
         need('codex agents', case_codex_agents(script, base),
              'a lane in an onboarded repo gets current .codex/agents; a repo never onboarded gets none')
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),
