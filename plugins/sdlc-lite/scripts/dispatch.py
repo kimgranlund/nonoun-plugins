@@ -4508,7 +4508,7 @@ def selftest():
         def stale_case(label, versions, want, orphaned=()):
             shutil.rmtree(sk, ignore_errors=True)
             for v in versions:
-                (sk / v / '.claude-plugin').mkdir(parents=True)
+                (sk / v / '.claude-plugin').mkdir(parents=True, exist_ok=True)  # old is 0.0.1 at an x.y.0 release
                 (sk / v / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': v}), encoding='utf-8')
             for v in orphaned:
                 (sk / v / '.orphaned_at').write_text('2026-10-21T00:50:00Z\n', encoding='utf-8')

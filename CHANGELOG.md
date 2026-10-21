@@ -2,6 +2,36 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.29.0] - 2026-10-21
+
+Report: [docs/reports/2026-10-21-release-0-29-0.md](docs/reports/2026-10-21-release-0-29-0.md). Addresses GitHub issues #32 to #43 and the reopened #10, #11 and #22, from the ui-kit 0.27 vs 0.28 measurement.
+
+### Added
+
+- `steps.py routes [<path>...]` prints the resolved repo skill routes; `onboard.py check` warns when an AGENTS.md names `.agents/skills/*/SKILL.md` but resolves no route (T-0677, #11).
+- `fanout.py settle <integration> --catch-up` merges main into an integration branch, regenerating the roadmap, router and notes files, and stops (T-0681, #34).
+- `.sdlc/config` `merge_union: <globs>` and `merge_union_gate: <cmd>`: land union-merges those paths and runs the gate before committing the merge (T-0683, #38).
+- `dispatch.py settle-held <verifier result> --by conductor --evidence <path>` settles a `deferred: conductor` held criterion, which steps, close and land then read as pass; a result with any unparsed criteria line never reads as settled (T-0684, T-0696, #35).
+- `fanout.py queue` prints the land holding `merge.lock` and the lands waiting on it (T-0687, #37).
+- `--tickets T-1,T-2` on `lanes.py open` and `tickets.py claim` (T-0691, #43).
+- `lanes.py ready --notify-cmd <cmd>` runs a command when a ready is pinned (T-0694, #39).
+- Briefs carry `Ports: SDLC_LANE_PORT=<n>` when the lane holds a port (T-0693, #41).
+
+### Changed
+
+- Skill routing reads markdown links to a SKILL.md and cued prose lines in a nested AGENTS.md, so repos that route skills that way get `Read first:` lint and the `Repo skills for this step:` brief line (T-0676, #11).
+- `prepare` stamps `plugin_version` on the dispatch and attempt; `record` accepts a result prepared under another version that fails the current format as `legacy-format`, instead of failing a pass (T-0678, #33).
+- `dispatch.py`, `solo_run.py` and `fanout.py` print one stderr line when a newer plugin version is in the cache; `conductor.md` says to re-resolve the scripts path after `/reload-plugins` (T-0679, #33).
+- `lanes.py open --into <integration>` records the claim and lane in the integration tree, not on main, and `lanes.py close` clears it there (T-0680, T-0695, #34).
+- Solo briefs from `solo_run.py` and `fanout.py prep` carry `Report file:` and a one-line pointer, and `record` reads the solo report file (T-0682, #10).
+- `record --agent-id` ignores stdin under 40 characters with no heading when the transcript holds a complete result (T-0685, #36).
+- `record` prints a repo-relative `- Review record:` line for ui-designer reviews; `steps.py lint` warns on an absolute home path in a criterion (T-0686, #22).
+- `dispatch.py advance` also handles solo, ticket verifier and review completions (T-0688, #32).
+- `fanout.py prep` and `land` reuse an integration branch checked out in another worktree (T-0689, #42).
+- `dispatch.py status` lists `step-*/` attempts and says where to look when it finds none (T-0690, #40).
+- `lane_setup:` runs every config line in order and prints `setup: ok` or the failing command (T-0692, #41).
+- `lanes.py ready` prints the missing-mailbox warning once per session (T-0694, #39).
+
 ## [0.28.1] - 2026-10-20
 
 Report: [docs/reports/2026-10-20-release-0-28-1.md](docs/reports/2026-10-20-release-0-28-1.md).
