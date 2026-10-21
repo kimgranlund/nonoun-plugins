@@ -132,3 +132,8 @@
 
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2013: the L1 solo close line, the ui-designer branches (`next: <verdict>` / `stop: changes-required`) and the "other role keeps `next: <hint>`" branch have no selftest case; read-only inspection only, `results.key_value` for ui-designer is keyed on `## Mode` (results.py:81, 307) so `verdict_word == 'review'` matches. note: not a criterion.
 - decide: Scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0688-verifier-L2 (a copy of the plugin plus selftest logs) could not be removed: the permission layer denied `rm -rf` on it. note: harmless, outside the repo; the detached worktree was already removed.
+
+## T-0694: lanes.py ready warns once per session and runs --notify-cmd on pin (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/lanes.py:1716 `if notify_cmd: pass` followed by `elif` reads awkwardly; `if not notify_cmd:` wrapping the two branches would say the same thing.
+- note: plugins/sdlc-lite/scripts/lanes.py:191 the docstring line ending `(T-0694); any other refused send prints ...` runs well past the surrounding wrap width.

@@ -2,7 +2,7 @@
 id: T-0694
 title: "lanes.py ready warns once per session and runs --notify-cmd on pin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,15 @@ The ready ref, unlock and exit codes are unchanged; a registered mailbox still g
 - Selftest case `ready once` added; it fails with the once-marker or the notify call removed (observed with mutated copies).
 - Docs: lanes.py docstring and the Hosts bullet in `plugins/sdlc-lite/AGENTS.md`.
 - Checks: `lanes.py selftest` exit 0, `lanes.py ready --help` lists `--notify-cmd`, `check.py` exit 0, `git diff --check 65579ba8` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 65579ba8ee2a
+- Changed: see commits
+- Commits: 53bd3c2 T-0694: lanes ready warns once per session and runs --notify-cmd on pin
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with the new case, and the case fai...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/lanes.py ready --help` lists `--notify-cmd`: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:1716 if notify_cmd: pass... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:191 the docstring line ending... -> notes.md

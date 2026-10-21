@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:729c2f995be4 -->
+<!-- sdlc-lite:managed:start v1 sha256:d97cb6b4d2a3 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -24,12 +24,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0693 briefs carry a Ports line from lanes.py port (docs/work/0693-brief-ports-line)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 2
+- claimed: 1
   - T-0682 solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file (docs/work/0682-solo-brief-report-file), claimed by sdlc-lite-author 2026-10-20
-  - T-0694 lanes.py ready warns once per session and runs --notify-cmd on pin (docs/work/0694-ready-warn-once-notify-cmd), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
-- done: 645
+- done: 646
 - dropped: 29
 
 ## Procedures
