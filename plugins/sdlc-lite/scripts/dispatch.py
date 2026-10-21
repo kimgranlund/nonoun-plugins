@@ -2127,6 +2127,7 @@ def main(argv):
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
         return selftest()
+    plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
     if args.cmd == 'prune':
         try:
             if args.done:
@@ -4371,6 +4372,28 @@ def selftest():
         (hooks / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': have}), encoding='utf-8')
         rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, CLAUDE_PLUGIN_ROOT=str(hooks)))
         case('plugin_min: a hook plugin that meets plugin_min passes', rc == 0 and 'plugin_min' not in err)
+        # T-0679: a newer, non-orphaned version folder in the plugin cache prints one stderr line naming both versions and the
+        # scripts path to re-resolve; an equal or older folder and an orphaned newer one print nothing.
+        sk = tmp / 'stale-cache'
+        nxt = '.'.join(parts[:-1] + [str(int(parts[-1]) + 1)])
+
+        def stale_case(label, versions, want, orphaned=()):
+            shutil.rmtree(sk, ignore_errors=True)
+            for v in versions:
+                (sk / v / '.claude-plugin').mkdir(parents=True)
+                (sk / v / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': v}), encoding='utf-8')
+            for v in orphaned:
+                (sk / v / '.orphaned_at').write_text('2026-10-21T00:50:00Z\n', encoding='utf-8')
+            rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, SDLC_PLUGIN_CACHE=str(sk)))
+            line = 'sdlc-lite %s in use; %s installed: re-resolve the scripts path (%s/scripts)' % (have, nxt, sk / nxt)
+            case(label, rc == 0 and (err.count(line) == 1 if want else 'in use;' not in err))
+        (pm / '.sdlc' / 'config').unlink()
+        stale_case('stale: a newer version folder in the cache prints the one re-resolve line', (have, nxt), True)
+        stale_case('stale: an equal version folder prints nothing', (have,), False)
+        stale_case('stale: an older version folder prints nothing', (old, '0.0.1'), False)
+        stale_case('stale: a newer version folder holding .orphaned_at prints nothing', (have, nxt), False, orphaned=(nxt,))
+        rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, SDLC_PLUGIN_CACHE=str(tmp / 'no-cache')))
+        case('stale: no cache prints nothing', rc == 0 and 'in use;' not in err)
         case('plugin_min compares numerically per part', plugin_min.below('0.9.0', '0.10.0') and not plugin_min.below('0.10.0', '0.9.0')
              and plugin_min.below('0.23.1', '0.24') and not plugin_min.below('1.0', '1.0.0'))
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))

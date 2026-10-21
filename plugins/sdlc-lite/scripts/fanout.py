@@ -482,6 +482,7 @@ import steps  # same scripts/ dir: next_action and section read step results
 import order  # same scripts/ dir: newest result file of a role
 import wtroot  # same scripts/ dir: the worktree root under the main checkout (T-0550)
 import lanes  # same scripts/ dir: the lane lifecycle (open, close, sweep)
+import plugin_min  # same scripts/ dir: the stale-install warning (T-0679)
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
@@ -5972,6 +5973,7 @@ def main(argv):
     if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover'], ['sync'], ['queue']):
         print(USAGE, file=sys.stderr)
         return 2
+    plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
     if argv[0] == 'queue':
         qp = argparse.ArgumentParser(prog='fanout.py queue', description='Print the land order of one lanes dir '
                                      '(T-0687): the merge.lock holder, then each other live `fanout.py land`.')
