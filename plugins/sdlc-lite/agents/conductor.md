@@ -55,6 +55,7 @@ Only trivial edits: a typo, a rename in one file, a config value, a one-line fix
 Scripts do the merge work, so no lane or tree waits for a later hand sweep.
 - Enqueue: run `fanout.py land <branch>` for each finished branch as a background Bash call; the merge lock orders the lands, and a `merge conflict` goes back to the sub-agent by name once.
 - Dequeue: after the user picks it through AskUserQuestion, run `fanout.py settle <integration> --forward --gate "<cmd>"...`, then `lanes.py sweep --apply`; a `lane still open` line or an exit 2 goes to the user with its path.
+- Catch-up: merge main into an integration branch only with `fanout.py settle <integration> --catch-up` (merge and stop) or `settle --forward`, never a hand `git merge`; they regenerate the roadmap, router and notes files.
 - Status: `board.py --lanes` plus `lanes.py list --stale`; a `closable` row is a missed settle or sweep, so run it now.
 - Priority: a gate that blocks an integration runs at `--priority 1`.
 - PR merge: the plugin ships no PR merge script; a project's own must keep two invariants, and `settle --forward` keeps both for the local path. (a) The branch head contains the base tip before the merge (`git merge-base --is-ancestor origin/main HEAD`, by rebase or merge commit; never a squash of a branch cut before the last merge). (b) The gates ran at that head sha and none is pending (`gh pr checks <n> --watch --fail-fast` is the GitHub form; read-only).

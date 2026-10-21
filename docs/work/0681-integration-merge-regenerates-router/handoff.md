@@ -36,3 +36,10 @@ Source: GitHub issue #34, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 2. `git grep -n -- "--catch-up" plugins/sdlc-lite/skills/fanout/SKILL.md plugins/sdlc-lite/agents/conductor.md` shows the Arguments row and both sentences.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `fanout.py settle <integration> --catch-up` merges the current branch into the integration branch through the shared `merge_into_integration` (factored out of `settle_forward`: worktree lookup, dirty refusal, `merge_generated` under `<lanes dir>/merge.lock`, the commit), commits `catch-up: <head> <sha7> into <integration>` and stops: no cover, no fast-forward, worktree and branch kept. Nothing to merge exits 0; a running role refuses unless `--force`; `--catch-up` with `--forward` exits 2. `settle --forward` messages, commit subject and exit codes are unchanged.
+- Docs: the `--catch-up` Arguments row and a sentence in `skills/fanout/SKILL.md`; a Catch-up line in `agents/conductor.md` `## Merge ops` (Codex conductor TOML regenerated).
+- Selftest T-0681: main files T-0003 and the integration branch files T-0004, each regenerating the roadmap; `settle --catch-up` exits 0, the integration roadmap lists both, main is unmoved; a second run prints nothing to merge.
+- Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; with `--catch-up` removed from the parser it exits 1 on both T-0681 expectations. `git grep -n -- "--catch-up" plugins/sdlc-lite/skills/fanout/SKILL.md plugins/sdlc-lite/agents/conductor.md` exit 0. `python3 plugins/sdlc-lite/scripts/check.py` exit 0. `git diff --check 6c2467b5` exit 0.
+- Not changed: `skills/handoff-format/run-operations.md` `## Merge ops` (outside scope) has no catch-up line.
