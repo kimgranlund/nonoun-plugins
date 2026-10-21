@@ -174,11 +174,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             created (declared_future_paths: a [creates: <path>] marker, an Outputs: line, a ### Do create
             verb, a (red) span; T-0533), and lint and split refuse
             with the plan defect last line. A step with no ### Read first stays valid.
-            Skill routing (T-0647): a list item or table row of any AGENTS.md under the tree (root included) whose
-            code spans hold one skill path (a SKILL.md file or a folder under skills/) and at least one other path
-            or glob routes those paths to that skill; a list item also needs a routing cue (ROUTE_CUE_RE: ->, read,
-            use, follow) just before the skill span, T-0672 (repo_skill_routes; paths in a nested AGENTS.md resolve against
-            its folder). A step whose scope allow-list (scope_entries) names a routed path (a trailing / matches the
+            Skill routing (T-0647): a list item or table row of any AGENTS.md under the tree (root included), or a
+            prose line of a nested AGENTS.md (T-0676), whose code spans or markdown link targets hold one skill path
+            (a SKILL.md file or a folder under skills/) and at least one other path or glob routes those paths to
+            that skill; a list item or prose line also needs a routing cue (ROUTE_CUE_RE: ->, read, use, follow)
+            just before the skill span, T-0672 (repo_skill_routes; paths in a nested AGENTS.md resolve against its
+            folder, a skill path only when it exists there, else against the repo root). A step whose scope allow-list (scope_entries) names a routed path (a trailing / matches the
             folder prefix, else fnmatch) and whose ### Read first does not list the skill is a finding "steps: <plan>
             step <n>: plan defect: edits routed path <p> without its skill under ### Read first: <skill>". A repo
             with no routing lines, or a step with no scope span, gets no such finding.
@@ -1517,6 +1518,7 @@ def read_first_paths(block):
 
 SKILL_PATH_RE = re.compile(r'(?:^|/)(?:SKILL\.md|skills/[^/]+/?)$')
 ROUTE_CUE_RE = re.compile(r'->|\u2192|\b(?:read|reads|use|uses|using|follow|follows)\b', re.I)
+SKILL_LINK_RE = re.compile(r'\[[^\]]*\]\(<?([^)\s>]+)>?\)')
 
 
 def route_path_like(text):
@@ -1541,11 +1543,12 @@ def agents_files(top):
 
 def repo_skill_routes(top):
     """[(glob, skill)] from the routing lines of every AGENTS.md under top, root included. A routing line is a
-    list item (- or *) or table row (|) whose code spans hold exactly one skill path (a SKILL.md file or a folder
-    under a skills/ directory) and at least one other path or glob (route_path_like); a list item also needs a
-    routing cue (ROUTE_CUE_RE) in the text just before the skill span, so a prose bullet that merely mentions a
-    skill is no route. Paths in a nested AGENTS.md
-    resolve against its folder; every pair comes back repo-relative in posix form."""
+    list item (- or *) or table row (|), or in a nested AGENTS.md also a prose line, whose spans (code spans, and
+    markdown link targets that are skill paths, T-0676) hold exactly one skill path (a SKILL.md file or a folder
+    under a skills/ directory) and at least one other path or glob (route_path_like); a list item or prose line
+    also needs a routing cue (ROUTE_CUE_RE) in the text just before the skill span, so a prose bullet that merely
+    mentions a skill is no route. Paths in a nested AGENTS.md resolve against its folder, a skill path only when
+    it exists there, else against the repo root; every pair comes back repo-relative in posix form."""
     top = pathlib.Path(top)
     routes = []
     for f in agents_files(top):
@@ -1561,10 +1564,13 @@ def repo_skill_routes(top):
             if t.startswith('```'):
                 fenced = not fenced
                 continue
-            if fenced or not (t.startswith('- ') or t.startswith('* ') or t.startswith('|')):
+            if fenced or not (t.startswith('- ') or t.startswith('* ') or t.startswith('|') or prefix):
                 continue
-            ms = [m for m in SPAN_RE.finditer(t) if m.group(2).strip()]
-            spans = [m.group(2).strip() for m in ms]
+            links = [m for m in SKILL_LINK_RE.finditer(t) if SKILL_PATH_RE.search(m.group(1))]
+            ms = sorted([m for m in SPAN_RE.finditer(t) if m.group(2).strip()
+                         and not any(x.start() <= m.start() < x.end() for x in links)] + links,
+                        key=lambda m: m.start())
+            spans = [(m.group(1) if m.re is SKILL_LINK_RE else m.group(2)).strip() for m in ms]
             skills = [x for x in spans if route_path_like(x) and SKILL_PATH_RE.search(x)]
             others = [x for x in spans if route_path_like(x) and not SKILL_PATH_RE.search(x)]
             if len(skills) != 1 or not others:
@@ -1573,7 +1579,8 @@ def repo_skill_routes(top):
                 k = next(i for i, x in enumerate(spans) if x == skills[0])
                 if not ROUTE_CUE_RE.search(t[ms[k - 1].end() if k else 0:ms[k].start()]):
                     continue
-            routes += [(prefix + (g[2:] if g.startswith('./') else g), prefix + skills[0]) for g in others]
+            skill = prefix + skills[0] if (f.parent / skills[0]).exists() else skills[0]
+            routes += [(prefix + (g[2:] if g.startswith('./') else g), skill) for g in others]
     return routes
 
 
@@ -5555,6 +5562,19 @@ def selftest():
         (rt / 'AGENTS.md').write_text(RT_PROSE, encoding='utf-8')
         check('(rt) T-0672: a prose bullet that mentions a skill beside paths yields no route',
               repo_skill_routes(rt) == [])
+        # (rt) T-0676: a markdown link to a SKILL.md is a skill span, and a nested AGENTS.md prose line with a cue
+        # routes; a root-relative skill cited from the nested file resolves to the root skill
+        (rt / 'AGENTS.md').write_text('# Repo\n\n- `src/styles/` follows [recipe](.agents/skills/recipe/SKILL.md)\n',
+                                      encoding='utf-8')
+        check('(rt) T-0676: a root bullet that links the skill as markdown yields its route',
+              repo_skill_routes(rt) == [('src/styles/', '.agents/skills/recipe/SKILL.md')])
+        (rt / 'AGENTS.md').write_text('# Repo\n', encoding='utf-8')
+        (rt / 'src').mkdir(exist_ok=True)
+        (rt / 'src' / 'AGENTS.md').write_text(
+            '# Src\n\nBefore editing `styles/`, read `.agents/skills/recipe/SKILL.md`.\n', encoding='utf-8')
+        check('(rt) T-0676: a nested AGENTS.md prose line with a cue routes to the root skill',
+              repo_skill_routes(rt) == [('src/styles/', '.agents/skills/recipe/SKILL.md')])
+        (rt / 'src' / 'AGENTS.md').unlink()
         (rt / 'AGENTS.md').write_text(RT_ROUTE, encoding='utf-8')
         rc, out, err = rt_lint('rt-bad', RT_ROUTE, rt_step)
         check('(rt) lint refuses a step that edits a routed path without its skill under ### Read first',
