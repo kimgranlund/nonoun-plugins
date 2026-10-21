@@ -2,7 +2,7 @@
 id: T-0686
 title: "record prints a repo-relative Review record line; lint warns on absolute home paths in criteria"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ The new line and the warning are additive: no exit code changes.
 - `steps.py lint`: advisory `absolute home path in a criterion: <span>` warning (`abs_path_warnings`, pattern of `tickets.ABS_PATH_RE`), help text updated. Selftest case plus a repo-relative control; the case fails with the warning unhooked.
 - `docs/references/sdlc-internals.md`: the record paragraph names the new line.
 - Checks: dispatch.py selftest exit 0, steps.py selftest exit 0, tickets.py selftest exit 0, check.py exit 0, `git diff --check 5b758412` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 5b758412231c
+- Changed: see commits
+- Commits: 8855106 T-0686: record prints a repo-relative Review record line; lint warns on absolute home paths in criteria
+- Check: 1 dispatch.py selftest exits 0 with the review-record case and plan-mode control; case fails with c...: pass
+- Check: 2 steps.py selftest exits 0 with the absolute-path warning case and clean control; case fails with ...: pass
+- Check: 3 tickets.py selftest exits 0: pass
+- Check: 4 check.py exits 0: pass
+- Check: 5 `git diff --check 5b758412` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:1746: ABS_HOME_RE copies the... -> notes.md

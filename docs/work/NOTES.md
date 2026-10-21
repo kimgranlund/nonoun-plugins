@@ -159,3 +159,7 @@
 ## T-0681: merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md (2026-10-20)
 
 - decide: `settle --forward` was refactored (`settle_forward` now calls `merge_into_integration`); its messages, commit subject and exit codes read as unchanged in the diff and the existing T-0489 selftest cases still pass in the green selftest run.
+
+## T-0686: record prints a repo-relative Review record line; lint warns on absolute home paths in criteria (2026-10-20)
+
+- decide: plugins/sdlc-lite/scripts/steps.py:1746: `ABS_HOME_RE` copies the `tickets.ABS_PATH_RE` pattern as a literal, not an import, so the two can drift. The handoff said to reuse the pattern, and this is acceptable.

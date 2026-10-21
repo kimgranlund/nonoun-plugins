@@ -8,13 +8,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
 | T-0684 | [0684-settle-held-criterion](0684-settle-held-criterion/handoff.md) | settle a deferred: conductor held criterion so land reads it as pass | feature | L2 | P2 | none | ⏳ proposed |
-| T-0686 | [0686-review-record-relative-line](0686-review-record-relative-line/handoff.md) | record prints a repo-relative Review record line; lint warns on absolute home paths in criteria | bug | L2 | P2 | none | 🟡 claimed |
 | T-0687 | [0687-land-queue-doc](0687-land-queue-doc/handoff.md) | document merge.lock land queueing and add fanout.py queue | feature | L1 | P2 | none | 🟡 claimed |
 | T-0689 | [0689-prep-reuse-integration-tree](0689-prep-reuse-integration-tree/handoff.md) | fanout.py prep --integration reuses an existing integration worktree | bug | L1 | P3 | none | ⏳ proposed |
 | T-0690 | [0690-status-recurse-records](0690-status-recurse-records/handoff.md) | dispatch.py status finds attempts in step folders and the records dir | bug | L1 | P3 | none | ⏳ proposed |
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
 
-Closed: 651 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 652 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -28,3 +27,4 @@ Closed: 651 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2013: the L1 solo close line, the ui-designer branches (`next: <verdict>` / `stop: changes-required`) and the "other role keeps `next: <hint>`" branch have no selftest case; read-only inspection only, `results.key_value` for ui-designer is keyed on `## Mode` (results.py:81, 307) so `verdict_word == 'review'` matches. note: not a criterion. (from T-0688: dispatch.py advance handles ticket-level completions (2026-10-20))
 - decide: Scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0688-verifier-L2 (a copy of the plugin plus selftest logs) could not be removed: the permission layer denied `rm -rf` on it. note: harmless, outside the repo; the detached worktree was already removed. (from T-0688: dispatch.py advance handles ticket-level completions (2026-10-20))
 - decide: `settle --forward` was refactored (`settle_forward` now calls `merge_into_integration`); its messages, commit subject and exit codes read as unchanged in the diff and the existing T-0489 selftest cases still pass in the green selftest run. (from T-0681: merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md (2026-10-20))
+- decide: plugins/sdlc-lite/scripts/steps.py:1746: `ABS_HOME_RE` copies the `tickets.ABS_PATH_RE` pattern as a literal, not an import, so the two can drift. The handoff said to reuse the pattern, and this is acceptable. (from T-0686: record prints a repo-relative Review record line; lint warns on absolute home paths in criteria (2026-10-20))
