@@ -58,8 +58,11 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   `worktree: <tree relative to the main checkout>` (T-0550, printed as `ticket <id>: worktree: <path>`; none for a
   tree outside the checkout); the Python open_lane does so only with record_branch=True. The same open then commits the
   paths those writes changed in main as `<ids>: record lane <leaf>` (T-0599, printed as `committed: <sha> <message>`),
-  so main is clean and a fast-forward settle is not blocked. A path already dirty before the open (staged or not) is
-  never committed, compared by path: a ticket handoff left out this way prints `not committed: <path> (dirty before
+  so main is clean and a fast-forward settle is not blocked. With no --root, an --into branch checked out in an
+  integration tree (not the main checkout) takes both writes and the commit in that tree instead, printed as `recorded
+  in <tree>`, and main does not move (T-0680); a ticket missing from that tree's root falls back to main, printed as
+  `recorded in the main checkout: <ids> not in <tree>/<root>`. An explicit --root records in the main checkout.
+  A path already dirty before the open (staged or not) is never committed, compared by path: a ticket handoff left out this way prints `not committed: <path> (dirty before
   open); commit it yourself`. When main tracks an upstream (T-0609: the repo lands through it, as by PR), open writes
   and commits neither line, printing `not recorded: <main> tracks <upstream>, ...`, so main never gains a commit its
   landing path does not push; the claim is the refs/sdlc/claims ref (T-0588). Every close removes a record
