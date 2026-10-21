@@ -137,3 +137,8 @@
 
 - note: plugins/sdlc-lite/scripts/lanes.py:1716 `if notify_cmd: pass` followed by `elif` reads awkwardly; `if not notify_cmd:` wrapping the two branches would say the same thing.
 - note: plugins/sdlc-lite/scripts/lanes.py:191 the docstring line ending `(T-0694); any other refused send prints ...` runs well past the surrounding wrap width.
+
+## T-0692: lane_setup config commands run by lanes.py open (2026-10-20)
+
+- note: docs/specs/sdlc-lite/lane-lifecycle.md:220 still says a failed setup records `setup: failed rc=<n>`. The record now appends ` (<cmd>)`, and the spec does not mention repeated lines.
+- note: the contract changed from `config()['lane_setup']` as a str or None to a list. `git grep lane_setup` and `git grep "'setup'"` across plugins/ and scripts/ find no consumer outside lanes.py, and fanout.py selftest passes.

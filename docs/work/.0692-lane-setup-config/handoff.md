@@ -2,7 +2,7 @@
 id: T-0692
 title: "lane_setup config commands run by lanes.py open"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,16 @@ A config with one `lane_setup:` line behaves as today apart from the printed `se
 - New selftest case `lane_setup` (two lines run in order; a failing first line skips the second). Observed red against HEAD's lanes.py (marker held only `two`, no `setup: ok` line), green with the change.
 - Documented in fanout SKILL.md line 39, the lanes.py Config docstring, and `docs/references/sdlc-internals.md`.
 - Checks: `lanes.py selftest` exit 0, `fanout.py selftest` PASS, `check.py` exit 0, `git diff --check 148975bb` exit 0, `grep -n "lane_setup" plugins/sdlc-lite/skills/fanout/SKILL.md` prints line 39.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 148975bb6669
+- Changed: see commits
+- Commits: 024d901 T-0692: lane_setup runs every config line in order and prints setup status
+- Check: 1 `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 with the new case, and the case fai...: pass
+- Check: 2 `grep -n "lane_setup" plugins/sdlc-lite/skills/fanout/SKILL.md` prints at least one line: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0: pass
+- Check: 4 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 5 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: docs/specs/sdlc-lite/lane-lifecycle.md:220 still says a failed... -> notes.md
+- Follow-up: note: the contract changed from config'lane_setup' as a str or None to a... -> notes.md
