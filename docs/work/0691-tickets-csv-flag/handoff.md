@@ -36,3 +36,7 @@ Source: GitHub issue #43, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 2. `git grep -n -- "--tickets" plugins/sdlc-lite/skills/ticket/SKILL.md` shows the Arguments row, and `git grep -n "bash -c" plugins/sdlc-lite/agents/conductor.md` shows the sentence.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Changed: `--tickets T-1,T-2` on `lanes.py open` (merged after `--ticket`, duplicates dropped) and `tickets.py claim` (each id tried in order, exit 1 if any fails); docstring and usage lines, `--tickets` row in the ticket skill Arguments, one `bash -c` sentence in `agents/conductor.md` (Codex conductor toml regenerated). `fanout.py land` untouched per the non-goal.
+- Checks: `lanes.py selftest` exit 0 (new case plus mutant TICKETS-CSV), `tickets.py selftest` exit 0 (new claim cases); with the flag ignored in a scratch copy the new tickets cases fail; `check.py` exit 0; `git diff --check aff32475` exit 0.

@@ -5,7 +5,7 @@ tickets` line, the <W> form when it has a `work_root: W` line (W is repo-relativ
 This script is the only writer of the roadmap: .sdlc/roadmap.md, .sdlc/tickets/roadmap.md with `layout: topics`,
 or <W>/ROADMAP.md under a work root.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--lessons TEXT]... [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim <id> [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | inventory [--into BRANCH]... [--days N] [--json] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--filer] [--changed TEXT] [--lessons TEXT]... [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] [--preflight] | claim [<id>] [--tickets ID,ID] [--by <agent>] [--handover --reason TEXT] [--numbered] | release <id> [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-work-root [--to PATH] [--dry-run] [--rewrite-refs] | migrate-size [--apply] | blockers [--scope PATH] | inventory [--into BRANCH]... [--days N] [--json] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -7235,6 +7235,37 @@ def selftest():
                and '- claimed: 0\n' in stage_text(rc_))
         rc, _, err = run(rc_, 'release', ('T-0001',))
         expect(f'release on an unclaimed ticket refuses: rc={rc} {err!r}', rc == 1 and 'not claimed' in err)
+        # T-0691: claim --tickets T-1,T-2 is two claim calls; a failing id exits 1 and the rest are still tried
+        import contextlib
+        import io
+        cc = pathlib.Path(tmp) / 'rt-claim-csv' / '.sdlc'
+        cw = pathlib.Path(tmp) / 'rt-claim-two' / '.sdlc'
+        for d_ in (cc, cw):
+            for slug_ in ('alpha', 'beta', 'gamma'):
+                run(d_, 'new', ('feature', slug_, slug_.title()))
+
+        def cli(*argv):
+            o_, e_ = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(o_), contextlib.redirect_stderr(e_):
+                try:
+                    code = main(list(argv))
+                except SystemExit as ex:
+                    code = ex.code
+            return code, o_.getvalue(), e_.getvalue()
+
+        def claimed(d_):
+            return [(m.get('id'), m.get('status'), m.get('claimed_by')) for _, m in load(d_)]
+        rc, out, err = cli('--root', str(cc), 'claim', '--tickets', 'T-0001,T-0002', '--by', 'tester')
+        run(cw, 'claim', ('T-0001', 'tester'))
+        run(cw, 'claim', ('T-0002', 'tester'))
+        expect(f'claim --tickets T-0001,T-0002 equals two claim calls: rc={rc} {out!r} {err!r} {claimed(cc)!r} {claimed(cw)!r}',
+               rc == 0 and claimed(cc) == claimed(cw) and sum(st == 'claimed' for _, st, _ in claimed(cc)) == 2)
+        rc, out, err = cli('--root', str(cc), 'claim', '--tickets', 'T-0001,T-0003', '--by', 'other')
+        expect(f'claim --tickets with one held id exits 1, names it and still claims the next: rc={rc} {out!r} {err!r}',
+               rc == 1 and 'already claimed by tester' in err and ('T-0003', 'claimed', f'other {datetime.date.today().isoformat()}')
+               in claimed(cc))
+        rc, out, err = cli('--root', str(cc), 'claim')
+        expect(f'claim with no id and no --tickets refuses: rc={rc} {err!r}', rc == 2 and 'needs an id or --tickets' in err)
         edit(rc_, 'beta', r'^status:.*$', 'status: claimed')
         rc, _, err = run(rc_, 'new', ('feature', 'delta', 'Delta'))
         expect(f'new refusing on a ticket problem names the ticket and the one-line fix: rc={rc} {err!r}',
@@ -8999,7 +9030,9 @@ def main(argv):
                         'lock; refuses with --dry-run, --skip, --expect or --ticket')
     p = sub.add_parser('claim', help='claim a ticket: status claimed and `claimed_by: <agent> <YYYY-MM-DD>` '
                                      'directly after created:, then regenerate the roadmap')
-    p.add_argument('id', help='the ticket id (T-NNNN) or folder name')
+    p.add_argument('id', nargs='?', help='the ticket id (T-NNNN) or folder name')
+    p.add_argument('--tickets', action='append', default=[], metavar='ID,ID',
+                   help='comma-separated ids claimed in order after any <id>, duplicates dropped; exits 1 if any claim fails (T-0691)')
     p.add_argument('--by', metavar='AGENT', help='the claiming agent, e.g. claude, astra or codex:<thread>; '
                    'wins over $SDLC_HOST and host detection; default: $SDLC_HOST, else claude or codex (with :<session>) from the host\'s own variables')
     p.add_argument('--handover', action='store_true',
@@ -9118,6 +9151,22 @@ def main(argv):
         except Fail as e:
             print(e, file=sys.stderr)
             return 1
+    if cmd == 'claim':  # T-0691: <id> then each --tickets id, in order; every id is tried, any failure exits 1
+        ids = []
+        for i in ([a.id] if a.id else []) + [x.strip() for c in a.tickets for x in c.split(',')]:  # TICKETS-CSV
+            if i and i not in ids:
+                ids.append(i)
+        if not ids:
+            ap.error('claim needs an id or --tickets')
+        worst = 0
+        for i in ids:
+            rc, out, err = run(pathlib.Path(a.root), cmd, (i, args[1]), **kw)
+            if out:
+                print(out)
+            if err:
+                print(err, file=sys.stderr)
+            worst = worst or rc
+        return worst
     lock = close_lock(pathlib.Path(a.root)) if cmd == 'close' and not a.preflight else None
     try:
         rc, out, err = run(pathlib.Path(a.root), cmd, args, **kw)

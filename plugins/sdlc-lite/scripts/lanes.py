@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lanes.py: the one home of the lane lifecycle. Open, close, finish, ready, sweep, list, check, port and archive a lane.
 
-  lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--kind fanout|integration|solo] [--title TEXT]
+  lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--tickets ID,ID] [--kind fanout|integration|solo] [--title TEXT]
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
@@ -1406,6 +1406,15 @@ def record_tree(ctx, into_, root, ids):
     return wt, None
 
 
+def merge_tickets(single, csv):
+    """T-0691: --ticket ids then the ids of each --tickets T-1,T-2, in order, duplicates dropped."""
+    out = []
+    for t in list(single or ()) + [x.strip() for c in (csv or ()) for x in c.split(',')]:  # TICKETS-CSV
+        if t and t not in out:
+            out.append(t)
+    return out
+
+
 def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None, root='.sdlc', dry_run=False, cwd='.', *,
               path=None, branch=None, check_claim=True, record_branch=False, lock=False):
     ctx = Ctx(cwd)
@@ -1996,6 +2005,8 @@ def main(argv=None):
     p.add_argument('--base')
     p.add_argument('--into')
     p.add_argument('--ticket', action='append', default=[])
+    p.add_argument('--tickets', action='append', default=[], metavar='ID,ID',
+                   help='comma-separated ticket ids, merged after any --ticket in order, duplicates dropped (T-0691)')
     p.add_argument('--kind', choices=KINDS, default='fanout')
     p.add_argument('--title')
     p.add_argument('--root')
@@ -2047,7 +2058,7 @@ def main(argv=None):
         return selftest()
     try:
         if a.cmd == 'open':
-            r = open_lane(a.name, base=a.base, into=a.into, tickets=a.ticket, kind=a.kind, title=a.title, root=a.root,
+            r = open_lane(a.name, base=a.base, into=a.into, tickets=merge_tickets(a.ticket, a.tickets), kind=a.kind, title=a.title, root=a.root,
                           dry_run=a.dry_run, path=a.path, branch=a.branch, check_claim=not a.no_claim,
                           record_branch=True, lock=True)
             print(r['message'])
@@ -2626,6 +2637,24 @@ def case_c9(script, base):
     rc, o = t.lanes('open', 'a', '--ticket', 'T-1')
     if rc != 0 or not (t.tree('T-1-a') / RECORD).is_file() or not t.ok('rev-parse', '--verify', 'refs/heads/lane/T-1-a'):
         fails.append(f'C9: lane/T-1-a did not open: {rc}: {o}')
+    return fails
+
+
+def case_tickets_csv(script, base):
+    """T-0691: --tickets T-1,T-2 is two --ticket; mixed forms concatenate and drop duplicates."""
+    t = Fixture(base, script, 'csv')
+    t.ticket(1, 'First', claimed=True)
+    t.ticket(2, 'Second', claimed=True)
+    t.ticket(3, 'Third')
+    fails = []
+    rc, o = t.lanes('open', 'a', '--tickets', 'T-1,T-2', '--dry-run')
+    rc2, o2 = t.lanes('open', 'a', '--ticket', 'T-1', '--ticket', 'T-2', '--dry-run')
+    rc3, o3 = t.lanes('open', 'a', '--ticket', 'T-1', '--tickets', 'T-1,T-2', '--dry-run')
+    if rc != 0 or (rc, o) != (rc2, o2) or (rc, o) != (rc3, o3):
+        fails.append(f'tickets csv: --tickets differs from two --ticket: {(rc, o)} vs {(rc2, o2)} vs {(rc3, o3)}')
+    rc, o = t.lanes('open', 'b', '--tickets', 'T-1,T-3')
+    if rc != 1 or 'T-3' not in o or 'not claimed' not in o:
+        fails.append(f'tickets csv: the second id of --tickets was not checked: {rc}: {o}')
     return fails
 
 
@@ -3406,6 +3435,8 @@ MUTANTS = (
     ('REALPATH', 'child, parent = os.path.realpath(str(child)), os.path.realpath(str(parent))' + '  # REALPATH',
      'child, parent = os.path.normpath(str(child)), os.path.normpath(str(parent))' + '  # REALPATH', case_c1_outside,
      'passed a symlinked path', 'C1 passes a symlinked path'),
+    ('TICKETS-CSV', "+ [x.strip() for c in (csv or ()) for x in c.split(',')]:" + '  # TICKETS-CSV', ':' + '  # TICKETS-CSV',
+     case_tickets_csv, 'tickets csv', '--tickets adds no ticket to the open'),
 )
 
 
@@ -3650,6 +3681,8 @@ def run_selftest(script, src, base):
         need('bare root', case_bare_root(script, base), 'a bare clone lane gets <bare parent>/lanes and its tmp dir, outside the lane')
         need('C4', case_c4(script, base), 'stale at 11 days, not at 9, closable when landed, stale, locked kept by sweep')
         need('C9', case_c9(script, base), 'clashing names and a missing ticket refuse with nothing left; lane/T-1-a opens')
+        need('tickets csv', case_tickets_csv(script, base),
+             '--tickets T-1,T-2 equals two --ticket, mixed forms drop duplicates, and the second id is claim-checked (T-0691)')
         need('plugin_min', case_plugin_min(script, base),
              'plugin_min above the manifest refuses open with exit 2 and the host command, nothing left; equal opens')
         need('lane_setup', case_lane_setup(script, base),
