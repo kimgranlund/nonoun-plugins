@@ -2877,9 +2877,14 @@ def held_note(path):
 def owner_settled_hold(path):
     """True when the verifier result is a held-only fail (Verdict fail, first next-attempt line `deferred:`, no fail
     or unmet-dependency criterion, at least one deferred one) whose every deferred criterion is listed under its
-    ## Settled by owner by that owner (dispatch.py settle-held, T-0684). Reads the result alone, no handoff."""
+    ## Settled by owner by that owner (dispatch.py settle-held, T-0684). A ## Criteria bullet line that
+    results.criteria_states cannot parse makes it False: a real fail must not land behind a settled hold (T-0696).
+    Reads the result alone, no handoff."""
     m = HELD_NOTE_RE.match(next_note(path))
     if results.key_value(path, 'verifier') != 'fail' or not m or m.group(1) != 'deferred':
+        return False
+    if any(re.match(r'\s*(?:[-*]|\d+\.)\s+\S', line) and not results.CRITERION_RE.match(line)
+           for line in section(path, 'Criteria') or []):
         return False
     states = results.criteria_states(path)
     held = [c for c in states if c['state'] == 'deferred']
@@ -7508,6 +7513,13 @@ def selftest():
             rc, out, err = run_main(['open', str(t)])
             check(f'held: T-0684 a ref settled by {who} ' + ('empties open' if not want else 'stays open (control)'),
                   rc == 0 and out == want)
+        # T-0696: a Criteria line criteria_states cannot parse keeps a settled hold from reading as pass
+        for extra, want in (('', True), ('- #2 y FAILED no evidence\n', False)):
+            t = held_task([], ticket_ac='\n## Acceptance criteria\n- [ ] the review passes [owner: conductor]\n',
+                          task_files=[('verifier-L2.md', H_OWNED.format(who='conductor').replace(
+                              'owner stage\n\n', 'owner stage\n' + extra + '\n', 1))])
+            check('held: T-0696 owner_settled_hold ' + ('is True for a fully parsed result' if want
+                  else 'is False beside an unparsed Criteria line'), owner_settled_hold(t / 'verifier-L2.md') is want)
         t = held_task([B, ('verifier-L1.md', H_DEFER)])
         (t / 'step-2').mkdir()
         (t / 'step-2' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 2: y\nlevel: L1\n', encoding='utf-8')
