@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c609efb175f3 -->
+<!-- sdlc-lite:managed:start v1 sha256:f8463c3fb74d -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 13
+- proposed: 12
   - T-0679 scripts warn once on stderr when a newer plugin version is installed (docs/work/0679-stale-scripts-warning)
   - T-0681 merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md (docs/work/0681-integration-merge-regenerates-router)
   - T-0684 settle a deferred: conductor held criterion so land reads it as pass (docs/work/0684-settle-held-criterion)
@@ -23,11 +23,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0692 lane_setup config commands run by lanes.py open (docs/work/0692-lane-setup-config)
   - T-0693 briefs carry a Ports line from lanes.py port (docs/work/0693-brief-ports-line)
   - T-0694 lanes.py ready warns once per session and runs --notify-cmd on pin (docs/work/0694-ready-warn-once-notify-cmd)
-  - T-0695 lanes.py close leaves a lane record written in an integration tree (docs/work/0695-lane-close-integration-record)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 1
+- claimed: 2
   - T-0682 solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file (docs/work/0682-solo-brief-report-file), claimed by sdlc-lite-author 2026-10-20
+  - T-0695 lanes.py close leaves a lane record written in an integration tree (docs/work/0695-lane-close-integration-record), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
 - done: 644

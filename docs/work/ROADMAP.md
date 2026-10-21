@@ -19,7 +19,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0692 | [0692-lane-setup-config](0692-lane-setup-config/handoff.md) | lane_setup config commands run by lanes.py open | feature | L1 | P3 | none | ⏳ proposed |
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
 | T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
-| T-0695 | [0695-lane-close-integration-record](0695-lane-close-integration-record/handoff.md) | lanes.py close leaves a lane record written in an integration tree | bug | L1 | P2 | T-0680 | ⏳ proposed |
+| T-0695 | [0695-lane-close-integration-record](0695-lane-close-integration-record/handoff.md) | lanes.py close leaves a lane record written in an integration tree | bug | L1 | P2 | T-0680 | 🟡 claimed |
 
 Closed: 644 done, 29 dropped (git log or .NNNN-* folders)
 
