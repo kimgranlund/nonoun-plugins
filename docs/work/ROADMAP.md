@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0696 | [0696-settled-hold-unparsed-criteria](0696-settled-hold-unparsed-criteria/handoff.md) | A settled hold must not pass a result with an unparsed criterion line | bug | L1 | P1 | T-0684 | 🟡 claimed |
 
-Closed: 658 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 659 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

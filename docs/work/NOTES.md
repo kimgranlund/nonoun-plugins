@@ -191,3 +191,8 @@
 - decide: plugins/sdlc-lite/scripts/steps.py:2877 `owner_settled_hold`: a Criteria line that `results.criteria_states` cannot parse (for example `- #2 y FAILED no evidence`, no `: fail. Evidence:`) is ignored, so a result with such a line plus a settled `deferred:` hold reads as `pass` (probe returned True, and `results.py validate` accepts the file). The gap is the existing parser's, and a validated verifier result normally has no such line; decide: whether `settle-held` or `owner_settled_hold` should refuse a result with unparsed Criteria lines.
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1883: evidence with no `## Verdict` heading is accepted unchecked (only a review record's Verdict is judged); that matches the handoff but any existing repo-relative file settles a hold.
 - decide: Cleanup: the throwaway worktree was removed with `git worktree remove`; `rm -rf` of the empty prefix dir `tmp:0684-verifier-L2` was denied by the permission system and may remain empty.
+
+## T-0696: A settled hold must not pass a result with an unparsed criterion line (2026-10-21)
+
+- note: plugins/sdlc-lite/scripts/steps.py:2886 the guard treats any bullet under ## Criteria that CRITERION_RE does not match as unparsed, so an indented sub-bullet under a criterion would also block a settled hold. That errs toward not settling, which is the safe direction.
+- note: /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0696-verifier-L2 still holds the probe scratch files (rm was denied). The throwaway worktree has been removed.

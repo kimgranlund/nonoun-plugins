@@ -2,7 +2,7 @@
 id: T-0696
 title: "A settled hold must not pass a result with an unparsed criterion line"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0684]    # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,15 @@ A result whose criteria all parse, with every hold settled, still reads as pass.
 
 ## Outcome
 `steps.owner_settled_hold` now returns False when any `## Criteria` bullet line does not match `results.CRITERION_RE`; `fanout.branch_verdict` already calls that helper, so it needed no change. New selftest cases (fully parsed result True, plus `- #2 y FAILED no evidence` False); the False case fails with the guard disabled. `steps.py selftest`, `fanout.py selftest`, `check.py`, `check-packaging.py` and `git diff --check 7f60309a` exit 0.
+
+## Outcome
+
+2026-10-21 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 7f60309a83d9
+- Changed: see commits
+- Commits: 71b4694 T-0696: a settled hold must not pass an unparsed criterion line
+- Check: 1 `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with a new case (settled `deferred:...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:2886 the guard treats any bullet... -> notes.md
+- Follow-up: note: /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lit... -> notes.md
