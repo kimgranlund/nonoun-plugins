@@ -108,3 +108,8 @@
 
 - note: plugins/sdlc-lite/skills/ticket/SKILL.md:51 says a follow-up is a duplicate on "normalized title or slug"; the slug comparison now skips leading path-like words, which that sentence does not mention.
 - decide: plugins/sdlc-lite/scripts/tickets.py:3777 the path-skip regex also strips a leading word like `Node.js`, and the shorter key (e.g. `src/x.py: fix bug` -> `fix-bug`) can now match an unrelated ticket folder slugged `fix-bug`; narrow, but a new false-duplicate path.
+
+## T-0676: repo_skill_routes reads markdown-link and nested AGENTS.md prose skill routes (2026-10-20)
+
+- note: T-0676-t0676:plugins/sdlc-lite/scripts/steps.py:182 the lint help text line has grown to about 180 characters ("... else against the repo root. A step whose scope allow-list ..."), well over the neighboring lines' wrap width; cosmetic only.
+- note: during verification I briefly copied a mutated steps.py into the repo scripts dir and removed it straight away; `git status --short` was empty afterward, so the tree is unchanged.

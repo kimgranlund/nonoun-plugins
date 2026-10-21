@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:6ab936c1be37 -->
+<!-- sdlc-lite:managed:start v1 sha256:2cc501b617e4 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -28,14 +28,13 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0694 lanes.py ready warns once per session and runs --notify-cmd on pin (docs/work/0694-ready-warn-once-notify-cmd)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 4
-  - T-0676 repo_skill_routes reads markdown-link and nested AGENTS.md prose skill routes (docs/work/0676-skill-routes-links-prose), claimed by sdlc-lite-author 2026-10-20
+- claimed: 3
   - T-0678 record judges a result by the plugin version that prepared it (docs/work/0678-record-version-skew), claimed by sdlc-lite-author 2026-10-20
   - T-0680 lanes.py open --into an integration branch writes the claim and lane record there, not on main (docs/work/0680-lane-open-into-integration-root), claimed by sdlc-lite-author 2026-10-20
   - T-0683 merge_union config: land union-merges listed paths behind one light gate (docs/work/0683-merge-union-config), claimed by sdlc-lite-author 2026-10-20
 - paused: 0
 - blocked: 0
-- done: 638
+- done: 639
 - dropped: 29
 
 ## Procedures

@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0676 | [0676-skill-routes-links-prose](0676-skill-routes-links-prose/handoff.md) | repo_skill_routes reads markdown-link and nested AGENTS.md prose skill routes | bug | L2 | P1 | none | 🟡 claimed |
 | T-0677 | [0677-routes-command-onboard-warn](0677-routes-command-onboard-warn/handoff.md) | steps.py routes prints resolved skill routes; onboard check warns on zero routes | feature | L2 | P2 | T-0676 | ⏳ proposed |
 | T-0678 | [0678-record-version-skew](0678-record-version-skew/handoff.md) | record judges a result by the plugin version that prepared it | bug | L2 | P1 | none | 🟡 claimed |
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
@@ -26,7 +25,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
 | T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
 
-Closed: 638 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 639 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

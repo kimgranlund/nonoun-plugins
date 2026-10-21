@@ -2,7 +2,7 @@
 id: T-0676
 title: "repo_skill_routes reads markdown-link and nested AGENTS.md prose skill routes"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,16 @@ The T-0647 and T-0672 `(rt)` cases keep passing unchanged. A root AGENTS.md pros
 - Two `(rt) T-0676` selftest cases beside the T-0647 and T-0672 ones; with the old function body both print no `ok:` line (both miss), with the change both pass.
 - The Context example link above is wrapped in a code span: as a live link it pointed at a skill this repo lacks and check.py failed on it as an unlisted broken link.
 - Checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1 | grep -F 'ok: (rt) T-0672'` prints one line; `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check 9dc347f2` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9dc347f22c55
+- Changed: see commits
+- Commits: 13d8184 T-0676: repo_skill_routes reads markdown-link and nested AGENTS.md prose skill routes
+- Check: 1 selftest exits 0 with the two new cases, each failing with the change reverted: pass
+- Check: 2 T-0672 case still passes: pass
+- Check: 3 dispatch selftest: pass
+- Check: 4 check.py: pass
+- Check: 5 diff --check: pass
+- Follow-up: note: T-0676-t0676:plugins/sdlc-lite/scripts/steps.py:182 the lint help... -> notes.md
+- Follow-up: note: during verification I briefly copied a mutated steps.py into the... -> notes.md
