@@ -15,7 +15,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0687 | [0687-land-queue-doc](0687-land-queue-doc/handoff.md) | document merge.lock land queueing and add fanout.py queue | feature | L1 | P2 | none | ⏳ proposed |
 | T-0689 | [0689-prep-reuse-integration-tree](0689-prep-reuse-integration-tree/handoff.md) | fanout.py prep --integration reuses an existing integration worktree | bug | L1 | P3 | none | ⏳ proposed |
 | T-0690 | [0690-status-recurse-records](0690-status-recurse-records/handoff.md) | dispatch.py status finds attempts in step folders and the records dir | bug | L1 | P3 | none | ⏳ proposed |
-| T-0691 | [0691-tickets-csv-flag](0691-tickets-csv-flag/handoff.md) | accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim | feature | L1 | P3 | none | ⏳ proposed |
+| T-0691 | [0691-tickets-csv-flag](0691-tickets-csv-flag/handoff.md) | accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim | feature | L1 | P3 | none | 🟡 claimed |
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
 
 Closed: 647 done, 29 dropped (git log or .NNNN-* folders)
