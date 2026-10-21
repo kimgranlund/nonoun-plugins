@@ -225,6 +225,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 rule merges it into a neighboring step ... (exactly one top-level - or * item)
               steps lint: warning: <plan> step <n>: history-shaped criterion: <span> (T-0475; a
                 criterion command span that reads git log, git rev-list, or --oneline output)
+              steps lint: warning: <plan> step <n>: absolute home path in a criterion: <span>
+                (T-0686; a criterion line holding /Users/, /home/, /var/folders/ or /private/tmp/)
   review    review <task dir>: decide whether the task dir's newest planner-*.md (by order.py) needs
             a plan review before split (/chain 3). Reads only; never file times. Stdout: "<action>"
             or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted;
@@ -1741,6 +1743,24 @@ def history_warnings(plan, steps):
     return out
 
 
+# tickets.ABS_PATH_RE: a personal path in a tracked criterion trips a repo's personal-path gate (T-0686)
+ABS_HOME_RE = re.compile(r'/Users/|/home/|/var/folders/|/private/tmp/')
+
+
+def abs_path_warnings(plan, steps):
+    """One warning per acceptance criterion line holding an absolute home or temp path; it names the code span
+    that holds the path, else the line. Advisory only (T-0686)."""
+    out = []
+    for n, block in steps.items():
+        for line in criteria_lines(block):
+            if not ABS_HOME_RE.search(line):
+                continue
+            span = next((s for s in line_spans(line) if ABS_HOME_RE.search(s)), line.strip())
+            out.append(f'steps lint: warning: {plan} step {n}: absolute home path in a criterion: {span[:100]}\n'
+                       '  use a repo-relative path or $TMPDIR, so the tracked record passes a personal-path gate')
+    return out
+
+
 # --- step handoff links (T-0379) ----------------------------------------------
 # A replanned step's handoff is split from a plan written while step-<n>/ still held the previous attempt's
 # reports; /chain 4.2 then renames that folder to step-<n>.superseded-<k>/, so a path in the plan that names
@@ -2622,7 +2642,7 @@ def cmd_lint(target, tree=None, approved=None):
         print(e, file=sys.stderr)
         return 1
     print('steps lint: ok')
-    for w in count_warnings(plan, steps) + history_warnings(plan, steps) + lean_warnings(plan, task_dir, steps):
+    for w in count_warnings(plan, steps) + history_warnings(plan, steps) + abs_path_warnings(plan, steps) + lean_warnings(plan, task_dir, steps):
         print(w, file=sys.stderr)
     return 0
 
@@ -5028,6 +5048,15 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '- `git diff --quiet HEAD -- scripts/steps.py` and `grep -c "x" scripts/steps.py`'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(t0475) a state-form criterion does not warn', rc == 0 and 'history-shaped' not in err)
+
+        # (t0686) a criterion holding an absolute home path warns and exits 0; a repo-relative one does not
+        d = task(plan=PLAN.replace('- one works', '- `grep -q x /Users/someone/repo/scripts/steps.py`'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0686) an absolute home path in a criterion warns and exits 0',
+              rc == 0 and out == 'steps lint: ok\n' and 'step 1: absolute home path in a criterion: grep -q x /Users/someone/' in err)
+        d = task(plan=PLAN.replace('- one works', '- `grep -q x scripts/steps.py`'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0686) a repo-relative criterion does not warn', rc == 0 and 'absolute home path' not in err)
 
         # (k) command spans that parse, and non-command spans, pass
         k_spans = ['grep -c "x" scripts/steps.py', 'scripts/steps.py',
