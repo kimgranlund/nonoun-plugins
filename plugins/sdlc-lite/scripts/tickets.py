@@ -268,6 +268,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             change nothing.
             `hash_bound: <glob> [<glob>...]` lines (same comment rules) declare the hash-bound and generated paths of
             the fanout merge class (hash_bound_globs); tickets.py itself never acts on them.
+            `merge_union: <glob> [<glob>...]` lines (same comment rules, T-0683) name append-only shared files: fanout
+            land union-merges a conflict in a matching path as it does notes.md (merge_union_globs), and an optional
+            `merge_union_gate: <cmd>` line (the first one counts) runs in the integration tree before that merge commit
+            (merge_union_gate); tickets.py itself never acts on them.
             A `merge_gate: light` line and `light_scope: <glob> [<glob>...]` lines (same comment rules, T-0481)
             opt a repo into the fanout light gate class (merge_gate_declared, light_scope_globs): a merge whose paths
             outside the ticket root all match a light_scope glob runs the --light-gate set; tickets.py never acts on them.
@@ -423,6 +427,8 @@ DOT_RE = re.compile(r'\.\d{4}-[a-z0-9]+(-[a-z0-9]+)*')  # a closed-ticket folder
 CONFIG_RE = re.compile(r'\s*ticket_folders\s*:\s*numbered\s*(?:#.*)?')
 EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
 HASH_BOUND_RE = re.compile(r'\s*hash_bound\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0374: one or more globs per line
+MERGE_UNION_RE = re.compile(r'\s*merge_union\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0683: one or more globs per line
+MERGE_UNION_GATE_RE = re.compile(r'\s*merge_union_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0683: one command
 LIGHT_SCOPE_RE = re.compile(r'\s*light_scope\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0481: one or more globs per line
 MERGE_GATE_RE = re.compile(r'\s*merge_gate\s*:\s*light\s*(?:#.*)?')  # T-0481: the light gate class opt-in
 PROFILE_RE = re.compile(r'\s*profile\s*:\s*(\S+)\s*(?:#.*)?')  # T-0510: `profile: inner-loop` opt-in
@@ -741,6 +747,40 @@ def hash_bound_globs(root):
             if g not in out:
                 out.append(g)
     return out
+
+
+def merge_union_globs(root):
+    """The append-only shared paths a repo declares for a union merge at fanout land (T-0683): the globs on every
+    `merge_union: <glob> [<glob>...]` line in <root>/config, in file order, deduplicated; blank and # comment lines and
+    a trailing # comment are ignored, as for hash_bound. [] when the file or the line is missing. Each glob is a git
+    :(glob) pathspec relative to the repository root."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = MERGE_UNION_RE.fullmatch(line)
+        for g in (m.group(1).split() if m else []):
+            if g not in out:
+                out.append(g)
+    return out
+
+
+def merge_union_gate(root):
+    """The command on the first uncommented, non-empty `merge_union_gate: <cmd>` line in <root>/config (T-0683), run by
+    fanout land after a union merge and before its merge commit; None when the file or the line is missing."""
+    path = root / 'config'
+    if not path.is_file():
+        return None
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = MERGE_UNION_GATE_RE.fullmatch(line)
+        if m and m.group(1):
+            return m.group(1)
+    return None
 
 
 def light_scope_globs(root):
@@ -6377,6 +6417,19 @@ def selftest():
             expect(f'hash_bound: config yields the three globs in order, external_branch untouched: {got!r}',
                    got == ['gen', 'a/**', 'b/*.json'] and external_branches(cfg) == ['ext'])
             expect('hash_bound: a missing config yields []', hash_bound_globs(wtmp / 'nocfg') == [])
+            # T-0683: merge_union lines read like hash_bound (order kept, duplicates once, comments skipped), and the
+            # first merge_union_gate line is the gate; a missing config yields [] and None
+            (cfg / 'config').write_text('# merge_union: hidden\nmerge_union: fixtures/*.tsx  # appended\n'
+                                        '  merge_union: a/** fixtures/*.tsx\nmerge_union:   # none\n'
+                                        '# merge_union_gate: false\nmerge_union_gate: npm run tsc  # cheap\n'
+                                        'merge_union_gate: second\n', encoding='utf-8')
+            got = merge_union_globs(cfg)
+            expect(f'merge_union: config yields the two globs in order, comments ignored: {got!r}',
+                   got == ['fixtures/*.tsx', 'a/**'])
+            expect(f'merge_union_gate: the first uncommented line counts, got {merge_union_gate(cfg)!r}',
+                   merge_union_gate(cfg) == 'npm run tsc')
+            expect('merge_union: a missing config yields [] and no gate',
+                   merge_union_globs(wtmp / 'nocfg') == [] and merge_union_gate(wtmp / 'nocfg') is None)
 
             # (ii) branch_tickets reads a branch checked out nowhere, by load()'s folder rule
             e_dir = wtmp / 'ext'
