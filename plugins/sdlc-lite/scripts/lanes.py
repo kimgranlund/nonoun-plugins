@@ -1345,6 +1345,24 @@ def lock_reason(rootp, ids):
     return ' '.join([holder] + list(ids))
 
 
+def record_tree(ctx, into_, root, ids):
+    """T-0680: (tree, note) for the lane record: the worktree holding into_ when it is not the main checkout and its
+    root holds every local ticket in ids, else the main checkout with note saying why (None when no tree holds into_)."""
+    wt = next((Path(w['path']) for w in worktrees(ctx.top) if w['branch'] == into_), None)
+    if wt is None or os.path.realpath(str(wt)) == os.path.realpath(str(ctx.top)):
+        return ctx.top, None
+    rel = os.path.relpath(os.path.realpath(str(wt)), os.path.realpath(str(ctx.top)))
+    want = [t for t in ids if LOCAL_ID.fullmatch(t)]
+    try:
+        have = {m.get('id') for _, m in TICKETS.load(TICKETS.ticket_dir(wt / root))} if (wt / root).is_dir() else set()
+    except TICKETS.Fail:
+        have = set()
+    missing = [t for t in want if t not in have]
+    if missing:
+        return ctx.top, f'recorded in the main checkout: {", ".join(missing)} not in {rel}/{root}'
+    return wt, None
+
+
 def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None, root='.sdlc', dry_run=False, cwd='.', *,
               path=None, branch=None, check_claim=True, record_branch=False, lock=False):
     ctx = Ctx(cwd)
@@ -1358,6 +1376,8 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     refused = plugin_min.refusal(top)  # T-0593: before any claim, branch or tree
     if refused:
         return result(2, refused)
+    explicit_root = root is not None  # T-0680: the CLI passes None when --root was not given
+    root = root or '.sdlc'
     rootp = Path(cwd, root)
     titles = {}
     for t in ids:
@@ -1438,20 +1458,26 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     if upstream and record_branch and rootp.is_dir() and any(LOCAL_ID.fullmatch(t) for t in ids):
         lines.append(f'not recorded: {ctx.main} tracks {upstream}, so open writes no branch: or worktree: line in main')
         record_branch = False
-    pre = porcelain(top)
+    rtop, rrootp = top, rootp  # T-0680: an --into checked out in an integration tree takes the record there
+    if record_branch and not explicit_root and rootp.is_dir() and any(LOCAL_ID.fullmatch(t) for t in ids):
+        rtop, note = record_tree(ctx, into_, root, ids)
+        rrootp = rtop / root if rtop != top else rootp
+        if note:
+            lines.append(note)
+    pre = porcelain(rtop)
     written, handoffs = [], []
-    for t in ids if record_branch and rootp.is_dir() else ():
+    for t in ids if record_branch and rrootp.is_dir() else ():
         if LOCAL_ID.fullmatch(t):
             try:
                 # relative to the main checkout: inside it, or under the sibling root (../<name>.worktrees/..., T-0563)
                 rel = os.path.relpath(os.path.realpath(str(tree)), os.path.realpath(str(top)))
                 if rel.startswith('..') and not plain_under(os.path.realpath(str(tree)), os.path.realpath(str(wtroot.default_root(top)))):
                     rel = None
-                slug_ = TICKETS.record_branch(rootp, t, branch, worktree=rel)
+                slug_ = TICKETS.record_branch(rrootp, t, branch, worktree=rel)
                 if slug_:
                     written.append(t)
-                    handoffs.append(os.path.relpath(os.path.realpath(str(TICKETS.layout_paths(rootp).tickets / slug_ / 'handoff.md')),
-                                                    os.path.realpath(str(top))))
+                    handoffs.append(os.path.relpath(os.path.realpath(str(TICKETS.layout_paths(rrootp).tickets / slug_ / 'handoff.md')),
+                                                    os.path.realpath(str(rtop))))
                     lines.append(f'ticket {t}: branch: {branch}')
                     if rel:
                         lines.append(f'ticket {t}: worktree: {rel}')
@@ -1461,12 +1487,15 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         msg = f'{", ".join(written)}: record lane {leaf}'
         # compared by path: a staged edit turns `M ` into `MM`, a line commit_new would count as new
         pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
-        held = {l for l in porcelain(top) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
-        sha = commit_new(top, pre | held, msg)
+        held = {l for l in porcelain(rtop) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
+        sha = commit_new(rtop, pre | held, msg)
+        where = 'main' if rtop == top else os.path.relpath(os.path.realpath(str(rtop)), os.path.realpath(str(top)))
         if sha:
             lines.append(f'committed: {sha} {msg}')
+            if rtop != top:
+                lines.append(f'recorded in {where}')
         elif sha is None:
-            lines.append(f'not committed: commit the ticket changes in main as `{msg}`')
+            lines.append(f'not committed: commit the ticket changes in {where} as `{msg}`')
         for h in handoffs:
             if h in pre_paths:
                 lines.append(f'not committed: {h} (dirty before open); commit it yourself')
@@ -1886,7 +1915,7 @@ def main(argv=None):
     p.add_argument('--ticket', action='append', default=[])
     p.add_argument('--kind', choices=KINDS, default='fanout')
     p.add_argument('--title')
-    p.add_argument('--root', default='.sdlc')
+    p.add_argument('--root')
     p.add_argument('--path')
     p.add_argument('--branch')
     p.add_argument('--no-claim', action='store_true')
@@ -2806,6 +2835,37 @@ def case_open_dirty_ticket(script, base):
     return fails
 
 
+def case_open_into_integration(script, base):
+    """T-0680: open --into a branch checked out in an integration tree commits the lane record there, not on main; a
+    ticket missing from that tree falls back to main and says why."""
+    t = Fixture(base, script, 'openinto')
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             '.sdlc/0001-one/handoff.md': ticket_file('T-0001', claimed=True)})
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    head0, ihead0 = t.g('rev-parse', 'HEAD'), t.g('rev-parse', ib)
+    rc, o = t.lanes('open', 'one', '--ticket', 'T-0001', '--kind', 'solo', '--into', ib)
+    if rc:
+        return [f'open into integration: open failed: {rc}: {o}']
+    fails = []
+    if t.g('rev-parse', 'HEAD') != head0:
+        fails.append(f'open into integration: main moved: {t.g("log", "--oneline", f"{head0}..HEAD")}')
+    if t.g('log', '--format=%s', f'{ihead0}..{ib}') != 'T-0001: record lane T-0001-one':
+        fails.append(f'open into integration: {ib} lacks the record commit: {t.g("log", "--oneline", f"{ihead0}..{ib}")!r}')
+    if 'branch: lane/T-0001-one\nworktree:' not in t.g('show', f'{ib}:.sdlc/0001-one/handoff.md'):
+        fails.append('open into integration: the integration tip lacks the branch: and worktree: lines')
+    if t.g('status', '--porcelain', cwd=integ) or t.g('status', '--porcelain'):
+        fails.append('open into integration: a tree is dirty after open')
+    if f'recorded in {os.path.relpath(integ, t.top)}' not in o:
+        fails.append(f'open into integration: no recorded in line: {o}')
+    # filed on main after the integration branch forked: the record falls back to main
+    t.commit('file T-0002', {'.sdlc/0002-two/handoff.md': ticket_file('T-0002', claimed=True)})
+    head1 = t.g('rev-parse', 'HEAD')
+    rc, o = t.lanes('open', 'two', '--ticket', 'T-0002', '--kind', 'solo', '--into', ib)
+    if rc or 'recorded in the main checkout: T-0002 not in' not in o or t.g('rev-parse', 'HEAD') == head1:
+        fails.append(f'open into integration: a ticket missing there did not fall back to main: {rc}: {o}')
+    return fails
+
+
 def case_open_upstream(script, base):
     """T-0609: in a main that tracks an upstream (a repo landing by PR), open commits nothing on main and leaves it
     clean, so main stays fast-forwardable to origin."""
@@ -3432,6 +3492,8 @@ def run_selftest(script, src, base):
              'open commits the ticket branch: and worktree: lines in main and leaves other dirty paths alone (T-0599)')
         need('open dirty ticket', case_open_dirty_ticket(script, base),
              'a staged edit to the ticket handoff before open is not committed and is named in a not committed line (T-0599)')
+        need('open into integration', case_open_into_integration(script, base),
+             'open --into an integration tree commits the record there and main does not move (T-0680)')
         need('open upstream', case_open_upstream(script, base),
              'a main tracking an upstream gets no record commit and stays clean and level with origin (T-0609)')
         need('open local finish', case_open_local_finish(script, base),
