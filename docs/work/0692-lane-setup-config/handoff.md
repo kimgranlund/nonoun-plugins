@@ -36,3 +36,9 @@ A config with one `lane_setup:` line behaves as today apart from the printed `se
 3. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `lanes.py config()` now collects every `lane_setup:` line in order; `open_lane` runs them in the new tree, stops at the first failure, records `setup: ok` or `setup: failed rc=<n> (<command>)`, and prints the setup line on success too. A failed setup keeps the lane.
+- New selftest case `lane_setup` (two lines run in order; a failing first line skips the second). Observed red against HEAD's lanes.py (marker held only `two`, no `setup: ok` line), green with the change.
+- Documented in fanout SKILL.md line 39, the lanes.py Config docstring, and `docs/references/sdlc-internals.md`.
+- Checks: `lanes.py selftest` exit 0, `fanout.py selftest` PASS, `check.py` exit 0, `git diff --check 148975bb` exit 0, `grep -n "lane_setup" plugins/sdlc-lite/skills/fanout/SKILL.md` prints line 39.
