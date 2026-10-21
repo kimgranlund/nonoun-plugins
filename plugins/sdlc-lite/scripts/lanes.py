@@ -66,7 +66,9 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   open); commit it yourself`. When main tracks an upstream (T-0609: the repo lands through it, as by PR), open writes
   and commits neither line, printing `not recorded: <main> tracks <upstream>, ...`, so main never gains a commit its
   landing path does not push; the claim is the refs/sdlc/claims ref (T-0588). Every close removes a record
-  ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it. list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
+  ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it, in main and in the integration
+  tree holding the lane's into branch, where it commits `<ids>: clear lane record <leaf>` (T-0695, printed as `committed in
+  <tree>: <sha> <message>`). list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
   first local ticket, else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
   manual worktree with verified, unmerged work shows its ticket.
 
@@ -931,7 +933,8 @@ def do_close(ctx, d, outcome, info, dry):
             with contextlib.suppress(tickets.Fail, OSError):
                 tickets.record_branch(Path(top) / '.sdlc', t, None, only=b)
             git(top, 'update-ref', '-d', READY_REFS + str(t))  # T-0590: the review pin goes with its lane
-    lines = pre + [outcome] + carried
+    cleared = clear_integration_record(ctx, d, into)
+    lines = pre + [outcome] + carried + cleared
     pl = port_line(d['port'])
     if pl:
         lines.append(pl)
@@ -941,6 +944,33 @@ def do_close(ctx, d, outcome, info, dry):
             if LOCAL_ID.fullmatch(str(t)) and any(m.get('id') == t and m.get('status') not in ('done', 'dropped') for _, m in metas):
                 lines.append(f'ticket still open: {t}')
     return result(0, '\n'.join(lines), lane=name, path=d['path'], branch=b, archive=ref, row=how)
+
+
+def clear_integration_record(ctx, d, into):
+    """T-0695: the lane's `branch:` and `worktree:` lines in the integration tree holding into (T-0680 wrote them there),
+    cleared and committed in that tree. Returns the report lines; none when into is the main checkout or holds no record."""
+    top, b = ctx.top, d['branch']
+    into = (into or '')[len('refs/heads/'):] if (into or '').startswith('refs/heads/') else (into or '')
+    wt = next((Path(w['path']) for w in worktrees(top) if w['branch'] == into), None)
+    if not into or wt is None or samepath(str(wt), str(top)) or not (wt / '.sdlc').is_dir():
+        return []
+    pre = porcelain(wt)
+    pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
+    cleared = []
+    for t in d['tickets']:
+        if LOCAL_ID.fullmatch(str(t)):
+            with contextlib.suppress(tickets.Fail, OSError):
+                if tickets.record_branch(wt / '.sdlc', t, None, only=b):
+                    cleared.append(str(t))
+    if not cleared:
+        return []
+    msg = f'{", ".join(cleared)}: clear lane record {d["lane"]}'
+    held = {l for l in porcelain(wt) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
+    sha = commit_new(wt, pre | held, msg)
+    where = os.path.relpath(os.path.realpath(str(wt)), os.path.realpath(str(top)))
+    if sha:
+        return [f'committed in {where}: {sha} {msg}']
+    return [f'not committed in {where}: the cleared record is left in the tree; commit it yourself']
 
 
 def close_lane(target, into=None, discard=False, dry_run=False, cwd='.'):
@@ -2869,6 +2899,33 @@ def case_open_into_integration(script, base):
     return fails
 
 
+def case_close_integration_record(script, base):
+    """T-0695: close clears the branch: and worktree: lines in the integration tree that open wrote them in (T-0680), and
+    commits that there; main does not move."""
+    t = Fixture(base, script, 'closeinto')
+    h = '.sdlc/0001-one/handoff.md'
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n', h: ticket_file('T-0001', claimed=True)})
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    leaf, tree, b = t.open('one', 'T-0001', '--kind', 'solo', '--into', ib)
+    t.work(tree)
+    t.g('merge', '--no-ff', '-q', '-m', f'merge {b}', f'refs/heads/{b}', cwd=integ)
+    head0, ihead0 = t.g('rev-parse', 'HEAD'), t.g('rev-parse', ib)
+    rc, o = t.lanes('close', leaf)
+    if rc:
+        return [f'close integration record: close failed: {rc}: {o}']
+    fails = []
+    text = (integ / h).read_text()
+    if 'branch:' in text or 'worktree:' in text:
+        fails.append(f'close integration record: the integration ticket still holds branch: or worktree: {text!r}')
+    if t.g('rev-parse', 'HEAD') != head0:
+        fails.append(f'close integration record: main moved: {t.g("log", "--oneline", f"{head0}..HEAD")}')
+    if t.g('log', '--format=%s', f'{ihead0}..{ib}') != 'T-0001: clear lane record ' + leaf:
+        fails.append(f'close integration record: {ib} lacks the clear commit: {t.g("log", "--oneline", f"{ihead0}..{ib}")!r}')
+    if t.g('status', '--porcelain', cwd=integ):
+        fails.append('close integration record: the integration tree is dirty after close')
+    return fails
+
+
 def case_open_upstream(script, base):
     """T-0609: in a main that tracks an upstream (a repo landing by PR), open commits nothing on main and leaves it
     clean, so main stays fast-forwardable to origin."""
@@ -3497,6 +3554,8 @@ def run_selftest(script, src, base):
              'a staged edit to the ticket handoff before open is not committed and is named in a not committed line (T-0599)')
         need('open into integration', case_open_into_integration(script, base),
              'open --into an integration tree commits the record there and main does not move (T-0680)')
+        need('close integration record', case_close_integration_record(script, base),
+             'close clears branch: and worktree: in the integration tree that holds the record and commits it there (T-0695)')
         need('open upstream', case_open_upstream(script, base),
              'a main tracking an upstream gets no record commit and stays clean and level with origin (T-0609)')
         need('open local finish', case_open_local_finish(script, base),
