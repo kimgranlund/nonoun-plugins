@@ -20,6 +20,7 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
                        [--no-gate-lock] [--allow-empty-gate]
        fanout.py sync <lane branch or tree> [--integration BRANCH] [--root .sdlc] [--lanes-dir DIR] [--gate CMD]...
                       [--regen CMD] [--paths P,...]
+       fanout.py queue [--lanes-dir DIR] [--integration BRANCH]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
@@ -137,6 +138,11 @@ cover (T-0481)
   from..to), and commits it there (`git add -f`, message `cover <to7>: rc=<rc>`); the primary checkout is never written. Red prints
   `git bisect start <to> <from> --first-parent` and exits 1; green exits 0.
 
+queue (T-0687)
+  `queue` prints the land order of one lanes dir: the `landing` line from <lanes-dir>/merge.lock.holder (MergeLock
+  writes it on acquire and removes it on release; a dead pid reads `stale holder` and never blocks a land), then one
+  `waiting` line per other live `fanout.py land` process for that lanes dir, oldest first, or `queue: empty`.
+  --integration keeps only the waiters for that integration branch. Read only.
 sync (T-0654)
   `sync <lane>` brings a running lane level with its integration branch. The lane is a branch or a worktree path from
   `git worktree list --porcelain`; the integration branch is --integration or the `into` of the lane's record
@@ -1291,10 +1297,14 @@ def setup(ctx):
 
 class MergeLock:
     """Exclusive fcntl.flock on <lanes-dir>/merge.lock (macOS has no flock binary), plus a thread lock
-    so lane threads in this process serialize whatever the platform's flock semantics."""
+    so lane threads in this process serialize whatever the platform's flock semantics. The holder writes
+    <lanes-dir>/merge.lock.holder while it holds the lock, which `fanout.py queue` reads (T-0687)."""
 
-    def __init__(self, path):
-        self.path, self.local, self.f = path, threading.Lock(), None
+    def __init__(self, path, **holder):
+        self.path, self.local, self.f, self.holder = path, threading.Lock(), None, holder
+
+    def holder_path(self):
+        return pathlib.Path(str(self.path) + '.holder')
 
     def __enter__(self):
         self.local.acquire()
@@ -1306,10 +1316,16 @@ class MergeLock:
                 self.f.close()
             self.local.release()
             raise
+        fields = {'pid': os.getpid(), 'cmd': (sys.argv[1:2] or ['-'])[0], **self.holder,
+                  'start': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
+        with contextlib.suppress(OSError):
+            self.holder_path().write_text(' '.join(f'{k}={v or "-"}' for k, v in fields.items()) + '\n', encoding='utf-8')
         return self
 
     def __exit__(self, *exc):
         try:
+            with contextlib.suppress(OSError):
+                self.holder_path().unlink()
             fcntl.flock(self.f, fcntl.LOCK_UN)
             self.f.close()
         finally:
@@ -2539,7 +2555,8 @@ def cmd_land(a):
         cost = price_solo_row(ctx['root'] / t.slug, tier, a.transcript, a.tokens)
         say(ctx, lane, t.id, 'solo row priced $%.4f (estimate)' % cost if cost is not None else 'solo row not priced (no unpriced row or no usage)')
     try:
-        outcome, commit = land_ticket(ctx, MergeLock(ctx['lanes_dir'] / 'merge.lock'))
+        outcome, commit = land_ticket(ctx, MergeLock(ctx['lanes_dir'] / 'merge.lock', branch=lane.branch, ticket=t.id,
+                                                     integration=ctx['integration']))
     except Exception as e:  # a git or IO failure mid-land: record it
         outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
     lane.results.append((t.id, outcome, commit))
@@ -2693,6 +2710,74 @@ def roll_ticket(ctx, lock):
         if p.returncode:
             return f'main not advanced: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', new[:7]
         return 'merged', commit
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def etime_secs(text):
+    """ps etime ([[dd-]hh:]mm:ss) in seconds."""
+    days, _, rest = text.rpartition('-')
+    secs = 0
+    for part in rest.split(':'):
+        secs = secs * 60 + int(part)
+    return secs + int(days or 0) * 86400
+
+
+def cmd_queue(a):
+    """The land order of one lanes dir (T-0687): the merge.lock holder, then each other live `fanout.py land`."""
+    cwd = pathlib.Path.cwd()
+    try:
+        if a.lanes_dir:
+            lanes_dir = (cwd / a.lanes_dir).resolve()
+        else:
+            lanes_dir = resolve_lanes_dir(a, cwd, pathlib.Path(git_out(cwd, 'rev-parse', '--show-toplevel').strip()))
+    except Refuse as e:
+        print(f'fanout: {e}', file=sys.stderr)
+        return 2
+    default = a.lanes_dir is None or lanes_dir == resolve_default_or_none(cwd)
+    holder, hpid, out = lanes_dir / 'merge.lock.holder', None, []
+    with contextlib.suppress(OSError, ValueError):
+        line = holder.read_text(encoding='utf-8').strip()
+        hpid = int(dict(f.split('=', 1) for f in line.split() if '=' in f).get('pid', ''))
+        out.append(('landing: ' if pid_alive(hpid) else 'stale holder: ') + line)
+    ps = subprocess.run(['ps', '-axww', '-o', 'pid=,etime=,command='], capture_output=True, text=True)
+    waiting = []
+    for row in ps.stdout.splitlines():
+        parts = row.split()
+        if len(parts) < 4 or not parts[0].isdigit():
+            continue
+        pid, argv = int(parts[0]), parts[2:]
+        i = next((k for k, w in enumerate(argv) if w.endswith('fanout.py')), None)
+        if pid in (os.getpid(), hpid) or i is None or argv[i + 1:i + 2] != ['land']:
+            continue
+        opts = dict(zip(argv, argv[1:]))
+        theirs = opts.get('--lanes-dir')
+        if (theirs and (cwd / theirs).resolve() != lanes_dir) or (not theirs and not default):
+            continue
+        if a.integration and opts.get('--integration', f'fanout/{datetime.date.today().isoformat()}') != a.integration:
+            continue
+        with contextlib.suppress(ValueError):
+            waiting.append((-etime_secs(parts[1]), pid, ' '.join(argv[i + 2:])))
+    out += [f'waiting: pid={pid} {rest}' for _, pid, rest in sorted(waiting)]
+    print('\n'.join(out) if out else 'queue: empty')
+    return 0
+
+
+def resolve_default_or_none(cwd):
+    """The default lanes dir of the repo at cwd, else None (outside a repo)."""
+    try:
+        top = pathlib.Path(git_out(cwd, 'rev-parse', '--show-toplevel').strip())
+        return resolve_lanes_dir(types.SimpleNamespace(lanes_dir=None), cwd, top)
+    except Refuse:
+        return None
 
 
 def cmd_settle(a):
@@ -5758,6 +5843,46 @@ def selftest():
                sr.returncode == 2 and 'uncovered' in sr.stderr)
 
 
+    # T-0687: MergeLock writes merge.lock.holder while held; `queue` prints it as landing, a dead pid as stale holder
+    with tempfile.TemporaryDirectory() as t687:
+        qd = pathlib.Path(t687)
+        hold = qd / 'merge.lock.holder'
+
+        def queue(*args):
+            return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'queue', '--lanes-dir', str(qd), *args],
+                                  cwd=t687, env=ENV, capture_output=True, text=True, timeout=120)
+        with MergeLock(qd / 'merge.lock', branch='worktree-T-0001-solo', ticket='T-0001', integration='fanout/q'):
+            held = hold.read_text(encoding='utf-8') if hold.is_file() else ''
+            q1 = queue()
+        expect(f'T-0687 MergeLock writes the holder line, got {held!r}',
+               f'pid={os.getpid()} ' in held and 'branch=worktree-T-0001-solo ticket=T-0001' in held)
+        expect(f'T-0687 queue prints a live holder as landing, got rc={q1.returncode} out={q1.stdout!r} err={q1.stderr!r}',
+               q1.returncode == 0 and q1.stdout.startswith(f'landing: pid={os.getpid()} ') and 'ticket=T-0001' in q1.stdout)
+        expect('T-0687 MergeLock removes the holder on release', not hold.exists())
+        q2 = queue()
+        expect(f'T-0687 queue with no holder and no land prints queue: empty, got rc={q2.returncode} out={q2.stdout!r}',
+               q2.returncode == 0 and q2.stdout.strip() == 'queue: empty')
+        dead = subprocess.Popen(['true'])
+        dead.wait()
+        hold.write_text(f'pid={dead.pid} cmd=land branch=b ticket=T-0002\n', encoding='utf-8')
+        q3 = queue()
+        expect(f'T-0687 queue prints a dead holder as stale holder, got out={q3.stdout!r}',
+               q3.stdout.startswith(f'stale holder: pid={dead.pid} '))
+        land = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)', '/x/fanout.py', 'land',
+                                 'worktree-T-0003-solo', '--ticket', 'T-0003', '--lanes-dir', str(qd)])
+        try:
+            q4, q5 = queue(), queue('--integration', 'fanout/other')
+        finally:
+            land.kill()
+            land.wait()
+        expect(f'T-0687 queue prints a live land as waiting, got out={q4.stdout!r}',
+               f'waiting: pid={land.pid} worktree-T-0003-solo --ticket T-0003' in q4.stdout)
+        expect(f'T-0687 queue --integration drops a land into another branch, got out={q5.stdout!r}',
+               'waiting:' not in q5.stdout)
+        with MergeLock(qd / 'merge.lock'):  # a stale holder never blocks the lock
+            pass
+        expect('T-0687 a stale holder does not block the merge lock', not hold.exists())
+
     # case 33 (T-0455): the run-plan claim step sets status: claimed together with claimed_by
     def claim_rule_ok(text):
         m = re.search(r'(?m)^\s*- Claim it \((.*)$', text)
@@ -5792,6 +5917,7 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
          '[--no-gate-lock] [--allow-empty-gate] | '
          'fanout.py sync <lane> [--integration BRANCH] [--root .sdlc] [--lanes-dir DIR] [--gate CMD]... [--regen CMD] '
          '[--paths P,...] | '
+         'fanout.py queue [--lanes-dir DIR] [--integration BRANCH] | '
          'fanout.py selftest\n'
          '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
          '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
@@ -5801,9 +5927,15 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
 def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
-    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover'], ['sync']):
+    if argv[:1] not in (['run'], ['prep'], ['land'], ['roll'], ['settle'], ['cover'], ['sync'], ['queue']):
         print(USAGE, file=sys.stderr)
         return 2
+    if argv[0] == 'queue':
+        qp = argparse.ArgumentParser(prog='fanout.py queue', description='Print the land order of one lanes dir '
+                                     '(T-0687): the merge.lock holder, then each other live `fanout.py land`.')
+        qp.add_argument('--lanes-dir', help='where merge.lock is (default <worktree root>/fanout)')
+        qp.add_argument('--integration', metavar='BRANCH', help='only the lands into this integration branch')
+        return cmd_queue(qp.parse_args(argv[1:]))
     if argv[0] == 'settle':
         sp = argparse.ArgumentParser(prog='fanout.py settle', description='Fast-forward the current branch to a landed '
                                      'integration branch, then close its worktree through lanes.py: the archive ref '

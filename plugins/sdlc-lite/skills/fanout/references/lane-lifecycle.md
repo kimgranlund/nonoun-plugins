@@ -1,0 +1,5 @@
+# Lane lifecycle
+
+Detail for the fanout skill: how lanes open and close.
+
+Lanes open through `lanes.py`, which writes each lane's `.lane.json`. A lane whose tickets all merged is closed after its archive ref `refs/archive/<date>/<branch>` is written, so its tree and branch are gone and `lanes.py archive restore` brings the branch back. A stopped lane stays, and the report says `lane still open: <path> (<outcome>)`. The integration tree stays until main contains the integration branch. `run` and `prep` start with `lanes.py sweep --apply`, which closes every landed lane, unless `.sdlc/config` has `lane_sweep: off`. `roll` removes its scratch tree at the end of every roll. When `.sdlc/config` has `lane_ports: <lo>-<hi>`, each lane gets a port, and its driver and gates see it as `$SDLC_LANE_PORT`. Each `lane_setup: <cmd>` line in `.sdlc/config` (install, codegen, builds) runs in order in every new lane tree, the first failure stops the rest, `open` prints `setup: ok` or `setup: failed rc=<n> (<cmd>)`, and a failed setup keeps the lane.
