@@ -96,7 +96,8 @@ Records. <stem>.attempt.json holds run_lifecycle.py's keys with status running, 
 parent_pid (SDLC_DISPATCH_PARENT_PID, else the first ancestor process named claude, else the first ancestor
 that is not a shell or python; never the short-lived tool shell). <stem>.dispatch.json holds subagent_type,
 name, model, effort, prompt (the brief), result, tmp_prefix, base_sha, and what T-0278 needs to write the
-runs.jsonl line (lane_override, specgate, handoff_sha256, routing_reason). A builder or verifier also writes
+runs.jsonl line (lane_override, specgate, handoff_sha256, routing_reason). Both records carry plugin_version, the
+running plugin manifest version (plugin_min.running, T-0678), which record compares. A builder or verifier also writes
 base-sha as run.sh does. prepare also writes the running marker <role>-<level>.running (the epoch start in whole
 seconds, as run.sh writes it) beside the handoff, so warn-handoff-edit.sh freezes the handoff while the attempt
 runs; record clears it when it closes the attempt completed or failed (a no-result record leaves it), and recover
@@ -156,7 +157,11 @@ it then does the following.
                replaces the token count with the transcript's summed usage fields, priced per field (T-0328); with --agent-id and no
                --transcript, the one file <projects>/*/*/subagents/agent-<id>.jsonl is used (T-0446; none or several: unpriced as above).
   validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
-               <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3.
+               <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3. A legacy
+               result (T-0678) is the exception: when the attempt's plugin_version is missing or differs from the running
+               version and the result has a "## " heading, the defect is a schema change between prepare and record, so
+               record prints "legacy-format: <role> result <reason>; prepared under <version or an older plugin>,
+               recorded as completed", stores legacy_format: <reason> in the attempt and the runs.jsonl line, and exits 0.
   no result yet  no result file, empty stdin, and no transcript result: record prints `no result yet at <path>; the
                attempt stays running` to stderr and exits 2, writing no log, runs.jsonl line, limit marker, or delivery
                and not closing the attempt; record again once the role writes the file, or pass --no-result (T-0412).
@@ -1304,7 +1309,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         base_sha=base, review_sha=review or None, diff_range=diff_range, tree=toplevel, handoff=str(handoff), artifacts_dir=str(records),
                         handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate, time_budget_min=minutes,
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
-                        attempt_file=str(records / (stem + '.attempt.json')),
+                        attempt_file=str(records / (stem + '.attempt.json')), plugin_version=plugin_min.running(PLUGIN, 'claude')[0],
                         dispatch_file=str(records / (stem + '.dispatch.json')), dry_run=dry_run)
         if notify:
             dispatch.update(notify=notify, notify_re=notify_re)
@@ -1323,7 +1328,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         attempt = dict(attempt_id=uuid.uuid4().hex, name=stem, agent_name=name, role=role, level=level, backend='claude',
                        transport='subagent', model=model, effort=effort, routing_reason=dispatch['routing_reason'],
                        reason_source='caller' if reason else 'fallback', status='running', started_at=run_lifecycle.now(),
-                       project=os.getcwd(), handoff=str(handoff), parent_pid=pid, parent_pid_source=source, handoff_sha256=sha, time_budget_min=minutes,
+                       project=os.getcwd(), handoff=str(handoff), plugin_version=dispatch['plugin_version'], parent_pid=pid, parent_pid_source=source, handoff_sha256=sha, time_budget_min=minutes,
                        worktrees_before=[p for p, _ in worktrees(toplevel)], branches_before=branches(toplevel))
         dispatch['attempt_id'] = attempt['attempt_id']
         run_lifecycle.write(Path(dispatch['attempt_file']), attempt)
@@ -1662,7 +1667,9 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control.
     With transcript (a jsonl path), a result missing from both the file and stdin is taken from the transcript's last
     assistant message; one that stopped on max_tokens is refused as truncated (T-0343).
-    With no file, empty stdin, and no transcript result, the attempt stays running and the exit is 2 (T-0412); no_result=True closes it failed (exit 1) as before."""
+    With no file, empty stdin, and no transcript result, the attempt stays running and the exit is 2 (T-0412); no_result=True closes it failed (exit 1) as before.
+    A result that fails validate from an attempt prepared under another plugin version (plugin_version missing or different)
+    with at least one ## heading is legacy (T-0678): closed completed (exit 0) with legacy_format, never failed."""
     try:
         d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
     except (OSError, ValueError) as e:
@@ -1759,6 +1766,12 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
                 transport='subagent', agent_id=agent_id, usage=usage, cost_usd=est, cost_reason=None if est is not None else COST_REASON,
                 duration_ms=duration_ms, turns=None, stray_worktrees=stray_wt, stray_branches=stray_br,
                 loaded_context={'status': 'log absent'})  # T-0252: a sub-agent leaves no stream-json log to read
+    reason = validate(role, str(result))
+    legacy = None
+    prepared = attempt.get('plugin_version')
+    if reason is not None and prepared != plugin_min.running(PLUGIN, 'claude')[0] and re.search(r'^## ', body, re.M):
+        legacy, reason = reason, None  # T-0678: the schema changed between prepare and record; not the role's failure
+        line['legacy_format'] = legacy
     if est is not None:
         line.update(cost_estimated=True, cost_basis=basis)
     else:  # T-0402: no transcript and no tokens leaves no cost row; say so now and mark the row, never fail the record
@@ -1774,7 +1787,8 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         f.write(json.dumps(line, separators=(',', ':')) + '\n')
     if stale:
         say('stale input: %s changed while %s ran' % (handoff, role))
-    reason = validate(role, str(result))
+    if legacy:
+        say('legacy-format: %s result %s; prepared under %s, recorded as completed' % (role, legacy, prepared or 'an older plugin'))
     if reason is not None:
         say('%s result %s; see %s' % (role, reason, result))
         report_strays(found)
@@ -1789,7 +1803,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         if end:
             (result.parent / 'end-sha').write_text(end + '\n', encoding='utf-8')
     report_strays(found)
-    close('completed', 0, result_sha256=result_sha)
+    close('completed', 0, result_sha256=result_sha, **({'legacy_format': legacy} if legacy else {}))
     print(result)
     deliver_quietly(dispatch_file)
     queue_prune(d, attempt, agent_id)
@@ -3186,7 +3200,7 @@ def selftest():
                 p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
             return p.returncode, p.stdout.strip(), p.stderr
 
-        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, no_result=False, **env):
+        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, no_result=False, attempt_mutate=None, **env):
             """prepare, let the role write body (or not), then record in process: (rc, dispatch, stderr, stdout)."""
             rc, got, err = prep(repo, role, level, rel, SDLC_DISPATCH_PARENT_PID=live_pid, **env)
             if rc != 0:
@@ -3198,6 +3212,9 @@ def selftest():
                 data = json.loads(f.read_text())
                 data.update(mutate)
                 f.write_text(json.dumps(data))
+            if attempt_mutate:
+                f = Path(got['attempt_file'])
+                f.write_text(json.dumps(dict(json.loads(f.read_text()), **attempt_mutate)))
             e, o = io.StringIO(), io.StringIO()
             with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
                 try:
@@ -3302,6 +3319,28 @@ def selftest():
             case('negative control (%s): an accept-all validator lets the same bad result pass' % label,
                  rc == 0 and attempt_of(cgot)['status'] == 'completed'
                  and all(l.startswith(('dispatch.py: unpriced: ', 'dispatch.py: cleaned: ')) for l in err.splitlines()))  # T-0402: only the unpriced note; T-0426: and the cleanup count
+
+        # T-0678: an attempt prepared under an older plugin whose result fails a newer schema is recorded completed as legacy.
+        running_version = plugin_min.running(PLUGIN, 'claude')[0]
+        old_review = '## Mode\nreview\n\n## Decisions\nd\n\n## Findings\nNone\n\nVerdict: pass (0 blocking, 3 advisory)\n'
+        for name in ('lg1', 'lg2', 'lg3'):
+            put(rb / '.sdlc' / name / 'handoff.md')
+        rc, got, err, out = go(rb, 'ui-designer', 'L1', '.sdlc/lg1/handoff.md', body=old_review, attempt_mutate={'plugin_version': '0.0.1'})
+        att = attempt_of(got)
+        case('legacy format: a result failing validation from an attempt prepared under 0.0.1 exits 0 with legacy-format on stderr',
+             rc == 0 and 'legacy-format: ui-designer result review mode lacks ## Verdict' in err and 'prepared under 0.0.1, recorded as completed' in err
+             and att['status'] == 'completed' and 'lacks ## Verdict' in att.get('legacy_format', '')
+             and 'lacks ## Verdict' in lines_of(rb / '.sdlc' / 'lg1')[-1].get('legacy_format', ''))
+        rc, lg2, err, out = go(rb, 'ui-designer', 'L1', '.sdlc/lg2/handoff.md', body=old_review)
+        att = attempt_of(lg2)
+        case('legacy format: the same result prepared under the running version exits 3 and the attempt reads failed',
+             rc == 3 and (att['status'], att['exit_code']) == ('failed', 3) and 'legacy_format' not in att and 'legacy-format' not in err)
+        rc, got, err, out = go(rb, 'ui-designer', 'L1', '.sdlc/lg3/handoff.md', body='Verdict: pass\n', attempt_mutate={'plugin_version': '0.0.1'})
+        case('legacy format: a result with no ## heading from an older version is never legacy',
+             rc != 0 and attempt_of(got)['status'] == 'failed' and 'legacy-format' not in err)
+        case('prepare writes plugin_version equal to the manifest version in the dispatch and the attempt',
+             running_version is not None and json.loads(Path(lg2['dispatch_file']).read_text())['plugin_version'] == running_version
+             and attempt_of(lg2)['plugin_version'] == running_version)
 
         # A failed sub-agent: error text and no result; a limit text also leaves the resume marker.
         for name in ('f1', 'f2', 'f3'):

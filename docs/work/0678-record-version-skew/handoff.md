@@ -32,3 +32,10 @@ A result from the current version that fails validation still exits 3 and closes
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new cases, and case (a) fails with the `record` change reverted.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `prepare` stamps `plugin_version` (from `plugin_min.running(PLUGIN, 'claude')[0]`) on the dispatch and attempt records; the records paragraph documents it.
+- `record` treats a validation failure as legacy when the attempt's `plugin_version` is missing or differs from the running version and the result has a `## ` heading: exit 0, attempt `completed` with `legacy_format`, the same key on the `runs.jsonl` line, and `legacy-format: <role> result <reason>; prepared under <version>, recorded as completed` on stderr. A matching version still exits 3 `failed`. Docstring and record paragraph updated.
+- Selftest adds four cases: legacy under 0.0.1 (fails with the `record` change reverted), running version exits 3 (fails with the `prepare` stamp reverted), no `## ` heading is never legacy (fails with the heading guard dropped), and `prepare` writes the manifest version in both records.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `git diff --check 9dc347f2` exit 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 1 on one pre-existing failure outside this ticket: an unlisted broken link in `docs/work/0676-skill-routes-links-prose/handoff.md` (present at base 9dc347f2, owned by T-0676's lane).
