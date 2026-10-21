@@ -38,3 +38,10 @@ Source: GitHub issue #34, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 2. `git grep -n "integration tree" plugins/sdlc-lite/AGENTS.md` shows the updated `Open:` bullet.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `lanes.py open` with no `--root` (argparse default now `None`) resolves the worktree holding `--into`; when it is not the main checkout and its root holds every local ticket, the `branch:`/`worktree:` writes and the `<ids>: record lane <leaf>` commit go to that tree, printed as `recorded in <tree>`. A missing ticket falls back to main with `recorded in the main checkout: <ids> not in <tree>/<root>`. An explicit `--root` and the T-0609 upstream rule are unchanged; the claim check still reads the main checkout's root.
+- New selftest case `open into integration`; with the `open_lane` change disabled it fails (main moved, no record on `wave/1`).
+- Docs: the T-0599 paragraph of the `lanes.py` docstring and the `Open:` bullet of `plugins/sdlc-lite/AGENTS.md`.
+- Checks: `lanes.py selftest` exit 0, `git grep -n "integration tree" plugins/sdlc-lite/AGENTS.md` exit 0, `check.py` exit 0, `git diff --check 9b480e34` exit 0.
+- Open: `lanes.py close` still removes `branch:` lines from the main checkout's root only, so a record written in an integration tree is not removed by close (possible follow-up ticket).
