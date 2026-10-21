@@ -9,7 +9,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0677 | [0677-routes-command-onboard-warn](0677-routes-command-onboard-warn/handoff.md) | steps.py routes prints resolved skill routes; onboard check warns on zero routes | feature | L2 | P2 | T-0676 | ⏳ proposed |
 | T-0678 | [0678-record-version-skew](0678-record-version-skew/handoff.md) | record judges a result by the plugin version that prepared it | bug | L2 | P1 | none | 🟡 claimed |
 | T-0679 | [0679-stale-scripts-warning](0679-stale-scripts-warning/handoff.md) | scripts warn once on stderr when a newer plugin version is installed | feature | L1 | P2 | none | ⏳ proposed |
-| T-0680 | [0680-lane-open-into-integration-root](0680-lane-open-into-integration-root/handoff.md) | lanes.py open --into an integration branch writes the claim and lane record there, not on main | bug | L2 | P1 | none | 🟡 claimed |
 | T-0681 | [0681-integration-merge-regenerates-router](0681-integration-merge-regenerates-router/handoff.md) | merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md | bug | L2 | P1 | none | ⏳ proposed |
 | T-0682 | [0682-solo-brief-report-file](0682-solo-brief-report-file/handoff.md) | solo_run.py briefs carry Report file and pointer lines, and record reads the solo report file | bug | L2 | P2 | none | ⏳ proposed |
 | T-0683 | [0683-merge-union-config](0683-merge-union-config/handoff.md) | merge_union config: land union-merges listed paths behind one light gate | feature | L2 | P2 | none | 🟡 claimed |
@@ -25,10 +24,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0693 | [0693-brief-ports-line](0693-brief-ports-line/handoff.md) | briefs carry a Ports line from lanes.py port | feature | L1 | P3 | T-0682 | ⏳ proposed |
 | T-0694 | [0694-ready-warn-once-notify-cmd](0694-ready-warn-once-notify-cmd/handoff.md) | lanes.py ready warns once per session and runs --notify-cmd on pin | feature | L1 | P3 | none | ⏳ proposed |
 
-Closed: 639 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 640 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
 - decide: plugins/sdlc-lite/skills/build/SKILL.md and 12 other skills (fix, agent, architect, dig, file, scout, research, verify, bench, fleet-retro, review-traces, plan/references/steps.md) still say "with the sub-agent's final message on stdin", per the builder's Outcome; this needs a follow-up ticket to align them with conductor.md:41. (from T-0667: record --agent-id reads the final message from the transcript (2026-10-20))
 - decide: the handoff's Non-goals ("any script change") contradict criterion 2 as written, because item 41 had to change. Future tickets that reword a check-enforced phrase should name the check in Do. (from T-0673: Skills say record reads the transcript, not the final message on stdin (2026-10-20))
 - decide: plugins/sdlc-lite/scripts/tickets.py:3777 the path-skip regex also strips a leading word like `Node.js`, and the shorter key (e.g. `src/x.py: fix bug` -> `fix-bug`) can now match an unrelated ticket folder slugged `fix-bug`; narrow, but a new false-duplicate path. (from T-0675: close drops follow-ups whose leading file path matches a filed ticket's slug (2026-10-20))
+- decide: plugins/sdlc-lite/scripts/lanes.py:69: the docstring line "A path already dirty before the open ..." is now 187 characters, joined onto the added text instead of re-wrapped like the surrounding ~120-column lines. (from T-0680: lanes.py open --into an integration branch writes the claim and lane record there, not on main (2026-10-20))

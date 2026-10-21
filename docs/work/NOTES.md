@@ -113,3 +113,8 @@
 
 - note: T-0676-t0676:plugins/sdlc-lite/scripts/steps.py:182 the lint help text line has grown to about 180 characters ("... else against the repo root. A step whose scope allow-list ..."), well over the neighboring lines' wrap width; cosmetic only.
 - note: during verification I briefly copied a mutated steps.py into the repo scripts dir and removed it straight away; `git status --short` was empty afterward, so the tree is unchanged.
+
+## T-0680: lanes.py open --into an integration branch writes the claim and lane record there, not on main (2026-10-20)
+
+- decide: plugins/sdlc-lite/scripts/lanes.py:69: the docstring line "A path already dirty before the open ..." is now 187 characters, joined onto the added text instead of re-wrapped like the surrounding ~120-column lines.
+- note: the builder's Open item stands. `lanes.py close` removes `branch:` lines only from the main checkout's root, so a record written in an integration tree is not removed by close (possible follow-up ticket).

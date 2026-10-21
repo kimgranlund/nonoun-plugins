@@ -2,7 +2,7 @@
 id: T-0680
 title: "lanes.py open --into an integration branch writes the claim and lane record there, not on main"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,15 @@ Source: GitHub issue #34, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 - Docs: the T-0599 paragraph of the `lanes.py` docstring and the `Open:` bullet of `plugins/sdlc-lite/AGENTS.md`.
 - Checks: `lanes.py selftest` exit 0, `git grep -n "integration tree" plugins/sdlc-lite/AGENTS.md` exit 0, `check.py` exit 0, `git diff --check 9b480e34` exit 0.
 - Open: `lanes.py close` still removes `branch:` lines from the main checkout's root only, so a record written in an integration tree is not removed by close (possible follow-up ticket).
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9dc347f22c55
+- Changed: see commits
+- Commits: a8fef54 T-0680: lanes.py open --into an integration tree records the lane there, not on main
+- Check: 1 `lanes.py selftest` exits 0 with the new case, and the case fails with the `open_lane` change rev...: pass
+- Check: 2 `git grep -n "integration tree" plugins/sdlc-lite/AGENTS.md` shows the updated `Open:` bullet: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:69: the docstring line "A path... -> notes.md
+- Follow-up: note: the builder's Open item stands -> notes.md
