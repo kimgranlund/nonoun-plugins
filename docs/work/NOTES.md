@@ -118,3 +118,8 @@
 
 - decide: plugins/sdlc-lite/scripts/lanes.py:69: the docstring line "A path already dirty before the open ..." is now 187 characters, joined onto the added text instead of re-wrapped like the surrounding ~120-column lines.
 - note: the builder's Open item stands. `lanes.py close` removes `branch:` lines only from the main checkout's root, so a record written in an integration tree is not removed by close (possible follow-up ticket).
+
+## T-0678: record judges a result by the plugin version that prepared it (2026-10-20)
+
+- decide: `/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.28.1/scripts/redck.py deviations` printed no process deviations.
+- decide: Selftest mutation runs take several minutes each (three sequential runs exceeded the 600 s foreground cap).

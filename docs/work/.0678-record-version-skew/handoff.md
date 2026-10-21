@@ -2,7 +2,7 @@
 id: T-0678
 title: "record judges a result by the plugin version that prepared it"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,13 @@ A result from the current version that fails validation still exits 3 and closes
 - Selftest adds four cases: legacy under 0.0.1 (fails with the `record` change reverted), running version exits 3 (fails with the `prepare` stamp reverted), no `## ` heading is never legacy (fails with the heading guard dropped), and `prepare` writes the manifest version in both records.
 - `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `git diff --check 9dc347f2` exit 0.
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 1 on one pre-existing failure outside this ticket: an unlisted broken link in `docs/work/0676-skill-routes-links-prose/handoff.md` (present at base 9dc347f2, owned by T-0676's lane).
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9dc347f22c55
+- Changed: see commits
+- Commits: c11dd0b T-0678: record judges a result by the plugin version that prepared it
+- Check: 1 `dispatch.py selftest` exits 0 with the new cases, and case (a) fails with the `record` change re...: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
+- Follow-up: decide: /Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.28.1... -> notes.md
+- Follow-up: decide: Selftest mutation runs take several minutes each three sequential... -> notes.md
