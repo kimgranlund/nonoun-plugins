@@ -15,7 +15,7 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
        fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]...
                       [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
                       [--gate-need [PREFIX::]RES=N]...
-       fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--force]]
+       fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--force]] [--catch-up]
        fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]...
                        [--no-gate-lock] [--allow-empty-gate]
        fanout.py sync <lane branch or tree> [--integration BRANCH] [--root .sdlc] [--lanes-dir DIR] [--gate CMD]...
@@ -112,6 +112,9 @@ settle (T-0438, T-0452)
   fast-forward: it reads the ledger with `git show <integration>:<rel>/gate-ledger.jsonl` and refuses (exit 2, branch
   kept, nothing merged, the uncovered range `<from-or-to>..<tip>` printed) unless the newest entry has rc 0 and either
   its `to` is the integration tip or `git diff --name-only <to> <integration>` lists only the ledger path.
+  --catch-up (T-0681) is the --forward merge alone: it merges the current branch into the integration branch in its
+  worktree under <lanes dir>/merge.lock, regenerates the generated files, commits `catch-up: <head> <sha7> into
+  <integration>` and stops (no cover, no fast-forward, worktree and branch kept); the same refusals, exit 2.
 
 Gate class (T-0481; docs/references/sdlc-internals.md, fanout gate class)
   In merge_gate_close, before the merge, gate_class(ctx, ref) is `light` only when the run is not a roll, <root>/config
@@ -2703,9 +2706,12 @@ def cmd_settle(a):
     --forward (T-0489, needs --gate) first brings a diverged branch level with the current branch through settle_forward
     (merge, regenerate, cover under the merge lock); green continues into the fast-forward above, red exits 1. Before
     that merge it refuses (exit 2, nothing merged) while a role is running against the branch (running_roles, T-0656)
-    unless --force."""
+    unless --force. --catch-up (T-0681) runs only that merge (settle_catch_up) and stops: no cover, no fast-forward, the
+    worktree and branch kept."""
     cwd = pathlib.Path.cwd()
     try:
+        if a.forward and a.catch_up:
+            raise Refuse('settle: --catch-up and --forward exclude each other; nothing merged')
         if a.forward and not a.gate:
             raise Refuse('settle --forward needs at least one --gate CMD: the gate set cover runs at the new integration '
                          'tip before the fast-forward; nothing merged')
@@ -2713,6 +2719,12 @@ def cmd_settle(a):
             print(f'settle: no branch {a.integration}: nothing to settle')
             return 0
         head = git_out(cwd, 'symbolic-ref', '--short', '-q', 'HEAD')
+        if a.catch_up:
+            busy = [] if a.force else running_roles(a, cwd)
+            if busy:
+                raise Refuse('settle --catch-up: a role is running against ' + a.integration + '; nothing merged; '
+                             '--force merges anyway:\n' + '\n'.join(busy))
+            return settle_catch_up(a, cwd, head)
         if a.forward and git(cwd, 'merge-base', '--is-ancestor', a.integration, 'HEAD').returncode \
                 and git(cwd, 'merge-base', '--is-ancestor', 'HEAD', a.integration).returncode:
             if not a.force:
@@ -2776,13 +2788,45 @@ def running_roles(a, cwd):
 
 
 def settle_forward(a, cwd, head):
-    """settle --forward (T-0489): merge the current branch into the diverged integration branch in its worktree under
-    <lanes dir>/merge.lock, resolve conflicts only in the generated files (notes.md by a union of its three stages, the
-    roadmap, router and mailbox files by --ours, then `tickets.py roadmap` regenerates them; merge_generated), commit
-    `settle --forward: <head> <sha7> into <integration>` and run cover_at at the new tip in the same lock. Returns 0
-    green (the caller fast-forwards) or 1 red (cover's lines printed, the current branch unmoved, the merge and the red
-    ledger entry kept on the integration branch). Raises Refuse (exit 2): no or dirty integration worktree, a conflict
-    outside the generated files, or a failed regeneration, each with the merge aborted."""
+    """settle --forward (T-0489): merge the current branch into the diverged integration branch (merge_into_integration)
+    and run cover_at at the new tip in the same merge lock. Returns 0 green (the caller fast-forwards) or 1 red (cover's
+    lines printed, the current branch unmoved, the merge and the red ledger entry kept on the integration branch).
+    Raises Refuse (exit 2) as merge_into_integration does."""
+    lpath, _top = ledger_rel(cwd, a.root)
+
+    def cover(wt, lanes_dir):
+        ctx = {'gate_needs': gate_needs_of(a), 'gate_lock': not a.no_gate_lock and not gate_slots_off(),
+               'run_id': 'fanout-' + uuid.uuid4().hex[:12]}
+        logs = lanes_dir / 'logs'
+        logs.mkdir(parents=True, exist_ok=True)
+        return cover_at(a, cwd, wt, lpath, logs, ctx)
+
+    rc, to, frm, merges, ledger = merge_into_integration(a, cwd, head, 'settle --forward', 'settle --forward', cover)
+    return cover_report(a, rc, to, frm, merges, ledger)
+
+
+def settle_catch_up(a, cwd, head):
+    """settle --catch-up (T-0681): merge the current branch into the integration branch (merge_into_integration, commit
+    `catch-up: <head> <sha7> into <integration>`) and stop: no cover, the current branch unmoved, the worktree kept.
+    Nothing to merge prints and exits 0. Raises Refuse (exit 2) as merge_into_integration does."""
+    src = head or 'HEAD'
+    if git(cwd, 'merge-base', '--is-ancestor', 'HEAD', a.integration).returncode == 0:
+        print(f'settle --catch-up: {src} is already in {a.integration}: nothing to merge')
+        return 0
+    sha = merge_into_integration(a, cwd, head, 'settle --catch-up', 'catch-up')
+    print(f'caught up: {src} {sha[:7]} into {a.integration} ({git_out(cwd, "rev-parse", "--short", a.integration)}); '
+          f'{src} is unmoved')
+    return 0
+
+
+def merge_into_integration(a, cwd, head, label, subject, then=None):
+    """The merge half of settle --forward and settle --catch-up: merge the current branch into the integration branch
+    in its worktree under <lanes dir>/merge.lock, resolve conflicts only in the generated files (notes.md by a union of
+    its three stages, the roadmap, router and mailbox files by --ours, then `tickets.py roadmap` regenerates them;
+    merge_generated) and commit `<subject>: <head> <sha7> into <integration>`. Returns then(wt, lanes_dir), run in the
+    same lock, or the merged sha without it. Raises Refuse (exit 2, messages prefixed `<label>:`): no or dirty
+    integration worktree, a conflict outside the generated files, or a failed regeneration, each with the merge
+    aborted."""
     lpath, _top = ledger_rel(cwd, a.root)
     rel = pathlib.PurePosixPath(lpath).parent
     wt, cur = None, None
@@ -2792,16 +2836,12 @@ def settle_forward(a, cwd, head):
         elif line == f'branch refs/heads/{a.integration}':
             wt = pathlib.Path(cur)
     if wt is None:
-        raise Refuse(f'settle --forward: no worktree has {a.integration} checked out: the forward merge runs there; '
+        raise Refuse(f'{label}: no worktree has {a.integration} checked out: the forward merge runs there; '
                      f'nothing merged')
     if git_out(wt, 'status', '--porcelain', '--untracked-files=no'):
-        raise Refuse(f'settle --forward: {wt} has uncommitted tracked changes: commit or discard them first; nothing merged')
+        raise Refuse(f'{label}: {wt} has uncommitted tracked changes: commit or discard them first; nothing merged')
     root = wt / rel
     lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else wt.parent
-    ctx = {'gate_needs': gate_needs_of(a), 'gate_lock': not a.no_gate_lock and not gate_slots_off(),
-           'run_id': 'fanout-' + uuid.uuid4().hex[:12]}
-    logs = lanes_dir / 'logs'
-    logs.mkdir(parents=True, exist_ok=True)
     src = head or 'HEAD'
 
     def abort(why):
@@ -2811,24 +2851,24 @@ def settle_forward(a, cwd, head):
             why += f'; git merge --abort left MERGE_HEAD in {wt}: run it there by hand'
         raise Refuse(why)
 
+    lanes_dir.mkdir(parents=True, exist_ok=True)
     with MergeLock(lanes_dir / 'merge.lock'):
         sha = git_out(cwd, 'rev-parse', f'refs/heads/{head}' if head else 'HEAD')
         m = merge_generated(wt, sha, root)
         if m == 'up to date':
-            abort(f'settle --forward: {src} {sha[:7]} is already in {a.integration}: nothing to merge')
+            abort(f'{label}: {src} {sha[:7]} is already in {a.integration}: nothing to merge')
         if m:
             kind, detail = m
-            abort({'failed': f'settle --forward: git merge {sha[:7]} failed in {wt}: {detail}; {src}, {a.integration} '
+            abort({'failed': f'{label}: git merge {sha[:7]} failed in {wt}: {detail}; {src}, {a.integration} '
                              f'and the tree are unchanged',
-                   'conflict': f'settle --forward: conflict outside the generated files: {detail}; {src}, '
+                   'conflict': f'{label}: conflict outside the generated files: {detail}; {src}, '
                                f'{a.integration} and the tree are unchanged',
-                   'merge-file': f'settle --forward: git merge-file --union {detail}',
-                   'roadmap': f'settle --forward: tickets.py roadmap failed in {wt}, the merge is aborted: {detail}'}[kind])
-        c = git(wt, 'commit', '-q', '-m', f'settle --forward: {src} {sha[:7]} into {a.integration}')
+                   'merge-file': f'{label}: git merge-file --union {detail}',
+                   'roadmap': f'{label}: tickets.py roadmap failed in {wt}, the merge is aborted: {detail}'}[kind])
+        c = git(wt, 'commit', '-q', '-m', f'{subject}: {src} {sha[:7]} into {a.integration}')
         if c.returncode:
-            abort(f'settle --forward: the merge commit failed in {wt}: {(c.stderr or c.stdout).strip() or c.returncode}')
-        rc, to, frm, merges, ledger = cover_at(a, cwd, wt, lpath, logs, ctx)
-    return cover_report(a, rc, to, frm, merges, ledger)
+            abort(f'{label}: the merge commit failed in {wt}: {(c.stderr or c.stdout).strip() or c.returncode}')
+        return then(wt, lanes_dir) if then else sha
 
 
 LEDGER = 'gate-ledger.jsonl'  # <root>/gate-ledger.jsonl on the integration branch, one line per `cover` run (T-0481)
@@ -5381,6 +5421,34 @@ def selftest():
         fn = verb(sg, 'settle', 'fanout/x', '--forward')
         expect(f'T-0489 settle --forward without --gate exits 2 naming --gate, got rc={fn.returncode} err={fn.stderr!r}',
                fn.returncode == 2 and '--gate' in fn.stderr)
+        # T-0681: settle --catch-up merges main into the integration branch with the roadmap regenerated on both sides
+        # (main filed T-0003, the integration branch T-0004) and stops: main unmoved, the branch and worktree kept
+        sc_ = forward_fixture('settle-catch-up', {'f1.txt': 'one\n'})
+        wtc = tree_of(sc_, 'fanout/x')
+        tn4 = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'new', 'chore', 'fourth',
+                              'Ticket t4'], cwd=str(wtc), env=ENV, capture_output=True, text=True)
+        hp4 = wtc / '.sdlc' / 'fourth' / 'handoff.md'
+        hp4.write_text(hp4.read_text(encoding='utf-8').replace('id: T-0003', 'id: T-0004'), encoding='utf-8')
+        rr4 = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'roadmap'], cwd=str(wtc),
+                             env=ENV, capture_output=True, text=True)
+        sh(wtc, 'add', '-A')
+        sh(wtc, 'commit', '-q', '-m', 'T-0004 filed on fanout/x')
+        mainC = sh(sc_, 'rev-parse', 'main').stdout.strip()
+        fc = verb(sc_, 'settle', 'fanout/x', '--catch-up')
+        rc_rows = sh(sc_, 'show', 'fanout/x:.sdlc/roadmap.md').stdout.splitlines()
+        expect(f'T-0681 settle --catch-up: exit 0, the catch-up merge on fanout/x, its roadmap lists T-0003 and T-0004, '
+               f'main unmoved and the worktree kept, got rc={fc.returncode} out={fc.stdout!r} err={fc.stderr!r} '
+               f'new={tn4.returncode} roadmap={rr4.returncode} rows={rc_rows!r}',
+               tn4.returncode == 0 and rr4.returncode == 0 and fc.returncode == 0 and 'caught up' in fc.stdout
+               and sh(sc_, 'log', '-1', '--format=%s', 'fanout/x').stdout.strip()
+               == f'catch-up: main {mainC[:7]} into fanout/x'
+               and any(x.startswith('| T-0003 |') for x in rc_rows) and any(x.startswith('| T-0004 |') for x in rc_rows)
+               and sh(sc_, 'rev-parse', 'main').stdout.strip() == mainC
+               and sh(sc_, 'merge-base', '--is-ancestor', mainC, 'fanout/x').returncode == 0
+               and wtc.exists() and sh(wtc, 'status', '--porcelain', '--untracked-files=no').stdout == '')
+        fc2 = verb(sc_, 'settle', 'fanout/x', '--catch-up')
+        expect(f'T-0681 settle --catch-up again: nothing to merge, exit 0, got rc={fc2.returncode} out={fc2.stdout!r}',
+               fc2.returncode == 0 and 'nothing to merge' in fc2.stdout)
 
         # T-0654: sync merges the integration branch into a running lane opened with prep's `lanes.py open` line, so
         # the integration branch comes from the lane record; the roadmap and a `hash_bound: gen/*` file change on both
@@ -5719,7 +5787,7 @@ USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integrat
          'fanout.py roll <branch> [--ticket T-NNNN] [--root .sdlc] [--main BRANCH] [--lanes-dir DIR] [--gate CMD]... '
          '[--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... | '
          'fanout.py settle <integration> [--root .sdlc] [--require-covered] [--forward --gate CMD... [--force] [--lanes-dir DIR] '
-         '[--gate-need ...] [--no-gate-lock] [--allow-empty-gate]] | '
+         '[--gate-need ...] [--no-gate-lock] [--allow-empty-gate]] [--catch-up [--force] [--lanes-dir DIR]] | '
          'fanout.py cover <integration> [--root .sdlc] [--lanes-dir DIR] --gate CMD... [--gate-need [PREFIX::]RES=N]... '
          '[--no-gate-lock] [--allow-empty-gate] | '
          'fanout.py sync <lane> [--integration BRANCH] [--root .sdlc] [--lanes-dir DIR] [--gate CMD]... [--regen CMD] '
@@ -5748,12 +5816,15 @@ def main(argv):
         sp.add_argument('--forward', action='store_true', help='a diverged integration branch (T-0489): merge the current '
                         'branch into it under the merge lock, regenerate the roadmap and router files, union notes.md, '
                         'run cover with --gate at the new tip, and fast-forward only when it is green (needs --gate)')
-        sp.add_argument('--force', action='store_true', help='with --forward: skip the running-role check (T-0656), which '
+        sp.add_argument('--catch-up', action='store_true', help='bring the current branch into the integration branch '
+                        '(T-0681): the --forward merge under the merge lock, with the generated files regenerated, and '
+                        'stop: no cover, no fast-forward, the worktree and branch kept')
+        sp.add_argument('--force', action='store_true', help='with --forward or --catch-up: skip the running-role check (T-0656), which '
                         'otherwise refuses (exit 2, nothing merged) while a `<role>-<level>.running` marker is under the '
                         'integration worktree or a lane into it')
         sp.add_argument('--gate', action='append', metavar='CMD', help='with --forward: the full gate set cover runs '
                         'in the integration worktree (repeatable, in order; the first red one stops)')
-        sp.add_argument('--lanes-dir', help='with --forward: where merge.lock and logs/ are (default: the integration '
+        sp.add_argument('--lanes-dir', help='with --forward or --catch-up: where merge.lock and logs/ are (default: the integration '
                         'worktree\'s parent)')
         sp.add_argument('--gate-need', action='append', metavar='[PREFIX::]RES=N', help='as for run')
         sp.add_argument('--no-gate-lock', action='store_true', help='as for run')
