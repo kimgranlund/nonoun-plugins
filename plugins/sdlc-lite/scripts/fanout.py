@@ -2227,7 +2227,8 @@ def branch_verdict(ctx, ref, t, with_held=False):
     the ticket (runtime_records, the copy land_ticket made from the lane worktree's records dir); when it holds none,
     the newest task-dir verifier result committed on ref that the integration branch does not hold yet (read from git
     objects into a temp dir, never from a tree). With with_held, the pair (verdict, held): held is the subjects or
-    owners of a `fail` result's `deferred:` or `unmet-dependency:` note (steps.held_note, T-0408), else ''."""
+    owners of a `fail` result's `deferred:` or `unmet-dependency:` note (steps.held_note, T-0408), else ''. A held-only
+    `deferred:` fail whose every hold its owner settled (steps.owner_settled_hold, T-0684) reads as 'pass'."""
     rd = runtime_records(ctx['integ_dir'] / ctx['trel'] / t.slug)
     try:
         local = {f.name for f in rd.iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
@@ -2236,6 +2237,7 @@ def branch_verdict(ctx, ref, t, with_held=False):
     if local:
         newest = newest_verifier(rd, local)
         v = steps.verdict_or_none(newest) if newest else None
+        v = 'pass' if v == 'fail' and steps.owner_settled_hold(newest) else v  # T-0684: the owner settled every hold
         return (v, steps.held_note(newest) if newest and v == 'fail' else '') if with_held else v
     prefix = (ctx['trel'] / t.slug).as_posix()
     on_ref = branch_names(ctx['cwd'], ref, prefix)
@@ -2250,6 +2252,7 @@ def branch_verdict(ctx, ref, t, with_held=False):
                 (pathlib.Path(td) / n).write_text(blob.stdout, encoding='utf-8')
         newest = newest_verifier(td, set(new))
         v = steps.verdict_or_none(newest) if newest else None
+        v = 'pass' if v == 'fail' and steps.owner_settled_hold(newest) else v  # T-0684: the owner settled every hold
         return (v, steps.held_note(newest) if newest and v == 'fail' else '') if with_held else v
 
 
@@ -4893,7 +4896,7 @@ def selftest():
 
         # case 23 (T-0285): land merges one sub-agent branch behind the locked merge, gates and close
         ld = tmp / 'land'
-        sized_repo(ld, ['L1', 'L2', 'S', 'S', 'S', 'S', 'S'], {'.gitignore': gi})
+        sized_repo(ld, ['L1', 'L2', 'S', 'S', 'S', 'S', 'S', 'L2'], {'.gitignore': gi})
         main_ld = sh(ld, 'rev-parse', 'main').stdout.strip()
 
         def make_branch(repo_, branch, files, msg=None):
@@ -4996,6 +4999,21 @@ def selftest():
                    want in lm.stdout and (lm.returncode == 0) == (want == 'merged'))
         expect('case 23 land level L2: the report names the L2 model',
                '- Lane for `T-0002`: solo (level L2: opus medium)' in lm.stdout)
+        # T-0684: a `deferred: conductor` hold lands only once its owner settled it (dispatch.py settle-held)
+        make_branch(ld, 'worktree-T-0008-solo', {'f8.txt': 'eight\n'}, 'T-0008: Ticket t8')
+        hold = (vhead + '## Verdict\nfail\n\n## Criteria\n- #1 the review passes: deferred conductor. Evidence: owner stage\n\n'
+                '## For the next attempt\ndeferred: conductor\n')
+        for name, text, want in (('verifier-L3.md', hold, 'verifier fail (held conductor'),
+                                 ('verifier-L3-2.md', hold + '\n## Settled by owner\n- ticket#1 conductor: docs/review.md at abc1234\n',
+                                  '| t-0008-solo | T-0008 | merged |')):
+            sh(ld, 'checkout', '-q', 'worktree-T-0008-solo')
+            (ld / '.sdlc' / 't8' / name).write_text(text, encoding='utf-8')
+            sh(ld, 'add', '-A')
+            sh(ld, 'commit', '-q', '-m', f'verifier {name}')
+            sh(ld, 'checkout', '-q', 'main')
+            lm8 = verb(ld, 'land', 'worktree-T-0008-solo', *pin, '--gate', 'true')
+            expect(f'case 23 land level L2 (T-0684): {name} gives {want}, got rc={lm8.returncode} out={lm8.stdout[-300:]!r}',
+                   want in lm8.stdout and (lm8.returncode == 0) == ('merged' in want))
         expect(f'case 23 land git objects: a verifier committed with git add -f is untracked by the close and kept in the '
                f'runtime records dir, got {sh(ld, "ls-tree", "-r", "--name-only", integ, "--", ".sdlc/t2").stdout.split()}',
                sh(ld, 'ls-tree', '-r', '--name-only', integ, '--', '.sdlc/t2').stdout.split() == ['.sdlc/t2/handoff.md']

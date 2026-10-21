@@ -23,6 +23,11 @@
                                           <role>-<level>.limit with the resume call (SendMessage by name keeps its context) and the
                                           prepare command; refused for an attempt that is not running or has a result (T-0537).
                                           A limit-stopped attempt can still be recorded once the resumed agent reports.
+  dispatch.py settle-held <verifier result> --by <owner> --evidence <repo-relative path> [--ref <ref>]...
+                                          append `## Settled by owner` to a `deferred: <owner>` held fail, one line per held ref, so
+                                          steps.py open, fanout.py land and tickets.py close read the refs as pass (T-0684); exit 2 and
+                                          nothing written for any other result, another owner, a missing or absolute evidence path, or a
+                                          review record whose Verdict is not pass or pass-with-notes
   dispatch.py selftest
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
@@ -1850,6 +1855,70 @@ def review_record_line(result, tree):
     return '- Review record: %s (%s at %s)' % (rel, verdict, sha)
 
 
+HELD_NOTE_RE = re.compile(r'^(unmet-dependency|deferred):\s*(.*)$')  # steps.HELD_NOTE_RE
+REF_ARG_RE = re.compile(r'^#?(?:(step-\d+|ticket)#)?(\d+)$')
+
+
+def settle_held(result, by, evidence, refs=()):
+    """Append `## Settled by owner` to a held verifier result (T-0684): one `- <ref> <owner>: <evidence> at <sha7>` line
+    per `deferred <by>` criterion (or the --ref subset), so steps.held_items and fanout.py land read them as pass with no
+    second verifier. Refuses (Refuse rc 2, file unchanged) a result that is not a `fail` whose ## For the next attempt
+    first line is `deferred:` naming --by, a missing or absolute evidence path, and an evidence file with a ## Verdict
+    (a review record) that is not pass or pass-with-notes. Returns the lines it added."""
+    result = Path(result)
+    if not result.is_file():
+        raise Refuse(2, 'settle-held: no such verifier result: %s' % result)
+    lines = results._lines(str(result))
+    note = next((l.strip() for l in results._section_lines(lines, 'For the next attempt') if l.strip()), '')
+    m = HELD_NOTE_RE.match(note)
+    owners = [o.strip() for o in m.group(2).split(',')] if m else []
+    if results.key_value(str(result), 'verifier') != 'fail' or not m or m.group(1) != 'deferred' or by not in owners:
+        raise Refuse(2, 'settle-held: %s is not a held fail deferred to %s (its next-attempt line is %r); only a '
+                        '`deferred: %s` hold is settled here, nothing written' % (result, by, note, by))
+    default = result.parent.name if re.fullmatch(r'step-\d+', result.parent.name) else 'ticket'
+    held = ['%s#%d' % (c['scope'] or default, c['k']) for c in results.criteria_states(str(result))
+            if c['state'] == 'deferred' and c['who'] == by and c['k'] is not None]
+    want = []
+    for r in refs:
+        rm = REF_ARG_RE.match(r.strip())
+        ref = '%s#%s' % (rm.group(1) or default, rm.group(2)) if rm else r
+        if ref not in held:
+            raise Refuse(2, 'settle-held: %s is not a criterion deferred to %s in %s (held: %s); nothing written'
+                         % (r, by, result, ', '.join(held) or 'none'))
+        want.append(ref)
+    want = want or held
+    if not want:
+        raise Refuse(2, 'settle-held: no criterion of %s is deferred to %s; nothing written' % (result, by))
+    if os.path.isabs(evidence):
+        raise Refuse(2, 'settle-held: --evidence must be repo-relative, got the absolute path %s; nothing written' % evidence)
+    top = Path(git('rev-parse', '--show-toplevel', cwd=result.parent).stdout.strip() or '.')
+    ev = top / evidence
+    if not ev.is_file():
+        raise Refuse(2, 'settle-held: no evidence file %s under %s; nothing written' % (evidence, top))
+    has_verdict, verdict = results._key_body_value(results._lines(str(ev)), 'Verdict')
+    if has_verdict and verdict.lower() not in ('pass', 'pass-with-notes'):
+        raise Refuse(2, 'settle-held: the review record %s has Verdict %r, not pass or pass-with-notes; nothing written'
+                     % (evidence, verdict or 'none'))
+    sha = git('rev-parse', '--short=7', 'HEAD', cwd=top).stdout.strip() or '0000000'
+    done = {'%s#%d' % (sc, k) for sc, k, who in results.owner_settled(str(result)) if who == by}
+    add = ['- %s %s: %s at %s' % (ref, by, evidence, sha) for ref in want if ref not in done]
+    if not add:
+        return []
+    text = result.read_text(encoding='utf-8')
+    body = text.splitlines()
+    i = results._first_heading(body, 'Settled by owner')
+    if i is None:
+        text = text.rstrip('\n') + '\n\n## Settled by owner\n' + '\n'.join(add) + '\n'
+    else:
+        end = next((j for j in range(i + 1, len(body)) if body[j].startswith('## ')), len(body))
+        while end > i + 1 and not body[end - 1].strip():
+            end -= 1
+        body[end:end] = add
+        text = '\n'.join(body) + '\n'
+    result.write_text(text, encoding='utf-8')
+    return add
+
+
 def delivery_path(d):
     return Path(d['artifacts_dir']) / (Path(d['result']).stem + '.delivery.json')
 
@@ -2141,11 +2210,25 @@ def main(argv):
     pg2.add_argument('--forget-stale', action='store_true', help='drop the entries another session queued (T-0601)')
     pr.add_argument('--role', default='', help='with --add: the agent role')
     pr.add_argument('--level', default='', help='with --add: the agent level')
+    sh_ = sub.add_parser('settle-held', help='record that the owner of a `deferred:` held criterion settled it with evidence (T-0684)')
+    sh_.add_argument('result', help='the verifier result holding the criteria (Verdict fail, `deferred: <owner>` note)')
+    sh_.add_argument('--by', required=True, metavar='OWNER', help='the owner the criteria are deferred to, e.g. conductor')
+    sh_.add_argument('--evidence', required=True, metavar='PATH', help='repo-relative evidence file; a review record needs Verdict pass or pass-with-notes')
+    sh_.add_argument('--ref', action='append', default=[], metavar='REF', help='settle only this held ref (ticket#3, step-1#2, #3); repeatable; default every ref deferred to --by')
     sub.add_parser('selftest', help='run the regression cases in temp repos')
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
         return selftest()
     plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
+    if args.cmd == 'settle-held':
+        try:
+            add = settle_held(args.result, args.by, args.evidence, args.ref)
+        except Refuse as r:
+            for line in r.lines:
+                print(line, file=sys.stderr)
+            return r.rc
+        print('\n'.join(add) if add else 'settle-held: already settled, nothing written')
+        return 0
     if args.cmd == 'prune':
         try:
             if args.done:
@@ -4441,6 +4524,40 @@ def selftest():
         case('stale: no cache prints nothing', rc == 0 and 'in use;' not in err)
         case('plugin_min compares numerically per part', plugin_min.below('0.9.0', '0.10.0') and not plugin_min.below('0.10.0', '0.9.0')
              and plugin_min.below('0.23.1', '0.24') and not plugin_min.below('1.0', '1.0.0'))
+
+        # T-0684: settle-held records an owner's settle of a `deferred: <owner>` hold; every refusal leaves the file unchanged
+        sr = tmp / 'settle'
+        init_repo(sr)
+        put(sr / 'docs' / 'review.md', '<!-- role=ui-designer level=L1 model=opus effort=high -->\n## Verdict\npass\n')
+        put(sr / 'docs' / 'review-bad.md', '## Verdict\nchanges-required\n')
+        held = ('<!-- role=verifier level=L2 model=opus effort=medium -->\n## Verdict\nfail\n\n## Criteria\n'
+                '- #1 `true`: pass. Evidence: ok\n- #2 the ui-designer review passes: deferred conductor. Evidence: owner stage\n\n'
+                '## For the next attempt\ndeferred: conductor\n- #2 deferred\n')
+        vr = sr / '.sdlc' / 't' / 'verifier-L2.md'
+
+        def settle(text, *flags):
+            put(vr, text)
+            err, out = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+                rc = main(['settle-held', str(vr)] + list(flags))
+            return rc, vr.read_text(encoding='utf-8'), err.getvalue()
+        rc, after, err = settle(held, '--by', 'conductor', '--evidence', 'docs/review.md')
+        sha7 = git('rev-parse', '--short=7', 'HEAD', cwd=sr).stdout.strip()
+        case('settle-held: a deferred: conductor result with a pass review record exits 0 and appends the section, got rc=%s %r'
+             % (rc, after[len(held):]), rc == 0 and after == held + '\n## Settled by owner\n- ticket#2 conductor: docs/review.md at %s\n' % sha7)
+        case('settle-held: the settled result still validates as a verifier result', validate_result('verifier', str(vr)) is None)
+        for label, text, flags in (
+                ('--by naming another owner', held, ('--by', 'integration', '--evidence', 'docs/review.md')),
+                ('a missing evidence file', held, ('--by', 'conductor', '--evidence', 'docs/none.md')),
+                ('an absolute evidence path', held, ('--by', 'conductor', '--evidence', str(sr / 'docs' / 'review.md'))),
+                ('a review record whose Verdict is changes-required', held, ('--by', 'conductor', '--evidence', 'docs/review-bad.md')),
+                ('a non-held fail', held.replace('deferred conductor', 'fail').replace('deferred: conductor', 'rebuild'),
+                 ('--by', 'conductor', '--evidence', 'docs/review.md')),
+                ('an unmet-dependency hold', held.replace('deferred conductor', 'unmet-dependency T-0307')
+                 .replace('deferred: conductor', 'unmet-dependency: T-0307'), ('--by', 'conductor', '--evidence', 'docs/review.md'))):
+            rc, after, err = settle(text, *flags)
+            case('settle-held: %s exits 2 and leaves the file unchanged, got rc=%s err=%r' % (label, rc, err),
+                 rc == 2 and after == text and 'nothing written' in err)
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))
     return 1 if failures else 0
 

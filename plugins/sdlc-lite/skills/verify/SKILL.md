@@ -15,6 +15,7 @@ Arguments: `$ARGUMENTS`
 |---|---|---|---|
 | `L1\|L2\|L3` | The verifier level | per the verifier section of the level rubric: it follows the newest builder level in the step dir | `L2` |
 | `<step-handoff.md>` | The step handoff whose build is verified | - | `.sdlc/add-retry/step-1/handoff.md` |
+| `settle-held <result> --by <owner> --evidence <path> [--ref <ref>]` | `dispatch.py` subcommand, not a verifier run: the owner of a `deferred: <owner>` held fail records its settle with repo-relative evidence (a review record needs Verdict `pass` or `pass-with-notes`); `steps.py open`, `fanout.py land` and `tickets.py close` then read those refs as pass (T-0684) | every ref deferred to `--by` | `dispatch.py settle-held .sdlc/runtime/tasks/0082-x/verifier-L2.md --by conductor --evidence .sdlc/runtime/tasks/0082-x/ui-designer-L1.md` |
 
 When launching a role, pass `dispatch.py prepare --routing-reason "<why>"` (or set `SDLC_ROUTING_REASON`) with a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 

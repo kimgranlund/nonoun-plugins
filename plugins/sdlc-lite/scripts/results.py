@@ -218,6 +218,7 @@ CRITERION_RE = re.compile(
     r'^\s*(?:[-*]\s*)?(?:\d+\.\s*)?(?:#(?:(step-\d+|ticket)#)?(\d+)\s+)?(.+?):\s+'
     r'(pass|fail|unmet-dependency\s+\S+|deferred\s+\S+)\.\s*Evidence:(.*)$', re.I)
 SETTLE_RE = re.compile(r'^\s*[-*]\s*`?#?(step-\d+|ticket)#(\d+)`?\s*$')
+OWNER_SETTLE_RE = re.compile(r'^\s*[-*]\s*(step-\d+|ticket)#(\d+)\s+(\S+):\s+(.+?)\s+at\s+([0-9a-f]{7,40})\s*$')
 
 
 def notes_lines(path):
@@ -268,6 +269,17 @@ def settled_refs(path):
     except OSError:
         return []
     return [(m.group(1), int(m.group(2))) for m in map(SETTLE_RE.match, _section_lines(lines, 'Settles')) if m]
+
+
+def owner_settled(path):
+    """[(scope, k, owner)] for each `- <ref> <owner>: <evidence> at <sha7>` line under ## Settled by owner, the lines
+    `dispatch.py settle-held` appends when the owner of a deferred criterion settled it with evidence (T-0684). Never raises."""
+    try:
+        lines = _lines(path)
+    except OSError:
+        return []
+    return [(m.group(1), int(m.group(2)), m.group(3))
+            for m in map(OWNER_SETTLE_RE.match, _section_lines(lines, 'Settled by owner')) if m]
 
 
 def _ref_text(c):

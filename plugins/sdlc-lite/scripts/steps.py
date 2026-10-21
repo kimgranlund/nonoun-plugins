@@ -2822,7 +2822,8 @@ def held_items(task, root=None):
     handoff declares with owner: or needs:, the newest verifier result (task dir or live step dir) that names its
     ref decides. pass settles it and fail is an ordinary fail; unmet-dependency and deferred are listed through
     hold_item. A step-dir result's bare #k is that step's criterion, a task-dir result's bare #k is ticket#k, and
-    a task-dir Verdict pass settles the refs under its ## Settles. Newest is by the run record's ts, then step dir
+    a task-dir Verdict pass settles the refs under its ## Settles, and a deferred ref listed under the same result's
+    ## Settled by owner by its declared owner is pass (T-0684). Newest is by the run record's ts, then step dir
     before task dir, then order.py; a result with no ts loses to a recorded one. Reads only."""
     task = task_of(task)
     declared = declared_meta(task)
@@ -2839,6 +2840,10 @@ def held_items(task, root=None):
             if results.key_value(w, 'verifier') == 'pass':
                 for scope, k in results.settled_refs(w):
                     states.setdefault(f'{scope}#{k}', ('pass', ''))
+            for scope, k, owner in results.owner_settled(w):  # T-0684: the declared owner settled its deferred ref
+                ref = f'{scope}#{k}'
+                if states.get(ref) == ('deferred', owner) and declared.get(ref, {}).get('owner') == owner:
+                    states[ref] = ('pass', '')
             events.append(((result_ts(w), dir_rank, i), states))
     latest = {}
     for _, states in sorted(events, key=lambda e: e[0]):
@@ -2867,6 +2872,21 @@ def held_note(path):
     integration` gives 'integration'), else ''. A display read; it does not check the handoff."""
     m = HELD_NOTE_RE.match(next_note(path))
     return m.group(2).strip() if m else ''
+
+
+def owner_settled_hold(path):
+    """True when the verifier result is a held-only fail (Verdict fail, first next-attempt line `deferred:`, no fail
+    or unmet-dependency criterion, at least one deferred one) whose every deferred criterion is listed under its
+    ## Settled by owner by that owner (dispatch.py settle-held, T-0684). Reads the result alone, no handoff."""
+    m = HELD_NOTE_RE.match(next_note(path))
+    if results.key_value(path, 'verifier') != 'fail' or not m or m.group(1) != 'deferred':
+        return False
+    states = results.criteria_states(path)
+    held = [c for c in states if c['state'] == 'deferred']
+    settled = results.owner_settled(path)
+    return (bool(held) and all(c['state'] in ('pass', 'deferred') for c in states)
+            and all(c['k'] is not None and any(k == c['k'] and who == c['who'] and (c['scope'] in (None, scope))
+                                               for scope, k, who in settled) for c in held))
 
 
 def step_holds(d, v):
@@ -7478,6 +7498,16 @@ def selftest():
                                    'Evidence: not yet\n\n## For the next attempt\ndeferred: integration\n')])
         rc, out, err = run_main(['open', str(t)])
         check('held: a bare #k in a task-dir result is ticket#k', rc == 0 and out == 'ticket#1\tdeferred\tintegration\n')
+        # T-0684: a deferred ref listed under ## Settled by owner by its declared owner is pass; another owner is not
+        H_OWNED = ('## Verdict\nfail\n\n## Criteria\n- #1 the review passes: deferred conductor. Evidence: owner stage\n\n'
+                   '## For the next attempt\ndeferred: conductor\n\n## Settled by owner\n'
+                   '- ticket#1 {who}: docs/review.md at abc1234\n')
+        for who, want in (('conductor', ''), ('integration', 'ticket#1\tdeferred\tconductor\n')):
+            t = held_task([], ticket_ac='\n## Acceptance criteria\n- [ ] the review passes [owner: conductor]\n',
+                          task_files=[('verifier-L2.md', H_OWNED.format(who=who))])
+            rc, out, err = run_main(['open', str(t)])
+            check(f'held: T-0684 a ref settled by {who} ' + ('empties open' if not want else 'stays open (control)'),
+                  rc == 0 and out == want)
         t = held_task([B, ('verifier-L1.md', H_DEFER)])
         (t / 'step-2').mkdir()
         (t / 'step-2' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 2: y\nlevel: L1\n', encoding='utf-8')
