@@ -2,7 +2,7 @@
 id: T-0685
 title: "record --agent-id ignores short heading-less stdin when the transcript holds a complete result"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,13 @@ The T-0646 pointer-with-no-file case and the T-0412 empty-stdin case keep their 
 
 ## Outcome
 `record` (`plugins/sdlc-lite/scripts/dispatch.py`) now ignores a one-line stdin under 40 characters with no heading, no `LIMIT_RE` match and no error word when the transcript's final message is complete and holds a `## ` heading: it prints `dispatch.py: ignored stdin "<text>" (no heading, under 40 chars); recorded the transcript's final message` and records the transcript. Module doc and `record` docstring name the exception. New selftest case `record --agent-id with placeholder stdin x ...` beside the T-0667 cases; it fails with the code change reverted (observed) and passes with it. `dispatch.py selftest` exit 0 (t2, r6 still pass); `check.py` exit 0; `git diff --check a3147a26` exit 0.
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: a3147a26fb81
+- Changed: see commits
+- Commits: f6f1f5e T-0685: record ignores short placeholder stdin when the transcript holds a complete result
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with the new case, and the new c...: pass
+- Check: 2 The existing `record t2` and `record r6` cases still pass: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: tmp:0685-verifier-L2 may remain as an empty directory; the worktree... -> notes.md

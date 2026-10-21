@@ -151,3 +151,7 @@
 ## T-0691: accept --tickets T-1,T-2 on lanes.py open, fanout.py land and tickets.py claim (2026-10-20)
 
 - note: /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0691-verifier-L2/ holds my scratch logs and a copied scripts dir (`mut/`); `rm -rf` there was denied by the permission layer, so it is left behind. The throwaway worktree was removed with `git worktree remove`.
+
+## T-0685: record --agent-id ignores short heading-less stdin when the transcript holds a complete result (2026-10-20)
+
+- note: tmp:0685-verifier-L2 may remain as an empty directory; the worktree was removed with `git worktree remove --force` but `rm -rf` of the prefix dir was denied by the permission hook.
