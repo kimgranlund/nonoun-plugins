@@ -2,7 +2,7 @@
 id: T-0690
 title: "dispatch.py status finds attempts in step folders and the records dir"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ Output lines for attempts in the dir itself are unchanged; exit code stays 0.
 - `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0
 - `python3 plugins/sdlc-lite/scripts/dispatch.py status docs/work/.0675-followup-path-slug-dup` run from the main checkout prints `verifier-L2 completed verifier-L2 parent_pid=3218`, exit 0 (the lane tree has no runtime records, so there it prints the new `no attempts in ...` line)
 - `git diff --check af79c749` exit 0; `check.py` and `check-packaging.py` pass
+
+## Outcome
+
+2026-10-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: af79c749f730
+- Changed: see commits
+- Commits: 3828935 T-0690: dispatch.py status lists step-* attempts and says where to look when empty
+- Check: 1 `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with new cases (a) step-1/ line ...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/dispatch.py status docs/work/.0675-followup-path-slug-dup` sti...: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/board.py:249 now also receives orphaned... -> notes.md
+- Follow-up: note: no builder-.md report was in the artifacts dir; the handoff Outcome... -> notes.md

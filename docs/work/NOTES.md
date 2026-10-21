@@ -176,3 +176,8 @@
 ## T-0679: scripts warn once on stderr when a newer plugin version is installed (2026-10-20)
 
 - note: scripts/check-packaging.py fails on plugins/sdlc-lite/skills/fanout/SKILL.md (18631 characters, limit 18,000) on both the tree and base 5032b547 with the identical message, so it is inherited and not a criterion here; main fixed it in T-0687.
+
+## T-0690: dispatch.py status finds attempts in step folders and the records dir (2026-10-20)
+
+- note: plugins/sdlc-lite/scripts/board.py:249 now also receives orphaned `step-*/` attempts from `dispatch.status(rd, True)`, though its guard at board.py:247 still returns early when the records dir itself holds no `*.attempt.json`; display-only, no criterion covers it.
+- note: no builder-*.md report was in the artifacts dir; the handoff Outcome section served as the builder claim, and every claim was checked independently above.
