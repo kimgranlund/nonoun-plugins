@@ -112,6 +112,8 @@ per-ticket cost budget from optional front matter `budget_usd` (by ticket level:
 
 ## `scripts/steps.py`
 
+`routes [<path>...]` (T-0677) prints the skill routes `repo_skill_routes` resolves for the git toplevel of the cwd, one `<glob> -> <skill>` line each, else `no skill routes`; with paths it prints `<path>: <skill>, ...` per path from `routed_skills`, else `<path>: none`. It writes nothing and exits 0. `onboard.py check` points to it when an AGENTS.md names a repo skill and no route resolves.
+
 When the task handoff lacks `## Goal` but holds another `## ` heading containing "goal" (for example `## Task goal`), `split` and `precheck` name it: `found ## Task goal instead, expected ## Goal` (T-0295); with no such heading the message is unchanged.
 
 Held criteria (T-0408; design `docs/specs/sdlc-lite/verifier-held-criteria.md`): a criterion line may end with a bracket clause `[stage: ..; owner: ..; needs: ..]` (`steps.parse_clause`, linted, kept by `swap`), and the verifier may report it `unmet-dependency <subject>` or `deferred <owner>` apart from `fail`; `results.py validate` keeps Verdict `pass` for all-`pass` criteria only. `steps.held_items` re-derives each claim from the clause and the ticket state (`steps.py open <task dir> [--explain]`), `next` routes a verified hold to `wait`, `reverify` or `deferred` (never counted as a fail), `resume` skips those steps, and `tickets.py close` refuses while any is open, `--reason` and `--force` included. The ref ordinal counts bullet lines (the design says lines of `criteria_lines`, which would count blanks). The `fanout.py land` of a lane whose verifier only holds criteria still stops with a `verifier fail (held ...)` outcome; letting it land before the owner settles is not built.

@@ -36,3 +36,9 @@ Source: GitHub issue #11, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 3. `python3 plugins/sdlc-lite/scripts/steps.py routes` run in this repo exits 0.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `steps.py routes [<path>...]` (`cmd_routes`) prints `<glob> -> <skill>` per resolved route of the cwd repo, else `no skill routes`; with paths `<path>: <skill>, ...` or `<path>: none`; exit 0, writes nothing. Two selftest cases (one route, none); both fail with the dispatch stubbed out.
+- `onboard.py check` writes `warning: AGENTS.md names <skill path> but no skill route resolves; see steps.py routes` on stderr (`route_warnings`); exit code unchanged. New gate `route-warning`: positive is the T-0672 prose form, control a routing bullet; the negative variant (no warning) is rejected.
+- Docs: the onboard skill `check` row and the `steps.py` entry of `docs/references/sdlc-internals.md`.
+- Checks: `steps.py selftest` exit 0, `onboard.py selftest` exit 0, `steps.py routes` exit 0, `check.py` exit 0, `git diff --check 425258e3` exit 0.

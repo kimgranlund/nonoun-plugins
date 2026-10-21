@@ -1606,6 +1606,23 @@ def routed_skills(top, paths, routes=None):
     return out
 
 
+def cmd_routes(paths):
+    """routes [<path>...]: with no path, one `<glob> -> <skill>` line per repo_skill_routes pair of the git
+    toplevel of the cwd, else `no skill routes`; with paths, one `<path>: <skill>, ...` line per path from
+    routed_skills, else `<path>: none`. Writes nothing; exit 0."""
+    top = git_toplevel(os.getcwd()) or os.getcwd()
+    routes = repo_skill_routes(top)
+    if not paths:
+        for glob, skill in routes:
+            print(f'{glob} -> {skill}')
+        if not routes:
+            print('no skill routes')
+        return 0
+    for path in paths:
+        print(f'{path}: {", ".join(routed_skills(top, [path], routes)) or "none"}')
+    return 0
+
+
 PLAN_DEFECT_PREFIX = 'plan defect:'
 PATH_TRIM = '`\'"()[]{}<>,;:.*'
 PATH_LINENO_RE = re.compile(r':\d+(?::\d+)?$')
@@ -5575,6 +5592,23 @@ def selftest():
         check('(rt) T-0676: a nested AGENTS.md prose line with a cue routes to the root skill',
               repo_skill_routes(rt) == [('src/styles/', '.agents/skills/recipe/SKILL.md')])
         (rt / 'src' / 'AGENTS.md').unlink()
+        # (rt) T-0677: `routes` prints the resolved routes of the cwd repo, or says there are none
+        cwd = os.getcwd()
+        try:
+            os.chdir(rt)
+            (rt / 'AGENTS.md').write_text(RT_ROUTE, encoding='utf-8')
+            r1 = run_main(['routes'])
+            r2 = run_main(['routes', 'src/styles/a.css', 'src/other.css'])
+            (rt / 'AGENTS.md').write_text('# Repo\n', encoding='utf-8')
+            r3 = run_main(['routes'])
+            r4 = run_main(['routes', 'src/styles/a.css'])
+        finally:
+            os.chdir(cwd)
+        check('(rt) T-0677: routes prints one <glob> -> <skill> line, and the skill per routed path',
+              r1 == (0, 'src/styles/ -> .agents/skills/recipe/SKILL.md\n', '')
+              and r2 == (0, 'src/styles/a.css: .agents/skills/recipe/SKILL.md\nsrc/other.css: none\n', ''))
+        check('(rt) T-0677: routes in a repo with no route prints no skill routes and none per path',
+              r3 == (0, 'no skill routes\n', '') and r4 == (0, 'src/styles/a.css: none\n', ''))
         (rt / 'AGENTS.md').write_text(RT_ROUTE, encoding='utf-8')
         rc, out, err = rt_lint('rt-bad', RT_ROUTE, rt_step)
         check('(rt) lint refuses a step that edits a routed path without its skill under ### Read first',
@@ -7698,6 +7732,8 @@ def main(argv):
     p.add_argument('--check', action='store_true', help='print the lane only; write nothing (run.sh lane gate)')
     p = sub.add_parser('verifier-level', help='print the level (L2 or L3) of the one batched verifier of a solo ticket; writes nothing')
     p.add_argument('task', help='a task dir holding the ticket handoff.md')
+    p = sub.add_parser('routes', help='print the skill routes the AGENTS.md files of the current repo resolve; writes nothing')
+    p.add_argument('paths', nargs='*', metavar='path', help='repo-relative paths: print the skills routed to each instead')
     p = sub.add_parser('open', help='list the held criteria (unmet-dependency, deferred) of a task dir; writes nothing')
     p.add_argument('task', help='a task dir holding handoff.md and any step-<n>/ dirs')
     p.add_argument('--explain', action='store_true', help='add the reason a hold was read as stale or an ordinary fail')
@@ -7750,6 +7786,8 @@ def main(argv):
         return cmd_lane(a.task, a.check)
     if a.cmd == 'verifier-level':
         return cmd_verifier_level(a.task)
+    if a.cmd == 'routes':
+        return cmd_routes(a.paths)
     if a.cmd == 'open':
         return cmd_open(a.task, a.explain)
     if a.cmd == 'swap':

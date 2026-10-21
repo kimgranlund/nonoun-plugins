@@ -1132,9 +1132,37 @@ def run_setup(root, impl=None, dry_run=False, force=False, init=False, out=None,
     return 0
 
 
-def run_check(root, impl=None, out=None, err=None, resolver=None):
-    """check: one `<label> <path>` line per file; 1 unless all are current or present."""
+SKILL_NAME_RE = re.compile(r'\.agents/skills/[^/\s`)\]]+/SKILL\.md')
+
+
+def route_warnings(root):
+    """One advisory line when an AGENTS.md under root names a .agents/skills/<name>/SKILL.md path yet
+    steps.repo_skill_routes(root) resolves no route (T-0677); else none."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import steps  # same scripts/ dir
+    finally:
+        sys.path.pop(0)
+    named = None
+    for f in steps.agents_files(root):
+        try:
+            m = SKILL_NAME_RE.search(f.read_text(encoding='utf-8'))
+        except (OSError, UnicodeDecodeError):
+            continue
+        if m:
+            named = m.group(0)
+            break
+    if named is None or steps.repo_skill_routes(root):
+        return []
+    return ['warning: AGENTS.md names %s but no skill route resolves; see steps.py routes' % named]
+
+
+def run_check(root, impl=None, out=None, err=None, resolver=None, warner=None):
+    """check: one `<label> <path>` line per file; 1 unless all are current or present. Route warnings
+    (route_warnings) go to stderr and never change the exit status."""
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
+    for w in (warner or route_warnings)(root):
+        err.write(w + '\n')
     changes = _plan_or_report(root, impl, False, err)
     if changes is None:
         return 1
@@ -1748,6 +1776,24 @@ def gate_check_mode(impl):
             expect(_snapshot(root) == snap, '%s fixture: check wrote to the tree' % label)
 
 
+def gate_route_warning(warner):
+    """check warns on stderr when an AGENTS.md names a repo skill in prose that yields no route (the T-0672
+    form), stays quiet for a routing bullet, and keeps the same exit status either way."""
+    skill = '.agents/skills/recipe/SKILL.md'
+    prose = ('# Repo\n\n- Models live in `src/a.json` (the `src/run.sh` rows mirror it), with the consumer '
+             'explanation in `%s`. `src/check.py` checks them.\n' % skill)
+    bullet = '# Repo\n\n- `src/styles/` uses `%s`\n' % skill
+    want = 'warning: AGENTS.md names %s but no skill route resolves; see steps.py routes' % skill
+    runs = []
+    for agents in (prose, bullet):
+        with _fixture({'AGENTS.md': agents, skill: 'x\n'}) as root:
+            runs.append(_call(run_check, root, None, warner=warner))
+    (rc1, _, err1), (rc2, _, err2) = runs
+    expect(want in err1.splitlines(), 'prose fixture: check stderr %r has no route warning' % err1)
+    expect('no skill route' not in err2, 'routing bullet fixture: check warned %r' % err2)
+    expect(rc1 == rc2, 'the warning changed the exit status: %d vs %d' % (rc1, rc2))
+
+
 def _render_without_starter(model):
     return collections.OrderedDict((p, t._replace(before='', after='')) for p, t in render_templates(model).items())
 
@@ -1972,6 +2018,9 @@ GATES = [
     ('layout-variant', gate_layout_variant, REAL, [
         ('renders the topics text for a flat repo', REAL._replace(render=_render_topics_always)),
         ('renders the flat text for a topics repo', REAL._replace(render=_render_flat_always)),
+    ]),
+    ('route-warning', gate_route_warning, route_warnings, [
+        ('prints no route warning', lambda root: []),
     ]),
     ('check-mode', gate_check_mode, REAL, [
         ('labels an edited block current', REAL._replace(labels=_relabel(4, 'current'))),
