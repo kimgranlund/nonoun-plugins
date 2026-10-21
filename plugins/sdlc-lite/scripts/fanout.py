@@ -62,7 +62,9 @@ land
   or an integration worktree path that is something else. It then follows the external-lane path of `run` unchanged:
   the overlap wait, the integration-dirty refusal, `git merge --no-ff` as `Merge <branch>: <id>` (merge_generated:
   a conflict only in the generated roadmap, router and mailbox files or notes.md is resolved and `tickets.py roadmap`
-  regenerates them inside the merge commit, T-0565; any other conflict is aborted as `merge conflict`: the parent asks the sub-agent, by name, to merge the integration branch on its side,
+  regenerates them inside the merge commit, T-0565; one in a `merge_union:` path of <root>/config is union-merged,
+  printed as `union-merged: <paths>`, checked by its `merge_union_gate:` before the merge commit (`union gate red: <cmd>`
+  resets the merge) and forces the full gate class, T-0683; any other conflict is aborted as `merge conflict`: the parent asks the sub-agent, by name, to merge the integration branch on its side,
   then lands again), each --gate through gate_lock.py (a vacuous gate is `gate vacuous`, a red one resets the merge:
   `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
@@ -1604,11 +1606,13 @@ def generated_files(wt, root):
     return {p.relative_to(wt).as_posix(): p for p in files}, lp.notes.relative_to(wt).as_posix()
 
 
-def merge_generated(wt, ref, root, theirs=()):
+def merge_generated(wt, ref, root, theirs=(), union=(), unioned=None):
     """`git merge --no-ff --no-commit <ref>` in wt, resolving conflicts only in the generated files (notes.md by a
     union of its three stages, the roadmap, router and mailbox files by --ours), then `tickets.py roadmap` regenerates
     them for the merged tree and they are staged for the caller's commit (T-0489, T-0565). A conflict in a path the
     `theirs` pathspecs match (fanout sync's hash-bound globs, T-0654; empty for every other caller) takes ref's side.
+    A conflict in a path a `union` glob matches (the repo's merge_union globs, passed by land, T-0683) is union-merged
+    like notes.md and its path appended to the `unioned` list.
     Returns None with the merge staged; 'up to date' when ref brought nothing (no MERGE_HEAD, nothing staged); else
     (kind, detail) with the merge still in progress for the caller to abort: 'failed' (git merge failed with no
     conflicted path), 'conflict' (the conflicted paths outside the generated files and `theirs`), 'merge-file' or
@@ -1623,15 +1627,14 @@ def merge_generated(wt, ref, root, theirs=()):
         if not conflicted:
             return 'failed', first_line((p.stderr or p.stdout).strip(), str(p.returncode))
         taken = set(git(wt, 'diff', '--name-only', '--diff-filter=U', '--', *theirs).stdout.splitlines()) if theirs else set()
-        outside = [x for x in conflicted if x not in gen and x not in taken]
+        unions = set(git(wt, 'diff', '--name-only', '--diff-filter=U', '--',
+                         *(f':(top,glob){g}' for g in union)).stdout.splitlines()) if union else set()
+        outside = [x for x in conflicted if x not in gen and x not in taken and x not in unions]
         if outside:
             return 'conflict', ' '.join(outside)
         for path in conflicted:
-            if path not in gen:
-                if git(wt, 'checkout', '--theirs', '--', path).returncode:
-                    git(wt, 'rm', '-q', '-f', '--', path)  # deleted on ref's side
-                    continue
-            elif path == notes_rel:
+            by_union = path == notes_rel or (path in unions and path not in gen and path not in taken)
+            if by_union:
                 with tempfile.TemporaryDirectory() as td:
                     names = []
                     for n in (2, 1, 3):  # git merge-file <current> <base> <other>
@@ -1642,7 +1645,13 @@ def merge_generated(wt, ref, root, theirs=()):
                     u = git(wt, 'merge-file', '-p', '--union', *names)
                 if u.returncode < 0 or u.returncode > 127:
                     return 'merge-file', f'{path}: {u.stderr.strip()}'
-                gen[path].write_text(u.stdout, encoding='utf-8')
+                gen.get(path, wt / path).write_text(u.stdout, encoding='utf-8')
+                if path != notes_rel and unioned is not None:
+                    unioned.append(path)
+            elif path not in gen:
+                if git(wt, 'checkout', '--theirs', '--', path).returncode:
+                    git(wt, 'rm', '-q', '-f', '--', path)  # deleted on ref's side
+                    continue
             elif git(wt, 'checkout', '--ours', '--', path).returncode:
                 git(wt, 'checkout', '--theirs', '--', path)  # deleted on ours: the regeneration rewrites it anyway
             git(wt, 'add', '--', path)
@@ -1692,8 +1701,10 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         say(ctx, lane, t.id, 'gate: light' if cls == 'light' else f'gate: full ({why})')
         before = git_out(integ, 'rev-parse', 'HEAD')
         # a conflict only in the generated roadmap, router and mailbox files or notes.md is resolved and they are
-        # regenerated for the merged tree (T-0565); one anywhere else still stops the merge
-        m = merge_generated(integ, ref, integ / rel)
+        # regenerated for the merged tree (T-0565); one in a merge_union path is union-merged (T-0683); one anywhere
+        # else still stops the merge
+        unioned = []
+        m = merge_generated(integ, ref, integ / rel, union=tickets.merge_union_globs(integ / rel), unioned=unioned)
         if m not in (None, 'up to date'):
             if not in_merge(integ) or git(integ, 'merge', '--abort').returncode:
                 git(integ, 'reset', '-q', '--hard', before)
@@ -1701,6 +1712,19 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             if kind == 'conflict':
                 return 'merge conflict', cell
             return f'merge failed: {first_line(detail, kind)}', cell
+        if unioned:
+            # a union can break syntax: the repo's merge_union_gate checks it before the merge commit, and the full
+            # gate set runs after it, whatever the light class said
+            say(ctx, lane, t.id, f'union-merged: {" ".join(unioned)}')
+            if cls == 'light':
+                cls = lane.gate = 'full'
+                say(ctx, lane, t.id, 'gate: full (union-merged)')
+            ugate = tickets.merge_union_gate(integ / rel)
+            if ugate and subprocess.run(['bash', '-c', ugate], cwd=str(integ), env=ENV, stdin=subprocess.DEVNULL,
+                                        capture_output=True, text=True).returncode:
+                git(integ, 'merge', '--abort')
+                git(integ, 'reset', '-q', '--hard', before)
+                return f'union gate red: {ugate}', cell
         if m is None:
             c = git(integ, 'commit', '-q', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}')
             if c.returncode:
@@ -5108,9 +5132,15 @@ def selftest():
         # T-0565: two lanes from the same main each file a ticket (T-0003, T-0004), so both regenerate the roadmap and
         # the router; the second land resolves that conflict and regenerates them for the merged tree, and settle moves
         # main there. Negative control: README.md edited on both lanes still stops the second land as a merge conflict.
-        def gen_fixture(name, readme=False, mailbox=False):
+        def gen_fixture(name, readme=False, mailbox=False, shared=False, config=''):
             r_, lanes_ = tmp / name, tmp / f'{name}-lanes'
-            sized_repo(r_, ['L1', 'L1'], {'.gitignore': gi + ('.sdlc/messages/\n' if mailbox else ''), 'README.md': 'base\n'})
+            base_files = {'.gitignore': gi + ('.sdlc/messages/\n' if mailbox else ''), 'README.md': 'base\n'}
+            if shared:  # T-0683: an append-only shared file both lanes add a line to
+                base_files['fixtures/shared.txt'] = 'base\n'
+                (r_ / 'fixtures').mkdir(parents=True)
+            if config:
+                base_files['.sdlc/config'] = config
+            sized_repo(r_, ['L1', 'L1'], base_files)
             if mailbox:  # T-0597: a git-ignored mailbox whose router files are partly tracked (the rest stay untracked)
                 subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', '.sdlc', 'roadmap'], cwd=str(r_),
                                env=ENV, capture_output=True, text=True)
@@ -5132,6 +5162,8 @@ def selftest():
                 (r_ / f'f{k}.txt').write_text(f'{k}\n', encoding='utf-8')
                 if readme:
                     (r_ / 'README.md').write_text(f'lane {k}\n', encoding='utf-8')
+                if shared:
+                    (r_ / 'fixtures' / 'shared.txt').write_text(f'base\nlane {k}\n', encoding='utf-8')
                 sh(r_, 'add', '-A')
                 sh(r_, 'commit', '-q', '-m', f'T-000{k}: Ticket t{k} files {tid}')
                 sh(r_, 'checkout', '-q', 'main')
@@ -5214,6 +5246,33 @@ def selftest():
                and n_wt is not None and sh(n_wt, 'status', '--porcelain', '--untracked-files=no').stdout == ''
                and sh(n_wt, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode != 0
                and sh(nr, 'log', '-1', '--format=%s', n_tip).stdout.strip() == 'close T-0001')
+
+        # T-0683: with `merge_union: fixtures/*.txt` two lanes appending different lines to fixtures/shared.txt both land
+        # as merged, the second prints union-merged and the merge keeps both lines; without the line the same lanes
+        # still stop as a merge conflict; a merge_union_gate that exits 1 leaves fanout/g at the pre-merge commit
+        ur, ulands = gen_fixture('union-merge', shared=True, config='merge_union: fixtures/*.txt  # appended\n')
+        u_shared = sh(ur, 'show', 'fanout/g:fixtures/shared.txt').stdout
+        expect(f'T-0683 union: both lands exit 0 as merged, the second prints union-merged, and fanout/g keeps both lines, '
+               f'got {[(x.returncode, x.stdout[-400:], x.stderr[-300:]) for x in ulands]!r} shared={u_shared!r}',
+               all(x.returncode == 0 and 'merge conflict' not in x.stdout for x in ulands)
+               and 'union-merged: fixtures/shared.txt' in ulands[1].stdout
+               and 'lane 1\n' in u_shared and 'lane 2\n' in u_shared and '<<<<<<<' not in u_shared)
+        cr, clands = gen_fixture('union-merge-none', shared=True)
+        expect(f'T-0683 union negative control: no merge_union line, the second land stops as a merge conflict, got '
+               f'{[(x.returncode, x.stdout[-400:]) for x in clands]!r}',
+               clands[0].returncode == 0 and clands[1].returncode != 0 and 'merge conflict' in clands[1].stdout
+               and 'union-merged' not in clands[1].stdout)
+        rr_, rlands = gen_fixture('union-merge-gate', shared=True,
+                                  config='merge_union: fixtures/*.txt\nmerge_union_gate: exit 1\n')
+        r_tip = sh(rr_, 'log', '-1', '--format=%s', 'fanout/g').stdout.strip()
+        r_wt = tree_of(rr_, 'fanout/g')
+        expect(f'T-0683 union gate: a merge_union_gate exiting 1 refuses the second land as union gate red with fanout/g at '
+               f'the pre-merge commit and the integration tree clean, got rc={rlands[1].returncode} '
+               f'out={rlands[1].stdout[-400:]!r} tip={r_tip!r}',
+               rlands[0].returncode == 0 and rlands[1].returncode != 0 and 'union gate red: exit 1' in rlands[1].stdout
+               and r_tip == 'close T-0001' and r_wt is not None
+               and sh(r_wt, 'status', '--porcelain', '--untracked-files=no').stdout == ''
+               and sh(r_wt, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode != 0)
 
         # T-0489: settle --forward merges main into a diverged integration branch under the merge lock, regenerates the
         # roadmap and router files (here an add/add conflict on both), runs cover at the new tip and fast-forwards main

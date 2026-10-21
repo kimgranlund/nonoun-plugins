@@ -33,3 +33,10 @@ A repo with no `merge_union:` line lands exactly as today. A conflict in a path 
 3. `grep -n "merge_union" plugins/sdlc-lite/skills/fanout/references/land.md` prints at least one line.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check 8624f984` exits 0.
+
+## Outcome
+Base: merged main into the lane first (`git merge --no-edit main` fast-forwarded the lane to 4efd51f7); `git diff --check` is green against both 4efd51f7 and 8624f984.
+- `plugins/sdlc-lite/scripts/tickets.py`: `MERGE_UNION_RE`, `MERGE_UNION_GATE_RE`, `merge_union_globs(root)` and `merge_union_gate(root)` (first uncommented line), both keys in the config docstring, and a selftest case (order kept, duplicates once, comments ignored, missing config gives [] and None).
+- `plugins/sdlc-lite/scripts/fanout.py`: `merge_generated` takes `union` globs and an `unioned` out-list and union-merges a matching conflicted path through the notes.md three-stage `git merge-file -p --union`; `merge_gate_close` passes the repo's globs, prints `union-merged: <paths>`, forces the full gate class for that land, and runs `merge_union_gate` before the merge commit, resetting to the pre-merge commit as `union gate red: <cmd>` on a non-zero exit. Other callers (settle, sync, lanes.py) are unchanged. Three selftest cases: union lands merged with both lines; no `merge_union` line still stops as `merge conflict`; a gate exiting 1 leaves fanout/g at `close T-0001`.
+- `plugins/sdlc-lite/skills/fanout/references/land.md`: documents both keys.
+Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; with the land's union globs replaced by `()` it exits 1 on exactly the T-0683 union and union gate cases. `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0. `grep -n "merge_union" plugins/sdlc-lite/skills/fanout/references/land.md` exit 0. `python3 plugins/sdlc-lite/scripts/check.py` exit 0. `git diff --check 8624f984` exit 0.
