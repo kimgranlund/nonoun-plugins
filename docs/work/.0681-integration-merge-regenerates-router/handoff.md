@@ -2,7 +2,7 @@
 id: T-0681
 title: "merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,14 @@ Source: GitHub issue #34, ui-kit 0.27 vs 0.28 measurement 2026-10-21.
 - Selftest T-0681: main files T-0003 and the integration branch files T-0004, each regenerating the roadmap; `settle --catch-up` exits 0, the integration roadmap lists both, main is unmoved; a second run prints nothing to merge.
 - Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; with `--catch-up` removed from the parser it exits 1 on both T-0681 expectations. `git grep -n -- "--catch-up" plugins/sdlc-lite/skills/fanout/SKILL.md plugins/sdlc-lite/agents/conductor.md` exit 0. `python3 plugins/sdlc-lite/scripts/check.py` exit 0. `git diff --check 6c2467b5` exit 0.
 - Not changed: `skills/handoff-format/run-operations.md` `## Merge ops` (outside scope) has no catch-up line.
+
+## Outcome
+
+2026-10-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 6c2467b5f81c
+- Changed: see commits
+- Commits: 3f82514 T-0681: fanout.py settle --catch-up merges main into an integration branch and stops
+- Check: 1 selftest exits 0 with the new case, fails with `--catch-up` removed: pass
+- Check: 2 grep shows the Arguments row and both sentences: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check 6c2467b5` exits 0: pass
+- Follow-up: decide: settle --forward was refactored settle_forward now calls... -> notes.md

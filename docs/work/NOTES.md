@@ -155,3 +155,7 @@
 ## T-0685: record --agent-id ignores short heading-less stdin when the transcript holds a complete result (2026-10-20)
 
 - note: tmp:0685-verifier-L2 may remain as an empty directory; the worktree was removed with `git worktree remove --force` but `rm -rf` of the prefix dir was denied by the permission hook.
+
+## T-0681: merging main into an integration branch regenerates .sdlc/AGENTS.md and ROADMAP.md (2026-10-20)
+
+- decide: `settle --forward` was refactored (`settle_forward` now calls `merge_into_integration`); its messages, commit subject and exit codes read as unchanged in the diff and the existing T-0489 selftest cases still pass in the green selftest run.
