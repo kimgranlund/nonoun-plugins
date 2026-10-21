@@ -1815,9 +1815,21 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     report_strays(found)
     close('completed', 0, result_sha256=result_sha, **({'legacy_format': legacy} if legacy else {}))
     print(result)
+    if role == 'ui-designer' and handoff.is_file() and re.search(r'^mode:\s*review\b', handoff.read_text(encoding='utf-8', errors='replace'), re.M):
+        print(review_record_line(result, tree))
     deliver_quietly(dispatch_file)
     queue_prune(d, attempt, agent_id)
     return 0
+
+
+def review_record_line(result, tree):
+    """The repo-relative line a conductor pastes into a ticket handoff after a ui-designer review (T-0686): an absolute
+    path there trips a repo's personal-path gate."""
+    top = git('rev-parse', '--show-toplevel', cwd=result.parent).stdout.strip()
+    rel = os.path.relpath(os.path.realpath(result), os.path.realpath(top)) if top else str(result)
+    verdict = results._key_body_value(results._lines(str(result)), 'Verdict')[1] or 'no verdict'
+    sha = git('rev-parse', '--short', 'HEAD', cwd=tree).stdout.strip() or 'no HEAD'
+    return '- Review record: %s (%s at %s)' % (rel, verdict, sha)
 
 
 def delivery_path(d):
@@ -3408,6 +3420,17 @@ def selftest():
         rc, got, err, out = go(rb, 'ui-designer', 'L1', '.sdlc/lg3/handoff.md', body='Verdict: pass\n', attempt_mutate={'plugin_version': '0.0.1'})
         case('legacy format: a result with no ## heading from an older version is never legacy',
              rc != 0 and attempt_of(got)['status'] == 'failed' and 'legacy-format' not in err)
+        # T-0686: a completed ui-designer review prints a repo-relative Review record line; a plan-mode run prints none.
+        review = '## Mode\nreview\n\n## Verdict\npass-with-notes\n\n## Decisions\nd\n\n## Findings\nNone\n'
+        put(rb / '.sdlc' / 'rr1' / 'handoff.md', '## Goal\nx\n\nmode: review\n')
+        put(rb / '.sdlc' / 'rr2' / 'handoff.md', '## Goal\nx\n\nmode: plan\n')
+        head = git('rev-parse', '--short', 'HEAD', cwd=str(rb)).stdout.strip()
+        rc, got, err, out = go(rb, 'ui-designer', 'L1', '.sdlc/rr1/handoff.md', body=review)
+        rel = os.path.relpath(os.path.realpath(got['result']), os.path.realpath(str(rb)))
+        case('record of a ui-designer review prints - Review record: <repo-relative result> (<verdict> at <short HEAD>)',
+             rc == 0 and out.splitlines()[1:2] == ['- Review record: %s (pass-with-notes at %s)' % (rel, head)] and not rel.startswith(('/', '..')))
+        rc, got, err, out = go(rb, 'ui-designer', 'L1', '.sdlc/rr2/handoff.md', body=review.replace('review\n\n## Verdict\npass-with-notes\n', 'plan\n'))
+        case('negative control: a mode: plan ui-designer record prints no Review record line', rc == 0 and out.strip() and 'Review record' not in out)
         case('prepare writes plugin_version equal to the manifest version in the dispatch and the attempt',
              running_version is not None and json.loads(Path(lg2['dispatch_file']).read_text())['plugin_version'] == running_version
              and attempt_of(lg2)['plugin_version'] == running_version)

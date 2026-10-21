@@ -36,3 +36,9 @@ The new line and the warning are additive: no exit code changes.
 3. The existing tickets.py warning still holds: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `dispatch.py record`: a completed ui-designer record whose handoff holds `mode: review` prints `- Review record: <repo-relative result> (<verdict> at <short HEAD>)` after the result path (`review_record_line`). Selftest case plus a `mode: plan` control; the case fails with the print removed.
+- `steps.py lint`: advisory `absolute home path in a criterion: <span>` warning (`abs_path_warnings`, pattern of `tickets.ABS_PATH_RE`), help text updated. Selftest case plus a repo-relative control; the case fails with the warning unhooked.
+- `docs/references/sdlc-internals.md`: the record paragraph names the new line.
+- Checks: dispatch.py selftest exit 0, steps.py selftest exit 0, tickets.py selftest exit 0, check.py exit 0, `git diff --check 5b758412` exit 0.
