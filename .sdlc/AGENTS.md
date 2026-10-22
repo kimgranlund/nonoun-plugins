@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:2ae94604e418 -->
+<!-- sdlc-lite:managed:start v1 sha256:a4fa87800ede -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,10 +10,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 1
-  - T-0716 gate_lock run caps the Node heap of a gate (docs/work/0716-gate-node-heap-cap)
+- proposed: 0
 - ready: 0
-- claimed: 0
+- claimed: 1
+  - T-0716 gate_lock run caps the Node heap of a gate (docs/work/0716-gate-node-heap-cap), claimed by sdlc-lite-author 2026-10-22
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
