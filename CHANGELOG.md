@@ -2,6 +2,26 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.30.0] - 2026-10-22
+
+Report: [docs/reports/2026-10-22-release-0-30-0.md](docs/reports/2026-10-22-release-0-30-0.md). Addresses GitHub issue #44 (machine-wide concurrency): T-0697 to T-0703, plus follow-ups T-0704 and T-0705.
+
+### Added
+
+- `fanout.py prep` warns when a `--gate` runs `node --test`, `vitest`, `playwright` or `jest` with no worker cap; `skills/fanout/references/land.md` lists each runner's flag for `$SDLC_GATE_WORKERS` (T-0699).
+- `fanout.py prep` prints the live gate-lock holders from other repos and, when the load is over `max_load`, opens 1 lane with `prep: load <x> over <max>: opening 1 of <n> lanes`; `prep --force` opens every lane (T-0700).
+- `dispatch.py status` flags `report-unrecorded` for a report newer than its unrecorded attempt, including interrupted and limit-stopped ones; the resume message tells the agent to `SendMessage` "main" when done (T-0703).
+- Every brief carries a search-scope line: search only inside Tree and the Artifacts dir (T-0702).
+
+### Changed
+
+- `gate_lock.py` caps admission at `0.8 x` the CPU count when `policy.json` sets no `max_load`; `max_load=0` turns it off. The cap applies only while a grant is held, so outside load never starves the queue (T-0697).
+- Builder, solo and verifier run full test suites, browser tests and `check.sh` through `gate_lock.py run --need compute_units=N --nice` (T-0698).
+- `settle --forward --gate` runs its gates at the integration tip when main is already in the integration branch, unless the ledger already holds a pass there (T-0701).
+- Role hooks resolve a named teammate's role from its real agent type (`customAgentType` in the sub-agent meta file), falling back to the spawn name; before this, every role hook skipped named teammates (T-0702, T-0704).
+- `block-disk-scan` also blocks `mdfind` with no `-onlyin` below the blocked roots (T-0702).
+- `report-written-unrecorded` is merged into `report-unrecorded`; `status` prints one token (T-0705).
+
 ## [0.29.0] - 2026-10-21
 
 Report: [docs/reports/2026-10-21-release-0-29-0.md](docs/reports/2026-10-21-release-0-29-0.md). Addresses GitHub issues #32 to #43 and the reopened #10, #11 and #22, from the ui-kit 0.27 vs 0.28 measurement.

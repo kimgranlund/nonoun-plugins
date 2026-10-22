@@ -59,6 +59,7 @@
 - [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC Lite, with verifier history and known limits.
 - [Haiku 5.5 pin](reports/2026-10-07-haiku-5-5.md): dated record of moving the scout L1 row and the messenger to `claude-haiku-5-5` (T-0353): the sites changed, the grep inventory, the eval and lock, the live scout proof (the alias `haiku` resolved to `claude-haiku-5-5`), and the unrefit haiku price rate.
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
+- [Release 0.30.0](reports/2026-10-22-release-0-30-0.md): machine-wide concurrency (#44): default load cap, lane tests through the gate lock, role hooks for named teammates.
 - [Release 0.29.0](reports/2026-10-21-release-0-29-0.md): issues #32 to #43 and the reopened #10, #11 and #22 from the ui-kit measurement.
 - [Release 0.28.1](reports/2026-10-20-release-0-28-1.md): close keeps follow-ups that share a leading file path with a filed ticket.
 - [Release 0.28.0](reports/2026-10-20-release-0-28-0.md): all 23 GitHub issues from the ui-kit-neue audit: `dispatch.py advance`, result files with pointers, repo-skill routing, review verdicts, `fanout.py sync`, lane guidance checks.
