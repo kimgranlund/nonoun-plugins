@@ -14,6 +14,11 @@
 # interactive conductor that publishes after approval is never blocked. A bare agent_type
 # counts only when it names a pipeline role; any other agent (Explore, general-purpose,
 # another plugin's agent) has no role.
+# An in-process teammate (an Agent spawn with a name in a session with agent teams on) reports
+# its name as agent_type, not its sdlc-lite type (T-0702: solo-0702 ran find / unblocked), so a
+# name with no colon resolves too when it holds <role>-L<n> as whole hyphen-separated parts
+# (0702-solo-L2, 0697-verifier-L2-2, the dispatch.py and solo_run.py names) or starts or ends
+# with solo as a part (solo-0702, the fanout name T-0702-solo).
 #
 # A payload without an agent_type costs no jq call.
 SDLC_PIPELINE_ROLES=" scout researcher architect archaeologist planner plan-reviewer builder verifier filer solo ui-designer "
@@ -44,6 +49,17 @@ sdlc_role() {
   esac
   if [[ "$at" == sdlc-lite:* || "$SDLC_PIPELINE_ROLES" == *" $name "* ]]; then
     printf '%s' "$name"
+    return 0
   fi
+  [[ "$at" == *:* ]] && return 0
+  local r re_mate re_solo_part='^solo-|-solo$'
+  for r in $SDLC_PIPELINE_ROLES; do
+    re_mate="(^|-)$r-L[0-9]+(-|\$)"
+    if [[ "$at" =~ $re_mate ]]; then
+      printf '%s' "$r"
+      return 0
+    fi
+  done
+  [[ "$at" =~ $re_solo_part ]] && printf solo
   return 0
 }

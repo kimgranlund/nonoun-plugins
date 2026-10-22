@@ -114,7 +114,7 @@ either), takes no lock, and skips recovery.
 
 Brief. The run.sh prompt (Handoff, Artifacts dir), then a Report file line and a one-line pointer line (T-0646), then a Tree line, a
 throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root), a scratch line
-($TMPDIR/sdlc-lite/<repo key>/<Agent name>), and for builder and verifier a Base sha line,
+($TMPDIR/sdlc-lite/<repo key>/<Agent name>), the search scope line (SEARCH_SCOPE, T-0702), and for builder and verifier a Base sha line,
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier for a ticket with a ready ref
 (refs/sdlc/ready/<id>, lanes.py ready, T-0590) also gets `Review sha: <its sha>`, stored as review_sha, and takes Base sha
 from the `Lane-Base:` line of that snapshot commit when it is an ancestor; prepare says so on stderr when the tree has
@@ -564,6 +564,9 @@ def build_base(directory, records=None, tree=None, role=None):
 
 
 READY_REFS = 'refs/sdlc/ready/'  # lanes.py READY_REFS
+# T-0702: every role brief bounds its file searches; hooks/block-disk-scan.sh enforces it on Claude only
+SEARCH_SCOPE = ('Search only inside Tree (the checkout you run in when the brief has no Tree line) and the Artifacts dir; never '
+                'search /, a home folder, or the whole disk (find /, bfs /, mdfind without -onlyin), which can run for hours.')
 LANE_BASE_RE = re.compile(r'^Lane-Base: ([0-9a-f]{40})$', re.M)
 
 
@@ -1308,9 +1311,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   '%sThrowaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
                   'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done.\n'
-                  'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).'
+                  'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).\n%s'
                   % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, role, role, result,
-                     toplevel, shlex.quote(toplevel), ports_line(toplevel), tmp_prefix, tmp_prefix, scratch))
+                     toplevel, shlex.quote(toplevel), ports_line(toplevel), tmp_prefix, tmp_prefix, scratch, SEARCH_SCOPE))
         if role == 'verifier':
             # T-0591: run rules every verifier gets, so the conductor stops adding them by hand
             prompt += ('\n' + ('Diff only the Diff range below, not Base sha against HEAD.' if range_line else
@@ -2941,6 +2944,8 @@ def selftest():
         case('T-0550 scratch sits under the system temp dir, not the repo, and the brief names it',
              got['scratch'].startswith(tempfile.gettempdir()) and not under(got['scratch'], str(rr))
              and 'Scratch files that are not worktrees (probe files, mutated copies) only under %s' % got['scratch'] in got['prompt'])
+        case('T-0702 the brief bounds file searches to Tree and the Artifacts dir, on its own line',
+             ('\n' + SEARCH_SCOPE) in got['prompt'] and SEARCH_SCOPE.startswith('Search only inside Tree ') and 'Artifacts dir' in SEARCH_SCOPE)
         # T-0504: a repository and task path with spaces still passes the actual spawn hook; a missing record is still denied.
         if shutil.which('jq') and shutil.which('bash'):
             sp = tmp / 'with spaces' / 'repo sp'
