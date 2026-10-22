@@ -109,6 +109,9 @@ settle (T-0438, T-0452)
   a `<role>-<level>.running` marker under `<root>/runtime/tasks/` in the integration worktree or in a worktree whose lane
   record has `into` equal to the branch prints `settle: running in <tree>: <role>-<level> (<task>)` per marker; check
   `dispatch.py status`, and `dispatch.py recover` clears a stale one. --force skips the check.
+  --forward with the current branch already in the integration branch (T-0701) has nothing to merge: it runs --gate at
+  the integration tip under merge.lock and commits the ledger entry (red exits 1, main unmoved), or prints `settle: gates
+  already passed at <sha7>` and skips them when the ledger holds a pass for the tip (the --require-covered rule).
   --require-covered (T-0481; --root, default .sdlc, names the ledger <rel>/gate-ledger.jsonl) runs before the
   fast-forward: it reads the ledger with `git show <integration>:<rel>/gate-ledger.jsonl` and refuses (exit 2, branch
   kept, nothing merged, the uncovered range `<from-or-to>..<tip>` printed) unless the newest entry has rc 0 and either
@@ -2808,7 +2811,8 @@ def cmd_settle(a):
     keeps the branch and exits 1. Local only, never a push. --require-covered (T-0481) first reads the newest
     gate-ledger.jsonl entry on the branch (require_covered) and refuses (exit 2, nothing merged) an uncovered tip.
     --forward (T-0489, needs --gate) first brings a diverged branch level with the current branch through settle_forward
-    (merge, regenerate, cover under the merge lock); green continues into the fast-forward above, red exits 1. Before
+    (merge, regenerate, cover under the merge lock; T-0701: an integration branch that already holds the current
+    branch gets cover at its tip, or a skip when the ledger covers it); green continues into the fast-forward above, red exits 1. Before
     that merge it refuses (exit 2, nothing merged) while a role is running against the branch (running_roles, T-0656)
     unless --force. --catch-up (T-0681) runs only that merge (settle_catch_up) and stops: no cover, no fast-forward, the
     worktree and branch kept."""
@@ -2829,8 +2833,7 @@ def cmd_settle(a):
                 raise Refuse('settle --catch-up: a role is running against ' + a.integration + '; nothing merged; '
                              '--force merges anyway:\n' + '\n'.join(busy))
             return settle_catch_up(a, cwd, head)
-        if a.forward and git(cwd, 'merge-base', '--is-ancestor', a.integration, 'HEAD').returncode \
-                and git(cwd, 'merge-base', '--is-ancestor', 'HEAD', a.integration).returncode:
+        if a.forward and git(cwd, 'merge-base', '--is-ancestor', a.integration, 'HEAD').returncode:
             if not a.force:
                 busy = running_roles(a, cwd)
                 if busy:
@@ -2895,7 +2898,10 @@ def settle_forward(a, cwd, head):
     """settle --forward (T-0489): merge the current branch into the diverged integration branch (merge_into_integration)
     and run cover_at at the new tip in the same merge lock. Returns 0 green (the caller fast-forwards) or 1 red (cover's
     lines printed, the current branch unmoved, the merge and the red ledger entry kept on the integration branch).
-    Raises Refuse (exit 2) as merge_into_integration does."""
+    Raises Refuse (exit 2) as merge_into_integration does. When the current branch is already in the integration
+    branch (T-0701, GitHub #44: nothing to merge, so no merge-time cover) the gates still run at its tip under the
+    merge lock, unless the ledger already holds a pass for that tip (require_covered), which prints
+    `settle: gates already passed at <sha7>`; red exits 1 and the current branch stays unmoved."""
     lpath, _top = ledger_rel(cwd, a.root)
 
     def cover(wt, lanes_dir):
@@ -2904,6 +2910,32 @@ def settle_forward(a, cwd, head):
         logs = lanes_dir / 'logs'
         logs.mkdir(parents=True, exist_ok=True)
         return cover_at(a, cwd, wt, lpath, logs, ctx)
+
+    if git(cwd, 'merge-base', '--is-ancestor', 'HEAD', a.integration).returncode == 0:
+        try:
+            require_covered(cwd, a)
+        except Refuse:
+            pass
+        else:
+            print(f'settle: gates already passed at {git_out(cwd, "rev-parse", "--short", a.integration)}')
+            return 0
+        wt, cur = None, None
+        for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+            if line.startswith('worktree '):
+                cur = line[len('worktree '):]
+            elif line == f'branch refs/heads/{a.integration}':
+                wt = pathlib.Path(cur)
+        if wt is None:
+            raise Refuse(f'settle --forward: no worktree has {a.integration} checked out: the gates run there; '
+                         f'nothing moved')
+        if git_out(wt, 'status', '--porcelain', '--untracked-files=no'):
+            raise Refuse(f'settle --forward: {wt} has uncommitted tracked changes: commit or discard them first; '
+                         f'nothing moved')
+        lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else wt.parent
+        lanes_dir.mkdir(parents=True, exist_ok=True)
+        with MergeLock(lanes_dir / 'merge.lock'):
+            rc, to, frm, merges, ledger = cover(wt, lanes_dir)
+        return cover_report(a, rc, to, frm, merges, ledger)
 
     rc, to, frm, merges, ledger = merge_into_integration(a, cwd, head, 'settle --forward', 'settle --forward', cover)
     return cover_report(a, rc, to, frm, merges, ledger)
@@ -5567,6 +5599,44 @@ def selftest():
         fn = verb(sg, 'settle', 'fanout/x', '--forward')
         expect(f'T-0489 settle --forward without --gate exits 2 naming --gate, got rc={fn.returncode} err={fn.stderr!r}',
                fn.returncode == 2 and '--gate' in fn.stderr)
+        # T-0701: main already in the integration branch means no forward merge, so no merge-time cover; settle --forward
+        # still runs --gate at the integration tip before it moves main, and skips it when the ledger holds a pass
+        def ahead_fixture(name):
+            r_, lanes_ = tmp / name, tmp / f'{name}-lanes'
+            sized_repo(r_, ['L1', 'L1'], {'.gitignore': gi})
+            make_branch(r_, 'worktree-T-0001-solo', {'f1.txt': 'one\n'}, 'T-0001: Ticket t1')
+            ld_ = verb(r_, 'land', 'worktree-T-0001-solo', '--integration', 'fanout/x', '--lanes-dir', str(lanes_),
+                       '--base', 'main', '--gate', 'true')
+            expect(f'T-0701 fixture {name}: land merges T-0001 into fanout/x, got rc={ld_.returncode} '
+                   f'out={ld_.stdout[-400:]!r} err={ld_.stderr[-300:]!r}', ld_.returncode == 0)
+            return r_
+
+        sa = ahead_fixture('settle-fwd-ahead-red')
+        mainA, tipA = sh(sa, 'rev-parse', 'main').stdout.strip(), sh(sa, 'rev-parse', 'fanout/x').stdout.strip()
+        fa = verb(sa, 'settle', 'fanout/x', '--forward', '--gate', 'false')
+        expect(f'T-0701 settle --forward, main already in the branch, red gate: exit 1, main unmoved, the branch kept, got '
+               f'rc={fa.returncode} out={fa.stdout!r} err={fa.stderr!r}',
+               fa.returncode == 1 and 'red: false' in fa.stdout and sh(sa, 'rev-parse', 'main').stdout.strip() == mainA
+               and sh(sa, 'merge-base', '--is-ancestor', mainA, 'fanout/x').returncode == 0
+               and sh(sa, 'merge-base', '--is-ancestor', 'fanout/x', mainA).returncode != 0
+               and sh(sa, 'merge-base', '--is-ancestor', tipA, 'fanout/x').returncode == 0
+               and not archived(sa, 'fanout/x'))
+        sa2 = ahead_fixture('settle-fwd-ahead-green')
+        fa2 = verb(sa2, 'settle', 'fanout/x', '--forward', '--gate', 'true')
+        ledA = [json.loads(x) for x in sh(sa2, 'show', 'main:.sdlc/gate-ledger.jsonl').stdout.splitlines() if x.strip()]
+        expect(f'T-0701 settle --forward, main already in the branch, green gate: exit 0, a green ledger entry, main '
+               f'fast-forwarded and the branch archived, got rc={fa2.returncode} out={fa2.stdout[-400:]!r} '
+               f'err={fa2.stderr[-400:]!r} ledger={ledA[-1:]!r}',
+               fa2.returncode == 0 and 'settled' in fa2.stdout and bool(ledA) and ledA[-1].get('rc') == 0
+               and bool(archived(sa2, 'fanout/x')))
+        sa3 = ahead_fixture('settle-fwd-ahead-covered')
+        ca3 = verb(sa3, 'cover', 'fanout/x', '--gate', 'true')
+        fa3 = verb(sa3, 'settle', 'fanout/x', '--forward', '--gate', 'false')
+        expect(f'T-0701 settle --forward, the ledger already holds a pass for the tip: gates are not rerun (a red --gate '
+               f'does not matter), "gates already passed at <sha7>" printed, exit 0, got cover={ca3.returncode} '
+               f'rc={fa3.returncode} out={fa3.stdout[-400:]!r} err={fa3.stderr[-400:]!r}',
+               ca3.returncode == 0 and fa3.returncode == 0 and 'settle: gates already passed at ' in fa3.stdout
+               and 'red:' not in fa3.stdout and bool(archived(sa3, 'fanout/x')))
         # T-0681: settle --catch-up merges main into the integration branch with the roadmap regenerated on both sides
         # (main filed T-0003, the integration branch T-0004) and stops: main unmoved, the branch and worktree kept
         sc_ = forward_fixture('settle-catch-up', {'f1.txt': 'one\n'})
