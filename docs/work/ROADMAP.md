@@ -11,7 +11,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0721 | [0721-land-second-ticket-same-lane](0721-land-second-ticket-same-lane/handoff.md) | fanout.py land closes a second lane ticket whose commits an earlier land merged | bug | L2 | P2 | none | 🟡 claimed |
 | T-0722 | [0722-land-merge-gate-from-integration](0722-land-merge-gate-from-integration/handoff.md) | fanout.py land reads merge_gate from the integration tree | bug | L1 | P2 | none | 🔵 ready |
 | T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🔵 ready |
-| T-0724 | [0724-lanes-exclude-settings-local](0724-lanes-exclude-settings-local/handoff.md) | Lanes never stage .claude/settings.local.json | bug | L1 | P2 | none | 🟡 claimed |
 | T-0725 | [0725-lane-open-merge-lock](0725-lane-open-merge-lock/handoff.md) | lanes.py open takes the merge lock before committing to integration | bug | L2 | P2 | none | 🔵 ready |
 | T-0729 | [0729-builder-pre-edit-red](0729-builder-pre-edit-red/handoff.md) | Builders record a pre-edit red run for each (red) criterion | bug | L1 | P2 | none | 🔵 ready |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
@@ -20,7 +19,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0736 | [0736-split-env-error-needs-deps](0736-split-env-error-needs-deps/handoff.md) | split's environment error requires declared dependencies | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 686 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 687 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -53,3 +52,4 @@ Closed: 686 done, 29 dropped (git log or .NNNN-* folders)
 - decide: Red-checkpoint deviation check printed no `process deviation:` line. (from T-0717: dispatch.py prepare uses the handoff base: line for Base sha (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2550: decide: the new main-checkout fallback in branch_verdict is bound to the ticket slug but not to the current build (no sha or timestamp check). A pass left in main's records dir by an earlier attempt (for example a land that carried a pass into main and then failed its gate) is accepted when a fresh lane for the same ticket holds no verifier and none is committed on the branch. A newer lane-copy or branch result outranks it, a different ticket cannot collide, and the other fallbacks have the same property inside one lane, so it matches the criteria but is the stale-result window the conductor asked about. (from T-0720: fanout.py land finds a verifier result recorded by prepare --tree (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2543: decide: the fallback weakens selftest coverage of `copy_lane_records`. Removing that call at 5587b51f leaves `fanout selftest: PASS`, because land_ticket's carry_records puts the same records in main and the new fallback reads them. The same removal at 83a3a4e6 fails `case 23 land records copy` and `case 23 land carry`. The records-copy negative control (`SDLC_SELFTEST_NO_RECORDS_COPY=1` now also skips the carry) still passes and still refuses, so it did not weaken; the positive case for the integration copy path did. (from T-0720: fanout.py land finds a verifier result recorded by prepare --tree (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/lanes.py:1514 The exclude is added only at `lanes.py open`. Lanes opened before this change, and checkouts where land or settle run without a prior open, get no line. The Goal's "land or settle tolerate it being untracked" is not covered by any criterion and was not tested. (from T-0724: Lanes never stage .claude/settings.local.json (2026-10-22))

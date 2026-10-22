@@ -2,7 +2,7 @@
 id: T-0724
 title: "Lanes never stage .claude/settings.local.json"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,15 @@ The failing test lands before or with the fix, never after.
 
 - Negative control (exclude step disabled): `FAIL: local settings unignored: local settings unignored: git add -A in the lane want only new.txt staged, got ['.claude/settings.local.json', 'new.txt']`, selftest exit 1.
 - With the change: `lanes.py selftest` through gate_lock exit 0; `check.py` exit 0; `scripts/check-packaging.py` exit 0; `git diff --check 2c630e96d7118051929a27ff477b62c4f056350d` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 2c630e96d711
+- Changed: see commits
+- Commits: bf91887 T-0724: lanes never stage .claude/settings.local.json
+- Check: 1 A `lanes.py` selftest case reproduces the issue's repro and passes; with the change reverted it f...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:1374 Conductor ask idempotent... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:1514 Conductor ask a repo that... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:1514 The exclude is added only... -> notes.md
