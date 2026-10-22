@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:40b84b3e06f8 -->
+<!-- sdlc-lite:managed:start v1 sha256:8991bfd5d6f6 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -14,15 +14,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0699 fanout prep warns when a gate runs a test runner with no worker cap (docs/work/0699-gate-runner-worker-cap)
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 5
-  - T-0697 gate_lock admits by load from a CPU-count default when policy sets no max_load (docs/work/0697-gate-max-load-default), claimed by sdlc-lite-author 2026-10-21
+- claimed: 4
   - T-0700 fanout prep counts other lanes and the load before opening lanes (docs/work/0700-prep-load-aware-lanes), claimed by sdlc-lite-author 2026-10-21
   - T-0701 settle --forward says when it skipped its gates (docs/work/0701-settle-forward-gate-at-tip), claimed by sdlc-lite-author 2026-10-21
   - T-0702 Lane agents ran find / for hours despite block-disk-scan (docs/work/0702-disk-scan-hook-gap), claimed by sdlc-lite-author 2026-10-21
   - T-0703 A resumed sub-agent reports back to the conductor (docs/work/0703-resumed-agent-reports), claimed by sdlc-lite-author 2026-10-21
 - paused: 0
 - blocked: 0
-- done: 660
+- done: 661
 - dropped: 29
 
 ## Procedures

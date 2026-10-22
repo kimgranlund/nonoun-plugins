@@ -200,3 +200,9 @@
 ## T-0698: Lane roles run heavy test suites through gate_lock run (2026-10-21)
 
 - decide: plugins/sdlc-lite/agents/builder.md:14: the command path `${CLAUDE_PLUGIN_ROOT}` is now unquoted (needed for the literal match in criterion 1); a plugin root containing spaces would split the argument. note: accepted by the ticket Outcome.
+
+## T-0697: gate_lock admits by load from a CPU-count default when policy sets no max_load (2026-10-21)
+
+- fix-now: docs/specs/sdlc-lite/gate-lock-admission.md:208 still says "the cap is off unless the operator sets it", now stale: absent max_load is the CPU-count default.
+- note: plugins/sdlc-lite/scripts/gate_lock.py:1466 the case_rr "over the load cap with a grant held" check is vacuous against cap removal: every entry needs 6 compute units and the held grant uses 1, so capacity alone refuses them (mutant D left case_rr GREEN). Likewise "then the cap holds" after b3 is held by capacity, not the cap. The real-process case_load_idle carries this proof instead.
+- note: docs/specs/sdlc-lite/gate-lock-admission.md:213 the Reason bullet does not say `status --json` `over` is now true only while a grant or legacy holder is held (gate_lock.py:795).
