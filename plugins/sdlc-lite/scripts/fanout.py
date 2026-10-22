@@ -8,7 +8,7 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
                      [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate]
                      [--no-gate-lock] [--gate-need [PREFIX::]RES=N]... [--light-gate CMD]...
-       fanout.py prep <spec>... [the run flags but --driver and --dry-run]
+       fanout.py prep <spec>... [the run flags but --driver and --dry-run] [--force]
        fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR]
                       [--gate CMD]... [--light-gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate]
                       [--no-gate-lock] [--gate-need [PREFIX::]RES=N]...
@@ -37,6 +37,9 @@ prep
   host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers). Every lane SDLC Lite opens
   lives in the sibling root outside the repo, <main checkout parent>/<name>.worktrees (T-0563, wtroot.py).
   After the refusals it sweeps landed lanes as `run` does (lanes.sweep --apply, unless `lane_sweep: off`).
+  Load (T-0700): it prints the live gate-lock holders from other repos, and when the load is over the gate lock's
+  effective max_load it opens only the first regular lane (`prep: load <x> over <max>: opening 1 of <n> lanes`);
+  --force opens them all.
   Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
   for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
@@ -2216,7 +2219,31 @@ def cmd_prep(a):
         print(f'fanout: {e}', file=sys.stderr)
         return 2
     sweep_lanes(ctx['top'])  # after every refusal, so a refused prep changes nothing
+    load_cap(ctx, a)
     return print_prep(ctx)
+
+
+def load_cap(ctx, a):
+    """T-0700: read the gate-lock ledger and the load; over the effective max_load (T-0697's CPU default applies) keep
+    the first regular lane only, unless --force. Prints the live holders from other repos. A ledger that cannot be read
+    changes nothing."""
+    import gate_lock  # same scripts/ dir: the machine-wide ledger, the policy and the load
+    try:
+        d = gate_lock.status_data(gate_lock.state_root())
+    except (gate_lock.GateError, OSError) as e:
+        print(f'prep: gate-lock ledger unreadable ({e}): lanes not capped by load')
+        return
+    me = gate_lock.repo_identity(str(ctx['top']))
+    others = sum(1 for g in d['grants'] if g['state'] != 'dead' and g['repo'] != me)
+    print(f'prep: {others} live gate-lock holder(s) from other repos')
+    load, regular = d.get('load'), [x for x in ctx['lanes'] if not x.external]
+    if not load or load['value'] is None or load['value'] <= load['max_load'] or len(regular) < 2:
+        return
+    if getattr(a, 'force', False):
+        print(f"prep: load {load['value']:.1f} over {load['max_load']}: --force opens all {len(regular)} lanes")
+        return
+    print(f"prep: load {load['value']:.1f} over {load['max_load']}: opening 1 of {len(regular)} lanes")
+    ctx['lanes'] = [x for x in ctx['lanes'] if x.external or x is regular[0]]
 
 
 def branch_names(cwd, ref, prefix):
@@ -3402,6 +3429,7 @@ def selftest():
         env = {k: v for k, v in ENV.items() if not k.startswith('SDLC_GATE_')}
         env['TMPDIR'] = str(gate_tmp)
         env['SDLC_GATE_DIR'] = str(gate_tmp / 'gate-state')
+        env['SDLC_GATE_LOAD_FILE'] = str(gate_tmp / 'load-quiet')  # a quiet host, so a busy one never caps prep
         env.update(extra)
         return env
 
@@ -3415,6 +3443,7 @@ def selftest():
         tmp = pathlib.Path(tmp).resolve()
         gate_tmp = tmp / 'gate-tmp'
         gate_tmp.mkdir()
+        (gate_tmp / 'load-quiet').write_text('0\n')
 
         # 1. Two lanes, a stub driver, a gate that goes red on T-0003.
         repo, lanes = tmp / 'repo', tmp / 'lanes'
@@ -4922,6 +4951,19 @@ def selftest():
         expect(f'case 22 parity control: --allow-overlap lets prep print the plan, got rc={po.returncode} err={po.stderr!r}',
                po.returncode == 0 and 'overlap (planned scope): alpha T-0001 and beta T-0002: shared.txt' in po.stdout)
 
+        # T-0700: a load over max_load opens 1 lane of 3 with the `prep: load` line; --force opens all 3
+        (gate_tmp / 'load-busy').write_text('1000\n')
+        lc_args = ('alpha=T-0001', 'beta=T-0002', 'gamma=T-0003', '--lanes-dir', str(tmp / 'lcl'), '--integration', 'fanout/lc')
+        lc = verb(p1, 'prep', *lc_args, SDLC_GATE_LOAD_FILE=str(gate_tmp / 'load-busy'), SDLC_GATE_CPUS='4')
+        lcf = verb(p1, 'prep', *lc_args, '--force', SDLC_GATE_LOAD_FILE=str(gate_tmp / 'load-busy'), SDLC_GATE_CPUS='4')
+        lcq = verb(p1, 'prep', *lc_args, SDLC_GATE_CPUS='4')
+        n_disp = lambda o: sum(f'dispatch T-000{k}:' in o.stdout for k in (1, 2, 3))
+        expect(f'case 22 prep load cap: busy opens 1 of 3 with the prep: load line, --force and a quiet load open 3, and the '
+               f'other-repo holder count prints, got rc {lc.returncode} {lcf.returncode} {lcq.returncode} '
+               f'dispatches {n_disp(lc)} {n_disp(lcf)} {n_disp(lcq)} out={lc.stdout[:600]!r} err={lc.stderr!r}',
+               lc.returncode == lcf.returncode == lcq.returncode == 0 and n_disp(lc) == 1 and 'dispatch T-0001:' in lc.stdout
+               and 'prep: load 1000.0 over 3: opening 1 of 3 lanes' in lc.stdout and n_disp(lcf) == 3 and n_disp(lcq) == 3
+               and 'opening 1 of' not in lcf.stdout + lcq.stdout and 'prep: 0 live gate-lock holder(s) from other repos' in lc.stdout)
         gxp = verb(gx, 'prep', 'alpha=T-0001', '--integration', 'fanout/gxp', '--lanes-dir', str(tmp / 'gxpl'), '--stagger', '0')
         expect(f'case 22 prep (T-0477) still refuses an uncommitted handoff (host-lane half, out of T-0477), got rc={gxp.returncode} '
                f'err={gxp.stderr!r}', gxp.returncode == 2 and 'not committed at' in gxp.stderr)
@@ -6212,6 +6254,8 @@ def main(argv):
                     'for example compute_units=1; a cheap gate (check.py, generate --check) defaults to compute_units=1 '
                     '(repeatable)')
     if argv[0] == 'prep':  # prep never runs a driver and never creates anything, so it has neither flag
+        ap.add_argument('--force', action='store_true',
+                        help='open every lane although the load is over the gate lock max_load (else prep opens 1)')
         ap.set_defaults(driver=None, dry_run=True)
         return cmd_prep(ap.parse_intermixed_args(argv[1:]))
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
