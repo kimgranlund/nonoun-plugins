@@ -83,7 +83,9 @@ land
   integration branch does not hold (git objects, newest by order.py: a branch with no worktree commits its verifier
   result into the ticket folder with `git add -f`, and the close commit untracks it). Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
-  (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
+  (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`. A landed branch
+  is a regular lane there, `- Lane <name>: <worktree> (branch <branch>)`, or `- Lane <name>: branch <branch>` when it
+  was checked out in no worktree, never an external lane line (T-0730).
   Lanes (T-0452), after the merge lock is released: a `merged` branch checked out under host-owned .claude/worktrees/<leaf> whose
   leaf is not <id>-solo (the host names it agent-<agent_id>) gets its host record rebound, host_record(<leaf>) written
   and the provisional <id>-solo record removed; that host lane stays open (dispatch.py prune --done closes it). A
@@ -737,6 +739,7 @@ class Lane:
         self.files = set()  # every path this lane brought to a merge (report.md's Overlap lines)
         self.done = False  # set when run_lane returns, under ctx['cond']; a later lane stops waiting on it
         self.gate = None  # the gate class of the last merge_gate_close (T-0481): 'light' or 'full'
+        self.wt = None  # land only: the worktree the landed branch was checked out in, for report.md
 
 
 def branch_clash(name, refs):
@@ -1904,7 +1907,10 @@ def report(ctx):
            + (' (reused)' if ctx['reuse'] else f" (from `{ctx['start'][:12]}`)"),
            f'- Integration worktree: `{integ}`']
     for x in ctx['lanes']:
-        if x.external:  # the branch tip now (fanout never writes it), else the tip preflight saw
+        if ctx.get('land'):  # a landed branch is an agent's lane, not a registered external one (T-0730)
+            out.append(f'- Lane `{x.name}`: `{x.wt}` (branch `{x.branch}`)' if x.wt
+                       else f'- Lane `{x.name}`: branch `{x.branch}`')
+        elif x.external:  # the branch tip now (fanout never writes it), else the tip preflight saw
             sha = git(ctx['cwd'], 'rev-parse', '-q', '--verify', f'refs/heads/{x.branch}^{{commit}}').stdout.strip()
             out.append(f'- Lane `{x.name}`: external branch `{x.branch}` at `{sha or x.tip}`')
         else:
@@ -2461,6 +2467,7 @@ def land_preflight(a):
                      f'or pass another --lanes-dir')
     lane = Lane(land_lane_name(branch, tid), [tid], branch)
     lane.branch, lane.tip, lane.tickets = branch, tip, [t]
+    lane.wt = checked_out.get(branch)
     return {'lane_wt': checked_out.get(branch), 'main': main or top, 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
             'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
@@ -2642,12 +2649,14 @@ def cmd_land(a):
     with open(journal, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'run_id': ctx['run_id'], 'lane': lane.name, 'branch': lane.branch, 'ticket': t.id,
                             'outcome': outcome, 'commit': commit, 'kind': kind, 'tier': tier,
-                            'gate': lane.gate or 'full', 'files': sorted(lane.files)}) + '\n')
+                            'gate': lane.gate or 'full', 'files': sorted(lane.files),
+                            'worktree': str(lane.wt) if lane.wt else None}) + '\n')
     prior = read_journal(journal)  # report every ticket landed so far in this lanes dir, the latest outcome each
     lanes, kinds = [], {}
     for tid, rec in prior.items():
         ln = lane if tid == t.id else Lane(rec['lane'], [tid], rec['branch'])
         ln.branch, ln.results, ln.files = rec['branch'], [(tid, rec['outcome'], rec['commit'])], set(rec.get('files') or [])
+        ln.wt = ln.wt if ln is lane else rec.get('worktree')
         lanes.append(ln)
         kinds[tid] = (rec['kind'], solo_tier(rec['tier']) if rec.get('tier') else None)  # a 0.21.x journal holds S, M, L
     ctx['lanes'], ctx['kinds'] = lanes, kinds
@@ -5047,6 +5056,9 @@ def selftest():
                f'got rc={l3.returncode} out={l3.stdout[-400:]!r} err={l3.stderr!r}',
                l3.returncode == 0 and '| t-0001-solo | T-0001 | merged |' in rep_ld and '| t-0003-solo | T-0003 | merged |' in rep_ld
                and sh(ld, 'rev-list', '--merges', '--count', integ).stdout.strip() == '2')
+        expect(f'case 23 land (T-0730): report.md writes each landed branch as a regular lane, no external branch line, got {rep_ld!r}',
+               'external branch' not in rep_ld and '- Lane `t-0001-solo`: branch `worktree-T-0001-solo`' in rep_ld
+               and '- Lane `t-0003-solo`: branch `worktree-T-0003-solo`' in rep_ld)
         def pruned(repo_):
             try:
                 return [e['name'] for e in json.loads((repo_ / '.sdlc' / 'runtime' / 'prune.json').read_text())]
