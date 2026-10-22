@@ -2,7 +2,7 @@
 id: T-0737
 title: "A carried close needs a commit that names the ticket"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,12 @@ T-0721 verifier-L2 (landed):
 
 ## Outcome
 `fanout.py land` now closes a ticket as `commits carried by merge <sha>` only when a commit in the carried merge's second-parent range has a subject naming the ticket id (`merge_names_ticket`); otherwise it stays `no changes` and the ticket stays open. New selftest case 32c (two tickets, only T-0001 committed): land B gives `no changes`, T-0002 not done. Case 32b still passes. Negative control: with the id check removed the selftest fails on `case 32c carried none: land A merges, land B stays \`no changes\` and T-0002 stays open, got ... land B rc=0`. Checks: fanout selftest exit 0, check.py exit 0, check-packaging.py exit 0, `git diff --check a65f8caa` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: a65f8caa0b32
+- Changed: see commits
+- Commits: 63087b5 T-0737: A carried close needs a commit that names the ticket
+- Check: 1 The new `fanout.py` selftest case passes, case 32b (T-0721) still passes, and with the id check r...: pass
+- Check: 2 fanout selftest via gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:1246: lanes.py ready commits... -> notes.md
