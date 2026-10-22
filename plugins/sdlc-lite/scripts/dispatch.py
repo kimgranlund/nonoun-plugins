@@ -1307,11 +1307,11 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                   'validate <file> --role %s --headerless; dispatch.py record reads the file, and a missing one fails the run)\n'
                   'End with one line: `%s <status> %s` (status is your Status or Verdict value, else done), nothing else.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
-                  '%sThrowaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
-                  'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done. '
+                  '%sThrowaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents). '
+                  'dispatch.py record removes this prefix and the scratch dir after the run, so do not remove them yourself (a git worktree remove of a worktree you made is fine). '
                   'Write each worktree and rm path literally as the full path under the prefix this line names, never through a shell variable such as $T, $S or $SDLC_TMP_WORKTREES: '
                   'the guard hooks cannot read it and refuse the command.\n'
-                  'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).\n%s'
+                  'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo.\n%s'
                   % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, role, role, result,
                      toplevel, shlex.quote(toplevel), ports_line(toplevel), tmp_prefix, tmp_prefix, scratch, SEARCH_SCOPE))
         if role == 'verifier':
@@ -3637,8 +3637,9 @@ def selftest():
         case('a verifier prompt names the report path it must write before it ends',
              'Report file: %s' % got['result'] in got['prompt'] and 'before you end' in got['prompt']
              and 'dispatch.py record adds it' in got['prompt'] and '--role verifier --headerless' in got['prompt'])
-        case('every brief says rm under the tmp prefix is allowed and elsewhere refused, once',
-             got['prompt'].count('rm is allowed there and refused elsewhere') == 1)
+        case('T-0712 every brief says record removes the tmp prefix and scratch dir, once, and no longer says rm is allowed there',
+             got['prompt'].count('dispatch.py record removes this prefix and the scratch dir after the run, so do not remove them yourself') == 1
+             and 'rm is allowed there' not in got['prompt'])
         # T-0646: every role writes its result to the Report file and ends with a one-line pointer; record reads the file.
         for name, role, rel in (('pb', 'builder', '.sdlc/pb/handoff.md'), ('pp', 'planner', '.sdlc/pp/handoff.md'), ('ps', 'scout', '.sdlc/ps/handoff.md')):
             put(rb / '.sdlc' / name / 'handoff.md')

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse(Bash): a read-only role (hooks/_role.sh resolves the role: SDLC_ROLE, else the
 # sub-agent's agent_type; the set is SDLC_READONLY_ROLES) may remove files only under its throwaway
-# prefix, the one its brief names ("remove them, and any scratch output you wrote under that prefix").
+# prefix, the one its brief names (T-0712: the brief now says dispatch.py record removes it, so a role need not rm there).
 # T-0538: the brief told a verifier to clean up there and a host permission prompt refused it, so the
 # hook now says the rule in both directions. For rm (also behind sudo, command, env, a path such as
 # /bin/rm) and unlink, rmdir:
