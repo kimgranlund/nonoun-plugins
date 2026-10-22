@@ -2,7 +2,7 @@
 id: T-0743
 title: "Landed host-owned agent worktrees do not hold the integration tree open"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -56,3 +56,14 @@ The failing test lands before or with the fix, never after.
 - Verifier fail fix (attempt 2): the host-owned skip in `evaluate` row 4 now also needs a clean tree (`first_dirty(o['path']) == (None, None)`, the row 6 test), so a merged host tree with uncommitted work stays in `lanes still open`. `case_host_landed_integration` adds a merged agent-x with a modified file that must report `lanes still open into wave/1: agent-x`, then closes once clean.
 - Negative control with the clean check removed: `FAIL: host landed: host landed: a merged agent-x with a modified file must hold it open, got 0: closed wave-1 (ancestor)`.
 - Rerun after the fix: lanes selftest via gate_lock exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8f08aaab` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 8f08aaab05a1
+- Changed: see commits
+- Commits: 43a64e7 T-0743: a dirty landed host-owned tree still holds the integration tree open; bb0d491 T-0743: landed host-owned agent worktrees do not hold the integration tree open
+- Check: 1 selftest case reproduces the issue and fails with the change reverted: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py sel...: pass
+- Check: 3 `check.py`, `check-packaging.py`, `git diff --check <base>`: pass
+- Check: 4 Conductor check, dirty-host-tree finding from attempt 1 is closed: pass
+- Check: 5 Conductor check, nothing previously passed regressed: pass
