@@ -2,7 +2,7 @@
 id: T-0723
 title: "land drops a lane's stale open folder of a ticket closed on integration"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,16 @@ The failing test lands before or with the fix, never after.
 - Repro first in a throwaway repo: `merge failed: 0002-t2: duplicate id T-0002, also used by .0002-t2`; with the fix: `merged`, `.sdlc/0002-t2` dropped.
 - Selftest case `case 23 stale open folder (T-0723)`. Negative control (the drop call replaced by `[]`): `fanout selftest: FAIL` with `- case 23 stale open folder (T-0723): a lane carrying the open copy of a ticket closed on the integration branch lands with it dropped and reported, got rc2=0 rc=1 ...`.
 - Checks: `gate_lock.py run ... fanout.py selftest` exit 0 (PASS); `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 9c803b49` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9c803b4950e4
+- Changed: see commits
+- Commits: 57658b4 T-0723: land drops a lane's stale open folder of a ticket closed on integration
+- Check: 1 fanout.py selftest case reproduces the repro and fails with the change reverted: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py se...: pass
+- Check: 3 check.py, check-packaging.py, git diff --check: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1652 decide: data-loss probe -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1652 decide: the drop is... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1660 fix-now: the glob... -> notes.md
+- Follow-up: decide: The same-work-root requirement holds -> notes.md
