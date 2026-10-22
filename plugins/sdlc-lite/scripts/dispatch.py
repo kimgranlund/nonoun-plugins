@@ -191,7 +191,7 @@ verifier, filer, ui-designer) and false for builder, whose failed run may be res
 level, recorded_at, session} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
 result's ## Follow-ups section is not None (a filer is queued either way: its follow-ups are its output, which tickets.py
 close consumes, T-0531). `dispatch.py prune` lists the queue with the stop call per entry
-(`TaskStop task_id=<name>`); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
+(`TaskStop task_id=<name>`, and for a solo, a finished background agent, a note that a `No task found` failure is safe to ignore, T-0746); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
 (`fanout.py land` does it for a merged solo, under the `name` of its newest solo dispatch record, else `<id>-solo`). The queue
 lives in the main checkout, also when the call runs in a linked worktree, and session is CLAUDE_CODE_SESSION_ID (a
 sub-agent shares its parent's). In a Claude session the listing shows only that session's entries and ends with
@@ -1638,6 +1638,10 @@ def prune_lane(root, name):
     return 'lane still open: %s (%s)' % (d['path'], first)
 
 
+# A queued solo is a background agent that has finished; the host drops it as a task, so its TaskStop fails (T-0746).
+BACKGROUND_NOTE = "; finished background agent: a 'No task found' failure from TaskStop is safe to ignore, still run --done"
+
+
 def prune_lines(root='.'):
     """One stop call per entry of the current session (every entry outside a Claude session), then one line counting
     the entries of other sessions, which no TaskStop here can reach (T-0601)."""
@@ -1649,9 +1653,10 @@ def prune_lines(root='.'):
     if not entries:
         return ['prune: nothing queued'] + tail
     open_ = host_lanes(root, [e['name'] for e in entries])
-    return ['TaskStop task_id=%s    # %s %s, recorded %s; then: dispatch.py prune --done %s%s'
+    return ['TaskStop task_id=%s    # %s %s, recorded %s; then: dispatch.py prune --done %s%s%s'
             % (e['name'], e.get('role') or 'agent', e.get('level') or '', e.get('recorded_at') or '?', e['name'],
-               '; lane open %s' % open_[e['name']]['path'] if e['name'] in open_ else '') for e in entries] + tail
+               '; lane open %s' % open_[e['name']]['path'] if e['name'] in open_ else '',
+               BACKGROUND_NOTE if e.get('role') == 'solo' else '') for e in entries] + tail
 
 
 def follow_up_pending(text):
@@ -4470,6 +4475,11 @@ def selftest():
         after = [e['name'] for e in queued(rp)]
         case('prune --done removes one entry, --add queues a landed solo, an unknown name changes nothing',
              after == names[1:] + ['T-0900-solo'] and 'not queued: nobody' in out_done.getvalue())
+        solo_line = [l for l in prune_lines(str(rp)) if 'task_id=T-0900-solo ' in l]
+        other_lines = [l for l in prune_lines(str(rp)) if 'task_id=T-0900-solo ' not in l and l.startswith('TaskStop')]
+        case('T-0746 prune: a queued solo (a finished background agent) keeps its TaskStop line and says a No task found failure is safe to ignore; a teammate entry does not',
+             len(solo_line) == 1 and 'No task found' in solo_line[0] and 'safe to ignore' in solo_line[0]
+             and other_lines and not any('No task found' in l for l in other_lines))
         with contextlib.redirect_stdout(io.StringIO()):
             for n in after:
                 main(['prune', '--root', str(rp), '--done', n])
