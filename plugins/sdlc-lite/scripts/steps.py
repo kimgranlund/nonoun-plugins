@@ -229,7 +229,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 (T-0686; a criterion line holding /Users/, /home/, /var/folders/ or /private/tmp/)
   review    review <task dir>: decide whether the task dir's newest planner-*.md (by order.py) needs
             a plan review before split (/chain 3). Reads only; never file times. Stdout: "<action>"
-            or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted;
+            or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted, each path
+            repo-relative when the task is in a git work tree (T-0715: a line pasted into a tracked handoff holds no home path);
             exit 0. Rules, in order:
               no planner-*.md                            -> one "steps review: " line on stderr,
                 nothing on stdout, exit 1
@@ -837,6 +838,20 @@ def git_toplevel(task_dir):
         return None
     top = r.stdout.strip()
     return top if r.returncode == 0 and top else None
+
+
+def repo_relative(text, task_dir):
+    """text with every absolute path under task_dir's git toplevel (or its main checkout or lanes root) made
+    repo-relative (tickets.relative_paths, T-0662), so a line written into a tracked handoff passes a personal-path
+    gate (T-0715). Outside git, or on any failure, text comes back unchanged."""
+    top = git_toplevel(task_dir)
+    if not top or '/' not in text:
+        return text
+    try:
+        import tickets  # local, as lane_action: a copy of steps.py beside only order.py and results.py has no tickets.py
+        return tickets.relative_paths(text, pathlib.Path(top))
+    except Exception:  # noqa: BLE001 - a path rewrite never breaks the command
+        return text
 
 
 def guard_cwd(task_dir):
@@ -2084,6 +2099,7 @@ def record_plan_review(task_dir, plan, findings):
             else:
                 rest = first[len(f'steps: {plan}'):] if first.startswith(f'steps: {plan}') else first
                 body = f'plan defect at split: {rest.lstrip(": ").strip()}'
+            body = repo_relative(body, task_dir)
             if body in held:
                 continue
             held.add(body)
@@ -3256,7 +3272,7 @@ def next_action(step_dir):
 INVALID_REASON = 'the newest result does not match its results.py schema; stop and ask the user'
 
 
-def print_action(action, level, reason, read):
+def print_action(action, level, reason, read, rel_to=None):
     """The stdout of next, resume (after its step dir line), and review. An invalid result prints
     "invalid result: <path>: <why>", then the fixed reason line, then the read: lines."""
     if action == 'invalid result':
@@ -3264,9 +3280,9 @@ def print_action(action, level, reason, read):
         print(f'reason: {INVALID_REASON}')
     else:
         print(action if level is None else f'{action} L{level}')
-        print(f'reason: {reason}')
+        print(f'reason: {repo_relative(reason, rel_to) if rel_to is not None else reason}')
     for p in read:
-        print(f'read: {p}')
+        print(f'read: {repo_relative(str(p), rel_to) if rel_to is not None else p}')
 
 
 def cmd_next(step_dir):
@@ -3506,7 +3522,8 @@ def record_review_override(task_dir, review_name, reason):
         with open(p, encoding='utf-8', newline='') as f:
             old = f.read()
         with open(p, 'w', encoding='utf-8', newline='') as f:
-            f.write(section_text(old, '## Plan review', f'review override: {review_name}: {reason}', at_end=True))
+            f.write(section_text(old, '## Plan review',
+                                 repo_relative(f'review override: {review_name}: {reason}', task_dir), at_end=True))
     except OSError as e:
         raise Fail(f'steps split: cannot write {p}: {e}')
 
@@ -3522,7 +3539,7 @@ def record_criterion_amends(task_dir, review_name, amended):
             text = f.read()
         for n, old, new in amended:
             print(f'steps: step {n}: criterion-only amend: old `{old}` -> new {new}', file=sys.stderr)
-            line = criterion_log(review_name, n, old, new)
+            line = repo_relative(criterion_log(review_name, n, old, new), task_dir)
             if line not in have:
                 text = section_text(text, '## Plan review', line, at_end=True)
         with open(p, 'w', encoding='utf-8', newline='') as f:
@@ -3683,7 +3700,7 @@ def cmd_review(task):
             action, level = 'replan', None
             reason = (f'{len(defects)} (red) span(s) of {os.path.basename(plan)} already pass at the base commit '
                       '(red-at-base); replan at planner L3')
-    print_action(action, level, reason, read)
+    print_action(action, level, reason, read, rel_to=task_of(task))
     for line in defects:
         print(line)
     return 0
@@ -4378,7 +4395,7 @@ def amend(step_dir, timeout=300):
     ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
     lines[idx] = f'{indent}{marker} {new}{ending}'
     task_h = task_of(d) / 'handoff.md'
-    record = f'- amend applied: step {m.group(1)}: old `{old}` -> new {new}'
+    record = repo_relative(f'- amend applied: step {m.group(1)}: old `{old}` -> new {new}', d)
     old_task = task_h.read_text(encoding='utf-8') if task_h.is_file() else ''
     h.write_text(''.join(lines), encoding='utf-8')
     task_h.write_text(section_text(old_task, '## Plan review', record, at_end=True), encoding='utf-8')
@@ -6697,6 +6714,20 @@ def selftest():
         check('(r) red-at-base negative: a (red) span red at base reviews as before (split, no defect line)',
               rc == 0 and out.splitlines()[0] == 'split' and 'red-at-base' not in out
               and worktree_list(d) == wt_before)
+        # (T-0715) a line meant for a tracked handoff holds no absolute home path: review prints repo-relative read:
+        # paths, and the ## Plan review appends strip the repo prefix from a quoted path.
+        d = o_repo('(red) `test -f absent.txt`', commit='README.md')
+        rc, out, err = run_main(['review', str(d)])
+        reads = [x for x in out.splitlines() if x.startswith('read: ')]
+        check('(r) review prints the read: path repo-relative, never an absolute home or temp path',
+              rc == 0 and reads == ['read: .sdlc/x/planner-L2.md'] and str(tmp) not in out)
+        plan = str(d / 'planner-L2.md')
+        record_plan_review(d, plan, [f'steps: {plan} step 1: plan-reviewer found {d}/planner-L2.md wrong'])
+        record_review_override(d, 'plan-reviewer-L1.md', f'accepted per {d}/planner-L2.md')
+        held = (d / 'handoff.md').read_text(encoding='utf-8').split('## Plan review', 1)[-1]
+        check('(r) the ## Plan review appends hold the repo-relative path and no absolute path',
+              '.sdlc/x/planner-L2.md wrong' in held and 'accepted per .sdlc/x/planner-L2.md' in held
+              and str(tmp) not in held and not ABS_HOME_RE.search(held))
         check('(r) an unresolved: item under ## Assumptions stops, for - and * items, and the reason quotes it',
               r_first(r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: flag or positional\n')}))
               == 'stop'

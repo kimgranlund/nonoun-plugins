@@ -45,3 +45,9 @@ The failing test lands before or with the fix, never after.
 1. A `steps.py` selftest case shows `steps.py review` printing a repo-relative `read:` path and an append under `## Plan review` holding no absolute home path; with the change reverted, the case fails (state the FAIL line in the Outcome).
 2. `git grep -n "plan review: replan: <result path>" plugins/sdlc-lite/skills/chain` shows the instruction names a repo-relative path.
 3. `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `steps.py` gained `repo_relative` (wraps `tickets.relative_paths`, T-0662): `steps.py review` prints `reason:` and `read:` repo-relative, and every append under `## Plan review` (`record_plan_review`, `record_review_override`, `record_criterion_amends`, `amend`) strips the repo prefix. `swap` appends nothing under `## Plan review`, so it needed no change.
+- `skills/chain/SKILL.md` line 49 now says the `replan` result path is the repo-relative `read:` path.
+- Two selftest cases added (`(r) review prints the read: path repo-relative...`, `(r) the ## Plan review appends hold the repo-relative path...`). Negative control (repo_relative made a no-op): `steps selftest: FAIL` on both cases: `- (r) review prints the read: path repo-relative, never an absolute home or temp path` and `- (r) the ## Plan review appends hold the repo-relative path and no absolute path`.
+- Green: `steps.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 7e5c77c6` exit 0.
