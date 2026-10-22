@@ -2,7 +2,7 @@
 id: T-0708
 title: "Hooks treat an unset SDLC_TMP_WORKTREES as the fallback prefix"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,17 @@ Both hooks now substitute the prefix for `$SDLC_TMP_WORKTREES` / `${SDLC_TMP_WOR
 - Negative control: with `hooks/` reverted to base the selftest fails with `FAIL: block-stray-worktree denies 'git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD' for a sub-agent with SDLC_TMP_WORKTREES unset: exit 0, want 2`; with only `block-role-rm.sh` reverted it fails with `FAIL: block-role-rm denies 'rm -rf $SDLC_TMP_WORKTREES/scratch' for a sub-agent with SDLC_TMP_WORKTREES unset: exit 0, want 2`. Changes restored, PASS again.
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` PASS; `git diff --check 2bbee9d44740c3e5aa8c0b006ee62b0c35460168` exit 0.
 - run.sh headless roles are unaffected: run.sh exports SDLC_TMP_WORKTREES for them, so the variable form still resolves.
+
+## Outcome
+
+2026-10-21 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 2bbee9d44740
+- Changed: see commits
+- Commits: ba3b1fb T-0708: hooks refuse an unset SDLC_TMP_WORKTREES instead of mapping it to the fallback prefix
+- Check: 1 `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 and has cases: with SDLC_TMP_WORKTREES ...: pass
+- Check: 2 Negative control: with the hook changes reverted, the new "unset is refused" cases fail: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: note: conductor check run.sh headless role: with SDLC_ROLE=verifier and... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/adapters/claude/hooks.json:10,13 registers both... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/hooks/block-stray-worktree.sh still allows git... -> notes.md
+- Follow-up: decide: the verifier agent instructions rule 3, git worktree add --detach... -> notes.md
+- Follow-up: note: the throwaway prefix tmp:0708-verifier-L2 and the scratch dir still... -> notes.md

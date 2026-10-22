@@ -7,9 +7,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0707 | [0707-brief-literal-paths](0707-brief-literal-paths/handoff.md) | Briefs say to write worktree and rm paths literally | chore | L2 | P2 | none | 🟡 claimed |
-| T-0708 | [0708-hook-unset-tmp-var](0708-hook-unset-tmp-var/handoff.md) | Hooks treat an unset SDLC_TMP_WORKTREES as the fallback prefix | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 669 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 670 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -32,3 +31,4 @@ Closed: 669 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/hooks/_role.sh:57: `^solo-|-solo$` gives a user teammate named `solo-notes` or `my-solo` the solo role (and its blocks). Documented in the header comment and acceptable; any prefix or suffix `solo` part matches by design. (from T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21))
 - decide: The claim that a teammate's hook payload `agent_type` equals meta.json `agentType` was not captured live by the builder and I did not capture it either; the Outcome labels it inferred. (from T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21))
 - decide: plugins/sdlc-lite/scripts/fanout.py (load_cap): the ledger-unreadable and `--force` branches have no selftest case beyond the busy, force and quiet cases; the unreadable-ledger path is unobserved. note: no criterion requires it. (from T-0700: fanout prep counts other lanes and the load before opening lanes (2026-10-21))
+- decide: the verifier agent instructions (rule 3, `git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD`) still teach the variable form, which a dispatch.py prepare sub-agent now has refused. That brief text belongs to T-0707 (a Non-goal here). (from T-0708: Hooks treat an unset SDLC_TMP_WORKTREES as the fallback prefix (2026-10-21))
