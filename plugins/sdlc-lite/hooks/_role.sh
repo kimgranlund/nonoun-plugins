@@ -19,6 +19,11 @@
 # name with no colon resolves too when it holds <role>-L<n> as whole hyphen-separated parts
 # (0702-solo-L2, 0697-verifier-L2-2, the dispatch.py and solo_run.py names) or starts or ends
 # with solo as a part (solo-0702, the fanout name T-0702-solo).
+# That name inference is the fallback (T-0704): the teammate's real type is not in the payload,
+# but its transcript sidecar <transcript_path minus .jsonl>/subagents/agent-<agent_id>.meta.json
+# holds it as customAgentType (sdlc-lite:builder-L2 for a teammate named reviewer-x), and it is
+# there by the teammate's first tool call. When that file names a type, the type decides and the
+# name is not read; a missing file or field falls back to the name.
 #
 # A payload without an agent_type costs no jq call.
 SDLC_PIPELINE_ROLES=" scout researcher architect archaeologist planner plan-reviewer builder verifier filer solo ui-designer "
@@ -36,8 +41,17 @@ sdlc_role() {
     return 0
   fi
   [[ "$1" == *'"agent_type"'* ]] || return 0
-  at=$(jq -r '.agent_type // ""' <<<"$1" 2>/dev/null) || return 0
+  local tp aid meta ct
+  # \x1f, not a tab: whitespace IFS would merge an empty transcript_path into the next field.
+  IFS=$'\x1f' read -r at tp aid < <(jq -r '[.agent_type, .transcript_path, .agent_id] | map(. // "" | tostring) | join("\u001f")' <<<"$1" 2>/dev/null) || true
   [[ -n "$at" ]] || return 0
+  if [[ "$at" != *:* && "$tp" == *.jsonl && "$aid" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    meta="${tp%.jsonl}/subagents/agent-$aid.meta.json"
+    if [[ -f "$meta" ]]; then
+      ct=$(jq -r '.customAgentType // ""' "$meta" 2>/dev/null) || ct=
+      [[ -n "$ct" ]] && at="$ct"
+    fi
+  fi
   name="${at#sdlc-lite:}"
   if [[ "$name" =~ $re_level ]]; then
     name="${BASH_REMATCH[1]}"
@@ -51,7 +65,7 @@ sdlc_role() {
     printf '%s' "$name"
     return 0
   fi
-  [[ "$at" == *:* ]] && return 0
+  [[ "$at" == *:* || -n "${ct:-}" ]] && return 0
   local r re_mate re_solo_part='^solo-|-solo$'
   for r in $SDLC_PIPELINE_ROLES; do
     re_mate="(^|-)$r-L[0-9]+(-|\$)"

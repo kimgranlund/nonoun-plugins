@@ -794,7 +794,8 @@ frozen; rc=$?
 
 # Role resolution (hooks/_role.sh): SDLC_ROLE, else the sub-agent's agent_type with the sdlc-lite:
 # prefix and the -L<n> or solo tier suffix removed, or an in-process teammate's name that holds
-# <role>-L<n> or starts or ends with solo (T-0702). Session agents and non-SDLC agents have no role.
+# <role>-L<n> or starts or ends with solo (T-0702), unless the teammate's meta.json names its real
+# type (T-0704). Session agents and non-SDLC agents have no role.
 rr() { ( unset SDLC_ROLE; . "$hooks/_role.sh"; sdlc_role "$1" ); }
 # rj <agent_type or empty> <command>: the JSON of one Bash call, with agent_type only when given.
 rj() {
@@ -838,6 +839,23 @@ plan-driver-hardening|
 release-0-22-4|
 |
 CASES
+# T-0704: a teammate's real type is customAgentType in its transcript sidecar meta.json, found from
+# the payload's transcript_path and agent_id; it wins over the name, and no sidecar falls back to it.
+mj() {
+  jq -n --arg at "$1" --arg tp "$wtmp/sess.jsonl" --arg id "$2" \
+    '{tool_name:"Bash",agent_type:$at,agent_id:$id,transcript_path:$tp,tool_input:{command:"x"}}'
+}
+mkdir -p "$wtmp/sess/subagents"
+printf '%s' '{"agentType":"reviewer-x","taskKind":"in_process_teammate","customAgentType":"sdlc-lite:builder-L2"}' >"$wtmp/sess/subagents/agent-areviewer-x-1.meta.json"
+printf '%s' '{"agentType":"solo-0799","customAgentType":"general-purpose"}' >"$wtmp/sess/subagents/agent-asolo-0799-1.meta.json"
+[[ "$(rr "$(mj reviewer-x areviewer-x-1)")" == builder ]] || fail "_role.sh: teammate reviewer-x with real type sdlc-lite:builder-L2 must resolve builder (T-0704)"
+[[ "$(rr "$(mj reviewer-x areviewer-x-2)")" == "" ]] || fail "_role.sh: teammate reviewer-x with no meta.json must have no role"
+[[ "$(rr "$(mj solo-0799 asolo-0799-1)")" == "" ]] || fail "_role.sh: a real type general-purpose must win over the name solo-0799"
+[[ "$(rr "$(mj solo-0799 asolo-0799-2)")" == solo ]] || fail "_role.sh: with no meta.json the name solo-0799 must still resolve solo"
+[[ "$(rr "$(mj reviewer-x ../x)")" == "" ]] || fail "_role.sh: an agent_id with a slash must not be read as a path"
+out=$(run "$ds" "$(jq --arg c "$fw / -name x" '.tool_input.command = $c' <<<"$(mj reviewer-x areviewer-x-1)")"); rc=$?
+[[ $rc -eq 2 ]] || fail "block-disk-scan blocks teammate reviewer-x of type sdlc-lite:builder-L2: exit $rc, want 2"
+grep -q builder <<<"$out" || fail "block-disk-scan teammate reviewer-x: stderr lacks the role builder"
 [[ "$(rr '{"tool_name":"Bash"}')" == "" ]] || fail "_role.sh: a payload with no agent_type resolved a role"
 [[ "$(rr 'not json agent_type')" == "" ]] || fail "_role.sh: unparsable input resolved a role"
 [[ "$( . "$hooks/_role.sh"; SDLC_ROLE=verifier sdlc_role "$(rj sdlc-lite:builder-L3 x)" )" == verifier ]] || fail "_role.sh: SDLC_ROLE must win over agent_type"
