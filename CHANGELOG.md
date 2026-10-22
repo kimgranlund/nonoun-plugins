@@ -2,6 +2,14 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.33.0] - 2026-10-22
+
+Report: [docs/reports/2026-10-22-release-0-33-0.md](docs/reports/2026-10-22-release-0-33-0.md). From CPU diagnostics on a second fleet machine (T-0716).
+
+### Added
+
+- `gate_lock.py run` samples the total RSS of the gate's process tree every 2 s and stops a tree over `max_rss_mb` (SIGTERM, then SIGKILL; descendants that left the group are killed before the drain), releases the grant, prints `gate_lock: stopped <name>: process tree RSS <x> MB over max_rss_mb <N>` and exits 137. `max_rss_mb` defaults to 25% of physical RAM; `policy set max_rss_mb=0` turns it off (T-0716).
+
 ## [0.32.0] - 2026-10-22
 
 Report: [docs/reports/2026-10-22-release-0-32-0.md](docs/reports/2026-10-22-release-0-32-0.md). Addresses GitHub issues #46, #47 and #48 (T-0713 to T-0715).
