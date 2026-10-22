@@ -6,12 +6,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0697 | [0697-gate-max-load-default](0697-gate-max-load-default/handoff.md) | gate_lock admits by load from a CPU-count default when policy sets no max_load | bug | L1 | P1 | none | ⏳ proposed |
-| T-0698 | [0698-lane-tests-through-gate-lock](0698-lane-tests-through-gate-lock/handoff.md) | Lane roles run heavy test suites through gate_lock run | feature | L2 | P1 | none | ⏳ proposed |
+| T-0697 | [0697-gate-max-load-default](0697-gate-max-load-default/handoff.md) | gate_lock admits by load from a CPU-count default when policy sets no max_load | bug | L1 | P1 | none | 🟡 claimed |
+| T-0698 | [0698-lane-tests-through-gate-lock](0698-lane-tests-through-gate-lock/handoff.md) | Lane roles run heavy test suites through gate_lock run | feature | L2 | P1 | none | 🟡 claimed |
 | T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | ⏳ proposed |
 | T-0700 | [0700-prep-load-aware-lanes](0700-prep-load-aware-lanes/handoff.md) | fanout prep counts other lanes and the load before opening lanes | feature | L2 | P1 | none | ⏳ proposed |
-| T-0701 | [0701-settle-forward-gate-at-tip](0701-settle-forward-gate-at-tip/handoff.md) | settle --forward says when it skipped its gates | bug | L1 | P2 | none | ⏳ proposed |
-| T-0702 | [0702-disk-scan-hook-gap](0702-disk-scan-hook-gap/handoff.md) | Lane agents ran find / for hours despite block-disk-scan | bug | L2 | P1 | none | ⏳ proposed |
+| T-0701 | [0701-settle-forward-gate-at-tip](0701-settle-forward-gate-at-tip/handoff.md) | settle --forward says when it skipped its gates | bug | L1 | P2 | none | 🟡 claimed |
+| T-0702 | [0702-disk-scan-hook-gap](0702-disk-scan-hook-gap/handoff.md) | Lane agents ran find / for hours despite block-disk-scan | bug | L2 | P1 | none | 🟡 claimed |
 | T-0703 | [0703-resumed-agent-reports](0703-resumed-agent-reports/handoff.md) | A resumed sub-agent reports back to the conductor | bug | L1 | P2 | none | ⏳ proposed |
 
 Closed: 659 done, 29 dropped (git log or .NNNN-* folders)
