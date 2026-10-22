@@ -2,7 +2,7 @@
 id: T-0748
 title: "A re-verify after a lane merges main keeps the ticket's build base"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ Checks:
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0
 - `git diff --check 2de1b84a` exit 0 (and against the merge point 6885c68b)
 - Negative control (fix reverted in a scratch copy): `FAIL: a verifier after the lane merged main (attempt 2): the base diff holds both lane commits and no main-only file` and the same for attempt 3; reverting only the resync guard fails attempt 3 alone.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (sonnet) · base: 6885c68b458a
+- Changed: see commits
+- Commits: 89c45bf T-0748: a re-verify after a lane merges main keeps the ticket's build base
+- Check: 1 selftest case: lane with recorded start, verifier attempt, main merge, fix commit; next prepare's...: pass
+- Check: 2 selftest exit 0, check.py exit 0, check-packaging passes, `git diff --check` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:3251: the changed T-0376 case... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:3396 and :3404: the two... -> notes.md
+- Follow-up: decide: T-0717: no named-base: case was touched, and all of them are green... -> notes.md
