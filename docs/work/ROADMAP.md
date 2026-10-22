@@ -11,10 +11,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🟡 claimed |
-| T-0746 | [0746-prune-skips-finished-agents](0746-prune-skips-finished-agents/handoff.md) | dispatch.py prune lists only agents that still exist | bug | L1 | P2 | none | 🟡 claimed |
 | T-0747 | [0747-advance-prep-solo-verifier-tree](0747-advance-prep-solo-verifier-tree/handoff.md) | advance prepares a prep solo's verifier on the lane worktree | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 703 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 704 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -71,3 +70,4 @@ Closed: 703 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2108: host_report_copy cannot pick another ticket's report. The fallback searches the same relative path, which names the ticket id (`<id>-solo.md`). It returns None when more than one worktree holds a copy. (from T-0740: Solo lanes in host worktrees commit and report where land reads (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2272: merge overlap with T-0744 is real. T-0744 (already on main, 1566168e) added `artifacts_dir` through a helper at fanout.py:~2177. `git merge-tree main 59014ab9` reports `CONFLICT (content)` in fanout.py. dispatch.py auto-merges. The merge must keep one `artifacts_dir` entry in the solo dispatch file, not two. (from T-0740: Solo lanes in host worktrees commit and report where land reads (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:1210-1216 An install folded into a combined full gate (`--gate 'npm ci && npm test'`) is neither split nor run twice (light_installs returns [] for it, as the conductor asked), but the light set then still runs without node_modules and fails rc=127. deps_note (fanout.py:1204-1205) gives no warning either, because a gate does install. Probed with light_installs/deps_note on a package.json repo: `['npm ci && npm test'] + light ['npm run typecheck']` gives [] and no note. (from T-0742: The light gate set runs with dependencies installed (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1641 the comment "A queued solo is a background agent that has finished" and the note text "finished background agent" overclaim: a solo spawned as a named in-process teammate (as this repo's conductor does) is still live when queued by `--add`, and TaskStop succeeds on it. The line does not tell the conductor to skip TaskStop (it keeps `TaskStop task_id=` and only says a 'No task found' failure is safe to ignore, then `--done`), so behavior stays correct; consider wording such as "if it was a background agent, a 'No task found' failure ... is safe to ignore". (from T-0746: dispatch.py prune lists only agents that still exist (2026-10-22))
