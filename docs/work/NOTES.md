@@ -254,3 +254,7 @@
 ## T-0710: Fix four verifier-flagged doc and test gaps (2026-10-21)
 
 - note: redck.py deviations printed no process deviation lines for this artifacts dir; no criterion is marked (red).
+
+## T-0707: Briefs say to write worktree and rm paths literally (2026-10-21)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:1313 says the guard hooks "refuse the command". That holds for `$T` and `$S`, but the first verifier showed that block-stray-worktree.sh:237 and block-role-rm.sh:92 expand a literal `$SDLC_TMP_WORKTREES` and let it through. The hook side is T-0708.
