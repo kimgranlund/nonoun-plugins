@@ -2,7 +2,7 @@
 id: T-0729
 title: "Builders record a pre-edit red run for each (red) criterion"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,13 @@ Rule 11 (redck record before the first edit) already existed but sat at the end 
 New line: "First action: when the handoff has a `(red)` criterion, run `redck.py record` (rule 11) before any edit, a new test, generator or formatter run included; a record taken after any edit is stored as retrospective and leaves a process deviation."
 
 Checks: `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 7ec0d4bb` exit 0; claude_roles.py and codex_roles.py generate rerun leaves no diff.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 7ec0d4bb698b
+- Changed: see commits
+- Commits: 62cb430 T-0729: builders record a pre-edit red run as their first action
+- Check: 1 The source definition says it (quote the new line in the Outcome) and `python3 plugins/sdlc-lite/...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: decide: plugins/sdlc-lite/agents/builder.md:10 says to record "before any... -> notes.md
+- Follow-up: note: redck.py deviations on the artifacts dir printed nothing rc=0; this... -> notes.md
