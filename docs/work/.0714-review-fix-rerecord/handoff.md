@@ -2,7 +2,7 @@
 id: T-0714
 title: "Review-fix resume refreshes the recorded end tree and keeps the report header"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -52,3 +52,17 @@ The failing test lands before or with the fix, never after.
 - Selftest case (d) in `dispatch.py selftest`: builder recorded on a commit, an uncommitted fix, a headerless report, `record --update`, then a dry-run verifier prepare: the header is back, `results.py validate --role builder` exits 0, and the Diff range ends at a new tree hash whose diff from the old end is exactly `fix4.txt`. A second case refuses `--update` on a running attempt.
 - Negative control: with the `--update` wiring removed, `dispatch.py selftest` exits 1 with `FAIL: (d) record --update after a review fix re-adds the result header and the verifier Diff range ends at the fixed tree` (and the refusal case).
 - Checks: `gate_lock.py run ... dispatch.py selftest` exit 0; `steps.py selftest` exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 7e5c77c6` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 7e5c77c60f7c
+- Changed: see commits
+- Commits: e8a1f6b T-0714: review-fix resume re-records the builder (record --update)
+- Check: 1 dispatch.py selftest case for record --update (header re-added, Diff range ends at new tree, FAIL...: pass
+- Check: 2 dispatch.py selftest and steps.py selftest exit 0: pass
+- Check: 3 check.py, check-packaging.py, git diff --check: pass
+- Check: 4 Conductor note, validation on rewrite: pass
+- Check: 5 Conductor note, runs.jsonl and cost unchanged: pass
+- Check: 6 Conductor note, relay text agrees with `advance`: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:1868: decide: record --update... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:2210: note: the new stop... -> notes.md

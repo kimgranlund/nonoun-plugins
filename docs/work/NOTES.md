@@ -278,3 +278,8 @@
 
 - note: plugins/sdlc-lite/scripts/steps.py:4398 the `amend` and `record_criterion_amends` (steps.py:3542) paths are wrapped in repo_relative but no selftest case drives them; only record_plan_review and record_review_override are exercised.
 - note: plugins/sdlc-lite/scripts/steps.py:3279 an `invalid result: <path>` line from print_action is not passed through repo_relative; only the reason and read: lines are.
+
+## T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1868: decide: `record --update` accepts any completed attempt of any role, not only a resumed builder or ui-designer, and checks only report format; a hand-edited verifier fail rewritten to pass would be accepted and get a fresh `result_sha256` in the attempt (runs.jsonl keeps the original sha, and nothing compares the sha to the file today, so this adds no new capability over editing the file). Consider restricting `--update` to builder and solo, or leaving the old sha in the attempt.
+- decide: plugins/sdlc-lite/scripts/dispatch.py:2210: note: the new `stop: changes-required ...` relay text has no selftest assertion; a wording drift between `advance` and conductor.md would not be caught.

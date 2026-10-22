@@ -7,9 +7,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0713 | [0713-fanout-land-dirty-primary](0713-fanout-land-dirty-primary/handoff.md) | fanout.py land leaves lane-close bookkeeping uncommitted in the primary checkout | bug | L2 | P2 | none | 🟡 claimed |
-| T-0714 | [0714-review-fix-rerecord](0714-review-fix-rerecord/handoff.md) | Review-fix resume refreshes the recorded end tree and keeps the report header | bug | L2 | P2 | none | 🟡 claimed |
 
-Closed: 676 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 677 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -35,3 +34,5 @@ Closed: 676 done, 29 dropped (git log or .NNNN-* folders)
 - decide: the verifier agent instructions (rule 3, `git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD`) still teach the variable form, which a dispatch.py prepare sub-agent now has refused. That brief text belongs to T-0707 (a Non-goal here). (from T-0708: Hooks treat an unset SDLC_TMP_WORKTREES as the fallback prefix (2026-10-21))
 - decide: plugins/sdlc-lite/scripts/run.sh:710 passes the prefix to a run.sh-launched role only as the `SDLC_TMP_WORKTREES` env var; the run.sh prompt has no throwaway-prefix line. A role launched that way with a brief that names no prefix has to infer from the parenthetical that the variable's value is its prefix. (from T-0709: Role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES (2026-10-21))
 - decide: plugins/sdlc-lite/agents/builder.md:20 says "`dispatch.py record` removes the prefix after the run". For a run.sh-launched role (the Codex sdlc-builder-l*.toml), nothing calls dispatch.py record. run.sh's own `cleanup_worktrees` (plugins/sdlc-lite/scripts/run.sh:581-591, called from on_exit at :679 on every exit) removes the prefix instead. The instruction "do not rm -rf it" is still correct, but the line names the wrong mechanism. A neutral wording would fix it, for example "the runner (`dispatch.py record` or `run.sh`) removes the prefix after the run". (from T-0712: Briefs say record removes the throwaway prefix and scratch dir (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1868: decide: `record --update` accepts any completed attempt of any role, not only a resumed builder or ui-designer, and checks only report format; a hand-edited verifier fail rewritten to pass would be accepted and get a fresh `result_sha256` in the attempt (runs.jsonl keeps the original sha, and nothing compares the sha to the file today, so this adds no new capability over editing the file). Consider restricting `--update` to builder and solo, or leaving the old sha in the attempt. (from T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:2210: note: the new `stop: changes-required ...` relay text has no selftest assertion; a wording drift between `advance` and conductor.md would not be caught. (from T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22))
