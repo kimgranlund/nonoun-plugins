@@ -7,7 +7,8 @@ aux["lanes"] (one sources/fanout.read per lanes dir), and aux["tickets"] (source
 <repo>/.sdlc). rows is unused. Evidence paths under aux["repo"] are repo-relative, others stay
 absolute; an evidence entry with no line number in a file carries line None. The only raw files
 opened are a report.md and <repo>/.sdlc/config, to find the line an external branch sits on, and
-the only other filesystem read is whether a report's integration worktree still exists.
+<repo>/docs/layout.md, for the reports homes; the only other filesystem reads are whether a report's
+integration worktree still exists and whether a worktree holds a KEEP_MARKER or a .lane.json.
 
 A lost-edit signal of a lanes dir: a report row or fanout.log line whose outcome is `red: ... rc=<n>`
 or starts `integration dirty`, a report Commit cell or fanout.log line starting `wip `, and (for
@@ -16,8 +17,11 @@ in aux["git"]["commits"].
 
 Detectors (cause_hint files are plugin-relative):
   stray-worktree       a worktree whose path holds a legacy worktree root (`.claude/worktrees/` or `.worktrees/`)
-                       twice or lies under its `tmp/`; evidence the path. Cause scripts/run.sh.
-  tracked-runtime-file each git tracked_runtime path; evidence the path. Cause
+                       twice or lies under its `tmp/`, and holds no KEEP_MARKER file at its root (a
+                       repo's opt-out for an intentional worktree); evidence the path. Cause scripts/run.sh.
+  tracked-runtime-file each git tracked_runtime path outside the evidence dirs (docs/evidence/ and
+                       docs/<home>/ for each home of kind `reports` in docs/layout.md, where dated
+                       evidence logs are tracked on purpose); evidence the path. Cause
                        skills/handoff-format/SKILL.md.
   integration-reset    per `reset: moving to` reflog entry, when the first lanes dir whose report
                        names an integration worktree that exists (the one ingest read the reflog
@@ -37,11 +41,14 @@ Detectors (cause_hint files are plugin-relative):
                        line. Cause scripts/tickets.py.
   unregistered-external-branch
                        a report's external lane branch absent from the registered
-                       `external_branch` names (evidence the report line), and a registered name
+                       `external_branch` names, unless its lanes dir's land.jsonl names it (a lane
+                       `fanout.py land` merged) or a worktree on it holds a .lane.json (evidence the
+                       report line), and a registered name
                        with no local branch (evidence the config line). Cause scripts/tickets.py.
 """
 import os
 
+import docs_check  # same scripts/ dir: the docs layout's reports homes
 import tickets  # same scripts/ dir: the external_branch config line
 
 from .. import findings
@@ -56,6 +63,8 @@ DIRTY = 'integration dirty'
 WIP_COMMIT = 'wip('
 WIP_CELL = 'wip '
 DUPLICATE = 'duplicate id'
+KEEP_MARKER = '.sdlc-keep'  # at a worktree's root: the worktree is intentional, never a stray
+EVIDENCE_DIRS = ('docs/evidence/',)
 
 DETECTORS = ('stray-worktree', 'tracked-runtime-file', 'integration-reset', 'reflog-gone',
              'stale-log-lines', 'overwritten-gate-log', 'ticket-id-collision',
@@ -122,6 +131,8 @@ def stray_worktree(ctx):
             continue
         if not (w.get('nested') or git_src.nested(path)):
             continue
+        if os.path.isfile(os.path.join(ctx.abs(path), KEEP_MARKER)):
+            continue
         rel = ctx.rel(path)
         out.append(_make(ctx, 'stray-worktree', 'scripts/run.sh',
                          'runner temporary worktrees live under SDLC_TMP_WORKTREES and are removed',
@@ -129,10 +140,22 @@ def stray_worktree(ctx):
     return out
 
 
+def _evidence_dirs(ctx):
+    dirs = list(EVIDENCE_DIRS)
+    if ctx.repo:
+        try:
+            kinds, _ = docs_check.home_kinds(docs_check.load_layout(ctx.repo))
+        except Exception:  # a malformed layout leaves the default dir only
+            kinds = {}
+        dirs += [f'docs/{h}/' for h, kind in kinds.items() if kind == 'reports']
+    return dirs
+
+
 def tracked_runtime_file(ctx):
     out = []
+    evidence = _evidence_dirs(ctx)
     for path in ctx.git.get('tracked_runtime') or []:
-        if not isinstance(path, str) or not path:
+        if not isinstance(path, str) or not path or path.startswith(tuple(evidence)):
             continue
         out.append(_make(ctx, 'tracked-runtime-file', 'skills/handoff-format/SKILL.md',
                          'runtime files (.log, .running, .run.lock, .board-state.json) are ignored',
@@ -291,11 +314,15 @@ def _config_line(ctx, config, name):
 def unregistered_external_branch(ctx):
     out = []
     registered = [b for b in ctx.tickets.get('external') or [] if isinstance(b, str)]
+    recorded = {w.get('branch') for w in ctx.git.get('worktrees') or [] if isinstance(w, dict)
+                and isinstance(w.get('path'), str) and w.get('branch')
+                and os.path.isfile(os.path.join(ctx.abs(w['path']), '.lane.json'))}
     for lane in ctx.lanes:
         rep = lane.get('report') if isinstance(lane.get('report'), dict) else None
+        landed = lane.get('landed') or []
         for x in (rep or {}).get('external') or []:
             branch = x.get('branch')
-            if not branch or branch in registered:
+            if not branch or branch in registered or branch in landed or branch in recorded:
                 continue
             line = _report_line(ctx, rep, f'- Lane `{x.get("lane")}`:', 'external branch')
             out.append(_make(ctx, 'unregistered-external-branch', 'scripts/tickets.py',

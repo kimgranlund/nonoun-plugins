@@ -1910,6 +1910,52 @@ def _hyg_mixed_ids():
                                   'line': 2}], f['evidence']
 
 
+@case('hygiene: tracked evidence logs, landed or lane-recorded fanout lanes, and a kept worktree '
+      'are no findings (T-0730)')
+def _hyg_t0730_known():
+    """Issue #53/#66 repro: a land-written `external branch ... at None` line (its branch in
+    logs/land.jsonl), a lane whose worktree holds .lane.json, a tracked docs/evidence/*.log, and a
+    preview worktree under .worktrees/tmp/ holding the keep marker. A tracked foo.log and an
+    unregistered external lane with neither record still fire."""
+    _need_git()
+    with tempfile.TemporaryDirectory() as tmp:
+        root = os.path.realpath(tmp)
+        repo, lanes, added = _hyg_clean_repo(root), os.path.join(root, 'lanes'), []
+        try:
+            _write(repo, 'docs/evidence/run.stdout.log', 'kept\n')
+            _write(repo, 'foo.log', 'stray\n')
+            _g(repo, 'add', '-A')
+            _g(repo, 'commit', '-q', '-m', 'evidence')
+            for b in ('fanout/l-a', 'fanout/l-b', 'codex/other'):
+                _g(repo, 'branch', b)
+            preview = os.path.join(repo, '.worktrees', 'tmp', 'preview')
+            lane_b = os.path.join(root, 'repo.worktrees', 'l-b')
+            _g(repo, 'worktree', 'add', '-q', '--detach', preview, 'HEAD')
+            added.append(preview)
+            _g(repo, 'worktree', 'add', '-q', lane_b, 'fanout/l-b')
+            added.append(lane_b)
+            _write(preview, '.sdlc-keep', '')
+            _write(lane_b, '.lane.json', '{}\n')
+            _write(repo, '.sdlc/config', 'external_branch: codex/work\n')
+            _write(lanes, 'report.md', _fanout_report(
+                f'- Run: `{_R2}`', [],
+                ['- Lane `t-0001-solo`: external branch `fanout/l-a` at `None`',
+                 '- Lane `l-b`: external branch `fanout/l-b` at `' + 'e' * 40 + '`',
+                 '- Lane `other`: external branch `codex/other` at `' + 'd' * 40 + '`'],
+                ['| t-0001-solo | T-0001 | merged | abc1234 |']))
+            _write(lanes, 'logs/land.jsonl', json.dumps({'lane': 't-0001-solo', 'branch': 'fanout/l-a',
+                                                         'ticket': 'T-0001'}) + '\n')
+            got = _hyg_detect(root, repo, lanes)
+            assert [f['evidence'][0]['branch'] for f in got
+                    if f['detector'] == 'unregistered-external-branch'] == ['codex/other'], got
+            assert [f['evidence'][0]['path'] for f in got
+                    if f['detector'] == 'tracked-runtime-file'] == ['foo.log'], got
+            assert [f for f in got if f['detector'] == 'stray-worktree'] == [], got
+        finally:
+            for wt in reversed(added):
+                _g(repo, 'worktree', 'remove', '--force', wt)
+
+
 # --- cost ---------------------------------------------------------------------------------------
 
 _T0 = '2026-09-30T06:00:00+00:00'

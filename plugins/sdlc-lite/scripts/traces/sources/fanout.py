@@ -16,6 +16,8 @@ read(lanes_dir) returns one dict:
   driver_logs  one {lane, ticket, path, lines, run_ids} per logs/<lane>-<id>.log;
   gate_logs    one {lane, ticket, k, attempt, path, lines, run_ids, rc} per
                logs/gate-<lane>-<id>-<k>[-a<n>].log (attempt None for the legacy name);
+  landed       the branch of every logs/land.jsonl line, in first-seen order: the lanes
+               `fanout.py land` merged, which a pre-T-0730 report.md wrote as external lanes;
   problems     the paths of files that could not be read, which are skipped.
 A line's run id is its `[fanout-<12 hex>] ` prefix, None without one; run_ids lists the distinct
 ids of a log's lines in first-seen order (None included), and run_id_lines pairs each with the
@@ -25,7 +27,7 @@ the report's gate commands, else it is the highest k logged in that run), placed
 attempt that carries the recording run's id (a legacy record, with no id, on the legacy log);
 a gate no line records a rc for (a green gate included) keeps rc None.
 """
-import os, re
+import json, os, re
 
 RUN_ID = r'fanout-[0-9a-f]{12}'
 PREFIX_RE = re.compile(r'^\[(' + RUN_ID + r')\] ')
@@ -171,6 +173,21 @@ def _place_rc(gates, report, run_id, lane, ticket, outcome):
         max(hits, key=lambda g: g['attempt'] or 0)['rc'] = rc
 
 
+def _landed(logs, problems):
+    path = os.path.join(logs, 'land.jsonl')
+    if not os.path.isfile(path):
+        return []
+    out = []
+    for line in _lines(path, problems) or []:
+        try:
+            branch = json.loads(line).get('branch')
+        except (ValueError, AttributeError):
+            continue
+        if isinstance(branch, str) and branch and branch not in out:
+            out.append(branch)
+    return out
+
+
 def read(lanes_dir):
     problems = []
     report = _report(lanes_dir, problems)
@@ -183,4 +200,4 @@ def read(lanes_dir):
     for r in (report or {}).get('rows', []):
         _place_rc(gates, report, report['run_id'], r['lane'], r['ticket'], r['outcome'])
     return {'lanes_dir': lanes_dir, 'report': report, 'fanout_log': flog, 'driver_logs': drivers,
-            'gate_logs': gates, 'problems': problems}
+            'gate_logs': gates, 'landed': _landed(logs, problems), 'problems': problems}
