@@ -2,7 +2,7 @@
 id: T-0728
 title: "Planner runs each new-behavior criterion red at base before returning"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,16 @@ Changed `plugins/sdlc-lite/agents/planner.md` rule 1 (generated planner -L1/-L2/
 > Your last action before returning is to run every `(red)` and new-behavior criterion once more at the build-start base (in a detached worktree copy of HEAD when the tree is not base) and fix or drop any that exits 0, because `steps.py review` sends a plan with a green `(red)` span back for a replan.
 
 The in-file wording is "in a `git worktree add --detach <tmp> HEAD` copy". Checks: `check.py` exit 0, `check-packaging.py` exit 0. No lint added: `steps.py review` already runs `(red)` spans at base.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 0e63ead0204d
+- Changed: see commits
+- Commits: 572e788 T-0728: planner runs new-behavior criteria red at base as its last action
+- Check: 1 The source definition says it (quote the new line in the Outcome) and `claude_roles.py generate` ...: pass
+- Check: 2 `check.py` exits 0, `check-packaging.py` passes, `git diff --check <base sha>` exits 0: pass
+- Follow-up: fix-now: plugins/sdlc-lite/agents/planner.md:29 the new line writes the... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/agents/planner.md:29 the new line does not... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/agents/planner.md:29 the new "last action"... -> notes.md
+- Follow-up: note: docs/work/0728-planner-red-at-base-check/handoff.md Outcome quote... -> notes.md
+- Follow-up: note: redck.py deviations printed no process deviation: lines -> notes.md

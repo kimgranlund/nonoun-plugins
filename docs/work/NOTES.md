@@ -314,3 +314,11 @@
 
 - decide: plugins/sdlc-lite/scripts/steps.py:1096 treats a module-not-found line as an environment error whenever the tree root has no node_modules. A Node repo with no dependencies, or a guard whose missing module is a local file the step creates, is then reported as `environment error` with an `npm ci` hint that cannot fix it, and the split never reaches a plan defect. Also requiring a package.json would narrow this.
 - note: the Goal names "guard or red span", but split --only runs only (guard) spans (steps.py:796 guard_spans), so only guards are classified.
+
+## T-0728: Planner runs each new-behavior criterion red at base before returning (2026-10-22)
+
+- fix-now: plugins/sdlc-lite/agents/planner.md:29 the new line writes the worktree path as a bare `<tmp>` placeholder. The conductor wanted the literal throwaway prefix from the brief, per T-0709. Rules 3, 8 and 11 (planner.md:31, :40, :43) still use the same `<tmp>` form, which T-0709 left as is, so the line matches its neighbors. No handoff criterion names this. A one-word follow-up across rules 1, 3, 8 and 11 would be `"<throwaway prefix>/base"`, as rule 13a (planner.md:47) already has it.
+- note: plugins/sdlc-lite/agents/planner.md:29 the new line does not conflict with the read-only rule or the no-deletes rule. Rule 11 (planner.md:43) already allows a `git worktree add --detach` copy "within rule 1's read-only limits". The new line never asks the planner to remove the worktree, so rule 15 (planner.md:51) still holds.
+- note: plugins/sdlc-lite/agents/planner.md:29 the new "last action" sentence comes before the existing "Before returning, dry-run each step's `(guard)` commands" sentence in the same rule, so it is unclear which runs last. This is harmless because both are base runs.
+- note: docs/work/0728-planner-red-at-base-check/handoff.md Outcome quote paraphrases the parenthetical ("detached worktree copy of HEAD") and then states the exact in-file wording. It is not a verbatim quote.
+- note: redck.py deviations printed no `process deviation:` lines. The ticket has no `(red)` criteria.
