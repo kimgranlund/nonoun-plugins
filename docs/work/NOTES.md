@@ -300,3 +300,7 @@
 - note: plugins/sdlc-lite/scripts/steps.py:1031-1039 Conductor check: a caller's own SDLC_TMP_WORKTREES is overridden on purpose. With the caller's env set to `/caller/own/prefix`, every probed span saw the fresh `split-spans-*` dir instead. The dir sits under wtroot.tmp_root, the same prefix the role hooks allow.
 - note: plugins/sdlc-lite/scripts/steps.py:4251,4397,4653,3697 and redck.py:209, specgate.py:164, traces/rerun.py:115 still call `run_guard`/`red_first` without `tmp`, so `swap`, `amend`, `widen`, `review-red`, `redck` and `specgate` spans keep the inherited SDLC_TMP_WORKTREES. The ticket's Non-goals and Outcome scope these out. If a span there uses the same pattern, the issue would come back, so a follow-up ticket may be wanted.
 - note: plugins/sdlc-lite/scripts/steps.py:5367 The selftest runs from a task dir outside git, so it exercises only the fallback to the system temp dir. The in-git wtroot.tmp_root branch was checked only by the direct `span_tmp` probe above.
+
+## T-0730: traces.py detect skips evidence logs, fanout lanes and declared preview worktrees (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/traces/detectors/hygiene.py `_evidence_dirs` also skips docs/reports/ because it is a default `reports` home in docs_check.DEFAULT_HOMES; this matches the Outcome's "each docs/layout.md home of kind reports" and is not named by a criterion.

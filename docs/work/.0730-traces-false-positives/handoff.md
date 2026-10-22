@@ -2,7 +2,7 @@
 id: T-0730
 title: "traces.py detect skips evidence logs, fanout lanes and declared preview worktrees"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -72,3 +72,15 @@ The failing test lands before or with the fix, never after.
 - Red control: with the traces change reverted, `traces.py selftest -k hygiene` printed `- hygiene: tracked evidence logs, landed or lane-recorded fanout lanes, and a kept worktree are no findings (T-0730): [{... 'detector': 'stray-worktree' ...` and `traces selftest: FAIL`. With the report change reverted, `fanout.py selftest` exited 1 on `case 23 land (T-0730): report.md writes each landed branch as a regular lane, no external branch line`.
 - Checks: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/traces.py selftest` exit 0; `fanout.py selftest` (gate_lock) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` PASS; `git diff --check 83a3a4e6` exit 0.
 - Open: a Codex external branch checked out in a plain worktree (no `.lane.json`) still counts as external, by design. The `.sdlc-keep` marker is untracked in the kept worktree; a repo can list it in info/exclude.
+
+## Outcome
+
+2026-10-22 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 83a3a4e63e21
+- Changed: see commits
+- Commits: db67116 T-0730: traces.py detect skips evidence logs, fanout lanes and declared preview worktrees
+- Check: 1 A traces.py selftest case reproduces the issue repro and fails with the change reverted: pass
+- Check: 2 gate_lock traces.py selftest exits 0: pass
+- Check: 3 check.py exits 0, check-packaging passes, git diff --check clean: pass
+- Check: 4 Conductor note, skips do not hide real findings: pass
+- Check: 5 Conductor note, `.sdlc-keep` documented: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/traces/detectors/hygiene.py... -> notes.md
