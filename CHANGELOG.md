@@ -2,6 +2,20 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.35.0] - 2026-10-22
+
+Report: [docs/reports/2026-10-22-release-0-35-0.md](docs/reports/2026-10-22-release-0-35-0.md). Addresses GitHub issues #68 to #72 (T-0740 to T-0746) and follow-ups T-0747 and T-0748.
+
+### Changed
+
+- Solo lanes in Claude Code host worktrees (`isolation: worktree`) no longer run git or write outside their worktree: the brief has the solo leave its change uncommitted and write its report inside the worktree, `fanout.py land` commits a dirty host lane as `<id>: <title>`, and `dispatch.py record` copies the report from the agent worktree. The refusals were Claude Code's own sandbox, not a plugin hook (T-0740, #68).
+- `fanout.py prep` ends with one `no lane: <ticket> (<reason>)` line per ticket a cap leaves out (T-0741, #69).
+- A light merge in a Node repo runs the full set's install-only gates first when the gate worktree has no `node_modules`; `prep` warns when a light gate runs an npm script and no install-only gate runs first (T-0742, #70).
+- A clean host-owned agent worktree whose branch is merged into the integration branch no longer holds the integration tree open; settle prints the `git worktree remove` line for it (T-0743, #71).
+- `fanout.py prep` writes a full solo dispatch file, so `dispatch.py advance` and `record` accept it and L1 solo lanes get a cost row (T-0744, #72); for an L2 or L3 prep solo, advance prepares the verifier on the lane worktree it resolves at advance time (including `agent-<id>`), with the level from main's handoff (T-0747).
+- `dispatch.py prepare verifier` prints no `nothing recorded for this step` line when a lane record (fanout, lanes.py or host) names the lane start (T-0745, #72), and after a lane merges main its default base is the merge point with main, never HEAD or the merge commit (T-0748).
+- `dispatch.py prune` notes that a `No task found` failure from TaskStop is safe to ignore for a solo that already finished as a background agent (T-0746, #72).
+
 ## [0.34.0] - 2026-10-22
 
 Report: [docs/reports/2026-10-22-release-0-34-0.md](docs/reports/2026-10-22-release-0-34-0.md). Addresses GitHub issues #49 to #67 (bugs; #61 and #63 are filed as proposed features T-0732 and T-0733): T-0717 to T-0731 and follow-ups T-0736 to T-0739.
