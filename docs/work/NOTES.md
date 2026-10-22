@@ -264,3 +264,8 @@
 - note: plugins/sdlc-lite/scripts/dispatch.py:1310 dispatch briefs say `Throwaway worktrees only under <literal prefix>`. The new "the throwaway prefix your brief names" / `"<throwaway prefix>/base"` wording matches that line. T-0707 (3c47b09f, on main but not in this lane's base) changes the brief to "never through a shell variable such as $T, $S or $SDLC_TMP_WORKTREES". The definitions only say the variable may be set and never tell a role to use it, so the two agree. `git merge-tree --write-tree main 98ff10b9` merges cleanly.
 - decide: plugins/sdlc-lite/scripts/run.sh:710 passes the prefix to a run.sh-launched role only as the `SDLC_TMP_WORKTREES` env var; the run.sh prompt has no throwaway-prefix line. A role launched that way with a brief that names no prefix has to infer from the parenthetical that the variable's value is its prefix.
 - note: The throwaway worktrees were removed with `git worktree remove`. `rm -rf` was denied for the empty prefix dir tmp:0709-verifier-L2 and for the scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0709-verifier-L2, which holds two selftest logs.
+
+## T-0711: run.sh prompts name the literal throwaway prefix (2026-10-21)
+
+- note: plugins/sdlc-lite/scripts/run.sh:43 the new header comment sentence was appended to an existing line, making it 257 characters where the surrounding header lines wrap near 115.
+- note: redck.py deviations printed no process-deviation lines; the artifacts dir holds no builder-*.md (solo lane), so the builder claims were checked against the Outcome section of the handoff.
