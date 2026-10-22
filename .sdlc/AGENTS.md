@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:423ad6ce0f33 -->
+<!-- sdlc-lite:managed:start v1 sha256:e329ec38421c -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,7 +13,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 - proposed: 2
   - T-0732 Project hook for a required review role between build and verify (docs/work/0732-pre-verify-review-role)
   - T-0733 dispatch.py wait blocks until a role result lands (docs/work/0733-dispatch-wait)
-- ready: 11
+- ready: 10
   - T-0718 dispatch.py advance reverifies at the failing verifier level (docs/work/0718-advance-reverify-level)
   - T-0719 dispatch.py record --no-result closes a stalled solo as failed (docs/work/0719-record-no-result-solo)
   - T-0721 fanout.py land closes a second lane ticket whose commits an earlier land merged (docs/work/0721-land-second-ticket-same-lane)
@@ -24,11 +24,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0727 steps.py split reports missing dependencies as an environment error (docs/work/0727-split-env-error-not-defect)
   - T-0728 Planner runs each new-behavior criterion red at base before returning (docs/work/0728-planner-red-at-base-check)
   - T-0729 Builders record a pre-edit red run for each (red) criterion (docs/work/0729-builder-pre-edit-red)
-  - T-0731 gate_lock status explains a load-cap stall (docs/work/0731-gate-lock-stall-report)
-- claimed: 3
+- claimed: 4
   - T-0717 dispatch.py prepare uses the handoff base: line for Base sha (docs/work/0717-prepare-honors-base-line), claimed by sdlc-lite-author 2026-10-22
   - T-0720 fanout.py land finds a verifier result recorded by prepare --tree (docs/work/0720-land-finds-tree-verifier-result), claimed by sdlc-lite-author 2026-10-22
   - T-0730 traces.py detect skips evidence logs, fanout lanes and declared preview worktrees (docs/work/0730-traces-false-positives), claimed by sdlc-lite-author 2026-10-22
+  - T-0731 gate_lock status explains a load-cap stall (docs/work/0731-gate-lock-stall-report), claimed by sdlc-lite-author 2026-10-22
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
