@@ -60,7 +60,8 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   paths those writes changed in main as `<ids>: record lane <leaf>` (T-0599, printed as `committed: <sha> <message>`),
   so main is clean and a fast-forward settle is not blocked. With no --root, an --into branch checked out in an
   integration tree (not the main checkout) takes both writes and the commit in that tree instead, printed as `recorded
-  in <tree>`, and main does not move (T-0680); a ticket missing from that tree's root falls back to main, printed as
+  in <tree>`, and main does not move (T-0680); it writes and commits there under the merge.lock fanout.py land holds
+  (<tree parent>/merge.lock beside a fanout integration tree, else the default lanes dir's, T-0725); a ticket missing from that tree's root falls back to main, printed as
   `recorded in the main checkout: <ids> not in <tree>/<root>`. An explicit --root records in the main checkout.
   A path already dirty before the open (staged or not) is never committed, compared by path: a ticket handoff left out this way prints `not committed: <path> (dirty before
   open); commit it yourself`. When main tracks an upstream (T-0609: the repo lands through it, as by PR), open writes
@@ -1428,6 +1429,22 @@ def record_tree(ctx, into_, root, ids):
     return wt, None
 
 
+def integration_lock(top, tree):
+    """T-0725: the fanout.MergeLock a land holds over the integration branch checked out in tree: <tree parent>/merge.lock
+    for a fanout integration tree, else the default lanes dir's (fanout.resolve_lanes_dir); a null context where land
+    refuses that dir."""
+    import fanout  # same scripts/ dir; local because fanout imports lanes
+    ldir = Path(tree).parent
+    if not (ldir / 'merge.lock').is_file():
+        top = Path(top).resolve()
+        try:
+            ldir = fanout.resolve_lanes_dir(argparse.Namespace(lanes_dir=None), top, top)
+        except fanout.Refuse:
+            return contextlib.nullcontext()
+    ldir.mkdir(parents=True, exist_ok=True)
+    return fanout.MergeLock(ldir / 'merge.lock')
+
+
 def merge_tickets(single, csv):
     """T-0691: --ticket ids then the ids of each --tickets T-1,T-2, in order, duplicates dropped."""
     out = []
@@ -1540,41 +1557,42 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         rrootp = rtop / root if rtop != top else rootp
         if note:
             lines.append(note)
-    pre = porcelain(rtop)
-    written, handoffs = [], []
-    for t in ids if record_branch and rrootp.is_dir() else ():
-        if LOCAL_ID.fullmatch(t):
-            try:
-                # relative to the main checkout: inside it, or under the sibling root (../<name>.worktrees/..., T-0563)
-                rel = os.path.relpath(os.path.realpath(str(tree)), os.path.realpath(str(top)))
-                if rel.startswith('..') and not plain_under(os.path.realpath(str(tree)), os.path.realpath(str(wtroot.default_root(top)))):
-                    rel = None
-                slug_ = TICKETS.record_branch(rrootp, t, branch, worktree=rel)
-                if slug_:
-                    written.append(t)
-                    handoffs.append(os.path.relpath(os.path.realpath(str(TICKETS.layout_paths(rrootp).tickets / slug_ / 'handoff.md')),
-                                                    os.path.realpath(str(rtop))))
-                    lines.append(f'ticket {t}: branch: {branch}')
-                    if rel:
-                        lines.append(f'ticket {t}: worktree: {rel}')
-            except (TICKETS.Fail, OSError) as e:
-                lines.append(f'ticket {t}: branch: not written: {e}')
-    if written:  # T-0599: commit what the writes changed, or main stays dirty and a fast-forward settle refuses
-        msg = f'{", ".join(written)}: record lane {leaf}'
-        # compared by path: a staged edit turns `M ` into `MM`, a line commit_new would count as new
-        pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
-        held = {l for l in porcelain(rtop) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
-        sha = commit_new(rtop, pre | held, msg)
-        where = 'main' if rtop == top else os.path.relpath(os.path.realpath(str(rtop)), os.path.realpath(str(top)))
-        if sha:
-            lines.append(f'committed: {sha} {msg}')
-            if rtop != top:
-                lines.append(f'recorded in {where}')
-        elif sha is None:
-            lines.append(f'not committed: commit the ticket changes in {where} as `{msg}`')
-        for h in handoffs:
-            if h in pre_paths:
-                lines.append(f'not committed: {h} (dirty before open); commit it yourself')
+    with integration_lock(top, rtop) if rtop != top else contextlib.nullcontext():  # T-0725: never under a land
+        pre = porcelain(rtop)
+        written, handoffs = [], []
+        for t in ids if record_branch and rrootp.is_dir() else ():
+            if LOCAL_ID.fullmatch(t):
+                try:
+                    # relative to the main checkout: inside it, or under the sibling root (../<name>.worktrees/..., T-0563)
+                    rel = os.path.relpath(os.path.realpath(str(tree)), os.path.realpath(str(top)))
+                    if rel.startswith('..') and not plain_under(os.path.realpath(str(tree)), os.path.realpath(str(wtroot.default_root(top)))):
+                        rel = None
+                    slug_ = TICKETS.record_branch(rrootp, t, branch, worktree=rel)
+                    if slug_:
+                        written.append(t)
+                        handoffs.append(os.path.relpath(os.path.realpath(str(TICKETS.layout_paths(rrootp).tickets / slug_ / 'handoff.md')),
+                                                        os.path.realpath(str(rtop))))
+                        lines.append(f'ticket {t}: branch: {branch}')
+                        if rel:
+                            lines.append(f'ticket {t}: worktree: {rel}')
+                except (TICKETS.Fail, OSError) as e:
+                    lines.append(f'ticket {t}: branch: not written: {e}')
+        if written:  # T-0599: commit what the writes changed, or main stays dirty and a fast-forward settle refuses
+            msg = f'{", ".join(written)}: record lane {leaf}'
+            # compared by path: a staged edit turns `M ` into `MM`, a line commit_new would count as new
+            pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
+            held = {l for l in porcelain(rtop) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
+            sha = commit_new(rtop, pre | held, msg)
+            where = 'main' if rtop == top else os.path.relpath(os.path.realpath(str(rtop)), os.path.realpath(str(top)))
+            if sha:
+                lines.append(f'committed: {sha} {msg}')
+                if rtop != top:
+                    lines.append(f'recorded in {where}')
+            elif sha is None:
+                lines.append(f'not committed: commit the ticket changes in {where} as `{msg}`')
+            for h in handoffs:
+                if h in pre_paths:
+                    lines.append(f'not committed: {h} (dirty before open); commit it yourself')
     if rec['port']:
         lines.append(f'port {rec["port"]}')
     if ctx.cfg['lane_setup']:
@@ -3003,6 +3021,37 @@ def case_open_into_integration(script, base):
     return fails
 
 
+def case_open_into_mergelock(script, base):
+    """T-0725: open --into an integration tree waits for the merge.lock fanout.py land holds (the default lanes dir's),
+    so the record commit never lands while a land's gates or auto-reset run; once released it commits."""
+    t = Fixture(base, script, 'openlock')
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             '.sdlc/0001-one/handoff.md': ticket_file('T-0001', claimed=True)})
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    ihead0 = t.g('rev-parse', ib)
+    ldir = wtroot.default_root(t.top) / 'fanout'
+    ldir.mkdir(parents=True, exist_ok=True)
+    fails = []
+    with open(ldir / 'merge.lock', 'a') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            p = subprocess.Popen([sys.executable, str(script), 'open', 'one', '--ticket', 'T-0001', '--kind', 'solo',
+                                  '--into', ib], cwd=str(t.top), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            try:
+                p.wait(timeout=6)
+                fails.append(f'open into mergelock: open finished while merge.lock was held: {p.returncode}: {p.stdout.read()}')
+            except subprocess.TimeoutExpired:
+                pass
+            if t.g('rev-parse', ib) != ihead0:
+                fails.append(f'open into mergelock: {ib} moved while merge.lock was held')
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+    o, _ = p.communicate(timeout=300)
+    if p.returncode or t.g('log', '--format=%s', f'{ihead0}..{ib}') != 'T-0001: record lane T-0001-one':
+        fails.append(f'open into mergelock: once released want the record committed in {ib}: {p.returncode}: {o}')
+    return fails
+
+
 def case_close_integration_record(script, base):
     """T-0695: close clears the branch: and worktree: lines in the integration tree that open wrote them in (T-0680), and
     commits that there; main does not move."""
@@ -3745,6 +3794,8 @@ def run_selftest(script, src, base):
              'a staged edit to the ticket handoff before open is not committed and is named in a not committed line (T-0599)')
         need('open into integration', case_open_into_integration(script, base),
              'open --into an integration tree commits the record there and main does not move (T-0680)')
+        need('open into mergelock', case_open_into_mergelock(script, base),
+             'open --into an integration tree waits for the merge.lock land holds before it commits the record (T-0725)')
         need('close integration record', case_close_integration_record(script, base),
              'close clears branch: and worktree: in the integration tree that holds the record and commits it there (T-0695)')
         need('open upstream', case_open_upstream(script, base),

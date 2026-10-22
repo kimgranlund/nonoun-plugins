@@ -41,3 +41,9 @@ The failing test lands before or with the fix, never after.
 1. A `lanes.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/lanes.py`: new `integration_lock(top, tree)` returns `fanout.MergeLock` on `<tree parent>/merge.lock` for a fanout integration tree, else the default lanes dir's (`fanout.resolve_lanes_dir`), a null context where land refuses that dir. `open` writes and commits the lane record in an integration tree under it; a record in main takes no lock. Module docstring updated.
+- New selftest case `open into mergelock`: holds `<worktree root>/fanout/merge.lock` as land does, runs `lanes.py open --into wave/1`, wants it still waiting after 6 s with `wave/1` unmoved, then the record commit once released.
+- Negative control (fix reverted, case kept): `FAIL: open into mergelock: open finished while merge.lock was held: 0: ...` and `FAIL: open into mergelock: wave/1 moved while merge.lock was held`.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check c491e6f8` exit 0.
