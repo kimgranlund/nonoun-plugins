@@ -3371,6 +3371,36 @@ def selftest():
         rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
         case('negative control: with nothing named or recorded in either tree the verifier base is the lane start',
              rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' in errn)
+        # T-0748: a lane whose first verifier recorded the lane start, then merged main and fixed: each later verifier
+        # gets the lane's merge point with main, whose diff holds both lane commits and no main-only file, never HEAD
+        # (an empty diff) or the merge commit (which drops the first pass).
+        lw4 = rr.parent / (rr.name + '-lane4')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'lane4', str(lw4), 'HEAD')
+        start4 = gt(lw4, 'rev-parse', 'HEAD')
+        (lw4 / '.lane.json').write_text(json.dumps({'lane': 'lane4', 'base_sha': start4}))
+        (lw4 / 'pass4.txt').write_text('p')
+        gt(lw4, 'add', 'pass4.txt')
+        gt(lw4, 'commit', '-qm', 'lane4 first pass')
+        _, dv1, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw4))
+        mbase.write_text(dv1['base_sha'] + '\n')  # what a real (not dry-run) first prepare writes
+        (rr / 'main4.txt').write_text('m')
+        gt(rr, 'add', 'main4.txt')
+        gt(rr, 'commit', '-qm', 'main moves on a third time')
+        gt(lw4, 'merge', '-q', '--no-edit', gt(rr, 'rev-parse', 'HEAD'))
+        merge4 = gt(lw4, 'rev-parse', 'HEAD')
+        (lw4 / 'fix4.txt').write_text('f')
+        gt(lw4, 'add', 'fix4.txt')
+        gt(lw4, 'commit', '-qm', 'lane4 fix')
+        head4 = gt(lw4, 'rev-parse', 'HEAD')
+        _, dv2, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw4))
+        mbase.write_text(dv2['base_sha'] + '\n')
+        _, dv3, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw4))
+        for n, d in ((2, dv2), (3, dv3)):
+            files4 = gt(lw4, 'diff', '--name-only', d['base_sha'], 'HEAD', '--', '.', ':(exclude).lane.json').split()
+            case('a verifier after the lane merged main (attempt %d): the base diff holds both lane commits and no main-only file' % n,
+                 dv1['base_sha'] == start4 and d['base_sha'] not in (head4, merge4) and files4 == ['fix4.txt', 'pass4.txt'])
+        mbase.unlink()
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw4)], capture_output=True)
         if mbase_was is not None:
             mbase.write_text(mbase_was)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw3)], capture_output=True)
