@@ -8,9 +8,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | ⏳ proposed |
 | T-0700 | [0700-prep-load-aware-lanes](0700-prep-load-aware-lanes/handoff.md) | fanout prep counts other lanes and the load before opening lanes | feature | L2 | P1 | none | 🟡 claimed |
-| T-0702 | [0702-disk-scan-hook-gap](0702-disk-scan-hook-gap/handoff.md) | Lane agents ran find / for hours despite block-disk-scan | bug | L2 | P1 | none | 🟡 claimed |
 
-Closed: 663 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 664 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -30,3 +29,5 @@ Closed: 663 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1883: evidence with no `## Verdict` heading is accepted unchecked (only a review record's Verdict is judged); that matches the handoff but any existing repo-relative file settles a hold. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
 - decide: Cleanup: the throwaway worktree was removed with `git worktree remove`; `rm -rf` of the empty prefix dir `tmp:0684-verifier-L2` was denied by the permission system and may remain empty. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
 - decide: plugins/sdlc-lite/agents/builder.md:14: the command path `${CLAUDE_PLUGIN_ROOT}` is now unquoted (needed for the literal match in criterion 1); a plugin root containing spaces would split the argument. note: accepted by the ticket Outcome. (from T-0698: Lane roles run heavy test suites through gate_lock run (2026-10-21))
+- decide: plugins/sdlc-lite/hooks/_role.sh:57: `^solo-|-solo$` gives a user teammate named `solo-notes` or `my-solo` the solo role (and its blocks). Documented in the header comment and acceptable; any prefix or suffix `solo` part matches by design. (from T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21))
+- decide: The claim that a teammate's hook payload `agent_type` equals meta.json `agentType` was not captured live by the builder and I did not capture it either; the Outcome labels it inferred. (from T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21))

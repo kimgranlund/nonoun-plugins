@@ -216,3 +216,8 @@
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:971-974 answers the conductor's question about the two flags. The old `report-written-unrecorded` fires only for state running or orphaned with a non-empty report, whatever the mtime. The new `report-unrecorded` fires for any state except completed and failed, but only when the report is newer than the attempt record. Running or orphaned with a newer report prints both tokens. Running or orphaned with an older report (for example a report left by an earlier attempt or written before an attempt-record rewrite) prints only the old one. Only the new token covers interrupted and limit-stopped. That is the T-0703 case: `recover` rewrites the attempt to interrupted (dispatch.py:753), so the old flag goes quiet when a resumed agent later writes its report. A merge would need one rule for the older-report case, which the old flag reports and the new one skips by design.
 - note: plugins/sdlc-lite/agents/conductor.md:43 names both the SendMessage-to-main resume message and `report-unrecorded` in the recovery paragraph.
+
+## T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21)
+
+- decide: plugins/sdlc-lite/hooks/_role.sh:57: `^solo-|-solo$` gives a user teammate named `solo-notes` or `my-solo` the solo role (and its blocks). Documented in the header comment and acceptable; any prefix or suffix `solo` part matches by design.
+- decide: The claim that a teammate's hook payload `agent_type` equals meta.json `agentType` was not captured live by the builder and I did not capture it either; the Outcome labels it inferred.

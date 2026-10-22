@@ -2,7 +2,7 @@
 id: T-0702
 title: "Lane agents ran find / for hours despite block-disk-scan"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ Checks: `bash plugins/sdlc-lite/scripts/hook-selftest.sh` PASS. `python3 plugins
 Red controls, using the base hooks (a8680df4): every new mdfind block case and the teammate-name cases (`solo-0702`, `0702-solo-L2`, `0697-verifier-L2-2`, `T-0702-solo`) exit 0, and they exit 2 after the change. The `sdlc-lite:solo-L1` case named in criterion 1 exits 2 before the change too. It is a regression pin, not a red control, because that path was never broken.
 
 Still open: a teammate named outside these patterns still has no role. Exact resolution would need the payload to carry the custom type, or the hook to read `customAgentType` from `meta.json`.
+
+## Outcome
+
+2026-10-21 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a8680df45305
+- Changed: see commits
+- Commits: c178722 T-0702: bind the teammate agent_type claim to its evidence; b575249 T-0702: resolve teammate role names in _role.sh; block mdfind; search scope line in briefs
+- Check: 1 hook regression check with new cases: pass
+- Check: 2 dispatch selftest and search-scope line: pass
+- Check: 3 Outcome names the cause: pass
+- Check: 4 check.py and diff check: pass
+- Follow-up: decide: plugins/sdlc-lite/hooks/_role.sh:57: ^solo-|-solo$ gives a user... -> notes.md
+- Follow-up: decide: The claim that a teammate's hook payload agent_type equals... -> notes.md
