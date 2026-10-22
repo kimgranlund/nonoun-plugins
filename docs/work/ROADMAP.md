@@ -8,14 +8,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🟡 claimed |
 | T-0721 | [0721-land-second-ticket-same-lane](0721-land-second-ticket-same-lane/handoff.md) | fanout.py land closes a second lane ticket whose commits an earlier land merged | bug | L2 | P2 | none | 🟡 claimed |
-| T-0722 | [0722-land-merge-gate-from-integration](0722-land-merge-gate-from-integration/handoff.md) | fanout.py land reads merge_gate from the integration tree | bug | L1 | P2 | none | 🟡 claimed |
 | T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🟡 claimed |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 
-Closed: 691 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 692 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -56,3 +55,4 @@ Closed: 691 done, 29 dropped (git log or .NNNN-* folders)
 - decide: Stale lock: flock is released by the kernel on process death. I held `merge.lock` in a child, wrote a `.holder` file naming its pid, SIGKILLed it, and `fanout.MergeLock` acquired in 0.00 s. fanout.py:6132 also has a selftest for a stale holder. (from T-0725: lanes.py open takes the merge lock before committing to integration (2026-10-22))
 - decide: lanes.py:62-64 (module docstring): the added line runs past the surrounding wrap width, and the sentence is split mid-clause. Cosmetic only. (from T-0725: lanes.py open takes the merge lock before committing to integration (2026-10-22))
 - decide: `integration_lock` waits without a timeout or a message, so an open behind a hung land blocks silently. This matches how land and queue treat the lock and the ticket asks for waiting, so no change is needed unless a progress line is wanted. (from T-0725: lanes.py open takes the merge lock before committing to integration (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/fanout.py:1745 The dirty check uses `--untracked-files=no`, so an untracked `.sdlc/config` placed in the integration worktree (not committed) would be read by config_root/gate_class. Only fanout writes that worktree, so the risk is low; a repo that wants it closed could require the config file to be tracked at integration HEAD. (from T-0722: fanout.py land reads merge_gate from the integration tree (2026-10-22))
