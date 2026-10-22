@@ -7,9 +7,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | 🟡 claimed |
-| T-0705 | [0705-status-unrecorded-one-flag](0705-status-unrecorded-one-flag/handoff.md) | dispatch.py status prints one unrecorded-report flag | chore | L1 | P3 | none | 🟡 claimed |
 
-Closed: 666 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 667 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

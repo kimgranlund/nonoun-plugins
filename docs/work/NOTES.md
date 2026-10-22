@@ -225,3 +225,7 @@
 ## T-0700: fanout prep counts other lanes and the load before opening lanes (2026-10-21)
 
 - decide: plugins/sdlc-lite/scripts/fanout.py (load_cap): the ledger-unreadable and `--force` branches have no selftest case beyond the busy, force and quiet cases; the unreadable-ledger path is unobserved. note: no criterion requires it.
+
+## T-0705: dispatch.py status prints one unrecorded-report flag (2026-10-21)
+
+- note: docs/references/sdlc-internals.md:29 the added clause "so a running attempt with a report prints it once)" closes a parenthesis that has no opening one in that sentence.
