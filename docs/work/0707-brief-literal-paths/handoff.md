@@ -25,3 +25,6 @@ Transcripts under `~/.claude/projects` hold 606 hook refusals "a git worktree ad
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and a case asserts a prepared brief contains the literal-path sentence.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Added one sentence to the brief `dispatch.py prepare` builds (end of the `Throwaway worktrees only under` line): write each worktree and rm path literally (the full path, or under `$SDLC_TMP_WORKTREES`), never through another shell variable such as `$T` or `$S`, because the guard hooks cannot read it. `solo_run.py`, `fanout.py`, and `run.sh` carry no such brief line (run.sh only has a comment), so they are unchanged. Added a selftest case in `dispatch.py selftest` asserting the sentence. Checks: `dispatch.py selftest` PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 3fbfdf44` exit 0.
