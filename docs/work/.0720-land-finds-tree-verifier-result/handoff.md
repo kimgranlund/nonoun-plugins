@@ -2,7 +2,7 @@
 id: T-0720
 title: "fanout.py land finds a verifier result recorded by prepare --tree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,14 @@ The failing test lands before or with the fix, never after.
 - New selftest case `case 23 land prepare --tree (T-0720)`: a pass verifier in the primary checkout's records dir for a lane ticket whose worktree holds none; land merges it.
 - Negative control (case in place, fix absent): `- case 23 land prepare --tree (T-0720): a verifier result in the primary checkout records dir is read, got rc=1 out="... | agent-w2 | T-0002 | no verifier result (the lane worktree's records dir holds none; ...) | f25930f |"`.
 - Checks: `gate_lock.py run ... fanout.py selftest` exit 0; `check.py` exit 0; `scripts/check-packaging.py` PASS; `git diff --check 83a3a4e6` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 83a3a4e63e21
+- Changed: see commits
+- Commits: 5587b51 T-0720: fanout.py land finds a verifier result recorded by prepare --tree
+- Check: 1 A fanout.py selftest case reproduces the issue's repro, passes, and fails with the change reverted: pass
+- Check: 2 gate_lock fanout.py selftest exits 0: pass
+- Check: 3 check.py exit 0, check-packaging passes, git diff --check clean: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2550: decide: the new... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2543: decide: the fallback... -> notes.md

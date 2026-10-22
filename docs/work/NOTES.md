@@ -327,3 +327,8 @@
 
 - decide: plugins/sdlc-lite/scripts/dispatch.py:3086-3094: the new ready-ref case writes a `base:` line into the handoff and restores it afterwards, which is fine; if a later selftest case ever reads that handoff while the line is present, it would break, so keep the restore adjacent.
 - decide: Red-checkpoint deviation check printed no `process deviation:` line.
+
+## T-0720: fanout.py land finds a verifier result recorded by prepare --tree (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/fanout.py:2550: decide: the new main-checkout fallback in branch_verdict is bound to the ticket slug but not to the current build (no sha or timestamp check). A pass left in main's records dir by an earlier attempt (for example a land that carried a pass into main and then failed its gate) is accepted when a fresh lane for the same ticket holds no verifier and none is committed on the branch. A newer lane-copy or branch result outranks it, a different ticket cannot collide, and the other fallbacks have the same property inside one lane, so it matches the criteria but is the stale-result window the conductor asked about.
+- decide: plugins/sdlc-lite/scripts/fanout.py:2543: decide: the fallback weakens selftest coverage of `copy_lane_records`. Removing that call at 5587b51f leaves `fanout selftest: PASS`, because land_ticket's carry_records puts the same records in main and the new fallback reads them. The same removal at 83a3a4e6 fails `case 23 land records copy` and `case 23 land carry`. The records-copy negative control (`SDLC_SELFTEST_NO_RECORDS_COPY=1` now also skips the carry) still passes and still refuses, so it did not weaken; the positive case for the integration copy path did.
