@@ -8,6 +8,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0707 | [0707-brief-literal-paths](0707-brief-literal-paths/handoff.md) | Briefs say to write worktree and rm paths literally | chore | L2 | P2 | none | 🟡 claimed |
 | T-0709 | [0709-roles-literal-tmp-prefix](0709-roles-literal-tmp-prefix/handoff.md) | Role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES | bug | L1 | P2 | none | 🟡 claimed |
+| T-0710 | [0710-verifier-followups-1022](0710-verifier-followups-1022/handoff.md) | Fix four verifier-flagged doc and test gaps | chore | L2 | P2 | none | ⏳ proposed |
 
 Closed: 670 done, 29 dropped (git log or .NNNN-* folders)
 
