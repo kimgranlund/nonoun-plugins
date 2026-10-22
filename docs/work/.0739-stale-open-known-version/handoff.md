@@ -2,7 +2,7 @@
 id: T-0739
 title: "A stale open copy that matches a committed version is dropped"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,14 @@ T-0738 verifier-L2 (landed):
 `open_adds` in `plugins/sdlc-lite/scripts/fanout.py` now collects the (path, blob) pairs both folder names held in HEAD's history (`git log --raw --no-abbrev`) and counts a file whose index blob is among them as not added. New selftest case 23 variant `-replan` (lane replans the handoff, closes, pre-replan open copy re-added from main) is dropped; the `-extra` and `-edit` cases still refuse.
 - Negative control: with the history check neutralised (`not in set()`), the selftest prints `FAIL ... case 23 stale open folder (T-0739): the pre-replan open copy of a ticket replanned in its lane ... got rc2=0 rc=1`, exit 1.
 - `gate_lock.py run ... fanout.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 963a8bd8` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 963a8bd8eb6f
+- Changed: see commits
+- Commits: 6f4c760 T-0739: a stale open copy that matches a committed version is dropped
+- Check: 1 The new `fanout.py` selftest case passes, the T-0723 and T-0738 cases still pass, and with the hi...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py se...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:1682 replay of the T-0738 finding -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:1683 the cost is bounded -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1683 the log uses default... -> notes.md
