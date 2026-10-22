@@ -2,7 +2,7 @@
 id: T-0725
 title: "lanes.py open takes the merge lock before committing to integration"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,17 @@ The failing test lands before or with the fix, never after.
 - New selftest case `open into mergelock`: holds `<worktree root>/fanout/merge.lock` as land does, runs `lanes.py open --into wave/1`, wants it still waiting after 6 s with `wave/1` unmoved, then the record commit once released.
 - Negative control (fix reverted, case kept): `FAIL: open into mergelock: open finished while merge.lock was held: 0: ...` and `FAIL: open into mergelock: wave/1 moved while merge.lock was held`.
 - `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check c491e6f8` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: c491e6f8e22d
+- Changed: see commits
+- Commits: b2e21fc T-0725: lanes.py open takes the merge lock before committing to integration
+- Check: 1 A lanes.py selftest case reproduces the repro and fails with the change reverted: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py sel...: pass
+- Check: 3 `check.py` exits 0, `check-packaging.py` passes, `git diff --check <base>` exits 0: pass
+- Follow-up: decide: Deadlock trace, no self-wait: the setup of fanout.py prep and run... -> notes.md
+- Follow-up: decide: Lock ordering: lanes.lock is released end of its with at... -> notes.md
+- Follow-up: decide: Stale lock: flock is released by the kernel on process death -> notes.md
+- Follow-up: decide: lanes.py:62-64 module docstring: the added line runs past the... -> notes.md
+- Follow-up: decide: integration_lock waits without a timeout or a message, so an open... -> notes.md

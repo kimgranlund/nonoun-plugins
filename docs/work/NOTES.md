@@ -354,3 +354,11 @@
 ## T-0718: dispatch.py advance reverifies at the failing verifier level (2026-10-22)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:2179 a newest verifier result whose verdict is `inherited red` (not `fail`) falls back to the ticket default level; no criterion covers that case.
+
+## T-0725: lanes.py open takes the merge lock before committing to integration (2026-10-22)
+
+- decide: Deadlock trace, no self-wait: the setup of `fanout.py prep` and `run` is the only in-repo `open_lane` call that passes `into=` (fanout.py:1268). It passes `root=` explicitly, so `explicit_root` is true and `rtop == top`, which takes no lock (lanes.py:1555, the `if rtop != top` guard). It also runs before any MergeLock is taken. `land`, `settle`, `cover`, `roll` and `queue` never call `open_lane` or `lanes.py open`. Only prep's printed `tree:` line and the user run `lanes.py open`. `solo_run.py:585` opens without `--into`, so also no lock. `fanout.py selftest` exits 0 (`fanout selftest: PASS`), covering the cases that call `lanes.py open` around land.
+- decide: Lock ordering: `lanes.lock` is released (end of its `with` at lanes.py:1513 to 1529) before `merge.lock` is waited on, so open never holds `lanes.lock` while blocked behind a land. Land's close paths take `lanes.lock` but only after the merge lock is released, so there is no inversion.
+- decide: Stale lock: flock is released by the kernel on process death. I held `merge.lock` in a child, wrote a `.holder` file naming its pid, SIGKILLed it, and `fanout.MergeLock` acquired in 0.00 s. fanout.py:6132 also has a selftest for a stale holder.
+- decide: lanes.py:62-64 (module docstring): the added line runs past the surrounding wrap width, and the sentence is split mid-clause. Cosmetic only.
+- decide: `integration_lock` waits without a timeout or a message, so an open behind a hung land blocks silently. This matches how land and queue treat the lock and the ticket asks for waiting, so no change is needed unless a progress line is wanted.
