@@ -2,8 +2,8 @@
 id: T-0611
 title: "Rehearse a Pi host working tickets beside Claude and Codex"
 type: chore           # feature | bug | chore | spike | idea
-status: paused       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
-paused_reason: maintainer chose to hold it 2026-10-22; needs the Pi host installed and logged in by the user
+status: blocked      # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+blocked_reason: Pi 0.73.1 installed 2026-10-22 (npm -g @mariozechner/pi-coding-agent); no provider login (~/.pi/agent/auth.json empty, no API key env). The user runs `pi` then `/login` once.
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,4 @@ Throwaway repo only. No push.
 
 ## Deferred
 2026-10-22: paused by the maintainer ("Keep holding"): it needs the Pi host installed and logged in, which waits for the user.
+2026-10-22 05:45 PDT: user approved install; installed Pi 0.73.1. `pi -p` fails for anthropic and openai-codex with no credentials; login is interactive OAuth.
