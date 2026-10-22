@@ -27,3 +27,6 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 2. `git grep -n "SDLC_GATE_WORKERS" plugins/sdlc-lite/skills/fanout/references/land.md` prints a line.
 3. `python3 plugins/sdlc-lite/scripts/check.py` and `python3 scripts/check-packaging.py` exit 0.
 4. `git diff --check <base sha>` exits 0.
+
+## Outcome
+`fanout.py prep` now prints `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS` for each `--gate` or `--light-gate` running `node --test`, `vitest`, `playwright` or `jest` without its flag (exit code unchanged). `skills/fanout/references/land.md` gained a `## Gate worker caps` runner-to-flag table. New selftest assertion under case 22 (`prep worker cap`) fails with the `warn_uncapped_gates` call removed and passes with it. fanout selftest, `check.py`, `check-packaging.py` and `git diff --check` green; SKILL.md unchanged at 17,847 characters.
