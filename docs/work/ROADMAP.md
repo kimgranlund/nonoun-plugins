@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | 🟡 claimed |
 
-Closed: 667 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 668 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

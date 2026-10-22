@@ -229,3 +229,7 @@
 ## T-0705: dispatch.py status prints one unrecorded-report flag (2026-10-21)
 
 - note: docs/references/sdlc-internals.md:29 the added clause "so a running attempt with a report prints it once)" closes a parenthesis that has no opening one in that sentence.
+
+## T-0699: fanout prep warns when a gate runs a test runner with no worker cap (2026-10-21)
+
+- note: plugins/sdlc-lite/skills/fanout/references/land.md:15 says the warning fires "for each `--gate`", but the code (fanout.py:2240) also checks `--light-gate`. The fanout.py docstring at line 43 names both.

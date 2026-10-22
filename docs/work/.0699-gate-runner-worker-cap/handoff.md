@@ -2,7 +2,7 @@
 id: T-0699
 title: "fanout prep warns when a gate runs a test runner with no worker cap"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,15 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 
 ## Outcome
 `fanout.py prep` now prints `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS` for each `--gate` or `--light-gate` running `node --test`, `vitest`, `playwright` or `jest` without its flag (exit code unchanged). `skills/fanout/references/land.md` gained a `## Gate worker caps` runner-to-flag table. New selftest assertion under case 22 (`prep worker cap`) fails with the `warn_uncapped_gates` call removed and passes with it. fanout selftest, `check.py`, `check-packaging.py` and `git diff --check` green; SKILL.md unchanged at 17,847 characters.
+
+## Outcome
+
+2026-10-21 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: a07754dd8710
+- Changed: see commits
+- Commits: 16fb29d T-0699: fanout prep warns when a gate runs a test runner with no worker cap
+- Check: 1 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a new vitest case that fails ...: pass
+- Check: 2 `git grep -n "SDLC_GATE_WORKERS" plugins/sdlc-lite/skills/fanout/references/land.md` prints a line: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` and `python3 scripts/check-packaging.py` exit 0: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Check: 5 Conductor note, flag spellings: pass
+- Follow-up: note: plugins/sdlc-lite/skills/fanout/references/land.md:15 says the... -> notes.md
