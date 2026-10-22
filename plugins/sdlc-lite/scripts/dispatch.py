@@ -943,6 +943,7 @@ def ticket_time(ticket):
 def status(directory, orphans_only=False):
     """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones.
     Attempts in the dir's `step-*/` folders are listed too, stem prefixed `step-<n>/`; a dir with none prints `no attempts in <dir>` and its records dir when that differs (T-0690).
+    An unrecorded attempt (any state but completed or failed) whose report is newer than its attempt record adds `report-unrecorded` (T-0703).
     A running attempt with a stored agent id and one sub-agent transcript adds `last activity <age>` (the transcript's mtime) and `silent` at 30 minutes or more (T-0476)."""
     lines = []
     base = Path(directory)
@@ -969,6 +970,8 @@ def status(directory, orphans_only=False):
         report = path.parent / (path.name[:-len('.attempt.json')] + '.md')
         if state in ('running', 'orphaned') and report.is_file() and report.stat().st_size:
             line += ' report-written-unrecorded'  # T-0383: the role reported but nobody recorded it, so no verdict was delivered
+        if state not in ('completed', 'failed') and report.is_file() and report.stat().st_size and report.stat().st_mtime > path.stat().st_mtime:
+            line += ' report-unrecorded'  # T-0703: a resumed agent wrote its report after the attempt record and nobody recorded it
         lines.append(line)
         sent = path.parent / (path.name[:-len('.attempt.json')] + '.delivery.json')
         if sent.is_file():
@@ -1026,6 +1029,11 @@ def limit_stop(name, root='.'):
     raise Refuse(2, 'dispatch.py: no attempt named %s under %s' % (name, root))
 
 
+# T-0703: a resumed agent's idle notice may never reach the conductor, so the resume message asks it to report back itself.
+RESUME_MESSAGE = ("Continue your interrupted work. When you finish, SendMessage to 'main' with your one-line pointer "
+                  "('%s-%s <status> <path>') so the conductor records it.")
+
+
 def resume(name, root='.'):
     """The resume ladder for an orphaned or interrupted attempt found by stem or Agent name under root.
     Under `profile: inner-loop` a running attempt with a stored agent id whose transcript is silent (SILENT_SECONDS) also gets it (T-0514)."""
@@ -1050,8 +1058,9 @@ def resume(name, root='.'):
         transcript = data.get('transcript') or 'the sub-agent transcript for %s under ~/.claude/projects/' % (aid if aid != 'unknown' else agent)
         addendum = ('Resume note: attempt %s was interrupted before it reported. First step: run git status, then read its transcript at %s; '
                     'continue from what is on disk and never replay an old report.' % (data.get('name'), transcript))
-        return ['1. SendMessage({to: "%s", message: "Continue your interrupted work."})   # by name' % agent,
-                '2. SendMessage({to: "%s", message: "Continue your interrupted work."})   # by id' % aid,
+        nudge = RESUME_MESSAGE % (data.get('role'), data.get('level'))
+        return ['1. SendMessage({to: "%s", message: "%s"})   # by name' % (agent, nudge),
+                '2. SendMessage({to: "%s", message: "%s"})   # by id' % (aid, nudge),
                 '3. python3 dispatch.py prepare %s %s %s   # new attempt; add to its brief: %s'
                 % (data.get('role'), data.get('level'), data.get('handoff'), addendum)]
     raise Refuse(2, 'dispatch.py: no attempt named %s under %s' % (name, root))
@@ -3215,6 +3224,30 @@ def selftest():
              len(ladder) == 3 and 'SendMessage' in ladder[0] and 'w-builder-L1' in ladder[0] and 'SendMessage' in ladder[1] and 'ag-7' in ladder[1]
              and ladder[2].startswith('3. python3 dispatch.py prepare builder L1') and 'git status' in ladder[2] and 'transcript' in ladder[2])
         case('resume replays no old report', 'builder-L1.md' not in ' '.join(ladder))
+        # T-0703: a resumed agent reports to main itself; status flags a report newer than its unrecorded attempt record
+        case('T-0703 resume tells the agent to SendMessage main with its pointer line, by name and by id',
+             all("SendMessage to 'main'" in ladder[i] and 'builder-L1 <status> <path>' in ladder[i] for i in (0, 1)))
+        apath, rpath = R(w) / 'builder-L1.attempt.json', R(w) / 'builder-L1.md'
+        rpath.write_text('builder done\n')
+        os.utime(rpath, (time.time() - 60, time.time() - 60))
+        os.utime(apath, None)
+        case('T-0703 negative control: a report older than its attempt record is not report-unrecorded',
+             ' report-unrecorded' not in status(R(w))[0])
+        os.utime(rpath, (time.time() + 60, time.time() + 60))
+        case('T-0703 status prints report-unrecorded for a report newer than its unrecorded attempt record',
+             status(R(w))[0].endswith(' report-unrecorded'))
+        a['status'] = 'interrupted'
+        apath.write_text(json.dumps(a))
+        os.utime(rpath, (time.time() + 60, time.time() + 60))
+        case('T-0703 status prints report-unrecorded for an interrupted attempt the resumed agent reported on',
+             status(R(w))[0].split()[1] == 'interrupted' and status(R(w))[0].endswith(' report-unrecorded'))
+        a['status'] = 'completed'
+        apath.write_text(json.dumps(a))
+        os.utime(rpath, (time.time() + 60, time.time() + 60))
+        case('T-0703 negative control: a recorded attempt prints no report-unrecorded', 'report-unrecorded' not in status(R(w))[0])
+        rpath.unlink()
+        a['status'] = 'running'
+        apath.write_text(json.dumps(a))
         a.pop('agent_id')
         a['parent_pid'] = live
         (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
