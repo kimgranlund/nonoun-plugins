@@ -1088,13 +1088,18 @@ MISSING_COMMAND_RE = re.compile(r': command not found$')
 
 
 def declares_deps(cwd):
-    """True when cwd holds a package.json that lists at least one dependency or devDependency (T-0736)."""
+    """True when cwd holds a package.json that lists at least one dependency or devDependency, or workspaces (T-0736)."""
     try:
         with open(os.path.join(cwd, 'package.json'), encoding='utf-8') as f:
             pkg = json.load(f)
     except (OSError, ValueError):
         return False
-    return isinstance(pkg, dict) and any(isinstance(pkg.get(k), dict) and pkg[k] for k in ('dependencies', 'devDependencies'))
+    if not isinstance(pkg, dict):
+        return False
+    if any(isinstance(pkg.get(k), dict) and pkg[k] for k in ('dependencies', 'devDependencies')):
+        return True
+    ws = pkg.get('workspaces')  # a monorepo root declares its packages, whose dependencies install at the root
+    return bool(ws.get('packages') if isinstance(ws, dict) else ws)
 
 
 def missing_package(lines):
@@ -5469,6 +5474,12 @@ def selftest():
         rc, out, err = run_main(['split', str(d), '--only', '1'])
         check('(T-0736) a module error in a repo whose package.json declares no dependencies is a plan defect (exit 1)',
               rc == 1 and 'environment error' not in err and err.strip().splitlines()[-1].startswith('plan defect:'))
+
+        d = env_guard('workspaces', mod_err)
+        (d / 'package.json').write_text('{"name": "root", "workspaces": ["packages/*"]}\n', encoding='utf-8')
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0736) a monorepo root that declares workspaces and has no node_modules is an environment error (exit 2)',
+              rc == 2 and 'plan defect' not in err and err.strip().splitlines()[-1].startswith('environment error:'))
 
         d = env_guard('nopkg', mod_err)
         rc, out, err = run_main(['split', str(d), '--only', '1'])
