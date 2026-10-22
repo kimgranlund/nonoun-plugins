@@ -44,7 +44,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             "guard timeout: <seconds>" line, else such a line outside every ## Step block (for
             example in ## Goal), else 300; a value of 0 or less counts as no line. Spans run with
             SDLC_BASE_SHA set to git rev-parse HEAD at the toplevel (no build has started, so HEAD
-            is the base; unset outside git, never inherited from the caller). A span that references HEAD^1 or holds a
+            is the base; unset outside git, never inherited from the caller) and with
+            SDLC_TMP_WORKTREES set to a fresh dir under the worktree root tmp prefix that split removes
+            after its guard and (red) spans ran (T-0726). A span that references HEAD^1 or holds a
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
             line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
@@ -1026,19 +1028,36 @@ def base_sha(top, step_dir=None):
     return rev_commit(top, 'HEAD')
 
 
-def span_env(base):
-    """The env a span runs with: SDLC_BASE_SHA set to base, never inherited; unset when base is None."""
+def span_env(base, tmp=None):
+    """The env a span runs with: SDLC_BASE_SHA set to base, never inherited; unset when base is None.
+    SDLC_TMP_WORKTREES is set to tmp when given (T-0726), else left as inherited."""
     env = {k: v for k, v in os.environ.items() if k != 'SDLC_BASE_SHA'}
     if base:
         env['SDLC_BASE_SHA'] = base
+    if tmp:
+        env['SDLC_TMP_WORKTREES'] = str(tmp)
     return env
 
 
-def run_guard(text, cwd, timeout, base=None):
-    """Run one guard span with SDLC_BASE_SHA=base (unset when None).
+@contextlib.contextmanager
+def span_tmp(top):
+    """A fresh throwaway dir for the spans of one split --only, under the worktree root tmp prefix
+    (the system temp dir when there is none), removed on exit (T-0726). Yields its path."""
+    import wtroot  # local, as in red_at_base: a copy of steps.py beside only order.py and results.py has no wtroot.py
+    root = (wtroot.tmp_root(top) if top else None) or pathlib.Path(tempfile.gettempdir())
+    root.mkdir(parents=True, exist_ok=True)
+    holder = tempfile.mkdtemp(prefix='split-spans-', dir=root)
+    try:
+        yield holder
+    finally:
+        shutil.rmtree(holder, ignore_errors=True)
+
+
+def run_guard(text, cwd, timeout, base=None, tmp=None):
+    """Run one guard span with SDLC_BASE_SHA=base (unset when None) and SDLC_TMP_WORKTREES=tmp (when given).
     Returns (rc or None on timeout, combined output tail lines).
     It runs in its own session so a timeout kills the whole process group, grandchildren too."""
-    proc = subprocess.Popen(['bash', '-c', '--', text], cwd=cwd, stdin=subprocess.DEVNULL, env=span_env(base),
+    proc = subprocess.Popen(['bash', '-c', '--', text], cwd=cwd, stdin=subprocess.DEVNULL, env=span_env(base, tmp),
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
     try:
         out, err = proc.communicate(timeout=timeout)
@@ -1060,21 +1079,22 @@ def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
     cwd = top or str(tree or task_dir)
     base = base_sha(top)
     lines, red, before, ran = [], [], None, False
-    for n in chosen:
-        for text in guard_spans(steps[n]):
-            if guard_skipped(text):
-                continue
-            if top and not ran:
-                before = tree_state(top)
-            ran = True
-            timeout = timeouts[n]
-            rc, tail = run_guard(text, cwd, timeout, base)
-            if rc == 0:
-                continue
-            why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
-            lines.append(f'steps: {plan} step {n}: (guard) criterion is red now ({why}): {text}')
-            lines += [f'  {t}' for t in tail]
-            red.append(f'step {n} red guard: {text}')
+    with span_tmp(top) as tmp:
+        for n in chosen:
+            for text in guard_spans(steps[n]):
+                if guard_skipped(text):
+                    continue
+                if top and not ran:
+                    before = tree_state(top)
+                ran = True
+                timeout = timeouts[n]
+                rc, tail = run_guard(text, cwd, timeout, base, tmp)
+                if rc == 0:
+                    continue
+                why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
+                lines.append(f'steps: {plan} step {n}: (guard) criterion is red now ({why}): {text}')
+                lines += [f'  {t}' for t in tail]
+                red.append(f'step {n} red guard: {text}')
     after = tree_state(top) if before is not None else None
     changed = tree_changes(before, after) if after is not None else []
     if changed:
@@ -1165,19 +1185,19 @@ def red_restore(top, before, after, snap):
     return tree_changes(before, now) if now is not None else sorted(tree_changes(before, after))
 
 
-def red_first(items, top, cwd, base, results=None):
+def red_first(items, top, cwd, base, results=None, tmp=None):
     """Run each (n, span, timeout) of items once, in order, in the current tree and return one message per
     refusal: a span that exits 0 is green now and cannot detect the change; a timeout; and, in a git work
     tree, a tree change, which is undone from a content snapshot taken before the first span (the message
     says whether the tree is restored). n is the step number, or None for a ticket handoff. Empty list: every
     span is red now. The spans run synchronously, so the caller must own the tree while they do. A list passed
-    as results gets one (n, span, rc) per span, rc None on a timeout (redck.py records them)."""
+    as results gets one (n, span, rc) per span, rc None on a timeout (redck.py records them). tmp, when given, is the SDLC_TMP_WORKTREES the spans run with."""
     out = []
     before = tree_state(top) if top and items else None
     snap = red_snapshot(top, before) if before is not None else {}
     for n, span, timeout in items:
         where = f'step {n}: ' if n is not None else ''
-        rc, _ = run_guard(span, cwd, timeout, base)
+        rc, _ = run_guard(span, cwd, timeout, base, tmp)
         if results is not None:
             results.append((n, span, rc))
         if rc == 0:
@@ -1199,7 +1219,8 @@ def run_red(plan, steps, chosen, task_dir, timeouts, tree=None):
     beside run_guards; a full split and lint never execute a span."""
     top = git_toplevel(tree or task_dir)
     items = [(n, text, timeouts[n]) for n in chosen for text in red_spans(steps[n]) if not guard_skipped(text)]
-    found = red_first(items, top, top or str(tree or task_dir), base_sha(top))
+    with span_tmp(top) as tmp:
+        found = red_first(items, top, top or str(tree or task_dir), base_sha(top), tmp=tmp)
     if found:
         record_plan_review(task_dir, plan, [f'steps: {plan} red-first: {m}' for m in found])
         raise Fail('\n'.join([f'steps: {plan} red-first: {m}' for m in found]
@@ -5342,6 +5363,25 @@ def selftest():
         rc, out, err = run_main(['split', str(d), '--only', '1'])
         check('(n) --only with a green guard runs it (from the task dir outside git) and writes the handoff',
               rc == 0 and err == '' and green.exists() and (d / 'step-1' / 'handoff.md').is_file())
+
+        # (T-0726) split --only exports a fresh SDLC_TMP_WORKTREES to guard and red spans and removes it after
+        saved_tmpwt = os.environ.pop('SDLC_TMP_WORKTREES', None)
+        try:
+            seen = tmp / 'n-tmpwt-guard'
+            d = task(plan=guard_plan(f'(guard) `x=$(mktemp -d "$SDLC_TMP_WORKTREES/x.XXXXXX") && printf %s "$SDLC_TMP_WORKTREES" > {seen}`'))
+            rc, _, err = run_main(['split', str(d), '--only', '1'])
+            used = seen.read_text() if seen.is_file() else ''
+            check('(T-0726) --only exports SDLC_TMP_WORKTREES to a guard, a fresh dir removed afterwards',
+                  rc == 0 and err == '' and used != '' and not pathlib.Path(used).exists())
+            seen = tmp / 'n-tmpwt-red'
+            d = task(plan=guard_plan(f'(red) `printf %s "$SDLC_TMP_WORKTREES" > {seen}; test ! -d "$SDLC_TMP_WORKTREES"`'))
+            rc, _, err = run_main(['split', str(d), '--only', '1'])
+            used = seen.read_text() if seen.is_file() else ''
+            check('(T-0726) --only exports SDLC_TMP_WORKTREES to a (red) span, a fresh dir removed afterwards',
+                  rc == 0 and err == '' and used != '' and not pathlib.Path(used).exists())
+        finally:
+            if saved_tmpwt is not None:
+                os.environ['SDLC_TMP_WORKTREES'] = saved_tmpwt
 
         # (T-0377) the plan folder lacks the file the guard greps; the lane tree has it
         lane_tree = tmp / 'n-lane-tree'
