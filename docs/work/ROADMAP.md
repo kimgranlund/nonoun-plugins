@@ -18,7 +18,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
-| T-0736 | [0736-split-env-error-needs-deps](0736-split-env-error-needs-deps/handoff.md) | split's environment error requires declared dependencies | bug | L1 | P2 | none | 🔵 ready |
+| T-0736 | [0736-split-env-error-needs-deps](0736-split-env-error-needs-deps/handoff.md) | split's environment error requires declared dependencies | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 686 done, 29 dropped (git log or .NNNN-* folders)
 
