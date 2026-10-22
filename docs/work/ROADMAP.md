@@ -11,7 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0721 | [0721-land-second-ticket-same-lane](0721-land-second-ticket-same-lane/handoff.md) | fanout.py land closes a second lane ticket whose commits an earlier land merged | bug | L2 | P2 | none | 🟡 claimed |
 | T-0722 | [0722-land-merge-gate-from-integration](0722-land-merge-gate-from-integration/handoff.md) | fanout.py land reads merge_gate from the integration tree | bug | L1 | P2 | none | 🔵 ready |
 | T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🔵 ready |
-| T-0725 | [0725-lane-open-merge-lock](0725-lane-open-merge-lock/handoff.md) | lanes.py open takes the merge lock before committing to integration | bug | L2 | P2 | none | 🔵 ready |
+| T-0725 | [0725-lane-open-merge-lock](0725-lane-open-merge-lock/handoff.md) | lanes.py open takes the merge lock before committing to integration | bug | L2 | P2 | none | 🟡 claimed |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
