@@ -2,7 +2,7 @@
 id: T-0700
 title: "fanout prep counts other lanes and the load before opening lanes"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,13 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 - Selftest: case 22 prep load cap (load file 1000, 4 CPUs so max_load 3): 1 of 3 dispatches with the line; `--force` and a quiet load give 3. `gate_env` now defaults to a quiet load file so a busy host never caps the other prep cases. With `load_cap` reverted the new case fails (the only failure).
 - Docs: `--force` row in `skills/fanout/SKILL.md` (17,847 characters), usage line and prep paragraph in the fanout.py docstring.
 - Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` (through gate_lock.py run --need compute_units=1 --nice) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 47fb0e8c` exit 0.
+
+## Outcome
+
+2026-10-21 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 05c7d6f28c27
+- Changed: see commits
+- Commits: b9ab04c T-0700: fanout prep counts other lanes and the load before opening lanes
+- Check: 1 selftest with a new load-cap case: pass
+- Check: 2 check.py and check-packaging.py exit 0: pass
+- Check: 3 `git diff --check <base sha>`: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py load_cap: the ledger-unreadable... -> notes.md

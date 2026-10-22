@@ -7,11 +7,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | ⏳ proposed |
-| T-0700 | [0700-prep-load-aware-lanes](0700-prep-load-aware-lanes/handoff.md) | fanout prep counts other lanes and the load before opening lanes | feature | L2 | P1 | none | 🟡 claimed |
 | T-0704 | [0704-hook-role-exact-type](0704-hook-role-exact-type/handoff.md) | Role hooks resolve a named teammate by its real agent type | bug | L2 | P2 | none | ⏳ proposed |
 | T-0705 | [0705-status-unrecorded-one-flag](0705-status-unrecorded-one-flag/handoff.md) | dispatch.py status prints one unrecorded-report flag | chore | L1 | P3 | none | ⏳ proposed |
 
-Closed: 664 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 665 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -33,3 +32,4 @@ Closed: 664 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/agents/builder.md:14: the command path `${CLAUDE_PLUGIN_ROOT}` is now unquoted (needed for the literal match in criterion 1); a plugin root containing spaces would split the argument. note: accepted by the ticket Outcome. (from T-0698: Lane roles run heavy test suites through gate_lock run (2026-10-21))
 - decide: plugins/sdlc-lite/hooks/_role.sh:57: `^solo-|-solo$` gives a user teammate named `solo-notes` or `my-solo` the solo role (and its blocks). Documented in the header comment and acceptable; any prefix or suffix `solo` part matches by design. (from T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21))
 - decide: The claim that a teammate's hook payload `agent_type` equals meta.json `agentType` was not captured live by the builder and I did not capture it either; the Outcome labels it inferred. (from T-0702: Lane agents ran find / for hours despite block-disk-scan (2026-10-21))
+- decide: plugins/sdlc-lite/scripts/fanout.py (load_cap): the ledger-unreadable and `--force` branches have no selftest case beyond the busy, force and quiet cases; the unreadable-ledger path is unobserved. note: no criterion requires it. (from T-0700: fanout prep counts other lanes and the load before opening lanes (2026-10-21))

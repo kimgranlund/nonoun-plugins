@@ -221,3 +221,7 @@
 
 - decide: plugins/sdlc-lite/hooks/_role.sh:57: `^solo-|-solo$` gives a user teammate named `solo-notes` or `my-solo` the solo role (and its blocks). Documented in the header comment and acceptable; any prefix or suffix `solo` part matches by design.
 - decide: The claim that a teammate's hook payload `agent_type` equals meta.json `agentType` was not captured live by the builder and I did not capture it either; the Outcome labels it inferred.
+
+## T-0700: fanout prep counts other lanes and the load before opening lanes (2026-10-21)
+
+- decide: plugins/sdlc-lite/scripts/fanout.py (load_cap): the ledger-unreadable and `--force` branches have no selftest case beyond the busy, force and quiet cases; the unreadable-ledger path is unobserved. note: no criterion requires it.
