@@ -2,7 +2,7 @@
 id: T-0747
 title: "advance prepares a prep solo's verifier on the lane worktree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,12 @@ T-0744 verifier-L2 (landed):
 - Selftest cases (loop of four): `T-0747 advance on an L2 prep solo dispatch (named | lane copy drops the pin | agent-<id> worktree | no worktree) ...`.
 - Negative controls, each fix reverted alone: recorded tree only gives `FAIL: ... (agent-<id> worktree) ...` and `FAIL: ... (no worktree) ...`; level read from the lane copy gives `FAIL: ... (lane copy drops the pin) ...`; both end `dispatch selftest: FAIL`.
 - Checks: dispatch selftest (gate_lock) exit 0, fanout selftest PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 34a12178` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 0c63c93192b3
+- Changed: see commits
+- Commits: e59634c T-0747: resolve the prep solo tree at advance, take the verifier level from main; 9fabdac T-0747: advance prepares a prep solo's verifier on the lane worktree
+- Check: 1 A `dispatch.py` selftest case: advance on an L2 prep solo dispatch prepares a verifier whose brie...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py ...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:2307 the verifier brief's... -> notes.md

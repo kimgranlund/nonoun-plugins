@@ -439,3 +439,7 @@
 - decide: plugins/sdlc-lite/scripts/dispatch.py:3251: the changed T-0376 case is a correct new expectation, not a weakened one. It still asserts the builder gets the lane HEAD and now asserts the verifier gets the fork point (`dver['base_sha'] == fork`). The code change is gated on `role == 'verifier'`, so a builder prepare is unchanged. With the fix reverted this case fails.
 - decide: plugins/sdlc-lite/scripts/dispatch.py:3396 and :3404: the two changed T-0745 cases are correct. They now expect `floor3` (the merge point), and `floor3 != start3` is asserted, so lane3 did merge main and the cases cannot pass vacuously. They still assert `'nothing recorded' not in err`, so a recorded start stays quiet. Both fail with the fix reverted.
 - decide: T-0717: no named-`base:` case was touched, and all of them are green in the full selftest.
+
+## T-0747: advance prepares a prep solo's verifier on the lane worktree (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:2307 the verifier brief's handoff is now the lane copy, whose records dir lacks the prep dispatch json, so base resolution prints `nothing recorded for this step: Base sha is the lane start ...` on stderr. The picked base is still the prep HEAD in both probes, so this is a misleading message, not a wrong base.
