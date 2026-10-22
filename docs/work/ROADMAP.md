@@ -13,7 +13,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0742 | [0742-light-gate-installs-deps](0742-light-gate-installs-deps/handoff.md) | The light gate set runs with dependencies installed | bug | L1 | P2 | none | 🟡 claimed |
 | T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🟡 claimed |
 | T-0746 | [0746-prune-skips-finished-agents](0746-prune-skips-finished-agents/handoff.md) | dispatch.py prune lists only agents that still exist | bug | L1 | P2 | none | 🟡 claimed |
-| T-0747 | [0747-advance-prep-solo-verifier-tree](0747-advance-prep-solo-verifier-tree/handoff.md) | advance prepares a prep solo's verifier on the lane worktree | bug | L1 | P2 | none | 🔵 ready |
+| T-0747 | [0747-advance-prep-solo-verifier-tree](0747-advance-prep-solo-verifier-tree/handoff.md) | advance prepares a prep solo's verifier on the lane worktree | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 702 done, 29 dropped (git log or .NNNN-* folders)
 
