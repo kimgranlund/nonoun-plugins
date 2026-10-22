@@ -26,3 +26,9 @@ T-0709 (landed) makes the role definitions say "the throwaway prefix your brief 
 ## Acceptance criteria
 1. `SDLC_DRY_RUN=1 bash plugins/sdlc-lite/scripts/run.sh builder L1 <a throwaway handoff>` (or the existing run.sh dry-run selftest) prints a prompt containing `Throwaway worktrees only under ` followed by the same path run.sh exports as `SDLC_TMP_WORKTREES`; same for `SDLC_BACKEND=codex`.
 2. The run.sh selftest that `plugins/sdlc-lite/scripts/check.sh` runs for run.sh passes (name the command in the Outcome); `python3 plugins/sdlc-lite/scripts/check.py` exits 0; `python3 scripts/check-packaging.py` passes; `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/run.sh`: the `toplevel`..`wt_tmp` block moved above the prompt (value unchanged); both the Claude and the Codex prompt gain `Throwaway worktrees only under <wt_tmp> (git worktree add --detach "<wt_tmp>/<name>" HEAD); write that path literally.`; header comment notes it; `SDLC_TMP_WORKTREES` export unchanged.
+- `plugins/sdlc-lite/scripts/run-selftest.sh`: dry-run cases for both backends (line text plus the sibling `.worktrees/tmp/builder-` prefix), and the real-run stub records its prompt and `want_wt` asserts the prompt line names exactly the `SDLC_TMP_WORKTREES` value the stub saw.
+- Criterion 1: dry run with role `scout` (a builder dry run is refused by the lane guard on this L1 ticket) printed the line for `SDLC_BACKEND=claude` and `codex`.
+- Criterion 2: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- bash plugins/sdlc-lite/scripts/run-selftest.sh` PASS (the run.sh selftest check.sh runs as `run-selftest`); `dispatch.py selftest` PASS; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 9b1c7a3b` exit 0.

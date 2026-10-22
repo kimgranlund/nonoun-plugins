@@ -475,6 +475,7 @@ mkdir -p "$tmp/wbin"
 cat >"$tmp/wbin/claude" <<EOF
 #!/usr/bin/env bash
 printf '%s\n' "\${SDLC_TMP_WORKTREES:-}" >"$tmp/wtenv"
+printf '%s\n' "\${@: -1}" >"$tmp/wtprompt"
 git worktree add -q --detach "\${SDLC_TMP_WORKTREES:-\$PWD.worktrees/tmp/unset}/w" HEAD >/dev/null 2>&1 \\
   || { echo "stub: git worktree add failed" >&2; exit 9; }
 case "\${STUB_MODE:-ok}" in
@@ -495,6 +496,14 @@ git -C "$wrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c 
 wtop=$(git -C "$wrepo" rev-parse --show-toplevel)
 (cd "$wrepo" && SDLC_DRY_RUN=1 PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) \
   || fail "worktree dry run: run.sh exited non-zero"
+# T-0711: both backends' prompts name the throwaway prefix as a literal path (a dry run prints argv through %q, so the
+# line is checked by its text and the sibling prefix, the pid being the dry run's own).
+for wd_host in claude codex; do
+  wd_out=$(cd "$wrepo" && SDLC_BACKEND=$wd_host SDLC_DRY_RUN=1 PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md 2>/dev/null) \
+    || fail "T-0711 $wd_host dry run: run.sh exited non-zero"
+  [[ "$wd_out" == *"Throwaway worktrees only under $wtop.worktrees/tmp/builder-"* ]] \
+    || fail "T-0711 $wd_host dry run: no 'Throwaway worktrees only under $wtop.worktrees/tmp/builder-' in the prompt: $wd_out"
+done
 [[ ! -e "$wrepo/.claude/worktrees" && ! -e "$wrepo.worktrees" ]] || fail "worktree dry run: created $wrepo/.claude/worktrees or $wrepo.worktrees"  # legacy root
 # want_wt <mode> <rc>: one real run with that stub mode, then the worktree assertions.
 want_wt() {
@@ -511,6 +520,8 @@ want_wt() {
   [[ -n "$env_seen" ]] || fail "worktree $1 run: claude saw no SDLC_TMP_WORKTREES (missing or empty)"
   [[ "$env_seen" == "$wtop.worktrees/tmp/"?* ]] \
     || fail "worktree $1 run: SDLC_TMP_WORKTREES is '$env_seen', want it under the sibling $wtop.worktrees/tmp/"
+  grep -qxF "Throwaway worktrees only under $env_seen (git worktree add --detach \"$env_seen/<name>\" HEAD); write that path literally." "$tmp/wtprompt" \
+    || fail "T-0711 worktree $1 run: the prompt has no throwaway-prefix line naming SDLC_TMP_WORKTREES '$env_seen': $(cat "$tmp/wtprompt" 2>/dev/null)"
   ! grep -q stray "$tmp/werr" || fail "worktree $1 run: printed a stray line: $(cat "$tmp/werr")"
 }
 want_wt ok 0
