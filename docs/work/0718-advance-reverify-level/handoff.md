@@ -41,3 +41,9 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`advance_solo` in `plugins/sdlc-lite/scripts/dispatch.py` now asks the new `failing_verifier_level` for the newest ticket verifier result; when its verdict is fail, the reverify is prepared at that file's level (for example L3) instead of the `steps.ticket_verifier` default. A pass verdict or no verifier result leaves the default.
+- Criterion 1: selftest cases `T-0718 advance on an L2 solo dispatch after a verifier L3 fail prepares the reverify at L3` (and a pass control that stays L2). With the change neutralized the run printed `FAIL: T-0718 advance on an L2 solo dispatch after a verifier L3 fail prepares the reverify at L3`; with it restored the case is ok.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `python3 scripts/check-packaging.py` exit 0, `git diff --check e0543aa7` exit 0
