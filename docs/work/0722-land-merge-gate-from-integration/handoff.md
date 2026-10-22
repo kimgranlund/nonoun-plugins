@@ -47,3 +47,10 @@ The failing test lands before or with the fix, never after.
 1. A `fanout.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`fanout.py land` now reads `merge_gate` / `light_scope` from the integration worktree it merges into when that worktree exists (new `config_root`, `ctx['cfg_root']`, used by `light_refusal` and `gate_class`), else from the primary checkout.
+- New selftest case in the case 34 block: main has only `light_scope:`, the integration worktree commits `merge_gate: light`, and `land --light-gate true` merges with `gate: light`.
+- Negative control (config_root forced back to main): `fanout selftest: FAIL`, `T-0722 light-gate config is read from the integration tree ... got first rc=0 rc=2 ... err='fanout: --light-gate needs a `merge_gate: light` line in .../light-integ/.sdlc/config ...'`. Restored: PASS.
+- `fanout.py selftest` via gate_lock exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check d747bc8d` exit 0.
+- Not done: an integration branch that exists without a worktree still reads main (the first land of a fanout branches from main anyway).
