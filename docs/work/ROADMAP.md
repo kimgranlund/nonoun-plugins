@@ -10,11 +10,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
-| T-0740 | [0740-host-worktree-solo-git-report](0740-host-worktree-solo-git-report/handoff.md) | Solo lanes in host worktrees commit and report where land reads | bug | L2 | P2 | none | 🔵 ready |
-| T-0741 | [0741-prep-names-dropped-lanes](0741-prep-names-dropped-lanes/handoff.md) | fanout.py prep names every ticket it leaves out | bug | L1 | P2 | none | 🔵 ready |
+| T-0740 | [0740-host-worktree-solo-git-report](0740-host-worktree-solo-git-report/handoff.md) | Solo lanes in host worktrees commit and report where land reads | bug | L2 | P2 | none | 🟡 claimed |
+| T-0741 | [0741-prep-names-dropped-lanes](0741-prep-names-dropped-lanes/handoff.md) | fanout.py prep names every ticket it leaves out | bug | L1 | P2 | none | 🟡 claimed |
 | T-0742 | [0742-light-gate-installs-deps](0742-light-gate-installs-deps/handoff.md) | The light gate set runs with dependencies installed | bug | L1 | P2 | none | 🔵 ready |
-| T-0743 | [0743-settle-host-worktree-closed](0743-settle-host-worktree-closed/handoff.md) | Landed host-owned agent worktrees do not hold the integration tree open | bug | L2 | P2 | none | 🔵 ready |
-| T-0744 | [0744-advance-reads-prep-solo-dispatch](0744-advance-reads-prep-solo-dispatch/handoff.md) | dispatch.py advance and record accept the solo dispatch file prep writes | bug | L1 | P2 | none | 🔵 ready |
+| T-0743 | [0743-settle-host-worktree-closed](0743-settle-host-worktree-closed/handoff.md) | Landed host-owned agent worktrees do not hold the integration tree open | bug | L2 | P2 | none | 🟡 claimed |
+| T-0744 | [0744-advance-reads-prep-solo-dispatch](0744-advance-reads-prep-solo-dispatch/handoff.md) | dispatch.py advance and record accept the solo dispatch file prep writes | bug | L1 | P2 | none | 🟡 claimed |
 | T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🔵 ready |
 | T-0746 | [0746-prune-skips-finished-agents](0746-prune-skips-finished-agents/handoff.md) | dispatch.py prune lists only agents that still exist | bug | L1 | P2 | none | 🔵 ready |
 
