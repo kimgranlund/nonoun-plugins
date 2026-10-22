@@ -2197,6 +2197,16 @@ def close_line(task_dir):
     return 'next: close %s (python3 %s close %s)' % (task_dir, HERE / 'tickets.py', task_dir)
 
 
+def failing_verifier_level(task):
+    """T-0718: the level (L2, L3) of the ticket's newest verifier result when its verdict is fail, else ''. A reverify after
+    a solo rebuild keeps that level, so work routed to L3 on purpose is not dropped to the ticket default."""
+    newest = order.newest(task, 'verifier')
+    m = order.RESULT.match(os.path.basename(newest)) if newest else None
+    if m is None or results.key_value(newest, 'verifier') != 'fail':
+        return ''
+    return 'L' + m.group(2)
+
+
 def advance_solo(d):
     """A recorded solo (T-0688): an L2 or L3 solo carries a `verifier` command, so prepare the ticket verifier at the
     steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line."""
@@ -2206,6 +2216,9 @@ def advance_solo(d):
         return 0
     import steps
     level, reason = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))
+    failed = failing_verifier_level(handoff.parent)
+    if failed:
+        level, reason = failed, 'the newest ticket verifier failed at %s' % failed
     os.environ.setdefault('SDLC_ROUTING_REASON', 'dispatch.py advance: solo %s done; ticket verifier %s: %s' % (d.get('tier') or d.get('level'), level, reason))
     top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
     tree = d.get('tree') or ''
@@ -4347,6 +4360,20 @@ def selftest():
         case('T-0688 advance on an L2 solo dispatch prints a ticket verifier dispatch JSON whose dispatch_file exists',
              rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == 'L2' and Path(nxt['dispatch_file']).is_file()
              and len(after) == len(before) + 1)
+        # T-0718: after a verifier L3 fail and a solo rebuild, advance prepares the reverify at L3 (the ticket default is L2);
+        # a pass verdict at L3 leaves the default.
+        for tag, vbody, want in (('fail', fail_body, 'L3'), ('pass', BODY['verifier'], 'L2')):
+            fr = mk(tmp / ('adv-solo-' + tag))
+            fh = (fr / '.sdlc' / 't' / 'handoff.md').resolve()
+            frd = order.records_dir(fh.parent)
+            frd.mkdir(parents=True, exist_ok=True)
+            (frd / 'verifier-L3.md').write_text(vbody, encoding='utf-8')
+            fdf = frd / 'solo-L2-t.dispatch.json'
+            fdf.write_text(json.dumps(dict(role='solo', tier='L2', level='L2', model='opus', name='solo-L2-t', attempt_id='a' * 32,
+                                           artifacts_dir=str(frd), handoff=str(fh), verifier='python3 dispatch.py prepare verifier L2 %s' % fh)))
+            rc, out, nxt, before, after = adv_ticket('solo-' + tag, str(fdf), fr)
+            case('T-0718 advance on an L2 solo dispatch after a verifier L3 %s prepares the reverify at %s' % (tag, want),
+                 rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == want and len(after) == len(before) + 1)
         # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
         # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
         import solo_run
