@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:00a6221430ef -->
+<!-- sdlc-lite:managed:start v1 sha256:4ea8bb668ade -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,9 +10,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 2
+- proposed: 3
   - T-0732 Project hook for a required review role between build and verify (docs/work/0732-pre-verify-review-role)
   - T-0733 dispatch.py wait blocks until a role result lands (docs/work/0733-dispatch-wait)
+  - T-0748 A re-verify after a lane merges main keeps the ticket's build base (docs/work/0748-reverify-base-after-main-merge)
 - ready: 2
   - T-0734 One rule for which checkout owns each sdlc record (docs/work/0734-tree-ownership-rule)
   - T-0735 Audit for run.sh-era assumptions in prepare-launched roles (docs/work/0735-runsh-assumption-audit)
