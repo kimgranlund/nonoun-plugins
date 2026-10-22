@@ -2,7 +2,7 @@
 id: T-0727
 title: "steps.py split reports missing dependencies as an environment error"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,14 @@ The failing test lands before or with the fix, never after.
 - (1) Four `(T-0727)` selftest cases in `steps.py` selftest. Negative control (classifier disabled, new cases kept): `steps selftest: FAIL`, `- (T-0727) a red guard with ERR_MODULE_NOT_FOUND and no node_modules is an environment error: exit 2, install hint, no plan defect, nothing written` and `- (T-0727) a red guard that exits 127 with "command not found" is an environment error`. Also red before the change.
 - (2) `gate_lock.py run ... steps.py selftest`: PASS, exit 0.
 - (3) `check.py` exit 0, `check-packaging.py` PASS, `git diff --check 210288ebb4eec61556df1c331dcb9b7bf21b8c6a` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 210288ebb4ee
+- Changed: see commits
+- Commits: 8b1cceb T-0727: steps split reports missing dependencies as an environment error
+- Check: 1 A `steps.py` selftest case reproduces the issue's repro and passes; with the change reverted it f...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:1096 treats a module-not-found... -> notes.md
+- Follow-up: note: the Goal names "guard or red span", but split --only runs only... -> notes.md

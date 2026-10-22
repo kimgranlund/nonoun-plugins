@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:af4b429957e0 -->
+<!-- sdlc-lite:managed:start v1 sha256:aec9d845dd12 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -24,15 +24,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0729 Builders record a pre-edit red run for each (red) criterion (docs/work/0729-builder-pre-edit-red)
   - T-0734 One rule for which checkout owns each sdlc record (docs/work/0734-tree-ownership-rule)
   - T-0735 Audit for run.sh-era assumptions in prepare-launched roles (docs/work/0735-runsh-assumption-audit)
-- claimed: 4
+- claimed: 3
   - T-0717 dispatch.py prepare uses the handoff base: line for Base sha (docs/work/0717-prepare-honors-base-line), claimed by sdlc-lite-author 2026-10-22
   - T-0720 fanout.py land finds a verifier result recorded by prepare --tree (docs/work/0720-land-finds-tree-verifier-result), claimed by sdlc-lite-author 2026-10-22
-  - T-0727 steps.py split reports missing dependencies as an environment error (docs/work/0727-split-env-error-not-defect), claimed by sdlc-lite-author 2026-10-22
   - T-0728 Planner runs each new-behavior criterion red at base before returning (docs/work/0728-planner-red-at-base-check), claimed by sdlc-lite-author 2026-10-22
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 682
+- done: 683
 - dropped: 29
 
 ## Procedures

@@ -309,3 +309,8 @@
 
 - note: plugins/sdlc-lite/scripts/fanout.py:2254 `load_cap` calls `gate_lock.status_data`, which now also runs `ps` (up to the 15 s timeout at plugins/sdlc-lite/scripts/gate_lock.py:483) when the load is over the cap and the queue is not empty. `stall` is an additive key that neither fanout.py nor report.py:1009 reads, and `outside_cpu` fails open, so neither breaks. The only cost is the possible delay.
 - note: plugins/sdlc-lite/scripts/gate_lock.py:464 `outside_cpu` catches every `Exception`. That is broad, but the path is display-only and admission never calls it.
+
+## T-0727: steps.py split reports missing dependencies as an environment error (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/steps.py:1096 treats a module-not-found line as an environment error whenever the tree root has no node_modules. A Node repo with no dependencies, or a guard whose missing module is a local file the step creates, is then reported as `environment error` with an `npm ci` hint that cannot fix it, and the split never reaches a plan defect. Also requiring a package.json would narrow this.
+- note: the Goal names "guard or red span", but split --only runs only (guard) spans (steps.py:796 guard_spans), so only guards are classified.

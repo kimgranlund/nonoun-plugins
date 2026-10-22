@@ -15,7 +15,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🔵 ready |
 | T-0724 | [0724-lanes-exclude-settings-local](0724-lanes-exclude-settings-local/handoff.md) | Lanes never stage .claude/settings.local.json | bug | L1 | P2 | none | 🔵 ready |
 | T-0725 | [0725-lane-open-merge-lock](0725-lane-open-merge-lock/handoff.md) | lanes.py open takes the merge lock before committing to integration | bug | L2 | P2 | none | 🔵 ready |
-| T-0727 | [0727-split-env-error-not-defect](0727-split-env-error-not-defect/handoff.md) | steps.py split reports missing dependencies as an environment error | bug | L1 | P2 | none | 🟡 claimed |
 | T-0728 | [0728-planner-red-at-base-check](0728-planner-red-at-base-check/handoff.md) | Planner runs each new-behavior criterion red at base before returning | bug | L1 | P2 | none | 🟡 claimed |
 | T-0729 | [0729-builder-pre-edit-red](0729-builder-pre-edit-red/handoff.md) | Builders record a pre-edit red run for each (red) criterion | bug | L1 | P2 | none | 🔵 ready |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
@@ -23,7 +22,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 
-Closed: 682 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 683 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -51,3 +50,4 @@ Closed: 682 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/agents/builder.md:20 says "`dispatch.py record` removes the prefix after the run". For a run.sh-launched role (the Codex sdlc-builder-l*.toml), nothing calls dispatch.py record. run.sh's own `cleanup_worktrees` (plugins/sdlc-lite/scripts/run.sh:581-591, called from on_exit at :679 on every exit) removes the prefix instead. The instruction "do not rm -rf it" is still correct, but the line names the wrong mechanism. A neutral wording would fix it, for example "the runner (`dispatch.py record` or `run.sh`) removes the prefix after the run". (from T-0712: Briefs say record removes the throwaway prefix and scratch dir (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1868: decide: `record --update` accepts any completed attempt of any role, not only a resumed builder or ui-designer, and checks only report format; a hand-edited verifier fail rewritten to pass would be accepted and get a fresh `result_sha256` in the attempt (runs.jsonl keeps the original sha, and nothing compares the sha to the file today, so this adds no new capability over editing the file). Consider restricting `--update` to builder and solo, or leaving the old sha in the attempt. (from T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2210: note: the new `stop: changes-required ...` relay text has no selftest assertion; a wording drift between `advance` and conductor.md would not be caught. (from T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/steps.py:1096 treats a module-not-found line as an environment error whenever the tree root has no node_modules. A Node repo with no dependencies, or a guard whose missing module is a local file the step creates, is then reported as `environment error` with an `npm ci` hint that cannot fix it, and the split never reaches a plan defect. Also requiring a package.json would narrow this. (from T-0727: steps.py split reports missing dependencies as an environment error (2026-10-22))
