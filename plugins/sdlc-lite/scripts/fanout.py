@@ -1667,22 +1667,49 @@ def generated_files(wt, root):
     return {p.relative_to(wt).as_posix(): p for p in files}, lp.notes.relative_to(wt).as_posix()
 
 
+def open_adds(wt, trel, open_name, closed_name):
+    """T-0738: the files of the open folder that hold something the closed folder lacks, as sorted names relative to
+    the folder: a file the closed copy does not have, a changed file other than handoff.md, or a handoff.md whose body
+    (the text after the front matter, which the close rewrites) is not a prefix of the closed body (the close only
+    appends its ## Outcome)."""
+    def blob(rel):
+        p = git(wt, 'show', f':{rel}')
+        return p.stdout if p.returncode == 0 else None
+    def body(text):
+        text = text.replace('\r\n', '\n')
+        return re.sub(r'\A---\n.*?^---[ \t]*$\n?', '', text, count=1, flags=re.S | re.M).rstrip()
+    adds = []
+    for f in git_out(wt, 'ls-files', '--', f'{trel}/{open_name}').splitlines():
+        rel = pathlib.PurePosixPath(f).relative_to(f'{trel}/{open_name}').as_posix()
+        mine, theirs = blob(f), blob(f'{trel}/{closed_name}/{rel}')
+        if theirs is None or (mine != theirs if rel != 'handoff.md' else not body(theirs).startswith(body(mine))):
+            adds.append(rel)
+    return sorted(adds)
+
+
 def drop_stale_open(wt, root):
     """T-0723 (#59): `git rm` each open NNNN-* ticket folder the index holds beside a closed .NNNN-* folder of the same
     number (the id in numbered mode): a lane that kept, or re-added from main, the open copy of a ticket closed on the
-    other side. Returns the dropped folders, repo-relative; [] when the ticket dir cannot be resolved."""
+    other side. T-0738: only when no open copy adds anything to its closed one (open_adds); otherwise nothing is
+    dropped. Returns (the dropped folders, repo-relative; the refusal text naming each folder and its differing files,
+    '' when none); ([], '') when the ticket dir cannot be resolved."""
     try:
         tdir = tickets.ticket_dir(root)
     except tickets.Fail:
-        return []
+        return [], ''
     trel = pathlib.PurePosixPath(os.path.relpath(tdir, wt)).as_posix()
     held = {pathlib.PurePosixPath(x).parent.name
             for x in git_out(wt, 'ls-files', '--', f'{trel}/*/handoff.md').splitlines() if x}
-    closed = {n[1:5] for n in held if tickets.DOT_RE.fullmatch(n)}
-    stale = sorted(f'{trel}/{n}' for n in held if tickets.PREFIX_RE.match(n) and n[:4] in closed)
+    closed = {n[1:5]: n for n in sorted(held) if tickets.DOT_RE.fullmatch(n)}
+    stale = sorted(n for n in held if tickets.PREFIX_RE.match(n) and n[:4] in closed)
+    differing = [f'{trel}/{n} holds what {closed[n[:4]]} lacks: {", ".join(adds)}'
+                 for n in stale for adds in [open_adds(wt, trel, n, closed[n[:4]])] if adds]
+    if differing:
+        return [], '; '.join(differing)
+    stale = [f'{trel}/{n}' for n in stale]
     if stale:
         git_out(wt, 'rm', '-r', '-q', '-f', '--', *stale)
-    return stale
+    return stale, ''
 
 
 def merge_generated(wt, ref, root, theirs=(), union=(), unioned=None, dropped=None):
@@ -1695,7 +1722,8 @@ def merge_generated(wt, ref, root, theirs=(), union=(), unioned=None, dropped=No
     copy is dropped (drop_stale_open, T-0723) and appended to the `dropped` list.
     Returns None with the merge staged; 'up to date' when ref brought nothing (no MERGE_HEAD, nothing staged); else
     (kind, detail) with the merge still in progress for the caller to abort: 'failed' (git merge failed with no
-    conflicted path), 'conflict' (the conflicted paths outside the generated files and `theirs`), 'merge-file' or
+    conflicted path), 'conflict' (the conflicted paths outside the generated files and `theirs`, or the open ticket folders that
+    hold edits their closed copy lacks, T-0738), 'merge-file' or
     'roadmap' (the failing command's output)."""
     try:
         gen, notes_rel = generated_files(wt, root)
@@ -1737,7 +1765,9 @@ def merge_generated(wt, ref, root, theirs=(), union=(), unioned=None, dropped=No
             git(wt, 'add', '--', path)
     elif not in_merge(wt):
         return 'up to date'
-    stale = drop_stale_open(wt, root)  # before the roadmap, which refuses the duplicate id (T-0723)
+    stale, why = drop_stale_open(wt, root)  # before the roadmap, which refuses the duplicate id (T-0723)
+    if why:
+        return 'conflict', f'stale open folder with edits (nothing dropped): {why}'  # T-0738
     if dropped is not None:
         dropped.extend(stale)
     r = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', str(root), 'roadmap'], cwd=str(wt),
@@ -1794,7 +1824,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 git(integ, 'reset', '-q', '--hard', before)
             kind, detail = m
             if kind == 'conflict':
-                return 'merge conflict', cell
+                return f'merge conflict: {detail}', cell
             return f'merge failed: {first_line(detail, kind)}', cell
         for d in dropped:
             say(ctx, lane, t.id, f'dropped stale open folder {d}: its ticket is closed on {ctx["integration"]}')
@@ -5348,38 +5378,57 @@ def selftest():
                lfresh.returncode == 2 and not (tmp / 'nolanes').exists() and sh(ld, 'branch', '--list', 'fanout/none').stdout.strip() == '')
         # T-0723 (#59): T-0002 lands and closes on the integration branch (numbered: .0002-t2); a lane that re-added the
         # open 0002-t2 from main lands with that copy dropped, not `merge failed: ... duplicate id`
-        so = tmp / 'stale-open'
-        so.mkdir()
-        (so / '.sdlc').mkdir()
-        (so / '.sdlc' / 'config').write_text('ticket_folders: numbered\n', encoding='utf-8')
-        (so / '.gitignore').write_text(gi, encoding='utf-8')
-        for k in (1, 2):
-            (so / '.sdlc' / f'000{k}-t{k}').mkdir()
-            (so / '.sdlc' / f'000{k}-t{k}' / 'handoff.md').write_text(
-                f'---\nid: T-000{k}\ntitle: "Ticket t{k}"\ntype: chore\nstatus: ready\nsize: L1\npriority: P2\n'
-                f'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nt{k}\n', encoding='utf-8')
-        for args_ in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
-                      ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
-                      ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
-            sh(so, *args_)
-        so_pin = ('--integration', 'fanout/so', '--lanes-dir', str(tmp / 'stale-open-lanes'), '--base', 'main',
-                  '--rewrite-refs', '--gate', 'true')
-        make_branch(so, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
-        so2 = verb(so, 'land', 'worktree-T-0002-solo', *so_pin)
-        sh(so, 'checkout', '-q', '-b', 'worktree-T-0001-solo', 'fanout/so')
-        (so / 'f1.txt').write_text('one\n', encoding='utf-8')
-        sh(so, 'checkout', 'main', '--', '.sdlc/0002-t2')  # the open copy, as a merge of main into the lane re-adds it
-        sh(so, 'add', '-A')
-        sh(so, 'commit', '-q', '-m', 'T-0001: Ticket t1')
-        sh(so, 'checkout', '-q', 'main')
-        so1 = verb(so, 'land', 'worktree-T-0001-solo', *so_pin)
-        so_tree = sh(so, 'ls-tree', '-r', '--name-only', 'fanout/so', '--', '.sdlc').stdout.split()
+        # T-0738: the drop needs the open copy to add nothing to the closed one; `variant` changes the re-added open copy
+        def stale_open(variant):
+            so = tmp / f'stale-open{variant}'
+            so.mkdir()
+            (so / '.sdlc').mkdir()
+            (so / '.sdlc' / 'config').write_text('ticket_folders: numbered\n', encoding='utf-8')
+            (so / '.gitignore').write_text(gi, encoding='utf-8')
+            for k in (1, 2):
+                (so / '.sdlc' / f'000{k}-t{k}').mkdir()
+                (so / '.sdlc' / f'000{k}-t{k}' / 'handoff.md').write_text(
+                    f'---\nid: T-000{k}\ntitle: "Ticket t{k}"\ntype: chore\nstatus: ready\nsize: L1\npriority: P2\n'
+                    f'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nt{k}\n', encoding='utf-8')
+            for args_ in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                          ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                          ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+                sh(so, *args_)
+            so_pin = ('--integration', 'fanout/so', '--lanes-dir', str(tmp / f'stale-open-lanes{variant}'),
+                      '--base', 'main', '--rewrite-refs', '--gate', 'true')
+            make_branch(so, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
+            so2 = verb(so, 'land', 'worktree-T-0002-solo', *so_pin)
+            sh(so, 'checkout', '-q', '-b', 'worktree-T-0001-solo', 'fanout/so')
+            (so / 'f1.txt').write_text('one\n', encoding='utf-8')
+            sh(so, 'checkout', 'main', '--', '.sdlc/0002-t2')  # the open copy, as a merge of main into the lane re-adds it
+            if variant == '-extra':
+                (so / '.sdlc' / '0002-t2' / 'extra.md').write_text('lane notes\n', encoding='utf-8')
+            elif variant == '-edit':
+                with (so / '.sdlc' / '0002-t2' / 'handoff.md').open('a', encoding='utf-8') as fh:
+                    fh.write('lane edit\n')
+            sh(so, 'add', '-A')
+            sh(so, 'commit', '-q', '-m', 'T-0001: Ticket t1')
+            sh(so, 'checkout', '-q', 'main')
+            so1 = verb(so, 'land', 'worktree-T-0001-solo', *so_pin)
+            return so2, so1, sh(so, 'ls-tree', '-r', '--name-only', 'fanout/so', '--', '.sdlc').stdout.split()
+        so2, so1, so_tree = stale_open('')
         expect(f'case 23 stale open folder (T-0723): a lane carrying the open copy of a ticket closed on the integration '
                f'branch lands with it dropped and reported, got rc2={so2.returncode} rc={so1.returncode} '
                f'out={so1.stdout[-400:]!r} tree={so_tree}',
                so2.returncode == 0 and so1.returncode == 0 and 'T-0001 | merged |' in so1.stdout
                and 'dropped stale open folder .sdlc/0002-t2' in so1.stdout
                and '.sdlc/0002-t2/handoff.md' not in so_tree and '.sdlc/.0002-t2/handoff.md' in so_tree)
+        for variant, differs in (('-extra', 'extra.md'), ('-edit', 'handoff.md')):
+            so2, so1, so_tree = stale_open(variant)
+            expect(f'case 23 stale open folder with edits (T-0738): an open copy with {variant[1:]} is not dropped, the land '
+                   f'stops as a merge conflict naming the folder and {differs}, and the integration branch keeps neither '
+                   f'the lane merge nor a second open folder, got rc2={so2.returncode} rc={so1.returncode} '
+                   f'out={so1.stdout[-400:]!r} tree={so_tree}',
+                   so2.returncode == 0 and so1.returncode != 0 and 'merge conflict' in so1.stdout
+                   and '.sdlc/0002-t2 holds what .0002-t2 lacks' in so1.stdout and differs in so1.stdout
+                   and 'dropped stale open folder' not in so1.stdout
+                   and '.sdlc/0002-t2/handoff.md' not in so_tree and '.sdlc/.0002-t2/handoff.md' in so_tree
+                   and 'f1.txt' not in ' '.join(so_tree))
 
         # case 24 (T-0285): a --driver stub that commits nothing gives `no changes`; the stub path itself is unchanged
         nc = tmp / 'nochange'

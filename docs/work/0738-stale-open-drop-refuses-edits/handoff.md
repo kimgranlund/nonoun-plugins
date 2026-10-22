@@ -27,3 +27,11 @@ T-0723 verifier-L2 (landed):
 ## Acceptance criteria
 1. The new `fanout.py` selftest cases pass, `case 23 stale open folder (T-0723)` still passes, and with the comparison removed the refusal case fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Root cause: `drop_stale_open` removed any open `NNNN-*` folder that sat beside a closed `.NNNN-*` folder, whatever the open copy held.
+- Fix: new `open_adds` in `plugins/sdlc-lite/scripts/fanout.py` lists what the open folder holds that the closed one lacks: a file missing from the closed copy, a changed non-handoff file, or a `handoff.md` whose body (after the front matter) is not a prefix of the closed body (the close only appends `## Outcome`). `drop_stale_open` now returns `(dropped, why)` and drops nothing when any folder differs; `merge_generated` returns `('conflict', 'stale open folder with edits (nothing dropped): <folder> holds what <closed> lacks: <files>')`, so every caller aborts the merge and `merge_gate_close` reports `merge conflict: <detail>`.
+- Selftest: `case 23 stale open folder (T-0723)` unchanged and passing; new `case 23 stale open folder with edits (T-0738)` for an extra file and for an edited body.
+- Negative control (`open_adds` returning `[]`): `fanout selftest: FAIL` with `- case 23 stale open folder with edits (T-0738): an open copy with extra is not dropped, the land stops as a merge conflict naming the folder and extra.md, ...` and the same line for `edit`.
+- Checks: `gate_lock.py run ... fanout.py selftest` exit 0 (PASS); `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 90317d25` exit 0.
+- Open: the silent drop in settle, sync and lanes forward (second note in Context) is not part of this ticket.
