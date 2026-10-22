@@ -26,3 +26,8 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 1. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 with new cases: `resume` output holds the SendMessage instruction; `status` prints `report-unrecorded` for a report newer than its unrecorded attempt and nothing extra once recorded. Each case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `dispatch.py` `resume` ladder message now asks the agent to `SendMessage` 'main' with its `<role>-<level> <status> <path>` pointer line (`RESUME_MESSAGE`); `status` adds `report-unrecorded` to any attempt other than completed or failed whose report file is newer than its attempt record (the older `report-written-unrecorded` flag is unchanged).
+- Named both in `agents/conductor.md` (recovery paragraph) and `docs/references/sdlc-internals.md`; regenerated `sdlc-conductor-l1.toml`.
+- Checks: `dispatch.py selftest` PASS; with the change reverted the 3 positive new cases fail (the 2 negative controls pass by design); `claude_roles.py generate --check` 0; `codex_roles.py generate --check` 0; `check.py` 0; `check-packaging.py` 0; `git diff --check 91ad9980` 0.
