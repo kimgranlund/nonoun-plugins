@@ -6,7 +6,7 @@ CPU and memory. Design: docs/specs/sdlc-lite/gate-lock-admission.md (protocol sd
 Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--name X] [--repo PATH] [--nice]
                         [--timeout SECS] [--receipt FILE] -- <cmd...>
        gate_lock.py context [--json] | capabilities --json | status [--json]
-       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [--default RES=N...] | policy reset
+       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [max_rss_mb=N] [--default RES=N...] | policy reset
        gate_lock.py reset --confirm | reap [--older-than MIN] [--kill] [--match REGEX] | selftest
 
   run     queues for a grant of the weighted demand (a vector of resources, all or none), waits in order, runs the
@@ -31,6 +31,13 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           never stopped, the refused head keeps its round-robin turn, and a host that reports no load average
           is not capped. It is an absolute load, so pick load per CPU times the CPU count. SDLC_GATE_LOAD_FILE
           (tests only) names a file holding the load to use; SDLC_GATE_CPUS (tests only) is the CPU count.
+          Memory cap: while the command runs, a top-level `run` sums the resident memory (RSS) of the command and all
+          its descendants every 2 s (one `ps` per sample). Over the policy key max_rss_mb (`policy set max_rss_mb=N`;
+          0 is off; absent is 25% of physical RAM, and `policy show` says `default 25% of N MB RAM`) it stops the
+          tree (SIGTERM, SIGKILL after 5 s), releases the grant as on any exit, prints `gate_lock: stopped <name>:
+          process tree RSS <x> MB over max_rss_mb <N>` and exits 137, so one leaking test fails fast instead of
+          taking the machine's memory. A nested run is inside its parent's tree; --slots 0 runs with no watchdog.
+          SDLC_GATE_RSS_SECS (tests only) is the sample interval.
           A grant stays charged while its wrapper is alive with the recorded start
           identity or its process group has a member; a dead holder with no live group is reclaimed, a dead
           wrapper with a live group stays charged (an orphaned group). The command gets SDLC_GATE_GRANT,
@@ -73,6 +80,7 @@ PID_SLACK = 5.0  # legacy slot files only: a live pid that started this much aft
 SLOT_RE = re.compile(r'slot-(\d+)$')
 BUILTIN_POLICY = {'capacity': {'compute_units': 6, 'browser_jobs': 3}, 'default_need': {'compute_units': 3}}
 COMPUTE = 'compute_units'
+RSS_SECS = 2.0
 
 
 class GateError(Exception):
@@ -323,12 +331,31 @@ def set_default_max_load(pol):
         pol['max_load_default'] = f'default from {n} CPUs'
 
 
+def ram_mb():
+    """Physical RAM in MB (sysctl hw.memsize on macOS, os.sysconf elsewhere), or 0 when the host does not say."""
+    try:
+        if sys.platform == 'darwin':
+            return int(subprocess.run(['sysctl', '-n', 'hw.memsize'], capture_output=True, text=True, timeout=5).stdout.strip()) >> 20
+        return os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES') >> 20
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0
+
+
+def set_default_max_rss(pol):
+    """A policy with no max_rss_mb key caps a gate's process tree at 25% of physical RAM (off when the RAM is unknown)."""
+    if 'max_rss_mb' not in pol:
+        n = ram_mb()
+        pol['max_rss_mb'] = n // 4
+        pol['max_rss_mb_default'] = f'default 25% of {n} MB RAM'
+
+
 def load_policy(root):
     """(policy, source): built-in numbers, each key replaced by policy.json's when present."""
     pol = {k: dict(v) for k, v in BUILTIN_POLICY.items()}
     path = root / 'policy.json'
     if not path.exists():
         set_default_max_load(pol)
+        set_default_max_rss(pol)
         return pol, 'builtin'
     try:
         d = json.loads(path.read_text())
@@ -343,9 +370,14 @@ def load_policy(root):
             if not (isinstance(d['max_load'], int) and not isinstance(d['max_load'], bool) and d['max_load'] >= 0):
                 raise ValueError('max_load must be a whole number')
             pol['max_load'] = d['max_load']  # 0 is off, kept so a later `policy set` does not bring the default back
+        if 'max_rss_mb' in d:
+            if not (isinstance(d['max_rss_mb'], int) and not isinstance(d['max_rss_mb'], bool) and d['max_rss_mb'] >= 0):
+                raise ValueError('max_rss_mb must be a whole number')
+            pol['max_rss_mb'] = d['max_rss_mb']  # 0 is off
     except (OSError, ValueError) as e:
         raise GateError('state_unavailable', f'{path} is not a usable policy: {e}')
     set_default_max_load(pol)
+    set_default_max_rss(pol)
     return pol, 'file'
 
 
@@ -573,6 +605,50 @@ def validate_grant(root, gid):
         return dict(g)
 
 
+def tree_rss(root_pid):
+    """(total RSS in MB, pids) of root_pid and all its descendants from one ps; (0, [root_pid]) when ps cannot run."""
+    try:
+        p = subprocess.run(['ps', '-axo', 'pid=,ppid=,rss='], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return 0, [root_pid]
+    kids, rss = {}, {}
+    for line in p.stdout.splitlines():
+        try:
+            pid, ppid, kb = (int(x) for x in line.split())
+        except ValueError:
+            continue
+        kids.setdefault(ppid, []).append(pid)
+        rss[pid] = kb
+    pids, todo = [], [root_pid]
+    while todo:
+        pid = todo.pop()
+        if pid not in pids:
+            pids.append(pid)
+            todo.extend(kids.get(pid, []))
+    return sum(rss.get(pid, 0) for pid in pids) >> 10, pids
+
+
+def wait_watched(child, cap_mb, name):
+    """child.wait() that samples the tree's RSS; (rc, None) when the child exits, (137, 'RSS MB') after stopping a tree over cap_mb."""
+    step = float(os.environ.get('SDLC_GATE_RSS_SECS') or RSS_SECS)
+    while True:
+        try:
+            return child.wait(timeout=step if cap_mb else None), None
+        except subprocess.TimeoutExpired:
+            pass
+        used, pids = tree_rss(child.pid) if cap_mb else (0, [])  # RSS-CAP
+        if cap_mb and used > cap_mb:
+            drain_group(child.pid, child)
+            for pid in pids:  # a descendant that left the process group
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+            child.wait()
+            print(f'gate_lock: stopped {name}: process tree RSS {used} MB over max_rss_mb {cap_mb}', file=sys.stderr, flush=True)
+            return 137, used
+
+
 def start_child(cmd, env, nice, new_session):
     return subprocess.Popen(cmd, env=env, start_new_session=new_session,
                             preexec_fn=(lambda: os.nice(10)) if nice else None)
@@ -724,10 +800,10 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
             g = next((g for g in L['grants'] if g['id'] == gid), None)
             if g is not None:
                 g['pgid'] = pgid
-        rc = child.wait()
+        rc, stopped = wait_watched(child, pol.get('max_rss_mb') or 0, name)
         t_exit = time.monotonic()
         rc = 128 - rc if rc < 0 else rc
-        outcome = 'signal' if rc > 128 else 'ok' if rc == 0 else 'child_failed'
+        outcome = 'rss_exceeded' if stopped else 'signal' if rc > 128 else 'ok' if rc == 0 else 'child_failed'
     except Stop as stop:
         rc, outcome = 128 + stop.sig, 'signal'
     except OSError as e:
@@ -883,8 +959,9 @@ def cmd_policy(argv):
                 print(f'gate_lock.py policy set: {e}', file=sys.stderr)
                 return 2
             max_load = caps.pop('max_load', None)  # a top-level key, never a capacity; 0 turns it off
-            if not caps and not defs and max_load is None:
-                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [--default RES=N...]', file=sys.stderr)
+            max_rss = caps.pop('max_rss_mb', None)  # likewise; 0 turns the memory cap off
+            if not caps and not defs and max_load is None and max_rss is None:
+                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [max_rss_mb=N] [--default RES=N...]', file=sys.stderr)
                 return 2
             if any(v < 1 for v in caps.values()):
                 print('gate_lock.py policy set: a capacity must be 1 or more', file=sys.stderr)
@@ -893,20 +970,25 @@ def cmd_policy(argv):
                 pol, _ = load_policy(root)
                 if 'max_load_default' in pol:  # the default is derived at load time, never written into the file
                     pol.pop('max_load'), pol.pop('max_load_default')
+                if 'max_rss_mb_default' in pol:  # likewise derived at load time
+                    pol.pop('max_rss_mb'), pol.pop('max_rss_mb_default')
                 pol['capacity'].update(caps)
                 pol['default_need'].update(defs)
                 if max_load is not None:
                     pol['max_load'] = max_load  # 0 is written: it turns the default cap off
+                if max_rss is not None:
+                    pol['max_rss_mb'] = max_rss  # 0 is written: it turns the memory cap off
                 tmp = root / f'.policy-{os.getpid()}.tmp'
                 tmp.write_text(json.dumps(pol, sort_keys=True))
                 os.replace(tmp, root / 'policy.json')
             print(f'policy set: capacity {need_text(pol["capacity"])}; default need {need_text(pol["default_need"])}'
-                  + (f'; max load {pol["max_load"]}' if pol.get('max_load') else ''))
+                  + (f'; max load {pol["max_load"]}' if pol.get('max_load') else '')
+                  + (f'; max rss {pol["max_rss_mb"]} MB' if pol.get('max_rss_mb') else ''))
             return 0
     except GateError as e:
         print(f'gate_lock: {e.code}: {e.detail}', file=sys.stderr)
         return 3
-    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [--default RES=N...] | reset', file=sys.stderr)
+    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [max_rss_mb=N] [--default RES=N...] | reset', file=sys.stderr)
     return 2
 
 
@@ -1048,6 +1130,7 @@ M_LIVE = "return wrapper or group_alive(g.get('pgid'))" + '  # GRANT-LIVE'
 M_IDENT = 'if start and cur and cur != start: return False' + '  # IDENT'
 M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
 M_LOADDEF = "pol['max_load'] = max(1, int(0.8 * n))" + '  # LOAD-DEFAULT'
+M_RSS = "used, pids = tree_rss(child.pid) if cap_mb else (0, [])" + '  # RSS-CAP'
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1436,6 +1519,50 @@ def case_load_default(py, base, label):
         release_all(m, procs)
 
 
+def case_rss(py, base, label):
+    """The memory cap: a gate whose child and grandchild together hold about 400 MB is stopped under max_rss_mb=200 (exit 137,
+    the stopped line, no grant held, nothing left running); with max_rss_mb=0 the same gate finishes."""
+    env = env_for(base, label, SDLC_GATE_RSS_SECS='0.3')
+    pidf = base / f'leaf-{label}'
+    leaf = f"import os,time; b=b'x'*(200<<20); open({str(pidf)!r},'w').write(str(os.getpid())); time.sleep(5); print('done')"
+    top = f"import subprocess,sys; b=b'x'*(200<<20); subprocess.run([sys.executable,'-c',{leaf!r}])"
+    cmd = [sys.executable, '-c', top]
+    bad = []
+    r = gl(py, env, 'policy', 'set', 'max_rss_mb=200')
+    if r.returncode != 0:
+        return [f'policy set max_rss_mb=200 failed, rc={r.returncode} {r.stderr!r}']
+    t = time.monotonic()
+    r = gl(py, env, 'run', '--name', 'rssgate', '--', *cmd, timeout=30)
+    took = time.monotonic() - t
+    if r.returncode != 137 or 'gate_lock: stopped rssgate: process tree RSS' not in r.stderr or 'over max_rss_mb 200' not in r.stderr or took > 15:
+        bad.append(f'rss cap missing: a 400 MB tree under max_rss_mb=200 gave rc={r.returncode} after {took:.1f}s {r.stdout!r} {r.stderr!r}, wanted 137 and the stopped line within 15 s')
+    s = gl(py, env, 'status')
+    if 'no holders' not in s.stdout:
+        bad.append(f'rss cap left a grant held: {s.stdout!r}')
+    try:
+        leftover = pidf.exists() and alive(int(pidf.read_text()), None)
+    except ValueError:
+        leftover = False
+    if leftover:
+        bad.append('rss cap left the grandchild running')
+        os.kill(int(pidf.read_text()), signal.SIGKILL)
+    r = gl(py, env, 'policy', 'show')
+    if '"max_rss_mb": 200' not in r.stdout:
+        bad.append(f'policy show does not show max_rss_mb, got {r.stdout!r}')
+    gl(py, env, 'policy', 'set', 'max_rss_mb=0')
+    r = gl(py, env, 'run', '--name', 'rssgate', '--', *cmd, timeout=30)
+    if r.returncode != 0 or 'done' not in r.stdout or 'stopped' in r.stderr:
+        bad.append(f'max_rss_mb=0 did not let the gate finish, got rc={r.returncode} {r.stdout!r} {r.stderr!r}')
+    gl(py, env, 'policy', 'reset')
+    r = gl(py, env, 'policy', 'show')
+    if '"max_rss_mb_default"' not in r.stdout or 'MB RAM' not in r.stdout:
+        bad.append(f'policy show does not name the default memory cap, got {r.stdout!r}')
+    gl(py, env, 'policy', 'set', 'compute_units=6')
+    if 'max_rss_mb' in (pathlib.Path(env['SDLC_GATE_DIR']) / 'policy.json').read_text():
+        bad.append('policy set compute_units=6 wrote the default memory cap into policy.json')
+    return bad
+
+
 def case_rr():
     """Round robin across repos with FIFO inside a repo, on a fabricated ledger (no processes); then the same
     ledger with a max_load: under the cap the order holds, over it nothing is granted and the turn does not move."""
@@ -1573,7 +1700,8 @@ def selftest():
             ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'),
             ('load cap starvation guard', case_load_idle, M_LOAD,
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
-            ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'))
+            ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'),
+            ('memory cap', case_rss, M_RSS, 'used, pids = 0, []  # RSS-CAP', 'rss cap missing'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')
             expect(f'{label}: {got}', not got)

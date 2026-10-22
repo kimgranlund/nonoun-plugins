@@ -20,6 +20,7 @@ The gate lock exports `SDLC_GATE_WORKERS` to every gate, but a test runner reads
 | `vitest` | `--maxWorkers=$SDLC_GATE_WORKERS` (or `VITEST_MAX_WORKERS=$SDLC_GATE_WORKERS`) |
 | `playwright` | `--workers=$SDLC_GATE_WORKERS` |
 | `jest` | `--maxWorkers=$SDLC_GATE_WORKERS` |
+| any runner (memory) | none to add: the lock stops a gate whose process tree passes `max_rss_mb` (default 25% of RAM) and exits 137 with `gate_lock: stopped <name>: process tree RSS ... over max_rss_mb ...`; `gate_lock.py policy set max_rss_mb=N` changes it, `0` turns it off (T-0716) |
 
 ## Roll
 
