@@ -1671,19 +1671,29 @@ def open_adds(wt, trel, open_name, closed_name):
     """T-0738: the files of the open folder that hold something the closed folder lacks, as sorted names relative to
     the folder: a file the closed copy does not have, a changed file other than handoff.md, or a handoff.md whose body
     (the text after the front matter, which the close rewrites) is not a prefix of the closed body (the close only
-    appends its ## Outcome)."""
+    appends its ## Outcome). T-0739: a file whose blob equals a version that path (under either folder name) had in
+    HEAD's history is stale, not an add, even when the lane's replan or close moved the closed body past it."""
     def blob(rel):
         p = git(wt, 'show', f':{rel}')
         return p.stdout if p.returncode == 0 else None
     def body(text):
         text = text.replace('\r\n', '\n')
         return re.sub(r'\A---\n.*?^---[ \t]*$\n?', '', text, count=1, flags=re.S | re.M).rstrip()
+    past = set()  # (path relative to the folder, blob id) of every version either folder held in HEAD's history
+    for ln in git(wt, 'log', '--format=', '--raw', '--no-abbrev', 'HEAD', '--',
+                  f'{trel}/{open_name}', f'{trel}/{closed_name}').stdout.splitlines():
+        meta, _, path = ln.partition('\t')
+        fields = meta.split()
+        for name in (open_name, closed_name):
+            if len(fields) == 5 and fields[4] != 'D' and path.startswith(f'{trel}/{name}/'):
+                past.add((path[len(trel) + len(name) + 2:], fields[3]))
     adds = []
     for f in git_out(wt, 'ls-files', '--', f'{trel}/{open_name}').splitlines():
         rel = pathlib.PurePosixPath(f).relative_to(f'{trel}/{open_name}').as_posix()
         mine, theirs = blob(f), blob(f'{trel}/{closed_name}/{rel}')
         if theirs is None or (mine != theirs if rel != 'handoff.md' else not body(theirs).startswith(body(mine))):
-            adds.append(rel)
+            if (rel, git_out(wt, 'rev-parse', f':{f}')) not in past:
+                adds.append(rel)
     return sorted(adds)
 
 
@@ -5396,7 +5406,11 @@ def selftest():
                 sh(so, *args_)
             so_pin = ('--integration', 'fanout/so', '--lanes-dir', str(tmp / f'stale-open-lanes{variant}'),
                       '--base', 'main', '--rewrite-refs', '--gate', 'true')
-            make_branch(so, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
+            lane2 = {'f2.txt': 'two\n'}
+            if variant == '-replan':  # T-0739: the lane replans the handoff, so the closed body is no extension of main's
+                lane2['.sdlc/0002-t2/handoff.md'] = (so / '.sdlc' / '0002-t2' / 'handoff.md').read_text(
+                    encoding='utf-8').replace('## Goal\nt2\n', '## Goal\nreplanned t2\n')
+            make_branch(so, 'worktree-T-0002-solo', lane2, 'T-0002: Ticket t2')
             so2 = verb(so, 'land', 'worktree-T-0002-solo', *so_pin)
             sh(so, 'checkout', '-q', '-b', 'worktree-T-0001-solo', 'fanout/so')
             (so / 'f1.txt').write_text('one\n', encoding='utf-8')
@@ -5415,6 +5429,13 @@ def selftest():
         expect(f'case 23 stale open folder (T-0723): a lane carrying the open copy of a ticket closed on the integration '
                f'branch lands with it dropped and reported, got rc2={so2.returncode} rc={so1.returncode} '
                f'out={so1.stdout[-400:]!r} tree={so_tree}',
+               so2.returncode == 0 and so1.returncode == 0 and 'T-0001 | merged |' in so1.stdout
+               and 'dropped stale open folder .sdlc/0002-t2' in so1.stdout
+               and '.sdlc/0002-t2/handoff.md' not in so_tree and '.sdlc/.0002-t2/handoff.md' in so_tree)
+        so2, so1, so_tree = stale_open('-replan')
+        expect(f'case 23 stale open folder (T-0739): the pre-replan open copy of a ticket replanned in its lane and closed on '
+               f'the integration branch matches a committed version, so it is dropped, got rc2={so2.returncode} '
+               f'rc={so1.returncode} out={so1.stdout[-400:]!r} tree={so_tree}',
                so2.returncode == 0 and so1.returncode == 0 and 'T-0001 | merged |' in so1.stdout
                and 'dropped stale open folder .sdlc/0002-t2' in so1.stdout
                and '.sdlc/0002-t2/handoff.md' not in so_tree and '.sdlc/.0002-t2/handoff.md' in so_tree)
