@@ -187,7 +187,7 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 - `git merge-base --is-ancestor <branch> HEAD`
 - (guard) `! git rev-parse -q --verify MERGE_HEAD`
 - (guard) `out=$(git diff-tree --cc HEAD) && ! printf "%s\n" "$out" | grep -qE "^\+\+(<<<<<<<|>>>>>>>)( |$)"`
-- (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add --detach <tmp> HEAD^1` copy and compare.
+- (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add --detach "<throwaway prefix>/<name>" HEAD^1` copy and compare.
 ```
 
 The conflict-marker guard flags only `++` lines; why that miss is accepted: `references/step-handoff-rules.md`.
