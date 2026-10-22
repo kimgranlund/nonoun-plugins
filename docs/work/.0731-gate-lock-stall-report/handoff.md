@@ -2,7 +2,7 @@
 id: T-0731
 title: "gate_lock status explains a load-cap stall"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -51,3 +51,14 @@ The failing test lands before or with the fix, never after.
 
 ### Rework after verification
 Defect: `outside_cpu` decoded `ps` output strictly, so a live process with a non-UTF-8 command line raised `UnicodeDecodeError` and crashed `status` and a waiting `run` (rc 1). Fix: `ps` output and the test file are read with `errors='replace'`, and `outside_cpu` wraps `_outside_cpu` so any exception gives `[]`. New control: `case_stall(raw=True)` (a 99.5% process with `\xff\xfe` in its command line must head the list as U+FFFD) plus a `STALL-DECODE` mutant. Against the previous commit's script the case fails: status shows no stall row, `--json` has no `stall`, and the waiter's stderr is a `Traceback`. Rerun: selftest (direct and through `gate_lock.py run --need compute_units=1 --nice --`) exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check f1e0d7784e64200b2d8f1c837a0c38af12e6dfd2` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: f1e0d7784e64
+- Changed: see commits
+- Commits: c1d9a38 T-0731: stall report reads ps with errors=replace and fails open; 8d2362c T-0731: gate_lock status and waiting line explain a load-cap stall
+- Check: 1 A `gate_lock.py` selftest case reproduces the issue's repro and passes; with the change reverted ...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2254 load_cap calls... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/gate_lock.py:464 outside_cpu catches... -> notes.md

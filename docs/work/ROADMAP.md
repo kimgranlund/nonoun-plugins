@@ -18,13 +18,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0727 | [0727-split-env-error-not-defect](0727-split-env-error-not-defect/handoff.md) | steps.py split reports missing dependencies as an environment error | bug | L1 | P2 | none | 🟡 claimed |
 | T-0728 | [0728-planner-red-at-base-check](0728-planner-red-at-base-check/handoff.md) | Planner runs each new-behavior criterion red at base before returning | bug | L1 | P2 | none | 🔵 ready |
 | T-0729 | [0729-builder-pre-edit-red](0729-builder-pre-edit-red/handoff.md) | Builders record a pre-edit red run for each (red) criterion | bug | L1 | P2 | none | 🔵 ready |
-| T-0731 | [0731-gate-lock-stall-report](0731-gate-lock-stall-report/handoff.md) | gate_lock status explains a load-cap stall | bug | L1 | P2 | none | 🟡 claimed |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 
-Closed: 681 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 682 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

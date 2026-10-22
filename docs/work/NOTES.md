@@ -304,3 +304,8 @@
 ## T-0730: traces.py detect skips evidence logs, fanout lanes and declared preview worktrees (2026-10-22)
 
 - note: plugins/sdlc-lite/scripts/traces/detectors/hygiene.py `_evidence_dirs` also skips docs/reports/ because it is a default `reports` home in docs_check.DEFAULT_HOMES; this matches the Outcome's "each docs/layout.md home of kind reports" and is not named by a criterion.
+
+## T-0731: gate_lock status explains a load-cap stall (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:2254 `load_cap` calls `gate_lock.status_data`, which now also runs `ps` (up to the 15 s timeout at plugins/sdlc-lite/scripts/gate_lock.py:483) when the load is over the cap and the queue is not empty. `stall` is an additive key that neither fanout.py nor report.py:1009 reads, and `outside_cpu` fails open, so neither breaks. The only cost is the possible delay.
+- note: plugins/sdlc-lite/scripts/gate_lock.py:464 `outside_cpu` catches every `Exception`. That is broad, but the path is display-only and admission never calls it.
