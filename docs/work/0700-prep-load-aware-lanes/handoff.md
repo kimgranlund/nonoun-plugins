@@ -26,3 +26,10 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a new case: with a faked load above max_load, prep of 3 lanes opens 1 and prints the `prep: load` line; with `--force` it opens 3; the case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/check.py` and `python3 scripts/check-packaging.py` exit 0 (a new flag needs its Arguments row in `skills/fanout/SKILL.md`).
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Base: 47fb0e8c (main merged into the lane, fast-forward, bringing T-0697's default max_load and no-holder guard).
+- `fanout.py prep` now calls `load_cap` after the refusals and the sweep: it reads `gate_lock.status_data` (the ledger, the policy with T-0697's CPU default, the load), prints `prep: <n> live gate-lock holder(s) from other repos`, and when the load is over the effective max_load keeps only the first regular lane, printing `prep: load <x> over <max>: opening 1 of <n> lanes`. `--force` (new, prep only) opens every lane. An unreadable ledger caps nothing.
+- Selftest: case 22 prep load cap (load file 1000, 4 CPUs so max_load 3): 1 of 3 dispatches with the line; `--force` and a quiet load give 3. `gate_env` now defaults to a quiet load file so a busy host never caps the other prep cases. With `load_cap` reverted the new case fails (the only failure).
+- Docs: `--force` row in `skills/fanout/SKILL.md` (17,847 characters), usage line and prep paragraph in the fanout.py docstring.
+- Checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` (through gate_lock.py run --need compute_units=1 --nice) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 47fb0e8c` exit 0.
