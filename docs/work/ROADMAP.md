@@ -10,12 +10,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
-| T-0742 | [0742-light-gate-installs-deps](0742-light-gate-installs-deps/handoff.md) | The light gate set runs with dependencies installed | bug | L1 | P2 | none | 🟡 claimed |
 | T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🟡 claimed |
 | T-0746 | [0746-prune-skips-finished-agents](0746-prune-skips-finished-agents/handoff.md) | dispatch.py prune lists only agents that still exist | bug | L1 | P2 | none | 🟡 claimed |
 | T-0747 | [0747-advance-prep-solo-verifier-tree](0747-advance-prep-solo-verifier-tree/handoff.md) | advance prepares a prep solo's verifier on the lane worktree | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 702 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 703 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -71,3 +70,4 @@ Closed: 702 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/fanout.py:2654: land's host-lane commit uses wip_commit (`git add -A` excluding only logs, locks and .running) inside lane_wt, the worktree where the host branch is checked out, gated on kind solo and branch `worktree-T-NNNN-solo` or `worktree-agent-*`. It cannot touch another tree. It does stage any untracked, non-ignored junk in that lane (`.claude/settings.local.json` is ignored in this repo's .gitignore, but not necessarily in a consumer repo). This is the same behavior as the existing wip commits at fanout.py:1507 and :1979. decide: whether a consumer repo needs an exclude. (from T-0740: Solo lanes in host worktrees commit and report where land reads (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2108: host_report_copy cannot pick another ticket's report. The fallback searches the same relative path, which names the ticket id (`<id>-solo.md`). It returns None when more than one worktree holds a copy. (from T-0740: Solo lanes in host worktrees commit and report where land reads (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2272: merge overlap with T-0744 is real. T-0744 (already on main, 1566168e) added `artifacts_dir` through a helper at fanout.py:~2177. `git merge-tree main 59014ab9` reports `CONFLICT (content)` in fanout.py. dispatch.py auto-merges. The merge must keep one `artifacts_dir` entry in the solo dispatch file, not two. (from T-0740: Solo lanes in host worktrees commit and report where land reads (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/fanout.py:1210-1216 An install folded into a combined full gate (`--gate 'npm ci && npm test'`) is neither split nor run twice (light_installs returns [] for it, as the conductor asked), but the light set then still runs without node_modules and fails rc=127. deps_note (fanout.py:1204-1205) gives no warning either, because a gate does install. Probed with light_installs/deps_note on a package.json repo: `['npm ci && npm test'] + light ['npm run typecheck']` gives [] and no note. (from T-0742: The light gate set runs with dependencies installed (2026-10-22))
