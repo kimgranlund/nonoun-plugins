@@ -48,3 +48,6 @@ The failing test lands before or with the fix, never after.
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0
 - `python3 scripts/check-packaging.py` exit 0
 - `git diff --check f1e0d7784e64200b2d8f1c837a0c38af12e6dfd2` exit 0
+
+### Rework after verification
+Defect: `outside_cpu` decoded `ps` output strictly, so a live process with a non-UTF-8 command line raised `UnicodeDecodeError` and crashed `status` and a waiting `run` (rc 1). Fix: `ps` output and the test file are read with `errors='replace'`, and `outside_cpu` wraps `_outside_cpu` so any exception gives `[]`. New control: `case_stall(raw=True)` (a 99.5% process with `\xff\xfe` in its command line must head the list as U+FFFD) plus a `STALL-DECODE` mutant. Against the previous commit's script the case fails: status shows no stall row, `--json` has no `stall`, and the waiter's stderr is a `Traceback`. Rerun: selftest (direct and through `gate_lock.py run --need compute_units=1 --nice --`) exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check f1e0d7784e64200b2d8f1c837a0c38af12e6dfd2` exit 0.

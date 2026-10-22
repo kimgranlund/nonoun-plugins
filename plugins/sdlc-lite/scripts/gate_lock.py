@@ -462,16 +462,25 @@ def gate_ids(ledger):
 
 
 def outside_cpu(gate, n=3):
+    """The stall report must never break `status` or a waiting `run`: any failure reading or parsing the process list gives []."""
+    try:
+        return _outside_cpu(gate, n)
+    except Exception:
+        return []
+
+
+def _outside_cpu(gate, n):
     """The n busiest processes by CPU that are not the gate's: not a wrapper in the ledger, not in an admitted
     command's group or under one of those, not this process or its ps. Each is {'pid', 'cpu', 'command'}; [] when ps
-    cannot run. SDLC_GATE_PS_FILE (tests only) names a file of `pid ppid pgid pcpu command` lines used in place of ps."""
+    cannot run (undecodable bytes in a command line become U+FFFD). SDLC_GATE_PS_FILE (tests only) names a file of `pid ppid pgid pcpu command` lines used in place of ps."""
     gpids, gpgids = gate
     path = os.environ.get('SDLC_GATE_PS_FILE')
     try:
         if path:
-            text = pathlib.Path(path).read_text()
+            text = pathlib.Path(path).read_text(errors='replace')  # STALL-DECODE
         else:
-            text = subprocess.run(['ps', '-axww', '-o', 'pid=,ppid=,pgid=,pcpu=,command='], capture_output=True, text=True, timeout=15).stdout
+            text = subprocess.run(['ps', '-axww', '-o', 'pid=,ppid=,pgid=,pcpu=,command='], capture_output=True, text=True, errors='replace',
+                                  timeout=15).stdout
     except (OSError, subprocess.SubprocessError):
         return []
     rows = {}
@@ -1193,6 +1202,7 @@ M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
 M_LOADDEF = "pol['max_load'] = max(1, int(0.8 * n))" + '  # LOAD-DEFAULT'
 M_RSS = "used, pids = tree_rss(child.pid) if cap_mb else (0, [])" + '  # RSS-CAP'
 M_STALL = "if d['load']['over'] and queue:" + '  # STALL-NOTE'
+M_DECODE = "text = pathlib.Path(path).read_text(errors='replace')" + '  # STALL-DECODE'
 M_STALLRUN = 'if cap and held and load is not None and load > cap:' + '  # STALL-LINE'
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
@@ -1517,11 +1527,13 @@ def case_load(py, base, label):
         release_all(m, procs)
 
 
-def case_stall(py, base, label):
+def case_stall(py, base, label, raw=False):
     """A stall on the load cap is explained: with max_load 24, a load of 36.5 from outside and a holder, status says how
     long the queue has waited and names the three busiest processes that are not the gate's (the holder's wrapper, its
     command and a child of it are busier and left out), in text and in `status --json` under `stall`; the waiter's own
-    waiting line on stderr carries the load and the same processes. The process list comes from a file (SDLC_GATE_PS_FILE)."""
+    waiting line on stderr carries the load and the same processes. The process list comes from a file (SDLC_GATE_PS_FILE).
+    With raw, the busiest outside process has bytes in its command line that are not UTF-8: status and the waiting line
+    still work and show it with U+FFFD, so an odd process on the host can never break them."""
     m, bad, procs = base / f'm-{label}', [], []
     m.mkdir()
     lf, pf = base / f'load-{label}', base / f'ps-{label}'
@@ -1536,13 +1548,14 @@ def case_stall(py, base, label):
             return ['the holder did not start with the load under the cap']
         cmd_pid = int((m / 'pid-1').read_text())
         wrapper = json.loads(gl(py, env, 'status', '--json').stdout)['grants'][0]['pid']
-        pf.write_text(f'{wrapper} 1 {wrapper} 98.0 python3 gate_lock.py run --name H1\n'
+        junk = b'900005 1 900005 99.5 python3 -c sleep \xff\xfe\n' if raw else b''
+        pf.write_bytes(junk + (f'{wrapper} 1 {wrapper} 98.0 python3 gate_lock.py run --name H1\n'
                       f'{cmd_pid} {wrapper} {cmd_pid} 99.0 sh -c holder\n'
                       f'900100 {cmd_pid} 900100 97.0 node under-the-holder\n'
                       '900001 1 900001 95.0 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome Helper --type=renderer\n'
                       '900002 1 900002 80.0 chrome-tab\n'
                       '900003 1 900003 60.5 node vite\n'
-                      '900004 1 900004 10.0 quiet\n')
+                      '900004 1 900004 10.0 quiet\n').encode())
         lf.write_text('36.5\n')
         procs.append(holder(py, env, m, 2))
         waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
@@ -1551,15 +1564,18 @@ def case_stall(py, base, label):
             return ['the waiter ran over the load cap']
         rows = gl(py, env, 'status').stdout.splitlines()
         want = 'top non-gate CPU: pid 900001 95.0% Google Chrome Helper; pid 900002 80.0% chrome-tab; pid 900003 60.5% node vite'
+        if raw:
+            want = 'top non-gate CPU: pid 900005 99.5% python3 -c sleep \ufffd\ufffd; pid 900001 95.0% Google Chrome Helper; pid 900002 80.0% chrome-tab'
         if not any(x.startswith('queue waited ') and x.endswith(want) for x in rows):
             bad.append(f'status does not say how long the queue waited and the top non-gate CPU, got {rows!r}')
         try:
             st = json.loads(gl(py, env, 'status', '--json').stdout).get('stall') or {}
         except ValueError:
             st = {}
-        if [t.get('pid') for t in st.get('top_cpu', [])] != [900001, 900002, 900003] or not isinstance(st.get('waited_s'), int):
+        if [t.get('pid') for t in st.get('top_cpu', [])] != ([900005, 900001, 900002] if raw else [900001, 900002, 900003]) or not isinstance(st.get('waited_s'), int):
             bad.append(f'status --json does not carry the stall, got {st}')
-        if not waitfor(lambda: 'top non-gate CPU: pid 900001 95.0%' in (m / 'err-2').read_text(), 5):
+        first = '900005 99.5%' if raw else '900001 95.0%'
+        if not waitfor(lambda: f'top non-gate CPU: pid {first}' in (m / 'err-2').read_text(), 5):
             bad.append(f"the waiter's waiting line does not carry the load and the top non-gate CPU, got {(m / 'err-2').read_text()!r}")
         lf.write_text('10\n')
         if not waitfor(lambda: (m / 'started-2').exists()):
@@ -1814,6 +1830,8 @@ def selftest():
             ('group drain', case_drain, M_DRAIN, 'pass  # DRAIN', 'still runs'),
             ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'),
             ('stall in status', case_stall, M_STALL, 'if False:  # STALL-NOTE', 'status does not say how long'),
+            ('stall with a non-UTF-8 command line', lambda p, b, lb: case_stall(p, b, lb, raw=True), M_DECODE,
+             "text = pathlib.Path(path).read_text()  # STALL-DECODE", 'status does not say how long'),
             ('stall in the waiting line', case_stall, M_STALLRUN, 'if False:  # STALL-LINE', 'waiting line does not carry'),
             ('load cap starvation guard', case_load_idle, M_LOAD,
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
