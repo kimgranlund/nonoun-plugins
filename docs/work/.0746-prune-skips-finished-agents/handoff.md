@@ -2,7 +2,7 @@
 id: T-0746
 title: "dispatch.py prune lists only agents that still exist"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -49,3 +49,20 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`dispatch.py prune` keeps the `TaskStop task_id=<name>` line for every entry (a queued teammate may still be live, and a finished one is not distinguishable from the records) but a queued solo, which is always a finished background agent, now ends with `; finished background agent: a 'No task found' failure from TaskStop is safe to ignore, still run --done`. Change: `BACKGROUND_NOTE` and `prune_lines` in `plugins/sdlc-lite/scripts/dispatch.py`, plus the Prune paragraph of its docstring.
+
+- Selftest case `T-0746 prune: a queued solo ...` added. Negative control (note removed from `prune_lines`, case kept): `FAIL: T-0746 prune: a queued solo (a finished background agent) keeps its TaskStop line and says a No task found failure is safe to ignore; a teammate entry does not`, selftest exit 1. With the change: exit 0.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `python3 scripts/check-packaging.py` exit 0, `git diff --check fd6963b9` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: fd6963b96133
+- Changed: see commits
+- Commits: 93a889a T-0746: prune notes that a failed TaskStop on a finished background solo is safe to ignore
+- Check: 1 A `dispatch.py` selftest case reproduces the issue's report and passes; with the change reverted ...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py ...: pass
+- Check: 3 `check.py` exits 0, `check-packaging.py` passes, `git diff --check <base sha>` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:1641 the comment "A queued... -> notes.md

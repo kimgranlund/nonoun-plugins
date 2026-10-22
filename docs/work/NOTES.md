@@ -419,3 +419,17 @@
 - decide: plugins/sdlc-lite/scripts/fanout.py:2654: land's host-lane commit uses wip_commit (`git add -A` excluding only logs, locks and .running) inside lane_wt, the worktree where the host branch is checked out, gated on kind solo and branch `worktree-T-NNNN-solo` or `worktree-agent-*`. It cannot touch another tree. It does stage any untracked, non-ignored junk in that lane (`.claude/settings.local.json` is ignored in this repo's .gitignore, but not necessarily in a consumer repo). This is the same behavior as the existing wip commits at fanout.py:1507 and :1979. decide: whether a consumer repo needs an exclude.
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2108: host_report_copy cannot pick another ticket's report. The fallback searches the same relative path, which names the ticket id (`<id>-solo.md`). It returns None when more than one worktree holds a copy.
 - decide: plugins/sdlc-lite/scripts/fanout.py:2272: merge overlap with T-0744 is real. T-0744 (already on main, 1566168e) added `artifacts_dir` through a helper at fanout.py:~2177. `git merge-tree main 59014ab9` reports `CONFLICT (content)` in fanout.py. dispatch.py auto-merges. The merge must keep one `artifacts_dir` entry in the solo dispatch file, not two.
+
+## T-0742: The light gate set runs with dependencies installed (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/fanout.py:1210-1216 An install folded into a combined full gate (`--gate 'npm ci && npm test'`) is neither split nor run twice (light_installs returns [] for it, as the conductor asked), but the light set then still runs without node_modules and fails rc=127. deps_note (fanout.py:1204-1205) gives no warning either, because a gate does install. Probed with light_installs/deps_note on a package.json repo: `['npm ci && npm test'] + light ['npm run typecheck']` gives [] and no note.
+- note: plugins/sdlc-lite/scripts/fanout.py:1884 A non-Node repo is untouched: the prepend runs only when the integration tree has package.json and no node_modules, and deps_note returns '' with no package.json at the start commit (probe on a plain repo: no note for any gate mix). An existing node_modules in a reused integration tree skips the install.
+- note: plugins/sdlc-lite/scripts/fanout.py:1188 INSTALL_ONLY accepts flags only (`npm ci --prefer-offline`, `pnpm install`, bare `yarn`), so `npm install foo` is not treated as an install-only gate.
+
+## T-0746: dispatch.py prune lists only agents that still exist (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1641 the comment "A queued solo is a background agent that has finished" and the note text "finished background agent" overclaim: a solo spawned as a named in-process teammate (as this repo's conductor does) is still live when queued by `--add`, and TaskStop succeeds on it. The line does not tell the conductor to skip TaskStop (it keeps `TaskStop task_id=` and only says a 'No task found' failure is safe to ignore, then `--done`), so behavior stays correct; consider wording such as "if it was a background agent, a 'No task found' failure ... is safe to ignore".
+
+## T-0745: prepare prints no warning for the normal lane-start base of a ticket verifier (2026-10-22)
+
+- note: I did not run a live `prepare` against a real `.claude/worktrees/<id>-solo` tree: the verifier hook refuses the worktree setup needed and a host record would write into the shared lanes root. The selftest uses the real `lanes.host_record` writer and the real `prepare` entry point in a temporary repo, and the negative control proves it bites.
