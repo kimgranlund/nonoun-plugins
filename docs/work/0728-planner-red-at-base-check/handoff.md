@@ -38,3 +38,10 @@ The failing test lands before or with the fix, never after.
 ## Acceptance criteria
 1. The source definition says it (quote the new line in the Outcome) and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate` plus `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` leave no diff after your commit.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Changed `plugins/sdlc-lite/agents/planner.md` rule 1 (generated planner -L1/-L2/-L3 and the Codex planner TOMLs regenerated). New text:
+
+> Your last action before returning is to run every `(red)` and new-behavior criterion once more at the build-start base (in a detached worktree copy of HEAD when the tree is not base) and fix or drop any that exits 0, because `steps.py review` sends a plan with a green `(red)` span back for a replan.
+
+The in-file wording is "in a `git worktree add --detach <tmp> HEAD` copy". Checks: `check.py` exit 0, `check-packaging.py` exit 0. No lint added: `steps.py review` already runs `(red)` spans at base.
