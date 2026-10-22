@@ -2,7 +2,7 @@
 id: T-0704
 title: "Role hooks resolve a named teammate by its real agent type"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,12 @@ Checks: `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exit 0. `python3 plugi
 Red control: with `_role.sh` from base 12785ab2 the selftest fails on `teammate reviewer-x with real type sdlc-lite:builder-L2 must resolve builder (T-0704)`; base resolves `reviewer-x` (with sidecar) to no role and `solo-0799` (sidecar `general-purpose`) to solo, and `block-disk-scan` lets the `reviewer-x` `find / -name x` through (exit 0, exit 2 after). The no-sidecar fallbacks and the slash `agent_id` case are regression pins, green before and after.
 
 Still open: the sidecar path and field are undocumented Claude Code internals; if a release moves them the resolver silently falls back to name inference.
+
+## Outcome
+
+2026-10-21 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 12785ab2d7d8
+- Changed: see commits
+- Commits: 3b50756 T-0704: role hooks resolve a named teammate by its real agent type
+- Check: 1 hook-selftest passes with a new reviewer-x case that fails when reverted: pass
+- Check: 2 Outcome names where the real type was read from and how it was observed: pass
+- Check: 3 check.py exits 0 and git diff --check exits 0: pass
