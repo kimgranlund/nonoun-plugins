@@ -29,7 +29,7 @@ Task folders, the roadmap, the notes, `evals/`, `proposals/`, and `fleet.json` l
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   *.attempt.json, *.dispatch.json, *.running, *.log, *.limit   run state per role run
   base-sha, budget-ack.md
-  end-sha               where a recorded builder's build ended (HEAD, else a tree hash): the verifier brief's Diff range end
+  end-sha               where a recorded builder's build ended (HEAD, else a tree hash): the verifier brief's Diff range end; `record --update` moves it after a review fix
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md
