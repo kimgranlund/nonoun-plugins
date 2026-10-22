@@ -5971,6 +5971,15 @@ def selftest():
                fl2.returncode == 0 and not ftree.exists() and 'closed alpha (ancestor)' in fl2.stdout.splitlines()
                and sh(fl, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/f-alpha').returncode != 0
                and faref and sh(fl, 'rev-parse', f'{faref}^{{commit}}').stdout.strip() == ftip)
+        # T-0713: open recorded the lane in main (no integration tree yet), so the close clears it on fanout/f, commits it
+        # there, and leaves main clean and fast-forwardable
+        fl_status = sh(fl, 'status', '--porcelain').stdout
+        fl_clear = sh(fl, 'log', '-1', '--format=%s', 'fanout/f').stdout.strip()
+        expect(f'case 32 T-0713: the land that closes the lane leaves main clean and commits the cleared record on '
+               f'fanout/f, got status={fl_status!r} last commit={fl_clear!r}',
+               not fl_status and 'branch: fanout/f-alpha' in (fl / '.sdlc' / 't1' / 'handoff.md').read_text()
+               and fl_clear == 'T-0001, T-0002: clear lane record alpha'
+               and 'branch:' not in sh(fl, 'show', 'fanout/f:.sdlc/t1/handoff.md').stdout)
 
         # case 34 (T-0481): the light gate class. A lane whose merged paths outside the ticket root all match a declared
         # light_scope glob runs --light-gate instead of --gate; cover runs the full set at the tip into gate-ledger.jsonl,
