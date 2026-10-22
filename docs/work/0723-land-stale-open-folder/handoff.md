@@ -41,3 +41,10 @@ The failing test lands before or with the fix, never after.
 1. A `fanout.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Root cause: a lane tree holding the open `NNNN-*` copy beside the target's closed `.NNNN-*` (re-added by merging main into the lane) merged cleanly with both folders, and `tickets.py roadmap` inside `merge_generated` refused the duplicate id.
+- Fix: `fanout.py` `drop_stale_open` runs in `merge_generated` after the merge and before the roadmap, `git rm`s each open folder the index holds beside a closed folder of the same number, and `merge_gate_close` reports `dropped stale open folder <path>: its ticket is closed on <integration>`. Every `merge_generated` caller (land, run, settle, sync, lanes forward) gets it.
+- Repro first in a throwaway repo: `merge failed: 0002-t2: duplicate id T-0002, also used by .0002-t2`; with the fix: `merged`, `.sdlc/0002-t2` dropped.
+- Selftest case `case 23 stale open folder (T-0723)`. Negative control (the drop call replaced by `[]`): `fanout selftest: FAIL` with `- case 23 stale open folder (T-0723): a lane carrying the open copy of a ticket closed on the integration branch lands with it dropped and reported, got rc2=0 rc=1 ...`.
+- Checks: `gate_lock.py run ... fanout.py selftest` exit 0 (PASS); `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 9c803b49` exit 0.
