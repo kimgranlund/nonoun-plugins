@@ -47,3 +47,9 @@ The failing test lands before or with the fix, never after.
 1. A `lanes.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/lanes.py`: in `evaluate` row 4, a lane into the integration branch whose tree exists, is host-owned (`wtroot.host_owned`) and whose branch is an ancestor of the integration branch no longer counts as open. `do_close` prints `host-owned <path> landed in <b>; remove it yourself: git worktree remove <path>` for each such tree and never removes it. `fanout.py settle` prints the close message, so the line reaches the maintainer there unchanged; fanout.py is not edited. Truth table row 4 documents it.
+- New selftest case `host landed` (`case_host_landed_integration`): an unmerged agent-y still holds the tree open alone; once only the merged agent-x remains, close removes the integration tree, keeps agent-x and prints its cleanup line.
+- Negative control, run before the fix (same case): `FAIL: host landed: host landed: want agent-y alone open, got 1: lanes still open into wave/1: agent-x, agent-y | host landed: want the integration tree closed and '...', got 1: lanes still open into wave/1: agent-x`.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 8f08aaab` exit 0.
