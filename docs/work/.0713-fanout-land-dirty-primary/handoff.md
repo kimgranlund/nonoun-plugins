@@ -2,7 +2,7 @@
 id: T-0713
 title: "fanout.py land leaves lane-close bookkeeping uncommitted in the primary checkout"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -55,3 +55,15 @@ The failing test lands before or with the fix, never after.
 - Selftest: `fanout.py` case 32 asserts main's `git status --porcelain` is empty after the closing land, main still holds the record, and `fanout/f` carries `T-0001, T-0002: clear lane record alpha` with no `branch:` line.
 - Negative control (lanes.py reverted to the base): `case 32 T-0713: the land that closes the lane leaves main clean and commits the cleared record on fanout/f, got status=' M .sdlc/AGENTS.md\n M .sdlc/roadmap.md\n M .sdlc/t1/handoff.md\n M .sdlc/t2/handoff.md\n' last commit='T-0001, T-0002: clear lane record alpha'`
 - Checks: `fanout.py selftest` PASS and `lanes.py selftest` ok (both through gate_lock), `check.py` exit 0, `check-packaging.py` PASS, `git diff --check 7e5c77c6` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 7e5c77c60f7c
+- Changed: see commits
+- Commits: 1e40d33 T-0713: fanout.py land leaves lane-close bookkeeping uncommitted in the primary checkout
+- Check: 1 fanout.py selftest case runs a land that closes a lane from the primary checkout, asserts main's ...: pass
+- Check: 2 fanout.py selftest and lanes.py selftest exit 0 through gate_lock: pass
+- Check: 3 check.py exit 0, check-packaging passes, `git diff --check` clean: pass
+- Check: 4 Conductor note, plain `lanes.py close` into main: pass
+- Check: 5 Conductor note, unrelated uncommitted edits never committed by commit_clear: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py commit_clear into a non-main... -> notes.md

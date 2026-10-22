@@ -283,3 +283,7 @@
 
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1868: decide: `record --update` accepts any completed attempt of any role, not only a resumed builder or ui-designer, and checks only report format; a hand-edited verifier fail rewritten to pass would be accepted and get a fresh `result_sha256` in the attempt (runs.jsonl keeps the original sha, and nothing compares the sha to the file today, so this adds no new capability over editing the file). Consider restricting `--update` to builder and solo, or leaving the old sha in the attempt.
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2210: note: the new `stop: changes-required ...` relay text has no selftest assertion; a wording drift between `advance` and conductor.md would not be caught.
+
+## T-0713: fanout.py land leaves lane-close bookkeeping uncommitted in the primary checkout (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/lanes.py `commit_clear` into a non-main `into` with no integration tree commits on whatever branch the main checkout has checked out; same as ctx.main in every case this repo uses, so no action.

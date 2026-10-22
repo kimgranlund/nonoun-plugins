@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0713 | [0713-fanout-land-dirty-primary](0713-fanout-land-dirty-primary/handoff.md) | fanout.py land leaves lane-close bookkeeping uncommitted in the primary checkout | bug | L2 | P2 | none | 🟡 claimed |
 
-Closed: 677 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 678 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
