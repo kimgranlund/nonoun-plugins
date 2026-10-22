@@ -38,3 +38,10 @@ The failing test lands before or with the fix, never after.
 ## Acceptance criteria
 1. The source definition says it (quote the new line in the Outcome) and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate` plus `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` leave no diff after your commit.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Rule 11 (redck record before the first edit) already existed but sat at the end of the list, after "implement the step". Added a First action line to `plugins/sdlc-lite/agents/builder.md` (Brief section) and regenerated the builder-L1..L5 and Codex definitions. `solo.md` already runs `specgate.py red` and `redck.py record` before the first edit (step 2), so it is unchanged.
+
+New line: "First action: when the handoff has a `(red)` criterion, run `redck.py record` (rule 11) before any edit, a new test, generator or formatter run included; a record taken after any edit is stored as retrospective and leaves a process deviation."
+
+Checks: `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 7ec0d4bb` exit 0; claude_roles.py and codex_roles.py generate rerun leaves no diff.
