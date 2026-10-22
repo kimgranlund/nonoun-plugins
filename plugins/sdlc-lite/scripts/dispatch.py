@@ -1309,7 +1309,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   '%sThrowaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them, and any '
                   'scratch output you wrote under that prefix (rm is allowed there and refused elsewhere), when done. '
-                  'Write each worktree and rm path literally (the full path, or under $SDLC_TMP_WORKTREES), never through another shell variable such as $T or $S: '
+                  'Write each worktree and rm path literally as the full path under the prefix this line names, never through a shell variable such as $T, $S or $SDLC_TMP_WORKTREES: '
                   'the guard hooks cannot read it and refuse the command.\n'
                   'Scratch files that are not worktrees (probe files, mutated copies) only under %s, never in the repo (rm is allowed there too).\n%s'
                   % (list_title(directory, role, level, k), handoff_locator(handoff), handoff_locator(records), result, role, role, result,
@@ -2938,7 +2938,7 @@ def selftest():
              and '\nEnd with one line: `builder <status> %s` (status is your Status or Verdict value, else done), nothing else.\nTree: ' % (R(w) / 'builder-L1.md') in got['prompt']
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
         case('T-0707 the brief tells the role to write worktree and rm paths literally, never through a shell variable',
-             'Write each worktree and rm path literally (the full path, or under $SDLC_TMP_WORKTREES), never through another shell variable such as $T or $S' in got['prompt'])
+             'Write each worktree and rm path literally as the full path under the prefix this line names, never through a shell variable such as $T, $S or $SDLC_TMP_WORKTREES' in got['prompt'])
         own = json.loads((Path(got['tmp_prefix']) / '.owner.json').read_text())
         case('T-0550 the tmp prefix and the scratch dir hold an owner marker: the session pid, the running marker, the role',
              own['pid'] == live and own['running'] == str(R(w) / 'builder-L1.running') and own['role'] == 'builder-L1'
