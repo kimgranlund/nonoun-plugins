@@ -16,7 +16,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0724 | [0724-lanes-exclude-settings-local](0724-lanes-exclude-settings-local/handoff.md) | Lanes never stage .claude/settings.local.json | bug | L1 | P2 | none | 🔵 ready |
 | T-0725 | [0725-lane-open-merge-lock](0725-lane-open-merge-lock/handoff.md) | lanes.py open takes the merge lock before committing to integration | bug | L2 | P2 | none | 🔵 ready |
 | T-0727 | [0727-split-env-error-not-defect](0727-split-env-error-not-defect/handoff.md) | steps.py split reports missing dependencies as an environment error | bug | L1 | P2 | none | 🟡 claimed |
-| T-0728 | [0728-planner-red-at-base-check](0728-planner-red-at-base-check/handoff.md) | Planner runs each new-behavior criterion red at base before returning | bug | L1 | P2 | none | 🔵 ready |
+| T-0728 | [0728-planner-red-at-base-check](0728-planner-red-at-base-check/handoff.md) | Planner runs each new-behavior criterion red at base before returning | bug | L1 | P2 | none | 🟡 claimed |
 | T-0729 | [0729-builder-pre-edit-red](0729-builder-pre-edit-red/handoff.md) | Builders record a pre-edit red run for each (red) criterion | bug | L1 | P2 | none | 🔵 ready |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
