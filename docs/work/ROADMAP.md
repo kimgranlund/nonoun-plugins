@@ -7,14 +7,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0697 | [0697-gate-max-load-default](0697-gate-max-load-default/handoff.md) | gate_lock admits by load from a CPU-count default when policy sets no max_load | bug | L1 | P1 | none | 🟡 claimed |
-| T-0698 | [0698-lane-tests-through-gate-lock](0698-lane-tests-through-gate-lock/handoff.md) | Lane roles run heavy test suites through gate_lock run | feature | L2 | P1 | none | 🟡 claimed |
 | T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | ⏳ proposed |
 | T-0700 | [0700-prep-load-aware-lanes](0700-prep-load-aware-lanes/handoff.md) | fanout prep counts other lanes and the load before opening lanes | feature | L2 | P1 | none | ⏳ proposed |
 | T-0701 | [0701-settle-forward-gate-at-tip](0701-settle-forward-gate-at-tip/handoff.md) | settle --forward says when it skipped its gates | bug | L1 | P2 | none | 🟡 claimed |
 | T-0702 | [0702-disk-scan-hook-gap](0702-disk-scan-hook-gap/handoff.md) | Lane agents ran find / for hours despite block-disk-scan | bug | L2 | P1 | none | 🟡 claimed |
 | T-0703 | [0703-resumed-agent-reports](0703-resumed-agent-reports/handoff.md) | A resumed sub-agent reports back to the conductor | bug | L1 | P2 | none | ⏳ proposed |
 
-Closed: 659 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 660 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -33,3 +32,4 @@ Closed: 659 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/steps.py:2877 `owner_settled_hold`: a Criteria line that `results.criteria_states` cannot parse (for example `- #2 y FAILED no evidence`, no `: fail. Evidence:`) is ignored, so a result with such a line plus a settled `deferred:` hold reads as `pass` (probe returned True, and `results.py validate` accepts the file). The gap is the existing parser's, and a validated verifier result normally has no such line; decide: whether `settle-held` or `owner_settled_hold` should refuse a result with unparsed Criteria lines. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1883: evidence with no `## Verdict` heading is accepted unchecked (only a review record's Verdict is judged); that matches the handoff but any existing repo-relative file settles a hold. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
 - decide: Cleanup: the throwaway worktree was removed with `git worktree remove`; `rm -rf` of the empty prefix dir `tmp:0684-verifier-L2` was denied by the permission system and may remain empty. (from T-0684: settle a deferred: conductor held criterion so land reads it as pass (2026-10-21))
+- decide: plugins/sdlc-lite/agents/builder.md:14: the command path `${CLAUDE_PLUGIN_ROOT}` is now unquoted (needed for the literal match in criterion 1); a plugin root containing spaces would split the argument. note: accepted by the ticket Outcome. (from T-0698: Lane roles run heavy test suites through gate_lock run (2026-10-21))

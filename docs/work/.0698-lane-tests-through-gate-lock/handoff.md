@@ -2,7 +2,7 @@
 id: T-0698
 title: "Lane roles run heavy test suites through gate_lock run"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,14 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 - The existing machine-wide queue sentence in `plugins/sdlc-lite/agents/builder.md`, `solo.md` and `verifier.md` now reads: a full test suite or browser test (npm test, node --test, vitest, playwright, jest, a repo gate) and the full `check.sh` run as `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gate_lock.py run --need compute_units=N --nice -- <cmd>`, N the workers the suite starts (1 to 6); a single test file or a selftest of one script runs directly. The path is unquoted so the literal `gate_lock.py run` of criterion 1 matches (the old quoted form printed nothing).
 - `docs/references/sdlc-internals.md` names the rule in the `gate_lock.py` section. Generated Claude and Codex agents regenerated.
 - Checks: criterion 1 prints one line per file; both `generate --check` exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check a8680df4` exit 0.
+
+## Outcome
+
+2026-10-21 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a8680df45305
+- Changed: see commits
+- Commits: c27e120 T-0698: Lane roles run heavy test suites through gate_lock run
+- Check: 1 `git grep -n "gate_lock.py run"` prints one line per file: pass
+- Check: 2 `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 4 `git diff --check a8680df4...` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/agents/builder.md:14: the command path... -> notes.md

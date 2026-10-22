@@ -196,3 +196,7 @@
 
 - note: plugins/sdlc-lite/scripts/steps.py:2886 the guard treats any bullet under ## Criteria that CRITERION_RE does not match as unparsed, so an indented sub-bullet under a criterion would also block a settled hold. That errs toward not settling, which is the safe direction.
 - note: /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0696-verifier-L2 still holds the probe scratch files (rm was denied). The throwaway worktree has been removed.
+
+## T-0698: Lane roles run heavy test suites through gate_lock run (2026-10-21)
+
+- decide: plugins/sdlc-lite/agents/builder.md:14: the command path `${CLAUDE_PLUGIN_ROOT}` is now unquoted (needed for the literal match in criterion 1); a plugin root containing spaces would split the argument. note: accepted by the ticket Outcome.
