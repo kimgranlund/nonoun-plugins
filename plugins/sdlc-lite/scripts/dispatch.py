@@ -485,17 +485,27 @@ NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40}
 
 
 def lane_record_base(tree):
-    """base_sha of a lane worktree's fanout record (.lane.json at its top), else ''."""
+    """base_sha of a lane worktree's fanout record (.lane.json at its top, else its host record), else ''."""
     top = git('rev-parse', '--show-toplevel', cwd=tree).stdout.strip()
     try:
         rec = json.loads((Path(top) / '.lane.json').read_text(encoding='utf-8')) if top else {}
     except (OSError, ValueError):
         rec = {}
-    return str(rec.get('base_sha') or '').strip() if isinstance(rec, dict) else ''
+    sha = str(rec.get('base_sha') or '').strip() if isinstance(rec, dict) else ''
+    if sha or not top:
+        return sha
+    try:  # a host-owned worktree has no .lane.json: its record is <lanes root>/host/<name>.lane.json (lanes.host_record, T-0745)
+        import lanes  # local like host_lanes: lanes imports nothing from here
+        for d in lanes.discover(lanes.Ctx(top)):
+            if d['owner'] == 'host' and d['exists'] and lanes.samepath(d['path'], top):
+                return str(d['base_sha'] or '').strip()
+    except Exception:  # noqa: BLE001 - a lane lookup never blocks prepare
+        pass
+    return ''
 
 
 def lane_start(tree, floor=''):
-    """The commit a lane worktree started from: base_sha of its fanout record (.lane.json at its top), else the fork floor."""
+    """The commit a lane worktree started from: base_sha of its fanout or host record (lane_record_base), else the fork floor."""
     return lane_record_base(tree) or floor
 
 
@@ -3371,6 +3381,15 @@ def selftest():
         rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
         case('prepare --tree <lane> verifier with a fanout record and nothing else named or recorded: the base is the record start and no warning prints (T-0745)',
              rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' not in errn)
+        # T-0745: a host-owned worktree has no .lane.json; fanout prep's host record names the lane start
+        (lw3 / '.lane.json').unlink()
+        import lanes
+        lanes.host_record(lw3.name, branch='lane3', into=gt(rr, 'rev-parse', '--abbrev-ref', 'HEAD'), tickets=['T-0745'], base=start3, cwd=str(rr))
+        hrec3 = lanes.Ctx(str(rr)).root / 'host' / (lw3.name + '.lane.json')
+        rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
+        case('prepare --tree <host worktree> verifier with a host record and no .lane.json: the base is the record base_sha and no warning prints (T-0745)',
+             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' not in errn)
+        hrec3.unlink()
         if mbase_was is not None:
             mbase.write_text(mbase_was)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw3)], capture_output=True)
