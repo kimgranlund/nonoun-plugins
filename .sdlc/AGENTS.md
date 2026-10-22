@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1f71ca8cb070 -->
+<!-- sdlc-lite:managed:start v1 sha256:ab0f56417d09 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,13 +13,12 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 - proposed: 0
 - ready: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- claimed: 3
+- claimed: 2
   - T-0707 Briefs say to write worktree and rm paths literally (docs/work/0707-brief-literal-paths), claimed by sdlc-lite-author 2026-10-21
   - T-0709 Role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES (docs/work/0709-roles-literal-tmp-prefix), claimed by sdlc-lite-author 2026-10-21
-  - T-0710 Fix four verifier-flagged doc and test gaps (docs/work/0710-verifier-followups-1022), claimed by sdlc-lite-author 2026-10-21
 - paused: 0
 - blocked: 0
-- done: 670
+- done: 671
 - dropped: 29
 
 ## Procedures

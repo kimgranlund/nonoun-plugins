@@ -250,3 +250,7 @@
 - note: plugins/sdlc-lite/hooks/block-stray-worktree.sh still allows `git worktree remove --force "$SDLC_TMP_WORKTREES/base"` for a sub-agent with the variable unset (rc=0 before and after). The shell runs it as `git worktree remove --force /base`, which git rejects for an unregistered path, so it is harmless and out of this ticket's scope.
 - decide: the verifier agent instructions (rule 3, `git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD`) still teach the variable form, which a dispatch.py prepare sub-agent now has refused. That brief text belongs to T-0707 (a Non-goal here).
 - note: the throwaway prefix tmp:0708-verifier-L2 and the scratch dir still hold only their dispatch `.owner.json`. `rm -rf` of either directory was denied by permissions. The worktree and my scratch logs were removed.
+
+## T-0710: Fix four verifier-flagged doc and test gaps (2026-10-21)
+
+- note: redck.py deviations printed no process deviation lines for this artifacts dir; no criterion is marked (red).

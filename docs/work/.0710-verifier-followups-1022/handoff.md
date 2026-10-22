@@ -2,7 +2,7 @@
 id: T-0710
 title: "Fix four verifier-flagged doc and test gaps"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,13 @@ Base 4f069a80. Four fixes, no behavior change.
 - sdlc-internals.md line 29: stray closing parenthesis removed.
 - land.md line 15: warning fires for each `--gate` and `--light-gate`.
 Checks: gate_lock selftest PASS (via gate_lock run), check.py exit 0, check-packaging.py exit 0, `git diff --check 4f069a80` exit 0.
+
+## Outcome
+
+2026-10-21 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (opus) · base: 4f069a805d8f
+- Changed: see commits
+- Commits: 0e1a37b T-0710: Fix four verifier-flagged doc and test gaps
+- Check: 1 `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0, and with the load-cap check di...: pass
+- Check: 2 `git diff <base sha> -- docs/specs/sdlc-lite/gate-lock-admission.md docs/references/sdlc-internal...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines for this... -> notes.md
