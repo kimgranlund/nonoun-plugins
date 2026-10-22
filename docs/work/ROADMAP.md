@@ -12,7 +12,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🟡 claimed |
 | T-0747 | [0747-advance-prep-solo-verifier-tree](0747-advance-prep-solo-verifier-tree/handoff.md) | advance prepares a prep solo's verifier on the lane worktree | bug | L1 | P2 | none | 🟡 claimed |
-| T-0748 | [0748-reverify-base-after-main-merge](0748-reverify-base-after-main-merge/handoff.md) | A re-verify after a lane merges main keeps the ticket's build base | bug | L1 | P2 | none | ⏳ proposed |
+| T-0748 | [0748-reverify-base-after-main-merge](0748-reverify-base-after-main-merge/handoff.md) | A re-verify after a lane merges main keeps the ticket's build base | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 704 done, 29 dropped (git log or .NNNN-* folders)
 
