@@ -41,3 +41,10 @@ The failing test lands before or with the fix, never after.
 1. A `steps.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`steps.py split --only N` now runs guard and (red) spans with `SDLC_TMP_WORKTREES` set to a fresh `split-spans-*` dir under the worktree root tmp prefix (`span_tmp`, `span_env(base, tmp)`, `run_guard(..., tmp)`, `red_first(..., tmp=)`), removed after the spans ran. `swap`, `amend`, `widen`, `redck.py` and `specgate.py` are unchanged.
+- Criterion 1: two selftest cases `(T-0726) --only exports SDLC_TMP_WORKTREES to a guard ...` and `... to a (red) span ...` pass. With the export line replaced by `pass`, `steps.py selftest` exits 1 and lists both: `  - (T-0726) --only exports SDLC_TMP_WORKTREES to a guard, a fresh dir removed afterwards` and `  - (T-0726) --only exports SDLC_TMP_WORKTREES to a (red) span, a fresh dir removed afterwards`.
+- Criterion 2: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0.
+- Criterion 3: `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `python3 scripts/check-packaging.py` exit 0, `git diff --check 83a3a4e6` exit 0.
+- Also updated the `steps.py` split docstring and `docs/references/sdlc-internals.md`.
