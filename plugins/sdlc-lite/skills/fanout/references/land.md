@@ -12,7 +12,7 @@ Levels L2 and L3: when the solo reports `verify: needed`, take the level from `s
 
 ## Gate worker caps
 
-The gate lock exports `SDLC_GATE_WORKERS` to every gate, but a test runner reads it only if the gate command passes it. `fanout.py prep` prints `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS` for each `--gate` that runs one of these without its flag (the exit code is unchanged); add the flag with `$SDLC_GATE_WORKERS` as the value:
+The gate lock exports `SDLC_GATE_WORKERS` to every gate, but a test runner reads it only if the gate command passes it. `fanout.py prep` prints `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS` for each `--gate` and `--light-gate` that runs one of these without its flag (the exit code is unchanged); add the flag with `$SDLC_GATE_WORKERS` as the value:
 
 | Runner | Flag |
 |---|---|
