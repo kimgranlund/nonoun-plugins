@@ -2,7 +2,7 @@
 id: T-0716
 title: "gate_lock run stops a gate whose process tree exceeds a memory cap"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,15 @@ The first attempt (`node_heap_mb`, `NODE_OPTIONS`) is removed from `gate_lock.py
 - Criterion 2: `git grep -n "node_heap_mb" plugins docs/specs` prints nothing (exit 1).
 - Criterion 3: `gate_lock.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 3575fb51` exit 0.
 - Limit: a sample every 2 s misses a shorter spike; the real 13 to 18 GB leak was not reproduced here, only the 400 MB fixture.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (opus) · base: 3575fb5150dc
+- Changed: see commits
+- Commits: 2e6ce29 T-0716: gate_lock run stops a gate whose process tree passes max_rss_mb; 870d089 T-0716: gate_lock run caps the Node heap of a gate
+- Check: 1 A `gate_lock.py` selftest case stops a ~400 MB tree under `max_rss_mb=200` with exit 137 within 1...: pass
+- Check: 2 `git grep -n "node_heap_mb" plugins docs/specs` prints nothing: pass
+- Check: 3 selftest, check.py, check-packaging.py and `git diff --check <base sha>` all green: pass
+- Follow-up: fix-now: plugins/sdlc-lite/scripts/gate_lock.py:641-646 the SIGKILL loop... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/gate_lock.py:631-636 there is no sampler... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/gate_lock.py:608-628 tree_rss walks only... -> notes.md

@@ -287,3 +287,9 @@
 ## T-0713: fanout.py land leaves lane-close bookkeeping uncommitted in the primary checkout (2026-10-22)
 
 - note: plugins/sdlc-lite/scripts/lanes.py `commit_clear` into a non-main `into` with no integration tree commits on whatever branch the main checkout has checked out; same as ctx.main in every case this repo uses, so no action.
+
+## T-0716: gate_lock run stops a gate whose process tree exceeds a memory cap (2026-10-22)
+
+- fix-now: plugins/sdlc-lite/scripts/gate_lock.py:641-646 the SIGKILL loop reuses the pre-drain `pids` sample, which always includes `child.pid`; `drain_group` has already reaped the child via `child.poll()`. Observed probe: `os.kill(pid=74335, sig=9) is_child=True child.returncode_at_kill=-15`, so the watchdog signals a pid it already reaped, and any group member that died and was reaped by init during the up-to-10 s drain is signalled too; a pid recycled in that window would be an unrelated process. Re-sample `tree_rss` after the drain (or skip `child.pid` and pids no longer descended from the tree) before the SIGKILL loop.
+- note: plugins/sdlc-lite/scripts/gate_lock.py:631-636 there is no sampler thread; `wait_watched` is a synchronous `child.wait(timeout=step)`. Under the default cap (32768 MB here) gates exited with their own code: `sleep 3; exit 7` rc 7 in 3.19 s, `exit 0` rc 0, `sleep 0.2; exit 5` rc 5, `kill -TERM $$` rc 143, and with the default 2 s step `sleep 0.1; exit 4` rc 4 in 0.29 s, `status` then `no holders`.
+- note: plugins/sdlc-lite/scripts/gate_lock.py:608-628 `tree_rss` walks only ppid descendants of the child, so no process outside the tree at sample time is counted or targeted; the only stray-kill path is the stale pid list in the note above.
