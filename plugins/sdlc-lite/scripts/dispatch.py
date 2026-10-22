@@ -191,7 +191,7 @@ verifier, filer, ui-designer) and false for builder, whose failed run may be res
 level, recorded_at, session} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
 result's ## Follow-ups section is not None (a filer is queued either way: its follow-ups are its output, which tickets.py
 close consumes, T-0531). `dispatch.py prune` lists the queue with the stop call per entry
-(`TaskStop task_id=<name>`, and for a solo, a finished background agent, a note that a `No task found` failure is safe to ignore, T-0746); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
+(`TaskStop task_id=<name>`, and for a solo, which may be a background agent that already finished, a note that a `No task found` failure is then safe to ignore, T-0746); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
 (`fanout.py land` does it for a merged solo, under the `name` of its newest solo dispatch record, else `<id>-solo`). The queue
 lives in the main checkout, also when the call runs in a linked worktree, and session is CLAUDE_CODE_SESSION_ID (a
 sub-agent shares its parent's). In a Claude session the listing shows only that session's entries and ends with
@@ -1638,8 +1638,8 @@ def prune_lane(root, name):
     return 'lane still open: %s (%s)' % (d['path'], first)
 
 
-# A queued solo is a background agent that has finished; the host drops it as a task, so its TaskStop fails (T-0746).
-BACKGROUND_NOTE = "; finished background agent: a 'No task found' failure from TaskStop is safe to ignore, still run --done"
+# A queued solo may be a background agent that already finished; the host then drops it as a task and its TaskStop fails (T-0746).
+BACKGROUND_NOTE = "; if this solo ran as a background agent that already finished, a 'No task found' failure from TaskStop is safe to ignore; still run --done"
 
 
 def prune_lines(root='.'):
