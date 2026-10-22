@@ -2,7 +2,7 @@
 id: T-0712
 title: "Briefs say record removes the throwaway prefix and scratch dir"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,12 @@ A prepared brief no longer tells the role to remove its throwaway prefix or scra
 - `plugins/sdlc-lite/scripts/dispatch.py`: the prepared brief now says `dispatch.py record` removes the throwaway prefix and the scratch dir after the run, so the role does not remove them (`git worktree remove` of its own worktree is fine); "rm is allowed there" text dropped, T-0707 literal-path sentence kept. Selftest case rewritten to assert the new clause appears once and the old text is absent.
 - `plugins/sdlc-lite/agents/builder.md` (and generated builder-L1..L5, Codex sdlc-builder-l1..l5): "Remove it when done" aligned to the same rule. `hooks/block-role-rm.sh`: header comment only.
 - Checks: dispatch selftest exit 0 (via gate_lock), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check c07d6a20` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (opus) · base: c07d6a20139a
+- Changed: see commits
+- Commits: fd4f7b6 T-0712: briefs say record removes the throwaway prefix and scratch dir
+- Check: 1 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: decide: plugins/sdlc-lite/agents/builder.md:20 says "dispatch.py record... -> notes.md

@@ -269,3 +269,7 @@
 
 - note: plugins/sdlc-lite/scripts/run.sh:43 the new header comment sentence was appended to an existing line, making it 257 characters where the surrounding header lines wrap near 115.
 - note: redck.py deviations printed no process-deviation lines; the artifacts dir holds no builder-*.md (solo lane), so the builder claims were checked against the Outcome section of the handoff.
+
+## T-0712: Briefs say record removes the throwaway prefix and scratch dir (2026-10-22)
+
+- decide: plugins/sdlc-lite/agents/builder.md:20 says "`dispatch.py record` removes the prefix after the run". For a run.sh-launched role (the Codex sdlc-builder-l*.toml), nothing calls dispatch.py record. run.sh's own `cleanup_worktrees` (plugins/sdlc-lite/scripts/run.sh:581-591, called from on_exit at :679 on every exit) removes the prefix instead. The instruction "do not rm -rf it" is still correct, but the line names the wrong mechanism. A neutral wording would fix it, for example "the runner (`dispatch.py record` or `run.sh`) removes the prefix after the run".

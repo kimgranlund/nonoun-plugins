@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0712 | [0712-brief-record-cleans-tmp](0712-brief-record-cleans-tmp/handoff.md) | Briefs say record removes the throwaway prefix and scratch dir | chore | L2 | P2 | none | 🟡 claimed |
 
-Closed: 674 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 675 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -33,3 +32,4 @@ Closed: 674 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/fanout.py (load_cap): the ledger-unreadable and `--force` branches have no selftest case beyond the busy, force and quiet cases; the unreadable-ledger path is unobserved. note: no criterion requires it. (from T-0700: fanout prep counts other lanes and the load before opening lanes (2026-10-21))
 - decide: the verifier agent instructions (rule 3, `git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD`) still teach the variable form, which a dispatch.py prepare sub-agent now has refused. That brief text belongs to T-0707 (a Non-goal here). (from T-0708: Hooks treat an unset SDLC_TMP_WORKTREES as the fallback prefix (2026-10-21))
 - decide: plugins/sdlc-lite/scripts/run.sh:710 passes the prefix to a run.sh-launched role only as the `SDLC_TMP_WORKTREES` env var; the run.sh prompt has no throwaway-prefix line. A role launched that way with a brief that names no prefix has to infer from the parenthetical that the variable's value is its prefix. (from T-0709: Role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES (2026-10-21))
+- decide: plugins/sdlc-lite/agents/builder.md:20 says "`dispatch.py record` removes the prefix after the run". For a run.sh-launched role (the Codex sdlc-builder-l*.toml), nothing calls dispatch.py record. run.sh's own `cleanup_worktrees` (plugins/sdlc-lite/scripts/run.sh:581-591, called from on_exit at :679 on every exit) removes the prefix instead. The instruction "do not rm -rf it" is still correct, but the line names the wrong mechanism. A neutral wording would fix it, for example "the runner (`dispatch.py record` or `run.sh`) removes the prefix after the run". (from T-0712: Briefs say record removes the throwaway prefix and scratch dir (2026-10-22))
