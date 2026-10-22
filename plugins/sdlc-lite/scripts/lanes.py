@@ -68,8 +68,10 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   landing path does not push; the claim is the refs/sdlc/claims ref (T-0588). Every close removes a record
   ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it, in main and in the integration
   tree holding the lane's into branch, where it commits `<ids>: clear lane record <leaf>` (T-0695, printed as `committed in
-  <tree>: <sha> <message>`). list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's
-  first local ticket, else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
+  <tree>: <sha> <message>`). A ticket that tree cleared stays byte-identical in main, which merging into brings the clear
+  to; a clear in main for any other into than main is committed there the same way (T-0713), so a land leaves main clean.
+  list rows carry ticket (the local ticket whose `branch:` is the row's branch, else the record's first local ticket,
+  else null) and verdict (its newest verifier result: pass, fail, inherited, or null), so a
   manual worktree with verified, unmerged work shows its ticket.
 
 Landed test. Every ref is named in full (refs/heads/<b>, refs/remotes/<r>/<b>), so a local pr/1 beside
@@ -938,12 +940,19 @@ def do_close(ctx, d, outcome, info, dry):
     if d['owner'] == 'host' and d['record_path']:
         with contextlib.suppress(OSError):
             os.unlink(d['record_path'])
+    cleared, done = clear_integration_record(ctx, d, into)
+    # T-0713: a ticket the integration tree cleared stays byte-identical in main (merging into brings the clear); any
+    # other clear in main is committed there when into is another branch, so a land never leaves main dirty
+    mpre, mains = porcelain(top), []
     for t in d['tickets']:
         if LOCAL_ID.fullmatch(str(t)):
-            with contextlib.suppress(tickets.Fail, OSError):
-                tickets.record_branch(Path(top) / '.sdlc', t, None, only=b)
+            if str(t) not in done:
+                with contextlib.suppress(tickets.Fail, OSError):
+                    if tickets.record_branch(Path(top) / '.sdlc', t, None, only=b):
+                        mains.append(str(t))
             git(top, 'update-ref', '-d', READY_REFS + str(t))  # T-0590: the review pin goes with its lane
-    cleared = clear_integration_record(ctx, d, into)
+    if mains and short_branch(into) not in ('', 'HEAD', ctx.main):
+        cleared += commit_clear(ctx, top, mpre, mains, d['lane'])
     lines = pre + [outcome] + carried + cleared
     pl = port_line(d['port'])
     if pl:
@@ -958,14 +967,14 @@ def do_close(ctx, d, outcome, info, dry):
 
 def clear_integration_record(ctx, d, into):
     """T-0695: the lane's `branch:` and `worktree:` lines in the integration tree holding into (T-0680 wrote them there),
-    cleared and committed in that tree. Returns the report lines; none when into is the main checkout or holds no record."""
+    cleared and committed in that tree. Returns (report lines, ids cleared); none when into is the main checkout or
+    holds no record."""
     top, b = ctx.top, d['branch']
-    into = (into or '')[len('refs/heads/'):] if (into or '').startswith('refs/heads/') else (into or '')
+    into = short_branch(into)
     wt = next((Path(w['path']) for w in worktrees(top) if w['branch'] == into), None)
     if not into or wt is None or samepath(str(wt), str(top)) or not (wt / '.sdlc').is_dir():
-        return []
+        return [], []
     pre = porcelain(wt)
-    pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
     cleared = []
     for t in d['tickets']:
         if LOCAL_ID.fullmatch(str(t)):
@@ -973,11 +982,23 @@ def clear_integration_record(ctx, d, into):
                 if tickets.record_branch(wt / '.sdlc', t, None, only=b):
                     cleared.append(str(t))
     if not cleared:
-        return []
-    msg = f'{", ".join(cleared)}: clear lane record {d["lane"]}'
+        return [], []
+    return commit_clear(ctx, wt, pre, cleared, d['lane']), cleared
+
+
+def short_branch(into):
+    into = into or ''
+    return into[len('refs/heads/'):] if into.startswith('refs/heads/') else into
+
+
+def commit_clear(ctx, wt, pre, cleared, lane):
+    """Commit the cleared lane record of tickets cleared in tree wt as `<ids>: clear lane record <lane>`, leaving any
+    path dirty before (pre) alone. Returns the report line."""
+    msg = f'{", ".join(cleared)}: clear lane record {lane}'
+    pre_paths = {l[3:].split(' -> ')[-1].strip('"') for l in pre}
     held = {l for l in porcelain(wt) if l[3:].split(' -> ')[-1].strip('"') in pre_paths}
     sha = commit_new(wt, pre | held, msg)
-    where = os.path.relpath(os.path.realpath(str(wt)), os.path.realpath(str(top)))
+    where = 'main' if samepath(str(wt), str(ctx.top)) else os.path.relpath(os.path.realpath(str(wt)), os.path.realpath(str(ctx.top)))
     if sha:
         return [f'committed in {where}: {sha} {msg}']
     return [f'not committed in {where}: the cleared record is left in the tree; commit it yourself']
