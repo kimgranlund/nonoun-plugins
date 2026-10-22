@@ -7,7 +7,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0717 | [0717-prepare-honors-base-line](0717-prepare-honors-base-line/handoff.md) | dispatch.py prepare uses the handoff base: line for Base sha | bug | L2 | P2 | none | 🟡 claimed |
-| T-0718 | [0718-advance-reverify-level](0718-advance-reverify-level/handoff.md) | dispatch.py advance reverifies at the failing verifier level | bug | L1 | P2 | none | 🔵 ready |
+| T-0718 | [0718-advance-reverify-level](0718-advance-reverify-level/handoff.md) | dispatch.py advance reverifies at the failing verifier level | bug | L1 | P2 | none | 🟡 claimed |
 | T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🔵 ready |
 | T-0720 | [0720-land-finds-tree-verifier-result](0720-land-finds-tree-verifier-result/handoff.md) | fanout.py land finds a verifier result recorded by prepare --tree | bug | L2 | P2 | none | 🟡 claimed |
 | T-0721 | [0721-land-second-ticket-same-lane](0721-land-second-ticket-same-lane/handoff.md) | fanout.py land closes a second lane ticket whose commits an earlier land merged | bug | L2 | P2 | none | 🔵 ready |
@@ -21,7 +21,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
-| T-0736 | [0736-split-env-error-needs-deps](0736-split-env-error-needs-deps/handoff.md) | split's environment error requires declared dependencies | bug | L1 | P2 | none | ⏳ proposed |
+| T-0736 | [0736-split-env-error-needs-deps](0736-split-env-error-needs-deps/handoff.md) | split's environment error requires declared dependencies | bug | L1 | P2 | none | 🔵 ready |
 
 Closed: 683 done, 29 dropped (git log or .NNNN-* folders)
 
