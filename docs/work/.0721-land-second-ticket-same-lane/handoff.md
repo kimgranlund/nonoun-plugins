@@ -2,7 +2,7 @@
 id: T-0721
 title: "fanout.py land closes a second lane ticket whose commits an earlier land merged"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -52,3 +52,14 @@ The failing test lands before or with the fix, never after.
 - Checks: `fanout.py selftest` through gate_lock exit 0 (PASS), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 9fd99a3c` exit 0.
 - Docs: fanout.py land docstring and case list, `docs/references/sdlc-internals.md`, `skills/fanout/references/land.md`.
 - Open: a filer-closed ticket (`--filer`) names the merge only in the report's Commit cell, not the close reason. `roll_ticket` has the same `no changes` short-circuit (out of scope). A lane ticket that committed nothing itself, sharing a lane with a landed sibling, now closes too: land cannot tell its commits apart.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9fd99a3c3049
+- Changed: see commits
+- Commits: f911fac T-0721: fanout land closes a second lane ticket whose commits an earlier land merged
+- Check: 1 selftest case reproduces the issue repro, passes, and fails with the change reverted: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py se...: pass
+- Check: 3 `check.py`, `check-packaging.py`, `git diff --check <base>`: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2551: decide: a solo L1 or... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2551: note: roll_ticket keeps... -> notes.md
