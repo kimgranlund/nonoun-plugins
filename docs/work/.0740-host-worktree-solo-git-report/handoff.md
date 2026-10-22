@@ -2,7 +2,7 @@
 id: T-0740
 title: "Solo lanes in host worktrees commit and report where land reads"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,28 @@ The failing test lands before or with the fix, never after.
 1. A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Layer: host-side. No plugin hook emits "too complex to verify" (`grep -rn "too complex"` hits only this handoff). `block-stray-worktree.sh` exits 0 for any command without the word `worktree` and its refusals start `Blocked for sdlc role`; `block-role-write.sh` applies only to read-only roles, never solo; `block-publish.sh` has no git status or commit rule. The git refusals and the refused Write outside the worktree come from Claude Code's own `isolation: worktree` sandbox for a background sub-agent, which cannot answer a permission prompt. The plugin-side defect was that the prep brief asked for git and a Report file outside that sandbox, and that only the primary report path was read.
+
+Plugin-side fix (no hook change):
+- `fanout.py` `SOLO_SUBAGENT_PROMPT`: the solo leaves its change uncommitted and writes its report at the worktree copy of the Report file (`<records dir rel>/<id>-solo.md` under its worktree root); a refused `git merge --ff-only` stops it only when the handoff is still missing.
+- `fanout.py` `land_ticket`: a solo lane on a host branch (`worktree-<id>-solo`, `worktree-agent-<id>`) with a dirty worktree is committed there as `<id>: <title>` before the no-changes check; the existing records carry brings the report into main.
+- `fanout.py` prep writes `artifacts_dir` into the solo's `<id>-solo.dispatch.json`, so `dispatch.py record` accepts it; `dispatch.py` `solo_report_file` falls back to `host_report_copy` (`.claude/worktrees/agent-<agent_id>/<rel>`, else the one worktree holding a copy) and copies it to the primary path.
+- Records: fanout.py docstring, `skills/fanout/SKILL.md`, `docs/references/sdlc-internals.md`.
+
+Checks: `fanout.py selftest` (new case 30b) exits 0; `dispatch.py selftest` exits 0; `check.py` exits 0; `check-packaging.py` exits 0; `git diff --check 8f08aaab` exits 0.
+Negative control (fix reverted, case 30b kept): FAIL lines `case 30b host worktree: the brief asks for no commit and names the worktree copy .sdlc/runtime/tasks/t1/T-0001-solo.md of the Report file`, `case 30b host worktree: dispatch.py record --agent-id y takes the report from the worktree copy, got rc=2 ... is not a dispatch file (missing tmp_prefix, tree, artifacts_dir, ...)`, and `case 30b host worktree: land commits the uncommitted host lane as T-0001: Ticket t1 ... got rc=1 subject='sizes'`.
+Open: when the host refuses git, the ff sync to the base sha cannot run either, so a claim commit absent from origin still ends in a blocked report.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 8f08aaab05a1
+- Changed: see commits
+- Commits: 59014ab T-0740: Solo lanes in host worktrees commit and report where land reads
+- Check: 1 fanout.py selftest case reproduces the issue's report, fails when reverted: pass
+- Check: 2 gate_lock fanout.py selftest exits 0: pass
+- Check: 3 check.py, check-packaging.py, git diff --check: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2654: land's host-lane commit... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:2108: host_report_copy cannot... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2272: merge overlap with T-0744... -> notes.md

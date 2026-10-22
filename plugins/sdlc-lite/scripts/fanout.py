@@ -39,7 +39,7 @@ prep
   After the refusals it sweeps landed lanes as `run` does (lanes.sweep --apply, unless `lane_sweep: off`).
   Load (T-0700): it prints the live gate-lock holders from other repos, and when the load is over the gate lock's
   effective max_load it opens only the first regular lane (`prep: load <x> over <max>: opening 1 of <n> lanes`);
-  --force opens them all.
+  --force opens them all. Each ticket the cap leaves out is named on a last line `no lane: <ticket> (load cap: ...)` (T-0741).
   Worker cap (T-0699): per --gate (or --light-gate) that runs `node --test`, `vitest`, `playwright` or `jest` without its
   worker flag (`--test-concurrency`, `--maxWorkers` or VITEST_MAX_WORKERS, `--workers`, `--maxWorkers`) it prints
   `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS`; the exit code is unchanged.
@@ -47,8 +47,9 @@ prep
   for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
   (worktree-<id>-solo, known before the spawn) and its `worktree` (host-owned .claude/worktrees/<id>-solo), and a `prompt` brief
-  that asks the solo to commit `<id>: <title>` on its branch (SOLO_SUBAGENT_PROMPT; the headless SOLO_PROMPT says
-  never commit). For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
+  that tells the solo to leave its change uncommitted and write its report at the worktree copy of the Report file,
+  because the host worktree sandbox refuses its git and any write outside the worktree (SOLO_SUBAGENT_PROMPT, T-0740;
+  the headless SOLO_PROMPT says never commit); `land` commits a dirty host lane as `<id>: <title>`. For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
   solo reports (`dispatch.py prepare verifier L2`, or L3 for the tickets steps.py verifier-level names; SOLO_VERIFIER, T-0356); its result is committed on the
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
   gates. Per solo ticket prep also writes the host lane record through lanes.host_record (<lanes root>/host/<id>-solo.lane.json,
@@ -480,7 +481,10 @@ selftest
   makes them; after settle the trees and branches are gone and refs/archive/<UTC date>/fanout/ff and .../fanout/hand
   exist; a diverged branch exits 2 and is kept; a tree outside a lanes dir is kept with `lane still open` and exit 1.
   Case 30 (host record): prep writes <lanes root>/host/T-0001-solo.lane.json (kind host, ticket T-0001); a land from
-  a host-owned worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 31 (roll scratch): after a merged
+  a host-owned worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 30b (T-0740): a host
+  worktree solo that left its change uncommitted and its report at the worktree copy: the brief asks for no commit,
+  `dispatch.py record --agent-id` copies the report, and land commits `<id>: <title>`, merges, and carries the report.
+  Case 31 (roll scratch): after a merged
   roll and after a refused one, <lanes-dir>/rolling is absent and `git worktree list` names no rolling tree. Case 32
   (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
   and, after the land of its last ticket, is gone with an archive ref and its branch deleted. Case 32b (T-0721): both
@@ -558,9 +562,11 @@ SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nArtifacts dir: {artifacts}\
                         'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
                         '## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the '
                         'parent runs the one batched independent verifier. No person is present: never ask the user '
-                        'and never use AskUserQuestion. You work on your own worktree branch: commit early and often, '
-                        'one `WIP {id}` commit after each green check and a final commit `{id}: {title}` when every '
-                        'check is green. Never push, open a PR, or publish: fanout.py land merges your branch, runs '
+                        'and never use AskUserQuestion. You work in a host worktree whose sandbox may refuse git and any '
+                        'write outside it (T-0740): leave your changes uncommitted (never run git add or git commit), '
+                        'fanout.py land commits them as `{id}: {title}` on your branch; write the report to {host_report} '
+                        'under your worktree root (the directory you start in), where dispatch.py record and fanout.py '
+                        'land read it. Never push, open a PR, or publish: fanout.py land merges your branch, runs '
                         'the gates, and closes the ticket.')
 
 
@@ -1410,8 +1416,8 @@ LANE_ADD = ('add', '-A', '--', '.', ':(exclude,glob)**/*.log', ':(exclude,glob)*
 LANE_ADD_SH = 'git ' + ' '.join(shlex.quote(a) for a in LANE_ADD)  # the same add as a printed shell command (T-0341)
 
 
-def wip_commit(wt, tid, outcome):
-    """Commit whatever a stopped ticket left in the lane worktree wt as `wip(<id>): <outcome>`.
+def wip_commit(wt, tid, outcome, message=None):
+    """Commit whatever a stopped ticket left in the lane worktree wt as `wip(<id>): <outcome>` (or message).
     Runs git only in wt (never the integration worktree, main, or the stash). Returns the new
     short sha, or '' when the tree is clean or the add or commit fails; never raises."""
     try:
@@ -1421,7 +1427,7 @@ def wip_commit(wt, tid, outcome):
             return ''
         if git(wt, *LANE_ADD).returncode:
             return ''
-        if git(wt, 'commit', '-q', '-m', f'wip({tid}): {outcome}').returncode:
+        if git(wt, 'commit', '-q', '-m', message or f'wip({tid}): {outcome}').returncode:
             return ''
         p = git(wt, 'rev-parse', 'HEAD')
         return p.stdout.strip()[:7] if p.returncode == 0 else ''
@@ -2127,7 +2133,7 @@ def subagent_head(tid, title, tier, limit=50):
 
 
 SOLO_SYNC = ('Base sha: {sha}. The host may make your worktree from origin/main, which can lack the claim commit: before anything else run '
-             '`git merge --ff-only {sha}` in your worktree so the ticket folder is visible, and stop with a blocked report if it refuses.\n')
+             '`git merge --ff-only {sha}` in your worktree so the ticket folder is visible; if it refuses and the handoff is still missing, stop with a blocked report.\n')
 
 
 def subagent_dispatch(ctx, t, tier):
@@ -2153,6 +2159,7 @@ def subagent_dispatch(ctx, t, tier):
             'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title,
                                                   artifacts=dispatch.handoff_locator(pathlib.Path(artifacts).as_posix()),
                                                   report=solo_run.report_lines(result, handoff),
+                                                  host_report=(pathlib.Path(artifacts) / f'{name}.md').as_posix(),
                                                   sync=SOLO_SYNC.format(sha=base_sha) if base_sha else ''),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
@@ -2273,7 +2280,7 @@ def print_prep(ctx):
                 # The spawn gate (hooks/block-role-spawn.sh) finds this record in the prompt's Artifacts dir, the records
                 # dir, as solo_run.dispatch_json writes it (T-0669); the task folder keeps only tracked records.
                 (order.records_dir(taskdir, create=True) / f"{d['name']}.dispatch.json").write_text(
-                    json.dumps(solo_record(d, taskdir, tier), indent=2) + '\n', encoding='utf-8')
+                    json.dumps(solo_record(d, taskdir, tier), indent=2) + '\n', encoding='utf-8')  # T-0744/T-0740: dispatch.py record and advance read it
                 out.append(f"    branch: {d['branch']}; worktree: {d['worktree']} (host-made at the spawn)")
                 out.append(f"    host record: {write_host_record(ctx, d['name'], d['branch'], t.id)}")
                 out.append(f"    dispatch {t.id}:")
@@ -2304,6 +2311,7 @@ def print_prep(ctx):
     if deps_note(ctx):
         out.append(deps_note(ctx))
     out.append(f"logs: {ctx['logs']}")
+    out += [f'no lane: {tid} ({why})' for tid, why in ctx.get('dropped') or []]  # T-0741: last, so a long plan never buries them
     print('\n'.join(out))
     return rc
 
@@ -2365,6 +2373,8 @@ def load_cap(ctx, a):
         print(f"prep: load {load['value']:.1f} over {load['max_load']}: --force opens all {len(regular)} lanes")
         return
     print(f"prep: load {load['value']:.1f} over {load['max_load']}: opening 1 of {len(regular)} lanes")
+    why = f"load cap: load {load['value']:.1f} over {load['max_load']}; --force opens all {len(regular)} lanes"
+    ctx['dropped'] = [(t.id, why) for x in regular[1:] for t in x.tickets]  # T-0741: print_prep names each one
     ctx['lanes'] = [x for x in ctx['lanes'] if x.external or x is regular[0]]
 
 
@@ -2648,6 +2658,13 @@ def land_ticket(ctx, lock):
     for a solo level L2 or L3, then the locked merge, gates, and close. Returns (outcome, commit)."""
     lane, t = ctx['lane'], ctx['ticket']
     ref = f'refs/heads/{lane.branch}'
+    wt = ctx.get('lane_wt')
+    if (ctx['kinds'][t.id][0] == 'solo' and wt and pathlib.Path(wt).is_dir()
+            and (SUBAGENT_BRANCH.fullmatch(lane.branch) or HOST_BRANCH.fullmatch(lane.branch))):
+        # T-0740: the host worktree sandbox refuses the solo's git, so it leaves its change uncommitted; land commits it
+        sha = wip_commit(wt, t.id, '', message=f'{t.id}: {t.title}')
+        if sha:
+            say(ctx, lane, t.id, f'committed the host lane: {sha}')
     tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'{ref}^{{commit}}')
     p = git(ctx['cwd'], 'rev-list', '--count', f"{ctx['integration']}..{ref}")
     if p.returncode == 0 and p.stdout.strip() == '0':
@@ -2658,7 +2675,6 @@ def land_ticket(ctx, lock):
         if not ctx['carried'] or not open_ or not merge_names_ticket(ctx['cwd'], ctx['carried'], t.id):
             return 'no changes', tip[:7]
         say(ctx, lane, t.id, f"commits carried by merge {ctx['carried'][:7]}")
-    wt = ctx.get('lane_wt')
     if wt and pathlib.Path(wt).is_dir():
         src = pathlib.Path(wt) / ctx['trel'] / t.slug
         copy_lane_records(src, ctx['integ_dir'] / ctx['trel'] / t.slug)
@@ -4954,7 +4970,7 @@ def selftest():
                and d1.get('run_in_background') is True and d1.get('branch') == 'worktree-T-0001-solo'
                and d1.get('worktree') == '.claude/worktrees/T-0001-solo')  # host-owned
         expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
-               'final commit `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
+               'commits them as `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
                and 'Never commit' not in d1.get('prompt', ''))
         # T-0438: the host makes the worktree from origin/main, so the brief syncs it to the local base before the solo reads the ticket
         expect(f'case 22 prep: the brief starts with `git merge --ff-only <base sha>` (negative control: a wrong sha is absent), got {d1.get("prompt")!r}',
@@ -5115,6 +5131,12 @@ def selftest():
         lcf = verb(p1, 'prep', *lc_args, '--force', SDLC_GATE_LOAD_FILE=str(gate_tmp / 'load-busy'), SDLC_GATE_CPUS='4')
         lcq = verb(p1, 'prep', *lc_args, SDLC_GATE_CPUS='4')
         n_disp = lambda o: sum(f'dispatch T-000{k}:' in o.stdout for k in (1, 2, 3))
+        expect(f'case 22 prep load cap names each dropped ticket (T-0741): busy prep ends with a `no lane:` line per dropped ticket '
+               f'with the load cap reason, and the planned ticket and the --force and quiet runs have none, got out={lc.stdout[-500:]!r}',
+               'no lane: T-0002 (load cap: load 1000.0 over 3; --force opens all 3 lanes)' in lc.stdout
+               and 'no lane: T-0003 (load cap: load 1000.0 over 3; --force opens all 3 lanes)' in lc.stdout
+               and 'no lane: T-0001' not in lc.stdout and 'no lane: T-' not in lcf.stdout + lcq.stdout
+               and lc.stdout.rstrip().splitlines()[-1].startswith('no lane: T-0003'))
         expect(f'case 22 prep load cap: busy opens 1 of 3 with the prep: load line, --force and a quiet load open 3, and the '
                f'other-repo holder count prints, got rc {lc.returncode} {lcf.returncode} {lcq.returncode} '
                f'dispatches {n_disp(lc)} {n_disp(lcf)} {n_disp(lcq)} out={lc.stdout[:600]!r} err={lc.stderr!r}',
@@ -6140,6 +6162,42 @@ def selftest():
                hl.returncode == 0 and rrec.get('kind') == 'host' and rrec.get('lane') == 'agent-x'
                and rrec.get('branch') == 'worktree-agent-x' and rrec.get('tickets') == ['T-0001']
                and rrec.get('base_sha') == prec.get('base_sha') and not prov.exists() and agent.is_dir())
+
+        # case 30b (T-0740, #68): the host worktree sandbox refuses a solo's git and its write to the primary Report file, so
+        # the solo leaves its change uncommitted and its report at the worktree copy; record and land read it there
+        hw = tmp / 'host-dirty'
+        sized_repo(hw, ['L1'], {'.gitignore': gi})
+        hw_pin = ('--integration', 'fanout/hw', '--lanes-dir', str(tmp / 'host-dirty-lanes'))
+        hwp = verb(hw, 'prep', 'alpha=T-0001', *hw_pin, '--stagger', '0')
+        try:
+            hwd = dispatch_of(hwp.stdout, 'T-0001')
+        except ValueError:
+            hwd = {}
+        hw_rel = os.path.relpath(hwd.get('result') or str(hw), str(hw.resolve()))
+        expect(f'case 30b host worktree: the brief asks for no commit and names the worktree copy {hw_rel} of the Report file, '
+               f'got {hwd.get("prompt")!r}',
+               'never run git add or git commit' in hwd.get('prompt', '') and 'commit early' not in hwd.get('prompt', '')
+               and f'write the report to {hw_rel} under your worktree root' in hwd.get('prompt', ''))
+        hagent = hw / '.claude' / 'worktrees' / 'agent-y'
+        sh(hw, 'worktree', 'add', '-q', '-b', 'worktree-agent-y', str(hagent), 'main')
+        (hagent / 'y.txt').write_text('y\n', encoding='utf-8')  # the solo's change, left uncommitted
+        (hagent / hw_rel).parent.mkdir(parents=True, exist_ok=True)
+        (hagent / hw_rel).write_text('solo report T-0740\n', encoding='utf-8')  # its report at the worktree copy
+        hwrec = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', '--agent-id', 'y',
+                                str(pathlib.Path(hwd.get('result') or hw).with_suffix('.dispatch.json'))],
+                               cwd=str(hw), env=gate_env(), capture_output=True, text=True, timeout=120)
+        hres = pathlib.Path(hwd.get('result') or hw / 'none')
+        expect(f'case 30b host worktree: dispatch.py record --agent-id y takes the report from the worktree copy, got '
+               f'rc={hwrec.returncode} out={hwrec.stdout[-400:]!r} err={hwrec.stderr[-400:]!r}',
+               hwrec.returncode == 0 and hres.is_file() and hres.read_text() == 'solo report T-0740\n')
+        hres.unlink(missing_ok=True)  # land carries the worktree copy into main without the record
+        hwl = verb(hw, 'land', 'worktree-agent-y', '--ticket', 'T-0001', *hw_pin, '--base', 'main', '--gate', 'test -e y.txt')
+        hw_subj = sh(hw, 'log', '-1', '--format=%s', 'worktree-agent-y').stdout.strip()
+        expect(f'case 30b host worktree: land commits the uncommitted host lane as `T-0001: Ticket t1`, merges it, and '
+               f'carries the report into main, got rc={hwl.returncode} subject={hw_subj!r} out={hwl.stdout[-600:]!r} '
+               f'err={hwl.stderr[-300:]!r}',
+               hwl.returncode == 0 and hw_subj == 'T-0001: Ticket t1' and 'merged' in hwl.stdout
+               and hres.is_file() and hres.read_text() == 'solo report T-0740\n')
 
         # case 32 (T-0452): a full lane tree made with prep's printed lanes.py open line closes after its last ticket lands
         fl = tmp / 'full-lane'
