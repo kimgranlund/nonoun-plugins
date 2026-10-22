@@ -47,3 +47,10 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`dispatch.py record --no-result <solo dispatch>` with no report file and no transcript final message now exits 1, prints `solo failed; live marker cleared`, and clears the live marker. Without `--no-result` it still exits 2 and changes nothing; its message now also names `--no-result`. `solo_report_file` takes `no_result` and returns 1; the `rec()` caller runs `solo_run.complete` then returns 1.
+
+- New selftest case `T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker` (the `solo_rec` helper gained a `git=True` option so the marker lives in a repo's git dir).
+- Negative control (call site reverted to `solo_report_file(sd, args.transcript)`): `FAIL: T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker`, `dispatch selftest: FAIL`; restored: `dispatch selftest: PASS`.
+- `gate_lock.py run ... dispatch.py selftest` exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check a41157c6` exit 0.
