@@ -2,7 +2,7 @@
 id: T-0738
 title: "Stale open folder drop refuses when the open copy holds edits"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,14 @@ T-0723 verifier-L2 (landed):
 - Negative control (`open_adds` returning `[]`): `fanout selftest: FAIL` with `- case 23 stale open folder with edits (T-0738): an open copy with extra is not dropped, the land stops as a merge conflict naming the folder and extra.md, ...` and the same line for `edit`.
 - Checks: `gate_lock.py run ... fanout.py selftest` exit 0 (PASS); `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 90317d25` exit 0.
 - Open: the silent drop in settle, sync and lanes forward (second note in Context) is not part of this ticket.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 90317d250352
+- Changed: see commits
+- Commits: c8320d4 T-0738: stale open folder drop refuses when the open copy holds edits
+- Check: 1 The new `fanout.py` selftest cases pass, `case 23 stale open folder (T-0723)` still passes, and w...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py se...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:1825 the outcome string changed... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:1683 a normal close front... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1683 the other 10 versions... -> notes.md
