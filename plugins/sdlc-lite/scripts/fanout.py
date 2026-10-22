@@ -39,7 +39,7 @@ prep
   After the refusals it sweeps landed lanes as `run` does (lanes.sweep --apply, unless `lane_sweep: off`).
   Load (T-0700): it prints the live gate-lock holders from other repos, and when the load is over the gate lock's
   effective max_load it opens only the first regular lane (`prep: load <x> over <max>: opening 1 of <n> lanes`);
-  --force opens them all. Each ticket the cap leaves out is named on a last line `not planned: <ticket> (load cap: ...)` (T-0741).
+  --force opens them all. Each ticket the cap leaves out is named on a last line `no lane: <ticket> (load cap: ...)` (T-0741).
   Worker cap (T-0699): per --gate (or --light-gate) that runs `node --test`, `vitest`, `playwright` or `jest` without its
   worker flag (`--test-concurrency`, `--maxWorkers` or VITEST_MAX_WORKERS, `--workers`, `--maxWorkers`) it prints
   `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS`; the exit code is unchanged.
@@ -2304,7 +2304,7 @@ def print_prep(ctx):
     if deps_note(ctx):
         out.append(deps_note(ctx))
     out.append(f"logs: {ctx['logs']}")
-    out += [f'not planned: {tid} ({why})' for tid, why in ctx.get('dropped') or []]  # T-0741: last, so a long plan never buries them
+    out += [f'no lane: {tid} ({why})' for tid, why in ctx.get('dropped') or []]  # T-0741: last, so a long plan never buries them
     print('\n'.join(out))
     return rc
 
@@ -5118,12 +5118,12 @@ def selftest():
         lcf = verb(p1, 'prep', *lc_args, '--force', SDLC_GATE_LOAD_FILE=str(gate_tmp / 'load-busy'), SDLC_GATE_CPUS='4')
         lcq = verb(p1, 'prep', *lc_args, SDLC_GATE_CPUS='4')
         n_disp = lambda o: sum(f'dispatch T-000{k}:' in o.stdout for k in (1, 2, 3))
-        expect(f'case 22 prep load cap names each dropped ticket (T-0741): busy prep ends with a `not planned:` line per dropped ticket '
+        expect(f'case 22 prep load cap names each dropped ticket (T-0741): busy prep ends with a `no lane:` line per dropped ticket '
                f'with the load cap reason, and the planned ticket and the --force and quiet runs have none, got out={lc.stdout[-500:]!r}',
-               'not planned: T-0002 (load cap: load 1000.0 over 3; --force opens all 3 lanes)' in lc.stdout
-               and 'not planned: T-0003 (load cap: load 1000.0 over 3; --force opens all 3 lanes)' in lc.stdout
-               and 'not planned: T-0001' not in lc.stdout and 'not planned: T-' not in lcf.stdout + lcq.stdout
-               and lc.stdout.rstrip().splitlines()[-1].startswith('not planned: T-0003'))
+               'no lane: T-0002 (load cap: load 1000.0 over 3; --force opens all 3 lanes)' in lc.stdout
+               and 'no lane: T-0003 (load cap: load 1000.0 over 3; --force opens all 3 lanes)' in lc.stdout
+               and 'no lane: T-0001' not in lc.stdout and 'no lane: T-' not in lcf.stdout + lcq.stdout
+               and lc.stdout.rstrip().splitlines()[-1].startswith('no lane: T-0003'))
         expect(f'case 22 prep load cap: busy opens 1 of 3 with the prep: load line, --force and a quiet load open 3, and the '
                f'other-repo holder count prints, got rc {lc.returncode} {lcf.returncode} {lcq.returncode} '
                f'dispatches {n_disp(lc)} {n_disp(lcf)} {n_disp(lcq)} out={lc.stdout[:600]!r} err={lc.stderr!r}',
