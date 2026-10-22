@@ -142,6 +142,9 @@ Gate class (T-0481; docs/references/sdlc-internals.md, fanout gate class)
   same. The class prints as `gate: light` or `gate: full (<reason>)`, is the `gate` key of the land.jsonl line, and a
   solo close reason ends `; gate: <class>`. --light-gate with no `merge_gate: light` line refuses (exit 2, nothing
   created) in run, prep and land; land_command passes each --light-gate on; roll has no flag and is always full.
+  A light merge into an integration tree with a package.json and no node_modules first runs the full set's install-only
+  gates (`npm ci`, `pnpm install` and the like) unless a light gate installs itself (T-0742, issue #70); prep and the
+  dry run note a light gate that runs an npm script when no gate installs.
   land reads that config from the integration worktree it merges into when one exists (T-0722), else from <root>.
 
 cover (T-0481)
@@ -1187,17 +1190,36 @@ def plan_overlap(ctx):
 
 
 INSTALL_WORDS = re.compile(r'\b(npm (ci|install|i)|pnpm (i|install)|yarn( install)?|bun install)\b')
+INSTALL_ONLY = re.compile(r'\s*(npm (ci|install|i)|pnpm (i|install)|yarn( install)?|bun install)(\s+-\S+)*\s*')
+SCRIPT_WORDS = re.compile(r'\b(npm (run|test|t|start)|npx|pnpm (run|test|exec)|yarn (run|test)|bun (run|test))\b')
 
 
 def deps_note(ctx):
     """A preflight note when the gates run in a fresh worktree that will lack node_modules: package.json is
-    tracked at the start commit and no gate installs. A node_modules symlink is no fix (drift checks fail)."""
-    if not ctx['gates'] or any(INSTALL_WORDS.search(g) for g in ctx['gates']):
-        return ''
+    tracked at the start commit and no gate installs. A node_modules symlink is no fix (drift checks fail).
+    A light gate that runs an npm script while no gate installs gets its own line (T-0742)."""
     if git(ctx['top'], 'cat-file', '-e', f"{ctx['start']}:package.json").returncode:
         return ''
-    return ('note: gates run in a fresh worktree with no node_modules; start the gate with `npm ci && ...` '
-            '(a node_modules symlink makes drift checks such as build-editor-demo --check fail)')
+    gates, light = ctx['gates'], ctx.get('light_gates') or []
+    out = []
+    if gates and not any(INSTALL_WORDS.search(g) for g in gates):
+        out.append('note: gates run in a fresh worktree with no node_modules; start the gate with `npm ci && ...` '
+                   '(a node_modules symlink makes drift checks such as build-editor-demo --check fail)')
+    if (any(SCRIPT_WORDS.search(g) for g in light)
+            and not any(INSTALL_WORDS.search(g) for g in gates + light)):
+        out.append('note: a light gate runs an npm script and no gate installs; the light set runs in the same fresh '
+                   'worktree with no node_modules, so add an install gate (`--gate "npm ci"`, run before the light set '
+                   'when node_modules is missing)')
+    return '\n'.join(out)
+
+
+def light_installs(ctx):
+    """The install-only gates of the full set that run before the light set (T-0742): the light set runs in the
+    same fresh integration worktree, so a Node repo's light gates need the install the full set starts with. None
+    when a light gate installs itself."""
+    if any(INSTALL_WORDS.search(g) for g in ctx.get('light_gates') or []):
+        return []
+    return [g for g in ctx['gates'] if INSTALL_ONLY.fullmatch(g)]
 
 
 def print_plan(ctx):
@@ -1865,6 +1887,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 return f'merge failed: {first_line(c.stderr or c.stdout, f"rc={c.returncode}")}', cell
         merge_sha = git_out(integ, 'rev-parse', 'HEAD')
         gates = ctx['light_gates'] if cls == 'light' else ctx['gates']
+        if cls == 'light' and (integ / 'package.json').is_file() and not (integ / 'node_modules').exists():
+            gates = light_installs(ctx) + gates  # T-0742: the full set's install first; the light set needs it too
         if merge_sha == before:  # nothing new came in, so there is nothing to gate
             say(ctx, lane, t.id, f'{lane.branch} already merged: nothing new, gates skipped')
             gates = []
@@ -6400,6 +6424,40 @@ def selftest():
                f'err={h2.stderr[-300:]!r}',
                h1.returncode == 0 and h2.returncode == 0 and 'gate: light' in h2.stdout
                and 'merge_gate: light' not in (lg5 / '.sdlc' / 'config').read_text(encoding='utf-8'))
+
+        # T-0742 (issue #70): the light set runs with the dependencies installed. The full set's install gate runs
+        # first when the integration tree has no node_modules; a light set that installs itself runs unchanged; with no
+        # install anywhere, the plan warns when a light gate runs an npm script
+        lg6, lg6_bin = tmp / 'light-deps', tmp / 'light-deps-bin'
+        lg6_bin.mkdir()
+        (lg6_bin / 'npm').write_text('#!/bin/sh\ncase "$1" in\n  ci) mkdir -p node_modules ;;\n'
+                                     '  run) test -d node_modules || exit 127 ;;\nesac\n', encoding='utf-8')
+        (lg6_bin / 'npm').chmod(0o755)
+        lg6_env = {'PATH': f"{lg6_bin}{os.pathsep}{ENV.get('PATH', '')}"}
+        sized_repo(lg6, ['L1', 'L1'], {'.gitignore': gi + 'node_modules/\n', 'package.json': '{}\n'})
+        (lg6 / '.sdlc' / 'config').write_text(light_cfg, encoding='utf-8')
+        sh(lg6, 'add', '-A')
+        sh(lg6, 'commit', '-q', '-m', 'light config')
+        make_branch(lg6, 'worktree-T-0001-solo', {'src/components/x/a.txt': 'a\n'}, 'T-0001: Ticket t1')
+        make_branch(lg6, 'worktree-T-0002-solo', {'src/components/x/b.txt': 'b\n'}, 'T-0002: Ticket t2')
+        lg6_gates = ('--gate', 'npm ci', '--gate', 'npm run typecheck', '--light-gate', 'npm run typecheck')
+        lg6_pin = ('--integration', 'fanout/lg6', '--lanes-dir', str(tmp / 'light-deps-lanes'), '--base', 'main')
+        d1 = verb(lg6, 'land', 'worktree-T-0001-solo', *lg6_pin, *lg6_gates, **lg6_env)
+        expect(f'T-0742 light set installs: the full set\'s npm ci runs before a light npm script in a tree with no '
+               f'node_modules, got rc={d1.returncode} out={d1.stdout[-400:]!r} err={d1.stderr[-300:]!r}',
+               d1.returncode == 0 and 'gate: light' in d1.stdout and 'rc=127' not in d1.stdout)
+        shutil.rmtree(tmp / 'light-deps-lanes' / 'integration' / 'node_modules', ignore_errors=True)
+        d2 = verb(lg6, 'land', 'worktree-T-0002-solo', *lg6_pin, '--gate', 'npm ci', '--light-gate', 'npm ci',
+                  '--light-gate', 'npm run typecheck', **lg6_env)
+        expect(f'T-0742 light set that installs itself still merges, got rc={d2.returncode} out={d2.stdout[-400:]!r}',
+               d2.returncode == 0 and 'gate: light' in d2.stdout)
+        warn = lambda gates, light: deps_note({'gates': gates, 'light_gates': light, 'top': lg6, 'start': 'main'})
+        expect('T-0742 prep warns when a light gate runs an npm script and no gate installs',
+               'light gate' in warn(['true'], ['npm run typecheck']) and 'npm ci' in warn(['true'], ['npm run typecheck']))
+        expect('T-0742 no light warning when the full set installs',
+               'light gate' not in warn(['npm ci', 'true'], ['npm run typecheck']))
+        expect('T-0742 no light warning when the light set installs',
+               'light gate' not in warn(['true'], ['npm ci && npm run typecheck']))
 
 
     # T-0687: MergeLock writes merge.lock.holder while held; `queue` prints it as landing, a dead pid as stale holder

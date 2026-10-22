@@ -46,3 +46,9 @@ The failing test lands before or with the fix, never after.
 1. A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Fixed in `plugins/sdlc-lite/scripts/fanout.py`: a light merge into an integration tree with a package.json and no node_modules now runs the full set's install-only gates (`light_installs`) before the light set, unless a light gate installs itself. `deps_note` (dry run and prep) also warns when a light gate runs an npm script and no gate installs. Selftest case T-0742 added (fake `npm` on PATH; `ci` creates node_modules, `run` exits 127 without it).
+- Red before the change: `fanout selftest: FAIL` with `T-0742 light set installs: the full set's npm ci runs before a light npm script ... red: npm run typecheck rc=127 (no node_modules in the gate worktree ...)` and `T-0742 prep warns when a light gate runs an npm script and no gate installs`.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check ee6c6693` exit 0.
+- Not done: the `lane_setup` alternative (the full set's install step covers the report).
