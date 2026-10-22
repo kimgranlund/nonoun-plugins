@@ -638,12 +638,15 @@ def wait_watched(child, cap_mb, name):
             pass
         used, pids = tree_rss(child.pid) if cap_mb else (0, [])  # RSS-CAP
         if cap_mb and used > cap_mb:
-            drain_group(child.pid, child)
-            for pid in pids:  # a descendant that left the process group
+            for pid in pids:  # a descendant that left the process group, killed before the drain reaps anything (a reaped pid can be recycled)
+                if pid == child.pid:
+                    continue
                 try:
-                    os.kill(pid, signal.SIGKILL)
+                    if os.getpgid(pid) != child.pid:
+                        os.kill(pid, signal.SIGKILL)
                 except OSError:
                     pass
+            drain_group(child.pid, child)
             child.wait()
             print(f'gate_lock: stopped {name}: process tree RSS {used} MB over max_rss_mb {cap_mb}', file=sys.stderr, flush=True)
             return 137, used
