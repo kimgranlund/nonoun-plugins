@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
-| T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | ⏳ proposed |
+| T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | 🟡 claimed |
 | T-0704 | [0704-hook-role-exact-type](0704-hook-role-exact-type/handoff.md) | Role hooks resolve a named teammate by its real agent type | bug | L2 | P2 | none | ⏳ proposed |
 | T-0705 | [0705-status-unrecorded-one-flag](0705-status-unrecorded-one-flag/handoff.md) | dispatch.py status prints one unrecorded-report flag | chore | L1 | P3 | none | ⏳ proposed |
 
