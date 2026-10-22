@@ -49,7 +49,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             after its guard and (red) spans ran (T-0726). A span that references HEAD^1 or holds a
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
-            line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
+            line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)". When every red
+            guard failed for want of dependencies in the tree (output holds ERR_MODULE_NOT_FOUND or Cannot
+            find module with no node_modules in the tree, or exit 127 with "command not found"), split exits
+            2 with a last line "environment error: step <n> ... install them ... run steps.py split again"
+            instead: nothing is written and no plan review is recorded, and no replan is spent (T-0727).
             In a git work tree it also snapshots `git status --porcelain --untracked-files=all`
             (plus each listed path's size and mtime) before the first runnable guard and after
             the last; a path that is new or different afterwards means the guards changed the
@@ -541,6 +545,11 @@ PLAN_DEFECT = 'plan defect: replan this step (/chain 3)'
 
 class Fail(Exception):
     """A refusal: the message goes to stderr and the command exits 1. Never a traceback."""
+
+
+class EnvError(Fail):
+    """A refusal caused by the tree, not the plan (dependencies missing): the message goes to stderr and the
+    command exits 2, so no caller replans (T-0727)."""
 
 
 def _as_given(given, path):
@@ -1053,9 +1062,9 @@ def span_tmp(top):
         shutil.rmtree(holder, ignore_errors=True)
 
 
-def run_guard(text, cwd, timeout, base=None, tmp=None):
+def run_guard(text, cwd, timeout, base=None, tmp=None, seen=None):
     """Run one guard span with SDLC_BASE_SHA=base (unset when None) and SDLC_TMP_WORKTREES=tmp (when given).
-    Returns (rc or None on timeout, combined output tail lines).
+    Returns (rc or None on timeout, combined output tail lines); a list passed as seen gets every output line.
     It runs in its own session so a timeout kills the whole process group, grandchildren too."""
     proc = subprocess.Popen(['bash', '-c', '--', text], cwd=cwd, stdin=subprocess.DEVNULL, env=span_env(base, tmp),
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
@@ -1068,7 +1077,24 @@ def run_guard(text, cwd, timeout, base=None, tmp=None):
         out, err = proc.communicate()
         rc = None
     tail = [line for line in (err + out).decode('utf-8', errors='replace').splitlines() if line.strip()]
+    if seen is not None:
+        seen.extend(tail)
     return rc, tail[-5:]
+
+
+MISSING_MODULE_RE = re.compile(r"ERR_MODULE_NOT_FOUND|Cannot find (?:module|package) ['\"]")
+MISSING_COMMAND_RE = re.compile(r': command not found$')
+
+
+def missing_deps(rc, lines, cwd):
+    """Why a red guard failed for want of dependencies in the tree, else None (T-0727). Narrow on purpose: a
+    module-not-found line counts only when cwd holds no node_modules (a present one means the import is the
+    plan's), a missing command only on exit 127 with the shell's own "command not found" line."""
+    if rc == 127 and any(MISSING_COMMAND_RE.search(x.strip()) for x in lines):
+        return 'a command is not installed'
+    if not os.path.isdir(os.path.join(cwd, 'node_modules')) and any(MISSING_MODULE_RE.search(x) for x in lines):
+        return 'no node_modules'
+    return None
 
 
 def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
@@ -1078,7 +1104,7 @@ def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
     top = git_toplevel(tree or task_dir)
     cwd = top or str(tree or task_dir)
     base = base_sha(top)
-    lines, red, before, ran = [], [], None, False
+    lines, red, env, before, ran = [], [], [], None, False
     with span_tmp(top) as tmp:
         for n in chosen:
             for text in guard_spans(steps[n]):
@@ -1088,9 +1114,13 @@ def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
                     before = tree_state(top)
                 ran = True
                 timeout = timeouts[n]
-                rc, tail = run_guard(text, cwd, timeout, base, tmp)
+                seen = []
+                rc, tail = run_guard(text, cwd, timeout, base, tmp, seen)
                 if rc == 0:
                     continue
+                why_env = missing_deps(rc, seen, cwd) if rc is not None else None
+                if why_env:
+                    env.append((n, text, why_env))
                 why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
                 lines.append(f'steps: {plan} step {n}: (guard) criterion is red now ({why}): {text}')
                 lines += [f'  {t}' for t in tail]
@@ -1101,6 +1131,11 @@ def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
         which = f'step {chosen[0]}' if len(chosen) == 1 else f'steps {", ".join(map(str, chosen))}'
         lines += [f'steps: {plan} {which}: (guard) criteria changed the work tree: {p}' for p in changed]
         red.append(f'{which} (guard) criteria changed the work tree: {", ".join(changed)}')
+    if red and len(env) == len(red):
+        n, text, why_env = env[0]
+        raise EnvError('\n'.join(lines + [
+            f'environment error: step {n} (guard) needs dependencies missing in the tree ({why_env}): {text}; '
+            f'install them in {cwd} (for example npm ci) and run steps.py split again; the plan is not at fault, do not replan']))
     if red:
         record_plan_review(task_dir, plan, [x for x in lines if not x.startswith(' ')])
         raise Fail('\n'.join(lines + [f'plan defect: {"; ".join(red)}; replan this step (/chain 3)']))
@@ -2616,7 +2651,7 @@ def cmd_split(target, only, guard_timeout=None, override_review=None, tree=None,
         written = split(target, only, guard_timeout, override_review, tree, supersede)
     except Fail as e:
         print(e, file=sys.stderr)
-        return 1
+        return 2 if isinstance(e, EnvError) else 1
     for p in written:
         print(p)
     return 0
@@ -5357,6 +5392,43 @@ def selftest():
         check('(n) --only with a red guard refuses, writes nothing, last line is plan defect with the span',
               rc == 1 and out == '' and snapshot(d) == before and not (d / 'step-1').exists()
               and last.startswith('plan defect:') and red_span in last and '(exit 1)' in err)
+
+        # (T-0727) a red guard whose output shows dependencies missing in the tree is an environment error
+        # (exit 2, an install hint, no plan defect, nothing written); output that merely mentions a module stays a plan defect
+        def env_guard(name, body):
+            script = tmp / f'env-{name}.sh'
+            script.write_text(body, encoding='utf-8')
+            return d_env(f'(guard) `bash {script}`')
+
+        def d_env(criterion):
+            return task(plan=guard_plan(criterion))
+
+        mod_err = ("echo \"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/lane/node_modules/vitest/vitest.mjs' "
+                   "imported from /lane/run.mjs\" >&2; exit 1\n")
+        d = env_guard('module', mod_err)
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        last = err.strip().splitlines()[-1] if err.strip() else ''
+        check('(T-0727) a red guard with ERR_MODULE_NOT_FOUND and no node_modules is an environment error: exit 2, '
+              'install hint, no plan defect, nothing written',
+              rc == 2 and out == '' and snapshot(d) == before and 'plan defect' not in err
+              and last.startswith('environment error:') and 'npm ci' in last and 'step 1' in last)
+
+        d = env_guard('cmd', 'echo "env.sh: line 1: sdlc-no-such-tool: command not found" >&2; exit 127\n')
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0727) a red guard that exits 127 with "command not found" is an environment error',
+              rc == 2 and 'plan defect' not in err and err.strip().splitlines()[-1].startswith('environment error:'))
+
+        d = env_guard('mention', 'echo "AssertionError: module registry should list 3 entries, got 2" >&2; exit 1\n')
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0727) a red guard whose output merely mentions a module stays a plan defect (exit 1)',
+              rc == 1 and err.strip().splitlines()[-1].startswith('plan defect:'))
+
+        d = env_guard('present', mod_err)
+        (d / 'node_modules').mkdir()
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0727) ERR_MODULE_NOT_FOUND with node_modules present is a real red guard: plan defect (exit 1)',
+              rc == 1 and err.strip().splitlines()[-1].startswith('plan defect:'))
 
         green = tmp / 'n-green-ran'
         d = task(plan=guard_plan(f'(guard) `touch {green} && test -f handoff.md`'))
