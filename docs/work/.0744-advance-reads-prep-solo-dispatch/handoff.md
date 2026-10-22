@@ -2,7 +2,7 @@
 id: T-0744
 title: "dispatch.py advance and record accept the solo dispatch file prep writes"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -56,3 +56,13 @@ Part 1 of #72 only (advance/record on prep's solo dispatch file). Prep now write
 - Negative control (solo_record reverted to the old file shape): `FAIL: T-0744 advance on the solo dispatch file fanout prep writes exits 0, prices the solo runs row, and prints the close line`, selftest rc 1; restored: PASS, rc 0.
 - Checks: dispatch selftest (gate_lock) exit 0; fanout selftest exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8f08aaab` exit 0.
 - Open: for an L2 or L3 solo, `advance` prepares the ticket verifier against the handoff in the main checkout (no `tree` in the file), not the sub-agent worktree the printed verifier command names; not verified, left for a new ticket.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 8f08aaab05a1
+- Changed: see commits
+- Commits: 1566168 T-0744: dispatch.py advance and record accept the solo dispatch file prep writes
+- Check: 1 A `dispatch.py` selftest case reproduces the issue's report and passes; with the change reverted ...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:2215 for an L2 or L3 prep... -> notes.md
