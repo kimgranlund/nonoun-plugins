@@ -2203,13 +2203,17 @@ def write_solo_row(taskdir, tier, file=''):
     return attempt
 
 
-def solo_record(d, taskdir, tier):
+def solo_record(d, taskdir, tier, top=None):
     """The dispatch file of a sub-agent solo lane: the Agent call plus the keys dispatch.py solo_dispatch reads, an absolute
-    handoff and the records dir as artifacts_dir, so `dispatch.py record` and `advance` price its row (T-0744)."""
+    handoff and the records dir as artifacts_dir, so `dispatch.py record` and `advance` price its row (T-0744). top, the
+    checkout `prep` ran in, adds `tree`, the host worktree the solo builds in, which `advance` prepares the verifier on (T-0747)."""
     import solo_run
     taskdir = pathlib.Path(taskdir).resolve()
-    return {**d, 'role': 'solo', 'level': solo_run.TIERS[tier][2], 'handoff': str(taskdir / 'handoff.md'),
-            'artifacts_dir': str(order.records_dir(taskdir))}
+    rec = {**d, 'role': 'solo', 'level': solo_run.TIERS[tier][2], 'handoff': str(taskdir / 'handoff.md'),
+           'artifacts_dir': str(order.records_dir(taskdir))}
+    if top is not None and d.get('worktree'):
+        rec['tree'] = str(pathlib.Path(top).resolve() / d['worktree'])
+    return rec
 
 
 def price_solo_row(taskdir, tier, transcript, tokens):
@@ -2304,7 +2308,7 @@ def print_prep(ctx):
                 # The spawn gate (hooks/block-role-spawn.sh) finds this record in the prompt's Artifacts dir, the records
                 # dir, as solo_run.dispatch_json writes it (T-0669); the task folder keeps only tracked records.
                 (order.records_dir(taskdir, create=True) / f"{d['name']}.dispatch.json").write_text(
-                    json.dumps(solo_record(d, taskdir, tier), indent=2) + '\n', encoding='utf-8')  # T-0744/T-0740: dispatch.py record and advance read it
+                    json.dumps(solo_record(d, taskdir, tier, ctx['top']), indent=2) + '\n', encoding='utf-8')  # T-0744/T-0740: dispatch.py record and advance read it
                 out.append(f"    branch: {d['branch']}; worktree: {d['worktree']} (host-made at the spawn)")
                 out.append(f"    host record: {write_host_record(ctx, d['name'], d['branch'], t.id)}")
                 out.append(f"    dispatch {t.id}:")

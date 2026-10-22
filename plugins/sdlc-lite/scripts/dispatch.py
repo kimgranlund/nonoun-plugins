@@ -2211,7 +2211,7 @@ def previous_attempt(steps, step_dir, handoff):
     print('previous attempt: %s' % handoff)
 
 
-def advance(dispatch_file, rec):
+def advance(dispatch_file, rec, agent_id=None):
     """One call per role completion (T-0645): rec() records the dispatch and returns its exit code; a non-zero record stops
     here with that code. Then a pruned role leaves the queue the way prune --done does and prints its TaskStop line, and
     steps.py next on the dispatch's step dir picks the next role: a builder or verifier action is prepared and its
@@ -2222,7 +2222,7 @@ def advance(dispatch_file, rec):
         return rc
     d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
     if solo_dispatch(dispatch_file):
-        return advance_solo(d)
+        return advance_solo(d, agent_id)
     attempt = read_attempt(d['attempt_file'])
     name, root = attempt.get('agent_name') or d.get('name'), attempt.get('project') or d['tree']
     if name and prune_done(root, name):
@@ -2267,23 +2267,47 @@ def failing_verifier_level(task):
     return 'L' + m.group(2)
 
 
-def advance_solo(d):
+def solo_lane_tree(d, top, agent_id=None):
+    """T-0747: the worktree a prep solo built in, settled when advance runs because the host names it: the listed
+    .claude/worktrees/agent-<agent id> first, else the worktree on branch worktree-<name> or worktree-agent-<id>, else the
+    dispatch file's recorded tree when it is a listed worktree; '' when none is (the verifier then prepares in main)."""
+    listed = [(os.path.realpath(p), br) for p, br in worktrees(top)]
+    paths = {p for p, _ in listed}
+    first = os.path.realpath(os.path.join(top, '.claude', 'worktrees', 'agent-%s' % agent_id)) if agent_id else ''
+    if first in paths:
+        return first
+    branches = {'worktree-%s' % d['name']} if d.get('name') else set()
+    if agent_id:
+        branches.add('worktree-agent-%s' % agent_id)
+    for p, br in listed:
+        if br in branches:
+            return p
+    recorded = os.path.realpath(d['tree']) if d.get('tree') else ''
+    return recorded if recorded in paths else ''
+
+
+def advance_solo(d, agent_id=None):
     """A recorded solo (T-0688): an L2 or L3 solo carries a `verifier` command, so prepare the ticket verifier at the
-    steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line."""
+    steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line.
+    A prep solo's tree is its host worktree (solo_lane_tree): the brief's Tree and Handoff name it, while the level
+    comes from the main checkout's handoff, which the solo under verification cannot edit (T-0747)."""
     handoff = Path(d['handoff'])
     if not d.get('verifier'):
         print(close_line(handoff.parent))
         return 0
     import steps
+    top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
+    tree = solo_lane_tree(d, top, agent_id) if top else d.get('tree') or ''
+    if tree and top and os.path.realpath(tree) == os.path.realpath(top):
+        tree = ''
     level, reason = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))
-    failed = failing_verifier_level(handoff.parent)
+    lane = Path(tree, os.path.relpath(os.path.realpath(handoff), os.path.realpath(top))) if tree and top else None
+    failed = failing_verifier_level(handoff.parent) or (failing_verifier_level(lane.parent) if lane is not None and lane.parent.is_dir() else '')
     if failed:
         level, reason = failed, 'the newest ticket verifier failed at %s' % failed
     os.environ.setdefault('SDLC_ROUTING_REASON', 'dispatch.py advance: solo %s done; ticket verifier %s: %s' % (d.get('tier') or d.get('level'), level, reason))
-    top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
-    tree = d.get('tree') or ''
-    if tree and top and os.path.realpath(tree) == os.path.realpath(top):
-        tree = ''
+    if lane is not None and lane.is_file():
+        handoff = lane
     model = d.get('model') if d.get('model') in ('sonnet', 'opus', 'fable', 'haiku') else ''
     print(json.dumps(prepare('verifier', level, str(handoff), solo=model, tree=tree), indent=2))
     return 0
@@ -2488,7 +2512,7 @@ def main(argv):
                           resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None,
                           transcript=args.transcript, no_result=args.no_result)
         try:
-            return advance(args.dispatch, rec) if args.cmd == 'advance' else rec()
+            return advance(args.dispatch, rec, args.agent_id) if args.cmd == 'advance' else rec()
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -4450,12 +4474,12 @@ def selftest():
              rc == 3 and nxt is None and after == before and 'TaskStop' not in out and 'stop:' not in out)
         # T-0688 advance on a ticket-level completion: an L2 solo prepares the ticket verifier, a ticket verifier pass or fail
         # prints the close or stop line.
-        def adv_ticket(tag, dispatch_file, repo):
+        def adv_ticket(tag, dispatch_file, repo, *flags):
             ad = Path(json.loads(Path(dispatch_file).read_text())['artifacts_dir'])
             before = sorted(ad.glob('*.dispatch.json'))
             o = io.StringIO()
             with clean_env(SDLC_DISPATCH_PARENT_PID=live_pid), cwd(repo), contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(o):
-                rc = main(['advance', dispatch_file])
+                rc = main(['advance', *flags, dispatch_file])
             js = o.getvalue()[o.getvalue().find('{'):] if '{' in o.getvalue() else ''
             return rc, o.getvalue(), json.loads(js) if js else None, before, sorted(ad.glob('*.dispatch.json'))
         sr = mk(tmp / 'adv-solo')
@@ -4483,6 +4507,38 @@ def selftest():
             rc, out, nxt, before, after = adv_ticket('solo-' + tag, str(fdf), fr)
             case('T-0718 advance on an L2 solo dispatch after a verifier L3 %s prepares the reverify at %s' % (tag, want),
                  rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == want and len(after) == len(before) + 1)
+        # T-0747: advance on the L2 solo dispatch `fanout.py prep` writes prepares the verifier on the host worktree the solo built
+        # in (found by the agent id, else the branch, else the recorded tree): the brief's Tree and Handoff name that tree's copy.
+        # The level comes from main's copy (pinned L3 here), so a lane copy that drops the pin does not lower it; no worktree
+        # at all falls back to main rather than refusing.
+        import fanout
+        pname, pid = 'T-0001-solo', 'abc123'
+        for tag, wt, branch, pin, flags, want_lane in (
+                ('named', pname, 'worktree-' + pname, True, (), True),
+                ('lane copy drops the pin', pname, 'worktree-' + pname, False, (), True),
+                ('agent-<id> worktree', 'agent-' + pid, 'worktree-other', True, ('--agent-id', pid), True),
+                ('no worktree', None, None, True, (), False)):
+            pr = mk(tmp / ('adv-prep-' + re.sub(r'\W+', '-', tag)))
+            ptask = pr / '.sdlc' / 't'
+            put(ptask / 'handoff.md', '## Goal\nx\n\nverifier: L3\n')
+            plane = pr / fanout.HOST_WORKTREES / (wt or pname)
+            if wt:
+                subprocess.run(['git', '-C', str(pr), 'worktree', 'add', '-q', '-b', branch, str(plane)], check=True)
+                put(plane / '.sdlc' / 't' / 'handoff.md', '## Goal\nx\n' + ('\nverifier: L3\n' if pin else ''))
+            pd = {'subagent_type': 'sdlc-lite:solo-L2', 'name': pname, 'model': 'opus', 'effort': 'medium', 'prompt': 'p', 'tier': 'L2', 'prune': False,
+                  'ticket': 'T-0001', 'branch': 'worktree-' + pname, 'worktree': fanout.HOST_WORKTREES + '/' + pname, 'handoff': '.sdlc/t/handoff.md',
+                  'verifier': 'python3 dispatch.py prepare verifier L2 %s/.sdlc/t/handoff.md' % (fanout.HOST_WORKTREES + '/' + pname),
+                  'result': str(order.records_dir(ptask) / (pname + '.md')), 'base_sha': None}
+            pd['attempt_id'] = fanout.write_solo_row(ptask, 'L2', pname + '.md')
+            pfile = order.records_dir(ptask, create=True) / (pname + '.dispatch.json')
+            pfile.write_text(json.dumps(fanout.solo_record(pd, ptask, 'L2', pr), indent=2) + '\n', encoding='utf-8')
+            Path(pd['result']).write_text('## Report\ndone\n', encoding='utf-8')
+            prc, pout, pnxt, _, _ = adv_ticket('prep-solo', str(pfile), pr, *flags)
+            want_tree = os.path.realpath(str(plane if want_lane else pr))
+            want_hand = os.path.join(want_tree, '.sdlc', 't', 'handoff.md')
+            case('T-0747 advance on an L2 prep solo dispatch (%s) prepares the verifier at L3 on %s: Tree and Handoff name it' % (tag, 'the host worktree' if want_lane else 'main'),
+                 prc == 0 and pnxt is not None and pnxt['role'] == 'verifier' and pnxt['level'] == 'L3' and pnxt['tree'] == want_tree
+                 and 'Tree: %s ' % want_tree in pnxt['prompt'] and 'Handoff: %s' % want_hand in pnxt['prompt'])
         # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
         # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
         import solo_run
