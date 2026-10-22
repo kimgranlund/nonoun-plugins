@@ -26,8 +26,8 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           turn until it fits (no backfill); a queued job is never preempted by a later one and a running job is
           never stopped by admission. Load cap: when policy.json has a top-level max_load (a whole number, set
           with `policy set max_load=N`; 0 is off; absent is max(1, int(0.8 * CPU count)), and `policy show` says
-          `default from N CPUs` then), no new grant is admitted while the
-          host's 1-minute load average (os.getloadavg) is above it; a load equal to it admits, a held grant is
+          `default from N CPUs` then), no new grant is admitted while a grant is held and the
+          host's 1-minute load average (os.getloadavg) is above it; a load equal to it admits, with no grant held the head is admitted at any load (load from outside never starves the queue), a held grant is
           never stopped, the refused head keeps its round-robin turn, and a host that reports no load average
           is not capped. It is an absolute load, so pick load per CPU times the CPU count. SDLC_GATE_LOAD_FILE
           (tests only) names a file holding the load to use; SDLC_GATE_CPUS (tests only) is the CPU count.
@@ -423,7 +423,8 @@ def host_load():
 def schedule(ledger, pol, legacy_n=0, load=None):
     """Grant queue heads while they fit: highest priority first, then arrival; among the repos at the top priority
     round robin after the repo granted last; the selected head keeps its turn until it fits (no backfill). With a
-    max_load in the policy, nothing is granted while the load (read once per call when not given) is above it."""
+    max_load in the policy, nothing more is granted while the load (read once per call when not given) is above it
+    and a grant is held; with none held the head is admitted at any load, so load from outside never starves the queue."""
     cap, usage = pol['capacity'], {}
     max_load = pol.get('max_load')
     if max_load and load is None:
@@ -445,7 +446,7 @@ def schedule(ledger, pol, legacy_n=0, load=None):
             i = cl.index(ledger['rr']) + 1
             cl = cl[i:] + cl[:i]
         entry = heads[cl[0]]
-        if max_load and load is not None and load > max_load: break  # LOAD-CAP
+        if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break  # LOAD-CAP
         if not fits(usage, entry['need'], cap):
             break
         ledger['queue'].remove(entry)
@@ -790,7 +791,8 @@ def status_data(root):
         max_load = None  # a policy that does not load gives no load fact and never fails status
     if max_load:
         load = host_load()
-        d['load'] = {'value': load, 'max_load': max_load, 'over': load is not None and load > max_load}
+        d['load'] = {'value': load, 'max_load': max_load,
+                     'over': load is not None and load > max_load and bool(grants or d['legacy'])}
     return d
 
 
@@ -1046,7 +1048,7 @@ M_LIVE = "return wrapper or group_alive(g.get('pgid'))" + '  # GRANT-LIVE'
 M_IDENT = 'if start and cur and cur != start: return False' + '  # IDENT'
 M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
 M_LOADDEF = "pol['max_load'] = max(1, int(0.8 * n))" + '  # LOAD-DEFAULT'
-M_LOAD = 'if max_load and load is not None and load > max_load: break' + '  # LOAD-CAP'
+M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
 REAP_FAKE = "import os,time; open(os.environ['GL_PIDFILE'],'w').write(str(os.getpid())); time.sleep(300)"
@@ -1369,6 +1371,31 @@ def case_load(py, base, label):
         release_all(m, procs)
 
 
+def case_load_idle(py, base, label):
+    """The starvation guard: with max_load 24, a load of 36.5 from outside and no grant held, the first gate is
+    admitted at once; a second one then waits on the load while the first holds."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    lf = base / f'load-{label}'
+    env = env_for(base, label, SDLC_GATE_LOAD_FILE=str(lf))
+    lf.write_text('36.5\n')
+    try:
+        r = gl(py, env, 'policy', 'set', 'max_load=24')
+        if r.returncode != 0:
+            return [f'policy set max_load=24 did not take, rc={r.returncode} {r.stderr!r}']
+        procs = [holder(py, env, m, 1)]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the starved head: no grant was held and the load was over the cap, yet the first gate was not admitted']
+        procs.append(holder(py, env, m, 2))
+        waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
+        time.sleep(3 * POLL)
+        if (m / 'started-2').exists():
+            bad.append('the second gate ran over the load cap while the first held a grant')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
 def case_load_default(py, base, label):
     """The default load cap: with no max_load in the policy and 10 CPUs (SDLC_GATE_CPUS) the cap is 8, so a load of
     12 keeps a second gate that fits the capacity waiting while the holder keeps its grant; `policy show` names the
@@ -1436,9 +1463,14 @@ def case_rr():
     if rounds(capped, load=24) != ['a1', 'b3', 'a2']:
         bad.append('a load equal to the cap did not admit')
     L = fresh('A')
+    L['grants'] = [dict(entry('h0', 'Z'), need={COMPUTE: 1})]  # a held grant: the cap now applies
     granted = schedule(L, capped, load=36.5)
-    if granted or L['grants'] or L['rr'] != 'A' or len(L['queue']) != 3:
-        bad.append(f'over the load cap the schedule granted {granted} and left rr {L["rr"]!r}, wanted nothing granted and rr A')
+    if granted or len(L['grants']) != 1 or L['rr'] != 'A' or len(L['queue']) != 3:
+        bad.append(f'over the load cap with a grant held the schedule granted {granted} and left rr {L["rr"]!r}, wanted nothing granted and rr A')
+    L = fresh('A')
+    granted = schedule(L, capped, load=36.5)
+    if granted != ['b3']:
+        bad.append(f'over the load cap with no grant held the schedule granted {granted}, wanted only b3 (the head, then the cap holds)')
     return bad
 
 
@@ -1539,6 +1571,8 @@ def selftest():
             ('start identity', case_ident, M_IDENT, 'pass  # IDENT', 'reused pid'),
             ('group drain', case_drain, M_DRAIN, 'pass  # DRAIN', 'still runs'),
             ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'),
+            ('load cap starvation guard', case_load_idle, M_LOAD,
+             "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
             ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')

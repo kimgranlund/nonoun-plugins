@@ -32,4 +32,6 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 
 Selftest: new `case_load_default` (10 fake CPUs, cap 8, load 12 refuses a fitting second gate; `policy show` names the default; `policy set compute_units=6` leaves policy.json without max_load; `max_load=0` admits) with a mutant control on the `LOAD-DEFAULT` line, observed failing ("the waiter ran over the default load cap"). `env_for` now gives every case a quiet load file so the default cap cannot stall cases on a busy host.
 
+Starvation guard (added after review): the cap applies only while a grant (or a legacy holder) is held; with none held the head is admitted at any load, and `status` reports `over` only in that state. New `case_load_idle` (real processes, load 36.5, max_load 24, no holder: the first gate starts, the second waits) with a mutant control restoring the unguarded line, observed failing ('the starved head ...'); `case_rr` now holds a grant for the over-cap check and asserts the idle ledger grants only the head.
+
 Checks: `gate_lock.py selftest` PASS, `check.py` exit 0, `scripts/check-packaging.py` PASS, `git diff --check a8680df4` exit 0.
