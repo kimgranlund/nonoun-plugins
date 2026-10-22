@@ -2105,14 +2105,41 @@ def solo_dispatch(path):
     return d if ok else None
 
 
-def solo_report_file(sd, transcript=None, no_result=False):
-    """The report of a recorded solo whose dispatch names a result (T-0682): the file when it holds text, else the
-    transcript's final message written there (a lone `solo ...` pointer line is no report). Prints the path and returns
-    0; with neither, returns 2 and changes nothing, so the row stays unpriced and the live marker stays, or 1 with
-    no_result (T-0719), which the caller closes failed and clears the marker."""
+def host_report_copy(result, agent_id=None):
+    """T-0740: the worktree copy of a solo's report, written at the same path under its host worktree because the host
+    sandbox refuses the primary path: .claude/worktrees/agent-<agent_id> first, else the one other git worktree that
+    holds a non-empty copy; None when there is none or more than one."""
+    p = subprocess.run(['git', '-C', str(result.parent), 'worktree', 'list', '--porcelain'], capture_output=True, text=True)
+    trees = [Path(ln[len('worktree '):]).resolve() for ln in p.stdout.splitlines() if ln.startswith('worktree ')] if p.returncode == 0 else []
+    if not trees:
+        return None
+    try:
+        rel = result.resolve().relative_to(trees[0])  # git lists the main checkout first
+    except ValueError:
+        return None
+    def full(f):
+        return f.is_file() and f.read_text(encoding='utf-8', errors='replace').strip()
+    if agent_id and full(trees[0] / '.claude' / 'worktrees' / ('agent-%s' % agent_id) / rel):
+        return trees[0] / '.claude' / 'worktrees' / ('agent-%s' % agent_id) / rel
+    hits = [w / rel for w in trees[1:] if full(w / rel)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def solo_report_file(sd, transcript=None, no_result=False, agent_id=None):
+    """The report of a recorded solo whose dispatch names a result (T-0682): the file when it holds text, else its host
+    worktree copy (host_report_copy, T-0740) copied there, else the transcript's final message written there (a lone
+    `solo ...` pointer line is no report). Prints the path and returns 0; with none, returns 2 and changes nothing, so
+    the row stays unpriced and the live marker stays, or 1 with no_result (T-0719), which the caller closes failed and
+    clears the marker."""
     result = Path(sd['result'])
     if result.is_file() and result.read_text(encoding='utf-8', errors='replace').strip():
         print('solo report: %s' % result)
+        return 0
+    copy = host_report_copy(result, agent_id)
+    if copy is not None:
+        result.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(copy), str(result))
+        print('solo report: %s (from the host worktree copy %s)' % (result, copy))
         return 0
     fin = cost_estimate.transcript_final(transcript) if transcript else None
     text = fin[0].strip() if fin and fin[1] != 'max_tokens' else ''
@@ -2416,7 +2443,7 @@ def main(argv):
                 return rerecord(args.dispatch)
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
-                gone = solo_report_file(sd, args.transcript, args.no_result) if sd.get('result') else 0
+                gone = solo_report_file(sd, args.transcript, args.no_result, args.agent_id) if sd.get('result') else 0
                 import solo_run
                 if gone == 1:  # T-0719: --no-result closes a stalled solo failed and clears its live marker
                     solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens,
