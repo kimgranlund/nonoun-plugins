@@ -25,3 +25,8 @@ A prepared brief no longer tells the role to remove its throwaway prefix or scra
 ## Acceptance criteria
 1. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and a case asserts the prepared brief says record removes the prefix and has no "rm is allowed there".
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `plugins/sdlc-lite/scripts/dispatch.py`: the prepared brief now says `dispatch.py record` removes the throwaway prefix and the scratch dir after the run, so the role does not remove them (`git worktree remove` of its own worktree is fine); "rm is allowed there" text dropped, T-0707 literal-path sentence kept. Selftest case rewritten to assert the new clause appears once and the old text is absent.
+- `plugins/sdlc-lite/agents/builder.md` (and generated builder-L1..L5, Codex sdlc-builder-l1..l5): "Remove it when done" aligned to the same rule. `hooks/block-role-rm.sh`: header comment only.
+- Checks: dispatch selftest exit 0 (via gate_lock), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check c07d6a20` exit 0.
