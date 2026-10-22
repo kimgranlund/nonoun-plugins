@@ -2,7 +2,7 @@
 id: T-0726
 title: "steps.py split sets SDLC_TMP_WORKTREES for guard and red spans"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,16 @@ The failing test lands before or with the fix, never after.
 - Criterion 2: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0.
 - Criterion 3: `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `python3 scripts/check-packaging.py` exit 0, `git diff --check 83a3a4e6` exit 0.
 - Also updated the `steps.py` split docstring and `docs/references/sdlc-internals.md`.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 83a3a4e63e21
+- Changed: see commits
+- Commits: b0df23d T-0726: steps.py split exports SDLC_TMP_WORKTREES to guard and red spans
+- Check: 1 A `steps.py` selftest case reproduces the issue's repro and passes; with the change reverted it f...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:1042-1053 Conductor check: the... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:1031-1039 Conductor check: a... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:4251,4397,4653,3697 and... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:5367 The selftest runs from a... -> notes.md
