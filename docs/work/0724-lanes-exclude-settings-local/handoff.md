@@ -41,3 +41,9 @@ The failing test lands before or with the fix, never after.
 1. A `lanes.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`lanes.py open` now adds `.claude/settings.local.json` to the common `info/exclude` when `git check-ignore` does not already ignore it, so a lane's `git add -A` never stages the copied host settings. Selftest case `local settings unignored` reproduces the repro (repo without the ignore line); the selftest env also sets `XDG_CONFIG_HOME` so a developer's global ignore cannot mask the case.
+
+- Negative control (exclude step disabled): `FAIL: local settings unignored: local settings unignored: git add -A in the lane want only new.txt staged, got ['.claude/settings.local.json', 'new.txt']`, selftest exit 1.
+- With the change: `lanes.py selftest` through gate_lock exit 0; `check.py` exit 0; `scripts/check-packaging.py` exit 0; `git diff --check 2c630e96d7118051929a27ff477b62c4f056350d` exit 0.

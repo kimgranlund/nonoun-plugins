@@ -244,6 +244,7 @@ import roots  # same scripts/ dir: the work-root record prefixes (T-0626)
 
 Path = pathlib.Path
 RECORD = '.lane.json'
+LOCAL_SETTINGS = '.claude/settings.local.json'
 FIELDS = ('lane', 'kind', 'branch', 'base', 'base_sha', 'into', 'tickets', 'port', 'opened', 'run_id', 'setup', 'lock')
 KINDS = ('fanout', 'integration', 'solo')
 LOCAL_ID = re.compile(r'T-\d+')
@@ -1370,12 +1371,12 @@ def pick_port(ctx, lanes):
     return None
 
 
-def add_exclude(common):
+def add_exclude(common, entry=RECORD):
     path = Path(common) / 'info' / 'exclude'
     path.parent.mkdir(parents=True, exist_ok=True)
     text = path.read_text(encoding='utf-8') if path.is_file() else ''
-    if not any(l.strip() in (RECORD, '/' + RECORD) for l in text.splitlines()):
-        path.write_text(text + ('' if not text or text.endswith('\n') else '\n') + RECORD + '\n', encoding='utf-8')
+    if not any(l.strip() in (entry, '/' + entry) for l in text.splitlines()):
+        path.write_text(text + ('' if not text or text.endswith('\n') else '\n') + entry + '\n', encoding='utf-8')
 
 
 def write_record(tree, rec):
@@ -1510,6 +1511,8 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
                 rec['lock'], lock_line = reason, f'locked: {reason}'
         write_record(tree, rec)
     add_exclude(ctx.common)
+    if git(top, 'check-ignore', '-q', LOCAL_SETTINGS).returncode:  # T-0724: host-personal, so a lane's `git add -A` never stages it
+        add_exclude(ctx.common, LOCAL_SETTINGS)
     local = Path(top, '.claude', 'settings.local.json')  # gitignored, so a new worktree lacks it; copy only this file, never log it
     if local.is_file() and not Path(tree, '.claude', 'settings.local.json').exists():
         try:
@@ -3168,6 +3171,24 @@ def case_local_settings(script, base):
     return fails
 
 
+def case_local_settings_unignored(script, base):
+    """T-0724: in a repo that does not ignore .claude/settings.local.json, a lane's `git add -A` never stages it."""
+    t = Fixture(base, script, 'lsetx')
+    t.commit('unignore', {'.gitignore': '.worktrees/\n.sdlc/\n'})
+    t.ticket(6, 'Six', claimed=True)
+    t.write({'.claude/settings.local.json': '{"permissions": {"allow": ["Bash(ls:*)"]}}\n'})
+    fails = []
+    leaf, wt, _ = t.open('a', 'T-6')
+    if not wt.joinpath('.claude', 'settings.local.json').is_file():
+        fails.append('local settings unignored: want the settings file copied into the lane')
+    t.write({'new.txt': 'n\n'}, cwd=wt)
+    t.g('add', '-A', cwd=wt)
+    staged = t.g('diff', '--cached', '--name-only', cwd=wt).splitlines()
+    if staged != ['new.txt']:
+        fails.append(f'local settings unignored: git add -A in the lane want only new.txt staged, got {staged}')
+    return fails
+
+
 def case_lane_setup(script, base):
     """T-0692: two lane_setup: lines both run in order in the new tree; a failing first line records failed and skips the second."""
     t = Fixture(base, script, 'lsetup')
@@ -3613,7 +3634,7 @@ def selftest():
             if k.startswith('GIT_') or k in ('SDLC_RUN_ID', 'LANES_STUB_GH'):
                 del os.environ[k]
         ts = f'@{int(time.time() - 3 * 86400)} +0000'
-        os.environ.update(GIT_CONFIG_GLOBAL=str(base / 'gitconfig'), GIT_CONFIG_NOSYSTEM='1', GIT_AUTHOR_NAME='lanes selftest',
+        os.environ.update(GIT_CONFIG_GLOBAL=str(base / 'gitconfig'), GIT_CONFIG_NOSYSTEM='1', XDG_CONFIG_HOME=str(base / 'xdg'), GIT_AUTHOR_NAME='lanes selftest',
                           GIT_AUTHOR_EMAIL='lanes@selftest', GIT_COMMITTER_NAME='lanes selftest', GIT_COMMITTER_EMAIL='lanes@selftest',
                           GIT_AUTHOR_DATE=ts, GIT_COMMITTER_DATE=ts, PATH=f'{base / "bin"}{os.pathsep}{os.environ.get("PATH", "")}',
                           PYTHONPATH=os.pathsep.join(x for x in (str(HERE), os.environ.get('PYTHONPATH')) if x))
@@ -3740,6 +3761,8 @@ def run_selftest(script, src, base):
              '--path, --branch and --no-claim open an unclaimed ticket there with a record; without --no-claim it refuses')
         need('local settings', case_local_settings(script, base),
              'an ignored .claude/settings.local.json is copied into the lane and no other ignored file'),
+        need('local settings unignored', case_local_settings_unignored(script, base),
+             'a repo that does not ignore .claude/settings.local.json: git add -A in a lane never stages it (T-0724)')
         need('sibling root', case_sibling_root(script, base), 'the default lanes root is <parent>/<name>.worktrees, outside the main checkout (T-0563)')
         need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
         need('host-owned', case_host_owned(script, base),
