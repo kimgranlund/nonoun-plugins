@@ -7,7 +7,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0718 | [0718-advance-reverify-level](0718-advance-reverify-level/handoff.md) | dispatch.py advance reverifies at the failing verifier level | bug | L1 | P2 | none | 🟡 claimed |
-| T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🔵 ready |
+| T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🟡 claimed |
 | T-0721 | [0721-land-second-ticket-same-lane](0721-land-second-ticket-same-lane/handoff.md) | fanout.py land closes a second lane ticket whose commits an earlier land merged | bug | L2 | P2 | none | 🟡 claimed |
 | T-0722 | [0722-land-merge-gate-from-integration](0722-land-merge-gate-from-integration/handoff.md) | fanout.py land reads merge_gate from the integration tree | bug | L1 | P2 | none | 🔵 ready |
 | T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🔵 ready |
