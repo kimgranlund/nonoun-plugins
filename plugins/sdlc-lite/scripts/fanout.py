@@ -139,6 +139,7 @@ Gate class (T-0481; docs/references/sdlc-internals.md, fanout gate class)
   same. The class prints as `gate: light` or `gate: full (<reason>)`, is the `gate` key of the land.jsonl line, and a
   solo close reason ends `; gate: <class>`. --light-gate with no `merge_gate: light` line refuses (exit 2, nothing
   created) in run, prep and land; land_command passes each --light-gate on; roll has no flag and is always full.
+  land reads that config from the integration worktree it merges into when one exists (T-0722), else from <root>.
 
 cover (T-0481)
   `cover <integration> --gate CMD...` finds the integration worktree in `git worktree list --porcelain` (none, or no
@@ -1037,6 +1038,16 @@ def light_refusal(a, root):
                      f'light gate class there, with its `light_scope: <glob>...` lines')
 
 
+def config_root(root, top, integ_dir, integ_exists):
+    """The root whose config declares the light gate class for a land (T-0722): the integration tree land merges into
+    when it exists, so a `merge_gate: light` line landed there counts before main has it; else the primary checkout."""
+    if integ_exists:
+        tree_root = integ_dir / root.relative_to(top)
+        if tree_root.is_dir():
+            return tree_root
+    return root
+
+
 def gate_class(ctx, ref):
     """The gate class of merging ref into the integration worktree (T-0481): ('light', '') when the repo declares
     `merge_gate: light` and `light_scope:` globs, --light-gate was given, and every path ref brings outside the ticket
@@ -1044,7 +1055,7 @@ def gate_class(ctx, ref):
     is always full. Called before the merge, so HEAD is the pre-merge commit."""
     if ctx.get('roll'):
         return 'full', 'roll'
-    root, integ = ctx['root'], ctx['integ_dir']
+    root, integ = ctx.get('cfg_root', ctx['root']), ctx['integ_dir']
     if not tickets.merge_gate_declared(root):
         return 'full', 'no merge_gate: light'
     globs = tickets.light_scope_globs(root)
@@ -2431,7 +2442,6 @@ def branch_ticket(a, root, branch):
 def land_preflight(a):
     """Every check before any write for one `land <branch>`. Returns the run context; raises Refuse."""
     cwd, top, root, rel, tdir, tip = branch_repo(a)
-    light_refusal(a, root)
     branch = a.branch
     integration = a.integration or f'fanout/{datetime.date.today().isoformat()}'
     if git(cwd, 'check-ref-format', '--branch', integration).returncode:
@@ -2474,10 +2484,12 @@ def land_preflight(a):
     elif integ_dir.exists() and where is None:
         raise Refuse(f'{integ_dir} exists but is not a worktree on {integration}; remove it with git worktree remove, '
                      f'or pass another --lanes-dir')
+    cfg_root = config_root(root, top, integ_dir, where is not None)
+    light_refusal(a, cfg_root)
     lane = Lane(land_lane_name(branch, tid), [tid], branch)
     lane.branch, lane.tip, lane.tickets = branch, tip, [t]
     lane.wt = checked_out.get(branch)
-    return {'lane_wt': checked_out.get(branch), 'main': main or top, 'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
+    return {'lane_wt': checked_out.get(branch), 'main': main or top, 'cwd': cwd, 'top': top, 'root': root, 'cfg_root': cfg_root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
             'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
             'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
             'gates': list(a.gate or []), 'light_gates': list(a.light_gate or []), 'gate_needs': gate_needs_of(a),
@@ -6091,6 +6103,28 @@ def selftest():
         sr = verb(lg, 'settle', 'fanout/lg2', '--require-covered')
         expect(f'T-0481 settle --require-covered refuses a red newest entry, got rc={sr.returncode} err={sr.stderr!r}',
                sr.returncode == 2 and 'uncovered' in sr.stderr)
+
+        # T-0722 (issue #58): a `merge_gate: light` line committed on the integration branch counts before main has it
+        lg5 = tmp / 'light-integ'
+        sized_repo(lg5, ['L1', 'L1'], {'.gitignore': gi})
+        (lg5 / '.sdlc' / 'config').write_text('light_scope: src/components/**\n', encoding='utf-8')
+        sh(lg5, 'add', '-A')
+        sh(lg5, 'commit', '-q', '-m', 'light_scope only')
+        lg5_lanes = tmp / 'light-integ-lanes'
+        lg5_pin = ('--integration', 'fanout/lg5', '--lanes-dir', str(lg5_lanes), '--base', 'main')
+        make_branch(lg5, 'worktree-T-0001-solo', {'src/other/a.txt': 'a\n'}, 'T-0001: Ticket t1')
+        make_branch(lg5, 'worktree-T-0002-solo', {'src/components/x/b.txt': 'b\n'}, 'T-0002: Ticket t2')
+        h1 = verb(lg5, 'land', 'worktree-T-0001-solo', *lg5_pin, '--gate', 'true')
+        lg5_integ_wt = lg5_lanes / 'integration'
+        (lg5_integ_wt / '.sdlc' / 'config').write_text('merge_gate: light\nlight_scope: src/components/**\n', encoding='utf-8')
+        sh(lg5_integ_wt, 'add', '-A')
+        sh(lg5_integ_wt, 'commit', '-q', '-m', 'declare merge_gate: light')
+        h2 = verb(lg5, 'land', 'worktree-T-0002-solo', *lg5_pin, '--gate', 'false', '--light-gate', 'true')
+        expect(f'T-0722 light-gate config is read from the integration tree: merge_gate: light on the integration branch '
+               f'only, main without it, got first rc={h1.returncode} rc={h2.returncode} out={h2.stdout[-400:]!r} '
+               f'err={h2.stderr[-300:]!r}',
+               h1.returncode == 0 and h2.returncode == 0 and 'gate: light' in h2.stdout
+               and 'merge_gate: light' not in (lg5 / '.sdlc' / 'config').read_text(encoding='utf-8'))
 
 
     # T-0687: MergeLock writes merge.lock.holder while held; `queue` prints it as landing, a dead pid as stale holder
