@@ -25,11 +25,12 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           arrival; among the repos at the top priority, round robin after the repo granted last; the head keeps its
           turn until it fits (no backfill); a queued job is never preempted by a later one and a running job is
           never stopped by admission. Load cap: when policy.json has a top-level max_load (a whole number, set
-          with `policy set max_load=N`; absent or 0 is off, the default), no new grant is admitted while the
+          with `policy set max_load=N`; 0 is off; absent is max(1, int(0.8 * CPU count)), and `policy show` says
+          `default from N CPUs` then), no new grant is admitted while the
           host's 1-minute load average (os.getloadavg) is above it; a load equal to it admits, a held grant is
           never stopped, the refused head keeps its round-robin turn, and a host that reports no load average
           is not capped. It is an absolute load, so pick load per CPU times the CPU count. SDLC_GATE_LOAD_FILE
-          (tests only) names a file holding the load to use.
+          (tests only) names a file holding the load to use; SDLC_GATE_CPUS (tests only) is the CPU count.
           A grant stays charged while its wrapper is alive with the recorded start
           identity or its process group has a member; a dead holder with no live group is reclaimed, a dead
           wrapper with a live group stays charged (an orphaned group). The command gets SDLC_GATE_GRANT,
@@ -306,11 +307,28 @@ def read_ledger(root):
         return load_ledger(root)
 
 
+def cpu_count():
+    """The CPU count the default load cap derives from; SDLC_GATE_CPUS (tests only) replaces it."""
+    try:
+        return max(1, int(os.environ['SDLC_GATE_CPUS']))
+    except (KeyError, ValueError):
+        return os.cpu_count() or 1
+
+
+def set_default_max_load(pol):
+    """A policy with no max_load key caps admission at 0.8 x the CPU count; max_load_default says where it came from."""
+    if 'max_load' not in pol:
+        n = cpu_count()
+        pol['max_load'] = max(1, int(0.8 * n))  # LOAD-DEFAULT
+        pol['max_load_default'] = f'default from {n} CPUs'
+
+
 def load_policy(root):
     """(policy, source): built-in numbers, each key replaced by policy.json's when present."""
     pol = {k: dict(v) for k, v in BUILTIN_POLICY.items()}
     path = root / 'policy.json'
     if not path.exists():
+        set_default_max_load(pol)
         return pol, 'builtin'
     try:
         d = json.loads(path.read_text())
@@ -324,10 +342,10 @@ def load_policy(root):
         if 'max_load' in d:
             if not (isinstance(d['max_load'], int) and not isinstance(d['max_load'], bool) and d['max_load'] >= 0):
                 raise ValueError('max_load must be a whole number')
-            if d['max_load']:
-                pol['max_load'] = d['max_load']  # absent or 0 is off
+            pol['max_load'] = d['max_load']  # 0 is off, kept so a later `policy set` does not bring the default back
     except (OSError, ValueError) as e:
         raise GateError('state_unavailable', f'{path} is not a usable policy: {e}')
+    set_default_max_load(pol)
     return pol, 'file'
 
 
@@ -871,12 +889,12 @@ def cmd_policy(argv):
                 return 2
             with mutex(root):
                 pol, _ = load_policy(root)
+                if 'max_load_default' in pol:  # the default is derived at load time, never written into the file
+                    pol.pop('max_load'), pol.pop('max_load_default')
                 pol['capacity'].update(caps)
                 pol['default_need'].update(defs)
-                if max_load:
-                    pol['max_load'] = max_load
-                elif max_load is not None:
-                    pol.pop('max_load', None)
+                if max_load is not None:
+                    pol['max_load'] = max_load  # 0 is written: it turns the default cap off
                 tmp = root / f'.policy-{os.getpid()}.tmp'
                 tmp.write_text(json.dumps(pol, sort_keys=True))
                 os.replace(tmp, root / 'policy.json')
@@ -1027,6 +1045,7 @@ M_ORDER = "return (-e['priority'], e['seq'])" + '  # QUEUE-ORDER'
 M_LIVE = "return wrapper or group_alive(g.get('pgid'))" + '  # GRANT-LIVE'
 M_IDENT = 'if start and cur and cur != start: return False' + '  # IDENT'
 M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
+M_LOADDEF = "pol['max_load'] = max(1, int(0.8 * n))" + '  # LOAD-DEFAULT'
 M_LOAD = 'if max_load and load is not None and load > max_load: break' + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1091,6 +1110,9 @@ def env_for(base, label, **extra):
     env = {k: v for k, v in os.environ.items() if not k.startswith('SDLC_GATE_')}
     env['TMPDIR'] = str(tm)
     env['SDLC_GATE_DIR'] = str(base / f'state-{label}')
+    quiet = base / f'load0-{label}'  # the default load cap must not hold a case back on a busy host
+    quiet.write_text('0\n')
+    env['SDLC_GATE_LOAD_FILE'] = str(quiet)
     env.update(extra)
     _ISO['issued'].append(env.get('SDLC_GATE_DIR'))
     return env
@@ -1347,6 +1369,46 @@ def case_load(py, base, label):
         release_all(m, procs)
 
 
+def case_load_default(py, base, label):
+    """The default load cap: with no max_load in the policy and 10 CPUs (SDLC_GATE_CPUS) the cap is 8, so a load of
+    12 keeps a second gate that fits the capacity waiting while the holder keeps its grant; `policy show` names the
+    default and `policy set compute_units=6` does not write it into policy.json; `policy set max_load=0` turns the cap
+    off and the waiter runs."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    lf = base / f'load-{label}'
+    env = env_for(base, label, SDLC_GATE_LOAD_FILE=str(lf), SDLC_GATE_CPUS='10')
+    lf.write_text('1\n')
+    try:
+        procs = [holder(py, env, m, 1)]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start with the load under the default cap']
+        lf.write_text('12\n')
+        procs.append(holder(py, env, m, 2))
+        waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
+        time.sleep(3 * POLL)
+        if (m / 'started-2').exists():
+            return ['the waiter ran over the default load cap']
+        r = gl(py, env, 'policy', 'show')
+        if not ('"max_load": 8' in r.stdout and 'default from 10 CPUs' in r.stdout):
+            bad.append(f'policy show does not name the default cap of 8 from 10 CPUs, got {r.stdout!r}')
+        r = gl(py, env, 'policy', 'set', 'compute_units=6')
+        pf = pathlib.Path(env['SDLC_GATE_DIR']) / 'policy.json'
+        if r.returncode != 0 or 'max_load' in pf.read_text():
+            bad.append(f'policy set compute_units=6 wrote the default cap into policy.json, got {r.returncode} {pf.read_text()!r}')
+        r = gl(py, env, 'policy', 'set', 'max_load=0')
+        if r.returncode != 0:
+            return bad + [f'policy set max_load=0 failed, rc={r.returncode} {r.stderr!r}']
+        if not waitfor(lambda: (m / 'started-2').exists()):
+            bad.append('max_load=0 did not turn the default cap off: the waiter did not run')
+        r = gl(py, env, 'policy', 'show')
+        if '"max_load": 0' not in r.stdout or 'default from' in r.stdout:
+            bad.append(f'policy show after max_load=0 still shows the default, got {r.stdout!r}')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
 def case_rr():
     """Round robin across repos with FIFO inside a repo, on a fabricated ledger (no processes); then the same
     ledger with a max_load: under the cap the order holds, over it nothing is granted and the turn does not move."""
@@ -1476,7 +1538,8 @@ def selftest():
             ('live group not reclaimed', case_livegroup, M_LIVE, 'return wrapper  # GRANT-LIVE', 'lost its charge'),
             ('start identity', case_ident, M_IDENT, 'pass  # IDENT', 'reused pid'),
             ('group drain', case_drain, M_DRAIN, 'pass  # DRAIN', 'still runs'),
-            ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'))
+            ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'),
+            ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')
             expect(f'{label}: {got}', not got)
