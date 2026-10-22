@@ -49,3 +49,10 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Part 1 of #72 only (advance/record on prep's solo dispatch file). Prep now writes the file through `fanout.solo_record`, which adds an absolute `handoff` and `artifacts_dir` (the records dir) so `dispatch.solo_dispatch` accepts it: `record` and `advance` price the solo runs row, clear the live marker, and an L1 solo prints the close line. The Agent-call JSON prep prints is unchanged. The base-sha message (part 2) and the prune TaskStop (part 3) are not touched.
+- New case in `dispatch.py selftest`: `T-0744 advance on the solo dispatch file fanout prep writes exits 0, prices the solo runs row, and prints the close line`.
+- Negative control (solo_record reverted to the old file shape): `FAIL: T-0744 advance on the solo dispatch file fanout prep writes exits 0, prices the solo runs row, and prints the close line`, selftest rc 1; restored: PASS, rc 0.
+- Checks: dispatch selftest (gate_lock) exit 0; fanout selftest exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8f08aaab` exit 0.
+- Open: for an L2 or L3 solo, `advance` prepares the ticket verifier against the handoff in the main checkout (no `tree` in the file), not the sub-agent worktree the printed verifier command names; not verified, left for a new ticket.
