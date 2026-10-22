@@ -11,6 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0737 | [0737-carried-close-needs-own-commit](0737-carried-close-needs-own-commit/handoff.md) | A carried close needs a commit that names the ticket | bug | L1 | P2 | none | 🟡 claimed |
+| T-0738 | [0738-stale-open-drop-refuses-edits](0738-stale-open-drop-refuses-edits/handoff.md) | Stale open folder drop refuses when the open copy holds edits | bug | L1 | P2 | none | ⏳ proposed |
 
 Closed: 695 done, 29 dropped (git log or .NNNN-* folders)
 
