@@ -40,6 +40,9 @@ prep
   Load (T-0700): it prints the live gate-lock holders from other repos, and when the load is over the gate lock's
   effective max_load it opens only the first regular lane (`prep: load <x> over <max>: opening 1 of <n> lanes`);
   --force opens them all.
+  Worker cap (T-0699): per --gate (or --light-gate) that runs `node --test`, `vitest`, `playwright` or `jest` without its
+  worker flag (`--test-concurrency`, `--maxWorkers` or VITEST_MAX_WORKERS, `--workers`, `--maxWorkers`) it prints
+  `warning: gate runs <runner> with no worker cap; add <flag>=$SDLC_GATE_WORKERS`; the exit code is unchanged.
   Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
   for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
@@ -2220,7 +2223,26 @@ def cmd_prep(a):
         return 2
     sweep_lanes(ctx['top'])  # after every refusal, so a refused prep changes nothing
     load_cap(ctx, a)
+    warn_uncapped_gates(ctx)
     return print_prep(ctx)
+
+
+# T-0699: gate runners that ignore SDLC_GATE_WORKERS unless told: (runner, command pattern, cap pattern, flag to add)
+UNCAPPED_RUNNERS = (
+    ('node --test', re.compile(r'\bnode\s(?:[^|;&]*\s)?--test(?![-\w])'), re.compile(r'--test-concurrency\b'), '--test-concurrency'),
+    ('vitest', re.compile(r'\bvitest\b'), re.compile(r'--maxWorkers\b|\bVITEST_MAX_WORKERS='), '--maxWorkers'),
+    ('playwright', re.compile(r'\bplaywright\b'), re.compile(r'--workers\b'), '--workers'),
+    ('jest', re.compile(r'\bjest\b'), re.compile(r'--maxWorkers\b'), '--maxWorkers'),
+)
+
+
+def warn_uncapped_gates(ctx):
+    """T-0699: one `warning:` line per gate that runs a test runner with no worker cap; never changes the exit code."""
+    for gate in list(ctx.get('gates') or []) + list(ctx.get('light_gates') or []):
+        for name, runs, capped, flag in UNCAPPED_RUNNERS:
+            if runs.search(gate) and not capped.search(gate):
+                print(f'warning: gate runs {name} with no worker cap; add {flag}=$SDLC_GATE_WORKERS')
+                break
 
 
 def load_cap(ctx, a):
@@ -4964,6 +4986,21 @@ def selftest():
                lc.returncode == lcf.returncode == lcq.returncode == 0 and n_disp(lc) == 1 and 'dispatch T-0001:' in lc.stdout
                and 'prep: load 1000.0 over 3: opening 1 of 3 lanes' in lc.stdout and n_disp(lcf) == 3 and n_disp(lcq) == 3
                and 'opening 1 of' not in lcf.stdout + lcq.stdout and 'prep: 0 live gate-lock holder(s) from other repos' in lc.stdout)
+        # T-0699: an uncapped test-runner gate warns naming its flag; a capped one, a plain command and the exit code do not
+        wc_args = ('alpha=T-0001', '--lanes-dir', str(tmp / 'wcl'), '--integration', 'fanout/wc')
+        wc_bad, wc_ok = (verb(p1, 'prep', *wc_args, '--gate', g) for g in ('npx vitest run', 'npx vitest run --maxWorkers=2'))
+        wc_all = verb(p1, 'prep', *wc_args, '--gate', 'node --test', '--gate', 'npx playwright test', '--gate', 'npx jest',
+                      '--gate', 'node --test --test-concurrency=2', '--gate', 'npx playwright test --workers=2', '--gate', 'true')
+        wc_n = sum(ln.startswith('warning: gate runs ') for ln in wc_all.stdout.splitlines())
+        expect(f'case 22 prep worker cap (T-0699): vitest with no cap warns naming --maxWorkers, with --maxWorkers=2 it does not, '
+               f'and node --test, playwright and jest warn once each (capped and plain gates silent), all exit 0, got rc '
+               f'{wc_bad.returncode} {wc_ok.returncode} {wc_all.returncode} out={wc_bad.stdout[:300]!r} {wc_all.stdout[:600]!r}',
+               wc_bad.returncode == wc_ok.returncode == wc_all.returncode == 0
+               and 'warning: gate runs vitest with no worker cap; add --maxWorkers=$SDLC_GATE_WORKERS' in wc_bad.stdout
+               and 'warning:' not in wc_ok.stdout and wc_n == 3
+               and 'gate runs node --test with no worker cap; add --test-concurrency=' in wc_all.stdout
+               and 'gate runs playwright with no worker cap; add --workers=' in wc_all.stdout
+               and 'gate runs jest with no worker cap; add --maxWorkers=' in wc_all.stdout)
         gxp = verb(gx, 'prep', 'alpha=T-0001', '--integration', 'fanout/gxp', '--lanes-dir', str(tmp / 'gxpl'), '--stagger', '0')
         expect(f'case 22 prep (T-0477) still refuses an uncommitted handoff (host-lane half, out of T-0477), got rc={gxp.returncode} '
                f'err={gxp.stderr!r}', gxp.returncode == 2 and 'not committed at' in gxp.stderr)
