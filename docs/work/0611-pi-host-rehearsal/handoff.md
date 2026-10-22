@@ -2,7 +2,8 @@
 id: T-0611
 title: "Rehearse a Pi host working tickets beside Claude and Codex"
 type: chore           # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: paused       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+paused_reason: maintainer chose to hold it 2026-10-22; needs the Pi host installed and logged in by the user
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +27,6 @@ Throwaway repo only. No push.
 
 ## Acceptance criteria
 1. The report exists and shows exactly one host winning the shared claim and all three tickets `status: done` in main, or names the ticket filed for each failure.
+
+## Deferred
+2026-10-22: paused by the maintainer ("Keep holding"): it needs the Pi host installed and logged in, which waits for the user.
