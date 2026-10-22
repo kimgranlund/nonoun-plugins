@@ -7,7 +7,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0706 | [0706-read-only-role-scratch-write](0706-read-only-role-scratch-write/handoff.md) | Read-only roles may write in their brief's scratch dir | bug | L1 | P2 | none | 🟡 claimed |
-| T-0707 | [0707-brief-literal-paths](0707-brief-literal-paths/handoff.md) | Briefs say to write worktree and rm paths literally | chore | L2 | P2 | none | ⏳ proposed |
+| T-0707 | [0707-brief-literal-paths](0707-brief-literal-paths/handoff.md) | Briefs say to write worktree and rm paths literally | chore | L2 | P2 | none | 🟡 claimed |
 
 Closed: 668 done, 29 dropped (git log or .NNNN-* folders)
 
