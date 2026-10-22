@@ -45,3 +45,9 @@ The failing test lands before or with the fix, never after.
 1. A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Cause: `fanout.py prep` `load_cap` (T-0700) trims `ctx['lanes']` to the first regular lane when the load is over `max_load`; it printed only `prep: load <x> over <max>: opening 1 of <n> lanes`, and `print_prep` then showed `lane cap: 1 lane(s)` with no line for the other tickets.
+Change: `load_cap` records `ctx['dropped']` (each ticket of the lanes it removes, reason `load cap: load <x> over <max>; --force opens all <n> lanes`); `print_prep` ends with `not planned: <ticket> (<reason>)` per dropped ticket. The `--max-lanes` overflow already refuses with exit 2.
+Selftest: new case 22 expectation (T-0741) on the busy-load prep. Red before the change and with the change reverted: `FAIL: case 22 prep load cap names each dropped ticket (T-0741): busy prep ends with a `not planned:` line per dropped ticket ...`. Green with it.
+Checks: fanout selftest via gate_lock exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8f08aaab` exit 0.
