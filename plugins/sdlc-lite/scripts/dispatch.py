@@ -2247,13 +2247,17 @@ def advance_solo(d):
         print(close_line(handoff.parent))
         return 0
     import steps
+    top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
+    tree = d.get('tree') or ''
+    # T-0747: a prep solo built in its host worktree; the ticket verifier reads that tree's copy of the handoff, not main's
+    lane = Path(tree, os.path.relpath(os.path.realpath(handoff), os.path.realpath(top))) if tree and top else None
+    if lane is not None and lane.is_file():
+        handoff = lane
     level, reason = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))
     failed = failing_verifier_level(handoff.parent)
     if failed:
         level, reason = failed, 'the newest ticket verifier failed at %s' % failed
     os.environ.setdefault('SDLC_ROUTING_REASON', 'dispatch.py advance: solo %s done; ticket verifier %s: %s' % (d.get('tier') or d.get('level'), level, reason))
-    top = git('rev-parse', '--show-toplevel', cwd=handoff.parent).stdout.strip()
-    tree = d.get('tree') or ''
     if tree and top and os.path.realpath(tree) == os.path.realpath(top):
         tree = ''
     model = d.get('model') if d.get('model') in ('sonnet', 'opus', 'fable', 'haiku') else ''
@@ -4412,6 +4416,29 @@ def selftest():
             rc, out, nxt, before, after = adv_ticket('solo-' + tag, str(fdf), fr)
             case('T-0718 advance on an L2 solo dispatch after a verifier L3 %s prepares the reverify at %s' % (tag, want),
                  rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == want and len(after) == len(before) + 1)
+        # T-0747: advance on the L2 solo dispatch `fanout.py prep` writes prepares the verifier on the host worktree the solo built
+        # in: the brief's Tree and Handoff name that tree's copy (here pinned to verifier L3, main's copy is not), not main's.
+        import fanout
+        pr = mk(tmp / 'adv-prep-solo')
+        pname = 'T-0001-solo'
+        plane = pr / fanout.HOST_WORKTREES / pname
+        subprocess.run(['git', '-C', str(pr), 'worktree', 'add', '-q', '-b', 'worktree-' + pname, str(plane)], check=True)
+        put(plane / '.sdlc' / 't' / 'handoff.md', '## Goal\nx\n\nverifier: L3\n')
+        ptask = pr / '.sdlc' / 't'
+        pd = {'subagent_type': 'sdlc-lite:solo-L2', 'name': pname, 'model': 'opus', 'effort': 'medium', 'prompt': 'p', 'tier': 'L2', 'prune': False,
+              'ticket': 'T-0001', 'branch': 'worktree-' + pname, 'worktree': fanout.HOST_WORKTREES + '/' + pname, 'handoff': '.sdlc/t/handoff.md',
+              'verifier': 'python3 dispatch.py prepare verifier L2 %s/.sdlc/t/handoff.md' % (fanout.HOST_WORKTREES + '/' + pname),
+              'result': str(order.records_dir(ptask) / (pname + '.md')), 'base_sha': None}
+        pd['attempt_id'] = fanout.write_solo_row(ptask, 'L2', pname + '.md')
+        pfile = order.records_dir(ptask, create=True) / (pname + '.dispatch.json')
+        pfile.write_text(json.dumps(fanout.solo_record(pd, ptask, 'L2', pr), indent=2) + '\n', encoding='utf-8')
+        Path(pd['result']).write_text('## Report\ndone\n', encoding='utf-8')
+        prc, pout, pnxt, _, _ = adv_ticket('prep-solo', str(pfile), pr)
+        preal = os.path.realpath(str(plane))
+        case('T-0747 advance on an L2 prep solo dispatch prepares the verifier on the host worktree: Tree and Handoff name it, not main',
+             prc == 0 and pnxt is not None and pnxt['role'] == 'verifier' and pnxt['level'] == 'L3' and pnxt['tree'] == preal
+             and 'Tree: %s ' % preal in pnxt['prompt'] and 'Handoff: %s' % os.path.join(preal, '.sdlc', 't', 'handoff.md') in pnxt['prompt']
+             and 'Handoff: %s' % os.path.realpath(str(ptask / 'handoff.md')) not in pnxt['prompt'])
         # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
         # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
         import solo_run

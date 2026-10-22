@@ -26,3 +26,10 @@ T-0744 verifier-L2 (landed):
 ## Acceptance criteria
 1. A `dispatch.py` selftest case: advance on an L2 prep solo dispatch prepares a verifier whose brief `Tree:` and `Handoff:` name the lane worktree; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `fanout.solo_record` takes the checkout `prep` ran in and records `tree` (the host worktree `<top>/.claude/worktrees/<name>`) in the prep-written solo dispatch file; `prep` passes `ctx['top']`.
+- `dispatch.advance_solo` reads the handoff copy under that tree when it exists, takes the verifier level and any failed-verifier level from it, and prepares the verifier with `tree=<lane>`, so the brief's `Tree:` and `Handoff:` name the lane. A tree equal to the main checkout is still cleared (T-0688 solos); T-0717 base resolution is unchanged.
+- New selftest case `T-0747 advance on an L2 prep solo dispatch prepares the verifier on the host worktree: Tree and Handoff name it, not main` (lane copy pinned `verifier: L3`, main's is not).
+- Negative control: with the change reverted the case prints `FAIL: T-0747 advance on an L2 prep solo dispatch prepares the verifier on the host worktree: Tree and Handoff name it, not main` and `dispatch selftest: FAIL`.
+- Checks: dispatch selftest (via gate_lock) exit 0, fanout selftest PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 34a12178` exit 0.
