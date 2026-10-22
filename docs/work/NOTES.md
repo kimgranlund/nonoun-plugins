@@ -429,3 +429,7 @@
 ## T-0746: dispatch.py prune lists only agents that still exist (2026-10-22)
 
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1641 the comment "A queued solo is a background agent that has finished" and the note text "finished background agent" overclaim: a solo spawned as a named in-process teammate (as this repo's conductor does) is still live when queued by `--add`, and TaskStop succeeds on it. The line does not tell the conductor to skip TaskStop (it keeps `TaskStop task_id=` and only says a 'No task found' failure is safe to ignore, then `--done`), so behavior stays correct; consider wording such as "if it was a background agent, a 'No task found' failure ... is safe to ignore".
+
+## T-0745: prepare prints no warning for the normal lane-start base of a ticket verifier (2026-10-22)
+
+- note: I did not run a live `prepare` against a real `.claude/worktrees/<id>-solo` tree: the verifier hook refuses the worktree setup needed and a host record would write into the shared lanes root. The selftest uses the real `lanes.host_record` writer and the real `prepare` entry point in a temporary repo, and the negative control proves it bites.

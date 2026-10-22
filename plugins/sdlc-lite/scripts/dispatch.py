@@ -484,15 +484,29 @@ def fork_floor(directory):
 NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
 
 
-def lane_start(tree, floor=''):
-    """The commit a lane worktree started from: base_sha of its fanout record (.lane.json at its top), else the fork floor."""
+def lane_record_base(tree):
+    """base_sha of a lane worktree's fanout record (.lane.json at its top, else its host record), else ''."""
     top = git('rev-parse', '--show-toplevel', cwd=tree).stdout.strip()
     try:
         rec = json.loads((Path(top) / '.lane.json').read_text(encoding='utf-8')) if top else {}
     except (OSError, ValueError):
         rec = {}
     sha = str(rec.get('base_sha') or '').strip() if isinstance(rec, dict) else ''
-    return sha or floor
+    if sha or not top:
+        return sha
+    try:  # a host-owned worktree has no .lane.json: its record is <lanes root>/host/<name>.lane.json (lanes.host_record, T-0745)
+        import lanes  # local like host_lanes: lanes imports nothing from here
+        for d in lanes.discover(lanes.Ctx(top)):
+            if d['owner'] == 'host' and d['exists'] and lanes.samepath(d['path'], top):
+                return str(d['base_sha'] or '').strip()
+    except Exception:  # noqa: BLE001 - a lane lookup never blocks prepare
+        pass
+    return ''
+
+
+def lane_start(tree, floor=''):
+    """The commit a lane worktree started from: base_sha of its fanout or host record (lane_record_base), else the fork floor."""
+    return lane_record_base(tree) or floor
 
 
 def build_base(directory, records=None, tree=None, role=None):
@@ -505,7 +519,7 @@ def build_base(directory, records=None, tree=None, role=None):
     (stored, base, named), named true for a base the handoff names. base-sha and the dispatch records are read in records
     (the records dir, default directory's), then in the twin of a handoff dir in another checkout than the execution tree
     (T-0717). A verifier with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD,
-    which after a resumed driver is its own WIP commit (T-0546). A solo dispatch's base_sha counts only in the tree it was recorded in (its
+    which after a resumed driver is its own WIP commit (T-0546); it says so only for a guessed fork point, not a fanout record (T-0745). A solo dispatch's base_sha counts only in the tree it was recorded in (its
     tree, else the handoff's checkout): one recorded in the main checkout is not a lane tree's base (T-0578)."""
     records = Path(records) if records is not None else order.records_dir(directory)
     cwd = tree if tree else exec_tree(directory)
@@ -579,8 +593,9 @@ def build_base(directory, records=None, tree=None, role=None):
         base, why = git('rev-parse', 'HEAD', cwd=cwd).stdout.strip(), 'HEAD of the execution tree (nothing named or recorded)'
         start = lane_start(cwd, floor) if role == 'verifier' and not stored else ''
         if start and start != base and ancestor(start):  # a lane resumed after its driver died: HEAD is its WIP commit (T-0546)
-            say('nothing recorded for this step: Base sha is the lane start %s, not its HEAD %s; name another with a line \'base: <sha>\''
-                % (start[:12], base[:12]))
+            if not lane_record_base(cwd):  # T-0745: a fanout record names the lane start, the expected base; only a fork-point guess is ambiguous
+                say('nothing recorded for this step: Base sha is the lane start %s, not its HEAD %s; name another with a line \'base: <sha>\''
+                    % (start[:12], base[:12]))
             base, why = commit(start), 'the lane start (nothing named or recorded)'
     supplied = re.sub(r'\s', '', os.environ.get('SDLC_BASE_SHA', ''))
     if supplied and commit(supplied) != base:
@@ -3369,8 +3384,17 @@ def selftest():
              rcn == 0 and dn['base_sha'] == built3 != start3 and 'nothing recorded' not in errn)
         (R(lw3 / '.sdlc' / 'w') / 'base-sha').unlink()
         rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
-        case('negative control: with nothing named or recorded in either tree the verifier base is the lane start',
-             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' in errn)
+        case('prepare --tree <lane> verifier with a fanout record and nothing else named or recorded: the base is the record start and no warning prints (T-0745)',
+             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' not in errn)
+        # T-0745: a host-owned worktree has no .lane.json; fanout prep's host record names the lane start
+        (lw3 / '.lane.json').unlink()
+        import lanes
+        lanes.host_record(lw3.name, branch='lane3', into=gt(rr, 'rev-parse', '--abbrev-ref', 'HEAD'), tickets=['T-0745'], base=start3, cwd=str(rr))
+        hrec3 = lanes.Ctx(str(rr)).root / 'host' / (lw3.name + '.lane.json')
+        rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
+        case('prepare --tree <host worktree> verifier with a host record and no .lane.json: the base is the record base_sha and no warning prints (T-0745)',
+             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' not in errn)
+        hrec3.unlink()
         # T-0748: a lane whose first verifier recorded the lane start, then merged main and fixed: each later verifier
         # gets the lane's merge point with main, whose diff holds both lane commits and no main-only file, never HEAD
         # (an empty diff) or the merge commit (which drops the first pass).
