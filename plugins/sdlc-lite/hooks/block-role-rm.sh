@@ -9,7 +9,8 @@
 #     allowed explicitly (permissionDecision allow on stdout, exit 0);
 #   every path operand under the prefix but the command holds anything else: no decision (exit 0);
 #   any path operand outside the prefix, relative after a cd to an unknown place, holding an
-#   expansion the hook cannot read (a variable other than $SDLC_TMP_WORKTREES), or a .. segment:
+#   expansion the hook cannot read (a variable other than $SDLC_TMP_WORKTREES, or that one when it is unset or empty
+#   in the hook's environment, since the shell then expands it to an empty string, T-0708), or a .. segment:
 #     denied (exit 2).
 # The prefix is $SDLC_TMP_WORKTREES when set, else `wtroot.py root --cwd <hook cwd>` plus /tmp, the parent of every
 # dispatch tmp prefix (as block-stray-worktree.sh: the sibling <main checkout>.worktrees/tmp, never a lane, T-0563, or
@@ -42,7 +43,7 @@ fi
 read -r -d '' checker <<'PY' || true
 import posixpath, shlex, sys
 
-cmd, prefix, cwd = sys.argv[1], sys.argv[2], sys.argv[3]
+cmd, prefix, cwd, varset = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == '1'
 prefixes = [p.rstrip('/') for p in prefix.split('\n') if p.strip('/')]
 prefix = prefixes[0] if prefixes else ''
 try:
@@ -89,8 +90,11 @@ for words in cmds:
         elif end or not w.startswith('-'):
             paths.append(w)
     for p in paths:
-        q = p.replace('${SDLC_TMP_WORKTREES}', prefix).replace('$SDLC_TMP_WORKTREES', prefix)
-        if not prefix:
+        # the shell expands the variable from its own environment: substitute only when it is set here too
+        q = p.replace('${SDLC_TMP_WORKTREES}', prefix).replace('$SDLC_TMP_WORKTREES', prefix) if varset else p
+        if not varset and '$SDLC_TMP_WORKTREES' in p.replace('${SDLC_TMP_WORKTREES}', '$SDLC_TMP_WORKTREES'):
+            reasons.append(f'{p} ($SDLC_TMP_WORKTREES is unset where the shell runs it and expands to an empty string; write the literal prefix from the brief)')
+        elif not prefix:
             reasons.append(f'{p} (no throwaway prefix is known)')
         elif '$' in q or q.startswith('~') or '`' in q:
             reasons.append(f'{p} (the hook cannot read the expansion)')
@@ -105,7 +109,7 @@ for words in cmds:
 print('deny ' + '; '.join(reasons) if reasons else ('allow' if only_rm_cd else 'open'))
 PY
 if ! command -v python3 >/dev/null 2>&1; then exit 0; fi
-verdict=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" 2>/dev/null) || exit 0
+verdict=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" "${SDLC_TMP_WORKTREES:+1}" 2>/dev/null) || exit 0
 case "$verdict" in
   deny*)
     shown=${prefix//$'\n'/ or the scratch dir }

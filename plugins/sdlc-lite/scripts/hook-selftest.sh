@@ -931,6 +931,17 @@ for c in "git worktree add --detach \"$wtp/w\" HEAD" "git worktree add -d \"$wtp
   run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-stray-worktree allows '$c' for sub-agent sdlc-lite:verifier-L1: exit $rc, want 0"
 done
+# T-0708: the shell expands $SDLC_TMP_WORKTREES from its own environment, so with it unset (a dispatch.py prepare
+# sub-agent) the hook refuses the variable form instead of mapping it to the fallback prefix; set, it still passes.
+for c in "git worktree add --detach \"\$SDLC_TMP_WORKTREES/base\" HEAD" "git worktree add --detach \"\${SDLC_TMP_WORKTREES}/base\" HEAD"; do
+  out=$(run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for a sub-agent with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
+  grep -q 'literal prefix' <<<"$out" || fail "block-stray-worktree '$c' with the variable unset: stderr lacks the literal-prefix advice"
+  run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" SDLC_TMP_WORKTREES= >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for a sub-agent with SDLC_TMP_WORKTREES empty: exit $rc, want 2"
+  run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" SDLC_TMP_WORKTREES="$wtp" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree allows '$c' for a sub-agent with SDLC_TMP_WORKTREES set: exit $rc, want 0"
+done
 run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$wtmp/nogit")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent outside a git work tree: exit $rc, want 2"
 # T-0550, T-0563: a sub-agent inside a lane (a sibling one, a legacy .claude/worktrees one, or a
@@ -1069,6 +1080,17 @@ for c in "rm -rf $rmtop/src" "rm -rf $rmtop.worktrees/other/x" "rm -rf $rmtop/.w
   "rm -rf ${rmscr%/sdlc-lite/*}/other/x"; do
   run "$rmh" "$(rmsub "$c")" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-role-rm denies a verifier sub-agent '$c': exit $rc, want 2"
+done
+# T-0708: with SDLC_TMP_WORKTREES unset in the hook the shell expands it to an empty string, so the variable form is
+# denied for a sub-agent (the prefix falls back to wtroot.py), and for an empty one; set, it still passes.
+for c in "rm -rf \$SDLC_TMP_WORKTREES/scratch" "rm -rf \${SDLC_TMP_WORKTREES}/scratch"; do
+  out=$(run "$rmh" "$(rmsub "$c")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-rm denies '$c' for a sub-agent with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
+  grep -q 'literal prefix' <<<"$out" || fail "block-role-rm '$c' with the variable unset: stderr lacks the literal-prefix advice"
+  run "$rmh" "$(rmsub "$c")" SDLC_TMP_WORKTREES= >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-rm denies '$c' for a sub-agent with SDLC_TMP_WORKTREES empty: exit $rc, want 2"
+  run "$rmh" "$(rmsub "$c")" SDLC_TMP_WORKTREES="$rmtop.worktrees/tmp/verifier-L1-x" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-rm allows '$c' for a sub-agent with SDLC_TMP_WORKTREES set: exit $rc, want 0"
 done
 # T-0561: both hooks take the sub-agent prefix from wtroot.py root plus /tmp. A bare clone lane gets
 # <bare parent>/lanes/tmp, a worktree_root: line its own root; the legacy nested <lane>/.claude/worktrees/tmp is denied.

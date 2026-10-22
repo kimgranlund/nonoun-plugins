@@ -6,7 +6,8 @@
 # git worktree add (git global options such as -C <dir> may sit between git and worktree) it
 # denies: -b, -B, or --orphan (they create a branch); an unset or empty SDLC_TMP_WORKTREES (a
 # conductor has SDLC_ROLE but no prefix); a path that is not strictly under the prefix (a
-# literal $SDLC_TMP_WORKTREES or ${SDLC_TMP_WORKTREES} in the path is expanded, a relative path
+# literal $SDLC_TMP_WORKTREES or ${SDLC_TMP_WORKTREES} in the path is expanded only when that variable is set and
+# non-empty in the hook's environment, else it is denied since the shell expands it to an empty string (T-0708), a relative path
 # is resolved against the hook JSON's cwd, else $PWD, and against -C; a path with a .. segment,
 # an unresolved expansion, or a relative path after cd is denied); and any add without
 # --detach/-d. Without --detach git can create a branch through DWIM (a name that exists only
@@ -61,7 +62,7 @@ block() {
 read -r -d '' checker <<'PY' || true
 import posixpath, re, sys
 
-cmd, prefix, cwd = sys.argv[1], sys.argv[2], sys.argv[3]
+cmd, prefix, cwd, varset = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == '1'
 SHELL_WORD = (r'(?:^|[\s;&|(`{/])(?:bash|sh|zsh|dash|ksh|fish|eval|ssh|su)'
               r'(?=$|[\s;&|)`}<>])')
 if re.search(SHELL_WORD, cmd) or re.search(r'<<(?!<)', cmd):
@@ -240,7 +241,9 @@ GIT_ARG_OPTS = {'-C', '-c', '--git-dir', '--work-tree', '--namespace',
 
 
 def expand(p):
-    return VAR.sub(lambda m: prefix, p)
+    # The shell expands the variable from its own environment, so the hook substitutes the prefix only when
+    # the variable is set and non-empty in the hook process; unset, it stays literal and reads as unresolved.
+    return VAR.sub(lambda m: prefix, p) if varset else p
 
 
 def unresolved(p):
@@ -282,7 +285,9 @@ def check_add(args, base, moved):
         return reasons
     path = expand(pos[0])
     root = posixpath.normpath(prefix)
-    if unresolved(path):
+    if not varset and VAR.search(pos[0]):
+        reasons.append(f'the path {pos[0]} uses $SDLC_TMP_WORKTREES, which is unset where the shell runs it, so it expands to an empty string; write the literal prefix from the brief')
+    elif unresolved(path):
         reasons.append(f'the path {pos[0]} cannot be resolved before it runs (the hook expands no variable except $SDLC_TMP_WORKTREES, so write "$SDLC_TMP_WORKTREES/<name>" or a literal path under it)')
     elif '..' in path.split('/'):
         reasons.append(f'the path {pos[0]} has a .. segment')
@@ -330,7 +335,7 @@ for words in cmds:
 sys.stdout.write('; '.join(reasons))
 PY
 
-if found=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" 2>/dev/null); then
+if found=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" "${SDLC_TMP_WORKTREES:+1}" 2>/dev/null); then
   [[ -n $found ]] && block "$found"
   exit 0
 fi

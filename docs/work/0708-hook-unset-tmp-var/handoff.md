@@ -35,3 +35,10 @@ The failing test lands before or with the fix, never after.
 1. `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 and has cases: with SDLC_TMP_WORKTREES unset, the rm and worktree-add forms above are refused; with it set, the same forms under it still pass.
 2. Negative control: with the hook changes reverted, the new "unset is refused" cases fail.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Both hooks now substitute the prefix for `$SDLC_TMP_WORKTREES` / `${SDLC_TMP_WORKTREES}` only when the variable is set and non-empty in the hook process (a `varset` flag passed from `${SDLC_TMP_WORKTREES:+1}`); unset or empty, the form is refused with "write the literal prefix from the brief". Files: `plugins/sdlc-lite/hooks/block-role-rm.sh`, `plugins/sdlc-lite/hooks/block-stray-worktree.sh`, `plugins/sdlc-lite/scripts/hook-selftest.sh` (new cases for a sub-agent: unset and empty refused for the rm and worktree-add forms, set still allowed).
+- `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exit 0 (PASS); also via gate_lock.
+- Negative control: with `hooks/` reverted to base the selftest fails with `FAIL: block-stray-worktree denies 'git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD' for a sub-agent with SDLC_TMP_WORKTREES unset: exit 0, want 2`; with only `block-role-rm.sh` reverted it fails with `FAIL: block-role-rm denies 'rm -rf $SDLC_TMP_WORKTREES/scratch' for a sub-agent with SDLC_TMP_WORKTREES unset: exit 0, want 2`. Changes restored, PASS again.
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` PASS; `git diff --check 2bbee9d44740c3e5aa8c0b006ee62b0c35460168` exit 0.
+- run.sh headless roles are unaffected: run.sh exports SDLC_TMP_WORKTREES for them, so the variable form still resolves.
