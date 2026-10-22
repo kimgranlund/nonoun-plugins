@@ -39,3 +39,15 @@ The failing test lands before or with the fix, never after.
 1. A `gate_lock.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`gate_lock.py status` now adds a row `queue waited <S>s; top non-gate CPU: pid <p> <c>% <command>; ...` (and `--json` a `stall` key) while a non-empty queue waits on the load cap, and the waiter's periodic stderr line ends with `waiting on load <n.n> over cap <N>, top non-gate CPU: ...`. The top 3 exclude wrappers in the ledger, admitted commands' groups and their children. Admission is unchanged. New selftest case `case_stall` plus two mutant controls (`STALL-NOTE`, `STALL-LINE`). Docs: `docs/references/sdlc-internals.md`, `docs/specs/sdlc-lite/gate-lock-admission.md`.
+
+- Negative control (case_stall run against the unchanged script): FAIL `status does not say how long the queue waited and the top non-gate CPU, got [... 'waiting: load 36.5 over cap 24']`, plus `status --json does not carry the stall, got {}` and the waiting-line failure.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0
+- `python3 scripts/check-packaging.py` exit 0
+- `git diff --check f1e0d7784e64200b2d8f1c837a0c38af12e6dfd2` exit 0
+
+### Rework after verification
+Defect: `outside_cpu` decoded `ps` output strictly, so a live process with a non-UTF-8 command line raised `UnicodeDecodeError` and crashed `status` and a waiting `run` (rc 1). Fix: `ps` output and the test file are read with `errors='replace'`, and `outside_cpu` wraps `_outside_cpu` so any exception gives `[]`. New control: `case_stall(raw=True)` (a 99.5% process with `\xff\xfe` in its command line must head the list as U+FFFD) plus a `STALL-DECODE` mutant. Against the previous commit's script the case fails: status shows no stall row, `--json` has no `stall`, and the waiter's stderr is a `Traceback`. Rerun: selftest (direct and through `gate_lock.py run --need compute_units=1 --nice --`) exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check f1e0d7784e64200b2d8f1c837a0c38af12e6dfd2` exit 0.

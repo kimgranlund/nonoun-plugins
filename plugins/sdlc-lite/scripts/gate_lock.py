@@ -52,8 +52,11 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
   context   exit 0 and print the grant when the caller runs inside a valid grant, else exit 1.
   status    queued and admitted rows (name, pid, need, repo, priority, age); `no holders` when empty; legacy
             slot holders from older plugin versions are listed and called a partial protection. With max_load
-            set, a queue that waits on the load ends with `waiting: load <n.n> over cap <N>`. --json for tools
-            (it gains `load`: value, max_load, over, only when max_load is set).
+            set, a queue that waits on the load ends with `waiting: load <n.n> over cap <N>` and a row with how long
+            the queue has waited and the top 3 non-gate processes by CPU. --json for tools (it gains `load`: value,
+            max_load, over, only when max_load is set, and `stall`: waited_s, top_cpu, only while waiting on the load).
+            The waiting line `run` prints adds the load and the same processes. SDLC_GATE_PS_FILE (tests only)
+            names a file of `pid ppid pgid pcpu command` lines used in place of ps.
   capabilities  read only: protocol, state root, boot id, the policy in force, legacy holders seen.
   policy / reset  operator only: show, set or reset policy.json; `reset --confirm` replaces an unparseable ledger.
   reap    lists leftover browser processes from finished runs and stops nothing: a process whose command line
@@ -452,6 +455,60 @@ def host_load():
         return None
 
 
+def gate_ids(ledger):
+    """(pids, pgids) the gate owns: every wrapper in the ledger, and the process group of each admitted command."""
+    pids = {e['pid'] for e in ledger['grants'] + ledger['queue']}
+    return pids, {g['pgid'] for g in ledger['grants'] if g.get('pgid')}
+
+
+def outside_cpu(gate, n=3):
+    """The stall report must never break `status` or a waiting `run`: any failure reading or parsing the process list gives []."""
+    try:
+        return _outside_cpu(gate, n)
+    except Exception:
+        return []
+
+
+def _outside_cpu(gate, n):
+    """The n busiest processes by CPU that are not the gate's: not a wrapper in the ledger, not in an admitted
+    command's group or under one of those, not this process or its ps. Each is {'pid', 'cpu', 'command'}; [] when ps
+    cannot run (undecodable bytes in a command line become U+FFFD). SDLC_GATE_PS_FILE (tests only) names a file of `pid ppid pgid pcpu command` lines used in place of ps."""
+    gpids, gpgids = gate
+    path = os.environ.get('SDLC_GATE_PS_FILE')
+    try:
+        if path:
+            text = pathlib.Path(path).read_text(errors='replace')  # STALL-DECODE
+        else:
+            text = subprocess.run(['ps', '-axww', '-o', 'pid=,ppid=,pgid=,pcpu=,command='], capture_output=True, text=True, errors='replace',
+                                  timeout=15).stdout
+    except (OSError, subprocess.SubprocessError):
+        return []
+    rows = {}
+    for line in text.splitlines():
+        parts = line.split(None, 4)
+        try:
+            if len(parts) == 5:
+                rows[int(parts[0])] = (int(parts[1]), int(parts[2]), float(parts[3]), parts[4].strip())
+        except ValueError:
+            continue
+
+    def ours(pid):
+        for _ in range(64):  # walk up the parents; bounded, so a cycle in a fake file cannot hang it
+            if pid in gpids or pid == os.getpid() or (pid in rows and rows[pid][1] in gpgids):
+                return True
+            if pid not in rows or rows[pid][0] in (0, pid):
+                return False
+            pid = rows[pid][0]
+        return False
+    out = [{'pid': pid, 'cpu': cpu, 'command': os.path.basename(cmd.split(' --')[0])[:40] or cmd[:40]}
+           for pid, (ppid, pgid, cpu, cmd) in rows.items() if not ours(pid)]
+    return sorted(out, key=lambda r: (-r['cpu'], r['pid']))[:n]
+
+
+def top_cpu_text(top):
+    return '; '.join(f"pid {r['pid']} {r['cpu']:.1f}% {r['command']}" for r in top) or 'none found'
+
+
 def schedule(ledger, pol, legacy_n=0, load=None):
     """Grant queue heads while they fit: highest priority first, then arrival; among the repos at the top priority
     round robin after the repo granted last; the selected head keeps its turn until it fits (no backfill). With a
@@ -774,6 +831,8 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
                     pos = next((i + 1 for i, e in enumerate(qs) if e['id'] == gid), None)
                     holders = holders_text(L)
                     nqueue = len(qs)
+                    gate = gate_ids(L)
+                    held = bool(L['grants'] or legacy_n)
             if mine is not None:
                 break
             now = time.monotonic()
@@ -783,8 +842,12 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
                 outcome = 'timeout'
                 raise GateError('timeout', f'after {timeout:g}s waiting for a grant of {need_text(need)} ({holders})')
             if now >= next_report:
-                print(f'gate_lock: {name} waiting for a slot, position {pos} of {nqueue} (need {need_text(need)}, {int(now - t0)}s so far); '
-                      f'admitted: {holders}', file=sys.stderr, flush=True)
+                line = (f'gate_lock: {name} waiting for a slot, position {pos} of {nqueue} (need {need_text(need)}, {int(now - t0)}s so far); '
+                        f'admitted: {holders}')
+                load, cap = host_load(), pol.get('max_load')
+                if cap and held and load is not None and load > cap:  # STALL-LINE
+                    line += f'; waiting on load {load:.1f} over cap {cap}, top non-gate CPU: {top_cpu_text(outside_cpu(gate))}'
+                print(line, file=sys.stderr, flush=True)
                 next_report = now + report
             if now - last_legacy > 5:
                 legacy_n, last_legacy = len(legacy_holders()), now
@@ -872,6 +935,8 @@ def status_data(root):
         load = host_load()
         d['load'] = {'value': load, 'max_load': max_load,
                      'over': load is not None and load > max_load and bool(grants or d['legacy'])}
+        if d['load']['over'] and queue:  # STALL-NOTE
+            d['stall'] = {'waited_s': max(q['waited_s'] for q in queue), 'top_cpu': outside_cpu(gate_ids(L))}
     return d
 
 
@@ -897,6 +962,8 @@ def cmd_status(argv):
                     f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}")
     if d['queue'] and d.get('load', {}).get('over'):
         rows.append(f"waiting: load {d['load']['value']:.1f} over cap {d['load']['max_load']}")
+        if d.get('stall'):
+            rows.append(f"queue waited {d['stall']['waited_s']}s; top non-gate CPU: {top_cpu_text(d['stall']['top_cpu'])}")
     for h in d['legacy']:
         rows.append(f"legacy    name {h['name']}  pid {h['pid']}  {h['slot']} in {h['dir']} (charged the default need; never touched)")
     if d['legacy']:
@@ -1134,6 +1201,9 @@ M_IDENT = 'if start and cur and cur != start: return False' + '  # IDENT'
 M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
 M_LOADDEF = "pol['max_load'] = max(1, int(0.8 * n))" + '  # LOAD-DEFAULT'
 M_RSS = "used, pids = tree_rss(child.pid) if cap_mb else (0, [])" + '  # RSS-CAP'
+M_STALL = "if d['load']['over'] and queue:" + '  # STALL-NOTE'
+M_DECODE = "text = pathlib.Path(path).read_text(errors='replace')" + '  # STALL-DECODE'
+M_STALLRUN = 'if cap and held and load is not None and load > cap:' + '  # STALL-LINE'
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1457,6 +1527,64 @@ def case_load(py, base, label):
         release_all(m, procs)
 
 
+def case_stall(py, base, label, raw=False):
+    """A stall on the load cap is explained: with max_load 24, a load of 36.5 from outside and a holder, status says how
+    long the queue has waited and names the three busiest processes that are not the gate's (the holder's wrapper, its
+    command and a child of it are busier and left out), in text and in `status --json` under `stall`; the waiter's own
+    waiting line on stderr carries the load and the same processes. The process list comes from a file (SDLC_GATE_PS_FILE).
+    With raw, the busiest outside process has bytes in its command line that are not UTF-8: status and the waiting line
+    still work and show it with U+FFFD, so an odd process on the host can never break them."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    lf, pf = base / f'load-{label}', base / f'ps-{label}'
+    lf.write_text('1\n')
+    env = env_for(base, label, SDLC_GATE_LOAD_FILE=str(lf), SDLC_GATE_PS_FILE=str(pf), SDLC_GATE_REPORT_SECS='0.3')
+    try:
+        r = gl(py, env, 'policy', 'set', 'max_load=24')
+        if r.returncode != 0:
+            return [f'policy set max_load=24 did not take, rc={r.returncode} {r.stderr!r}']
+        procs = [holder(py, env, m, 1)]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start with the load under the cap']
+        cmd_pid = int((m / 'pid-1').read_text())
+        wrapper = json.loads(gl(py, env, 'status', '--json').stdout)['grants'][0]['pid']
+        junk = b'900005 1 900005 99.5 python3 -c sleep \xff\xfe\n' if raw else b''
+        pf.write_bytes(junk + (f'{wrapper} 1 {wrapper} 98.0 python3 gate_lock.py run --name H1\n'
+                      f'{cmd_pid} {wrapper} {cmd_pid} 99.0 sh -c holder\n'
+                      f'900100 {cmd_pid} 900100 97.0 node under-the-holder\n'
+                      '900001 1 900001 95.0 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome Helper --type=renderer\n'
+                      '900002 1 900002 80.0 chrome-tab\n'
+                      '900003 1 900003 60.5 node vite\n'
+                      '900004 1 900004 10.0 quiet\n').encode())
+        lf.write_text('36.5\n')
+        procs.append(holder(py, env, m, 2))
+        waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
+        time.sleep(3 * POLL)
+        if (m / 'started-2').exists():
+            return ['the waiter ran over the load cap']
+        rows = gl(py, env, 'status').stdout.splitlines()
+        want = 'top non-gate CPU: pid 900001 95.0% Google Chrome Helper; pid 900002 80.0% chrome-tab; pid 900003 60.5% node vite'
+        if raw:
+            want = 'top non-gate CPU: pid 900005 99.5% python3 -c sleep \ufffd\ufffd; pid 900001 95.0% Google Chrome Helper; pid 900002 80.0% chrome-tab'
+        if not any(x.startswith('queue waited ') and x.endswith(want) for x in rows):
+            bad.append(f'status does not say how long the queue waited and the top non-gate CPU, got {rows!r}')
+        try:
+            st = json.loads(gl(py, env, 'status', '--json').stdout).get('stall') or {}
+        except ValueError:
+            st = {}
+        if [t.get('pid') for t in st.get('top_cpu', [])] != ([900005, 900001, 900002] if raw else [900001, 900002, 900003]) or not isinstance(st.get('waited_s'), int):
+            bad.append(f'status --json does not carry the stall, got {st}')
+        first = '900005 99.5%' if raw else '900001 95.0%'
+        if not waitfor(lambda: f'top non-gate CPU: pid {first}' in (m / 'err-2').read_text(), 5):
+            bad.append(f"the waiter's waiting line does not carry the load and the top non-gate CPU, got {(m / 'err-2').read_text()!r}")
+        lf.write_text('10\n')
+        if not waitfor(lambda: (m / 'started-2').exists()):
+            bad.append('the waiter did not run after the load dropped under the cap')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
 def case_load_idle(py, base, label):
     """The starvation guard: with max_load 24, a load of 36.5 from outside and no grant held, the first gate is
     admitted at once; a second one then waits on the load while the first holds."""
@@ -1701,6 +1829,10 @@ def selftest():
             ('start identity', case_ident, M_IDENT, 'pass  # IDENT', 'reused pid'),
             ('group drain', case_drain, M_DRAIN, 'pass  # DRAIN', 'still runs'),
             ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'),
+            ('stall in status', case_stall, M_STALL, 'if False:  # STALL-NOTE', 'status does not say how long'),
+            ('stall with a non-UTF-8 command line', lambda p, b, lb: case_stall(p, b, lb, raw=True), M_DECODE,
+             "text = pathlib.Path(path).read_text()  # STALL-DECODE", 'status does not say how long'),
+            ('stall in the waiting line', case_stall, M_STALLRUN, 'if False:  # STALL-LINE', 'waiting line does not carry'),
             ('load cap starvation guard', case_load_idle, M_LOAD,
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
             ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'),
