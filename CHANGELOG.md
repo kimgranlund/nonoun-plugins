@@ -2,6 +2,28 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.34.0] - 2026-10-22
+
+Report: [docs/reports/2026-10-22-release-0-34-0.md](docs/reports/2026-10-22-release-0-34-0.md). Addresses GitHub issues #49 to #67 (bugs; #61 and #63 are filed as proposed features T-0732 and T-0733): T-0717 to T-0731 and follow-ups T-0736 to T-0739.
+
+### Added
+
+- `gate_lock.py status` (and a waiting `run`) shows how long the queue has waited on the load cap and the top 3 non-gate CPU consumers; `status --json` carries `stall`. The report fails open (T-0731, #67).
+
+### Changed
+
+- `dispatch.py prepare` reads a `base:` line and `base-sha` from the lane's own copy of the handoff and records, and a named base wins over the ready snapshot's `Lane-Base:` (T-0717, #49).
+- `dispatch.py advance` prepares a reverify at the failing verifier's level (T-0718, #52).
+- `dispatch.py record --no-result` closes a stalled solo as failed and clears its live marker (T-0719, #54).
+- `fanout.py land` finds a verifier result that `prepare --tree` recorded in the main checkout (T-0720, #55).
+- `fanout.py land` closes a second lane ticket whose commits an earlier merge carried, only when a carried commit names the ticket (T-0721, T-0737, #56).
+- `fanout.py land` reads `merge_gate` and `light_scope` from the integration tree it merges into (T-0722, #58).
+- Merges drop a lane's stale open copy of a ticket closed on the target when it adds nothing a committed version lacks, and refuse naming the files otherwise (T-0723, T-0738, T-0739, #59).
+- `lanes.py open` excludes `.claude/settings.local.json` in the lane (T-0724, #60) and takes the merge lock before committing to an integration branch (T-0725, #65).
+- `steps.py split --only` runs guard and red spans with a fresh `SDLC_TMP_WORKTREES` (T-0726, #50) and reports missing dependencies as an environment error (exit 2) instead of a plan defect, only when the tree declares dependencies or workspaces it has not installed (T-0727, T-0736, #51).
+- The planner reruns every new-behavior criterion at base as its last action (T-0728, #62); the builder records its red run before editing, a declared `tests:` file excepted (T-0729, #64).
+- `traces.py detect` skips evidence logs, fanout lane branches and worktrees marked `.sdlc-keep`; land writes sub-agent lanes as regular lanes in report.md (T-0730, #53, #66).
+
 ## [0.33.0] - 2026-10-22
 
 Report: [docs/reports/2026-10-22-release-0-33-0.md](docs/reports/2026-10-22-release-0-33-0.md). From CPU diagnostics on a second fleet machine (T-0716).

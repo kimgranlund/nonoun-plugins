@@ -11,14 +11,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0740 | [0740-host-worktree-solo-git-report](0740-host-worktree-solo-git-report/handoff.md) | Solo lanes in host worktrees commit and report where land reads | bug | L2 | P2 | none | 🟡 claimed |
-| T-0741 | [0741-prep-names-dropped-lanes](0741-prep-names-dropped-lanes/handoff.md) | fanout.py prep names every ticket it leaves out | bug | L1 | P2 | none | 🟡 claimed |
-| T-0742 | [0742-light-gate-installs-deps](0742-light-gate-installs-deps/handoff.md) | The light gate set runs with dependencies installed | bug | L1 | P2 | none | 🔵 ready |
-| T-0743 | [0743-settle-host-worktree-closed](0743-settle-host-worktree-closed/handoff.md) | Landed host-owned agent worktrees do not hold the integration tree open | bug | L2 | P2 | none | 🟡 claimed |
-| T-0744 | [0744-advance-reads-prep-solo-dispatch](0744-advance-reads-prep-solo-dispatch/handoff.md) | dispatch.py advance and record accept the solo dispatch file prep writes | bug | L1 | P2 | none | 🟡 claimed |
-| T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🔵 ready |
-| T-0746 | [0746-prune-skips-finished-agents](0746-prune-skips-finished-agents/handoff.md) | dispatch.py prune lists only agents that still exist | bug | L1 | P2 | none | 🔵 ready |
+| T-0742 | [0742-light-gate-installs-deps](0742-light-gate-installs-deps/handoff.md) | The light gate set runs with dependencies installed | bug | L1 | P2 | none | 🟡 claimed |
+| T-0745 | [0745-verifier-lane-start-base-quiet](0745-verifier-lane-start-base-quiet/handoff.md) | prepare prints no warning for the normal lane-start base of a ticket verifier | bug | L1 | P2 | none | 🟡 claimed |
+| T-0746 | [0746-prune-skips-finished-agents](0746-prune-skips-finished-agents/handoff.md) | dispatch.py prune lists only agents that still exist | bug | L1 | P2 | none | 🟡 claimed |
+| T-0747 | [0747-advance-prep-solo-verifier-tree](0747-advance-prep-solo-verifier-tree/handoff.md) | advance prepares a prep solo's verifier on the lane worktree | bug | L1 | P2 | none | 🔵 ready |
 
-Closed: 698 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 701 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -69,3 +67,5 @@ Closed: 698 done, 29 dropped (git log or .NNNN-* folders)
 - decide: The same-work-root requirement holds. `drop_stale_open` only looks under `tickets.ticket_dir(root)`, so in the probe a closed `docs/work/.0005-w` did not drop an open `.sdlc/0005-q`, and `docs/work/0005-w` was not touched. (from T-0723: land drops a lane's stale open folder of a ticket closed on integration (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:1683 the other 10 versions belong to 5 tickets (T-0641, T-0642, T-0676, T-0707, T-0716). Their handoff body was changed inside the lane, for example a replan in T-0716. A stale copy of such a ticket re-added from main would now refuse even though the closed copy supersedes it. This is what the Goal says, because the text differs. Comparing with the open folder's state at the merge base, which the Intent also allows, would avoid that refusal. The refusal is safe because the merge aborts and nothing is lost. (from T-0738: Stale open folder drop refuses when the open copy holds edits (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:1683 the log uses default history simplification (no `--full-history`). Suppose a merge is TREESAME to one parent for these paths. Then a version that only the other parent's commits held is pruned and would still refuse. That is the safe direction (the merge aborts and nothing is lost), and no observed version in this repo was affected. (from T-0739: A stale open copy that matches a committed version is dropped (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:2215 for an L2 or L3 prep solo, advance_solo prepares the ticket verifier against `handoff`, which `solo_record` sets to the main checkout's handoff (fanout.py:2180), not the sub-agent worktree; observed in the e2e run (verifier prompt `Handoff:` names the main-checkout path). The builder's Outcome already flags it as open; a new ticket. (from T-0744: dispatch.py advance and record accept the solo dispatch file prep writes (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/fanout.py:2295 the new `not planned: T-0002 (load cap ...)` line shares the words `not planned` with the existing `overlap (planned scope): not planned, checked at merge time: T-0001`, which means "no planned scope" rather than "no lane"; a reader scanning for dropped tickets may confuse the two. (from T-0741: fanout.py prep names every ticket it leaves out (2026-10-22))

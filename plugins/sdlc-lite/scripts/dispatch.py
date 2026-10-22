@@ -4454,6 +4454,26 @@ def selftest():
         rc3, out3, row3 = go()
         case('T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker',
              was_live and rc3 == 1 and 'solo failed; live marker cleared' in out3 and not live_of())
+        # T-0744: the dispatch file `fanout.py prep` writes for a solo lane (issue #72) is one advance and record accept:
+        # the unpriced runs row is priced and the L1 solo prints the close line instead of exit 2 "not a dispatch file".
+        import fanout
+        fdir = tmp.joinpath('prep-solo', '.sdlc', 'n')
+        fdir.mkdir(parents=True)
+        (fdir / 'handoff.md').write_text('x\n', encoding='utf-8')
+        fname = 'T-0001-solo'
+        fd = {'subagent_type': 'sdlc-lite:solo-L1', 'name': fname, 'model': 'sonnet', 'effort': 'high', 'prompt': 'p', 'tier': 'L1', 'prune': False,
+              'ticket': 'T-0001', 'branch': 'worktree-' + fname, 'worktree': '.claude/worktrees/' + fname, 'handoff': '.sdlc/n/handoff.md',
+              'verifier': None, 'result': str(order.records_dir(fdir) / (fname + '.md')), 'base_sha': None}
+        fd['attempt_id'] = fanout.write_solo_row(fdir, 'L1', fname + '.md')
+        ffile = order.records_dir(fdir, create=True) / (fname + '.dispatch.json')
+        ffile.write_text(json.dumps(fanout.solo_record(fd, fdir, 'L1'), indent=2) + '\n', encoding='utf-8')
+        Path(fd['result']).write_text('## Report\ndone\n', encoding='utf-8')
+        fo, fe = io.StringIO(), io.StringIO()
+        with clean_env(), contextlib.redirect_stdout(fo), contextlib.redirect_stderr(fe):
+            frc = main(['advance', '--tokens', '5000', str(ffile)])
+        frow = [json.loads(l) for l in (order.records_dir(fdir) / 'runs.jsonl').read_text().splitlines()][-1]
+        case('T-0744 advance on the solo dispatch file fanout prep writes exits 0, prices the solo runs row, and prints the close line',
+             frc == 0 and frow['cost_usd'] and 'solo recorded' in fo.getvalue() and 'next: close' in fo.getvalue() and 'not a dispatch file' not in fe.getvalue())
         for tag, vbody, want in (('pass', BODY['verifier'], 'next: close'), ('fail', fail_body, 'stop: fail')):
             vr = mk(tmp / ('adv-t-' + tag))
             _, vgot, _ = prep(vr, 'verifier', 'L2', '.sdlc/t/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
