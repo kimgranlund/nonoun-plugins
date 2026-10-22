@@ -2,6 +2,20 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.31.0] - 2026-10-22
+
+Report: [docs/reports/2026-10-22-release-0-31-0.md](docs/reports/2026-10-22-release-0-31-0.md). Fixes found in an agent-ui planner run and by verifiers: T-0706 to T-0712.
+
+### Changed
+
+- `block-role-write.sh` lets a read-only role Write under this repo's scratch root, the parent of the brief's `Scratch files ... only under` dir, compared as real paths; Edit, NotebookEdit and every other Write stay blocked, and the hook fails closed without `python3` or `wtroot.py` (T-0706).
+- Prepared briefs say to write each worktree and rm path literally under the brief's prefix, never through `$T`, `$S` or `$SDLC_TMP_WORKTREES` (T-0707).
+- `block-role-rm.sh` and `block-stray-worktree.sh` map `$SDLC_TMP_WORKTREES` to the prefix only when the variable is set in the hook's environment; unset, the path is refused, since the shell would run it at `/` (T-0708).
+- Builder, verifier, planner and plan-reviewer definitions show `"<throwaway prefix>/base"` instead of the variable form (T-0709).
+- `run.sh` prompts, Claude and Codex, name the throwaway prefix as a literal path (T-0711).
+- Briefs and the builder definition say the runner removes the throwaway prefix and scratch dir after the run, so roles no longer `rm -rf` them (T-0712).
+- The gate_lock `case_rr` load-cap cases now fail when the cap check is removed; three docs corrected (T-0710).
+
 ## [0.30.0] - 2026-10-22
 
 Report: [docs/reports/2026-10-22-release-0-30-0.md](docs/reports/2026-10-22-release-0-30-0.md). Addresses GitHub issue #44 (machine-wide concurrency): T-0697 to T-0703, plus follow-ups T-0704 and T-0705.
