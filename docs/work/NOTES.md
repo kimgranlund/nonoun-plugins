@@ -406,3 +406,10 @@
 ## T-0744: dispatch.py advance and record accept the solo dispatch file prep writes (2026-10-22)
 
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2215 for an L2 or L3 prep solo, advance_solo prepares the ticket verifier against `handoff`, which `solo_record` sets to the main checkout's handoff (fanout.py:2180), not the sub-agent worktree; observed in the e2e run (verifier prompt `Handoff:` names the main-checkout path). The builder's Outcome already flags it as open; a new ticket.
+
+## T-0741: fanout.py prep names every ticket it leaves out (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:2359 Conductor question answered: the base version does print `prep: load 1000.0 over 3: opening 1 of 2 lanes` as the second stdout line in the issue's 2-lane scenario (observed run); the issue simply did not quote it, and it never named T-0002.
+- note: plugins/sdlc-lite/scripts/fanout.py:2362 `load_cap` is the only place prep removes a lane after preflight (`git grep "ctx\['lanes'\] ="` has one hit). Preflight (fanout.py:840-870) refuses with exit 2 for done/dropped status, unknown ids, duplicates, and `--max-lanes` overflow; claimed tickets and `depends:` are not filtered; planned-scope overlap refuses via `refuse_overlap`. A budget hold prints `blocked: budget gate` under the ticket's own line. No other silent drop path found.
+- decide: plugins/sdlc-lite/scripts/fanout.py:2295 the new `not planned: T-0002 (load cap ...)` line shares the words `not planned` with the existing `overlap (planned scope): not planned, checked at merge time: T-0001`, which means "no planned scope" rather than "no lane"; a reader scanning for dropped tickets may confuse the two.
+- note: the selftest reproduces with 3 lanes rather than the issue's 2; the same mechanism, and the 2-lane shape was checked by hand above.

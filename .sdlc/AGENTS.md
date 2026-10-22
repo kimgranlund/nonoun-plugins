@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:12ba6ded24c9 -->
+<!-- sdlc-lite:managed:start v1 sha256:4d068fdc4526 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,15 +18,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0735 Audit for run.sh-era assumptions in prepare-launched roles (docs/work/0735-runsh-assumption-audit)
   - T-0746 dispatch.py prune lists only agents that still exist (docs/work/0746-prune-skips-finished-agents)
   - T-0747 advance prepares a prep solo's verifier on the lane worktree (docs/work/0747-advance-prep-solo-verifier-tree)
-- claimed: 4
+- claimed: 3
   - T-0740 Solo lanes in host worktrees commit and report where land reads (docs/work/0740-host-worktree-solo-git-report), claimed by sdlc-lite-author 2026-10-22
-  - T-0741 fanout.py prep names every ticket it leaves out (docs/work/0741-prep-names-dropped-lanes), claimed by sdlc-lite-author 2026-10-22
   - T-0742 The light gate set runs with dependencies installed (docs/work/0742-light-gate-installs-deps), claimed by sdlc-lite-author 2026-10-22
   - T-0745 prepare prints no warning for the normal lane-start base of a ticket verifier (docs/work/0745-verifier-lane-start-base-quiet), claimed by sdlc-lite-author 2026-10-22
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 700
+- done: 701
 - dropped: 29
 
 ## Procedures

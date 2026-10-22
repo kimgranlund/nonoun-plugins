@@ -2,7 +2,7 @@
 id: T-0741
 title: "fanout.py prep names every ticket it leaves out"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -51,3 +51,16 @@ Cause: `fanout.py prep` `load_cap` (T-0700) trims `ctx['lanes']` to the first re
 Change: `load_cap` records `ctx['dropped']` (each ticket of the lanes it removes, reason `load cap: load <x> over <max>; --force opens all <n> lanes`); `print_prep` ends with `not planned: <ticket> (<reason>)` per dropped ticket. The `--max-lanes` overflow already refuses with exit 2.
 Selftest: new case 22 expectation (T-0741) on the busy-load prep. Red before the change and with the change reverted: `FAIL: case 22 prep load cap names each dropped ticket (T-0741): busy prep ends with a `not planned:` line per dropped ticket ...`. Green with it.
 Checks: fanout selftest via gate_lock exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8f08aaab` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 8f08aaab05a1
+- Changed: see commits
+- Commits: c5af464 T-0741: fanout.py prep names every ticket the load cap leaves out
+- Check: 1 A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `check.py` exits 0, `check-packaging.py` passes, `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2359 Conductor question... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2362 load_cap is the only place... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2295 the new not planned... -> notes.md
+- Follow-up: note: the selftest reproduces with 3 lanes rather than the issue's 2; the... -> notes.md
