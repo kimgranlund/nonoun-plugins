@@ -26,3 +26,6 @@ T-0721 verifier-L2 (landed):
 ## Acceptance criteria
 1. The new `fanout.py` selftest case passes, case 32b (T-0721) still passes, and with the id check removed the new case fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`fanout.py land` now closes a ticket as `commits carried by merge <sha>` only when a commit in the carried merge's second-parent range has a subject naming the ticket id (`merge_names_ticket`); otherwise it stays `no changes` and the ticket stays open. New selftest case 32c (two tickets, only T-0001 committed): land B gives `no changes`, T-0002 not done. Case 32b still passes. Negative control: with the id check removed the selftest fails on `case 32c carried none: land A merges, land B stays \`no changes\` and T-0002 stays open, got ... land B rc=0`. Checks: fanout selftest exit 0, check.py exit 0, check-packaging.py exit 0, `git diff --check a65f8caa` exit 0.
