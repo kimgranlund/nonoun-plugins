@@ -2,7 +2,7 @@
 id: T-0701
 title: "settle --forward says when it skipped its gates"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,14 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 - Selftest: three new T-0701 cases (red gate exit 1 and main unmoved, green gate fast-forwards with a green ledger entry, covered tip skips a red `--gate`). With the change reverted all three fail (checked on a scratch copy of the HEAD source).
 - Help text, `cmd_settle` docstring and `docs/references/sdlc-internals.md` updated.
 - `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` PASS; `git diff --check a8680df4` exit 0.
+
+## Outcome
+
+2026-10-21 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: a8680df45305
+- Changed: see commits
+- Commits: c03c689 T-0701: settle --forward runs its gates at the tip when main is already in the integration branch
+- Check: 1 `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a new case (main already in t...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 3 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2836 Conductor check on plain... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2819 --forward with no --gate... -> notes.md

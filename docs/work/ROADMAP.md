@@ -8,11 +8,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
 | T-0699 | [0699-gate-runner-worker-cap](0699-gate-runner-worker-cap/handoff.md) | fanout prep warns when a gate runs a test runner with no worker cap | feature | L1 | P2 | none | ⏳ proposed |
 | T-0700 | [0700-prep-load-aware-lanes](0700-prep-load-aware-lanes/handoff.md) | fanout prep counts other lanes and the load before opening lanes | feature | L2 | P1 | none | 🟡 claimed |
-| T-0701 | [0701-settle-forward-gate-at-tip](0701-settle-forward-gate-at-tip/handoff.md) | settle --forward says when it skipped its gates | bug | L1 | P2 | none | 🟡 claimed |
 | T-0702 | [0702-disk-scan-hook-gap](0702-disk-scan-hook-gap/handoff.md) | Lane agents ran find / for hours despite block-disk-scan | bug | L2 | P1 | none | 🟡 claimed |
 | T-0703 | [0703-resumed-agent-reports](0703-resumed-agent-reports/handoff.md) | A resumed sub-agent reports back to the conductor | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 661 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 662 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

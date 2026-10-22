@@ -206,3 +206,8 @@
 - fix-now: docs/specs/sdlc-lite/gate-lock-admission.md:208 still says "the cap is off unless the operator sets it", now stale: absent max_load is the CPU-count default.
 - note: plugins/sdlc-lite/scripts/gate_lock.py:1466 the case_rr "over the load cap with a grant held" check is vacuous against cap removal: every entry needs 6 compute units and the held grant uses 1, so capacity alone refuses them (mutant D left case_rr GREEN). Likewise "then the cap holds" after b3 is held by capacity, not the cap. The real-process case_load_idle carries this proof instead.
 - note: docs/specs/sdlc-lite/gate-lock-admission.md:213 the Reason bullet does not say `status --json` `over` is now true only while a grant or legacy holder is held (gate_lock.py:795).
+
+## T-0701: settle --forward says when it skipped its gates (2026-10-21)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:2836 Conductor check on plain `settle fanout/x` (no `--forward`, no `--gate`), run by both the base a8680df4 script and the build script on identical probe repos. When the branch already contains main, both printed `lane still open: ... (not a plugin lane: ...)` and exited 1. When the branch had diverged, both printed `fanout: fanout/x is not a fast-forward of main: ...` and exited 2. Output, exit code and resulting main were the same.
+- note: plugins/sdlc-lite/scripts/fanout.py:2819 `--forward` with no `--gate` does not fast-forward, at base or in the build. Both exit 2 with `settle --forward needs at least one --gate CMD ...; nothing merged`, and main stays where it was, for the ahead case and the diverged case alike. This refusal comes before the changed condition, so the build leaves it as it was.
