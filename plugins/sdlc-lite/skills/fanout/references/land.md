@@ -20,6 +20,7 @@ The gate lock exports `SDLC_GATE_WORKERS` to every gate, but a test runner reads
 | `vitest` | `--maxWorkers=$SDLC_GATE_WORKERS` (or `VITEST_MAX_WORKERS=$SDLC_GATE_WORKERS`) |
 | `playwright` | `--workers=$SDLC_GATE_WORKERS` |
 | `jest` | `--maxWorkers=$SDLC_GATE_WORKERS` |
+| any `node` process (heap) | none to add: the lock appends `--max-old-space-size=4096` to `NODE_OPTIONS` unless it already holds one; `gate_lock.py policy set node_heap_mb=N` changes the MB, `0` turns it off (T-0716) |
 
 ## Roll
 

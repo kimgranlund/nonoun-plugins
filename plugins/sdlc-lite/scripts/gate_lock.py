@@ -6,7 +6,7 @@ CPU and memory. Design: docs/specs/sdlc-lite/gate-lock-admission.md (protocol sd
 Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--name X] [--repo PATH] [--nice]
                         [--timeout SECS] [--receipt FILE] -- <cmd...>
        gate_lock.py context [--json] | capabilities --json | status [--json]
-       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [--default RES=N...] | policy reset
+       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [node_heap_mb=N] [--default RES=N...] | policy reset
        gate_lock.py reset --confirm | reap [--older-than MIN] [--kill] [--match REGEX] | selftest
 
   run     queues for a grant of the weighted demand (a vector of resources, all or none), waits in order, runs the
@@ -31,6 +31,11 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           never stopped, the refused head keeps its round-robin turn, and a host that reports no load average
           is not capped. It is an absolute load, so pick load per CPU times the CPU count. SDLC_GATE_LOAD_FILE
           (tests only) names a file holding the load to use; SDLC_GATE_CPUS (tests only) is the CPU count.
+          Node heap cap: a top-level `run` appends --max-old-space-size=<MB> to the command's NODE_OPTIONS unless
+          NODE_OPTIONS already holds a --max-old-space-size, so one leaking test fails fast instead of taking the
+          machine's memory, and prints one stderr line naming the cap. MB is the policy key node_heap_mb (`policy
+          set node_heap_mb=N`; 0 is off; absent is 4096, and `policy show` says `built-in default`). A nested run
+          inherits the flag; --slots 0 runs with no env change.
           A grant stays charged while its wrapper is alive with the recorded start
           identity or its process group has a member; a dead holder with no live group is reclaimed, a dead
           wrapper with a live group stays charged (an orphaned group). The command gets SDLC_GATE_GRANT,
@@ -72,6 +77,7 @@ KILL_GRACE = 5.0
 PID_SLACK = 5.0  # legacy slot files only: a live pid that started this much after the slot was taken is a reused pid
 SLOT_RE = re.compile(r'slot-(\d+)$')
 BUILTIN_POLICY = {'capacity': {'compute_units': 6, 'browser_jobs': 3}, 'default_need': {'compute_units': 3}}
+DEFAULT_NODE_HEAP_MB = 4096
 COMPUTE = 'compute_units'
 
 
@@ -323,12 +329,20 @@ def set_default_max_load(pol):
         pol['max_load_default'] = f'default from {n} CPUs'
 
 
+def set_default_node_heap(pol):
+    """A policy with no node_heap_mb key caps the Node heap of a gate at 4096 MB; node_heap_mb_default says where it came from."""
+    if 'node_heap_mb' not in pol:
+        pol['node_heap_mb'] = DEFAULT_NODE_HEAP_MB
+        pol['node_heap_mb_default'] = 'built-in default'
+
+
 def load_policy(root):
     """(policy, source): built-in numbers, each key replaced by policy.json's when present."""
     pol = {k: dict(v) for k, v in BUILTIN_POLICY.items()}
     path = root / 'policy.json'
     if not path.exists():
         set_default_max_load(pol)
+        set_default_node_heap(pol)
         return pol, 'builtin'
     try:
         d = json.loads(path.read_text())
@@ -343,9 +357,14 @@ def load_policy(root):
             if not (isinstance(d['max_load'], int) and not isinstance(d['max_load'], bool) and d['max_load'] >= 0):
                 raise ValueError('max_load must be a whole number')
             pol['max_load'] = d['max_load']  # 0 is off, kept so a later `policy set` does not bring the default back
+        if 'node_heap_mb' in d:
+            if not (isinstance(d['node_heap_mb'], int) and not isinstance(d['node_heap_mb'], bool) and d['node_heap_mb'] >= 0):
+                raise ValueError('node_heap_mb must be a whole number')
+            pol['node_heap_mb'] = d['node_heap_mb']  # 0 is off
     except (OSError, ValueError) as e:
         raise GateError('state_unavailable', f'{path} is not a usable policy: {e}')
     set_default_max_load(pol)
+    set_default_node_heap(pol)
     return pol, 'file'
 
 
@@ -573,6 +592,17 @@ def validate_grant(root, gid):
         return dict(g)
 
 
+def apply_heap_cap(env, pol):
+    """Append --max-old-space-size=<node_heap_mb> to NODE_OPTIONS unless it holds one or the policy turns the cap off."""
+    mb = pol.get('node_heap_mb') or 0
+    opts = env.get('NODE_OPTIONS', '')
+    if mb < 1 or re.search(r'--max[-_]old[-_]space[-_]size', opts):
+        return
+    env['NODE_OPTIONS'] = (opts + f' --max-old-space-size={mb}').strip()  # HEAP-CAP
+    print(f'gate_lock: node heap capped at {mb} MB (NODE_OPTIONS --max-old-space-size={mb}; policy node_heap_mb, 0 is off)',
+          file=sys.stderr, flush=True)
+
+
 def start_child(cmd, env, nice, new_session):
     return subprocess.Popen(cmd, env=env, start_new_session=new_session,
                             preexec_fn=(lambda: os.nice(10)) if nice else None)
@@ -717,6 +747,7 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
         env['SDLC_GATE_WORKERS'] = str(need.get(COMPUTE, 1))
         env['SDLC_GATE_DIR'] = str(root)
         env['SDLC_GATE_LOCK_HELD'] = '1'
+        apply_heap_cap(env, pol)
         t_run = time.monotonic()
         child = start_child(cmd, env, nice, True)
         pgid = child.pid
@@ -883,8 +914,9 @@ def cmd_policy(argv):
                 print(f'gate_lock.py policy set: {e}', file=sys.stderr)
                 return 2
             max_load = caps.pop('max_load', None)  # a top-level key, never a capacity; 0 turns it off
-            if not caps and not defs and max_load is None:
-                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [--default RES=N...]', file=sys.stderr)
+            node_heap = caps.pop('node_heap_mb', None)  # likewise; 0 turns the heap cap off
+            if not caps and not defs and max_load is None and node_heap is None:
+                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [node_heap_mb=N] [--default RES=N...]', file=sys.stderr)
                 return 2
             if any(v < 1 for v in caps.values()):
                 print('gate_lock.py policy set: a capacity must be 1 or more', file=sys.stderr)
@@ -893,20 +925,25 @@ def cmd_policy(argv):
                 pol, _ = load_policy(root)
                 if 'max_load_default' in pol:  # the default is derived at load time, never written into the file
                     pol.pop('max_load'), pol.pop('max_load_default')
+                if 'node_heap_mb_default' in pol:  # likewise derived at load time
+                    pol.pop('node_heap_mb'), pol.pop('node_heap_mb_default')
                 pol['capacity'].update(caps)
                 pol['default_need'].update(defs)
                 if max_load is not None:
                     pol['max_load'] = max_load  # 0 is written: it turns the default cap off
+                if node_heap is not None:
+                    pol['node_heap_mb'] = node_heap  # 0 is written: it turns the heap cap off
                 tmp = root / f'.policy-{os.getpid()}.tmp'
                 tmp.write_text(json.dumps(pol, sort_keys=True))
                 os.replace(tmp, root / 'policy.json')
             print(f'policy set: capacity {need_text(pol["capacity"])}; default need {need_text(pol["default_need"])}'
-                  + (f'; max load {pol["max_load"]}' if pol.get('max_load') else ''))
+                  + (f'; max load {pol["max_load"]}' if pol.get('max_load') else '')
+                  + (f'; node heap {pol["node_heap_mb"]} MB' if pol.get('node_heap_mb') else ''))
             return 0
     except GateError as e:
         print(f'gate_lock: {e.code}: {e.detail}', file=sys.stderr)
         return 3
-    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [--default RES=N...] | reset', file=sys.stderr)
+    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [node_heap_mb=N] [--default RES=N...] | reset', file=sys.stderr)
     return 2
 
 
@@ -1048,6 +1085,7 @@ M_LIVE = "return wrapper or group_alive(g.get('pgid'))" + '  # GRANT-LIVE'
 M_IDENT = 'if start and cur and cur != start: return False' + '  # IDENT'
 M_DRAIN = 'drain_group(pgid, child)' + '  # DRAIN'
 M_LOADDEF = "pol['max_load'] = max(1, int(0.8 * n))" + '  # LOAD-DEFAULT'
+M_HEAP = "env['NODE_OPTIONS'] = (opts + f' --max-old-space-size={mb}').strip()" + '  # HEAP-CAP'
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1436,6 +1474,41 @@ def case_load_default(py, base, label):
         release_all(m, procs)
 
 
+def case_heap(py, base, label):
+    """The Node heap cap: a run with no NODE_OPTIONS passes the child --max-old-space-size=4096 and says so on stderr;
+    an existing --max-old-space-size is left alone; `policy set node_heap_mb=0` adds nothing; `policy show` shows the key."""
+    env = env_for(base, label)
+    env.pop('NODE_OPTIONS', None)
+    show = ['sh', '-c', 'echo "[$NODE_OPTIONS]"']
+    bad = []
+    r = gl(py, env, 'run', '--', *show)
+    if r.stdout.strip() != '[--max-old-space-size=4096]' or 'node heap capped at 4096' not in r.stderr:
+        bad.append(f'heap cap missing: no NODE_OPTIONS gave {r.stdout!r} {r.stderr!r}, wanted [--max-old-space-size=4096] and one stderr line')
+    r = gl(py, dict(env, NODE_OPTIONS='--max-old-space-size=2048'), 'run', '--', *show)
+    if r.stdout.strip() != '[--max-old-space-size=2048]' or 'node heap capped' in r.stderr:
+        bad.append(f'heap cap overrode the caller: got {r.stdout!r} {r.stderr!r}')
+    r = gl(py, dict(env, NODE_OPTIONS='--trace-warnings'), 'run', '--', *show)
+    if r.stdout.strip() != '[--trace-warnings --max-old-space-size=4096]':
+        bad.append(f'heap cap lost the existing options: got {r.stdout!r}')
+    r = gl(py, env, 'policy', 'show')
+    if '"node_heap_mb": 4096' not in r.stdout or 'built-in default' not in r.stdout:
+        bad.append(f'policy show does not name node_heap_mb 4096 as the default, got {r.stdout!r}')
+    r = gl(py, env, 'policy', 'set', 'node_heap_mb=1024')
+    pf = pathlib.Path(env['SDLC_GATE_DIR']) / 'policy.json'
+    r2 = gl(py, env, 'run', '--', *show)
+    if r.returncode != 0 or r2.stdout.strip() != '[--max-old-space-size=1024]':
+        bad.append(f'policy set node_heap_mb=1024 did not take, got {r.returncode} {r.stderr!r} {r2.stdout!r}')
+    gl(py, env, 'policy', 'reset')
+    r = gl(py, env, 'policy', 'set', 'compute_units=6')
+    if 'node_heap_mb' in pf.read_text():
+        bad.append(f'policy set compute_units=6 wrote the default heap cap into policy.json, got {pf.read_text()!r}')
+    r = gl(py, env, 'policy', 'set', 'node_heap_mb=0')
+    r2 = gl(py, env, 'run', '--', *show)
+    if r.returncode != 0 or r2.stdout.strip() != '[]' or 'node heap capped' in r2.stderr:
+        bad.append(f'policy set node_heap_mb=0 still caps: got {r.returncode} {r2.stdout!r} {r2.stderr!r}')
+    return bad
+
+
 def case_rr():
     """Round robin across repos with FIFO inside a repo, on a fabricated ledger (no processes); then the same
     ledger with a max_load: under the cap the order holds, over it nothing is granted and the turn does not move."""
@@ -1573,7 +1646,8 @@ def selftest():
             ('load cap', case_load, M_LOAD, 'pass  # LOAD-CAP', 'ran over the load cap'),
             ('load cap starvation guard', case_load_idle, M_LOAD,
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
-            ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'))
+            ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'),
+            ('node heap cap', case_heap, M_HEAP, 'pass  # HEAP-CAP', 'heap cap missing'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')
             expect(f'{label}: {got}', not got)
