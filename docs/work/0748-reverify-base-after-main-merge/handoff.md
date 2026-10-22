@@ -25,3 +25,18 @@ Observed 2026-10-22 on lane T-0745-t0745 (lanes.py open, `.lane.json` base_sha a
 ## Acceptance criteria
 1. A `dispatch.py` selftest case: lane with a recorded start, a verifier attempt, then a main merge and a fix commit; the next verifier prepare's Base sha diff to HEAD contains both lane commits and no main-only change; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Reproduced in a throwaway repo (lane with `.lane.json`, first pass, verifier, main merge, fix): attempt 2 and 3 got HEAD (empty diff). Two causes in `build_base` (`plugins/sdlc-lite/scripts/dispatch.py`):
+- Attempt 1 writes the lane start to `base-sha`. After the main merge the fork floor moves past it, so the stored base is rejected, and the lane-start fallback was gated on `not stored`, so the verifier fell to HEAD.
+- With the merge point stored (the incident's hand-set 34a12178), the resync-merge rule moved the base to the merge commit, dropping the first pass.
+
+Fix: a verifier whose stored base is below the floor falls to the lane start too; a lane start below the floor is clamped to the floor (`git merge-base HEAD <main>`, with a one-line note); the resync-merge move is skipped when the stored base is the floor itself. A named `base:` still wins (T-0717 cases green). Builders are unchanged.
+
+T-0745 landed on main during this ticket; the lane merged main (70772dfc). The clamp sits after `lane_start` (which now calls T-0745's `lane_record_base`), so a fanout or host record stays quiet, and its base is clamped to the merge point when the lane has merged main since. Two T-0745 cases and the T-0376 verifier/builder case asserted the old base (start3, or HEAD for a verifier); they now expect the merge point and the fork point.
+
+Checks:
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0
+- `git diff --check 2de1b84a` exit 0 (and against the merge point 6885c68b)
+- Negative control (fix reverted in a scratch copy): `FAIL: a verifier after the lane merged main (attempt 2): the base diff holds both lane commits and no main-only file` and the same for attempt 3; reverting only the resync guard fails attempt 3 alone.

@@ -519,7 +519,8 @@ def build_base(directory, records=None, tree=None, role=None):
     (stored, base, named), named true for a base the handoff names. base-sha and the dispatch records are read in records
     (the records dir, default directory's), then in the twin of a handoff dir in another checkout than the execution tree
     (T-0717). A verifier with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD,
-    which after a resumed driver is its own WIP commit (T-0546); it says so only for a guessed fork point, not a fanout record (T-0745). A solo dispatch's base_sha counts only in the tree it was recorded in (its
+    which after a resumed driver is its own WIP commit (T-0546); it says so only for a guessed fork point, not a fanout record (T-0745). When the lane merged main after its start or its
+    recorded base, a verifier gets the lane's merge point with main instead, so the diff holds the lane's work and none of main's (T-0748). A solo dispatch's base_sha counts only in the tree it was recorded in (its
     tree, else the handoff's checkout): one recorded in the main checkout is not a lane tree's base (T-0578)."""
     records = Path(records) if records is not None else order.records_dir(directory)
     cwd = tree if tree else exec_tree(directory)
@@ -584,14 +585,21 @@ def build_base(directory, records=None, tree=None, role=None):
             raise Refuse(2, 'dispatch.py: SDLC_BASE_SHA refused: %s names base %s, which is not a commit that is an ancestor of HEAD in %s'
                          % (hf, m.group(1), cwd))
         base, why = commit(m.group(1)), 'named in the handoff'
-    if not base and ancestor(stored) and (not floor or git('merge-base', '--is-ancestor', floor, stored, cwd=cwd).returncode == 0):
+    def below_floor(sha):  # an ancestor of HEAD older than the lane's merge point with main: the lane merged main since
+        return bool(floor) and ancestor(sha) and git('merge-base', '--is-ancestor', floor, sha, cwd=cwd).returncode != 0
+
+    if not base and ancestor(stored) and not below_floor(stored):
         base, why = commit(stored), 'recorded at the first dispatch (base-sha)'
         merges = git('rev-list', '--first-parent', '--merges', base + '..HEAD', cwd=cwd).stdout.split()
-        if merges:
+        if merges and base != floor:  # T-0748: the merge point already keeps main out; moving to the merge drops the pre-merge lane work
             base, why = merges[0], 'newest resync merge since the recorded base-sha'
     if not base:
         base, why = git('rev-parse', 'HEAD', cwd=cwd).stdout.strip(), 'HEAD of the execution tree (nothing named or recorded)'
-        start = lane_start(cwd, floor) if role == 'verifier' and not stored else ''
+        # T-0748: a verifier whose recorded base predates a main merge gets the lane start too, never HEAD (an empty diff)
+        start = lane_start(cwd, floor) if role == 'verifier' and (not stored or below_floor(stored)) else ''
+        if start and below_floor(start):  # the lane merged main after it started: its merge point with main keeps main's changes out
+            say('the lane merged main after its start %s: Base sha is its merge point with main %s' % (start[:12], floor[:12]))
+            start = floor
         if start and start != base and ancestor(start):  # a lane resumed after its driver died: HEAD is its WIP commit (T-0546)
             if not lane_record_base(cwd):  # T-0745: a fanout record names the lane start, the expected base; only a fork-point guess is ambiguous
                 say('nothing recorded for this step: Base sha is the lane start %s, not its HEAD %s; name another with a line \'base: <sha>\''
@@ -3240,8 +3248,9 @@ def selftest():
         case('negative control: with no fork floor the stale ancestor is kept', dnofloor['base_sha'] == stale)
         _, dbld, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
         _, dver, _ = prep(rr, 'verifier', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
-        case('prepare verifier and prepare builder print the same base for the same lane',
-             dver['base_sha'] == dbld['base_sha'] == gt(lw2, 'rev-parse', 'HEAD'))
+        # T-0748: a verifier with a stale stored base gets the lane start (here the fork point), not the builder's HEAD (an empty diff)
+        case('prepare builder with a stale stored base starts at the lane HEAD, prepare verifier at the lane fork point',
+             dbld['base_sha'] == gt(lw2, 'rev-parse', 'HEAD') and dver['base_sha'] == fork)
         # T-0381: the handoff in the MAIN checkout, the owned lane worktree as the cwd. The base of a step is, in order,
         # a base the handoff names (a `base: <sha>` line), else the sha recorded at its first dispatch, else the
         # execution tree's HEAD (the lane), never the main checkout's HEAD; a differing supplied SDLC_BASE_SHA is refused.
@@ -3384,16 +3393,19 @@ def selftest():
              rcn == 0 and dn['base_sha'] == built3 != start3 and 'nothing recorded' not in errn)
         (R(lw3 / '.sdlc' / 'w') / 'base-sha').unlink()
         rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
-        case('prepare --tree <lane> verifier with a fanout record and nothing else named or recorded: the base is the record start and no warning prints (T-0745)',
-             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' not in errn)
+        floor3 = gt(lw3, 'merge-base', 'HEAD', gt(rr, 'rev-parse', 'HEAD'))  # T-0748: lane3 merged main after start3
+        case('prepare --tree <lane> verifier with a fanout record and nothing else named or recorded: the base is the record start, '
+             'clamped to the merge point with main, and no warning prints (T-0745)',
+             rcn == 0 and dn['base_sha'] == floor3 != start3 and 'nothing recorded' not in errn)
         # T-0745: a host-owned worktree has no .lane.json; fanout prep's host record names the lane start
         (lw3 / '.lane.json').unlink()
         import lanes
         lanes.host_record(lw3.name, branch='lane3', into=gt(rr, 'rev-parse', '--abbrev-ref', 'HEAD'), tickets=['T-0745'], base=start3, cwd=str(rr))
         hrec3 = lanes.Ctx(str(rr)).root / 'host' / (lw3.name + '.lane.json')
         rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
-        case('prepare --tree <host worktree> verifier with a host record and no .lane.json: the base is the record base_sha and no warning prints (T-0745)',
-             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' not in errn)
+        case('prepare --tree <host worktree> verifier with a host record and no .lane.json: the base is the record base_sha, '
+             'clamped to the merge point with main, and no warning prints (T-0745)',
+             rcn == 0 and dn['base_sha'] == floor3 != start3 and 'nothing recorded' not in errn)
         hrec3.unlink()
         # T-0748: a lane whose first verifier recorded the lane start, then merged main and fixed: each later verifier
         # gets the lane's merge point with main, whose diff holds both lane commits and no main-only file, never HEAD
