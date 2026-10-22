@@ -49,3 +49,14 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`dispatch.py prepare verifier` now stays quiet when the lane start comes from the fanout record (`.lane.json` base_sha); the `nothing recorded for this step` line prints only when the start is a guessed fork point (no record). Change: `lane_record_base` split out of `lane_start` and gated on in `build_base` (plugins/sdlc-lite/scripts/dispatch.py). The T-0717 control that required the warning with a fanout record now requires its absence; the T-0546 case (fork point, no record) still requires it.
+- Negative control: with the gate reverted the new case fails: `FAIL: prepare --tree <lane> verifier with a fanout record and nothing else named or recorded: the base is the record start and no warning prints (T-0745)`; restored, `dispatch selftest: PASS`.
+- `gate_lock.py run ... dispatch.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` PASS, `git diff --check aebe6d47` exit 0.
+- Open: the issue's other two parts (advance on prep's solo dispatch file, prune on finished agents) are T-0744 and T-0746.
+
+## Outcome (second pass)
+The verifier found that a host-owned worktree (`.claude/worktrees/<id>-solo`, or `agent-<id>` after rebind) has no `.lane.json`; its record is `<lanes root>/host/<name>.lane.json`. `lane_record_base` (dispatch.py) now falls back to `lanes.discover` and takes the `base_sha` of the host-owned lane whose path is the tree, so that record both supplies the lane start and quiets the line. Main (T-0740, T-0744) merged into the lane first.
+- New case: `prepare --tree <host worktree> verifier with a host record and no .lane.json: the base is the record base_sha and no warning prints (T-0745)`. With the host fallback reverted it fails alone: `FAIL: prepare --tree <host worktree> verifier with a host record and no .lane.json: the base is the record base_sha and no warning prints (T-0745)`; restored, `dispatch selftest: PASS`.
+- `gate_lock.py run ... dispatch.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check aebe6d47` exit 0.
