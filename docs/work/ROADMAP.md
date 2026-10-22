@@ -6,6 +6,23 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0717 | [0717-prepare-honors-base-line](0717-prepare-honors-base-line/handoff.md) | dispatch.py prepare uses the handoff base: line for Base sha | bug | L2 | P2 | none | 🔵 ready |
+| T-0718 | [0718-advance-reverify-level](0718-advance-reverify-level/handoff.md) | dispatch.py advance reverifies at the failing verifier level | bug | L1 | P2 | none | 🔵 ready |
+| T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🔵 ready |
+| T-0720 | [0720-land-finds-tree-verifier-result](0720-land-finds-tree-verifier-result/handoff.md) | fanout.py land finds a verifier result recorded by prepare --tree | bug | L2 | P2 | none | 🔵 ready |
+| T-0721 | [0721-land-second-ticket-same-lane](0721-land-second-ticket-same-lane/handoff.md) | fanout.py land closes a second lane ticket whose commits an earlier land merged | bug | L2 | P2 | none | 🔵 ready |
+| T-0722 | [0722-land-merge-gate-from-integration](0722-land-merge-gate-from-integration/handoff.md) | fanout.py land reads merge_gate from the integration tree | bug | L1 | P2 | none | 🔵 ready |
+| T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🔵 ready |
+| T-0724 | [0724-lanes-exclude-settings-local](0724-lanes-exclude-settings-local/handoff.md) | Lanes never stage .claude/settings.local.json | bug | L1 | P2 | none | 🔵 ready |
+| T-0725 | [0725-lane-open-merge-lock](0725-lane-open-merge-lock/handoff.md) | lanes.py open takes the merge lock before committing to integration | bug | L2 | P2 | none | 🔵 ready |
+| T-0726 | [0726-split-exports-tmp-worktrees](0726-split-exports-tmp-worktrees/handoff.md) | steps.py split sets SDLC_TMP_WORKTREES for guard and red spans | bug | L1 | P2 | none | 🔵 ready |
+| T-0727 | [0727-split-env-error-not-defect](0727-split-env-error-not-defect/handoff.md) | steps.py split reports missing dependencies as an environment error | bug | L1 | P2 | none | 🔵 ready |
+| T-0728 | [0728-planner-red-at-base-check](0728-planner-red-at-base-check/handoff.md) | Planner runs each new-behavior criterion red at base before returning | bug | L1 | P2 | none | 🔵 ready |
+| T-0729 | [0729-builder-pre-edit-red](0729-builder-pre-edit-red/handoff.md) | Builders record a pre-edit red run for each (red) criterion | bug | L1 | P2 | none | 🔵 ready |
+| T-0730 | [0730-traces-false-positives](0730-traces-false-positives/handoff.md) | traces.py detect skips evidence logs, fanout lanes and declared preview worktrees | bug | L2 | P2 | none | 🔵 ready |
+| T-0731 | [0731-gate-lock-stall-report](0731-gate-lock-stall-report/handoff.md) | gate_lock status explains a load-cap stall | bug | L1 | P2 | none | 🔵 ready |
+| T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
+| T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 
 Closed: 679 done, 29 dropped (git log or .NNNN-* folders)
 

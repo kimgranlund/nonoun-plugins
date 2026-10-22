@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:3bd809e4f469 -->
+<!-- sdlc-lite:managed:start v1 sha256:8d4d9e1ba3a8 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,8 +10,25 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 0
-- ready: 0
+- proposed: 2
+  - T-0732 Project hook for a required review role between build and verify (docs/work/0732-pre-verify-review-role)
+  - T-0733 dispatch.py wait blocks until a role result lands (docs/work/0733-dispatch-wait)
+- ready: 15
+  - T-0717 dispatch.py prepare uses the handoff base: line for Base sha (docs/work/0717-prepare-honors-base-line)
+  - T-0718 dispatch.py advance reverifies at the failing verifier level (docs/work/0718-advance-reverify-level)
+  - T-0719 dispatch.py record --no-result closes a stalled solo as failed (docs/work/0719-record-no-result-solo)
+  - T-0720 fanout.py land finds a verifier result recorded by prepare --tree (docs/work/0720-land-finds-tree-verifier-result)
+  - T-0721 fanout.py land closes a second lane ticket whose commits an earlier land merged (docs/work/0721-land-second-ticket-same-lane)
+  - T-0722 fanout.py land reads merge_gate from the integration tree (docs/work/0722-land-merge-gate-from-integration)
+  - T-0723 land drops a lane's stale open folder of a ticket closed on integration (docs/work/0723-land-stale-open-folder)
+  - T-0724 Lanes never stage .claude/settings.local.json (docs/work/0724-lanes-exclude-settings-local)
+  - T-0725 lanes.py open takes the merge lock before committing to integration (docs/work/0725-lane-open-merge-lock)
+  - T-0726 steps.py split sets SDLC_TMP_WORKTREES for guard and red spans (docs/work/0726-split-exports-tmp-worktrees)
+  - T-0727 steps.py split reports missing dependencies as an environment error (docs/work/0727-split-env-error-not-defect)
+  - T-0728 Planner runs each new-behavior criterion red at base before returning (docs/work/0728-planner-red-at-base-check)
+  - T-0729 Builders record a pre-edit red run for each (red) criterion (docs/work/0729-builder-pre-edit-red)
+  - T-0730 traces.py detect skips evidence logs, fanout lanes and declared preview worktrees (docs/work/0730-traces-false-positives)
+  - T-0731 gate_lock status explains a load-cap stall (docs/work/0731-gate-lock-stall-report)
 - claimed: 0
 - paused: 0
 - blocked: 1
