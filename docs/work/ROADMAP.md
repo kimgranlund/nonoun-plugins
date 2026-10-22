@@ -11,7 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0700 | [0700-prep-load-aware-lanes](0700-prep-load-aware-lanes/handoff.md) | fanout prep counts other lanes and the load before opening lanes | feature | L2 | P1 | none | ⏳ proposed |
 | T-0701 | [0701-settle-forward-gate-at-tip](0701-settle-forward-gate-at-tip/handoff.md) | settle --forward says when it skipped its gates | bug | L1 | P2 | none | 🟡 claimed |
 | T-0702 | [0702-disk-scan-hook-gap](0702-disk-scan-hook-gap/handoff.md) | Lane agents ran find / for hours despite block-disk-scan | bug | L2 | P1 | none | 🟡 claimed |
-| T-0703 | [0703-resumed-agent-reports](0703-resumed-agent-reports/handoff.md) | A resumed sub-agent reports back to the conductor | bug | L1 | P2 | none | ⏳ proposed |
+| T-0703 | [0703-resumed-agent-reports](0703-resumed-agent-reports/handoff.md) | A resumed sub-agent reports back to the conductor | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 660 done, 29 dropped (git log or .NNNN-* folders)
 
