@@ -21,8 +21,9 @@
 # naming the role and builder rule 6, and allows explicit file paths, npm test, a quoted
 # mention, and every other role or no role. block-disk-scan.sh, inside a role run, blocks a
 # search of the whole filesystem or a home folder (find, bfs, rg, grep -r on /, ~, "$HOME",
-# /Users, also behind sudo or inside bash -c) with a stderr naming the role, and allows
-# find ., a path below those roots, ls / without -R, a quoted mention, and no role.
+# /Users, also behind sudo or inside bash -c, mdfind without -onlyin, and the same from a
+# teammate named 0702-solo-L2 or solo-0702) with a stderr naming the role, and allows find ., a
+# path below those roots, mdfind -onlyin ., ls / without -R, a quoted mention, and no role.
 # block-role-spawn.sh is the spawn gate. In a conductor session (agent_type sdlc-lite:conductor or
 # conductor, or SDLC_ROLE=conductor) it allows an sdlc-lite:<role>-L<n> spawn only when the name is
 # <ticket>-<role>-L<n>[-<k>], a dispatch record beside the prompt's Handoff names that agent, and the
@@ -362,6 +363,25 @@ for c in "$fw . -name x" "$fw /tmp/x -name y" "$fw ~/.claude/plugins -name x" "l
 done
 run "$ds" "$(pj "$fw / -name x")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-disk-scan without role: exit $rc, want 0"
+# T-0702: mdfind searches the Spotlight index of every volume unless -onlyin bounds it.
+mw=$(printf 'md%s' find)
+for c in "$mw x" "$mw -name docs_check.py" "$mw -onlyin / x" "bash -c \"$mw x\""; do
+  out=$(run "$ds" "$(pj "$c")" SDLC_ROLE=solo); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-disk-scan blocks '$c': exit $rc, want 2"
+  grep -q solo <<<"$out" || fail "block-disk-scan '$c': stderr lacks the role"
+done
+for c in "$mw -onlyin . x" "$mw -onlyin ~/Projects/x -name y" "$gw -n \"$mw x\" notes.md"; do
+  run "$ds" "$(pj "$c")" SDLC_ROLE=solo >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-disk-scan allows '$c': exit $rc, want 0"
+done
+# T-0702: a sub-agent's agent_type, and an in-process teammate's, which is its spawn name
+# (solo-0702 ran find / for hours), resolve to a role; a teammate with another name has none.
+for at in sdlc-lite:solo-L1 sdlc-lite:builder-L2 solo-0702 0702-solo-L2 0697-verifier-L2-2 T-0702-solo; do
+  out=$(run "$ds" "$(jq -n --arg at "$at" --arg c "$fw / -name x" '{agent_type:$at,agent_id:"a1",tool_name:"Bash",tool_input:{command:$c}}')"); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-disk-scan blocks agent_type $at: exit $rc, want 2"
+done
+run "$ds" "$(jq -n --arg c "$fw / -name x" '{agent_type:"ticket-author",agent_id:"a1",tool_name:"Bash",tool_input:{command:$c}}')" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-disk-scan teammate ticket-author: exit $rc, want 0"
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
@@ -773,7 +793,8 @@ frozen; rc=$?
 [[ $rc -eq 2 ]] || fail "$pa live: exit $rc after recover, want 2 (a live attempt keeps the freeze)"
 
 # Role resolution (hooks/_role.sh): SDLC_ROLE, else the sub-agent's agent_type with the sdlc-lite:
-# prefix and the -L<n> or solo tier suffix removed. Session agents and non-SDLC agents have no role.
+# prefix and the -L<n> or solo tier suffix removed, or an in-process teammate's name that holds
+# <role>-L<n> or starts or ends with solo (T-0702). Session agents and non-SDLC agents have no role.
 rr() { ( unset SDLC_ROLE; . "$hooks/_role.sh"; sdlc_role "$1" ); }
 # rj <agent_type or empty> <command>: the JSON of one Bash call, with agent_type only when given.
 rj() {
@@ -805,6 +826,16 @@ general-purpose|
 Explore|
 harness:agent-checker|
 other:builder-L3|
+solo-0702|solo
+T-0702-solo|solo
+0702-solo-L2|solo
+0697-verifier-L2-2|verifier
+0626-verifier-L2-3b|verifier
+0001-s4-plan-reviewer-L1|plan-reviewer
+verify-verifier-L1|verifier
+ticket-author|
+plan-driver-hardening|
+release-0-22-4|
 |
 CASES
 [[ "$(rr '{"tool_name":"Bash"}')" == "" ]] || fail "_role.sh: a payload with no agent_type resolved a role"

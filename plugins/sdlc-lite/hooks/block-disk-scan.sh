@@ -7,7 +7,9 @@
 # /, /*, ~, ~/, $HOME, ${HOME}, $HOME/, ${HOME}/, /Users, /home, /Volumes, /System, /Library,
 # /private (a trailing / allowed), or a home folder itself (/Users/<name>, /home/<name>).
 # The search commands are find, bfs, fd, fdfind, rg, ag, grep or egrep with -r, -R, or
-# --recursive (also in a short-flag cluster such as -rn), du, ls -R, and tree. For grep, rg,
+# --recursive (also in a short-flag cluster such as -rn), du, ls -R, and tree. mdfind (the
+# Spotlight index of every volume) is blocked unless every path it gets is an -onlyin folder
+# below those roots (T-0702). For grep, rg,
 # ag, fd, and fdfind the first positional word is the pattern, not a path, unless the pattern
 # comes from an option (-e, -f, rg --files, ag -g); fd --search-path and --base-directory
 # values count as paths. For find only the starting points before the expression count.
@@ -15,8 +17,9 @@
 # behind sudo, command, env, nohup, exec, time, nice, stdbuf, timeout N, xargs, a VAR=value
 # assignment, or a shell keyword. Every such search is blocked, with or without -maxdepth.
 # Allowed: a path below those roots (/tmp/x, ~/.claude/plugins, "$HOME/.claude/plugins",
-# /Users/me/Projects/x), . and relative paths, ls / without -R, text that only mentions a
-# search inside a quoted argument (grep -n "find / -name x" f), and anything with no role.
+# /Users/me/Projects/x), . and relative paths, mdfind -onlyin . x, ls / without -R, text that
+# only mentions a search inside a quoted argument (grep -n "find / -name x" f), and anything
+# with no role.
 #
 # Masking follows block-pattern-kill.sh: single-quoted, $'...' and double-quoted contents are
 # kept when they are one plain word or only "$VAR", "${VAR}" (a trailing / allowed), and
@@ -34,11 +37,11 @@ cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 
 # Cheap exit: no search command word appears, even with quotes and backslashes removed.
 pf=$(tr -d "\\\\'\"" <<<"$cmd")
-re='(^|[^[:alnum:]_-])(find|bfs|fd|fdfind|rg|ag|e?grep|du|ls|tree)([^[:alnum:]_-]|$)'
+re='(^|[^[:alnum:]_-])(find|bfs|fd|fdfind|rg|ag|e?grep|du|ls|tree|mdfind)([^[:alnum:]_-]|$)'
 [[ $pf =~ $re ]] || exit 0
 
 block() {
-  echo "Blocked for sdlc role '$role': searching the whole filesystem or a home folder (find /, find ~, rg x /, grep -r x \$HOME, du /, ls -R /, tree /) can run for many minutes with no output and stall the run; | head does not stop it when nothing matches. Search a bounded path instead: the repository (.), a named subfolder such as ~/.claude/plugins, or \$CLAUDE_PLUGIN_ROOT." >&2
+  echo "Blocked for sdlc role '$role': searching the whole filesystem or a home folder (find /, find ~, rg x /, grep -r x \$HOME, du /, ls -R /, tree /, mdfind without -onlyin) can run for many minutes with no output and stall the run; | head does not stop it when nothing matches. Search a bounded path instead: the repository (.), a named subfolder such as ~/.claude/plugins, or \$CLAUDE_PLUGIN_ROOT." >&2
   exit 2
 }
 
@@ -238,6 +241,9 @@ def segment(tokens):
         return any(is_root(p) for p in positional(args, DU_VALUE)[0])
     if base == 'tree':
         return any(is_root(p) for p in positional(args, TREE_VALUE)[0])
+    if base == 'mdfind':
+        dirs = [args[i + 1] for i, a in enumerate(args[:-1]) if a == '-onlyin']
+        return not dirs or any(is_root(d) for d in dirs)
     if base == 'ls':
         rec = short_flag(args, 'R') or '--recursive' in args
         return rec and any(is_root(p) for p in positional(args, set())[0])
@@ -272,4 +278,5 @@ loose+="|${word}ls${more}${lr}([^;&|]*[[:space:]])?${rt}"
 loose+="|${word}ls${more}${rt}([^;&|]*[[:space:]])?${lr}"
 raw=$(tr -d '\\' <<<"$cmd" | tr '\n' ' ')
 grep -Eq "$loose" <<<"$raw" && block
+grep -Eq "${word}mdfind${tend}" <<<"$raw" && ! grep -q -- '-onlyin' <<<"$raw" && block
 exit 0

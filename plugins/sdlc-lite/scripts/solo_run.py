@@ -163,11 +163,14 @@ def refuse_template(task_dir):
 
 def report_lines(result, handoff):
     """The Report file and pointer lines of a solo brief (T-0682), as dispatch.py prepare writes them for every other role
-    (T-0646): the solo writes its report to result and ends with one short line, so the completion notice stays short."""
+    (T-0646): the solo writes its report to result and ends with one short line, so the completion notice stays short.
+    Then the search scope line every brief carries (T-0702)."""
+    import dispatch  # same scripts/ dir
     return (f'Report file: {result} (before you end, write your report to exactly this path with the Write tool; when it says '
             f'`verify: needed`, check it with python3 {SCRIPTS / "results.py"} solo-report <file> --handoff {handoff}; '
             'dispatch.py record reads the file)\n'
-            f'End with one line: `solo <status> {result}` (status is done, blocked, or already-fixed), nothing else.')
+            f'End with one line: `solo <status> {result}` (status is done, blocked, or already-fixed), nothing else.\n'
+            + dispatch.SEARCH_SCOPE)  # T-0702
 
 
 def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
@@ -1310,11 +1313,13 @@ def selftest():
         (d / 'handoff.md').write_text('x\n')
         rc, disp = dispatch_json(str(d), 'M', 'brief')
         # T-0682: the brief carries the Report file and pointer lines right after Artifacts dir; the row names the report file
+        import dispatch  # same scripts/ dir
         lines = disp['prompt'].splitlines()
         expect('T-0682 the solo brief carries Report file: <result> and End with one line: `solo <status> <result>` after Artifacts dir, '
                'and the runs row file names the report', lines[2].startswith('Artifacts dir: ')
                and lines[3].startswith(f"Report file: {disp['result']} (before you end") and 'results.py solo-report' in lines[3]
                and lines[4].startswith(f"End with one line: `solo <status> {disp['result']}`")
+               and lines[5] == dispatch.SEARCH_SCOPE  # T-0702
                and pathlib.Path(disp['result']).name == f"{disp['name']}.md" and pathlib.Path(disp['result']).parent.samefile(order.records_dir(d))
                and json.loads((order.records_dir(d) / 'runs.jsonl').read_text().splitlines()[0])['file'] == f"{disp['name']}.md")
         rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json')],

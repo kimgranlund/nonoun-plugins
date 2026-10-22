@@ -27,3 +27,18 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 2. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and a prepared prompt holds the search-scope line.
 3. The Outcome names the cause found.
 4. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Cause: the role was never resolved, because the lane agents were in-process teammates. In a session with agent teams on (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), an Agent spawn with a `name` becomes a teammate whose hook payload `agent_type` is its spawn name (`solo-0702`, `0702-solo-L2`, `0697-verifier-L2-2`), not its `sdlc-lite:` type. The transcript `meta.json` shows this: `agentType` holds the name, `customAgentType` holds `sdlc-lite:solo-L1`, and `taskKind` is `in_process_teammate`. `_role.sh` resolved no role for those names, so every role hook (disk-scan, background, stdin, pattern-kill, and the rest) exited 0. Evidence: in this session the teammate `solo-0702` ran `find / -maxdepth 0 -name x` unblocked, and its command was not wrapped by close-role-stdin. An unnamed `sdlc-lite:scout-L1` sub-agent in the same session was wrapped and blocked. Three `claude -p` probes with and without a name, in the foreground and the background, were blocked too, because there `agentType` stays `sdlc-lite:<role>-L<n>`. The ticket's two suspects are cleared: `_role.sh` already resolved `sdlc-lite:solo-L1` and `sdlc-lite:builder-L2`, and the hook is registered and fires for sub-agents. The installed 0.29.0 hook blocks both incident commands when the agent_type is the sdlc-lite type. One step is inferred, not captured: that the hook payload's `agent_type` equals `meta.json` `agentType`. A teammate's payload cannot be captured without editing the parent session's settings.
+
+Fix:
+- `_role.sh`: a colon-free agent_type also resolves when it holds `<role>-L<n>` as whole hyphen parts, or starts or ends with `solo`. Other names (`ticket-author`, `plan-driver-hardening`) still have no role.
+- `block-disk-scan.sh` blocks `mdfind` unless every `-onlyin` folder is below the root set. The fail-closed path covers it too.
+- `dispatch.SEARCH_SCOPE` is a new line in every `dispatch.py prepare` brief and, through `solo_run.report_lines`, in the solo and fanout briefs: search only inside Tree and the Artifacts dir.
+- `claude-hooks.md` and `sdlc-internals.md` are updated.
+
+Checks: `bash plugins/sdlc-lite/scripts/hook-selftest.sh` PASS. `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (`ok: T-0702 the brief bounds file searches...`), and `prepare --dry-run verifier L2` prints the line. `solo_run.py selftest` and `fanout.py selftest` PASS. `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check a8680df4` exit 0.
+
+Red controls, using the base hooks (a8680df4): every new mdfind block case and the teammate-name cases (`solo-0702`, `0702-solo-L2`, `0697-verifier-L2-2`, `T-0702-solo`) exit 0, and they exit 2 after the change. The `sdlc-lite:solo-L1` case named in criterion 1 exits 2 before the change too. It is a regression pin, not a red control, because that path was never broken.
+
+Still open: a teammate named outside these patterns still has no role. Exact resolution would need the payload to carry the custom type, or the hook to read `customAgentType` from `meta.json`.
