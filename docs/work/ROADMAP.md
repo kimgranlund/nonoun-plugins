@@ -6,6 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔵 ready |
+| T-0712 | [0712-brief-record-cleans-tmp](0712-brief-record-cleans-tmp/handoff.md) | Briefs say record removes the throwaway prefix and scratch dir | chore | L2 | P2 | none | ⏳ proposed |
 
 Closed: 674 done, 29 dropped (git log or .NNNN-* folders)
 
