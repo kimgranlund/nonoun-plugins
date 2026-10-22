@@ -998,6 +998,32 @@ for spec in "sdlc-lite:builder-L3|Write|$wd/notes.md" "sdlc-lite:builder-L3|Edit
   run "$wrh" "$(wrj "$at" "$tool" "$path")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-role-write passes ${at:-no role} $tool '$path': exit $rc, want 0"
 done
+# T-0706: a read-only role may also Write under this repo's scratch root (the parent of the scratch dir its
+# brief offers); outside it, a `..` escape, a symlink out, and an Edit anywhere stay denied.
+sr_tmp="$wtmp/scratch-tmp"; mkdir -p "$sr_tmp"
+sr=$(TMPDIR="$sr_tmp" python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import wtroot; print(wtroot.scratch_root(sys.argv[2]))' "$PWD/plugins/sdlc-lite/scripts" "$PWD")
+mkdir -p "$sr/0001-planner-L2" "$wtmp/outside"; ln -s "$wtmp/outside" "$sr/link"
+scj() { jq -n --arg at "$1" --arg t "$2" --arg p "$3" --arg c "$PWD" \
+  '{tool_name:$t,tool_input:{file_path:$p,content:"x"},cwd:$c,agent_type:$at}'; }
+canon=$sr; [[ $sr == /var/* && -d /private$sr ]] && canon=/private$sr
+for spec in "sdlc-lite:planner-L2|$sr/0001-planner-L2/probe.md" "sdlc-lite:planner-L2|$sr/0001-planner-L2/probe.txt" \
+  "sdlc-lite:verifier-L2|$sr/0001-planner-L2/sub/probe.py" "sdlc-lite:planner-L2|$canon/0001-planner-L2/probe.md"; do
+  IFS='|' read -r at path <<<"$spec"
+  run "$wrh" "$(scj "$at" Write "$path")" TMPDIR="$sr_tmp" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-write allows $at Write inside the scratch root '$path': exit $rc, want 0"
+done
+for spec in "sdlc-lite:planner-L2|Write|$sr_tmp/probe.md" "sdlc-lite:planner-L2|Write|$wtmp/outside/probe.md" \
+  "sdlc-lite:planner-L2|Write|$sr/0001-planner-L2/../../probe.md" "sdlc-lite:planner-L2|Write|$sr/0001-planner-L2/../../outside/x.txt" \
+  "sdlc-lite:planner-L2|Write|$sr/link/probe.md" "sdlc-lite:planner-L2|Write|$sr" "sdlc-lite:planner-L2|Write|${sr}-sibling/probe.md" \
+  "sdlc-lite:planner-L2|Write|0001-planner-L2/probe.md" "sdlc-lite:planner-L2|Edit|$sr/0001-planner-L2/probe.md" \
+  "sdlc-lite:planner-L2|NotebookEdit|$sr/0001-planner-L2/n.ipynb"; do
+  IFS='|' read -r at tool path <<<"$spec"
+  run "$wrh" "$(scj "$at" "$tool" "$path")" TMPDIR="$sr_tmp" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-write denies $at $tool '$path' near the scratch root: exit $rc, want 2"
+done
+# the builder is unrestricted, scratch root or not
+run "$wrh" "$(scj sdlc-lite:builder-L3 Write "$wtmp/outside/probe.md")" TMPDIR="$sr_tmp" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-role-write restricted the builder outside the scratch root: exit $rc, want 0"
 # A record whose result is another path does not unlock this one.
 printf '%s' "$(jq -n --arg r "$wd/elsewhere.md" '{subagent_type:"sdlc-lite:verifier-L3",role:"verifier",result:$r}')" >"$wd/stale-L3.dispatch.json"
 run "$wrh" "$(wrj sdlc-lite:verifier-L3 Write "$wd/stale-L3.md")" >/dev/null; rc=$?

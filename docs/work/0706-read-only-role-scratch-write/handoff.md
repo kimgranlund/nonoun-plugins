@@ -40,3 +40,9 @@ The failing test lands before or with the fix, never after.
 1. `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 and has cases: a planner Write inside the scratch root passes; Writes outside it, a `..` escape out of it, and an Edit inside it stay blocked.
 2. Negative control: with the hook change reverted, the new "Write inside the scratch root passes" case fails.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `block-role-write.sh` now lets a read-only role Write any file whose canonical real path (`os.path.realpath`, so `/var` equals `/private/var`, `..` and symlinks resolved) is strictly inside `wtroot.scratch_root(<hook cwd>)`; the root comes from `wtroot.py` via python3. Edit, NotebookEdit and every other Write stay denied; the result-path rule is unchanged. Header comment, block message and `docs/references/claude-hooks.md` updated.
+- `hook-selftest.sh` gained scratch-root cases: allowed (planner `.md`, `.txt`, verifier nested `.py`, `/private/var` spelling); denied (outside, `<root>/<dir>/../../probe.md`, `..` into a sibling dir, symlink out, the root itself, a `-sibling` prefix dir, a relative path, Edit, NotebookEdit); builder unrestricted.
+- Negative control: with the hook reverted to HEAD, `hook-selftest.sh` fails: "block-role-write allows sdlc-lite:planner-L2 Write inside the scratch root '.../scratch-tmp/sdlc-lite/sdlc-lite-0a5e021b/0001-planner-L2/probe.md': exit 2, want 0". Hook restored; selftest PASS.
+- Checks: `hook-selftest.sh` PASS (via gate_lock), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check dd9b93e0` exit 0.
