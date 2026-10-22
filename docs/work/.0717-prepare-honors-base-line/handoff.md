@@ -2,7 +2,7 @@
 id: T-0717
 title: "dispatch.py prepare uses the handoff base: line for Base sha"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -58,3 +58,16 @@ Negative control (fix reverted, tests kept), `dispatch.py selftest` exit 1:
 - `FAIL: a ready ref with a Lane-Base: line: a base the handoff names still wins (T-0717)`
 
 Checks: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0 (PASS); `git diff --check 83a3a4e6` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 83a3a4e63e21
+- Changed: see commits
+- Commits: 8e4348e T-0717: dispatch.py prepare uses the handoff base: line for Base sha
+- Check: 1 selftest case reproduces the repro, fails with the change reverted: pass
+- Check: 2 gate_lock selftest exits 0: pass
+- Check: 3 check.py, check-packaging.py, git diff --check: pass
+- Check: 4 Conductor note, a named base that is not an ancestor is refused: pass
+- Check: 5 Conductor note, ready_review still prefers `Lane-Base:` when no base is named: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:3086-3094: the new ready-ref... -> notes.md
+- Follow-up: decide: Red-checkpoint deviation check printed no process deviation: line. -> notes.md

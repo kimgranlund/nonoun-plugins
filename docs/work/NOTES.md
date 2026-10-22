@@ -322,3 +322,8 @@
 - note: plugins/sdlc-lite/agents/planner.md:29 the new "last action" sentence comes before the existing "Before returning, dry-run each step's `(guard)` commands" sentence in the same rule, so it is unclear which runs last. This is harmless because both are base runs.
 - note: docs/work/0728-planner-red-at-base-check/handoff.md Outcome quote paraphrases the parenthetical ("detached worktree copy of HEAD") and then states the exact in-file wording. It is not a verbatim quote.
 - note: redck.py deviations printed no `process deviation:` lines. The ticket has no `(red)` criteria.
+
+## T-0717: dispatch.py prepare uses the handoff base: line for Base sha (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:3086-3094: the new ready-ref case writes a `base:` line into the handoff and restores it afterwards, which is fine; if a later selftest case ever reads that handoff while the line is present, it would break, so keep the restore adjacent.
+- decide: Red-checkpoint deviation check printed no `process deviation:` line.

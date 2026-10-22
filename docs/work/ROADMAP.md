@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0717 | [0717-prepare-honors-base-line](0717-prepare-honors-base-line/handoff.md) | dispatch.py prepare uses the handoff base: line for Base sha | bug | L2 | P2 | none | 🟡 claimed |
 | T-0718 | [0718-advance-reverify-level](0718-advance-reverify-level/handoff.md) | dispatch.py advance reverifies at the failing verifier level | bug | L1 | P2 | none | 🟡 claimed |
 | T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🔵 ready |
 | T-0720 | [0720-land-finds-tree-verifier-result](0720-land-finds-tree-verifier-result/handoff.md) | fanout.py land finds a verifier result recorded by prepare --tree | bug | L2 | P2 | none | 🟡 claimed |
@@ -22,7 +21,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0736 | [0736-split-env-error-needs-deps](0736-split-env-error-needs-deps/handoff.md) | split's environment error requires declared dependencies | bug | L1 | P2 | none | 🔵 ready |
 
-Closed: 684 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 685 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -51,3 +50,5 @@ Closed: 684 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1868: decide: `record --update` accepts any completed attempt of any role, not only a resumed builder or ui-designer, and checks only report format; a hand-edited verifier fail rewritten to pass would be accepted and get a fresh `result_sha256` in the attempt (runs.jsonl keeps the original sha, and nothing compares the sha to the file today, so this adds no new capability over editing the file). Consider restricting `--update` to builder and solo, or leaving the old sha in the attempt. (from T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:2210: note: the new `stop: changes-required ...` relay text has no selftest assertion; a wording drift between `advance` and conductor.md would not be caught. (from T-0714: Review-fix resume refreshes the recorded end tree and keeps the report header (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/steps.py:1096 treats a module-not-found line as an environment error whenever the tree root has no node_modules. A Node repo with no dependencies, or a guard whose missing module is a local file the step creates, is then reported as `environment error` with an `npm ci` hint that cannot fix it, and the split never reaches a plan defect. Also requiring a package.json would narrow this. (from T-0727: steps.py split reports missing dependencies as an environment error (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:3086-3094: the new ready-ref case writes a `base:` line into the handoff and restores it afterwards, which is fine; if a later selftest case ever reads that handoff while the line is present, it would break, so keep the restore adjacent. (from T-0717: dispatch.py prepare uses the handoff base: line for Base sha (2026-10-22))
+- decide: Red-checkpoint deviation check printed no `process deviation:` line. (from T-0717: dispatch.py prepare uses the handoff base: line for Base sha (2026-10-22))
