@@ -485,6 +485,8 @@ selftest
   (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
   and, after the land of its last ticket, is gone with an archive ref and its branch deleted. Case 32b (T-0721): both
   tickets commit before the first land, so the second land closes T-0002 (`commits carried by merge <sha>`) and the lane.
+  Case 32c (T-0737): only T-0001 commits; after its land the T-0002 land stays `no changes` and T-0002 stays open,
+  because no commit the carried merge brought names T-0002.
   Case 34 (T-0481, light gate class): config `merge_gate: light` and `light_scope: src/components/** src/registry.ts`, a
   solo lane touching only src/components/x/a.txt and src/registry.ts landed with `--gate false --light-gate true` merges
   with `"gate": "light"` in land.jsonl and `gate: light` in the ticket's ## Outcome; the same lane also touching README.md is
@@ -2586,6 +2588,12 @@ def carrying_merge(cwd, tip, ref):
     return ''
 
 
+def merge_names_ticket(cwd, merge, tid):
+    """True when a commit the merge brought in (its second-parent range) has a subject naming tid (T-0737)."""
+    subjects = git_out(cwd, 'log', '--format=%s', f'{merge}^1..{merge}^2').splitlines()
+    return any(re.search(rf'\b{re.escape(tid)}(?!\d)', sj) for sj in subjects)
+
+
 def land_ticket(ctx, lock):
     """One finished branch through the external-lane merge: `no changes` when it adds nothing, the verifier verdict
     for a solo level L2 or L3, then the locked merge, gates, and close. Returns (outcome, commit)."""
@@ -2598,7 +2606,7 @@ def land_ticket(ctx, lock):
         ctx['carried'] = carrying_merge(ctx['cwd'], tip, ctx['integration'])
         open_ = any(mt.get('id') == t.id and mt.get('status') not in ('done', 'dropped')
                     for _, mt in tickets.branch_tickets(ctx['root'], ctx['integration']))
-        if not ctx['carried'] or not open_:
+        if not ctx['carried'] or not open_ or not merge_names_ticket(ctx['cwd'], ctx['carried'], t.id):
             return 'no changes', tip[:7]
         say(ctx, lane, t.id, f"commits carried by merge {ctx['carried'][:7]}")
     wt = ctx.get('lane_wt')
@@ -6129,6 +6137,30 @@ def selftest():
                cop is not None and cop.returncode == 0 and cl1.returncode == 0 and cl2.returncode == 0
                and bool(cmerge) and 'status: done' in c2 and f'commits carried by merge {cmerge}' in c2
                and 'no changes' not in cl2.stdout and 'closed alpha (ancestor)' in cl2.stdout.splitlines())
+
+        # case 32c (T-0737): two tickets in one lane, only A committed. Landing B stays `no changes` and B stays open: the
+        # carried merge brought no commit whose subject names B.
+        cn = tmp / 'carried-none'
+        sized_repo(cn, ['L3', 'L3'], {'.gitignore': gi})
+        cn_lanes = tmp / 'carried-none-lanes'
+        cn_pin = ('--integration', 'fanout/n', '--lanes-dir', str(cn_lanes), '--base', 'main', '--gate', 'true')
+        cnp = verb(cn, 'prep', 'alpha=T-0001,T-0002', '--lane', 'full', *cn_pin[:4], '--stagger', '0')
+        cntree_cmd = next((ln.strip()[len('tree: '):] for ln in cnp.stdout.splitlines() if ln.strip().startswith('tree: ')), '')
+        cnop = subprocess.run(['bash', '-c', cntree_cmd], cwd=str(cn), env=ENV, capture_output=True, text=True) if cntree_cmd else None
+        cntree = cn_lanes / 'alpha'
+        if cntree.is_dir():
+            (cntree / 'n1.txt').write_text('T-0001\n', encoding='utf-8')
+            sh(cntree, 'add', '-A')
+            sh(cntree, 'commit', '-q', '-m', 'T-0001: Ticket')
+        cn1 = verb(cn, 'land', 'fanout/n-alpha', '--ticket', 'T-0001', *cn_pin)
+        cn2 = verb(cn, 'land', 'fanout/n-alpha', '--ticket', 'T-0002', *cn_pin)
+        cn_t2 = sh(cn, 'show', 'fanout/n:.sdlc/t2/handoff.md').stdout
+        expect(f'case 32c carried none: land A merges, land B stays `no changes` and T-0002 stays open, got '
+               f'open rc={cnop and cnop.returncode} land A rc={cn1.returncode} land B rc={cn2.returncode} '
+               f'out={cn2.stdout[-700:]!r} err={cn2.stderr[-300:]!r} t2={cn_t2[-300:]!r}',
+               cnop is not None and cnop.returncode == 0 and cn1.returncode == 0 and cn2.returncode == 1
+               and 'no changes' in cn2.stdout and 'commits carried by merge' not in cn2.stdout
+               and 'status: done' not in cn_t2)
 
         # case 34 (T-0481): the light gate class. A lane whose merged paths outside the ticket root all match a declared
         # light_scope glob runs --light-gate instead of --gate; cover runs the full set at the tip into gate-ledger.jsonl,
