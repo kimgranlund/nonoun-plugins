@@ -34,3 +34,11 @@ Verifier notes copied from `docs/work/NOTES.md`:
 1. `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0, and with the load-cap check in gate_lock.py disabled in a scratch copy the fixed case fails (state the observed FAIL line in the Outcome).
 2. `git diff <base sha> -- docs/specs/sdlc-lite/gate-lock-admission.md docs/references/sdlc-internals.md plugins/sdlc-lite/skills/fanout/references/land.md` shows each of items 2 to 4.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Base 4f069a80. Four fixes, no behavior change.
+- gate_lock.py case_rr: the two load-cap checks now use 1-unit entries (the held grant also 1 unit), so capacity admits all three and only the load cap can refuse them. With the `(ledger['grants'] or legacy_n)` condition replaced by `False` in a scratch copy, case_rr returns: "over the load cap with a grant held the schedule granted ['b3', 'a1', 'a2'] and left rr 'A', wanted nothing granted and rr A" and "over the load cap with no grant held the schedule granted ['b3', 'a1', 'a2'], wanted only b3 (the head, then the cap holds)". Real file: case_rr returns [].
+- gate-lock-admission.md section 14 Reason: `over` is true only while a grant or legacy holder is held.
+- sdlc-internals.md line 29: stray closing parenthesis removed.
+- land.md line 15: warning fires for each `--gate` and `--light-gate`.
+Checks: gate_lock selftest PASS (via gate_lock run), check.py exit 0, check-packaging.py exit 0, `git diff --check 4f069a80` exit 0.

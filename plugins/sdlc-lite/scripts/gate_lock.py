@@ -1441,11 +1441,11 @@ def case_rr():
     ledger with a max_load: under the cap the order holds, over it nothing is granted and the turn does not move."""
     pol = {k: dict(v) for k, v in BUILTIN_POLICY.items()}
 
-    def entry(i, repo):
-        return {'id': i, 'seq': int(i[1:]), 'repo': repo, 'need': {COMPUTE: 6}, 'priority': 0}
+    def entry(i, repo, units=6):
+        return {'id': i, 'seq': int(i[1:]), 'repo': repo, 'need': {COMPUTE: units}, 'priority': 0}
 
-    def fresh(rr):
-        return {'grants': [], 'rr': rr, 'queue': [entry('a1', 'A'), entry('a2', 'A'), entry('b3', 'B')]}
+    def fresh(rr, units=6):
+        return {'grants': [], 'rr': rr, 'queue': [entry('a1', 'A', units), entry('a2', 'A', units), entry('b3', 'B', units)]}
 
     def rounds(pol, **kw):
         L, got = fresh(''), []
@@ -1462,12 +1462,12 @@ def case_rr():
         bad.append(f'under the load cap repos A,A,B were granted {got}, wanted a1, b3, a2')
     if rounds(capped, load=24) != ['a1', 'b3', 'a2']:
         bad.append('a load equal to the cap did not admit')
-    L = fresh('A')
-    L['grants'] = [dict(entry('h0', 'Z'), need={COMPUTE: 1})]  # a held grant: the cap now applies
+    L = fresh('A', 1)  # one unit each, so all three fit capacity and only the load cap can refuse them
+    L['grants'] = [entry('h0', 'Z', 1)]  # a held grant: the cap now applies
     granted = schedule(L, capped, load=36.5)
     if granted or len(L['grants']) != 1 or L['rr'] != 'A' or len(L['queue']) != 3:
         bad.append(f'over the load cap with a grant held the schedule granted {granted} and left rr {L["rr"]!r}, wanted nothing granted and rr A')
-    L = fresh('A')
+    L = fresh('A', 1)
     granted = schedule(L, capped, load=36.5)
     if granted != ['b3']:
         bad.append(f'over the load cap with no grant held the schedule granted {granted}, wanted only b3 (the head, then the cap holds)')
