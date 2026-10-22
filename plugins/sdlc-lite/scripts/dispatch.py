@@ -3,12 +3,16 @@
 
   dispatch.py prepare [--dry-run] [--approved "<who: why>"] <role> <level> <handoff.md>
   dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
+  dispatch.py record --update <dispatch.json>   re-record a completed attempt whose agent was resumed by SendMessage and rewrote its
+                                          report (a ui-designer changes-required review): re-add the header, validate, store the new
+                                          result_sha256, and for a builder rewrite end-sha so the verifier's Diff range ends at the fix;
+                                          no runs.jsonl line (T-0714). Exit 0 ok, 2 an attempt not completed or no result file, 3 invalid
   dispatch.py advance [record flags] <dispatch.json>   record, then drop a pruned role from the queue (prints TaskStop task_id=<name>),
                                           then steps.py next on its step dir: prepare the next builder or verifier and print its
                                           dispatch JSON, or print `stop: <action> <reason>` (T-0645); a ticket-level completion (T-0688):
                                           an L2 or L3 solo prepares the ticket verifier and prints its JSON, an L1 solo or a verifier pass
                                           prints `next: close <task dir> (...)`, a verifier fail `stop: fail <result>; ...`, a ui-designer
-                                          review `next: <verdict> <result>` or `stop: changes-required <result>`; any other role `next: <hint>`
+                                          review `next: <verdict> <result>` or `stop: changes-required <result>; ... record --update ...`; any other role `next: <hint>`
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME | --forget-stale]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
@@ -1790,12 +1794,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         deliver_quietly(dispatch_file)
         return 1
 
-    lines = text.splitlines()
-    skip = next((i for i, l in enumerate(lines) if l.strip()), 0)
-    body = '\n'.join(lines[skip + 1:] if skip < len(lines) and results.HEADER.match(lines[skip].rstrip()) else lines)
-    header = '<!-- role=%s level=%s model=%s effort=%s%s -->' % (
-        role, level, d['model'], d['effort'], ' shared_with_builder=yes' if d.get('shared_with_builder') else '')
-    result.write_text(header + '\n' + body + '\n', encoding='utf-8')
+    body = write_header(d, result, text)
     result_sha = hashlib.sha256(result.read_bytes()).hexdigest()  # T-0388: the accepted bytes, after the header write
     remove_tmp(tree, prefix)
     sweep_tmp(tree, d.get('scratch'))
@@ -1854,6 +1853,59 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         print(review_record_line(result, tree))
     deliver_quietly(dispatch_file)
     queue_prune(d, attempt, agent_id)
+    return 0
+
+
+def write_header(d, result, text):
+    """Write the dispatch header over any header the role wrote, then the body, to result; returns the body."""
+    lines = text.splitlines()
+    skip = next((i for i, l in enumerate(lines) if l.strip()), 0)
+    body = '\n'.join(lines[skip + 1:] if skip < len(lines) and results.HEADER.match(lines[skip].rstrip()) else lines)
+    header = '<!-- role=%s level=%s model=%s effort=%s%s -->' % (
+        d['role'], d['level'], d['model'], d['effort'], ' shared_with_builder=yes' if d.get('shared_with_builder') else '')
+    result.write_text(header + '\n' + body + '\n', encoding='utf-8')
+    return body
+
+
+def rerecord(dispatch_file, validate=validate_result):
+    """record --update (T-0714): after a recorded agent is resumed by SendMessage (a ui-designer changes-required review)
+    and rewrites its report, re-add the header, validate, store the new result_sha256, and for a builder refresh end-sha
+    so the verifier's Diff range ends at the fix. No runs.jsonl line: it is the same run. 0 ok, 2 refused, 3 invalid."""
+    try:
+        d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        raise Refuse(2, 'dispatch.py: cannot read dispatch file %s: %s' % (dispatch_file, e))
+    missing = [k for k in RECORD_KEYS if not isinstance(d, dict) or k not in d]
+    if missing:
+        raise Refuse(2, 'dispatch.py: %s is not a dispatch file (missing %s)' % (dispatch_file, ', '.join(missing)))
+    result, attempt_path = Path(d['result']), Path(d['attempt_file'])
+    if result.parent != Path(d['artifacts_dir']) or attempt_path.parent != result.parent:
+        raise Refuse(2, 'dispatch.py: result and attempt record must sit in the artifacts dir %s' % d['artifacts_dir'])
+    try:
+        attempt = json.loads(attempt_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        raise Refuse(2, 'dispatch.py: cannot read attempt record %s: %s' % (attempt_path, e))
+    if attempt.get('attempt_id') != d['attempt_id']:
+        raise Refuse(2, 'dispatch.py: %s belongs to another attempt than %s' % (attempt_path, dispatch_file))
+    if attempt.get('status') != 'completed':
+        raise Refuse(2, 'dispatch.py: attempt %s is %s, not completed; record --update re-records a completed attempt, plain record closes a running one'
+                     % (attempt_path.name, attempt.get('status')))
+    text = result.read_text(encoding='utf-8', errors='replace') if result.is_file() else ''
+    if not text.strip():
+        raise Refuse(2, 'dispatch.py: no result file at %s to re-record' % result)
+    write_header(d, result, text)
+    reason = validate(d['role'], str(result))
+    if reason is not None:
+        say('%s result %s; see %s' % (d['role'], reason, result))
+        return 3
+    attempt.update(result_sha256=hashlib.sha256(result.read_bytes()).hexdigest(), rerecorded_at=run_lifecycle.now())
+    run_lifecycle.write(attempt_path, attempt)
+    if d['role'] == 'builder':
+        end = build_end(d['tree'])
+        if end:
+            (result.parent / 'end-sha').write_text(end + '\n', encoding='utf-8')
+            print('end-sha %s' % end)
+    print(result)
     return 0
 
 
@@ -2154,7 +2206,9 @@ def advance_ticket(d, attempt):
         print('stop: fail %s; send its ## For the next attempt to the solo by name, then advance the solo\'s dispatch again' % result)
     elif d['role'] == 'ui-designer' and word == 'review':
         verdict = results._key_body_value(results._lines(result), 'Verdict')[1].lower()
-        print('next: %s %s' % (verdict, result) if verdict in ('pass', 'pass-with-notes') else 'stop: changes-required %s' % result)
+        print('next: %s %s' % (verdict, result) if verdict in ('pass', 'pass-with-notes') else
+              'stop: changes-required %s; send its findings to the builder by name, then run dispatch.py record --update '
+              '<builder dispatch> once it reports the fix' % result)
     else:
         print('next: %s is not a step dir; read %s and pick the next role' % (task, result))
     return 0
@@ -2198,6 +2252,9 @@ def main(argv):
         r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run (default with --agent-id: found under ~/.claude/projects)')
         r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
         r.add_argument('--no-result', action='store_true', help='close the attempt failed when no result file, stdin, or transcript result exists (default: exit 2 and leave it running)')
+        if r.prog.endswith('record'):
+            r.add_argument('--update', action='store_true',
+                           help='re-record a completed attempt whose agent was resumed and rewrote its report: re-add the header, refresh end-sha (T-0714)')
     dl = sub.add_parser('deliver', help='send (or confirm sent) the verdict message a dispatch asked for with --notify; idempotent')
     dl.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
     sd = sub.add_parser('started', help='store the spawned sub-agent id in the running attempt, so status can show its last activity')
@@ -2316,6 +2373,8 @@ def main(argv):
             used = {**(cost_estimate.transcript_usage(args.transcript) or {}), **{k: v for k, v in used.items() if k != 'subagent_tokens'}} \
                 if cost_estimate.transcript_usage(args.transcript) else used
         def rec():
+            if getattr(args, 'update', False):
+                return rerecord(args.dispatch)
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
                 if sd.get('result') and solo_report_file(sd, args.transcript):
@@ -4019,6 +4078,36 @@ def selftest():
         case('(c) a verifier with no end-sha gets no Diff range line and keeps the Base sha rule',
              vrc == 0 and 'Diff range' not in dv['prompt'] and dv['diff_range'] is None
              and 'diff against Base sha, not HEAD' in dv['prompt'])
+
+        # T-0714: a builder resumed after a changes-required review fixes the tree and rewrites its report without the header;
+        # record --update re-adds the header and moves end-sha, so the verifier's Diff range ends at the fix.
+        put(re_ / '.sdlc' / 'e4' / 'handoff.md')
+        git('add', '-A', cwd=re_)
+        git(*eci, 'before e4', cwd=re_)
+        _, eg, _ = prep(re_, 'builder', 'L1', '.sdlc/e4/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        (re_ / 'build4.txt').write_text('build\n')
+        git('add', 'build4.txt', cwd=re_)
+        git(*eci, 'step 4', cwd=re_)
+        Path(eg['result']).write_text(BODY['builder'], encoding='utf-8')
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            erc = record(eg['dispatch_file'])
+        old_end = ends('e4').strip()
+        (re_ / 'fix4.txt').write_text('review fix\n')
+        Path(eg['result']).write_text(BODY['builder'] + '\n## Review fix\nfix4.txt\n', encoding='utf-8')
+        up = script('dispatch.py', 'record', '--update', eg['dispatch_file'], cwd=re_)
+        vrc, dv, _ = prep(re_, 'verifier', 'L1', '.sdlc/e4/handoff.md', '--dry-run')
+        new_end = (dv['diff_range'] or ' ').split()[-1]
+        case('(d) record --update after a review fix re-adds the result header and the verifier Diff range ends at the fixed tree',
+             erc == 0 and old_end and up.returncode == 0 and Path(eg['result']).read_text().startswith('<!-- role=builder level=L1 ')
+             and script('results.py', 'validate', eg['result'], '--role', 'builder').returncode == 0
+             and vrc == 0 and new_end != old_end and git('cat-file', '-t', new_end, cwd=re_).stdout.strip() == 'tree'
+             and git('diff', '--name-only', old_end, new_end, cwd=re_).stdout.split() == ['fix4.txt']
+             and attempt_of(eg)['result_sha256'] == hashlib.sha256(Path(eg['result']).read_bytes()).hexdigest())
+        _, eg5, _ = prep(re_, 'builder', 'L1', '.sdlc/e3/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        Path(eg5['result']).write_text(BODY['builder'], encoding='utf-8')
+        up = script('dispatch.py', 'record', '--update', eg5['dispatch_file'], cwd=re_)
+        case('(d) record --update refuses an attempt that is still running and writes no header',
+             up.returncode == 2 and 'not completed' in up.stderr and not Path(eg5['result']).read_text().startswith('<!--'))
 
         # Guards on a tampered dispatch file: nothing outside the tmp root is removed, nothing outside the artifacts dir is written.
         keep = tmp / 'keep-me'
