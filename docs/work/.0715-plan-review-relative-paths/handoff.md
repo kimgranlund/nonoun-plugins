@@ -2,7 +2,7 @@
 id: T-0715
 title: "Plan review lines in a tracked handoff use repo-relative paths"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -51,3 +51,14 @@ The failing test lands before or with the fix, never after.
 - `skills/chain/SKILL.md` line 49 now says the `replan` result path is the repo-relative `read:` path.
 - Two selftest cases added (`(r) review prints the read: path repo-relative...`, `(r) the ## Plan review appends hold the repo-relative path...`). Negative control (repo_relative made a no-op): `steps selftest: FAIL` on both cases: `- (r) review prints the read: path repo-relative, never an absolute home or temp path` and `- (r) the ## Plan review appends hold the repo-relative path and no absolute path`.
 - Green: `steps.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 7e5c77c6` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 7e5c77c60f7c
+- Changed: see commits
+- Commits: 5bc9b25 T-0715: plan review lines in a tracked handoff use repo-relative paths
+- Check: 1 A `steps.py` selftest case shows `steps.py review` printing a repo-relative `read:` path and an a...: pass
+- Check: 2 `git grep -n "plan review: replan: <result path>" plugins/sdlc-lite/skills/chain` shows the instr...: pass
+- Check: 3 `steps.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff --check <...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:4398 the amend and... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:3279 an invalid result: <path>... -> notes.md

@@ -273,3 +273,8 @@
 ## T-0712: Briefs say record removes the throwaway prefix and scratch dir (2026-10-22)
 
 - decide: plugins/sdlc-lite/agents/builder.md:20 says "`dispatch.py record` removes the prefix after the run". For a run.sh-launched role (the Codex sdlc-builder-l*.toml), nothing calls dispatch.py record. run.sh's own `cleanup_worktrees` (plugins/sdlc-lite/scripts/run.sh:581-591, called from on_exit at :679 on every exit) removes the prefix instead. The instruction "do not rm -rf it" is still correct, but the line names the wrong mechanism. A neutral wording would fix it, for example "the runner (`dispatch.py record` or `run.sh`) removes the prefix after the run".
+
+## T-0715: Plan review lines in a tracked handoff use repo-relative paths (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/steps.py:4398 the `amend` and `record_criterion_amends` (steps.py:3542) paths are wrapped in repo_relative but no selftest case drives them; only record_plan_review and record_review_override are exercised.
+- note: plugins/sdlc-lite/scripts/steps.py:3279 an `invalid result: <path>` line from print_action is not passed through repo_relative; only the reason and read: lines are.
