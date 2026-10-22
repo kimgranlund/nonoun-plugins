@@ -2,6 +2,19 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.32.0] - 2026-10-22
+
+Report: [docs/reports/2026-10-22-release-0-32-0.md](docs/reports/2026-10-22-release-0-32-0.md). Addresses GitHub issues #46, #47 and #48 (T-0713 to T-0715).
+
+### Added
+
+- `dispatch.py record --update <dispatch>` re-records a completed attempt after a review-fix resume: it restores the report header, validates the report, and for a builder moves end-sha so the verifier's Diff range covers the fix; it adds no runs.jsonl line. `advance` and the conductor's review relay name it (T-0714, #47).
+
+### Changed
+
+- A lane close clears the ticket's `branch:`/`worktree:` record in the integration tree first and leaves main untouched when the integration branch carries the clear, so `git merge --ff-only` of the integration branch no longer refuses; a clear that must land in main when the target is not main is committed there (T-0713, #46).
+- `steps.py review` prints repo-relative `reason:` and `read:` paths, and every line `steps.py` appends under `## Plan review` strips the repo prefix; `/chain` says to write the replan result path repo-relative (T-0715, #48).
+
 ## [0.31.0] - 2026-10-22
 
 Report: [docs/reports/2026-10-22-release-0-31-0.md](docs/reports/2026-10-22-release-0-31-0.md). Fixes found in an agent-ui planner run and by verifiers: T-0706 to T-0712.
