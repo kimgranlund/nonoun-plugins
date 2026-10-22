@@ -76,6 +76,8 @@ land
   `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
   nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
+  unless an earlier land's merge carried the branch tip and the ticket is still open on the integration branch (a
+  second ticket of one lane, T-0721): that land closes it with no gate, its reason and Commit cell naming the merge,
   and, after copying the sub-agent worktree's records dir (order.records_dir) into the integration worktree's runtime
   records dir (copy_lane_records; no commit on the branch) and into the main checkout's, keeping a file there at least
   as new (lanes.carry_records prints `records: <path>`, T-0566), for a solo level L2 or L3, `no verifier result` or
@@ -481,7 +483,8 @@ selftest
   a host-owned worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 31 (roll scratch): after a merged
   roll and after a refused one, <lanes-dir>/rolling is absent and `git worktree list` names no rolling tree. Case 32
   (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
-  and, after the land of its last ticket, is gone with an archive ref and its branch deleted.
+  and, after the land of its last ticket, is gone with an archive ref and its branch deleted. Case 32b (T-0721): both
+  tickets commit before the first land, so the second land closes T-0002 (`commits carried by merge <sha>`) and the lane.
   Case 34 (T-0481, light gate class): config `merge_gate: light` and `light_scope: src/components/** src/registry.ts`, a
   solo lane touching only src/components/x/a.txt and src/registry.ts landed with `--gate false --light-gate true` merges
   with `"gate": "light"` in land.jsonl and `gate: light` in the ticket's ## Outcome; the same lane also touching README.md is
@@ -1028,6 +1031,8 @@ def close_reason(ctx, t, gate=None, has_filer=True, folder=None):
         why = (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
                if tier in SOLO_VERIFIED or ctx.get('roll') else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
     why += f'; gate: {gate}' if gate else ''
+    # T-0721: no `landed` here, close would then demand a sha on main, and the carrying merge is on the integration branch
+    why += f"; commits carried by merge {ctx['carried'][:7]}" if ctx.get('carried') else ''
     return why
 
 
@@ -1880,7 +1885,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             if src_rec.is_dir():
                 dst_rec = order.records_dir(runtime_records(ctx['top'] / cf.relative_to(integ)), create=True)
                 lanes.copy_newer(src_rec, dst_rec)
-        return 'merged', merge_sha[:7]
+        return 'merged', (ctx.get('carried') or merge_sha)[:7]
 
 
 def run_lane(ctx, lane, lock):
@@ -2546,6 +2551,16 @@ def copy_lane_records(src_folder, dst_folder):
     return True
 
 
+def carrying_merge(cwd, tip, ref):
+    """The merge on ref that brought tip in (tip reachable from its second parent, not its first), else ''. A stub
+    branch that never committed has none: its tip is the fork point, under every merge's first parent."""
+    for m in git_out(cwd, 'rev-list', '--merges', '--reverse', '--ancestry-path', f'{tip}..{ref}').splitlines():
+        if git(cwd, 'merge-base', '--is-ancestor', tip, f'{m}^1').returncode and \
+                not git(cwd, 'merge-base', '--is-ancestor', tip, f'{m}^2').returncode:
+            return m
+    return ''
+
+
 def land_ticket(ctx, lock):
     """One finished branch through the external-lane merge: `no changes` when it adds nothing, the verifier verdict
     for a solo level L2 or L3, then the locked merge, gates, and close. Returns (outcome, commit)."""
@@ -2554,7 +2569,13 @@ def land_ticket(ctx, lock):
     tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'{ref}^{{commit}}')
     p = git(ctx['cwd'], 'rev-list', '--count', f"{ctx['integration']}..{ref}")
     if p.returncode == 0 and p.stdout.strip() == '0':
-        return 'no changes', tip[:7]
+        # T-0721: a second ticket of one lane whose commits an earlier land's merge carried closes, naming that merge
+        ctx['carried'] = carrying_merge(ctx['cwd'], tip, ctx['integration'])
+        open_ = any(mt.get('id') == t.id and mt.get('status') not in ('done', 'dropped')
+                    for _, mt in tickets.branch_tickets(ctx['root'], ctx['integration']))
+        if not ctx['carried'] or not open_:
+            return 'no changes', tip[:7]
+        say(ctx, lane, t.id, f"commits carried by merge {ctx['carried'][:7]}")
     wt = ctx.get('lane_wt')
     if wt and pathlib.Path(wt).is_dir():
         src = pathlib.Path(wt) / ctx['trel'] / t.slug
@@ -6023,6 +6044,32 @@ def selftest():
                not fl_status and 'branch: fanout/f-alpha' in (fl / '.sdlc' / 't1' / 'handoff.md').read_text()
                and fl_clear == 'T-0001, T-0002: clear lane record alpha'
                and 'branch:' not in sh(fl, 'show', 'fanout/f:.sdlc/t1/handoff.md').stdout)
+
+        # case 32b (T-0721, issue #56): one commit per ticket on a two-ticket lane, then land A, then land B. The first
+        # merge carries B's commit too, so the second land closes B naming that merge, not `no changes` with B open.
+        cl = tmp / 'carried-lane'
+        sized_repo(cl, ['L3', 'L3'], {'.gitignore': gi})
+        cl_lanes = tmp / 'carried-lane-lanes'
+        cl_pin = ('--integration', 'fanout/c', '--lanes-dir', str(cl_lanes), '--base', 'main', '--gate', 'true')
+        cpp = verb(cl, 'prep', 'alpha=T-0001,T-0002', '--lane', 'full', *cl_pin[:4], '--stagger', '0')
+        ctree_cmd = next((ln.strip()[len('tree: '):] for ln in cpp.stdout.splitlines() if ln.strip().startswith('tree: ')), '')
+        cop = subprocess.run(['bash', '-c', ctree_cmd], cwd=str(cl), env=ENV, capture_output=True, text=True) if ctree_cmd else None
+        ctree = cl_lanes / 'alpha'
+        if ctree.is_dir():
+            for tid, fname in (('T-0001', 'c1.txt'), ('T-0002', 'c2.txt')):
+                (ctree / fname).write_text(f'{tid}\n', encoding='utf-8')
+                sh(ctree, 'add', '-A')
+                sh(ctree, 'commit', '-q', '-m', f'{tid}: Ticket')
+        cl1 = verb(cl, 'land', 'fanout/c-alpha', '--ticket', 'T-0001', *cl_pin)
+        cmerge = sh(cl, 'log', '-1', '--merges', '--format=%h', '--abbrev=7', 'fanout/c').stdout.strip()
+        cl2 = verb(cl, 'land', 'fanout/c-alpha', '--ticket', 'T-0002', *cl_pin)
+        c2 = sh(cl, 'show', 'fanout/c:.sdlc/t2/handoff.md').stdout
+        expect(f'case 32b carried: after land A, land B closes B naming merge {cmerge} and closes the lane, got '
+               f'open rc={cop and cop.returncode} land A rc={cl1.returncode} land B rc={cl2.returncode} '
+               f'out={cl2.stdout[-700:]!r} err={cl2.stderr[-300:]!r} t2={c2[-500:]!r}',
+               cop is not None and cop.returncode == 0 and cl1.returncode == 0 and cl2.returncode == 0
+               and bool(cmerge) and 'status: done' in c2 and f'commits carried by merge {cmerge}' in c2
+               and 'no changes' not in cl2.stdout and 'closed alpha (ancestor)' in cl2.stdout.splitlines())
 
         # case 34 (T-0481): the light gate class. A lane whose merged paths outside the ticket root all match a declared
         # light_scope glob runs --light-gate instead of --gate; cover runs the full set at the tip into gate-ledger.jsonl,
