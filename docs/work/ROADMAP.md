@@ -10,6 +10,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
+| T-0739 | [0739-stale-open-known-version](0739-stale-open-known-version/handoff.md) | A stale open copy that matches a committed version is dropped | bug | L1 | P2 | none | ⏳ proposed |
 
 Closed: 697 done, 29 dropped (git log or .NNNN-* folders)
 
