@@ -433,3 +433,9 @@
 ## T-0745: prepare prints no warning for the normal lane-start base of a ticket verifier (2026-10-22)
 
 - note: I did not run a live `prepare` against a real `.claude/worktrees/<id>-solo` tree: the verifier hook refuses the worktree setup needed and a host record would write into the shared lanes root. The selftest uses the real `lanes.host_record` writer and the real `prepare` entry point in a temporary repo, and the negative control proves it bites.
+
+## T-0748: A re-verify after a lane merges main keeps the ticket's build base (2026-10-22)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:3251: the changed T-0376 case is a correct new expectation, not a weakened one. It still asserts the builder gets the lane HEAD and now asserts the verifier gets the fork point (`dver['base_sha'] == fork`). The code change is gated on `role == 'verifier'`, so a builder prepare is unchanged. With the fix reverted this case fails.
+- decide: plugins/sdlc-lite/scripts/dispatch.py:3396 and :3404: the two changed T-0745 cases are correct. They now expect `floor3` (the merge point), and `floor3 != start3` is asserted, so lane3 did merge main and the cases cannot pass vacuously. They still assert `'nothing recorded' not in err`, so a recorded start stays quiet. Both fail with the fix reverted.
+- decide: T-0717: no named-`base:` case was touched, and all of them are green in the full selftest.
