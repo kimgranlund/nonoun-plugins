@@ -1205,9 +1205,9 @@ def deps_note(ctx):
     if gates and not any(INSTALL_WORDS.search(g) for g in gates):
         out.append('note: gates run in a fresh worktree with no node_modules; start the gate with `npm ci && ...` '
                    '(a node_modules symlink makes drift checks such as build-editor-demo --check fail)')
-    if (any(SCRIPT_WORDS.search(g) for g in light)
-            and not any(INSTALL_WORDS.search(g) for g in gates + light)):
-        out.append('note: a light gate runs an npm script and no gate installs; the light set runs in the same fresh '
+    if (any(SCRIPT_WORDS.search(g) for g in light) and not any(INSTALL_WORDS.search(g) for g in light)
+            and not any(INSTALL_ONLY.fullmatch(g) for g in gates)):  # an install folded into a combined full gate is not run first
+        out.append('note: a light gate runs an npm script and no install-only gate runs first; the light set runs in the same fresh '
                    'worktree with no node_modules, so add an install gate (`--gate "npm ci"`, run before the light set '
                    'when node_modules is missing)')
     return '\n'.join(out)
@@ -6456,6 +6456,8 @@ def selftest():
                'light gate' in warn(['true'], ['npm run typecheck']) and 'npm ci' in warn(['true'], ['npm run typecheck']))
         expect('T-0742 no light warning when the full set installs',
                'light gate' not in warn(['npm ci', 'true'], ['npm run typecheck']))
+        expect('T-0742 prep warns when the only install is folded into a combined full gate',
+               'light gate' in warn(['npm ci && npm test'], ['npm run typecheck']))
         expect('T-0742 no light warning when the light set installs',
                'light gate' not in warn(['true'], ['npm ci && npm run typecheck']))
 
