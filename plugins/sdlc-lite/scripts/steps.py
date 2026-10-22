@@ -50,8 +50,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
             line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)". When every red
-            guard failed for want of dependencies in the tree (output holds ERR_MODULE_NOT_FOUND or Cannot
-            find module with no node_modules in the tree, or exit 127 with "command not found"), split exits
+            guard failed for want of dependencies in the tree (output holds Cannot find module/package for a
+            package, not a relative or absolute local file, in a tree whose package.json declares dependencies
+            and has no node_modules, or exit 127 with "command not found"), split exits
             2 with a last line "environment error: step <n> ... install them ... run steps.py split again"
             instead: nothing is written and no plan review is recorded, and no replan is spent (T-0727).
             In a git work tree it also snapshots `git status --porcelain --untracked-files=all`
@@ -1082,17 +1083,39 @@ def run_guard(text, cwd, timeout, base=None, tmp=None, seen=None):
     return rc, tail[-5:]
 
 
-MISSING_MODULE_RE = re.compile(r"ERR_MODULE_NOT_FOUND|Cannot find (?:module|package) ['\"]")
+MISSING_MODULE_RE = re.compile(r"Cannot find (?:module|package) ['\"]([^'\"]+)['\"]")
 MISSING_COMMAND_RE = re.compile(r': command not found$')
+
+
+def declares_deps(cwd):
+    """True when cwd holds a package.json that lists at least one dependency or devDependency (T-0736)."""
+    try:
+        with open(os.path.join(cwd, 'package.json'), encoding='utf-8') as f:
+            pkg = json.load(f)
+    except (OSError, ValueError):
+        return False
+    return isinstance(pkg, dict) and any(isinstance(pkg.get(k), dict) and pkg[k] for k in ('dependencies', 'devDependencies'))
+
+
+def missing_package(lines):
+    """True when a line names a missing package: a bare name, or a path under node_modules. A relative or
+    absolute path outside node_modules is a local file the plan may create (T-0736)."""
+    for x in lines:
+        m = MISSING_MODULE_RE.search(x)
+        if m and (not m.group(1).startswith(('.', '/')) or '/node_modules/' in m.group(1)):
+            return True
+    return False
 
 
 def missing_deps(rc, lines, cwd):
     """Why a red guard failed for want of dependencies in the tree, else None (T-0727). Narrow on purpose: a
-    module-not-found line counts only when cwd holds no node_modules (a present one means the import is the
-    plan's), a missing command only on exit 127 with the shell's own "command not found" line."""
+    missing package counts only when cwd declares dependencies in package.json and holds no node_modules (a
+    present one means the import is the plan's; no declared dependency or a local file means the plan
+    is at fault, T-0736), a missing command only on exit 127 with the shell's own "command not found" line."""
     if rc == 127 and any(MISSING_COMMAND_RE.search(x.strip()) for x in lines):
         return 'a command is not installed'
-    if not os.path.isdir(os.path.join(cwd, 'node_modules')) and any(MISSING_MODULE_RE.search(x) for x in lines):
+    if (not os.path.isdir(os.path.join(cwd, 'node_modules')) and declares_deps(cwd)
+            and missing_package(lines)):
         return 'no node_modules'
     return None
 
@@ -5405,11 +5428,14 @@ def selftest():
 
         mod_err = ("echo \"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/lane/node_modules/vitest/vitest.mjs' "
                    "imported from /lane/run.mjs\" >&2; exit 1\n")
+        dep_pkg = '{"devDependencies": {"vitest": "^1.0.0"}}\n'
         d = env_guard('module', mod_err)
+        (d / 'package.json').write_text(dep_pkg, encoding='utf-8')
         before = snapshot(d)
         rc, out, err = run_main(['split', str(d), '--only', '1'])
         last = err.strip().splitlines()[-1] if err.strip() else ''
-        check('(T-0727) a red guard with ERR_MODULE_NOT_FOUND and no node_modules is an environment error: exit 2, '
+        check('(T-0727) a red guard with ERR_MODULE_NOT_FOUND and no node_modules, in a tree that declares dependencies, '
+              'is an environment error: exit 2, '
               'install hint, no plan defect, nothing written',
               rc == 2 and out == '' and snapshot(d) == before and 'plan defect' not in err
               and last.startswith('environment error:') and 'npm ci' in last and 'step 1' in last)
@@ -5425,10 +5451,29 @@ def selftest():
               rc == 1 and err.strip().splitlines()[-1].startswith('plan defect:'))
 
         d = env_guard('present', mod_err)
+        (d / 'package.json').write_text(dep_pkg, encoding='utf-8')
         (d / 'node_modules').mkdir()
         rc, out, err = run_main(['split', str(d), '--only', '1'])
         check('(T-0727) ERR_MODULE_NOT_FOUND with node_modules present is a real red guard: plan defect (exit 1)',
               rc == 1 and err.strip().splitlines()[-1].startswith('plan defect:'))
+
+        # (T-0736) a missing local file, or a tree that declares no dependencies, is the plan's defect, not the environment
+        d = env_guard('local', "echo \"Error [ERR_MODULE_NOT_FOUND]: Cannot find module './x.mjs' imported from /lane/run.mjs\" >&2; exit 1\n")
+        (d / 'package.json').write_text(dep_pkg, encoding='utf-8')
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0736) a missing relative module (./x.mjs) stays a plan defect even when dependencies are declared (exit 1)',
+              rc == 1 and 'environment error' not in err and err.strip().splitlines()[-1].startswith('plan defect:'))
+
+        d = env_guard('nodeps', mod_err)
+        (d / 'package.json').write_text('{"name": "x", "dependencies": {}}\n', encoding='utf-8')
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0736) a module error in a repo whose package.json declares no dependencies is a plan defect (exit 1)',
+              rc == 1 and 'environment error' not in err and err.strip().splitlines()[-1].startswith('plan defect:'))
+
+        d = env_guard('nopkg', mod_err)
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(T-0736) a module error with no package.json at all is a plan defect (exit 1)',
+              rc == 1 and 'environment error' not in err and err.strip().splitlines()[-1].startswith('plan defect:'))
 
         green = tmp / 'n-green-ran'
         d = task(plan=guard_plan(f'(guard) `touch {green} && test -f handoff.md`'))

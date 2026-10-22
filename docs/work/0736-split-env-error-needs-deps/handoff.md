@@ -26,3 +26,8 @@ T-0727 verifier-L2 (landed):
 ## Acceptance criteria
 1. `steps.py` selftest cases: a missing relative module (`./x.mjs`) and a module error in a repo whose `package.json` has no dependencies both report `plan defect`; the T-0727 env-error cases still pass; with the narrowing reverted, the new cases fail (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`missing_deps` in `plugins/sdlc-lite/scripts/steps.py` now reports an environment error for a module-not-found line only when `package.json` declares dependencies or devDependencies, `node_modules` is absent, and the missing name is a package (a bare name or a path under `node_modules`). A relative or absolute local path stays a plan defect. The T-0727 module cases now write a `package.json` with a devDependency; three T-0736 cases added (relative `./x.mjs`, empty dependencies, no package.json).
+- Negative control: with the narrowing reverted, the selftest prints `steps selftest: FAIL` for the three `(T-0736)` cases (relative module, no declared dependencies, no package.json).
+- `gate_lock.py run ... steps.py selftest` exit 0 (PASS); `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 7778924a` exit 0.
