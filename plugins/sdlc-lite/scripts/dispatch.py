@@ -750,7 +750,7 @@ def recover_orphans(directory, dry_run=False, own=None):
         data = read_attempt(path)
         state = attempt_state(data)
         if state == 'orphaned' and results.attempt_reported(path, data.get('role')):
-            continue  # T-0445: its result file holds a verdict; never mark it interrupted (status shows report-written-unrecorded)
+            continue  # T-0445: its result file holds a verdict; never mark it interrupted (status shows report-unrecorded)
         if state == 'orphaned':
             if not dry_run:
                 data.update(status='interrupted', finished_at=run_lifecycle.now(), recovery=RECOVERY)
@@ -946,7 +946,7 @@ def ticket_time(ticket):
 def status(directory, orphans_only=False):
     """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones.
     Attempts in the dir's `step-*/` folders are listed too, stem prefixed `step-<n>/`; a dir with none prints `no attempts in <dir>` and its records dir when that differs (T-0690).
-    An unrecorded attempt (any state but completed or failed) whose report is newer than its attempt record adds `report-unrecorded` (T-0703).
+    `report-unrecorded` (one token, T-0705) is added when a report file exists and the attempt is running or orphaned (T-0383), or is any state but completed or failed with the report newer than its attempt record (T-0703).
     A running attempt with a stored agent id and one sub-agent transcript adds `last activity <age>` (the transcript's mtime) and `silent` at 30 minutes or more (T-0476)."""
     lines = []
     base = Path(directory)
@@ -971,10 +971,8 @@ def status(directory, orphans_only=False):
             if hit:
                 line += ' over-budget %s (budget %dm)' % (age_text(hit[0]), hit[1])
         report = path.parent / (path.name[:-len('.attempt.json')] + '.md')
-        if state in ('running', 'orphaned') and report.is_file() and report.stat().st_size:
-            line += ' report-written-unrecorded'  # T-0383: the role reported but nobody recorded it, so no verdict was delivered
-        if state not in ('completed', 'failed') and report.is_file() and report.stat().st_size and report.stat().st_mtime > path.stat().st_mtime:
-            line += ' report-unrecorded'  # T-0703: a resumed agent wrote its report after the attempt record and nobody recorded it
+        if report.is_file() and report.stat().st_size and (state in ('running', 'orphaned') or (state not in ('completed', 'failed') and report.stat().st_mtime > path.stat().st_mtime)):
+            line += ' report-unrecorded'  # T-0383/T-0703/T-0705: a report exists and nobody recorded it, so no verdict was delivered; one token for a running or orphaned attempt (T-0383) and any unrecorded one with a newer report (T-0703)
         lines.append(line)
         sent = path.parent / (path.name[:-len('.attempt.json')] + '.delivery.json')
         if sent.is_file():
@@ -3236,11 +3234,19 @@ def selftest():
         rpath.write_text('builder done\n')
         os.utime(rpath, (time.time() - 60, time.time() - 60))
         os.utime(apath, None)
-        case('T-0703 negative control: a report older than its attempt record is not report-unrecorded',
+        case('T-0705 a running attempt with a report older than its record still prints report-unrecorded once (the T-0383 shape)',
+             status(R(w))[0].split().count('report-unrecorded') == 1)
+        a['status'] = 'interrupted'
+        apath.write_text(json.dumps(a))
+        os.utime(rpath, (time.time() - 60, time.time() - 60))
+        os.utime(apath, None)
+        case('T-0703 negative control: an interrupted attempt with a report older than its attempt record is not report-unrecorded',
              ' report-unrecorded' not in status(R(w))[0])
+        a['status'] = 'running'
+        apath.write_text(json.dumps(a))
         os.utime(rpath, (time.time() + 60, time.time() + 60))
-        case('T-0703 status prints report-unrecorded for a report newer than its unrecorded attempt record',
-             status(R(w))[0].endswith(' report-unrecorded'))
+        case('T-0703/T-0705 status prints exactly one report-unrecorded for a running attempt with a report newer than its record',
+             status(R(w))[0].endswith(' report-unrecorded') and status(R(w))[0].count('report-') == 1)
         a['status'] = 'interrupted'
         apath.write_text(json.dumps(a))
         os.utime(rpath, (time.time() + 60, time.time() + 60))
@@ -4462,7 +4468,7 @@ def selftest():
         # An attempt left running after the report was written is observable and delivers nothing until recorded.
         rc, got3, err = notified('n3', record_it=False)
         listed = status(got3['artifacts_dir'])
-        case('attempt left running after a report: status names it report-written-unrecorded', any('report-written-unrecorded' in l for l in listed))
+        case('attempt left running after a report: status names it report-unrecorded', any('report-unrecorded' in l for l in listed))
         e = io.StringIO()
         with contextlib.redirect_stderr(e):
             held = deliver(got3['dispatch_file'])
