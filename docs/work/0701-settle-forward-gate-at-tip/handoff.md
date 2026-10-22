@@ -26,3 +26,9 @@ Issue: GitHub #44 (machine-wide concurrency, 2026-10-21: six lanes plus Codex an
 1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with a new case: an integration branch that already contains main, settled with `--gate "false"`, exits non-zero and main does not move; with `--gate "true"` it fast-forwards. The case fails with the change reverted.
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 3. `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `fanout.py` `cmd_settle` now calls `settle_forward` whenever the integration branch is not already in the current branch (one condition line); `settle_forward` handles the case where the current branch is already in the integration branch: it prints `settle: gates already passed at <sha7>` when `require_covered` accepts the tip, else runs `--gate` at the tip under the merge lock via `cover_at`; red returns 1 so main never moves.
+- Selftest: three new T-0701 cases (red gate exit 1 and main unmoved, green gate fast-forwards with a green ledger entry, covered tip skips a red `--gate`). With the change reverted all three fail (checked on a scratch copy of the HEAD source).
+- Help text, `cmd_settle` docstring and `docs/references/sdlc-internals.md` updated.
+- `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` PASS; `git diff --check a8680df4` exit 0.
