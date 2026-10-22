@@ -121,7 +121,7 @@ throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root
 ($TMPDIR/sdlc-lite/<repo key>/<Agent name>), the search scope line (SEARCH_SCOPE, T-0702), and for builder and verifier a Base sha line,
 since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier for a ticket with a ready ref
 (refs/sdlc/ready/<id>, lanes.py ready, T-0590) also gets `Review sha: <its sha>`, stored as review_sha, and takes Base sha
-from the `Lane-Base:` line of that snapshot commit when it is an ancestor; prepare says so on stderr when the tree has
+from the `Lane-Base:` line of that snapshot commit when it is an ancestor and the handoff names no base (T-0717); prepare says so on stderr when the tree has
 moved since the pin (stale). A verifier whose records dir holds end-sha (written by record for a completed builder: the
 tree's HEAD when clean, else a tree hash built with a temporary index, T-0661) also gets `Diff range: <base>..<end>`
 (`git diff <base> <tree>` for a tree hash; base..Review sha when it has one), stored as diff_range. Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
@@ -501,12 +501,21 @@ def build_base(directory, records=None, tree=None, role=None):
     pick kept; a named base that is not an ancestor of HEAD raises Refuse. Git runs in the execution tree (tree when
     given, as prepare --tree settles it, else the handoff's own tree, or the lane worktree a main-checkout handoff is
     run from), and in a lane worktree a recorded sha older than the lane's fork point is stale (T-0376). Returns
-    (stored, base). base-sha and the dispatch records are read in records (the records dir, default directory's). A verifier
-    with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD, which after a resumed
-    driver is its own WIP commit (T-0546). A solo dispatch's base_sha counts only in the tree it was recorded in (its
+    (stored, base, named), named true for a base the handoff names. base-sha and the dispatch records are read in records
+    (the records dir, default directory's), then in the twin of a handoff dir in another checkout than the execution tree
+    (T-0717). A verifier with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD,
+    which after a resumed driver is its own WIP commit (T-0546). A solo dispatch's base_sha counts only in the tree it was recorded in (its
     tree, else the handoff's checkout): one recorded in the main checkout is not a lane tree's base (T-0578)."""
     records = Path(records) if records is not None else order.records_dir(directory)
     cwd = tree if tree else exec_tree(directory)
+    # T-0717: a handoff in another checkout than the execution tree (prepare --tree <lane> for a main-checkout handoff) has
+    # a twin dir at the same path in that tree, whose handoff and base-sha the lane's worker may have written
+    twin = None
+    src_top = git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip()
+    run_top = git('rev-parse', '--show-toplevel', cwd=cwd).stdout.strip()
+    if src_top and run_top and os.path.realpath(src_top) != os.path.realpath(run_top):
+        rel = os.path.relpath(os.path.realpath(str(directory)), os.path.realpath(src_top))
+        twin = Path(run_top) / rel if not rel.startswith('..') else None
     stored = ''
     f = records / 'base-sha'
     if f.is_file():
@@ -534,15 +543,27 @@ def build_base(directory, records=None, tree=None, role=None):
     def ancestor(sha):
         return bool(commit(sha)) and git('merge-base', '--is-ancestor', sha, 'HEAD', cwd=cwd).returncode == 0
 
+    tf = order.records_dir(twin) / 'base-sha' if twin is not None and not stored else None
+    if tf is not None and tf.is_file():  # the twin's base-sha counts only as a valid base of the execution tree
+        lines = tf.read_text(encoding='utf-8', errors='replace').splitlines()
+        sha = re.sub(r'\s', '', lines[0]) if lines else ''
+        if ancestor(sha) and (not floor or git('merge-base', '--is-ancestor', floor, sha, cwd=cwd).returncode == 0):
+            stored = sha
     base, why = '', ''
     hf = Path(directory) / 'handoff.md'
     m = NAMED_BASE_RE.search(hf.read_text(encoding='utf-8', errors='replace')) if hf.is_file() else None
-    if not m:  # a step handoff in the records dir names none: the task handoff may
+    if not m:  # a step handoff in the records dir names none: the task handoff may, then the twin's handoff and task handoff
         task = order.task_dir(records)
-        tf = task / 'handoff.md' if task is not None else None
-        if tf is not None and tf.is_file() and tf.resolve() != hf.resolve():
-            m = NAMED_BASE_RE.search(tf.read_text(encoding='utf-8', errors='replace'))
-            hf = tf if m else hf
+        cands = [task / 'handoff.md' if task is not None else None]
+        if twin is not None:
+            ttask = order.task_dir(order.records_dir(twin))
+            cands += [twin / 'handoff.md', ttask / 'handoff.md' if ttask is not None else None]
+        for tf in cands:
+            if tf is not None and tf.is_file() and tf.resolve() != hf.resolve():
+                m = NAMED_BASE_RE.search(tf.read_text(encoding='utf-8', errors='replace'))
+                if m:
+                    hf = tf
+                    break
     if m:
         if not ancestor(m.group(1)):
             raise Refuse(2, 'dispatch.py: SDLC_BASE_SHA refused: %s names base %s, which is not a commit that is an ancestor of HEAD in %s'
@@ -564,7 +585,7 @@ def build_base(directory, records=None, tree=None, role=None):
     if supplied and commit(supplied) != base:
         say("SDLC_BASE_SHA refused: %s (supplied) differs from the step base %s (%s); name it in the handoff with a line 'base: <sha>' to use it"
             % (supplied, base[:12], why))
-    return stored, base
+    return stored, base, why == 'named in the handoff'
 
 
 READY_REFS = 'refs/sdlc/ready/'  # lanes.py READY_REFS
@@ -574,17 +595,17 @@ SEARCH_SCOPE = ('Search only inside Tree (the checkout you run in when the brief
 LANE_BASE_RE = re.compile(r'^Lane-Base: ([0-9a-f]{40})$', re.M)
 
 
-def ready_review(directory, tree, base):
+def ready_review(directory, tree, base, named=False):
     """(review sha, base) for a verifier (T-0590): when refs/sdlc/ready/<ticket> exists for the ticket that owns
     directory, review its sha, and take the base from the `Lane-Base:` line of its snapshot commit (lanes.py pin) when
-    that is an ancestor of the sha, else keep base; says so when tree no longer holds the pinned state. ('', base)
+    that is an ancestor of the sha and base was not named in the handoff (named, T-0717), else keep base; says so when tree no longer holds the pinned state. ('', base)
     with no ready ref."""
     tid = ticket_label(directory)[0]
     sha = git('rev-parse', '-q', '--verify', READY_REFS + tid + '^{commit}', cwd=tree).stdout.strip() if tid else ''
     if not sha:
         return '', base
     m = LANE_BASE_RE.search(git('log', '-1', '--format=%B', sha, cwd=tree).stdout)
-    if m and git('merge-base', '--is-ancestor', m.group(1), sha, cwd=tree).returncode == 0:
+    if m and not named and git('merge-base', '--is-ancestor', m.group(1), sha, cwd=tree).returncode == 0:
         base = m.group(1)
     import lanes  # local like host_lanes: lanes imports nothing from here
     try:
@@ -1280,9 +1301,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
 
         base, review, diff_range, range_line = None, '', None, ''
         if role in ('builder', 'verifier'):
-            stored, base = build_base(directory, records, run_tree, role)
+            stored, base, named = build_base(directory, records, run_tree, role)
             if role == 'verifier':
-                review, base = ready_review(directory, toplevel, base)
+                review, base = ready_review(directory, toplevel, base, named)
                 # T-0661: the end a recorded builder left in end-sha bounds the diff, so later steps or merges stay out of it
                 end, kind = step_end(records, toplevel)
                 if review and end:
@@ -3065,6 +3086,14 @@ def selftest():
         rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
         case('a tree edited after ready: prepare says the ready ref is stale and still names the ready sha',
              rcr == 0 and 'T-0950 is stale' in er and 'Review sha: ' + rsha in dr['prompt'])
+        rd_work = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+        rd_hand = rr / '.sdlc' / 'rd' / 'handoff.md'
+        rd_was = rd_hand.read_text()
+        rd_hand.write_text(rd_was + '\nbase: %s\n' % rd_work)
+        rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
+        rd_hand.write_text(rd_was)
+        case('a ready ref with a Lane-Base: line: a base the handoff names still wins (T-0717)',
+             rcr == 0 and dr['review_sha'] == rsha and dr['base_sha'] == rd_work != start)
         subprocess.run(['git', '-C', str(rr), 'update-ref', '-d', READY_REFS + 'T-0950'], capture_output=True)
         rcr, dr, er = prep(rr, 'verifier', 'L1', '.sdlc/rd/handoff.md', '--dry-run')
         case('negative control: with no ready ref there is no Review sha line and Base sha is not the Lane-Base start',
@@ -3252,6 +3281,43 @@ def selftest():
             mbase.unlink(missing_ok=True)
         else:
             mbase.write_text(mbase_was)
+        # T-0717: a fanout lane merged main after its start, and its worker built on the merge. The worker names that base in
+        # the lane's copy of the ticket handoff, or in the lane's base-sha; prepare --tree <lane> verifier for the
+        # main-checkout handoff takes it, not the lane start.
+        lw3 = rr.parent / (rr.name + '-lane3')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'lane3', str(lw3), 'HEAD')
+        start3 = gt(lw3, 'rev-parse', 'HEAD')
+        (lw3 / 'lane3.txt').write_text('l')
+        gt(lw3, 'add', 'lane3.txt')
+        gt(lw3, 'commit', '-qm', 'lane3 work')
+        (rr / 'main3.txt').write_text('m')
+        gt(rr, 'add', 'main3.txt')
+        gt(rr, 'commit', '-qm', 'main moves on again')
+        gt(lw3, 'merge', '-q', '--no-edit', gt(rr, 'rev-parse', 'HEAD'))
+        built3 = gt(lw3, 'rev-parse', 'HEAD')
+        (lw3 / 'build3.txt').write_text('b')
+        gt(lw3, 'add', 'build3.txt')
+        gt(lw3, 'commit', '-qm', 'build on the merge')
+        (lw3 / '.lane.json').write_text(json.dumps({'lane': 'lane3', 'base_sha': start3}))
+        mbase.unlink(missing_ok=True)
+        lhand = lw3 / '.sdlc' / 'w' / 'handoff.md'
+        lhand.parent.mkdir(parents=True, exist_ok=True)
+        lhand.write_text(mhand_was + '\nbase: %s\n' % built3)
+        rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
+        case('prepare --tree <lane> verifier after a main merge: a base the lane copy of the handoff names wins over the lane start',
+             rcn == 0 and dn['base_sha'] == built3 != start3 and 'Base sha: ' + built3 in dn['prompt'] and 'nothing recorded' not in errn)
+        lhand.write_text(mhand_was)
+        (R(lw3 / '.sdlc' / 'w') / 'base-sha').write_text(built3 + '\n')
+        rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
+        case('prepare --tree <lane> verifier after a main merge: the lane\'s base-sha wins over the lane start',
+             rcn == 0 and dn['base_sha'] == built3 != start3 and 'nothing recorded' not in errn)
+        (R(lw3 / '.sdlc' / 'w') / 'base-sha').unlink()
+        rcn, dn, errn = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw3))
+        case('negative control: with nothing named or recorded in either tree the verifier base is the lane start',
+             rcn == 0 and dn['base_sha'] == start3 and 'nothing recorded' in errn)
+        if mbase_was is not None:
+            mbase.write_text(mbase_was)
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw3)], capture_output=True)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw2)], capture_output=True)
         rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(os.getppid()))
         case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2

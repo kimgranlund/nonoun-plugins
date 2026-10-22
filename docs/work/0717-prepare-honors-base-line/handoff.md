@@ -44,3 +44,17 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Root cause: with `prepare --tree <lane>` for a main-checkout handoff, `build_base` read the `base:` line and `base-sha` only from the main checkout's handoff and records dir. A lane worker writes both in the lane's copy (the twin dir at the same repo path), so prepare saw nothing and fell to the lane start. Second path: `ready_review` replaced any base with the ready snapshot's `Lane-Base:` (the `.lane.json` start), even a named one.
+
+Fix (`plugins/sdlc-lite/scripts/dispatch.py`): `build_base` also reads the twin's handoff (and its task handoff) for a `base:` line, and the twin's `base-sha` when it is a valid base of the execution tree (an ancestor of HEAD past the fork floor, so a stale lane record does not displace the lane start). It returns a `named` flag, and `ready_review` keeps a named base over `Lane-Base:`.
+
+Selftest cases added: a lane that merged main after its start, `base:` in the lane handoff copy, then in the lane's `base-sha`, each with `prepare --tree <lane> verifier`; a negative control with nothing in either tree (lane start, "nothing recorded"); a ready ref with `Lane-Base:` and a named base.
+
+Negative control (fix reverted, tests kept), `dispatch.py selftest` exit 1:
+- `FAIL: prepare --tree <lane> verifier after a main merge: a base the lane copy of the handoff names wins over the lane start`
+- `FAIL: prepare --tree <lane> verifier after a main merge: the lane's base-sha wins over the lane start`
+- `FAIL: a ready ref with a Lane-Base: line: a base the handoff names still wins (T-0717)`
+
+Checks: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0 (PASS); `git diff --check 83a3a4e6` exit 0.
