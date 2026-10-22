@@ -15,9 +15,12 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 Every prepared role brief tells the role to write `git worktree add` and `rm` paths literally, never through a shell variable.
 
 ## Intent
-- Do: add one sentence to the brief that `plugins/sdlc-lite/scripts/dispatch.py` prepare builds (the `Throwaway worktrees only under` line, about line 1310), and to any other brief builder with the same worktree line (`solo_run.py`, `fanout.py prep`, `run.sh`, if they carry one): write each worktree and rm path literally (the full path, or under `$SDLC_TMP_WORKTREES`), never through another shell variable such as `$T` or `$S`, because the guard hooks cannot read it and refuse the command. Update the selftest that pins the brief text.
+- Do: add one sentence to the brief that `plugins/sdlc-lite/scripts/dispatch.py` prepare builds (the `Throwaway worktrees only under` line, about line 1310), and to any other brief builder with the same worktree line (`solo_run.py`, `fanout.py prep`, `run.sh`, if they carry one): write each worktree and rm path literally as the full path under the prefix the brief names, never through a shell variable such as `$T`, `$S` or `$SDLC_TMP_WORKTREES` (a `prepare` brief does not set it), because the guard hooks cannot read it and refuse the command. Update the selftest that pins the brief text.
 - Non-goals: hook changes.
 - Done when: the criteria pass.
+
+## Replan
+2026-10-22, from verifier-L2 `plan defect:`: `$SDLC_TMP_WORKTREES` is unset for `dispatch.py prepare` roles (only run.sh sets it), so the sentence must name only the literal prefix.
 
 ## Context
 Transcripts under `~/.claude/projects` hold 606 hook refusals "a git worktree add the hook cannot parse safely" (verifier 312, solo 98, conductor 74, planner 64, builder 36, plan-reviewer 22) and 2 "rm of $W/$d (the hook cannot ...", 14 of them in the last 7 days. Each costs a retry. A consumer conductor traced its 5 to paths held in `$T` and `$S`.
@@ -27,4 +30,4 @@ Transcripts under `~/.claude/projects` hold 606 hook refusals "a git worktree ad
 2. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
 
 ## Outcome
-Added one sentence to the brief `dispatch.py prepare` builds (end of the `Throwaway worktrees only under` line): write each worktree and rm path literally (the full path, or under `$SDLC_TMP_WORKTREES`), never through another shell variable such as `$T` or `$S`, because the guard hooks cannot read it. `solo_run.py`, `fanout.py`, and `run.sh` carry no such brief line (run.sh only has a comment), so they are unchanged. Added a selftest case in `dispatch.py selftest` asserting the sentence. Checks: `dispatch.py selftest` PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 3fbfdf44` exit 0.
+Added one sentence to the brief `dispatch.py prepare` builds (end of the `Throwaway worktrees only under` line): write each worktree and rm path literally as the full path under the prefix the brief names, never through a shell variable such as `$T`, `$S` or `$SDLC_TMP_WORKTREES` (a `prepare` brief does not set it), because the guard hooks cannot read it. `solo_run.py`, `fanout.py`, and `run.sh` carry no such brief line (run.sh only has a comment), so they are unchanged. Added a selftest case in `dispatch.py selftest` asserting the sentence. Checks: `dispatch.py selftest` PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 3fbfdf44` exit 0.
