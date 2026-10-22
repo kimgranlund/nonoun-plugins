@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:64bfc5bc5137 -->
+<!-- sdlc-lite:managed:start v1 sha256:9f458a88db8b -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,14 +16,13 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 - ready: 2
   - T-0734 One rule for which checkout owns each sdlc record (docs/work/0734-tree-ownership-rule)
   - T-0735 Audit for run.sh-era assumptions in prepare-launched roles (docs/work/0735-runsh-assumption-audit)
-- claimed: 3
-  - T-0719 dispatch.py record --no-result closes a stalled solo as failed (docs/work/0719-record-no-result-solo), claimed by sdlc-lite-author 2026-10-22
+- claimed: 2
   - T-0723 land drops a lane's stale open folder of a ticket closed on integration (docs/work/0723-land-stale-open-folder), claimed by sdlc-lite-author 2026-10-22
   - T-0737 A carried close needs a commit that names the ticket (docs/work/0737-carried-close-needs-own-commit), claimed by sdlc-lite-author 2026-10-22
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 693
+- done: 694
 - dropped: 29
 
 ## Procedures

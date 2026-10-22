@@ -2,7 +2,7 @@
 id: T-0719
 title: "dispatch.py record --no-result closes a stalled solo as failed"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -54,3 +54,14 @@ The failing test lands before or with the fix, never after.
 - New selftest case `T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker` (the `solo_rec` helper gained a `git=True` option so the marker lives in a repo's git dir).
 - Negative control (call site reverted to `solo_report_file(sd, args.transcript)`): `FAIL: T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker`, `dispatch selftest: FAIL`; restored: `dispatch selftest: PASS`.
 - `gate_lock.py run ... dispatch.py selftest` exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check a41157c6` exit 0.
+
+## Outcome
+
+2026-10-22 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: a41157c6ec89
+- Changed: see commits
+- Commits: c0389a2 T-0719: dispatch.py record --no-result closes a stalled solo as failed
+- Check: 1 A `dispatch.py` selftest case reproduces the issue's repro and passes; with the change reverted i...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Check: 3 `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:2113 conductor check: if a... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:972 conductor check: the... -> notes.md

@@ -374,3 +374,8 @@
 
 - decide: plugins/sdlc-lite/scripts/fanout.py:2551: decide: a solo L1 or full-lane ticket that committed nothing itself, sharing a lane with a landed sibling, now closes `commits carried by merge <sha>` with no verifier check (land cannot tell its commits from the sibling's). Same trust as a normal L1 or full land, but an empty sibling is closed on the sibling's work. Consider a follow-up ticket if that is not wanted (e.g. require the ticket's folder or commits to appear in the carried merge).
 - decide: plugins/sdlc-lite/scripts/fanout.py:2551: note: `roll_ticket` keeps the same `no changes` short-circuit (builder's Open item, out of scope).
+
+## T-0719: dispatch.py record --no-result closes a stalled solo as failed (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:2113 (conductor check): if a solo already wrote its report, `--no-result` does not discard it. The live probe gave rc=0, `solo report: <path>` / `solo recorded; live marker cleared`, and left the report content unchanged (`## Report\nreal\n`). The existing report wins.
+- decide: plugins/sdlc-lite/scripts/dispatch.py:972 (conductor check): the closed solo attempt does not show `failed` in `dispatch.py status`. `status` lists only `*.attempt.json` files, and a solo dispatch has none (T-0350). So the live probe printed `no attempts in <dir>` before and after, on both the base and built trees. The solo's runs.jsonl row also still reads `exit_code: 0` and `cost_usd: null` after the `--no-result` close. The only record of "failed" is exit 1 plus the stdout and stderr text. The ticket's criteria do not require a durable failed state, so this is a follow-up, not a fail.

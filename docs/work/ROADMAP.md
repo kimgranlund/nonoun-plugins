@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0719 | [0719-record-no-result-solo](0719-record-no-result-solo/handoff.md) | dispatch.py record --no-result closes a stalled solo as failed | bug | L1 | P2 | none | 🟡 claimed |
 | T-0723 | [0723-land-stale-open-folder](0723-land-stale-open-folder/handoff.md) | land drops a lane's stale open folder of a ticket closed on integration | bug | L2 | P2 | none | 🟡 claimed |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
@@ -14,7 +13,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
 | T-0737 | [0737-carried-close-needs-own-commit](0737-carried-close-needs-own-commit/handoff.md) | A carried close needs a commit that names the ticket | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 693 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 694 done, 29 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -58,3 +57,4 @@ Closed: 693 done, 29 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/fanout.py:1745 The dirty check uses `--untracked-files=no`, so an untracked `.sdlc/config` placed in the integration worktree (not committed) would be read by config_root/gate_class. Only fanout writes that worktree, so the risk is low; a repo that wants it closed could require the config file to be tracked at integration HEAD. (from T-0722: fanout.py land reads merge_gate from the integration tree (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2551: decide: a solo L1 or full-lane ticket that committed nothing itself, sharing a lane with a landed sibling, now closes `commits carried by merge <sha>` with no verifier check (land cannot tell its commits from the sibling's). Same trust as a normal L1 or full land, but an empty sibling is closed on the sibling's work. Consider a follow-up ticket if that is not wanted (e.g. require the ticket's folder or commits to appear in the carried merge). (from T-0721: fanout.py land closes a second lane ticket whose commits an earlier land merged (2026-10-22))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2551: note: `roll_ticket` keeps the same `no changes` short-circuit (builder's Open item, out of scope). (from T-0721: fanout.py land closes a second lane ticket whose commits an earlier land merged (2026-10-22))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:972 (conductor check): the closed solo attempt does not show `failed` in `dispatch.py status`. `status` lists only `*.attempt.json` files, and a solo dispatch has none (T-0350). So the live probe printed `no attempts in <dir>` before and after, on both the base and built trees. The solo's runs.jsonl row also still reads `exit_code: 0` and `cost_usd: null` after the `--no-result` close. The only record of "failed" is exit 1 plus the stdout and stderr text. The ticket's criteria do not require a durable failed state, so this is a follow-up, not a fail. (from T-0719: dispatch.py record --no-result closes a stalled solo as failed (2026-10-22))
