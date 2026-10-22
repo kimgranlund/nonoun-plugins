@@ -81,7 +81,9 @@ land
   as new (lanes.carry_records prints `records: <path>`, T-0566), for a solo level L2 or L3, `no verifier result` or
   `verifier <verdict>` read from that copy, else from the verifier results committed on the branch that the
   integration branch does not hold (git objects, newest by order.py: a branch with no worktree commits its verifier
-  result into the ticket folder with `git add -f`, and the close commit untracks it). Exit 0 only for `merged`.
+  result into the ticket folder with `git add -f`, and the close commit untracks it), else from the main checkout's
+  records dir, where `dispatch.py prepare --tree <lane>` records a verifier of a primary-checkout handoff (T-0720).
+  Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
   (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
   Lanes (T-0452), after the merge lock is released: a `merged` branch checked out under host-owned .claude/worktrees/<leaf> whose
@@ -2274,29 +2276,36 @@ def branch_names(cwd, ref, prefix):
     return {pathlib.PurePosixPath(x).name for x in p.stdout.splitlines() if x} if p.returncode == 0 else set()
 
 
-def branch_verdict(ctx, ref, t, with_held=False):
+def branch_verdict(ctx, ref, t, with_held=False, primary=None):
     """'pass', 'fail', ... or None: the newest verifier result in the integration worktree's runtime records dir for
     the ticket (runtime_records, the copy land_ticket made from the lane worktree's records dir); when it holds none,
     the newest task-dir verifier result committed on ref that the integration branch does not hold yet (read from git
-    objects into a temp dir, never from a tree). With with_held, the pair (verdict, held): held is the subjects or
-    owners of a `fail` result's `deferred:` or `unmet-dependency:` note (steps.held_note, T-0408), else ''. A held-only
-    `deferred:` fail whose every hold its owner settled (steps.owner_settled_hold, T-0684) reads as 'pass'."""
-    rd = runtime_records(ctx['integ_dir'] / ctx['trel'] / t.slug)
-    try:
-        local = {f.name for f in rd.iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
-    except OSError:
-        local = set()
-    if local:
+    objects into a temp dir, never from a tree); when that finds none either, the newest one in records dir primary,
+    the main checkout's, where `dispatch.py prepare --tree <lane>` records a verifier of a primary-checkout handoff
+    (T-0720). With with_held, the pair (verdict, held): held is the subjects or owners of a `fail` result's `deferred:`
+    or `unmet-dependency:` note (steps.held_note, T-0408), else ''. A held-only `deferred:` fail whose every hold its
+    owner settled (steps.owner_settled_hold, T-0684) reads as 'pass'."""
+    def in_dir(rd):
+        try:
+            local = {f.name for f in rd.iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
+        except OSError:
+            return None
+        if not local:
+            return None
         newest = newest_verifier(rd, local)
         v = steps.verdict_or_none(newest) if newest else None
         v = 'pass' if v == 'fail' and steps.owner_settled_hold(newest) else v  # T-0684: the owner settled every hold
         return (v, steps.held_note(newest) if newest and v == 'fail' else '') if with_held else v
+    got = in_dir(runtime_records(ctx['integ_dir'] / ctx['trel'] / t.slug))
+    if got is not None:
+        return got
     prefix = (ctx['trel'] / t.slug).as_posix()
     on_ref = branch_names(ctx['cwd'], ref, prefix)
     new = sorted(n for n in on_ref - branch_names(ctx['cwd'], ctx['integration'], prefix)
                  if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', n))
     if not new:
-        return (None, '') if with_held else None
+        got = in_dir(pathlib.Path(primary)) if primary else None
+        return got if got is not None else ((None, '') if with_held else None)
     with tempfile.TemporaryDirectory() as td:
         for n in new + (['runs.jsonl'] if 'runs.jsonl' in on_ref else []):
             blob = git(ctx['cwd'], 'show', f'{ref}:{prefix}/{n}' if prefix != '.' else f'{ref}:{n}')
@@ -2531,12 +2540,14 @@ def land_ticket(ctx, lock):
     if wt and pathlib.Path(wt).is_dir():
         src = pathlib.Path(wt) / ctx['trel'] / t.slug
         copy_lane_records(src, ctx['integ_dir'] / ctx['trel'] / t.slug)
-        dst = lanes.carry_records(src, ctx['main'] / ctx['trel'] / t.slug)  # T-0566: a close in main finds the verdict
+        dst = (None if os.environ.get('SDLC_SELFTEST_NO_RECORDS_COPY') == '1'  # the knob keeps the lane's records out of main too
+               else lanes.carry_records(src, ctx['main'] / ctx['trel'] / t.slug))  # T-0566: a close in main finds the verdict
         if dst is not None:
             say(ctx, lane, t.id, f'records: {dst}')
     kind, tier = ctx['kinds'][t.id]
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
-        verdict, held = branch_verdict(ctx, ref, t, with_held=True)
+        verdict, held = branch_verdict(ctx, ref, t, with_held=True,
+                                       primary=order.records_dir(ctx['main'] / ctx['trel'] / t.slug))
         if verdict is None:
             return ('no verifier result (the lane worktree\'s records dir holds none; a branch with no worktree commits it '
                     'into the ticket folder with git add -f, then lands again)'), tip[:7]
@@ -5163,6 +5174,14 @@ def selftest():
         expect(f'case 23 land records copy: control, a worktree with no verifier result is still refused, got '
                f'rc={lw2.returncode} out={lw2.stdout[-300:]!r}', lw2.returncode == 1 and 'no verifier result' in lw2.stdout
                and sh(lw, 'cat-file', '-e', 'fanout/w:w2.txt').returncode != 0)
+        # T-0720 (#55): `dispatch.py prepare --tree <lane> verifier L3 <primary handoff>` records the result in the
+        # primary checkout's records dir (order.records_dir of the handoff dir), not the lane's; land reads it there
+        prd = records_dir_(lw / '.sdlc' / 't2', create=True)
+        (prd / 'verifier-L3.md').write_text(vhead + '## Verdict\npass\n', encoding='utf-8')
+        lw3 = verb(lw, 'land', 'worktree-agent-w2', '--ticket', 'T-0002', *lw_pin, '--gate', 'test -e w2.txt')
+        expect(f'case 23 land prepare --tree (T-0720): a verifier result in the primary checkout records dir is read, got '
+               f'rc={lw3.returncode} out={lw3.stdout[-400:]!r} err={lw3.stderr[-300:]!r}',
+               lw3.returncode == 0 and 'T-0002 | merged |' in lw3.stdout)
         lwn, lwn_pin = records_repo('land-wt-nc', 1)
         lwn1 = verb(lwn, 'land', 'worktree-agent-w1', '--ticket', 'T-0001', *lwn_pin, '--gate', 'test -e w1.txt',
                     SDLC_SELFTEST_NO_RECORDS_COPY='1')
