@@ -350,3 +350,7 @@
 - note: plugins/sdlc-lite/scripts/steps.py:1116 the `command not found` branch is unchanged by the diff. The probe gives `a command is not installed` on exit 127 and None on exit 1. The selftest case `(T-0727) a red guard that exits 127 with "command not found" is an environment error` passes.
 - decide: plugins/sdlc-lite/scripts/steps.py:1090 `declares_deps` reads only the tree-root package.json. A monorepo whose root package.json holds only `workspaces`, with dependencies declared in `packages/app/package.json` and no node_modules, now classifies a missing `vitest` as a plan defect (None). The reverted T-0727 code classified it as an environment error, and a root `npm ci` would fix it. A root that holds `workspaces` plus any devDependency still classifies as an environment error. This matches the ticket Goal as written ("a package.json with dependencies or devDependencies"). Counting a non-empty `workspaces` key as declared dependencies would cover the workspaces-only root.
 - note: plugins/sdlc-lite/scripts/steps.py:1086 the regex no longer matches a bare `ERR_MODULE_NOT_FOUND` line that has no `Cannot find module/package '<name>'` text. Node's ESM and CJS loaders print both, so this has no practical effect.
+
+## T-0718: dispatch.py advance reverifies at the failing verifier level (2026-10-22)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:2179 a newest verifier result whose verdict is `inherited red` (not `fail`) falls back to the ticket default level; no criterion covers that case.

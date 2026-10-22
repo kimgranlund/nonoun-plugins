@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f6af1c094028 -->
+<!-- sdlc-lite:managed:start v1 sha256:248f4371b8e3 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,15 +18,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0723 land drops a lane's stale open folder of a ticket closed on integration (docs/work/0723-land-stale-open-folder)
   - T-0734 One rule for which checkout owns each sdlc record (docs/work/0734-tree-ownership-rule)
   - T-0735 Audit for run.sh-era assumptions in prepare-launched roles (docs/work/0735-runsh-assumption-audit)
-- claimed: 4
-  - T-0718 dispatch.py advance reverifies at the failing verifier level (docs/work/0718-advance-reverify-level), claimed by sdlc-lite-author 2026-10-22
+- claimed: 3
   - T-0719 dispatch.py record --no-result closes a stalled solo as failed (docs/work/0719-record-no-result-solo), claimed by sdlc-lite-author 2026-10-22
   - T-0721 fanout.py land closes a second lane ticket whose commits an earlier land merged (docs/work/0721-land-second-ticket-same-lane), claimed by sdlc-lite-author 2026-10-22
   - T-0725 lanes.py open takes the merge lock before committing to integration (docs/work/0725-lane-open-merge-lock), claimed by sdlc-lite-author 2026-10-22
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 689
+- done: 690
 - dropped: 29
 
 ## Procedures
