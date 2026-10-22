@@ -97,7 +97,7 @@ Truth table for close and sweep; the first matching row wins.
   2          neither tree nor branch exists                                 no lane <name>                                             1
   3          the branch is checked out in another worktree                  branch <b> checked out at <path>                           1
   4          an integration tree with an open lane whose into is its branch lanes still open into <b>: <names>                         1
-             (T-0743: a host-owned tree whose branch is an ancestor of <b> is not open; the close then prints
+             (T-0743: a clean host-owned tree whose branch is an ancestor of <b> is not open; the close then prints
              `host-owned <path> landed in <b>; remove it yourself: git worktree remove <path>` and leaves the tree)
   5          into does not resolve, or a git read fails                     cannot decide: <reason>                                    1
   6          tracked changes, or untracked files outside .sdlc/, the        uncommitted changes in <lane>: <first path>                1
@@ -716,7 +716,8 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
             oi = oi[len('refs/heads/'):] if oi.startswith('refs/heads/') else oi
             if oi == b and (o['exists'] or (o['branch'] and has_ref(top, f'refs/heads/{o["branch"]}'))):
                 if o['exists'] and o['branch'] and wtroot.host_owned(o['path']) and has_ref(top, f'refs/heads/{o["branch"]}') \
-                        and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode:
+                        and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode \
+                        and first_dirty(o['path']) == (None, None):  # dirty work has not landed
                     hosts.append(o['path'])
                     continue
                 names.append(o['lane'])
@@ -3324,7 +3325,7 @@ def case_host_owned(script, base):
 def case_host_landed_integration(script, base):
     """T-0743 (GitHub #71): a host-owned .claude/worktrees/agent-x tree with a host record into the integration branch, its
     branch merged there, does not hold the integration tree open: close removes the integration tree, keeps agent-x and
-    prints the git worktree remove line for it. An unmerged agent-y still holds it open."""
+    prints the git worktree remove line for it. An unmerged agent-y, or agent-x with a modified file, still holds it open."""
     t = Fixture(base, script, 'hostinteg')
     _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
     agents = {}
@@ -3341,6 +3342,12 @@ def case_host_landed_integration(script, base):
     t.g('worktree', 'remove', '--force', str(agents['agent-y']))
     t.g('branch', '-D', 'worktree-agent-y')
     t.g('merge', '-q', '--ff-only', f'refs/heads/{ib}')
+    dirty = agents['agent-x'] / 'f-agent-x.txt'
+    dirty.write_text('changed\n')
+    rc, o = t.lanes('close', ib, '--into', 'main')
+    if rc != 1 or o != f'lanes still open into {ib}: agent-x' or not integ.is_dir():
+        fails.append(f'host landed: a merged agent-x with a modified file must hold it open, got {rc}: {o}')
+    dirty.write_text('x\n')
     rc, o = t.lanes('close', ib, '--into', 'main')
     line = f'host-owned {agents["agent-x"]} landed in {ib}; remove it yourself: git worktree remove {agents["agent-x"]}'
     if rc or line not in o.splitlines() or integ.exists():
