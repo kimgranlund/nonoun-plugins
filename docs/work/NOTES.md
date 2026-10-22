@@ -258,3 +258,9 @@
 ## T-0707: Briefs say to write worktree and rm paths literally (2026-10-21)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:1313 says the guard hooks "refuse the command". That holds for `$T` and `$S`, but the first verifier showed that block-stray-worktree.sh:237 and block-role-rm.sh:92 expand a literal `$SDLC_TMP_WORKTREES` and let it through. The hook side is T-0708.
+
+## T-0709: Role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES (2026-10-21)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:1310 dispatch briefs say `Throwaway worktrees only under <literal prefix>`. The new "the throwaway prefix your brief names" / `"<throwaway prefix>/base"` wording matches that line. T-0707 (3c47b09f, on main but not in this lane's base) changes the brief to "never through a shell variable such as $T, $S or $SDLC_TMP_WORKTREES". The definitions only say the variable may be set and never tell a role to use it, so the two agree. `git merge-tree --write-tree main 98ff10b9` merges cleanly.
+- decide: plugins/sdlc-lite/scripts/run.sh:710 passes the prefix to a run.sh-launched role only as the `SDLC_TMP_WORKTREES` env var; the run.sh prompt has no throwaway-prefix line. A role launched that way with a brief that names no prefix has to infer from the parenthetical that the variable's value is its prefix.
+- note: The throwaway worktrees were removed with `git worktree remove`. `rm -rf` was denied for the empty prefix dir tmp:0709-verifier-L2 and for the scratch dir /var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-lite/sdlc-lite-0a5e021b/0709-verifier-L2, which holds two selftest logs.

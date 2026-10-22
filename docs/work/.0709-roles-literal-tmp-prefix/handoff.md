@@ -2,7 +2,7 @@
 id: T-0709
 title: "Role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,16 @@ T-0708 (landed) makes the hooks refuse `$SDLC_TMP_WORKTREES/...` when the variab
 
 ## Outcome
 Source definitions `builder.md`, `verifier.md`, `planner.md`, `plan-reviewer.md` now show `"<throwaway prefix>/base"` in every example command and tell the role to use the throwaway prefix its brief names, with a note that a `run.sh`-launched role may also have `SDLC_TMP_WORKTREES` set. The 12 level variants and 16 Codex TOMLs were regenerated, not hand-edited. `git grep -nE '\$\{?SDLC_TMP_WORKTREES' plugins/sdlc-lite/agents` prints nothing. `check.py`, `check-packaging.py`, `dispatch.py selftest`, `hook-selftest.sh` and `git diff --check` all exit 0.
+
+## Outcome
+
+2026-10-21 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: ddbec177106a
+- Changed: see commits
+- Commits: 98ff10b T-0709: role definitions name the brief's literal throwaway prefix, not SDLC_TMP_WORKTREES
+- Check: 1 `git grep -nE '\$\{?SDLC_TMP_WORKTREES' plugins/sdlc-lite/agents` prints only lines that describe...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `python3 scripts/check-packaging.py` passes: pass
+- Check: 3 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py ...: pass
+- Check: 4 `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:1310 dispatch briefs say... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/run.sh:710 passes the prefix to a... -> notes.md
+- Follow-up: note: The throwaway worktrees were removed with git worktree remove -> notes.md
