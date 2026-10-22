@@ -180,7 +180,8 @@ it then does the following.
                and not closing the attempt; record again once the role writes the file, or pass --no-result (T-0412).
   failed       no result file and no result on stdin: the stdin text is saved as <stem>.log, the attempt is failed
                with exit_code 1 and the text, and no runs.jsonl line is written, as run.sh. --no-result closes an
-               attempt with nothing at all this way, with the error `no result file at <path>`. A 429 or session-limit
+               attempt with nothing at all this way, with the error `no result file at <path>`; on a solo dispatch (no attempt file)
+               it prints `solo failed; live marker cleared` and exits 1 (T-0719). A 429 or session-limit
                text writes <role>-<level>.limit with the prepare command to resume; a later success removes it.
   success      the attempt is completed, the result path is printed, exit 0.
 Prune (T-0368). The host keeps a finished sub-agent as an idle, addressable teammate until it is stopped. prepare writes
@@ -2104,10 +2105,11 @@ def solo_dispatch(path):
     return d if ok else None
 
 
-def solo_report_file(sd, transcript=None):
+def solo_report_file(sd, transcript=None, no_result=False):
     """The report of a recorded solo whose dispatch names a result (T-0682): the file when it holds text, else the
     transcript's final message written there (a lone `solo ...` pointer line is no report). Prints the path and returns
-    0; with neither, returns 2 and changes nothing, so the row stays unpriced and the live marker stays."""
+    0; with neither, returns 2 and changes nothing, so the row stays unpriced and the live marker stays, or 1 with
+    no_result (T-0719), which the caller closes failed and clears the marker."""
     result = Path(sd['result'])
     if result.is_file() and result.read_text(encoding='utf-8', errors='replace').strip():
         print('solo report: %s' % result)
@@ -2118,8 +2120,11 @@ def solo_report_file(sd, transcript=None):
         result.write_text(text + '\n', encoding='utf-8')
         print('solo report: %s (from the transcript\'s final message)' % result)
         return 0
+    if no_result:
+        print('dispatch.py: no solo report at %s; closed failed (--no-result)' % result, file=sys.stderr)
+        return 1
     print('dispatch.py: no solo report at %s and no transcript final message to take; the row and live marker are unchanged: '
-          'record again once the solo writes it, or pass --transcript' % result, file=sys.stderr)
+          'record again once the solo writes it, or pass --transcript or --no-result' % result, file=sys.stderr)
     return 2
 
 
@@ -2398,9 +2403,15 @@ def main(argv):
                 return rerecord(args.dispatch)
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
-                if sd.get('result') and solo_report_file(sd, args.transcript):
-                    return 2
+                gone = solo_report_file(sd, args.transcript, args.no_result) if sd.get('result') else 0
                 import solo_run
+                if gone == 1:  # T-0719: --no-result closes a stalled solo failed and clears its live marker
+                    solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens,
+                                      agent_id=args.agent_id, tool_uses=args.tool_uses, duration_ms=args.duration_ms)
+                    print('solo failed; live marker cleared')
+                    return 1
+                if gone:
+                    return 2
                 cost = solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens,
                                          agent_id=args.agent_id, tool_uses=args.tool_uses, duration_ms=args.duration_ms)
                 print('solo recorded%s; live marker cleared' % ('' if cost is None else ', cost_usd %s' % cost))
@@ -4350,9 +4361,13 @@ def selftest():
         # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
         # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
         import solo_run
-        def solo_rec(tag, *extra):
+        def solo_rec(tag, *extra, git=False):
             sdir = tmp / ('solo-report-' + tag)
-            sdir.mkdir()
+            if git:  # the repo's git dir holds the solo_live marker, and its records dir sits inside the repo
+                sdir.mkdir()
+                subprocess.run(['git', 'init', '-q', str(sdir)], check=True)
+                sdir = sdir / '.sdlc' / 'n'
+            sdir.mkdir(parents=True)
             (sdir / 'handoff.md').write_text('x\n', encoding='utf-8')
             with clean_env(), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 sdisp = solo_run.dispatch_json(str(sdir), 'L1', 'brief')[1]
@@ -4378,6 +4393,13 @@ def selftest():
         rc2, out2, _ = go()
         case('T-0682 record on a solo dispatch with no report file takes the transcript final message and writes it there',
              rc2 == 0 and Path(sdisp['result']).is_file() and Path(sdisp['result']).read_text() == '## Report\nfrom the transcript\n' and 'solo report: ' in out2)
+        # T-0719: --no-result on a solo dispatch with no report and no transcript closes it failed (exit 1) and clears its live marker.
+        sdisp, go = solo_rec('nores', '--no-result', git=True)
+        live_of = lambda: [f.name for f in (solo_run._live_dir(str(tmp / 'solo-report-nores')) or Path('/nonexistent')).glob(sdisp['attempt_id'] + '*')]
+        was_live = live_of()
+        rc3, out3, row3 = go()
+        case('T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker',
+             was_live and rc3 == 1 and 'solo failed; live marker cleared' in out3 and not live_of())
         for tag, vbody, want in (('pass', BODY['verifier'], 'next: close'), ('fail', fail_body, 'stop: fail')):
             vr = mk(tmp / ('adv-t-' + tag))
             _, vgot, _ = prep(vr, 'verifier', 'L2', '.sdlc/t/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
