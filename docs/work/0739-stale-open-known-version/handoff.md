@@ -26,3 +26,8 @@ T-0738 verifier-L2 (landed):
 ## Acceptance criteria
 1. The new `fanout.py` selftest case passes, the T-0723 and T-0738 cases still pass, and with the history check removed the new case fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`open_adds` in `plugins/sdlc-lite/scripts/fanout.py` now collects the (path, blob) pairs both folder names held in HEAD's history (`git log --raw --no-abbrev`) and counts a file whose index blob is among them as not added. New selftest case 23 variant `-replan` (lane replans the handoff, closes, pre-replan open copy re-added from main) is dropped; the `-extra` and `-edit` cases still refuse.
+- Negative control: with the history check neutralised (`not in set()`), the selftest prints `FAIL ... case 23 stale open folder (T-0739): the pre-replan open copy of a ticket replanned in its lane ... got rc2=0 rc=1`, exit 1.
+- `gate_lock.py run ... fanout.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 963a8bd8` exit 0.
