@@ -2,7 +2,7 @@
 id: T-0753
 title: "Solo briefs give no exported SDLC_BASE_SHA for criteria that name it"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,14 @@ The failing test lands before or with the fix, never after.
 
 ## Outcome
 Both solo briefs now name the base and say to `export SDLC_BASE_SHA=<base> &&` before a span that names it. The sentence lives in one place, `dispatch.base_export()` (dispatch.py), used by the `dispatch.py prepare` brief (unchanged text), the `solo_run.py` sub-agent brief (a `Base sha:` line before the brief, only when the tree is a repo) and the fanout `SOLO_SYNC` brief. Selftest cases: solo_run.py (T-0753 repo brief carries base and export; seen red before the change, green after) and fanout.py case 22 (export with the right sha, wrong sha absent). Checks: solo_run, fanout and dispatch selftests PASS; check.py and check-packaging.py exit 0; `git diff --check` clean.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 969df8b649b3
+- Changed: see commits
+- Commits: 80dd43c T-0753: solo briefs carry the base and the SDLC_BASE_SHA export; 367dc68 T-0753: solo briefs carry the base and the SDLC_BASE_SHA export
+- Check: 1 `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 and its T-0753 case passes: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 3 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 4 Ticket `## Expected` (both solo briefs carry the base and the export; a selftest case in solo_run...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:1381 the prepare brief now... -> notes.md
