@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:193744fe4cf5 -->
+<!-- sdlc-lite:managed:start v1 sha256:f4ca357ce14d -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,10 +10,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 3
+- proposed: 4
   - T-0732 Project hook for a required review role between build and verify (docs/work/0732-pre-verify-review-role)
   - T-0733 dispatch.py wait blocks until a role result lands (docs/work/0733-dispatch-wait)
   - T-0753 Solo briefs give no exported SDLC_BASE_SHA for criteria that name it (docs/work/0753-solo-brief-base-sha)
+  - T-0754 steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard (docs/work/0754-lint-unguarded-base-sha)
 - ready: 0
 - claimed: 2
   - T-0750 dispatch.py reads and writes records through the owner-tree helper (docs/work/0750-dispatch-owner-tree), claimed by sdlc-lite-author 2026-10-24
