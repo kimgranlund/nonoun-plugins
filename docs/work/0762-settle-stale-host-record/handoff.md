@@ -30,3 +30,10 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `lanes.py` or `fanout.py` selftest case: a host lane record whose worktree no longer exists does not block the integration close, and settle prints a remove line for each landed host worktree still present; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Cause: the integration close (row 4) counted a host record whose `.claude/worktrees/<leaf>` tree was removed but whose branch still existed, so round 2 settle refused; the refusal returned before the T-0743 remove lines were printed, which is why T-0002's line was missing.
+- Fix: `plugins/sdlc-lite/scripts/lanes.py` `evaluate` skips a host record with no tree whose branch is an ancestor of the integration branch; the truth table row 4 note says so. The record stays for sweep or `dispatch.py prune --done`. T-0743 behavior unchanged.
+- Test: selftest case `host removed` (`case_host_removed_integration`): landed agent-x tree present plus landed agent-z whose tree was removed; close exits 0, removes the integration tree, prints agent-x's remove line and no agent-z line.
+- Negative control (fix lines reverted, test kept): selftest rc 1, `FAIL: host removed: host removed: want the integration tree closed, 'host-owned .../hostgone-56/repo/.claude/worktrees/agent-x landed in wave/1; remove it yourself: git worktree remove .../agent-x' and no agent-z line, got 1: lanes still open into wave/1: agent-z`.
+- Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 12f046a9` exit 0.
