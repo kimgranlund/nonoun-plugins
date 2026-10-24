@@ -30,3 +30,9 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case: with only a `worktree-agent-<id>` branch present for the ticket (host record names it), the land command prep printed succeeds; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`fanout.py land` now resolves a printed `worktree-<id>-solo` name that is no local branch to the host branch (`host_branch_of`, called from `branch_repo`): the branch a host lane record names for the ticket, else the one local `worktree-agent-*` branch whose tree holds the ticket open and whose record or run record names no other ticket. Two candidates are refused naming both (exit 2); none keeps the old refusal. Docs: fanout.py docstring, lane-lifecycle.md, fanout SKILL.md.
+- Selftest case 23 (T-0758): ambiguity refusal, record resolution, scan resolution, no-candidate refusal. With the resolution call replaced by `''` the selftest fails: `case 23 land (T-0758): the host record names worktree-agent-h1 ... got rc=2 out='' err='fanout: worktree-T-0001-solo is not a local branch with a commit'` (3 new cases red).
+- `fanout.py selftest` via gate_lock exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check e98473dc` exit 0.
+- Not done: T-0763 had not landed on main when this finished, so no merge of main.
