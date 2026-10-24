@@ -9,11 +9,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0750 | [0750-dispatch-owner-tree](0750-dispatch-owner-tree/handoff.md) | dispatch.py reads and writes records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
-| T-0751 | [0751-fanout-owner-tree](0751-fanout-owner-tree/handoff.md) | fanout.py reads config and records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
 | T-0753 | [0753-solo-brief-base-sha](0753-solo-brief-base-sha/handoff.md) | Solo briefs give no exported SDLC_BASE_SHA for criteria that name it | bug | L1 | P2 | none | 🟡 claimed |
 | T-0754 | [0754-lint-unguarded-base-sha](0754-lint-unguarded-base-sha/handoff.md) | steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 710 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 711 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -83,3 +82,5 @@ Closed: 710 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/lanes.py:1431: a host lane under a custom `lanes_root:` still resolves to primary until T-0750, as the Outcome states; not a defect for this ticket. (from T-0752: lanes.py and steps.py read and write records through the owner-tree helper (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1374: the SDLC_BASE_SHA fix is an instruction, not a mechanism. Observed: with the variable unset, `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- plugins 2>/dev/null)"` exits 0 (vacuous pass) while the bare `git diff` exits 128 `bad revision ''`. A role that ignores the line still passes such a criterion vacuously. (from T-0735: Audit for run.sh-era assumptions in prepare-launched roles (2026-10-24))
 - decide: a `steps.py lint` rule could flag a criterion span that names `$SDLC_BASE_SHA` without a `${SDLC_BASE_SHA:?}` guard or an `export SDLC_BASE_SHA=` in the span, which would make the planner write the guard instead of relying on the brief; steps.py:6084 already has a lint case for this variable (that it is not flagged as a pinned sha), so the hook point exists. Not filed by the builder. (from T-0735: Audit for run.sh-era assumptions in prepare-launched roles (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/wtroot.py:308-309: the OWNERS `config` row still names `config_root` and `fanout.py run light_refusal`, now stale. The Outcome flags it and T-0750 owns the file, so this is not a fail. (from T-0751: fanout.py reads config and records through the owner-tree helper (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/fanout.py:1060-1076: `owner_dirs` lets a lane record's tree win over a `lane=` argument, and `lane.dir`/`ctx['lane_wt']` only fills a None slot. If two worktrees list one ticket in their lane records, the record's tree is picked. Not reachable in the selftests; note: low risk. (from T-0751: fanout.py reads config and records through the owner-tree helper (2026-10-24))

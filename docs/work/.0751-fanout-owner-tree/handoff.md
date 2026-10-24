@@ -2,7 +2,7 @@
 id: T-0751
 title: "fanout.py reads config and records through the owner-tree helper"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0749]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,16 @@ Split from T-0734 (root-cause review 2026-10-22): 8 issues share one cause, the 
 - Exceptions kept: `branch_base` reads `base-sha` from git objects on the lane ref, not a checkout. `end-sha` does not occur in fanout.py. prep's dispatch records (`subagent_dispatch`, `solo_record`, the `.dispatch.json` write) go to the tree prep runs in before any lane exists, which the row's fallback names primary when prep runs there. `verifier_files`, `price_solo_row` and `host_branch_ticket` take a task dir or search every tree. Integration-internal moves (`merge_gate_close` close read, `move_closed_records`, run's seeding of lane records from `ctx['top']`) stay in one tree. The T-0720 primary verdict fallback stays (settled by T-0750's writer, and its selftest pins it).
 - Criterion 2: new selftest case `T-0751 owner tree`: the integration worktree commits `merge_gate: light`, main lacks it, `fanout.py prep --light-gate true` from primary passes. Negative control (scratch copy, preflight `cfg_root = root`): `fanout selftest: FAIL`, `- T-0751 owner tree: prep --light-gate reads merge_gate: light from the reused integration worktree, not the primary checkout, got rc=2 err='fanout: --light-gate needs a `merge_gate: light` line in .../light-integ/.sdlc/config ...'`, the only failing case.
 - Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0 (`fanout selftest: PASS`); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 257cf42c` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 257cf42cc71b
+- Changed: see commits
+- Commits: 78332a8 T-0751: fanout.py reads config and records through the owner-tree helper
+- Check: 1 grep of records_dir|base-sha|end-sha|merge_gate|light_scope in fanout.py shows each read and writ...: pass
+- Check: 2 a selftest case writes one kind in one tree and reads it from another through the entry point, an...: pass
+- Check: 3 fanout selftest, check.py, check-packaging.py and `git diff --check <base>` pass: pass
+- Check: 4 Conductor note, existing selftest cases unchanged: pass
+- Check: 5 Conductor note, the two behaviour changes follow the rule table: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/wtroot.py:308-309: the OWNERS config row... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1060-1076: owner_dirs lets a... -> notes.md

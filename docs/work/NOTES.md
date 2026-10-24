@@ -462,3 +462,8 @@
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1374: the SDLC_BASE_SHA fix is an instruction, not a mechanism. Observed: with the variable unset, `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- plugins 2>/dev/null)"` exits 0 (vacuous pass) while the bare `git diff` exits 128 `bad revision ''`. A role that ignores the line still passes such a criterion vacuously.
 - decide: a `steps.py lint` rule could flag a criterion span that names `$SDLC_BASE_SHA` without a `${SDLC_BASE_SHA:?}` guard or an `export SDLC_BASE_SHA=` in the span, which would make the planner write the guard instead of relying on the brief; steps.py:6084 already has a lint case for this variable (that it is not flagged as a pinned sha), so the hook point exists. Not filed by the builder.
 - note: criterion #2 (c), the block-role-rm.sh case, was verified by diff reading plus the shared base run, not an isolated red run.
+
+## T-0751: fanout.py reads config and records through the owner-tree helper (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/wtroot.py:308-309: the OWNERS `config` row still names `config_root` and `fanout.py run light_refusal`, now stale. The Outcome flags it and T-0750 owns the file, so this is not a fail.
+- decide: plugins/sdlc-lite/scripts/fanout.py:1060-1076: `owner_dirs` lets a lane record's tree win over a `lane=` argument, and `lane.dir`/`ctx['lane_wt']` only fills a None slot. If two worktrees list one ticket in their lane records, the record's tree is picked. Not reachable in the selftests; note: low risk.
