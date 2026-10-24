@@ -2,7 +2,7 @@
 id: T-0750
 title: "dispatch.py reads and writes records through the owner-tree helper"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0749]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,16 @@ Split from T-0734 (root-cause review 2026-10-22): 8 issues share one cause, the 
 - Also changed by following the table: a `prepare` run from the primary cwd with no `--tree`, for a ticket that a lane record lists, now records in the lane twin while `Tree:` still names primary. No fixture covers this case.
 - Depends on T-0752: `steps.py next` and `plan_done.py` read `order.records_dir` of the primary task dir. A chain that runs `prepare --tree <lane>` for primary step handoffs needs T-0752 to route those reads. `fanout land` reads the lane first and is fine.
 - Follow-up: `owner_trees` runs about five times per `prepare`. Resolving it once where `run_tree` is settled would save the repeated `git worktree list` calls.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 75825fb63317
+- Changed: see commits
+- Commits: 2cd9481 T-0750: outcome notes; acae15e T-0750: dispatch.py reads and writes records through the owner-tree helper
+- Check: 1 grep of records_dir/base-sha/end-sha/merge_gate/light_scope in dispatch.py: pass
+- Check: 2 selftest writes a kind from one tree and reads it from another through prepare's entry point, and...: pass
+- Check: 3 gates: pass
+- Follow-up: decide: dispatch.py:1033 and :1616: probe in a scratch repo a lane record... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/wtroot.py:386: owner_trees now takes the... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:3285-3290, 3457: the moved... -> notes.md
+- Follow-up: note: runs recorded in primary before this change are not read for... -> notes.md
