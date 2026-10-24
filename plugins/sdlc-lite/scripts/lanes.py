@@ -861,11 +861,18 @@ def carry_records(src_folder, dst_folder):
     return dst
 
 
+def owner_root(kind, tree):
+    """<the checkout that owns kind for the lane or checkout tree>/.sdlc (wtroot.owner_tree, T-0752), else tree's."""
+    return Path(wtroot.owner_tree(kind, None, tree) or tree) / '.sdlc'
+
+
 def carry_lane_records(ctx, d):
-    """Carry the records of each local ticket of lane d from its tree into the main checkout (carry_records), before
-    the tree is removed. Returns the `records: <path>` lines."""
+    """Carry the records of each local ticket of lane d from the tree that owns them into the one that owns the lane
+    close (carry_records; wtroot.owner_tree records and lane-close, T-0752), before the tree is removed. Returns the
+    `records: <path>` lines."""
     lines = []
-    lroot, mroot = Path(d['path']) / '.sdlc', Path(ctx.top) / '.sdlc'
+    lroot = owner_root('records', d['path'])
+    mroot = owner_root('lane-close', ctx.top)
     if not lroot.is_dir():
         return lines
     try:
@@ -926,6 +933,8 @@ def do_close(ctx, d, outcome, info, dry):
     if e:
         return result(1, '\n'.join(pre + [e]), lane=name, path=d['path'], branch=b)
     carried = []
+    # T-0752: the tree that owns the branch: and worktree: lines, read while the lane record still exists
+    owner = wtroot.owner_tree('branch', None, d['path']) if d['exists'] else None
     if d['exists']:
         if how != 'discarded':  # a discarded lane's verdict must not close the ticket in main
             try:
@@ -950,7 +959,7 @@ def do_close(ctx, d, outcome, info, dry):
     if d['owner'] == 'host' and d['record_path']:
         with contextlib.suppress(OSError):
             os.unlink(d['record_path'])
-    cleared, done = clear_integration_record(ctx, d, into)
+    cleared, done = clear_integration_record(ctx, d, into, owner)
     # T-0713: a ticket the integration tree cleared stays byte-identical in main (merging into brings the clear); any
     # other clear in main is committed there when into is another branch, so a land never leaves main dirty
     mpre, mains = porcelain(top), []
@@ -976,14 +985,15 @@ def do_close(ctx, d, outcome, info, dry):
     return result(0, '\n'.join(lines), lane=name, path=d['path'], branch=b, archive=ref, row=how)
 
 
-def clear_integration_record(ctx, d, into):
-    """T-0695: the lane's `branch:` and `worktree:` lines in the integration tree holding into (T-0680 wrote them there),
-    cleared and committed in that tree. Returns (report lines, ids cleared); none when into is the main checkout or
-    holds no record."""
+def clear_integration_record(ctx, d, into, owner=None):
+    """T-0695: the lane's `branch:` and `worktree:` lines in owner, the tree that owns them (wtroot.owner_tree branch,
+    T-0752; T-0680 wrote them there), cleared and committed in that tree. A lane whose tree is gone has no record for
+    the helper to read, so owner None takes the worktree holding into. Returns (report lines, ids cleared); none when
+    the owner is the main checkout or holds no record."""
     top, b = ctx.top, d['branch']
     into = short_branch(into)
-    wt = next((Path(w['path']) for w in worktrees(top) if w['branch'] == into), None)
-    if not into or wt is None or samepath(str(wt), str(top)) or not (wt / '.sdlc').is_dir():
+    wt = owner if owner is not None else next((Path(w['path']) for w in worktrees(top) if into and w['branch'] == into), None)
+    if wt is None or samepath(str(wt), str(top)) or not (wt / '.sdlc').is_dir():
         return [], []
     pre = porcelain(wt)
     cleared = []
@@ -1222,7 +1232,8 @@ def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='
 
     # 1. record: each pending verifier dispatch, then the solo (dispatch.py record prices its row once, T-0350)
     done = []
-    rdir = order.records_dir(folder)
+    rfolder = owner_root('records', tree).parent / folder.relative_to(tree)  # T-0752: the tree that owns the records
+    rdir = order.records_dir(rfolder)
     for df in sorted(rdir.glob('*.dispatch.json')) if rdir.is_dir() else ():
         rec = read_json(df) or {}
         if rec.get('role') == 'verifier':
@@ -1241,7 +1252,7 @@ def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='
     say('record: ' + ('; '.join(done) or 'nothing pending'))
 
     # 2. verdict: the newest verifier result of the lane's records dir must pass, before anything is committed or merged
-    newest = order.newest(str(folder), 'verifier')
+    newest = order.newest(str(rfolder), 'verifier')
     verdict = results.key_value(newest, 'verifier') if newest else None
     if verdict != 'pass':
         return stop('verdict', f'{verdict or "no verifier result"}' + (f' ({os.path.basename(newest)})' if newest else '') +
@@ -1420,10 +1431,11 @@ def lock_reason(rootp, ids):
     return ' '.join([holder] + list(ids))
 
 
-def record_tree(ctx, into_, root, ids):
-    """T-0680: (tree, note) for the lane record: the worktree holding into_ when it is not the main checkout and its
-    root holds every local ticket in ids, else the main checkout with note saying why (None when no tree holds into_)."""
-    wt = next((Path(w['path']) for w in worktrees(ctx.top) if w['branch'] == into_), None)
+def record_tree(ctx, tree, root, ids):
+    """T-0680: (tree, note) for the lane record: the tree that owns the branch: line of lane tree (wtroot.owner_tree,
+    T-0752: the worktree holding its into branch) when it is not the main checkout and its root holds every local
+    ticket in ids, else the main checkout with note saying why (None when no other tree owns it)."""
+    wt = wtroot.owner_tree('branch', None, tree)
     if wt is None or os.path.realpath(str(wt)) == os.path.realpath(str(ctx.top)):
         return ctx.top, None
     rel = os.path.relpath(os.path.realpath(str(wt)), os.path.realpath(str(ctx.top)))
@@ -1562,7 +1574,7 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
         record_branch = False
     rtop, rrootp = top, rootp  # T-0680: an --into checked out in an integration tree takes the record there
     if record_branch and not explicit_root and rootp.is_dir() and any(LOCAL_ID.fullmatch(t) for t in ids):
-        rtop, note = record_tree(ctx, into_, root, ids)
+        rtop, note = record_tree(ctx, tree, root, ids)
         rrootp = rtop / root if rtop != top else rootp
         if note:
             lines.append(note)
@@ -1855,7 +1867,8 @@ def lane_states(ctx, d):
 
 def ticket_verdict(top, metas, d):
     """(ticket id, verdict) for lane d: the local ticket whose `branch:` is the lane branch, else the record's first
-    local ticket; verdict is the newest verifier result's (pass, fail, inherited) in its folder, else None."""
+    local ticket; verdict is the newest verifier result's (pass, fail, inherited) in its folder in the tree that owns
+    the records (the lane while it exists, T-0752), else None."""
     b = d['branch']
     hit = next((m for _, m in metas if b and isinstance(m.get('branch'), str) and m['branch'].strip() == b), None)
     if hit is None:
@@ -1864,7 +1877,8 @@ def ticket_verdict(top, metas, d):
         return None, None
     slug = next(s for s, m in metas if m is hit)
     try:
-        newest = order.newest(str(tickets.ticket_dir(Path(top) / '.sdlc') / slug), 'verifier')
+        rootp = Path(wtroot.owner_tree('records', hit.get('id'), top) or top) / '.sdlc'  # T-0752
+        newest = order.newest(str(tickets.ticket_dir(rootp) / slug), 'verifier')
     except (OSError, tickets.Fail):
         newest = None
     return hit.get('id'), (results.key_value(newest, 'verifier') if newest else None)
