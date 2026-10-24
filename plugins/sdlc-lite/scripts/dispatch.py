@@ -3522,6 +3522,29 @@ def selftest():
              % out.getvalue()[-200:], rc6 == 0 and out.getvalue().splitlines() == ['step-1/verifier-L2 completed verifier-L2 parent_pid=None']
              and not order.records_dir(rr / '.sdlc' / 't755').is_dir())
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw6)], capture_output=True)
+        # T-0763: a fanout solo whose only lane is the host worktree Claude Code named agent-<id>, while prep's host
+        # record still has the provisional name <id>-solo (rebound only at land): status and next from the main
+        # checkout read the records in that worktree, not `no attempts` and a missing builder result
+        lw7 = rr / '.claude' / 'worktrees' / 'agent-t763'
+        gt(rr, 'worktree', 'add', '-q', '-b', 'worktree-agent-t763', str(lw7), 'HEAD')
+        hrec7 = wtroot.host_dirs(rr)[0] / 'T-0763-solo.lane.json'
+        put(hrec7, json.dumps({'lane': 'T-0763-solo', 'kind': 'host', 'branch': 'worktree-T-0763-solo',
+                               'tickets': ['T-0763'], 'into': 'main'}))
+        put(rr / '.sdlc' / 't763' / 'handoff.md', '---\nid: T-0763\ntitle: host lane records\n---\n\n## Goal\nx\n')
+        tw7 = R(lw7 / '.sdlc' / 't763')
+        put(tw7 / 'verifier-L2.attempt.json', json.dumps({'attempt_id': 't763', 'status': 'completed', 'role': 'verifier',
+                                                          'level': 'L2'}))
+        put(tw7 / 'builder-L2.md', '<!-- role=builder level=L2 model=opus effort=low -->\n## Status\ndone\n\n## Changes\nx\n\n## Checks\nx\n')
+        with cwd(rr), contextlib.redirect_stdout(io.StringIO()) as out:
+            rc7 = main(['status', str(rr / '.sdlc' / 't763')])
+        nx7 = script('steps.py', 'next', rr / '.sdlc' / 't763', cwd=str(rr))
+        case('host lane (T-0763): status and next on a main-checkout task dir read the records in the agent-<id> host '
+             'worktree of a provisional <id>-solo host record, got status %r, next rc=%s %r'
+             % (out.getvalue()[-160:], nx7.returncode, (nx7.stdout + nx7.stderr)[-200:]),
+             rc7 == 0 and out.getvalue().splitlines() == ['verifier-L2 completed verifier-L2 parent_pid=None']
+             and nx7.returncode == 0 and '/.claude/worktrees/agent-t763/.sdlc/runtime/tasks/t763/builder-L2.md' in nx7.stdout)
+        hrec7.unlink()
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw7)], capture_output=True)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw4)], capture_output=True)
         if mbase_was is not None:
             mbase.write_text(mbase_was)
