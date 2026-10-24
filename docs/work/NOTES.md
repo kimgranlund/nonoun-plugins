@@ -519,3 +519,8 @@
 - note: conductor question 2 (solo-report check with a relative path): observed in a scratch tree mimicking the worktree layout, `results.py solo-report .sdlc/runtime/tasks/t1/T-0001-solo.md --handoff .sdlc/t1/handoff.md` run from that root gives rc=1 on a report missing the span's exit line and rc=0 on a full one; the brief's `--handoff` is also worktree-relative (fanout.py:2220), so both paths resolve from the solo's starting directory.
 - note: conductor question 3 (block-role-write hook): plugins/sdlc-lite/hooks/block-role-write.sh exits 0 for any role not in SDLC_READONLY_ROLES (plugins/sdlc-lite/hooks/_role.sh:34 lists scout researcher architect archaeologist planner plan-reviewer verifier filer), so a solo's Write passes untouched.
 - note: docs/work/0759-solo-report-path-one/handoff.md Outcome says case 30c was "the only miss" in its negative control; reverting only the fix line also fails case 22, so that control must have reverted case 22's update too. The criterion holds either way.
+
+## T-0761: settle without --forward leaves main where it is (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:125 says "--forward only adds the diverged case (merge main in, run the gates)", but with --forward a fast-forward branch is gated too (T-0701, settle_forward at fanout.py:3197-3221); skills/fanout/SKILL.md:31 likewise ties "gate it" to the diverged case only. The cmd_settle docstring and sdlc-internals.md:206 state the T-0701 case correctly.
+- note: the new T-0761 case overlaps case 28's `fanout/ff` assertion (both fail under the same mutation); it adds only the `settled: ... is in main` output check.
