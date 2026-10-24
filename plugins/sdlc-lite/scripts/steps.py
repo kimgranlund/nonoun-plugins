@@ -441,7 +441,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             above). Each new span then runs under bash -c from the git toplevel of the step dir
             (else the step dir) under --timeout SECONDS (default 300), with SDLC_BASE_SHA set to
             the first line of <step dir>/base-sha when it names a commit, else HEAD (unset outside
-            git, never inherited from the caller): the build is in the tree,
+            git, never inherited from the caller; base-sha is read in the checkout that owns it for
+            the ticket, wtroot.owner_tree, T-0752: the ticket's lane while one lists it, else this
+            checkout): the build is in the tree,
             so a red span or a timeout refuses; in a git work tree a span that changed the work
             tree refuses too, naming the paths (nothing is undone). When no criterion line holds
             the old span but one criterion line's text after its marker equals the new text, it
@@ -1000,6 +1002,38 @@ def declared_tests(text):
     return paths, problems
 
 
+TICKET_ID_RE = re.compile(r'\A---\n(?:(?!---\n).*\n)*?id:[ \t]*(T-\d+)', re.M)
+
+
+def owned(kind, path):
+    """path at the same place in the checkout that owns kind for its ticket (wtroot.owner_tree, T-0749, T-0752): the
+    ticket is the front matter id: of the nearest handoff.md at or above path (or its task folder). path unchanged
+    outside git, with no ticket, or beside no wtroot.py."""
+    p = pathlib.Path(os.path.abspath(path))
+    try:
+        import wtroot  # local, as in red_at_base: a copy of steps.py beside only order.py and results.py has no wtroot.py
+    except ImportError:
+        return p
+    t = order.task_dir(p)
+    here = next((q for q in [p, *p.parents] if q.is_dir()), None)
+    top = git_toplevel(here) if here else None
+    if not top:
+        return p
+    tid = None
+    for q in ([t] if t is not None else []) + [p, *p.parents]:
+        with contextlib.suppress(OSError, UnicodeDecodeError):
+            m = TICKET_ID_RE.match((q / 'handoff.md').read_text(encoding='utf-8'))
+            if m:
+                tid = m.group(1)
+                break
+        if os.path.realpath(q) == os.path.realpath(top):
+            break
+    own = wtroot.owner_tree(kind, tid, top) if tid else None
+    if own is None:
+        return p
+    return own / os.path.relpath(os.path.realpath(p), os.path.realpath(top))
+
+
 def base_sha(top, step_dir=None):
     """SDLC_BASE_SHA for a span (T-0381), in this order: a base the step handoff names (a line `base: <sha>`), else the
     first line of <step dir>/base-sha recorded at the first dispatch, else HEAD at top; None outside git. top is the
@@ -1028,7 +1062,7 @@ def base_sha(top, step_dir=None):
                 print(f'steps.py: SDLC_BASE_SHA refused: {named} names base '
                       f'{m.group(1)}, which is not a commit that is an ancestor of HEAD in {top}', file=sys.stderr)
         with contextlib.suppress(OSError, UnicodeDecodeError, subprocess.SubprocessError):
-            first = ((pathlib.Path(step_dir) / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
+            first = ((owned('base-sha', step_dir) / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
             if usable(first):
                 return usable(first)
             # a recorded commit that is not an ancestor of HEAD (a stale tree vs the lane base) stays the base, so
@@ -6519,6 +6553,27 @@ def selftest():
         (sd / 'base-sha').unlink()
         check('shared step dir (T-0381) negative control: from the main checkout the base is the main checkout HEAD',
               shared_base(main_r) == sb_main)
+        # T-0752: the ticket's lane (.lane.json lists it) owns base-sha; dispatch wrote it in the lane's records, and
+        # swap run on the main checkout's step dir reads it there (wtroot.owner_tree), not the lane HEAD
+        tk = main_r / 'sdlc' / '0001-own'
+        (tk / 'step-1').mkdir(parents=True)
+        (tk / 'handoff.md').write_text('---\nid: T-0001\ntitle: own\n---\n\n## Goal\nx\n', encoding='utf-8')
+        od = s_step([], where=tk / 'step-1')
+        (lane_r / '.lane.json').write_text(json.dumps({'lane': 'sb-lane', 'kind': 'solo', 'tickets': ['T-0001'],
+                                                       'into': 'main'}), encoding='utf-8')
+        (lane_r / 'sdlc' / '0001-own' / 'step-1').mkdir(parents=True)
+        (lane_r / 'sdlc' / '0001-own' / 'step-1' / 'base-sha').write_text(sb_l1 + '\n', encoding='utf-8')
+        for name, text in pair + [('verifier-L1.md', swap_v(new=f'`test "$SDLC_BASE_SHA" = {sb_l1}`'))]:
+            (od / name).write_text(hdr(name, text), encoding='utf-8')
+        here = os.getcwd()
+        os.chdir(lane_r)
+        try:
+            rc, out, err = run_main(['swap', str(od)])
+        finally:
+            os.chdir(here)
+        check('owner tree (T-0752): swap on the main step dir reads the base-sha the lane that owns it recorded',
+              rc == 0 and sb_l1 in (od / 'handoff.md').read_text(encoding='utf-8'))
+        (lane_r / '.lane.json').unlink()
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
         swap_refused('(c) newest verifier a pass', s_step(pair + [('verifier-L1.md', PASS)]), 'no fail verdict')

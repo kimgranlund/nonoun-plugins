@@ -450,3 +450,20 @@
 - decide: plugins/sdlc-lite/scripts/wtroot.py:309 and the config row of the table: note: the #58 note says `wtroot._config_root` reads the current tree. It reads `worktree_root:` from the main checkout (`main_top`) in a non-bare repo and has nothing to do with `merge_gate`, so the clause is inaccurate; it is harmless prose, but T-0751 should reword it.
 - decide: API coverage for T-0750 to T-0752: the kinds those tickets name (records, base-sha, end-sha; config, lane-close; branch, worktree) all exist in `OWNERS`. The helper returns only a tree, so callers still join `order.records_dir` or `.sdlc/config` themselves; that is enough for the three tickets as written.
 - decide: No `is_lane` or integration-tree-exists signal is exposed apart from `owner_trees`; T-0751 will need `owner_trees(...)['integration']` where `config_root` takes `integ_exists`, which is available.
+
+## T-0752: lanes.py and steps.py read and write records through the owner-tree helper (2026-10-24)
+
+- decide: Conductor check (existing selftests unchanged): the 257cf42c..28278a1d diff holds no hunk in the lanes.py selftest. The steps.py selftest diff is one added block and removes nothing. No existing assertion was edited.
+- decide: Conductor check (plain solo flow): in a throwaway repo I ran the new `lanes.py open smoke --kind solo --ticket T-0001`. It recorded `branch:` and `worktree:` in main and committed `T-0001: record lane T-0001-smoke`. `close --discard` of the locked lane was refused (`locked: me T-0001`) identically by the base 257cf42c script and the built one. After `git worktree unlock`, `close` removed the tree and cleared both lines in main (`closed T-0001-smoke (ancestor)`), the same effect the T-0713 selftest cases pin. I did not run `finish` live; the lanes selftest `finish` cases pass unchanged.
+- decide: plugins/sdlc-lite/scripts/lanes.py:1431: a host lane under a custom `lanes_root:` still resolves to primary until T-0750, as the Outcome states; not a defect for this ticket.
+
+## T-0735: Audit for run.sh-era assumptions in prepare-launched roles (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1374: the SDLC_BASE_SHA fix is an instruction, not a mechanism. Observed: with the variable unset, `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- plugins 2>/dev/null)"` exits 0 (vacuous pass) while the bare `git diff` exits 128 `bad revision ''`. A role that ignores the line still passes such a criterion vacuously.
+- decide: a `steps.py lint` rule could flag a criterion span that names `$SDLC_BASE_SHA` without a `${SDLC_BASE_SHA:?}` guard or an `export SDLC_BASE_SHA=` in the span, which would make the planner write the guard instead of relying on the brief; steps.py:6084 already has a lint case for this variable (that it is not flagged as a pinned sha), so the hook point exists. Not filed by the builder.
+- note: criterion #2 (c), the block-role-rm.sh case, was verified by diff reading plus the shared base run, not an isolated red run.
+
+## T-0751: fanout.py reads config and records through the owner-tree helper (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/wtroot.py:308-309: the OWNERS `config` row still names `config_root` and `fanout.py run light_refusal`, now stale. The Outcome flags it and T-0750 owns the file, so this is not a fail.
+- decide: plugins/sdlc-lite/scripts/fanout.py:1060-1076: `owner_dirs` lets a lane record's tree win over a `lane=` argument, and `lane.dir`/`ctx['lane_wt']` only fills a None slot. If two worktrees list one ticket in their lane records, the record's tree is picked. Not reachable in the selftests; note: low risk.

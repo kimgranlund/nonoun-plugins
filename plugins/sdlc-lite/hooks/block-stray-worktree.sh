@@ -52,8 +52,11 @@ if [[ -z $prefix && -z "${SDLC_ROLE:-}" ]]; then
 fi
 
 block() {
+  # A sub-agent has no SDLC_TMP_WORKTREES in its shell, so it is shown the literal prefix, never the variable (T-0735).
   # shellcheck disable=SC2016
-  echo "Blocked for sdlc role '$role': $1. The run removes only detached worktrees under its throwaway prefix \$SDLC_TMP_WORKTREES (${prefix:-unset}) when it ends and never deletes a branch. Use the allowed form: git worktree add --detach \"\$SDLC_TMP_WORKTREES/<name>\" <commit>. Never create a branch (-b, -B, --orphan) or a worktree anywhere else. To open or close a lane (a worktree with its branch), run python3 scripts/lanes.py open <name> or python3 scripts/lanes.py close <name>; the conductor, not a role, owns that." >&2
+  local form='$SDLC_TMP_WORKTREES'
+  [[ -n "${SDLC_TMP_WORKTREES:-}" ]] || form=${prefix:-<the throwaway prefix your brief names>}
+  echo "Blocked for sdlc role '$role': $1. The run removes only detached worktrees under its throwaway prefix (${prefix:-unset}) when it ends and never deletes a branch. Use the allowed form: git worktree add --detach \"$form/<name>\" <commit>. Never create a branch (-b, -B, --orphan) or a worktree anywhere else. To open or close a lane (a worktree with its branch), run python3 scripts/lanes.py open <name> or python3 scripts/lanes.py close <name>; the conductor, not a role, owns that." >&2
   exit 2
 }
 
