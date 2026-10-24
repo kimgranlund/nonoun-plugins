@@ -473,6 +473,14 @@ def owner_selftest():
                lanes_root(lane) == lr and owner_tree('base-sha', 'T-0004', repo) == hostd
                and owner_tree('config', 'T-0004', hostd) == integ and lane_record(hostd, hostd).get('base_sha') == 'abc')
         (repo / '.sdlc' / 'config').unlink()
+        ag = repo / '.claude' / 'worktrees' / 'agent-e1'
+        g(repo, 'worktree', 'add', '-q', '-b', 'worktree-agent-e1', str(ag), 'HEAD')
+        (sib / 'host' / 'T-0005-solo.lane.json').write_text(json.dumps({'lane': 'T-0005-solo', 'kind': 'host',
+                                                                       'tickets': ['T-0005'], 'into': 'integ'}))
+        expect('a provisional host record binds no agent-* tree it does not name: records stay in primary until '
+               'dispatch.py rebinds it (T-0763)', owner_tree('records', 'T-0005', repo) == repo)
+        (sib / 'host' / 'T-0005-solo.lane.json').unlink()
+        g(repo, 'worktree', 'remove', '--force', str(ag))
         expect('a ticket no lane record lists, run from a linked tree: that tree is the lane (T-0750)',
                owner_tree('records', 'T-0009', solo) == solo)
         expect('no ticket: the current tree is the lane', owner_tree('records', None, lane) == lane
