@@ -8,11 +8,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
-| T-0753 | [0753-solo-brief-base-sha](0753-solo-brief-base-sha/handoff.md) | Solo briefs give no exported SDLC_BASE_SHA for criteria that name it | bug | L1 | P2 | none | 🟡 claimed |
-| T-0754 | [0754-lint-unguarded-base-sha](0754-lint-unguarded-base-sha/handoff.md) | steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard | bug | L1 | P2 | none | 🟡 claimed |
 | T-0755 | [0755-steps-reads-owner-records](0755-steps-reads-owner-records/handoff.md) | steps.py next and plan_done read step records from the tree that owns them | bug | L2 | P2 | none | 🟡 claimed |
 
-Closed: 712 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 714 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

@@ -201,8 +201,10 @@ def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
              attempt_id=attempt, base_sha=head_sha(worktree or tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
     d['result'] = str(records(tdir) / f'{d["name"]}.md')  # T-0682: the solo's report file, which dispatch.py record reads
+    # T-0753: a sub-agent's shell has no SDLC_BASE_SHA; the base and the export sentence match dispatch.py prepare (T-0735)
+    base_line = f'Base sha: {d["base_sha"]} (the commit this build started from). {dispatch.base_export(d["base_sha"])}\n' if d['base_sha'] else ''
     d['prompt'] = (f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: '
-                   f'{dispatch.handoff_locator(d["artifacts_dir"])}\n{report_lines(d["result"], dispatch.handoff_locator(d["handoff"]))}\n{brief}')
+                   f'{dispatch.handoff_locator(d["artifacts_dir"])}\n{report_lines(d["result"], dispatch.handoff_locator(d["handoff"]))}\n{base_line}{brief}')
     tree = worktree or tree  # T-0550: a --worktree lane gets the same Tree line dispatch.py prepare writes; the lane wins
     if tree:
         d['tree'] = os.path.realpath(str(tree))
@@ -1322,6 +1324,17 @@ def selftest():
                and lines[5] == dispatch.SEARCH_SCOPE  # T-0702
                and pathlib.Path(disp['result']).name == f"{disp['name']}.md" and pathlib.Path(disp['result']).parent.samefile(order.records_dir(d))
                and json.loads((order.records_dir(d) / 'runs.jsonl').read_text().splitlines()[0])['file'] == f"{disp['name']}.md")
+        # T-0753: a solo sub-agent's shell has no SDLC_BASE_SHA, so the brief names the base and the export, as dispatch.py prepare does (T-0735)
+        gd = d / 'g'
+        gd.mkdir()
+        (gd / 'handoff.md').write_text('x\n')
+        subprocess.run(['git', '-C', str(gd), 'init', '-q'], check=True)
+        subprocess.run(['git', '-C', str(gd), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'c'], check=True)
+        rcg, dg0 = dispatch_json(str(gd), 'M', 'brief')
+        gb = dg0 and dg0.get('base_sha')
+        expect('T-0753 a repo solo brief carries the base and `export SDLC_BASE_SHA=<base> &&` ahead of the brief text',
+               rcg == 0 and bool(gb) and f'Base sha: {gb} ' in dg0['prompt'] and f'`export SDLC_BASE_SHA={gb} &&`' in dg0['prompt']
+               and dg0['prompt'].index('export SDLC_BASE_SHA') < dg0['prompt'].index('\nbrief'))
         rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json')],
                             capture_output=True, text=True, timeout=60)
         r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]

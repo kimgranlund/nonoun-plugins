@@ -611,6 +611,12 @@ def build_base(directory, records=None, tree=None, role=None):
 
 READY_REFS = 'refs/sdlc/ready/'  # lanes.py READY_REFS
 # T-0702: every role brief bounds its file searches; hooks/block-disk-scan.sh enforces it on Claude only
+def base_export(base):
+    """The sentence every brief carries beside its Base sha (T-0735, T-0753): a sub-agent's shell has no SDLC_BASE_SHA."""
+    return ('Your shell has no SDLC_BASE_SHA: run a criterion or command that names $SDLC_BASE_SHA as written, after '
+            '`export SDLC_BASE_SHA=%s &&` in the same Bash call' % base)
+
+
 SEARCH_SCOPE = ('Search only inside Tree (the checkout you run in when the brief has no Tree line) and the Artifacts dir; never '
                 'search /, a home folder, or the whole disk (find /, bfs /, mdfind without -onlyin), which can run for hours.')
 LANE_BASE_RE = re.compile(r'^Lane-Base: ([0-9a-f]{40})$', re.M)
@@ -1370,9 +1376,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                        'criteria name. Never use git stash; the stash stack is shared across sessions.')
         if base:
             # T-0735: a sub-agent's shell has no SDLC_BASE_SHA (run.sh exported it), and a criterion naming it expands to ''
-            prompt += ('\nBase sha: %s (the commit this build started from; diff scope criteria against it). Your shell has no '
-                       'SDLC_BASE_SHA: run a criterion or command that names $SDLC_BASE_SHA as written, after '
-                       '`export SDLC_BASE_SHA=%s &&` in the same Bash call' % (base, base))
+            prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it). %s' % (base, base_export(base))
         if range_line:
             prompt += '\n' + range_line
         if review:
