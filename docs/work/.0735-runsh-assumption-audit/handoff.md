@@ -2,7 +2,7 @@
 id: T-0735
 title: "Audit for run.sh-era assumptions in prepare-launched roles"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -55,3 +55,15 @@ Deliberate:
 - Remaining `run.sh` mentions (about 125 files, mostly "as run.sh does" parity notes in scripts, and Codex dispatch in skills, `agents/conductor.md`, `adapters/codex/instructions.md`): Codex still dispatches through run.sh (`dispatch.py:1161`), and parity notes describe run.sh rather than an assumption a prepare role relies on.
 
 Checks: `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exit 0; `dispatch.py selftest` and `steps.py selftest` through gate_lock exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 16f3c066` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 16f3c066c7bc
+- Changed: see commits
+- Commits: 19fa545 T-0735: audit run.sh-era assumptions in prepare-launched roles
+- Check: 1 The Outcome lists every hit of the grep set with a verdict: pass
+- Check: 2 Each fix has a selftest case that fails without it: pass
+- Check: 3 Gates pass: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:1374: the SDLC_BASE_SHA fix... -> notes.md
+- Follow-up: decide: a steps.py lint rule could flag a criterion span that names... -> notes.md
+- Follow-up: note: criterion #2 c, the block-role-rm.sh case, was verified by diff... -> notes.md
