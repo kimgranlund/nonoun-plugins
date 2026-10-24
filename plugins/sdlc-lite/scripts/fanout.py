@@ -2157,7 +2157,7 @@ def subagent_head(tid, title, tier, limit=50):
 
 
 SOLO_SYNC = ('Base sha: {sha}. The host may make your worktree from origin/main, which can lack the claim commit: before anything else run '
-             '`git merge --ff-only {sha}` in your worktree so the ticket folder is visible; if it refuses and the handoff is still missing, stop with a blocked report.\n')
+             '`git merge --ff-only {sha}` in your worktree so the ticket folder is visible; if it refuses and the handoff is still missing, stop with a blocked report. {export}.\n')
 
 
 def subagent_dispatch(ctx, t, tier):
@@ -2184,7 +2184,7 @@ def subagent_dispatch(ctx, t, tier):
                                                   artifacts=dispatch.handoff_locator(pathlib.Path(artifacts).as_posix()),
                                                   report=solo_run.report_lines(result, handoff),
                                                   host_report=(pathlib.Path(artifacts) / f'{name}.md').as_posix(),
-                                                  sync=SOLO_SYNC.format(sha=base_sha) if base_sha else ''),
+                                                  sync=SOLO_SYNC.format(sha=base_sha, export=dispatch.base_export(base_sha)) if base_sha else ''),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
             'handoff': handoff, 'verifier': verifier, 'result': result,
@@ -5004,6 +5004,9 @@ def selftest():
         expect(f'case 22 prep: the brief starts with `git merge --ff-only <base sha>` (negative control: a wrong sha is absent), got {d1.get("prompt")!r}',
                f'`git merge --ff-only {main_p1}`' in d1.get('prompt', '') and d1.get('base_sha') == main_p1
                and d1.get('prompt', '').splitlines()[1].startswith('Handoff: ') and '--ff-only 0000' not in d1.get('prompt', ''))
+        # T-0753: the sub-agent shell has no SDLC_BASE_SHA, so the brief says to export it before a span that names it
+        expect(f'case 22 prep: the brief has the solo export `SDLC_BASE_SHA=<base> &&` (negative control: a wrong sha is absent), got {d1.get("prompt")!r}',
+               f'`export SDLC_BASE_SHA={main_p1} &&`' in d1.get('prompt', '') and 'SDLC_BASE_SHA=0000' not in d1.get('prompt', ''))
         expect(f'case 22 prep: level L1 has no verifier, level L2 prepares verifier L2 (negative control: not L3) against the '
                f'worktree, got {d1.get("verifier")!r} {d2.get("verifier")!r}',
                d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'

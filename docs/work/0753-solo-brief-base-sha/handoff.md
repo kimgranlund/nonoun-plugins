@@ -29,3 +29,6 @@ Found in the T-0735 run.sh-assumption audit. run.sh exported SDLC_BASE_SHA to it
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Outcome
+Both solo briefs now name the base and say to `export SDLC_BASE_SHA=<base> &&` before a span that names it. The sentence lives in one place, `dispatch.base_export()` (dispatch.py), used by the `dispatch.py prepare` brief (unchanged text), the `solo_run.py` sub-agent brief (a `Base sha:` line before the brief, only when the tree is a repo) and the fanout `SOLO_SYNC` brief. Selftest cases: solo_run.py (T-0753 repo brief carries base and export; seen red before the change, green after) and fanout.py case 22 (export with the right sha, wrong sha absent). Checks: solo_run, fanout and dispatch selftests PASS; check.py and check-packaging.py exit 0; `git diff --check` clean.
