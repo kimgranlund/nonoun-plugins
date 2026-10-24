@@ -121,6 +121,9 @@ settle (T-0438, T-0452)
   .sdlc/config does not stop it) and the branch deleted, and the close message prints. A close that refuses (not a
   plugin lane, lanes still open into the branch, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
   keeps the branch and exits 1.
+  Plain settle moves the current branch (main) whenever the integration branch fast-forwards, with no --forward and no
+  --gate (T-0761, pinned by selftest); --forward only adds the diverged case (merge main in, run the gates) and its
+  refusals.
   --forward (T-0489) refuses (exit 2, nothing merged) while a role is running against the integration branch (T-0656):
   a `<role>-<level>.running` marker under `<root>/runtime/tasks/` in the integration worktree or in a worktree whose lane
   record has `into` equal to the branch prints `settle: running in <tree>: <role>-<level> (<task>)` per marker; check
@@ -5771,6 +5774,16 @@ def selftest():
                and not archived(sv, 'fanout/plain'))
         st = verb(sv, 'settle', 'fanout/none')
         expect(f'case 28 settle: an absent branch is nothing to settle (exit 0), got rc={st.returncode}', st.returncode == 0 and 'nothing to settle' in st.stdout)
+        # T-0761: plain settle (no --forward) moves main when the integration branch fast-forwards; --forward only adds the
+        # diverged case (merge main in, gate) and a --gate requirement. The rehearsal's `settled: ... is in main` was intended.
+        wt_p, tip_p = integration_with('fanout/plainff', 'p.txt')
+        main_p = sh(sv, 'rev-parse', 'main').stdout.strip()
+        st = verb(sv, 'settle', 'fanout/plainff')
+        expect(f'T-0761 plain settle: no --forward and no --gate, a fast-forward integration branch still moves main from '
+               f'{main_p[:7]} to its tip {tip_p[:7]}, got rc={st.returncode} main={sh(sv, "rev-parse", "main").stdout.strip()[:7]} '
+               f'out={st.stdout!r} err={st.stderr!r}',
+               st.returncode == 0 and sh(sv, 'rev-parse', 'main').stdout.strip() == tip_p != main_p
+               and 'settled: fanout/plainff is in main' in st.stdout)
 
         def tree_of(repo_, branch):
             wt_, cur_ = None, None
