@@ -135,7 +135,8 @@ settle (T-0438, T-0452)
 
 Gate class (T-0481; docs/references/sdlc-internals.md, fanout gate class)
   In merge_gate_close, before the merge, gate_class(ctx, ref) is `light` only when the run is not a roll, <root>/config
-  has an uncommented `merge_gate: light` line and `light_scope: <glob>...` lines (tickets.merge_gate_declared,
+  of the tree that owns the config (owner_root: the integration worktree when it exists, else the primary checkout,
+  wtroot.owner_rule('config'), T-0751) has an uncommented `merge_gate: light` line and `light_scope: <glob>...` lines (tickets.merge_gate_declared,
   tickets.light_scope_globs), --light-gate was given, and every path `git diff --name-only HEAD...<ref>` lists outside
   the ticket root matches a light_scope glob (steps.declared_hits, the :(top,glob) matcher); else `full (<reason>)`.
   A light merge runs the --light-gate set, a full one the --gate set; the vacuous-gate refusal and the reset are the
@@ -817,7 +818,6 @@ def preflight(a, copy_ignored=False, reuse_integ=False):
         raise Refuse(f'--root {a.root} is {root}, outside the git toplevel {top}')
     if not root.is_dir():
         raise Refuse(f'--root {a.root}: {root} is not a dir')
-    light_refusal(a, root)
 
     try:
         tdir = tickets.ticket_dir(root)
@@ -929,6 +929,9 @@ def preflight(a, copy_ignored=False, reuse_integ=False):
     if integ_dir.exists() and not integ_reused:
         raise Refuse(f'{integ_dir} exists (an earlier run?); remove it with git worktree remove, '
                      f'or pass another --lanes-dir')
+    cfg_root = owner_root({'cwd': cwd, 'top': top, 'root': root, 'integ_dir': integ_dir if integ_reused else None},
+                          'config')
+    light_refusal(a, cfg_root)
     for lane in lanes:
         if lane.external:  # no lane branch or worktree to create; the dir stays None
             lane.branch = lane.external
@@ -970,7 +973,7 @@ def preflight(a, copy_ignored=False, reuse_integ=False):
                      f'(above {MAX_LANES_HARD} also needs --yes-many)')
     if getattr(a, 'stagger', STAGGER_DEFAULT) < 0:
         raise Refuse('--stagger must be 0 or more seconds')
-    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
+    return {'cwd': cwd, 'top': top, 'root': root, 'cfg_root': cfg_root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'copy_dirs': copy_dirs, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'integ_reused': integ_reused, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
             'light_gates': list(getattr(a, 'light_gate', None) or []), 'gate_needs': gate_needs_of(a),
@@ -1054,14 +1057,33 @@ def light_refusal(a, root):
                      f'light gate class there, with its `light_scope: <glob>...` lines')
 
 
-def config_root(root, top, integ_dir, integ_exists):
-    """The root whose config declares the light gate class for a land (T-0722): the integration tree land merges into
-    when it exists, so a `merge_gate: light` line landed there counts before main has it; else the primary checkout."""
-    if integ_exists:
-        tree_root = integ_dir / root.relative_to(top)
-        if tree_root.is_dir():
-            return tree_root
-    return root
+def owner_dirs(ctx, kind, ticket=None, lane=None):
+    """The existing trees of kind's owner row for ticket, owner first (T-0751): wtroot.owner_rule(kind)['trees'] named
+    by wtroot.owner_trees, with this run's own integration worktree (ctx['integ_dir'] once it exists) and lane worktree
+    (lane, else ctx['lane_wt']) filling a tree the helper cannot see, a landed branch with no lane record."""
+    trees = wtroot.owner_trees(ticket, ctx['cwd'])
+    integ = ctx.get('integ_dir')
+    if trees['integration'] is None and integ is not None and pathlib.Path(integ).is_dir():
+        trees['integration'] = pathlib.Path(integ)
+    lane = lane or ctx.get('lane_wt')
+    if trees['lane'] is None and lane is not None and pathlib.Path(lane).is_dir():
+        trees['lane'] = pathlib.Path(lane)
+    out = []
+    for name in wtroot.owner_rule(kind)['trees']:
+        d = trees[name] and pathlib.Path(trees[name]).resolve()
+        if d is not None and d not in out:
+            out.append(d)
+    return out
+
+
+def owner_root(ctx, kind, ticket=None):
+    """ctx['root'] mapped into the tree that owns kind (owner_dirs), so a writer and its reader pick one checkout: the
+    config (merge_gate, light_scope) of the integration tree land merges into counts before main has it (T-0722, #58)."""
+    for d in owner_dirs(ctx, kind, ticket):
+        r = d / ctx['root'].relative_to(ctx['top'])
+        if r.is_dir():
+            return r
+    return ctx['root']
 
 
 def gate_class(ctx, ref):
@@ -1071,7 +1093,7 @@ def gate_class(ctx, ref):
     is always full. Called before the merge, so HEAD is the pre-merge commit."""
     if ctx.get('roll'):
         return 'full', 'roll'
-    root, integ = ctx.get('cfg_root', ctx['root']), ctx['integ_dir']
+    root, integ = ctx['cfg_root'], ctx['integ_dir']
     if not tickets.merge_gate_declared(root):
         return 'full', 'no merge_gate: light'
     globs = tickets.light_scope_globs(root)
@@ -1926,9 +1948,9 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                     hint = ' (no node_modules in the gate worktree: start the gate with `npm ci && ...`)'
                 return f'red: {gate} rc={rc}{hint}', cell
         folder = integ / trel / t.slug
-        src_tree = lane.dir if lane.dir is not None else ctx.get('lane_wt')  # an external lane has no lane dir
-        if src_tree is not None and pathlib.Path(src_tree).is_dir():
-            src = pathlib.Path(src_tree) / trel / t.slug
+        rec_trees = owner_dirs(ctx, 'records', t.id, lane=lane.dir)  # an external lane has no lane dir: ctx['lane_wt']
+        if len(rec_trees) > 1:  # the lane owns the records; the primary fallback is read in place, never copied in
+            src = rec_trees[0] / trel / t.slug
             # a gitignored trail (T-0477) is not tracked in the integration tree: the lane's folder is copied in
             if src.is_dir() and not git_out(integ, 'ls-files', '--', (trel / t.slug).as_posix()).strip():
                 shutil.copytree(str(src), str(folder), dirs_exist_ok=True)
@@ -1980,7 +2002,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         if cf is not None:  # mirror the closed ticket's records into the main checkout
             src_rec = runtime_records(cf)
             if src_rec.is_dir():
-                dst_rec = order.records_dir(runtime_records(ctx['top'] / cf.relative_to(integ)), create=True)
+                primary = owner_dirs(ctx, 'records', t.id)[-1]
+                dst_rec = order.records_dir(runtime_records(primary / cf.relative_to(integ)), create=True)
                 lanes.copy_newer(src_rec, dst_rec)
         return 'merged', (ctx.get('carried') or merge_sha)[:7]
 
@@ -2093,7 +2116,7 @@ def close_lanes(ctx):
         bad = next((o for _, o, _ in lane.results if o != 'merged'), None)
         if bad is None and lane.results:
             try:
-                r = lanes.close_lane(str(lane.dir), cwd=str(ctx['top']))  # LANE-CLOSE
+                r = lanes.close_lane(str(lane.dir), cwd=str(owner_dirs(ctx, 'lane-close')[0]))  # LANE-CLOSE
             except lanes.LaneError as e:
                 r = dict(rc=1, message=str(e))
             msg = first_line(r['message'], f"rc={r['rc']}")
@@ -2603,7 +2626,8 @@ def land_preflight(a):
     elif integ_dir.exists() and where is None:
         raise Refuse(f'{integ_dir} exists but is not a worktree on {integration}; remove it with git worktree remove, '
                      f'or pass another --lanes-dir')
-    cfg_root = config_root(root, top, integ_dir, where is not None)
+    cfg_root = owner_root({'cwd': cwd, 'top': top, 'root': root, 'integ_dir': integ_dir if where is not None else None},
+                          'config', tid)
     light_refusal(a, cfg_root)
     lane = Lane(land_lane_name(branch, tid), [tid], branch)
     lane.branch, lane.tip, lane.tickets = branch, tip, [t]
@@ -2703,17 +2727,18 @@ def land_ticket(ctx, lock):
         if not ctx['carried'] or not open_ or not merge_names_ticket(ctx['cwd'], ctx['carried'], t.id):
             return 'no changes', tip[:7]
         say(ctx, lane, t.id, f"commits carried by merge {ctx['carried'][:7]}")
-    if wt and pathlib.Path(wt).is_dir():
-        src = pathlib.Path(wt) / ctx['trel'] / t.slug
+    rec_trees = owner_dirs(ctx, 'records', t.id)  # (lane, primary), or (primary,) with no lane worktree
+    if len(rec_trees) > 1:
+        src = rec_trees[0] / ctx['trel'] / t.slug
         copy_lane_records(src, ctx['integ_dir'] / ctx['trel'] / t.slug)
         dst = (None if os.environ.get('SDLC_SELFTEST_NO_RECORDS_COPY') == '1'  # the knob keeps the lane's records out of main too
-               else lanes.carry_records(src, ctx['main'] / ctx['trel'] / t.slug))  # T-0566: a close in main finds the verdict
+               else lanes.carry_records(src, rec_trees[-1] / ctx['trel'] / t.slug))  # T-0566: a close in main finds the verdict
         if dst is not None:
             say(ctx, lane, t.id, f'records: {dst}')
     kind, tier = ctx['kinds'][t.id]
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict, held = branch_verdict(ctx, ref, t, with_held=True,
-                                       primary=order.records_dir(ctx['main'] / ctx['trel'] / t.slug))
+                                       primary=order.records_dir(rec_trees[-1] / ctx['trel'] / t.slug))
         if verdict is None:
             return ('no verifier result (the lane worktree\'s records dir holds none; a branch with no worktree commits it '
                     'into the ticket folder with git add -f, then lands again)'), tip[:7]
@@ -2779,7 +2804,7 @@ def land_lanes(ctx, t, outcome):
     if outcome != 'merged':
         return [f'lane still open: {wt} ({outcome})']
     try:
-        r = lanes.close_lane(str(wt), into=ctx['integration'], cwd=str(top))
+        r = lanes.close_lane(str(wt), into=ctx['integration'], cwd=str(owner_dirs(ctx, 'lane-close', t.id)[0]))
     except lanes.LaneError as e:
         r = dict(rc=1, message=str(e))
     if r['rc']:
@@ -3091,7 +3116,7 @@ def cmd_settle(a):
         print(f'lane still open: {a.integration} (no worktree)')
         return 1
     try:
-        r = lanes.close_lane(wt, into=head or 'HEAD', cwd=str(cwd))
+        r = lanes.close_lane(wt, into=head or 'HEAD', cwd=str(owner_dirs({'cwd': cwd}, 'lane-close')[0]))
     except lanes.LaneError as e:
         r = dict(rc=1, message=str(e))
     if r['rc']:
@@ -6428,6 +6453,13 @@ def selftest():
                f'err={h2.stderr[-300:]!r}',
                h1.returncode == 0 and h2.returncode == 0 and 'gate: light' in h2.stdout
                and 'merge_gate: light' not in (lg5 / '.sdlc' / 'config').read_text(encoding='utf-8'))
+        # T-0751 (issue #58, the run half): prep, run from the primary checkout, reads the config through the owner tree,
+        # so the `merge_gate: light` line the integration worktree it reuses committed above counts before main has it
+        h3 = verb(lg5, 'prep', 'alpha=T-0001', '--lanes-dir', str(lg5_lanes), '--integration', 'fanout/lg5',
+                  '--gate', 'false', '--light-gate', 'true', '--stagger', '0', SDLC_HEADLESS='')
+        expect(f'T-0751 owner tree: prep --light-gate reads merge_gate: light from the reused integration worktree, '
+               f'not the primary checkout, got rc={h3.returncode} err={h3.stderr[-300:]!r}',
+               h3.returncode == 0 and 'merge_gate: light' not in h3.stderr)
 
         # T-0742 (issue #70): the light set runs with the dependencies installed. The full set's install gate runs
         # first when the integration tree has no node_modules; a light set that installs itself runs unchanged; with no
