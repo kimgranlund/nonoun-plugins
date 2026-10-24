@@ -10,7 +10,8 @@
   dispatch.py advance [record flags] <dispatch.json>   record, then drop a pruned role from the queue (prints TaskStop task_id=<name>),
                                           then steps.py next on its step dir: prepare the next builder or verifier and print its
                                           dispatch JSON, or print `stop: <action> <reason>` (T-0645); a ticket-level completion (T-0688):
-                                          an L2 or L3 solo prepares the ticket verifier and prints its JSON, an L1 solo or a verifier pass
+                                          an L2 or L3 solo prepares the ticket verifier and prints its JSON, a solo whose report says blocked
+                                          prints `stop: blocked <report>: <line>` and prepares nothing (T-0760), an L1 solo or a verifier pass
                                           prints `next: close <task dir> (...)`, a verifier fail `stop: fail <result>; ...`, a ui-designer
                                           review `next: <verdict> <result>` or `stop: changes-required <result>; ... record --update ...`; any other role `next: <hint>`
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
@@ -2292,11 +2293,27 @@ def solo_lane_tree(d, top, agent_id=None):
     return recorded if recorded in paths else ''
 
 
+def solo_blocked(d):
+    """T-0760: the first line of a recorded solo's report when it reports `blocked` (`blocked: <question>`, optionally behind
+    the `solo` of its pointer line), else ''. A blocked solo has no finished work to verify or close."""
+    try:
+        text = Path(d['result']).read_text(encoding='utf-8', errors='replace') if d.get('result') else ''
+    except OSError:
+        return ''
+    first = next((ln.strip() for ln in text.splitlines() if ln.strip()), '')
+    return first if re.match(r'(?:solo\s+)?blocked\b', first, re.I) else ''
+
+
 def advance_solo(d, agent_id=None):
     """A recorded solo (T-0688): an L2 or L3 solo carries a `verifier` command, so prepare the ticket verifier at the
     steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line.
     A prep solo's tree is its host worktree (solo_lane_tree): the brief's Tree and Handoff name it, while the level
-    comes from the main checkout's handoff, which the solo under verification cannot edit (T-0747)."""
+    comes from the main checkout's handoff, which the solo under verification cannot edit (T-0747). A solo whose report
+    says blocked prepares no verifier and prints `stop: blocked <report>` (T-0760)."""
+    blocked = solo_blocked(d)
+    if blocked:
+        print('stop: blocked %s: %s; answer or fix what it names, then rerun the solo' % (d['result'], blocked))
+        return 0
     handoff = Path(d['handoff'])
     if not d.get('verifier'):
         print(close_line(handoff.parent))
@@ -4578,6 +4595,18 @@ def selftest():
         case('T-0688 advance on an L2 solo dispatch prints a ticket verifier dispatch JSON whose dispatch_file exists',
              rc == 0 and nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == 'L2' and Path(nxt['dispatch_file']).is_file()
              and len(after) == len(before) + 1)
+        # T-0760: a solo whose report says blocked is not done: advance prints stop: blocked and prepares no verifier (L1 or L2).
+        import solo_run
+        for lvl in ('L2', 'L1'):
+            bdir = mk(tmp / ('adv-solo-blocked-' + lvl)) / '.sdlc' / 'n'
+            bdir.mkdir(parents=True)
+            (bdir / 'handoff.md').write_text('x\n', encoding='utf-8')
+            with clean_env(), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                bdisp = solo_run.dispatch_json(str(bdir), lvl, 'brief')[1]
+            Path(bdisp['result']).write_text('blocked: plan defect: criterion 2 exits 1 on a correct tree\n\n# report\nverify: needed\n', encoding='utf-8')
+            rc, out, nxt, before, after = adv_ticket('solo-blocked-' + lvl, str(order.records_dir(bdir) / ('%s.dispatch.json' % bdisp['name'])), bdir.parent.parent)
+            case('T-0760 advance on a %s solo dispatch whose report says blocked prints stop: blocked and prepares no verifier' % lvl,
+                 rc == 0 and '\nstop: blocked ' in '\n' + out and 'plan defect' in out and nxt is None and after == before and 'next: close' not in out)
         # T-0718: after a verifier L3 fail and a solo rebuild, advance prepares the reverify at L3 (the ticket default is L2);
         # a pass verdict at L3 leaves the default.
         for tag, vbody, want in (('fail', fail_body, 'L3'), ('pass', BODY['verifier'], 'L2')):

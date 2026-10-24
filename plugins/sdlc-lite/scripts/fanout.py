@@ -54,6 +54,9 @@ prep
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
   gates. Per solo ticket prep also writes the host lane record through lanes.host_record (<lanes root>/host/<id>-solo.lane.json,
   kind host, into the integration branch, base the start sha) and prints `    host record: <path>`.
+  Host base (T-0756): the host cuts each sub-agent worktree from the remote default branch (origin/HEAD, else origin/main
+  or origin/master) and its sandbox refuses every git command, so the brief asks for no git; when a ticket runs solo and
+  that branch exists, prep exits 2 unless the base sha is reachable from it, naming the push of HEAD to that branch.
   A ticket at its budget gate prints `blocked: budget gate: budget.py ack` instead of a dispatch and prep exits 4.
   A `full` ticket gets no dispatch: the parent conductor drives the chain, each role a sub-agent against the lane tree
   (`<lanes-dir>/<lane>` on branch <integration>-<lane>, made with the printed `tree: python3 <scripts>/lanes.py open
@@ -2179,8 +2182,34 @@ def subagent_head(tid, title, tier, limit=50):
     return f'{tid} {cut}{tail}' if cut else f'{tid}{tail}'
 
 
-SOLO_SYNC = ('Base sha: {sha}. The host may make your worktree from origin/main, which can lack the claim commit: before anything else run '
-             '`git merge --ff-only {sha}` in your worktree so the ticket folder is visible; if it refuses and the handoff is still missing, stop with a blocked report. {export}.\n')
+# T-0756: the host sandbox refuses every git command in its worktree, so the brief asks for none; prep refuses a base the
+# host's origin branch lacks (host_base_refusal), so the worktree it cuts already holds the ticket folder
+SOLO_SYNC = ('Base sha: {sha}. Run no git command: the host worktree sandbox refuses it. If the handoff is missing from your '
+             'worktree, stop with a blocked report. {export}.\n')
+
+
+def remote_default(top):
+    """The remote-tracking branch the host cuts a sub-agent worktree from: origin/HEAD, else origin/main or origin/master;
+    None when the repo has none (the host then cuts from the local HEAD)."""
+    head = git(top, 'symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD').stdout.strip()
+    for ref in ([head] if head else []) + ['origin/main', 'origin/master']:
+        if git(top, 'rev-parse', '-q', '--verify', f'refs/remotes/{ref}^{{commit}}').returncode == 0:
+            return ref
+    return None
+
+
+def host_base_refusal(ctx):
+    """T-0756: why prep refuses, or ''. A solo lane runs in a host worktree cut from the remote default branch, where the
+    solo can run no git, so the base sha (HEAD, the sha subagent_dispatch writes) must already be reachable from it."""
+    if not any(lane_decision(ctx, tickets.ticket_dir(ctx['root']) / t.slug)[0] == 'solo' and solo_tier(t.size)
+               for lane in ctx['lanes'] for t in lane.tickets):
+        return ''
+    ref = remote_default(ctx['top'])
+    if not ref or git(ctx['top'], 'merge-base', '--is-ancestor', 'HEAD', f'refs/remotes/{ref}').returncode == 0:
+        return ''
+    base = git(ctx['top'], 'rev-parse', 'HEAD').stdout.strip()
+    return (f'base {base} is not on {ref}, the branch the host cuts each sub-agent worktree from, and the solo there can run '
+            f'no git: push it first (git push origin HEAD:{ref.split("/", 1)[1]}; when the remote may already have it, git fetch origin first), then rerun prep')
 
 
 def subagent_dispatch(ctx, t, tier):
@@ -2377,6 +2406,9 @@ def cmd_prep(a):
         if probe.returncode:
             raise Refuse(f'git check-ignore {HOST_WORKTREES}/x failed: {probe.stderr.strip() or probe.returncode}')
         refuse_overlap(ctx)
+        why = host_base_refusal(ctx)
+        if why:
+            raise Refuse(why)
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
         return 2
@@ -5025,10 +5057,31 @@ def selftest():
         expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
                'commits them as `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
                and 'Never commit' not in d1.get('prompt', ''))
-        # T-0438: the host makes the worktree from origin/main, so the brief syncs it to the local base before the solo reads the ticket
-        expect(f'case 22 prep: the brief starts with `git merge --ff-only <base sha>` (negative control: a wrong sha is absent), got {d1.get("prompt")!r}',
-               f'`git merge --ff-only {main_p1}`' in d1.get('prompt', '') and d1.get('base_sha') == main_p1
-               and d1.get('prompt', '').splitlines()[1].startswith('Handoff: ') and '--ff-only 0000' not in d1.get('prompt', ''))
+        # T-0756: the host worktree sandbox refuses every git command, so the brief names the base sha and asks for no git
+        expect(f'case 22 prep: the brief carries `Base sha: <base>` and no git command, got {d1.get("prompt")!r}',
+               f'Base sha: {main_p1}.' in d1.get('prompt', '') and d1.get('base_sha') == main_p1
+               and d1.get('prompt', '').splitlines()[1].startswith('Handoff: ') and '`git ' not in d1.get('prompt', ''))
+        # T-0756: the host cuts the worktree from the remote default branch, so prep refuses a base that is not on it
+        p_or = tmp / 'prep-origin'
+        sized_repo(p_or, ['L1'], {'.gitignore': gi})
+        or_bare = tmp / 'prep-origin.git'
+        sh(tmp, 'init', '-q', '--bare', '-b', 'main', str(or_bare))
+        sh(p_or, 'remote', 'add', 'origin', str(or_bare))
+        sh(p_or, 'push', '-q', 'origin', 'main')
+        (p_or / 'claim.txt').write_text('claim\n', encoding='utf-8')
+        for args_ in (('add', '-A'), ('commit', '-q', '-m', 'claim')):
+            sh(p_or, *args_)
+        por = verb(p_or, 'prep', 'alpha=T-0001', '--lanes-dir', str(tmp / 'prep-origin-lanes'), '--integration', 'fanout/or',
+                   '--gate', 'true', '--stagger', '0', SDLC_HEADLESS='')
+        expect(f'case 22 prep (T-0756): a base not on origin/main exits 2 naming the push and writes no dispatch, got '
+               f'rc={por.returncode} err={por.stderr!r}',
+               por.returncode == 2 and 'origin/main' in por.stderr and 'git push origin HEAD:main' in por.stderr
+               and not list((p_or / '.sdlc').rglob('*.dispatch.json')))
+        sh(p_or, 'push', '-q', 'origin', 'main')
+        por2 = verb(p_or, 'prep', 'alpha=T-0001', '--lanes-dir', str(tmp / 'prep-origin-lanes'), '--integration', 'fanout/or',
+                    '--gate', 'true', '--stagger', '0', SDLC_HEADLESS='')
+        expect(f'case 22 prep (T-0756) control: once pushed, prep exits 0 and the brief asks for no git, got rc={por2.returncode} '
+               f'err={por2.stderr!r}', por2.returncode == 0 and '`git ' not in por2.stdout and 'Base sha: ' in por2.stdout)
         # T-0753: the sub-agent shell has no SDLC_BASE_SHA, so the brief says to export it before a span that names it
         expect(f'case 22 prep: the brief has the solo export `SDLC_BASE_SHA=<base> &&` (negative control: a wrong sha is absent), got {d1.get("prompt")!r}',
                f'`export SDLC_BASE_SHA={main_p1} &&`' in d1.get('prompt', '') and 'SDLC_BASE_SHA=0000' not in d1.get('prompt', ''))

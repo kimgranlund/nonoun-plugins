@@ -487,3 +487,17 @@
 ## T-0755: steps.py next and plan_done read step records from the tree that owns them (2026-10-24)
 
 - decide: plugins/sdlc-lite/scripts/steps.py:581: note: `records_of` is lane-wins-whole, so a task-level call (lane holds step-1 only) and a step-level call for a step recorded only in primary can see different trees; amend/widen write `step_handoff(d)`, which may resolve to the primary handoff through `tree_twins` when the lane twin has none. Both need records split across trees, which T-0750 no longer produces; no criterion covers it.
+
+## T-0762: settle does not count a removed host lane as open (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/lanes.py:3378: note: the committed `host removed` case has no companion for a removed host tree whose branch is NOT an ancestor of the integration branch; I probed it by hand and it holds the tree open (correct), but a future edit dropping the ancestor test would pass the selftest. Consider adding that control.
+
+## T-0756: A host-worktree solo brief asks for no git sync (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/fanout.py:2211: decide: the refusal message names only the push; a stale `origin/*` ref (remote ahead of the tracking ref) makes it fire when HEAD is already on the real remote, and the suggested push is rejected non-fast-forward when the remote is ahead. Adding "or `git fetch` if the remote already has it" would help.
+- decide: plugins/sdlc-lite/scripts/fanout.py:2211: note: for a base on a non-main branch the message suggests `git push origin HEAD:main`, which pushes that branch to main; correct for what the host cuts from, but worth a human read before running.
+
+## T-0760: dispatch.py advance does not route a blocked solo as done (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:2304 the match is case-insensitive and needs no colon, so a first line such as `Blocked on nothing; unblocked` also reads as blocked (probe returned that line); the contract shape is `blocked: <question>`, so anchoring on `blocked:` or the `solo blocked` pointer would be tighter.
+- note: redck.py deviations printed no process deviation lines for this artifacts dir.

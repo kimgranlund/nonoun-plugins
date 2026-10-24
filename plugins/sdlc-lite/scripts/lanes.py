@@ -98,7 +98,8 @@ Truth table for close and sweep; the first matching row wins.
   3          the branch is checked out in another worktree                  branch <b> checked out at <path>                           1
   4          an integration tree with an open lane whose into is its branch lanes still open into <b>: <names>                         1
              (T-0743: a clean host-owned tree whose branch is an ancestor of <b> is not open; the close then prints
-             `host-owned <path> landed in <b>; remove it yourself: git worktree remove <path>` and leaves the tree)
+             `host-owned <path> landed in <b>; remove it yourself: git worktree remove <path>` and leaves the tree;
+             T-0762: nor is a host record whose tree is gone and whose branch is an ancestor of <b>)
   5          into does not resolve, or a git read fails                     cannot decide: <reason>                                    1
   6          tracked changes, or untracked files outside .sdlc/, the        uncommitted changes in <lane>: <first path>                1
              work_root: dir when set, and .lane.json, and no --discard
@@ -720,6 +721,9 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
                         and first_dirty(o['path']) == (None, None):  # dirty work has not landed
                     hosts.append(o['path'])
                     continue
+                if not o['exists'] and o['owner'] == 'host' and o['branch'] and has_ref(top, f'refs/heads/{o["branch"]}') \
+                        and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode:
+                    continue  # T-0762: a host record whose tree is gone and whose branch landed holds nothing open
                 names.append(o['lane'])
         if names:
             return '4', f'lanes still open into {b}: {", ".join(names)}', 1, {}
@@ -3371,6 +3375,30 @@ def case_host_landed_integration(script, base):
     return fails
 
 
+def case_host_removed_integration(script, base):
+    """T-0762: a host record whose .claude/worktrees/agent-z tree was removed after its branch landed does not hold the
+    integration tree open: close removes the integration tree and prints the remove line for the landed agent-x tree
+    still present, and none for agent-z."""
+    t = Fixture(base, script, 'hostgone')
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    agents = {}
+    for leaf in ('agent-x', 'agent-z'):
+        tree = t.top / '.claude' / 'worktrees' / leaf
+        t.g('worktree', 'add', '-q', '-b', f'worktree-{leaf}', str(tree), ib)
+        t.work(tree)
+        t.write({str(t.tree('host') / f'{leaf}.lane.json'): json.dumps(dict(lane=leaf, kind='host', branch=f'worktree-{leaf}',
+                                                                          into=ib))})
+        t.g('merge', '--no-ff', '-q', '-m', f'merge {leaf}', f'refs/heads/worktree-{leaf}', cwd=integ)
+        agents[leaf] = tree
+    t.g('worktree', 'remove', '--force', str(agents['agent-z']))
+    t.g('merge', '-q', '--ff-only', f'refs/heads/{ib}')
+    rc, o = t.lanes('close', ib, '--into', 'main')
+    line = f'host-owned {agents["agent-x"]} landed in {ib}; remove it yourself: git worktree remove {agents["agent-x"]}'
+    if rc or line not in o.splitlines() or 'agent-z' in o or integ.exists():
+        return [f'host removed: want the integration tree closed, {line!r} and no agent-z line, got {rc}: {o}']
+    return []
+
+
 def case_lock(script, base):
     """T-0589: open locks the tree with its owner (the claim ref holder, else claimed_by) and the ticket; list shows the
     lane with no commits as running, not closable; sweep --apply keeps it; close --discard refuses it; a plain close
@@ -3878,6 +3906,8 @@ def run_selftest(script, src, base):
              'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
         need('host landed', case_host_landed_integration(script, base),
              'a landed host-owned agent-x tree does not hold the integration tree open; close prints its cleanup line (T-0743)')
+        need('host removed', case_host_removed_integration(script, base),
+             'a landed host record whose tree was removed does not hold the integration tree open; the present tree gets its line (T-0762)')
         need('lock', case_lock(script, base),
              'open locks the lane with its owner; list shows it running, sweep keeps it, close --discard refuses, '
              'close unlocks and closes it, and an explicit unlock lets --discard close')
