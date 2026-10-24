@@ -15,6 +15,7 @@ Every read and write of records dir, base-sha, end-sha in `plugins/sdlc-lite/scr
 
 ## Intent
 - Do: replace each local choice of tree for those kinds with a call to the helper; keep current behaviour (the selftests that pin T-0713, T-0717, T-0720, T-0722, T-0723 and later fixes stay green). Where a fallback only existed to paper over a tree mismatch the helper now settles, remove it.
+- Also: make the helper's host-record lookup in `wtroot.py` honour `lanes_root:` the way `lanes.config` (lanes.py about line 373) and `lanes.discover` do, so routing `dispatch.lane_record_base` through it keeps finding host lanes (T-0749 verifier decide); add a helper selftest case with `lanes_root:` set. This ticket is the only one of T-0750 to T-0752 that edits `wtroot.py`.
 - Non-goals: other scripts; new features; changing what is recorded.
 - Done when: the criteria pass.
 
