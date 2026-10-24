@@ -10,8 +10,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0750 | [0750-dispatch-owner-tree](0750-dispatch-owner-tree/handoff.md) | dispatch.py reads and writes records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
 | T-0751 | [0751-fanout-owner-tree](0751-fanout-owner-tree/handoff.md) | fanout.py reads config and records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
-| T-0753 | [0753-solo-brief-base-sha](0753-solo-brief-base-sha/handoff.md) | Solo briefs give no exported SDLC_BASE_SHA for criteria that name it | bug | L1 | P2 | none | ⏳ proposed |
-| T-0754 | [0754-lint-unguarded-base-sha](0754-lint-unguarded-base-sha/handoff.md) | steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard | bug | L1 | P2 | none | ⏳ proposed |
+| T-0753 | [0753-solo-brief-base-sha](0753-solo-brief-base-sha/handoff.md) | Solo briefs give no exported SDLC_BASE_SHA for criteria that name it | bug | L1 | P2 | none | 🟡 claimed |
+| T-0754 | [0754-lint-unguarded-base-sha](0754-lint-unguarded-base-sha/handoff.md) | steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 710 done, 30 dropped (git log or .NNNN-* folders)
 
