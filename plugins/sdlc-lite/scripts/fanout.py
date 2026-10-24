@@ -2319,6 +2319,26 @@ def host_record_path(top, name):
     return lanes.Ctx(str(top)).root / 'host' / f'{name}.lane.json'
 
 
+def rebind_host_record(top, name, leaf, branch, tid, into=None, start=None):
+    """Rebind the provisional host record <name>.lane.json to <leaf>.lane.json on branch (the tree the host made, named
+    agent-<agent_id>), keeping its into and base (into and start when it gives none), and remove the provisional one;
+    the `host record: ...` line to print. fanout land after a merge (T-0452) and dispatch.py record/advance with
+    --agent-id (T-0763) call it. None, writing nothing, when <leaf>.lane.json exists and the provisional one does not:
+    record or advance already rebound it, and a second rewrite would move its base to the land start."""
+    prov = host_record_path(top, name)
+    if not prov.is_file() and host_record_path(top, leaf).is_file():
+        return None
+    old = lanes.read_json(prov) or {}
+    try:
+        lanes.host_record(leaf, branch=branch, into=into or old.get('into'), tickets=old.get('tickets') or [tid],
+                          base=old.get('base_sha') or old.get('base') or start, cwd=str(top))
+    except (lanes.LaneError, OSError) as e:
+        return f'host record: not written ({e})'
+    with contextlib.suppress(OSError):
+        prov.unlink()
+    return f'host record: {host_record_path(top, leaf)} (rebound from {prov.name})'
+
+
 def write_host_record(ctx, name, branch, tid, base=None):
     """Write the host lane record of a sub-agent lane (kind host, into the integration branch); its path, or why not."""
     try:
@@ -2871,14 +2891,8 @@ def land_lanes(ctx, t, outcome):
         name = subagent_name(t.id)
         if outcome != 'merged' or wt.name == name:
             return []
-        prov = host_record_path(top, name)
-        old = lanes.read_json(prov) or {}
-        got = write_host_record(ctx, wt.name, ctx['lane'].branch, t.id, base=old.get('base_sha') or old.get('base'))
-        if got.startswith('not written'):
-            return [f'host record: {got}']
-        with contextlib.suppress(OSError):
-            prov.unlink()
-        return [f'host record: {got} (rebound from {prov.name})']
+        got = rebind_host_record(top, name, wt.name, ctx['lane'].branch, t.id, into=ctx['integration'], start=ctx['start'])
+        return [got] if got else []
     tids = rec.get('tickets') or []
     if rec.get('kind') != 'fanout' or not tids or tids[-1] != t.id:
         return []
@@ -6399,7 +6413,21 @@ def selftest():
                f'rc={hwrec.returncode} out={hwrec.stdout[-400:]!r} err={hwrec.stderr[-400:]!r}',
                hwrec.returncode == 0 and hres.is_file() and hres.read_text() == 'solo report T-0740\n')
         hres.unlink(missing_ok=True)  # land carries the worktree copy into main without the record
+        # T-0763: record --agent-id rebinds the provisional record to agent-y; land, started on a later main, rewrites nothing
+        hw_host = tmp / 'host-dirty.worktrees' / 'host'
+        hw_rec = json.loads((hw_host / 'agent-y.lane.json').read_text()) if (hw_host / 'agent-y.lane.json').is_file() else {}
+        (hw / 'later.txt').write_text('later\n', encoding='utf-8')
+        sh(hw, 'add', 'later.txt')
+        sh(hw, 'commit', '-q', '-m', 'main moves on before the land')
         hwl = verb(hw, 'land', 'worktree-agent-y', '--ticket', 'T-0001', *hw_pin, '--base', 'main', '--gate', 'test -e y.txt')
+        hw_after = json.loads((hw_host / 'agent-y.lane.json').read_text()) if (hw_host / 'agent-y.lane.json').is_file() else {}
+        expect(f'case 30b host worktree (T-0763): record --agent-id y rebinds T-0001-solo.lane.json to agent-y.lane.json, and '
+               f'the land from a later main keeps its base_sha and prints no second rebound line, got record out='
+               f'{hwrec.stdout[-300:]!r} before={hw_rec} after={hw_after} land out={hwl.stdout[-400:]!r}',
+               '/host/agent-y.lane.json (rebound from T-0001-solo.lane.json)' in hwrec.stdout
+               and hw_rec.get('base_sha') and hw_after.get('base_sha') == hw_rec.get('base_sha')
+               and hw_rec.get('base_sha') != sh(hw, 'rev-parse', 'main').stdout.strip()
+               and not (hw_host / 'T-0001-solo.lane.json').exists() and 'rebound from' not in hwl.stdout)
         hw_subj = sh(hw, 'log', '-1', '--format=%s', 'worktree-agent-y').stdout.strip()
         expect(f'case 30b host worktree: land commits the uncommitted host lane as `T-0001: Ticket t1`, merges it, and '
                f'carries the report into main, got rc={hwl.returncode} subject={hw_subj!r} out={hwl.stdout[-600:]!r} '
