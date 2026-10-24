@@ -2,7 +2,7 @@
 id: T-0755
 title: "steps.py next and plan_done read step records from the tree that owns them"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,13 @@ T-0750 (2026-10-24) moved records, base-sha and end-sha for a ticket with a lane
   - plan_done: `FAIL: plan_done: owner tree (T-0755): the verifier pass in the ticket's lane twin is read, prints plan done`
   - dispatch: `FAIL: owner tree (T-0755): status on a main-checkout task dir lists the attempt in its ticket's lane twin, got 'no attempts in .../rr/.sdlc/runtime/tasks/t755'`
 - Checks: steps, plan_done and dispatch selftests (through gate_lock) exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 02ccf3a8` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: cb628a7a383d
+- Changed: see commits
+- Commits: f720dd8 T-0755: steps.py next and plan_done read step records from the tree that owns them
+- Check: 1 steps selftest case (lane twin records, `next` on the primary step dir reports done; bypass fails...: pass
+- Check: 2 gates: pass
+- Check: 3 Own flow unchanged: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:581: note: records_of is... -> notes.md

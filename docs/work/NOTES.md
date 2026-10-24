@@ -483,3 +483,7 @@
 
 - note: plugins/sdlc-lite/scripts/steps.py:1517 the guard accepts `export SDLC_BASE_SHA=$OTHER &&` (any other variable), which is empty when `$OTHER` is unset; only a self-read value is refused.
 - note: plugins/sdlc-lite/scripts/steps.py:544 with `:` in BUILTINS, prose spans that open with `: ` now count as command spans (e.g. `: <why>` in plugins/sdlc-lite/skills/handoff-format/references/step-handoff-rules.md:7, `: fail. Evidence:` in docs/work/NOTES.md:191); a criterion line holding such a prose span would now be linted with `bash -n` (`: <why>` does not parse). No open plan or handoff criterion holds one today.
+
+## T-0755: steps.py next and plan_done read step records from the tree that owns them (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/steps.py:581: note: `records_of` is lane-wins-whole, so a task-level call (lane holds step-1 only) and a step-level call for a step recorded only in primary can see different trees; amend/widen write `step_handoff(d)`, which may resolve to the primary handoff through `tree_twins` when the lane twin has none. Both need records split across trees, which T-0750 no longer produces; no criterion covers it.
