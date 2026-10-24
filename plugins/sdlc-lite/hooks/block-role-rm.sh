@@ -113,7 +113,7 @@ verdict=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" "${SDLC_TMP_WORKTREES:+1
 case "$verdict" in
   deny*)
     shown=${prefix//$'\n'/ or the scratch dir }
-    echo "Blocked for sdlc role '$role': rm of ${verdict#deny }. A read-only role removes only scratch it wrote under its throwaway prefix (${shown:-unset}); give the full path under it, or \$SDLC_TMP_WORKTREES/<name>, with no variable, ~, or .. in it." >&2
+    echo "Blocked for sdlc role '$role': rm of ${verdict#deny }. A read-only role removes only scratch it wrote under its throwaway prefix (${shown:-unset}); give the full path under it${SDLC_TMP_WORKTREES:+, or \$SDLC_TMP_WORKTREES/<name>}, with no other variable, ~, or .. in it." >&2
     exit 2
     ;;
   allow)
