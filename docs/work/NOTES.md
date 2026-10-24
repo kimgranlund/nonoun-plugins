@@ -487,3 +487,7 @@
 ## T-0755: steps.py next and plan_done read step records from the tree that owns them (2026-10-24)
 
 - decide: plugins/sdlc-lite/scripts/steps.py:581: note: `records_of` is lane-wins-whole, so a task-level call (lane holds step-1 only) and a step-level call for a step recorded only in primary can see different trees; amend/widen write `step_handoff(d)`, which may resolve to the primary handoff through `tree_twins` when the lane twin has none. Both need records split across trees, which T-0750 no longer produces; no criterion covers it.
+
+## T-0762: settle does not count a removed host lane as open (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/lanes.py:3378: note: the committed `host removed` case has no companion for a removed host tree whose branch is NOT an ancestor of the integration branch; I probed it by hand and it holds the tree open (correct), but a future edit dropping the ancestor test would pass the selftest. Consider adding that control.

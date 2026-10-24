@@ -14,11 +14,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0759 | [0759-solo-report-path-one](0759-solo-report-path-one/handoff.md) | A host-lane solo brief names one report path | bug | L1 | P2 | none | 🔵 ready |
 | T-0760 | [0760-advance-solo-blocked](0760-advance-solo-blocked/handoff.md) | dispatch.py advance does not route a blocked solo as done | bug | L1 | P2 | none | 🟡 claimed |
 | T-0761 | [0761-settle-no-forward-keeps-main](0761-settle-no-forward-keeps-main/handoff.md) | settle without --forward leaves main where it is | bug | L1 | P2 | none | 🔵 ready |
-| T-0762 | [0762-settle-stale-host-record](0762-settle-stale-host-record/handoff.md) | settle does not count a removed host lane as open | bug | L2 | P2 | none | 🟡 claimed |
 | T-0763 | [0763-owner-host-lane-records](0763-owner-host-lane-records/handoff.md) | dispatch status and steps next from main see a host lane's records | bug | L2 | P2 | none | 🟡 claimed |
 | T-0764 | [0764-sweep-noise-other-repos](0764-sweep-noise-other-repos/handoff.md) | prep and record print no sweep lines for other repos | bug | L1 | P2 | none | 🔵 ready |
 
-Closed: 715 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 716 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -94,3 +93,4 @@ Closed: 715 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/wtroot.py:386: owner_trees now takes the current linked tree as the lane for a ticket no lane record lists. Probe: with cwd an integration worktree or a role's throwaway worktree and an unlisted ticket, owner_tree('records') returns that worktree (with a live lane it returns the lane). In dispatch the tree argument is run_tree or the handoff's own checkout, never the bare cwd, so a prepare there already recorded in that tree before this change; only a main-checkout handoff with --tree <integration or throwaway> moves from primary to that tree, which is the table's intent. note: no misfire found in the build; the helper alone would misfire for a caller passing a bare cwd. (from T-0750: dispatch.py reads and writes records through the owner-tree helper (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:3285-3290, 3457: the moved T-0381 and T-0748 fixtures keep their assertions and only move the recorded base-sha to the lane twin (lbase, l4base); the bypass control fails four of them, so they still bite the read side. (from T-0750: dispatch.py reads and writes records through the owner-tree helper (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/steps.py:581: note: `records_of` is lane-wins-whole, so a task-level call (lane holds step-1 only) and a step-level call for a step recorded only in primary can see different trees; amend/widen write `step_handoff(d)`, which may resolve to the primary handoff through `tree_twins` when the lane twin has none. Both need records split across trees, which T-0750 no longer produces; no criterion covers it. (from T-0755: steps.py next and plan_done read step records from the tree that owns them (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/lanes.py:3378: note: the committed `host removed` case has no companion for a removed host tree whose branch is NOT an ancestor of the integration branch; I probed it by hand and it holds the tree open (correct), but a future edit dropping the ancestor test would pass the selftest. Consider adding that control. (from T-0762: settle does not count a removed host lane as open (2026-10-24))

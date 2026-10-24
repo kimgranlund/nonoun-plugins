@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:5c747c97a770 -->
+<!-- sdlc-lite:managed:start v1 sha256:262ac10f5e5b -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -19,15 +19,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0759 A host-lane solo brief names one report path (docs/work/0759-solo-report-path-one)
   - T-0761 settle without --forward leaves main where it is (docs/work/0761-settle-no-forward-keeps-main)
   - T-0764 prep and record print no sweep lines for other repos (docs/work/0764-sweep-noise-other-repos)
-- claimed: 4
+- claimed: 3
   - T-0756 A host-worktree solo brief asks for no git sync (docs/work/0756-host-solo-no-git-sync), claimed by sdlc-lite-author 2026-10-24
   - T-0760 dispatch.py advance does not route a blocked solo as done (docs/work/0760-advance-solo-blocked), claimed by sdlc-lite-author 2026-10-24
-  - T-0762 settle does not count a removed host lane as open (docs/work/0762-settle-stale-host-record), claimed by sdlc-lite-author 2026-10-24
   - T-0763 dispatch status and steps next from main see a host lane's records (docs/work/0763-owner-host-lane-records), claimed by sdlc-lite-author 2026-10-24
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 715
+- done: 716
 - dropped: 30
 
 ## Procedures
