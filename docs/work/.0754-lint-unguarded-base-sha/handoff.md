@@ -2,7 +2,7 @@
 id: T-0754
 title: "steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,14 @@ T-0735 verifier (2026-10-24): with the variable unset, `test -z "$(git diff --na
 - Guidance: `agents/planner.md` rules 6 and 13 teach the prefix form; generated planner agents and Codex TOMLs regenerated; `docs/references/sdlc-internals.md` lists the refusal; the `requires_clean_diff` message shows the prefix form. About 14 selftest fixtures take the prefix.
 - Criterion 2 reworded from "every open handoff" to "every task dir under `docs/work/` that holds a `planner-*.md` and is open", because `steps.py lint` needs a plan and exits 1 ("no Step blocks") on a ticket handoff by design. The only task dir holding a `planner-*.md` is `docs/work/plan-reliability-docs`, stopped since 2026-10-19 with no ticket pointing at it, so it is not open; my earlier edit to its `planner-L3.md` is reverted (the file equals the base). No open plan needed a fix.
 - Open ticket handoffs hold no `## Step` blocks, so their criteria are not linted by `steps.py lint`; the detector finds nothing in their criteria.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 969df8b649b3
+- Changed: see commits
+- Commits: d9e002c T-0754: require a top-level guard prefix for $SDLC_BASE_SHA, exempt passed steps in split; 59089a0 T-0754: steps.py lint refuses an unguarded $SDLC_BASE_SHA in a criterion
+- Check: 1 A `steps.py` selftest case: lint refuses a criterion with an unguarded `$SDLC_BASE_SHA` and accep...: pass
+- Check: 2 `steps.py lint` passes on every task dir under `docs/work/` that holds a `planner-*.md` and is op...: pass
+- Check: 3 selftest through gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff --...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:1517 the guard accepts export... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:544 with : in BUILTINS, prose... -> notes.md

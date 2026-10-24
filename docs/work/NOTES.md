@@ -478,3 +478,8 @@
 ## T-0753: Solo briefs give no exported SDLC_BASE_SHA for criteria that name it (2026-10-24)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:1381 the prepare brief now composes its sentence through `base_export()`; the dispatch.py selftest literal at dispatch.py:3132 still asserts the T-0735 text (`ok: T-0735 the brief has the builder export SDLC_BASE_SHA ...`), and `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` printed `dispatch selftest: PASS`, rc=0.
+
+## T-0754: steps.py lint flags a criterion that names SDLC_BASE_SHA without a guard (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/steps.py:1517 the guard accepts `export SDLC_BASE_SHA=$OTHER &&` (any other variable), which is empty when `$OTHER` is unset; only a self-read value is refused.
+- note: plugins/sdlc-lite/scripts/steps.py:544 with `:` in BUILTINS, prose spans that open with `: ` now count as command spans (e.g. `: <why>` in plugins/sdlc-lite/skills/handoff-format/references/step-handoff-rules.md:7, `: fail. Evidence:` in docs/work/NOTES.md:191); a criterion line holding such a prose span would now be linted with `bash -n` (`: <why>` does not parse). No open plan or handoff criterion holds one today.
