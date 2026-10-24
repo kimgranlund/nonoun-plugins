@@ -30,3 +30,9 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case: the host-lane brief's `Report file:` and end line name the same worktree-relative path and no main-checkout path; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `fanout.py` `subagent_dispatch`: the host-lane brief now passes the worktree-relative report path to `solo_run.report_lines`, so the `Report file:` line, the end line (`solo <status> <path>`) and the write instruction all name `<records dir rel>/<name>.md`; the dispatch `result` stays the absolute primary path, which `dispatch.py record` (host worktree copy, T-0740) and `advance` (`solo_blocked`, T-0760) still read. The prep docstring says so.
+- Tests: new case 30c (host brief names the one relative path, no main-checkout path); case 22 now expects the relative path in both lines.
+- Negative control (fix absent, case 30c present): `fanout selftest: FAIL` with `case 30c host brief: the Report file line and the end line name the worktree-relative .sdlc/runtime/tasks/t1/T-0001-solo.md and the prompt holds no main-checkout path '.../host-dirty/.sdlc/runtime/tasks/t1/T-0001-solo.md'`, the only miss.
+- Checks: `gate_lock.py run ... fanout.py selftest` exit 0 (PASS), `dispatch.py selftest` exit 0 (PASS, record and advance), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check b1f910d9` exit 0.

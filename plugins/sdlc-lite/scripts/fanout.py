@@ -48,7 +48,7 @@ prep
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
   (worktree-<id>-solo, known before the spawn) and its `worktree` (host-owned .claude/worktrees/<id>-solo), and a `prompt` brief
   that tells the solo to leave its change uncommitted and write its report at the worktree copy of the Report file,
-  because the host worktree sandbox refuses its git and any write outside the worktree (SOLO_SUBAGENT_PROMPT, T-0740;
+  named by that one worktree-relative path in the Report file line, the end line and the write instruction (T-0759; the dispatch `result` stays the primary path), because the host worktree sandbox refuses its git and any write outside the worktree (SOLO_SUBAGENT_PROMPT, T-0740;
   the headless SOLO_PROMPT says never commit); `land` commits a dirty host lane as `<id>: <title>`. For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
   solo reports (`dispatch.py prepare verifier L2`, or L3 for the tickets steps.py verifier-level names; SOLO_VERIFIER, T-0356); its result is committed on the
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
@@ -2221,9 +2221,12 @@ def subagent_dispatch(ctx, t, tier):
     import dispatch  # same scripts/ dir: handoff_locator quotes a spaced path for the spawn gate
     # T-0669: the records dir holds the dispatch record; the spawn gate reads it from this prompt line
     artifacts = os.path.relpath(order.records_dir(tickets.ticket_dir(ctx['root']) / t.slug), ctx['top'])
-    # T-0682: the report goes to the records dir of this checkout (absolute, outside the host worktree), where the parent reads it
+    # T-0682: the report is read from the records dir of this checkout (absolute, outside the host worktree) by the parent
     result = str(pathlib.Path(ctx['top'], artifacts, f'{name}.md').resolve())
     import solo_run  # same scripts/ dir: the shared Report file and pointer lines
+    # T-0759: the solo cannot write outside its host worktree, so its brief names this worktree-relative copy in the Report file
+    # line, the end line and the write instruction; `result` stays the primary path, where record and advance read the report
+    host_report = (pathlib.Path(artifacts) / f'{name}.md').as_posix()
     base_sha = subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None
     verifier = None
     if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports; the level is the ticket's at prep
@@ -2234,8 +2237,8 @@ def subagent_dispatch(ctx, t, tier):
             'model': model, 'effort': effort,
             'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title,
                                                   artifacts=dispatch.handoff_locator(pathlib.Path(artifacts).as_posix()),
-                                                  report=solo_run.report_lines(result, handoff),
-                                                  host_report=(pathlib.Path(artifacts) / f'{name}.md').as_posix(),
+                                                  report=solo_run.report_lines(host_report, handoff),
+                                                  host_report=host_report,
                                                   sync=SOLO_SYNC.format(sha=base_sha, export=dispatch.base_export(base_sha)) if base_sha else ''),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
@@ -5100,11 +5103,12 @@ def selftest():
         # T-0682: the solo brief carries the Report file and pointer lines after Artifacts dir; the solo row names the report file
         t1_rows = [json.loads(ln) for ln in (t1_rd / 'runs.jsonl').read_text().splitlines()]
         r1 = d1.get('result') or ''
+        r1_rel = os.path.relpath(r1, p1.resolve())  # T-0759: the brief names the worktree-relative path; `result` stays absolute
         expect(f'case 22 prep: the solo brief carries Report file: <records dir>/T-0001-solo.md and End with one line: `solo <status> <it>` '
                f'right after Artifacts dir, and the solo runs row file names it, got {r1!r} {[r.get("file") for r in t1_rows]}',
                pathlib.Path(r1).name == 'T-0001-solo.md' and pathlib.Path(r1).parent.samefile(t1_rd)
-               and f'\nArtifacts dir: {os.path.relpath(t1_rd, p1)}\nReport file: {r1} (before you end' in d1.get('prompt', '')
-               and f'\nEnd with one line: `solo <status> {r1}`' in d1.get('prompt', '')
+               and f'\nArtifacts dir: {os.path.relpath(t1_rd, p1)}\nReport file: {r1_rel} (before you end' in d1.get('prompt', '')
+               and f'\nEnd with one line: `solo <status> {r1_rel}`' in d1.get('prompt', '')
                and [r.get('file') for r in t1_rows if r.get('role') == 'solo'] == ['T-0001-solo.md'])
         # T-0356: the positive control: a `verifier: L3` line in the handoff prepares verifier L3; the others stay L2
         pv = tmp / 'prep-verifier'
@@ -6287,6 +6291,16 @@ def selftest():
                f'got {hwd.get("prompt")!r}',
                'never run git add or git commit' in hwd.get('prompt', '') and 'commit early' not in hwd.get('prompt', '')
                and f'write the report to {hw_rel} under your worktree root' in hwd.get('prompt', ''))
+        # case 30c (T-0759): the host-lane brief names one worktree-relative report path in the Report file line, the end line
+        # and the write instruction, and no main-checkout path, so a solo never ends naming a path that does not exist
+        hw_abs = hwd.get('result') or ''
+        hw_prompt = hwd.get('prompt', '')
+        expect(f'case 30c host brief: the Report file line and the end line name the worktree-relative {hw_rel} and the prompt holds '
+               f'no main-checkout path {hw_abs!r}, got {hw_prompt!r}',
+               os.path.isabs(hw_abs) and not os.path.isabs(hw_rel) and hw_abs not in hw_prompt
+               and f'\nReport file: {hw_rel} (before you end' in hw_prompt
+               and f'\nEnd with one line: `solo <status> {hw_rel}`' in hw_prompt
+               and f'write the report to {hw_rel} under your worktree root' in hw_prompt)
         hagent = hw / '.claude' / 'worktrees' / 'agent-y'
         sh(hw, 'worktree', 'add', '-q', '-b', 'worktree-agent-y', str(hagent), 'main')
         (hagent / 'y.txt').write_text('y\n', encoding='utf-8')  # the solo's change, left uncommitted
