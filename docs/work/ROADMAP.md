@@ -13,9 +13,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0759 | [0759-solo-report-path-one](0759-solo-report-path-one/handoff.md) | A host-lane solo brief names one report path | bug | L1 | P2 | none | 🟡 claimed |
 | T-0761 | [0761-settle-no-forward-keeps-main](0761-settle-no-forward-keeps-main/handoff.md) | settle without --forward leaves main where it is | bug | L1 | P2 | none | 🔵 ready |
 | T-0763 | [0763-owner-host-lane-records](0763-owner-host-lane-records/handoff.md) | dispatch status and steps next from main see a host lane's records | bug | L2 | P2 | none | 🟡 claimed |
-| T-0764 | [0764-sweep-noise-other-repos](0764-sweep-noise-other-repos/handoff.md) | prep and record print no sweep lines for other repos | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 718 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 719 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -94,3 +93,5 @@ Closed: 718 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/lanes.py:3378: note: the committed `host removed` case has no companion for a removed host tree whose branch is NOT an ancestor of the integration branch; I probed it by hand and it holds the tree open (correct), but a future edit dropping the ancestor test would pass the selftest. Consider adding that control. (from T-0762: settle does not count a removed host lane as open (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2211: decide: the refusal message names only the push; a stale `origin/*` ref (remote ahead of the tracking ref) makes it fire when HEAD is already on the real remote, and the suggested push is rejected non-fast-forward when the remote is ahead. Adding "or `git fetch` if the remote already has it" would help. (from T-0756: A host-worktree solo brief asks for no git sync (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/fanout.py:2211: note: for a base on a non-main branch the message suggests `git push origin HEAD:main`, which pushes that branch to main; correct for what the host cuts from, but worth a human read before running. (from T-0756: A host-worktree solo brief asks for no git sync (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1475 `record` still prints one `unmarked:` line per own-repo folder, with no summary line (observed: two lines for u-a and u-b). The Goal says "at most one summary line for this repo", and only `lanes.sweep` (the prep path) collapses them. (from T-0764: prep and record print no sweep lines for other repos (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/wtroot.py:250 (`sweep`, unchanged) removes a dead-owner folder past the limit in another repo's scratch dir, and both record and lanes sweep print `removed <other repo path>`. This happens at base too and is the documented design ("every repo's scratch dir"), so "never delete another repo's folder" holds only for unmarked folders. (from T-0764: prep and record print no sweep lines for other repos (2026-10-24))

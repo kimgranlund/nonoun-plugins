@@ -501,3 +501,9 @@
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:2304 the match is case-insensitive and needs no colon, so a first line such as `Blocked on nothing; unblocked` also reads as blocked (probe returned that line); the contract shape is `blocked: <question>`, so anchoring on `blocked:` or the `solo blocked` pointer would be tighter.
 - note: redck.py deviations printed no process deviation lines for this artifacts dir.
+
+## T-0764: prep and record print no sweep lines for other repos (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1475 `record` still prints one `unmarked:` line per own-repo folder, with no summary line (observed: two lines for u-a and u-b). The Goal says "at most one summary line for this repo", and only `lanes.sweep` (the prep path) collapses them.
+- decide: plugins/sdlc-lite/scripts/wtroot.py:250 (`sweep`, unchanged) removes a dead-owner folder past the limit in another repo's scratch dir, and both record and lanes sweep print `removed <other repo path>`. This happens at base too and is the documented design ("every repo's scratch dir"), so "never delete another repo's folder" holds only for unmarked folders.
+- fix-now: docs/references/sdlc-internals.md:169 still says the sweep lists an unmarked folder, without saying that only this repo's own folders are named now (T-0764).
