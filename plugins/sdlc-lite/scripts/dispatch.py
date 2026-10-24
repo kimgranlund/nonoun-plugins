@@ -45,7 +45,7 @@ task dir that already holds records keeps them in place), in the checkout that o
 at the same path in wtroot.owner_tree, the ticket's lane when one exists, else the execution tree; T-0750), so a
 --tree <lane> prepare for a main-checkout handoff records in the lane; the brief's Artifacts dir line names it. The handoff gates
 read the handoff dir, and skips.md stays in the task folder (order.task_dir). status and recover map a task or step
-dir to its records dir.
+dir to its records dir; status reads the owner tree's twin of it when that holds attempts (T-0755).
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
