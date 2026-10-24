@@ -15,6 +15,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Intent
 - Do: reproduce first (a selftest case built from the observation below), then make the smallest fix in `plugins/sdlc-lite/scripts/lanes.py` and its docs.
+- Also (T-0762 verifier note): add the missing control beside the `host removed` lanes.py selftest case: a removed host tree whose branch is NOT an ancestor of the integration branch must still hold the integration tree open (unmerged work is never orphaned); show it fails when the ancestor test in `evaluate` is dropped.
 - Non-goals: the other rehearsal findings (each has its own ticket).
 - Done when: the criteria pass.
 
