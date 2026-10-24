@@ -1472,7 +1472,7 @@ def sweep_tmp(tree, scratch):
                 and os.path.realpath(scratch) != os.path.realpath(str(wtroot.scratch_root(tree))):
             shutil.rmtree(scratch, ignore_errors=True)
         for v, p in wtroot.sweep(tree, apply=True):
-            if v in ('removed', 'unmarked', 'failed'):
+            if v in ('removed', 'failed') or (v == 'unmarked' and wtroot.mine(p, tree)):  # T-0764: not another repo's
                 say(wtroot.lines([(v, p)])[0])
     except OSError as e:
         say('could not sweep: %s' % e)

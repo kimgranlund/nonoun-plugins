@@ -124,7 +124,8 @@ Truth table for close and sweep; the first matching row wins.
   sweep is a dry run that prints `would close <lane> (<how>)`; --apply closes. It then runs the wtroot.py crash sweep
   over <worktree root>/tmp (and the legacy tmp dirs) and the scratch dirs with lane_min_age_hours as the limit: `would remove
   <path>` or `removed <path>` for a dead owner past the limit, `unmarked: <path>` for a folder with no owner marker
-  (never deleted); a live or recent owner is kept silently.
+  (never deleted; one line, `unmarked: <n> folders, first <path>` for several, and only for this repo's own tmp and scratch dirs,
+  never a folder under another repo's scratch dir; T-0764); a live or recent owner is kept silently.
 
 Close steps (rows 9, 10, pr merged, 12), in order, so a failure leaves a lane a rerun closes:
   1. Write an annotated tag object (git mktag, never a ref under refs/tags) whose message holds the branch
@@ -722,7 +723,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
                     hosts.append(o['path'])
                     continue
                 if not o['exists'] and o['owner'] == 'host' and o['branch'] and has_ref(top, f'refs/heads/{o["branch"]}') \
-                        and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode:
+                        and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode:  # HOST-GONE
                     continue  # T-0762: a host record whose tree is gone and whose branch landed holds nothing open
                 names.append(o['lane'])
         if names:
@@ -1092,11 +1093,21 @@ def sweep(apply=False, cwd='.'):
             lanes = discover(ctx)
     # T-0550: the crash sweep of run folders (<root>/tmp, the scratch dir): a dead owner past lane_min_age_hours goes,
     # a live or recent one stays, an unmarked one is reported and never deleted
+    # T-0764: an unmarked folder under another repo's scratch dir is that repo's to name; this repo's get one line
+    unmarked = []
     for v, p in wtroot.sweep(ctx.top, hours=ctx.cfg['lane_min_age_hours'], apply=apply):
         if v in ('live', 'recent'):
             continue
+        if v == 'unmarked':
+            if wtroot.mine(p, ctx.top):  # SWEEP-MINE
+                unmarked.append(p)
+            continue
         res.append(result(1 if v == 'failed' else 0, wtroot.lines([(v, p)])[0], path=p, row='run folder'))
         rc = 1 if v == 'failed' else rc
+    if unmarked:
+        line = wtroot.lines([('unmarked', unmarked[0])])[0] if len(unmarked) == 1 \
+            else f'unmarked: {len(unmarked)} folders, first {unmarked[0]}'
+        res.append(result(0, line, path=unmarked[0], row='run folder'))
     if not apply:
         res.append(result(0, 'dry run; pass --apply to close'))
     return res, rc
@@ -3399,6 +3410,50 @@ def case_host_removed_integration(script, base):
     return []
 
 
+def case_host_removed_unmerged(script, base):
+    """T-0762 verifier control: a host record whose tree was removed but whose branch is NOT an ancestor of the
+    integration branch still holds the integration tree open (unmerged work is never orphaned)."""
+    t = Fixture(base, script, 'hostgoneun')
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    tree = t.top / '.claude' / 'worktrees' / 'agent-z'
+    t.g('worktree', 'add', '-q', '-b', 'worktree-agent-z', str(tree), ib)
+    t.work(tree)
+    t.write({str(t.tree('host') / 'agent-z.lane.json'): json.dumps(dict(lane='agent-z', kind='host',
+                                                                       branch='worktree-agent-z', into=ib))})
+    t.g('worktree', 'remove', '--force', str(tree))
+    rc, o = t.lanes('close', ib, '--into', 'main')
+    if rc != 1 or o != f'lanes still open into {ib}: agent-z' or not integ.is_dir():
+        return [f'host removed unmerged: want agent-z alone holding the integration tree open, got {rc}: {o}']
+    return []
+
+
+def case_sweep_other_repo(script, base):
+    """T-0764: the sweep run from repo A names an unmarked scratch folder of A (one line for several) and none of repo B's;
+    B's folder is kept."""
+    t = Fixture(base, script, 'sweepother')
+    tmpd = Path(base) / 'sweepother-tmp'
+    shutil.rmtree(tmpd, ignore_errors=True)  # a mutant run reuses base
+    mine = tmpd / 'sdlc-lite' / wtroot.repo_key(t.top)
+    theirs = tmpd / 'sdlc-lite' / 'other-deadbeef'
+    for d in (mine / 'probe-a', theirs / 'probe-b', theirs / 'probe-c'):
+        d.mkdir(parents=True)
+    env = {'TMPDIR': str(tmpd)}
+    fails = []
+    for args in (('sweep',), ('sweep', '--apply')):
+        rc, o = t.lanes(*args, env=env)
+        got = [x for x in o.splitlines() if 'unmarked' in x]
+        if rc or got != [f'unmarked: {mine / "probe-a"}']:
+            fails.append(f'sweep other repo {args}: want one unmarked line for this repo only, got {rc}: {o}')
+    (mine / 'probe-d').mkdir()
+    rc, o = t.lanes('sweep', env=env)
+    got = [x for x in o.splitlines() if 'unmarked' in x]
+    if rc or len(got) != 1 or not got[0].startswith('unmarked: 2 folders, first ') or 'other-deadbeef' in o:
+        fails.append(f'sweep other repo: want one summary line for two folders, got {rc}: {o}')
+    if not all(d.is_dir() for d in (theirs / 'probe-b', theirs / 'probe-c', mine / 'probe-a')):
+        fails.append('sweep other repo: an unmarked folder was deleted')
+    return fails
+
+
 def case_lock(script, base):
     """T-0589: open locks the tree with its owner (the claim ref holder, else claimed_by) and the ticket; list shows the
     lane with no commits as running, not closable; sweep --apply keeps it; close --discard refuses it; a plain close
@@ -3614,6 +3669,11 @@ MUTANTS = (
      'passed a symlinked path', 'C1 passes a symlinked path'),
     ('TICKETS-CSV', "+ [x.strip() for c in (csv or ()) for x in c.split(',')]:" + '  # TICKETS-CSV', ':' + '  # TICKETS-CSV',
      case_tickets_csv, 'tickets csv', '--tickets adds no ticket to the open'),
+    ('HOST-GONE', "and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o[\"branch\"]}', f'refs/heads/{b}').returncode:"
+     + '  # HOST-GONE', 'and True:  # HOST-GONE', case_host_removed_unmerged, 'host removed unmerged',
+     'without the ancestor test a removed host tree with unmerged work no longer holds the integration tree open'),
+    ('SWEEP-MINE', 'if wtroot.mine(p, ctx.top):' + '  # SWEEP-MINE', 'if True:  # SWEEP-MINE', case_sweep_other_repo,
+     'sweep other repo', "without the own-repo test the sweep names another repo's unmarked folders"),
 )
 
 
@@ -3908,6 +3968,10 @@ def run_selftest(script, src, base):
              'a landed host-owned agent-x tree does not hold the integration tree open; close prints its cleanup line (T-0743)')
         need('host removed', case_host_removed_integration(script, base),
              'a landed host record whose tree was removed does not hold the integration tree open; the present tree gets its line (T-0762)')
+        need('host removed unmerged', case_host_removed_unmerged(script, base),
+             'a removed host tree whose branch is not an ancestor of the integration branch holds the integration tree open (T-0762)')
+        need('sweep other repo', case_sweep_other_repo(script, base),
+             "the sweep names no unmarked folder under another repo's scratch dir and one line for this repo's (T-0764)")
         need('lock', case_lock(script, base),
              'open locks the lane with its owner; list shows it running, sweep keeps it, close --discard refuses, '
              'close unlocks and closes it, and an explicit unlock lets --discard close')
