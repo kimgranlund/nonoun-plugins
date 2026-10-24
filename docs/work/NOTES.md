@@ -524,3 +524,7 @@
 
 - note: plugins/sdlc-lite/scripts/fanout.py:125 says "--forward only adds the diverged case (merge main in, run the gates)", but with --forward a fast-forward branch is gated too (T-0701, settle_forward at fanout.py:3197-3221); skills/fanout/SKILL.md:31 likewise ties "gate it" to the diverged case only. The cmd_settle docstring and sdlc-internals.md:206 state the T-0701 case correctly.
 - note: the new T-0761 case overlaps case 28's `fanout/ff` assertion (both fail under the same mutation); it adds only the `settled: ... is in main` output check.
+
+## T-0763: dispatch status and steps next from main see a host lane's records (2026-10-24)
+
+- note: the case 30b selftest assertion was not seen red with the guard removed through the full fanout selftest (about 9 minutes per run); the guard-removed behavior was observed directly with the probe above (base moves, false line prints), which is the same condition the assertion checks.

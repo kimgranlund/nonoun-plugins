@@ -2,7 +2,7 @@
 id: T-0763
 title: "dispatch status and steps next from main see a host lane's records"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,12 @@ Checks:
 Re-verify fix (verifier-L2-2): `fanout.py land` called `rebind_host_record` again after record/advance had rebound the record, rewriting it with the land-time base and printing a false `rebound from` line. `rebind_host_record` is now a no-op (returns None, writes nothing) when `<leaf>.lane.json` exists and the provisional record does not; `land_lanes` and `rebind_solo_host` print only a returned line. New assertion in `fanout.py selftest` case 30b: record --agent-id y rebinds to agent-y, main moves on, land keeps base_sha and prints no `rebound from`. Red with the guard removed: `fanout selftest: FAIL` on `case 30b host worktree (T-0763): record --agent-id y rebinds ... keeps its base_sha and prints no second rebound line`. Through gate_lock: fanout selftest exit 0, dispatch selftest exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 12f046a9` exit 0.
 
 Open: before the solo's advance or record, status and next from main still read main (no agent id yet; by design). `steps.py next` on a solo task dir with no builder result asks for a handoff level, as for any lane; not in scope.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a71e43a24934
+- Changed: see commits
+- Commits: 69901be T-0763: land keeps a host record that record/advance already rebound; 9b0079e T-0763: rebind a prep solo's host record at record/advance --agent-id; e59f14b T-0763: dispatch status and steps next from main see a host lane's records
+- Check: 1 selftest case: a host-worktree ticket's records are seen by status and next from the primary chec...: pass
+- Check: 2 gate commands: pass
+- Follow-up: note: the case 30b selftest assertion was not seen red with the guard... -> notes.md
