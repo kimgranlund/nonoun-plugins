@@ -9,7 +9,8 @@ Usage: wtroot.py main [--cwd D]                          print the main checkout
        wtroot.py mark DIR --pid N [--role R] [--ticket T] [--running F]
                                                          write DIR/.owner.json (creating DIR)
        wtroot.py sweep [--cwd D] [--hours H] [--apply]   a dry run by default; --apply removes dead-owner folders
-       wtroot.py selftest
+       wtroot.py owner KIND [--ticket T] [--cwd D]       print the checkout that owns KIND for T (see Owner trees)
+       wtroot.py selftest | owner-selftest
 
 Root. Every worktree SDLC Lite makes lives in a sibling folder outside the repo, <main checkout parent>/<main
 checkout name>.worktrees/ (T-0563), on both hosts, so no watcher, test runner, indexer or .sdlc walker in the repo
@@ -47,8 +48,14 @@ else `would remove <path>` (dry run) or, with --apply, its registered worktrees 
 --force, the folder is deleted, and it prints `removed <path>`. An unmarked run.sh prefix (<role>-<pid>) is left to
 reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
 
+Owner trees (T-0749). OWNERS maps each kind of sdlc state (records, base-sha, end-sha, config, branch, worktree,
+roadmap, router, ticket-close, lane-close) to the checkouts that own it, in order: primary (the main checkout), integration
+(the worktree holding the lane's into branch, when not the main checkout) and lane (the worktree whose .lane.json or host
+record lists the ticket). owner_tree(kind, ticket, cwd) returns the first that exists; owner_rule(kind) the whole row,
+with the note naming a script that disagrees today. The rule table is in docs/references/sdlc-internals.md.
+
 Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, host_owned, tmp_root, tmp_roots,
-scratch_root, scratch_dir, cache_root, evidence_dir, mark, owner, live, sweep.
+scratch_root, scratch_dir, cache_root, evidence_dir, mark, owner, live, sweep, OWNERS, owner_trees, owner_rule, owner_tree.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
@@ -284,6 +291,162 @@ def lines(res):
     return [word[v] % p for v, p in res]
 
 
+# Owner trees (T-0749): which checkout owns each kind of sdlc state while a ticket is in flight, derived from what the
+# scripts do today (docs/references/sdlc-internals.md, the owner-tree table). Each row: the trees in preference order
+# (the first that exists wins), who writes, who reads, and a note naming a script that disagrees today.
+OWNERS = {
+    'records': (('lane', 'primary'), 'dispatch.py prepare and record (order.records_dir of the handoff dir)',
+                'dispatch.py, fanout.py land (lane, then integration, then primary), lanes.py close (carries to primary)',
+                '#55: prepare --tree <lane> for a primary handoff writes primary records while land reads the lane first'),
+    'base-sha': (('lane', 'primary'), 'dispatch.py prepare (records dir)',
+                 'dispatch.build_base (records dir, then the twin in the execution tree, T-0717)',
+                 '#49: build_base falls back to the lane start (.lane.json base_sha) when no base-sha is in the execution tree'),
+    'end-sha': (('lane', 'primary'), 'dispatch.py record for a builder (records dir)',
+                'dispatch.step_end for the verifier Diff range (the object must exist in the execution tree)',
+                '#47: end-sha records the end tree before a review fix, so a later fix in the lane falls outside it'),
+    'config': (('integration', 'primary'), 'the repo owner (.sdlc/config: merge_gate, light_scope)',
+               'fanout.py land gate_class and light_refusal via config_root (T-0722)',
+               '#58: fanout.py run light_refusal and lanes.py read the primary config only; wtroot._config_root reads the current tree'),
+    'branch': (('integration', 'primary'), 'lanes.py open (T-0680; primary with --root or a ticket missing there)',
+               'lanes.py list and close (cleared in both trees, T-0695, T-0713)',
+               'a main tracking an upstream writes no line at all (T-0609)'),
+    'worktree': (('integration', 'primary'), 'lanes.py open, beside the branch: line',
+                 'lanes.py close (cleared with the branch: line)', 'as branch'),
+    'roadmap': (('integration', 'primary'), 'tickets.record_branch and tickets.py close (regenerated where they write)',
+                'fanout.merge_generated resolves roadmap conflicts on merge', 'as branch'),
+    'router': (('integration', 'primary'), 'tickets.record_branch and tickets.py close (regenerated where they write)',
+               'roles reading .sdlc/AGENTS.md', 'as branch'),
+    'ticket-close': (('integration', 'primary'), 'fanout.py land (tickets.py close on the integration branch)',
+                     'lanes.py finish step 6 closes in primary when land did not',
+                     '#59: the closed folder lands on integration while the lane keeps an open copy'),
+    'lane-close': (('primary',), 'lanes.py close_lane run from primary (archive ref, carried records, `lane closed` commit)',
+                   'lanes.py finish, archive list and restore',
+                   '#46/#57: close commits in primary while land merges into integration; only the branch: clear goes to integration (T-0695)'),
+}
+
+
+def _top(cwd):
+    top = _git(os.path.abspath(str(cwd)), 'rev-parse', '--show-toplevel')
+    return os.path.realpath(top) if top else None
+
+
+def _lane_rec(path, cwd):
+    """The lane record of a tree: .lane.json at its top, else its host record <root>/host/<leaf>.lane.json (T-0745)."""
+    r = root(cwd)
+    for f in (Path(path, '.lane.json'), Path(r, 'host', Path(path).name + '.lane.json') if r else None):
+        try:
+            rec = json.loads(f.read_text(encoding='utf-8')) if f else None
+        except (OSError, ValueError):
+            continue
+        if isinstance(rec, dict):
+            return rec
+    return {}
+
+
+def owner_trees(ticket=None, cwd='.'):
+    """{'primary', 'integration', 'lane'}: the main checkout, the lane worktree whose record lists ticket (else the
+    current tree when it is not the main checkout), and the worktree holding that lane's into branch when it is not the
+    main checkout; None for a tree that does not exist."""
+    primary = main_top(cwd)
+    primary = os.path.realpath(primary) if primary else None
+    trees, cur = [], None
+    for line in _git(os.path.abspath(str(cwd)), 'worktree', 'list', '--porcelain').splitlines():
+        if line.startswith('worktree '):
+            cur = [os.path.realpath(line[len('worktree '):]), None]
+            trees.append(cur)
+        elif line.startswith('branch refs/heads/') and cur:
+            cur[1] = line[len('branch refs/heads/'):]
+    lane, rec = None, {}
+    for p, _ in trees:
+        r = _lane_rec(p, cwd) if p != primary else {}
+        if ticket and ticket in (r.get('tickets') or []) and r.get('kind') != 'integration':
+            lane, rec = p, r
+            break
+    here = _top(cwd)
+    if lane is None and not ticket and here and here != primary:
+        lane, rec = here, _lane_rec(here, cwd)
+    into = str(rec.get('into') or '').replace('refs/heads/', '')
+    integ = next((p for p, b in trees if into and b == into and p != primary), None)
+    wrap = lambda p: Path(p) if p else None  # noqa: E731
+    return {'primary': wrap(primary), 'integration': wrap(integ), 'lane': wrap(lane)}
+
+
+def owner_rule(kind):
+    """The OWNERS row for kind as a dict (trees, writer, reader, note); ValueError for an unknown kind."""
+    if kind not in OWNERS:
+        raise ValueError('unknown kind %r: one of %s' % (kind, ', '.join(OWNERS)))
+    return dict(zip(('trees', 'writer', 'reader', 'note'), OWNERS[kind]))
+
+
+def owner_tree(kind, ticket=None, cwd='.'):
+    """The checkout that owns kind for ticket (owner_rule(kind)['trees'], the first that exists), else None."""
+    trees = owner_trees(ticket, cwd)
+    return next((trees[t] for t in owner_rule(kind)['trees'] if trees[t] is not None), None)
+
+
+def owner_selftest():
+    """One case per OWNERS kind across primary, integration and lane trees in a throwaway repo, then the fallbacks."""
+    fails = []
+
+    def expect(label, ok):
+        print(('ok: ' if ok else 'FAIL: ') + label)
+        if not ok:
+            fails.append(label)
+
+    def g(cwd, *a):
+        subprocess.run(['git', '-C', str(cwd), *a], check=True, capture_output=True)
+
+    want = {'records': 'lane', 'base-sha': 'lane', 'end-sha': 'lane', 'config': 'integration', 'branch': 'integration',
+            'worktree': 'integration', 'roadmap': 'integration', 'router': 'integration', 'ticket-close': 'integration',
+            'lane-close': 'primary'}
+    with tempfile.TemporaryDirectory() as t:
+        base = Path(os.path.realpath(t))
+        repo = base / 'repo'
+        repo.mkdir()
+        g(repo, 'init', '-q', '-b', 'main')
+        g(repo, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'init')
+        sib = base / 'repo.worktrees'
+        integ, lane, solo = sib / 'fanout' / 'integ', sib / 'fanout' / 'lane-a', sib / 'solo-b'
+        g(repo, 'worktree', 'add', '-q', '-b', 'integ', str(integ), 'HEAD')
+        g(repo, 'worktree', 'add', '-q', '-b', 'integ-lane-a', str(lane), 'HEAD')
+        g(repo, 'worktree', 'add', '-q', '-b', 'solo-b', str(solo), 'HEAD')
+        (lane / '.lane.json').write_text(json.dumps({'lane': 'lane-a', 'kind': 'fanout', 'tickets': ['T-0001'],
+                                                     'into': 'integ'}), encoding='utf-8')
+        (solo / '.lane.json').write_text(json.dumps({'lane': 'solo-b', 'kind': 'solo', 'tickets': ['T-0002'],
+                                                     'into': 'main'}), encoding='utf-8')
+        expect('owner_trees names primary, integration and lane for a fanout ticket, from any tree',
+               all(owner_trees('T-0001', c) == {'primary': repo, 'integration': integ, 'lane': lane}
+                   for c in (repo, integ, lane)))
+        name = {'primary': repo, 'integration': integ, 'lane': lane}
+        for kind in OWNERS:
+            got = [owner_tree(kind, 'T-0001', c) for c in (repo, lane)]
+            expect('%s is owned by the %s tree, from primary and from the lane (got %s)' % (kind, want[kind], [x and x.name for x in got]),
+                   got == [name[want[kind]]] * 2)
+        fall = {'lane': solo, 'integration': repo, 'primary': repo}
+        for kind in OWNERS:
+            got = owner_tree(kind, 'T-0002', solo)
+            expect('fallback: %s for a solo lane into main is %s (got %s)' % (kind, fall[want[kind]].name, got and got.name),
+                   got == fall[want[kind]])
+        expect('fallback: a ticket with no lane leaves the lane kinds in primary',
+               owner_tree('records', 'T-0009', repo) == repo and owner_tree('config', 'T-0009', repo) == repo)
+        host = sib / 'host-c'
+        g(repo, 'worktree', 'add', '-q', '-b', 'host-c', str(host), 'HEAD')
+        (sib / 'host').mkdir()
+        (sib / 'host' / 'host-c.lane.json').write_text(json.dumps({'lane': 'host-c', 'kind': 'host',
+                                                                   'tickets': ['T-0003'], 'into': 'integ'}))
+        expect('a host record (no .lane.json) names the lane and its integration tree (T-0745)',
+               owner_tree('base-sha', 'T-0003', repo) == host and owner_tree('config', 'T-0003', repo) == integ)
+        expect('no ticket: the current tree is the lane', owner_tree('records', None, lane) == lane
+               and owner_tree('records', None, repo) == repo)
+        try:
+            owner_rule('nope')
+            expect('an unknown kind raises ValueError', False)
+        except ValueError:
+            expect('an unknown kind raises ValueError', True)
+    print('wtroot.py owner-selftest: %s' % ('FAIL' if fails else 'ok'))
+    return 1 if fails else 0
+
+
 def selftest():
     fails = []
 
@@ -404,13 +567,15 @@ def selftest():
         expect('an unmarked run.sh prefix is left to reap-tmp-worktrees.sh, not listed or removed',
                'builder-%d' % dead.pid not in res and (tmp / ('builder-%d' % dead.pid)).is_dir())
         expect('lines() words the verdicts', lines([('unmarked', '/x')]) == ['unmarked: /x'])
+    if owner_selftest():
+        fails.append('owner-selftest')
     print('wtroot.py selftest: %s' % ('FAIL' if fails else 'ok'))
     return 1 if fails else 0
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='wtroot.py', description=__doc__.split('\n')[0])
-    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,legacy,scratch,evidence,mark,sweep,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{main,root,legacy,scratch,evidence,mark,sweep,owner,selftest,owner-selftest}')
     for n in ('main', 'root', 'legacy'):
         sub.add_parser(n).add_argument('--cwd', default='.')
     p = sub.add_parser('scratch')
@@ -429,10 +594,21 @@ def main(argv=None):
     p.add_argument('--cwd', default='.')
     p.add_argument('--hours', type=float)
     p.add_argument('--apply', action='store_true')
+    p = sub.add_parser('owner')
+    p.add_argument('kind', choices=list(OWNERS))
+    p.add_argument('--ticket')
+    p.add_argument('--cwd', default='.')
     sub.add_parser('selftest')
+    sub.add_parser('owner-selftest')
     a = ap.parse_args(argv)
     if a.cmd == 'selftest':
         return selftest()
+    if a.cmd == 'owner-selftest':
+        return owner_selftest()
+    if a.cmd == 'owner':
+        o = owner_tree(a.kind, a.ticket, a.cwd)
+        print(o or '')
+        return 0 if o else 1
     if a.cmd == 'main':
         top = main_top(a.cwd)
         print(top or '')
