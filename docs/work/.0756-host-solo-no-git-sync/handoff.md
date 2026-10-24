@@ -2,7 +2,7 @@
 id: T-0756
 title: "A host-worktree solo brief asks for no git sync"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,13 @@ Checks:
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0
 - `python3 scripts/check-packaging.py` exit 0
 - `git diff --check 12f046a9` exit 0
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 12f046a92ed1
+- Changed: see commits
+- Commits: 00b7c6a T-0756: A host-worktree solo brief asks for no git sync
+- Check: 1 fanout.py selftest case: prep for a host lane whose base is not on the remote default branch refu...: pass
+- Check: 2 gate_lock selftest exit 0, `check.py` exit 0, `check-packaging.py` passes, `git diff --check 12f0...: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2211: decide: the refusal... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:2211: note: for a base on a... -> notes.md
