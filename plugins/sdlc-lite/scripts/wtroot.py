@@ -51,11 +51,14 @@ reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call
 Owner trees (T-0749). OWNERS maps each kind of sdlc state (records, base-sha, end-sha, config, branch, worktree,
 roadmap, router, ticket-close, lane-close) to the checkouts that own it, in order: primary (the main checkout), integration
 (the worktree holding the lane's into branch, when not the main checkout) and lane (the worktree whose .lane.json or host
-record lists the ticket). owner_tree(kind, ticket, cwd) returns the first that exists; owner_rule(kind) the whole row,
+record lists the ticket, else the current tree when it is a linked one). A host record is <lanes root>/host/<leaf>.lane.json,
+the lanes root a lanes_root: line of the main checkout's .sdlc/config as lanes.config reads it, else root (lanes_root,
+host_dirs, lane_record; T-0750). owner_tree(kind, ticket, cwd) returns the first that exists; owner_rule(kind) the whole row,
 with the note naming a script that disagrees today. The rule table is in docs/references/sdlc-internals.md.
 
 Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, host_owned, tmp_root, tmp_roots,
-scratch_root, scratch_dir, cache_root, evidence_dir, mark, owner, live, sweep, OWNERS, owner_trees, owner_rule, owner_tree.
+scratch_root, scratch_dir, cache_root, evidence_dir, mark, owner, live, sweep, OWNERS, owner_trees, owner_rule, owner_tree,
+lanes_root, host_dirs, lane_record.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
@@ -97,14 +100,14 @@ def bare_parent(cwd='.'):
     return os.path.dirname(os.path.normpath(os.path.join(cwd, common)))
 
 
-def _config_root(top):
-    """The worktree_root: line of <top>/.sdlc/config, or None."""
+def _config_root(top, key='worktree_root'):
+    """The <key>: line (worktree_root, or lanes_root) of <top>/.sdlc/config, or None."""
     try:
         text = Path(top, '.sdlc', 'config').read_text(encoding='utf-8')
     except (OSError, TypeError):
         return None
     for line in text.splitlines():
-        m = re.match(r'\s*worktree_root\s*:\s*(.*?)\s*$', line)
+        m = re.match(r'\s*%s\s*:\s*(.*?)\s*$' % key, line)
         if m and m.group(1):
             return os.path.expanduser(m.group(1))
     return None
@@ -295,13 +298,13 @@ def lines(res):
 # scripts do today (docs/references/sdlc-internals.md, the owner-tree table). Each row: the trees in preference order
 # (the first that exists wins), who writes, who reads, and a note naming a script that disagrees today.
 OWNERS = {
-    'records': (('lane', 'primary'), 'dispatch.py prepare and record (order.records_dir of the handoff dir)',
+    'records': (('lane', 'primary'), 'dispatch.py prepare and record (dispatch.owned_records: the handoff dir in this tree, T-0750)',
                 'dispatch.py, fanout.py land (lane, then integration, then primary), lanes.py close (carries to primary)',
-                '#55: prepare --tree <lane> for a primary handoff writes primary records while land reads the lane first'),
-    'base-sha': (('lane', 'primary'), 'dispatch.py prepare (records dir)',
-                 'dispatch.build_base (records dir, then the twin in the execution tree, T-0717)',
-                 '#49: build_base falls back to the lane start (.lane.json base_sha) when no base-sha is in the execution tree'),
-    'end-sha': (('lane', 'primary'), 'dispatch.py record for a builder (records dir)',
+                'none in dispatch.py since T-0750 (#55: prepare --tree <lane> for a primary handoff now writes the lane)'),
+    'base-sha': (('lane', 'primary'), 'dispatch.py prepare (dispatch.owned_records)',
+                 'dispatch.build_base (dispatch.owned_records, T-0750; the twin read of T-0717 is gone)',
+                 '#49: build_base still takes the lane start (.lane.json base_sha) for a verifier when nothing is recorded'),
+    'end-sha': (('lane', 'primary'), 'dispatch.py record for a builder (dispatch.owned_records, T-0750)',
                 'dispatch.step_end for the verifier Diff range (the object must exist in the execution tree)',
                 '#47: end-sha records the end tree before a review fix, so a later fix in the lane falls outside it'),
     'config': (('integration', 'primary'), 'the repo owner (.sdlc/config: merge_gate, light_scope)',
@@ -330,10 +333,24 @@ def _top(cwd):
     return os.path.realpath(top) if top else None
 
 
-def _lane_rec(path, cwd):
-    """The lane record of a tree: .lane.json at its top, else its host record <root>/host/<leaf>.lane.json (T-0745)."""
-    r = root(cwd)
-    for f in (Path(path, '.lane.json'), Path(r, 'host', Path(path).name + '.lane.json') if r else None):
+def lanes_root(cwd='.'):
+    """Where lanes.py keeps lane and host records: a lanes_root: line in the main checkout's .sdlc/config, relative to it
+    (lanes.config), else root(cwd) (T-0750)."""
+    top = main_top(cwd)
+    conf = _config_root(top, 'lanes_root') if top else None
+    return Path(os.path.normpath(os.path.join(top, conf))) if conf else root(cwd)
+
+
+def host_dirs(cwd='.'):
+    """Where host records live, as lanes.host_dirs reads them: <lanes root>/host (lanes_root), then the legacy roots'."""
+    return [Path(r, 'host') for r in dict.fromkeys([lanes_root(cwd)] + legacy_roots(cwd)) if r]
+
+
+def lane_record(path, cwd='.', hosts=None):
+    """The lane record of a tree: .lane.json at its top, else its host record <host dir>/<leaf>.lane.json (T-0745), in
+    hosts (default host_dirs(cwd), so a lanes_root: line counts, T-0750); {} when none."""
+    hosts = host_dirs(cwd) if hosts is None else hosts
+    for f in [Path(path, '.lane.json')] + [Path(h, Path(path).name + '.lane.json') for h in hosts]:
         try:
             rec = json.loads(f.read_text(encoding='utf-8')) if f else None
         except (OSError, ValueError):
@@ -356,15 +373,15 @@ def owner_trees(ticket=None, cwd='.'):
             trees.append(cur)
         elif line.startswith('branch refs/heads/') and cur:
             cur[1] = line[len('branch refs/heads/'):]
-    lane, rec = None, {}
+    lane, rec, hosts = None, {}, host_dirs(cwd)
     for p, _ in trees:
-        r = _lane_rec(p, cwd) if p != primary else {}
+        r = lane_record(p, cwd, hosts) if p != primary and ticket else {}
         if ticket and ticket in (r.get('tickets') or []) and r.get('kind') != 'integration':
             lane, rec = p, r
             break
     here = _top(cwd)
-    if lane is None and not ticket and here and here != primary:
-        lane, rec = here, _lane_rec(here, cwd)
+    if lane is None and here and here != primary:  # T-0750: also a ticket no lane record lists, run from a linked tree
+        lane, rec = here, lane_record(here, cwd, hosts)
     into = str(rec.get('into') or '').replace('refs/heads/', '')
     integ = next((p for p, b in trees if into and b == into and p != primary), None)
     wrap = lambda p: Path(p) if p else None  # noqa: E731
@@ -436,6 +453,21 @@ def owner_selftest():
                                                                    'tickets': ['T-0003'], 'into': 'integ'}))
         expect('a host record (no .lane.json) names the lane and its integration tree (T-0745)',
                owner_tree('base-sha', 'T-0003', repo) == host and owner_tree('config', 'T-0003', repo) == integ)
+        hostd, lr = sib / 'host-d', base / 'lanes-elsewhere'
+        g(repo, 'worktree', 'add', '-q', '-b', 'host-d', str(hostd), 'HEAD')
+        (lr / 'host').mkdir(parents=True)
+        (lr / 'host' / 'host-d.lane.json').write_text(json.dumps({'lane': 'host-d', 'kind': 'host', 'tickets': ['T-0004'],
+                                                                 'into': 'integ', 'base_sha': 'abc'}))
+        expect('negative control: a host record under a lanes_root: dir is not found with no lanes_root: line',
+               owner_tree('base-sha', 'T-0004', repo) == repo and lane_record(hostd, repo) == {})
+        (repo / '.sdlc').mkdir()
+        (repo / '.sdlc' / 'config').write_text('lanes_root: ../lanes-elsewhere\n')
+        expect('a host record under the lanes_root: dir of .sdlc/config names the lane and its integration tree (T-0750)',
+               lanes_root(lane) == lr and owner_tree('base-sha', 'T-0004', repo) == hostd
+               and owner_tree('config', 'T-0004', hostd) == integ and lane_record(hostd, hostd).get('base_sha') == 'abc')
+        (repo / '.sdlc' / 'config').unlink()
+        expect('a ticket no lane record lists, run from a linked tree: that tree is the lane (T-0750)',
+               owner_tree('records', 'T-0009', solo) == solo)
         expect('no ticket: the current tree is the lane', owner_tree('records', None, lane) == lane
                and owner_tree('records', None, repo) == repo)
         try:

@@ -40,8 +40,10 @@ nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, fami
 goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, time gate, lane guidance
 check, then the one write section.
 Records dir (T-0540): every record prepare and record write (result, attempt, dispatch record, .running, .limit,
-base-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <nearest .sdlc>/runtime/tasks/<task>/ (a legacy
-task dir that already holds records keeps them in place); the brief's Artifacts dir line names it. The handoff gates
+base-sha, end-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <nearest .sdlc>/runtime/tasks/<task>/ (a legacy
+task dir that already holds records keeps them in place), in the checkout that owns them (owned_records: the handoff dir
+at the same path in wtroot.owner_tree, the ticket's lane when one exists, else the execution tree; T-0750), so a
+--tree <lane> prepare for a main-checkout handoff records in the lane; the brief's Artifacts dir line names it. The handoff gates
 read the handoff dir, and skips.md stays in the task folder (order.task_dir). status and recover map a task or step
 dir to its records dir.
 
@@ -485,23 +487,23 @@ NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40}
 
 
 def lane_record_base(tree):
-    """base_sha of a lane worktree's fanout record (.lane.json at its top, else its host record), else ''."""
+    """base_sha of a lane worktree's fanout record (.lane.json at its top, else its host record under the lanes root,
+    wtroot.lane_record: T-0745, T-0750), else ''."""
     top = git('rev-parse', '--show-toplevel', cwd=tree).stdout.strip()
-    try:
-        rec = json.loads((Path(top) / '.lane.json').read_text(encoding='utf-8')) if top else {}
-    except (OSError, ValueError):
-        rec = {}
-    sha = str(rec.get('base_sha') or '').strip() if isinstance(rec, dict) else ''
-    if sha or not top:
-        return sha
-    try:  # a host-owned worktree has no .lane.json: its record is <lanes root>/host/<name>.lane.json (lanes.host_record, T-0745)
-        import lanes  # local like host_lanes: lanes imports nothing from here
-        for d in lanes.discover(lanes.Ctx(top)):
-            if d['owner'] == 'host' and d['exists'] and lanes.samepath(d['path'], top):
-                return str(d['base_sha'] or '').strip()
-    except Exception:  # noqa: BLE001 - a lane lookup never blocks prepare
-        pass
-    return ''
+    return str(wtroot.lane_record(top, top).get('base_sha') or '').strip() if top else ''
+
+
+def owned_records(directory, tree=None, kind='records', create=False):
+    """The records dir of directory in the checkout that owns kind (records, base-sha or end-sha) for its ticket,
+    wtroot.owner_tree from the execution tree (tree, else exec_tree): directory at the same path in that checkout, so
+    prepare, record and a later prepare write and read one tree (T-0750; #55, #49). directory as given when it is
+    outside its checkout, missing, or no owner is found."""
+    if not os.path.isdir(str(directory)):
+        return order.records_dir(directory, create=create)
+    owner = wtroot.owner_tree(kind, ticket_label(directory)[0] or None, tree or exec_tree(directory))
+    src = git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip()
+    rel = os.path.relpath(os.path.realpath(str(directory)), os.path.realpath(src)) if src else '..'
+    return order.records_dir(Path(owner) / rel if owner is not None and not rel.startswith('..') else directory, create=create)
 
 
 def lane_start(tree, floor=''):
@@ -517,15 +519,15 @@ def build_base(directory, records=None, tree=None, role=None):
     given, as prepare --tree settles it, else the handoff's own tree, or the lane worktree a main-checkout handoff is
     run from), and in a lane worktree a recorded sha older than the lane's fork point is stale (T-0376). Returns
     (stored, base, named), named true for a base the handoff names. base-sha and the dispatch records are read in records
-    (the records dir, default directory's), then in the twin of a handoff dir in another checkout than the execution tree
-    (T-0717). A verifier with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD,
+    (default owned_records, the owner tree's records dir: for a handoff dir in another checkout than the execution tree,
+    its twin there, T-0717, T-0750); a base the handoff names is also read from the twin's handoffs. A verifier with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD,
     which after a resumed driver is its own WIP commit (T-0546); it says so only for a guessed fork point, not a fanout record (T-0745). When the lane merged main after its start or its
     recorded base, a verifier gets the lane's merge point with main instead, so the diff holds the lane's work and none of main's (T-0748). A solo dispatch's base_sha counts only in the tree it was recorded in (its
     tree, else the handoff's checkout): one recorded in the main checkout is not a lane tree's base (T-0578)."""
-    records = Path(records) if records is not None else order.records_dir(directory)
     cwd = tree if tree else exec_tree(directory)
+    records = Path(records) if records is not None else owned_records(directory, cwd, 'base-sha')
     # T-0717: a handoff in another checkout than the execution tree (prepare --tree <lane> for a main-checkout handoff) has
-    # a twin dir at the same path in that tree, whose handoff and base-sha the lane's worker may have written
+    # a twin dir at the same path in that tree, whose handoff the lane's worker may have written (its base-sha is records)
     twin = None
     src_top = git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip()
     run_top = git('rev-parse', '--show-toplevel', cwd=cwd).stdout.strip()
@@ -559,12 +561,6 @@ def build_base(directory, records=None, tree=None, role=None):
     def ancestor(sha):
         return bool(commit(sha)) and git('merge-base', '--is-ancestor', sha, 'HEAD', cwd=cwd).returncode == 0
 
-    tf = order.records_dir(twin) / 'base-sha' if twin is not None and not stored else None
-    if tf is not None and tf.is_file():  # the twin's base-sha counts only as a valid base of the execution tree
-        lines = tf.read_text(encoding='utf-8', errors='replace').splitlines()
-        sha = re.sub(r'\s', '', lines[0]) if lines else ''
-        if ancestor(sha) and (not floor or git('merge-base', '--is-ancestor', floor, sha, cwd=cwd).returncode == 0):
-            stored = sha
     base, why = '', ''
     hf = Path(directory) / 'handoff.md'
     m = NAMED_BASE_RE.search(hf.read_text(encoding='utf-8', errors='replace')) if hf.is_file() else None
@@ -945,10 +941,11 @@ def over_budget_lines(directory):
     return lines
 
 
-def ticket_minutes(ticket):
+def ticket_minutes(ticket, tree=None):
     """Agent minutes a ticket folder has used: each runs.jsonl row's duration_ms, else its closed (completed or failed)
-    attempt record's started_at to finished_at, over the records dir and the ticket folder, once per attempt_id."""
-    roots = {order.records_dir(ticket).resolve(), Path(ticket).resolve()}
+    attempt record's started_at to finished_at, over its records dir, the records dir prepare writes from tree
+    (owned_records, T-0750) and the ticket folder, once per attempt_id."""
+    roots = {order.records_dir(ticket).resolve(), owned_records(ticket, tree).resolve(), Path(ticket).resolve()}
     seen, total = set(), 0.0
     for f in sorted({f.resolve() for r in roots if r.is_dir() for f in r.rglob('runs.jsonl')}):
         for line in f.read_text(encoding='utf-8', errors='replace').splitlines():
@@ -978,7 +975,7 @@ def ticket_minutes(ticket):
     return total
 
 
-def ticket_time(ticket):
+def ticket_time(ticket, tree=None):
     """(used minutes, ceiling minutes, budget minutes, size) for a ticket folder with a size budget, else None. Each
     `time budget approved: <n>m of ...` line in its skips.md raises the ceiling to n plus one budget."""
     meta = budget.front(Path(ticket) / 'handoff.md') or {}
@@ -989,7 +986,7 @@ def ticket_time(ticket):
         approved = [int(m.group(1)) for m in TIME_APPROVED_RE.finditer((Path(ticket) / 'skips.md').read_text(encoding='utf-8'))]
     except OSError:
         approved = []
-    return ticket_minutes(ticket), max(approved, default=0) + TICKET_MINUTES[size], TICKET_MINUTES[size], size
+    return ticket_minutes(ticket, tree), max(approved, default=0) + TICKET_MINUTES[size], TICKET_MINUTES[size], size
 
 
 def status(directory, orphans_only=False):
@@ -1201,7 +1198,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
 
     # The records dir (order.records_dir): results, attempts, dispatch records, markers, base-sha and runs.jsonl. The
     # handoff gates above and below keep the handoff dir; skips.md stays in the task folder (order.task_dir).
-    records = order.records_dir(directory)  # made (create=True) only once every gate has passed, just before the lock
+    # T-0750: in the checkout that owns records for the ticket (wtroot.owner_tree), the twin of a handoff dir in another tree
+    records = owned_records(directory, run_tree)  # made (create=True) only once every gate has passed, just before the lock
     model = agent_alias(family(role, model, directory, solo))
     prev = row_before(records, role, level)
     if prev and prev != (model, effort):
@@ -1280,7 +1278,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
     time_approved, time_ticket = '', None
     if 'time' not in skip:  # T-0555: a ticket past its agent-time budget waits for the person
         time_ticket = budget.ticket_of(handoff)
-        tt = ticket_time(time_ticket) if time_ticket is not None else None
+        tt = ticket_time(time_ticket, run_tree) if time_ticket is not None else None
         if tt and tt[0] >= tt[1]:
             time_approved = ' '.join(os.environ.get('SDLC_TIME_APPROVED', '').split())
             if not time_approved:
@@ -1304,7 +1302,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
     lock = None
     try:
         if not dry_run:
-            records = order.records_dir(directory, create=True)
+            records = owned_records(directory, run_tree, create=True)
             try:
                 lock = run_lifecycle.lock(records)
             except ValueError as e:
@@ -1329,7 +1327,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             if role == 'verifier':
                 review, base = ready_review(directory, toplevel, base, named)
                 # T-0661: the end a recorded builder left in end-sha bounds the diff, so later steps or merges stay out of it
-                end, kind = step_end(records, toplevel)
+                end, kind = step_end(owned_records(directory, run_tree, 'end-sha'), toplevel)
                 if review and end:
                     diff_range = '%s..%s' % (base, review)
                     range_line = ('Diff range: %s (the Review sha wins over the end this step\'s builder recorded, %s; '
@@ -1345,9 +1343,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                 elif end:
                     say('end-sha %s is not a descendant of Base sha %s: no Diff range line' % (end[:12], base[:12]))
             elif not dry_run:
-                (records / 'end-sha').unlink(missing_ok=True)  # a new build: the last attempt's end is stale
+                (owned_records(directory, run_tree, 'end-sha') / 'end-sha').unlink(missing_ok=True)  # a new build: the last attempt's end is stale
             if not dry_run and base != stored:
-                (records / 'base-sha').write_text(base + '\n', encoding='utf-8')
+                (owned_records(directory, run_tree, 'base-sha') / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
         # T-0646: every role writes its result to the Report file and ends with a one-line pointer, so the completion notice stays short
         prompt = ('%s\nHandoff: %s\nArtifacts dir: %s\nReport file: %s (before you end, write your result to exactly this path with the Write '
@@ -1894,8 +1892,8 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         subprocess.run([sys.executable, str(HERE / 'redck.py'), 'audit', d['handoff'], '--attempt-id', d['attempt_id']],
                        stdout=subprocess.DEVNULL, check=False)
         end = build_end(tree)  # T-0661: where this step's build ended, the verifier's Diff range end
-        if end:
-            (result.parent / 'end-sha').write_text(end + '\n', encoding='utf-8')
+        if end:  # T-0750: where the verifier's prepare reads it, the end-sha owner tree
+            (owned_records(handoff.parent, tree, 'end-sha', create=True) / 'end-sha').write_text(end + '\n', encoding='utf-8')
     report_strays(found)
     close('completed', 0, result_sha256=result_sha, **({'legacy_format': legacy} if legacy else {}))
     print(result)
@@ -1953,7 +1951,7 @@ def rerecord(dispatch_file, validate=validate_result):
     if d['role'] == 'builder':
         end = build_end(d['tree'])
         if end:
-            (result.parent / 'end-sha').write_text(end + '\n', encoding='utf-8')
+            (owned_records(Path(d['handoff']).parent, d['tree'], 'end-sha', create=True) / 'end-sha').write_text(end + '\n', encoding='utf-8')
             print('end-sha %s' % end)
     print(result)
     return 0
@@ -3280,6 +3278,10 @@ def selftest():
         # execution tree's HEAD (the lane), never the main checkout's HEAD; a differing supplied SDLC_BASE_SHA is refused.
         mhand, mbase = rr / '.sdlc' / 'w' / 'handoff.md', R(rr / '.sdlc' / 'w') / 'base-sha'
         mbase_was = mbase.read_text() if mbase.is_file() else None
+        # T-0750: run from the lane, the lane twin owns the step's records (wtroot.owner_tree), so its base-sha is there
+        lbase = R(lw2 / '.sdlc' / 'w') / 'base-sha'
+        lbase_was = lbase.read_text() if lbase.is_file() else None
+        mbase.unlink(missing_ok=True)  # nothing recorded in the main checkout: only the lane's base-sha can move the base
         mhand_was = mhand.read_text()
         lane_tip2 = gt(lw2, 'rev-parse', 'HEAD')
         main_head = gt(rr, 'rev-parse', 'HEAD')
@@ -3289,11 +3291,11 @@ def selftest():
             err = io.StringIO()
             with clean_env(**env), cwd(lw2), contextlib.redirect_stderr(err):
                 return prepare('builder', 'L1', str(mhand), dry_run=True)['base_sha'], err.getvalue()
-        mbase.write_text(lane_head + '\n')
+        lbase.write_text(lane_head + '\n')
         got, _ = shared()
         case('a main-checkout handoff run from the lane: a rework keeps the base recorded at the first dispatch, which main does not contain',
              got == lane_head != lane_tip2 and lane_head not in gt(rr, 'rev-list', 'HEAD').split())
-        mbase.unlink()
+        lbase.unlink()
         got, _ = shared()
         case('a main-checkout handoff run from the lane with nothing recorded gets the lane HEAD, not the main checkout HEAD',
              got == lane_tip2 != main_head)
@@ -3351,17 +3353,17 @@ def selftest():
         case('prepare --tree: a path that is not a worktree of this repository is refused, exit 2',
              all(rcb == 2 and 'dispatch.py: --tree %s is not a worktree of this repository' % bad in errb for bad, rcb, _, errb in refusals)
              and sorted(p.name for p in sbd.iterdir()) == sb_before)
-        mbase.write_text(lane_head + '\n')
+        lbase.write_text(lane_head + '\n')
         got, err = shared(SDLC_BASE_SHA=main_head)
         case('a main-checkout handoff run from the lane refuses a wrong but valid supplied base and keeps the recorded one',
              got == lane_head and 'SDLC_BASE_SHA refused: %s' % main_head in err)
         got, err = shared(SDLC_BASE_SHA=lane_head)
         case('a main-checkout handoff run from the lane accepts a supplied base equal to the pick', got == lane_head and 'refused' not in err)
-        mbase.unlink()
+        lbase.unlink()
         got, err = shared(SDLC_BASE_SHA=main_head)
         case('a main-checkout handoff run from the lane refuses a wrong supplied base on a first dispatch too',
              got == lane_tip2 and 'SDLC_BASE_SHA refused: %s' % main_head in err)
-        mbase.write_text(lane_head + '\n')
+        lbase.write_text(lane_head + '\n')
         mhand.write_text(mhand_was + '\nbase: %s\n' % stale)
         got, _ = shared()
         case('a main-checkout handoff run from the lane: a base the handoff names wins over the recorded one, even older than the fork',
@@ -3385,6 +3387,10 @@ def selftest():
             mbase.unlink(missing_ok=True)
         else:
             mbase.write_text(mbase_was)
+        if lbase_was is None:
+            lbase.unlink(missing_ok=True)
+        else:
+            lbase.write_text(lbase_was)
         # T-0717: a fanout lane merged main after its start, and its worker built on the merge. The worker names that base in
         # the lane's copy of the ticket handoff, or in the lane's base-sha; prepare --tree <lane> verifier for the
         # main-checkout handoff takes it, not the lane start.
@@ -3442,7 +3448,8 @@ def selftest():
         gt(lw4, 'add', 'pass4.txt')
         gt(lw4, 'commit', '-qm', 'lane4 first pass')
         _, dv1, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw4))
-        mbase.write_text(dv1['base_sha'] + '\n')  # what a real (not dry-run) first prepare writes
+        l4base = R(lw4 / '.sdlc' / 'w') / 'base-sha'  # T-0750: prepare --tree <lane> records in the lane twin
+        l4base.write_text(dv1['base_sha'] + '\n')  # what a real (not dry-run) first prepare writes
         (rr / 'main4.txt').write_text('m')
         gt(rr, 'add', 'main4.txt')
         gt(rr, 'commit', '-qm', 'main moves on a third time')
@@ -3453,13 +3460,38 @@ def selftest():
         gt(lw4, 'commit', '-qm', 'lane4 fix')
         head4 = gt(lw4, 'rev-parse', 'HEAD')
         _, dv2, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw4))
-        mbase.write_text(dv2['base_sha'] + '\n')
+        l4base.write_text(dv2['base_sha'] + '\n')
         _, dv3, _ = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw4))
         for n, d in ((2, dv2), (3, dv3)):
             files4 = gt(lw4, 'diff', '--name-only', d['base_sha'], 'HEAD', '--', '.', ':(exclude).lane.json').split()
             case('a verifier after the lane merged main (attempt %d): the base diff holds both lane commits and no main-only file' % n,
                  dv1['base_sha'] == start4 and d['base_sha'] not in (head4, merge4) and files4 == ['fix4.txt', 'pass4.txt'])
-        mbase.unlink()
+        l4base.unlink()
+        # T-0750 (#55, #49): one tree writes base-sha, another reads it. prepare --tree <lane> builder for the main-checkout
+        # handoff, run from the main checkout, records in the lane twin (wtroot.owner_tree), so a verifier prepared from
+        # inside the lane for the lane's copy of the handoff reads the build base, not the lane start.
+        lw5 = rr.parent / (rr.name + '-lane5')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'lane5', str(lw5), 'HEAD')
+        start5 = gt(lw5, 'rev-parse', 'HEAD')
+        (lw5 / '.lane.json').write_text(json.dumps({'lane': 'lane5', 'base_sha': start5}))
+        (lw5 / 'pre5.txt').write_text('p')
+        gt(lw5, 'add', 'pre5.txt')
+        gt(lw5, 'commit', '-qm', 'lane5 work before the step')
+        built5 = gt(lw5, 'rev-parse', 'HEAD')
+        lh5 = lw5 / '.sdlc' / 'w' / 'handoff.md'
+        lh5.parent.mkdir(parents=True, exist_ok=True)
+        lh5.write_text(mhand_was)
+        rcb5, db5, errb5 = prep(rr, 'builder', 'L1', str(mhand), '--tree', str(lw5))
+        (lw5 / 'step5.txt').write_text('s')
+        gt(lw5, 'add', 'step5.txt')
+        gt(lw5, 'commit', '-qm', 'lane5 step build')
+        rcv5, dv5, errv5 = prep(lw5, 'verifier', 'L1', str(lh5), '--dry-run')
+        case('owner tree (T-0750): base-sha written by prepare --tree <lane> from the main checkout is read by a verifier '
+             'prepared inside the lane, got builder rc=%s base=%s, verifier rc=%s base=%s (start %s, built %s) %s'
+             % (rcb5, db5 and db5['base_sha'][:12], rcv5, dv5 and dv5['base_sha'][:12], start5[:12], built5[:12], (errb5 + errv5)[-200:]),
+             rcb5 == 0 and db5['base_sha'] == built5 and (R(lw5 / '.sdlc' / 'w') / 'base-sha').read_text() == built5 + '\n'
+             and rcv5 == 0 and dv5['base_sha'] == built5 != start5)
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw5)], capture_output=True)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw4)], capture_output=True)
         if mbase_was is not None:
             mbase.write_text(mbase_was)
