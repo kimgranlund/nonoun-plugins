@@ -45,7 +45,7 @@ task dir that already holds records keeps them in place), in the checkout that o
 at the same path in wtroot.owner_tree, the ticket's lane when one exists, else the execution tree; T-0750), so a
 --tree <lane> prepare for a main-checkout handoff records in the lane; the brief's Artifacts dir line names it. The handoff gates
 read the handoff dir, and skips.md stays in the task folder (order.task_dir). status and recover map a task or step
-dir to its records dir.
+dir to its records dir; status reads the owner tree's twin of it when that holds attempts (T-0755).
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
@@ -2465,7 +2465,13 @@ def main(argv):
     if args.cmd in ('status', 'recover', 'resume'):
         try:
             if args.cmd in ('status', 'recover') and getattr(args, 'directory', None):
-                args.directory = handoff_records(args.directory)
+                given, args.directory = args.directory, handoff_records(args.directory)
+                if args.cmd == 'status' and args.directory != given:
+                    # T-0755: the attempts are in the checkout that owns records for the ticket (the lane twin
+                    # prepare --tree <lane> wrote), when that twin holds any
+                    own = owned_records(given)
+                    if any(own.glob('*.attempt.json')) or any(own.glob('step-*/*.attempt.json')):
+                        args.directory = str(own)
             if args.cmd == 'status':
                 out = status(args.directory, args.orphans)
             elif args.cmd == 'resume':
@@ -3502,6 +3508,20 @@ def selftest():
              rcb5 == 0 and db5['base_sha'] == built5 and (R(lw5 / '.sdlc' / 'w') / 'base-sha').read_text() == built5 + '\n'
              and rcv5 == 0 and dv5['base_sha'] == built5 != start5)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw5)], capture_output=True)
+        # T-0755: status on a main-checkout task dir lists the attempt in its ticket's lane twin (owned_records), the tree
+        # prepare --tree <lane> writes, not `no attempts`; the main checkout's own records dir holds none
+        lw6 = rr.parent / (rr.name + '-lane6')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'lane6', str(lw6), 'HEAD')
+        (lw6 / '.lane.json').write_text(json.dumps({'lane': 'lane6', 'kind': 'solo', 'tickets': ['T-0755']}))
+        put(rr / '.sdlc' / 't755' / 'handoff.md', '---\nid: T-0755\ntitle: owner records\n---\n\n## Goal\nx\n')
+        put(R(lw6 / '.sdlc' / 't755') / 'step-1' / 'verifier-L2.attempt.json',
+            json.dumps({'attempt_id': 't755', 'status': 'completed', 'role': 'verifier', 'level': 'L2'}))
+        with cwd(rr), contextlib.redirect_stdout(io.StringIO()) as out:
+            rc6 = main(['status', str(rr / '.sdlc' / 't755')])
+        case('owner tree (T-0755): status on a main-checkout task dir lists the attempt in its ticket\'s lane twin, got %r'
+             % out.getvalue()[-200:], rc6 == 0 and out.getvalue().splitlines() == ['step-1/verifier-L2 completed verifier-L2 parent_pid=None']
+             and not order.records_dir(rr / '.sdlc' / 't755').is_dir())
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw6)], capture_output=True)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw4)], capture_output=True)
         if mbase_was is not None:
             mbase.write_text(mbase_was)

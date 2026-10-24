@@ -25,3 +25,14 @@ T-0750 (2026-10-24) moved records, base-sha and end-sha for a ticket with a lane
 ## Acceptance criteria
 1. A `steps.py` selftest case: a builder and verifier result recorded in the lane twin for a primary task dir with a lane record; `steps.py next <primary task dir>` reports the step done; with the helper call bypassed it fails (state the FAIL line). Same for `plan_done.py` if it reads records itself, and for `dispatch.py status <primary task dir>` listing the lane twin's attempt.
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 (and `plan_done.py selftest` if it has one, and `dispatch.py selftest`), `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `steps.records_of` (reads only) now reads the records dir in the checkout that owns `records` for the ticket (`steps.owned`, the same `wtroot.owner_tree` route as `base_sha`) when that twin holds records, else the tree of the dir given (unchanged for a task with no lane). `step_handoff` also looks at the same place in the ticket's other trees (`steps.tree_twins`, `wtroot.owner_trees`), so a lane twin step dir finds a step handoff written in primary. `create=True` writes are unchanged.
+- `plan_done.verifier_problem` reads the ticket's records through `steps.records_of`.
+- `dispatch.py status` on a handoff or step dir reads `dispatch.owned_records` when that holds attempts; `recover` is unchanged.
+- Docs: `docs/references/sdlc-internals.md` (the T-0752 note and the `records` row of the Owner trees table) and the dispatch.py docstring.
+- New selftest cases, each with an in-suite or one-off negative control. With `steps.owned` returning its input and `owned_records` replaced by the local records dir:
+  - steps: `FAIL owner tree (T-0755): next on the main step dir reads the builder and verifier results in the lane twin -> done` (the T-0752 swap case fails too, as expected)
+  - plan_done: `FAIL: plan_done: owner tree (T-0755): the verifier pass in the ticket's lane twin is read, prints plan done`
+  - dispatch: `FAIL: owner tree (T-0755): status on a main-checkout task dir lists the attempt in its ticket's lane twin, got 'no attempts in .../rr/.sdlc/runtime/tasks/t755'`
+- Checks: steps, plan_done and dispatch selftests (through gate_lock) exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 02ccf3a8` exit 0.

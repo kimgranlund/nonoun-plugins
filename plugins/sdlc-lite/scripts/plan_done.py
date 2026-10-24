@@ -91,8 +91,10 @@ def worker_model(folder):
 
 
 def verifier_problem(folder):
-    """None when the ticket's newest verifier result is an independent pass (or a verified hold, which C3 then lists), else the reason."""
-    v = order.newest(str(folder), 'verifier')
+    """None when the ticket's newest verifier result is an independent pass (or a verified hold, which C3 then lists), else the reason.
+    The records are read in the checkout that owns them for the ticket (steps.records_of: its lane twin while one lists it, T-0755)."""
+    rec = steps.records_of(folder)
+    v = order.newest(str(rec), 'verifier')
     if not v:
         return 'no verifier result; fanout.py land carries a lane\'s record onto this checkout, a hand merge or cherry-pick leaves it on the lane branch'
     err = results.validate(v, 'verifier')
@@ -102,12 +104,12 @@ def verifier_problem(folder):
     held = verdict == 'fail' and steps.HELD_NOTE_RE.match(steps.next_note(v)) and steps.held_items(folder)
     if verdict != 'pass' and not held:
         return f'Verdict: {verdict or "?"}'
-    wm, vm = worker_model(folder), header_model(v)
+    wm, vm = worker_model(rec), header_model(v)
     if not wm:
         return 'the worker model is not recorded (no solo or builder record)'
     if wm == vm:
         return f'the verifier model {vm} equals the worker model {wm}'
-    recs = order.records(str(folder))
+    recs = order.records(str(rec))
     vi = next((i for i, r in recs if r.get('role') == 'verifier' and r.get('file') == os.path.basename(v)), -1)
     if any(i > vi and r.get('role') in ('solo', 'builder') for i, r in recs):
         return 'a solo or builder result is newer than the verifier pass'
@@ -601,6 +603,33 @@ def selftest():
         moved = all((root / f / 'runs.jsonl').exists() != runtime for f, _, _ in TICKETS)
         res = run_all(root, plan)
         expect(f'plan_done: {label}: prints plan done', moved and res['code'] == 0 and res['last'] == 'plan done', (moved, res['code'], res['last'], res['items']))
+    # owner tree (T-0755): a ticket whose lane lists it keeps its solo record and verifier pass in the lane twin
+    # (dispatch.py prepare --tree <lane>); plan_done run in the main checkout reads them there
+    tmp, root, plan = fresh()
+    g = ['git', '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', '-C']
+    subprocess.run(['git', 'init', '-q', str(tmp)], check=True, capture_output=True)
+    subprocess.run(g + [str(tmp), 'commit', '-q', '--allow-empty', '-m', 'a'], check=True, capture_output=True)
+    lane_tmp = tempfile.TemporaryDirectory()
+    tmpdirs.append(lane_tmp)
+    lane = pathlib.Path(lane_tmp.name) / 't0755-lane'
+    subprocess.run(g + [str(tmp), 'worktree', 'add', '-q', '-b', 't0755-lane', str(lane), 'HEAD'], check=True, capture_output=True)
+    folder, tid, _ = TICKETS[0]
+    (lane / '.lane.json').write_text(json.dumps({'lane': 't0755-lane', 'kind': 'solo', 'tickets': [tid]}), encoding='utf-8')
+    (lane / '.sdlc' / folder).mkdir(parents=True)
+    for name in ('verifier-L2.md', 'runs.jsonl'):
+        os.replace(root / folder / name, lane / '.sdlc' / folder / name)
+    res = run_all(root, plan)
+    expect('plan_done: owner tree (T-0755): the verifier pass in the ticket\'s lane twin is read, prints plan done',
+           res['code'] == 0 and res['last'] == 'plan done', (res['code'], res['last'], res['items']))
+    real_owned = steps.owned
+    steps.owned = lambda kind, path: pathlib.Path(os.path.abspath(path))
+    try:
+        res = run_all(root, plan)
+    finally:
+        steps.owned = real_owned
+    expect('plan_done: owner tree (T-0755) negative control: with the owner lookup bypassed the ticket has no verifier result',
+           res['code'] != 0 and any('no verifier result' in str(i) for i in res['items']), (res['code'], res['last'], res['items']))
+    subprocess.run(['git', '-C', str(tmp), 'worktree', 'remove', '--force', str(lane)], capture_output=True)
     # the command line
     tmp, root, plan = fresh()
     rc, out = cli(plan, root)

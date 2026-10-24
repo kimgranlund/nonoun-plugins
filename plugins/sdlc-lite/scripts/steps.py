@@ -574,8 +574,14 @@ def task_of(path):
 def records_of(path, create=False):
     """The records dir (results, runs.jsonl, step-<n>/ dirs) for a task, records or step dir on either side
     (order.records_dir; a legacy task is its own records dir). create makes a runtime records dir. Without create, an
-    existing dir whose records dir does not exist (a hand-written step-<n>/ beside its handoff) is read in place."""
+    existing dir whose records dir does not exist (a hand-written step-<n>/ beside its handoff) is read in place, and
+    the records dir is read in the checkout that owns records for the ticket (owned, T-0755: the lane twin dispatch.py
+    writes) when that twin holds records."""
     r = order.records_dir(path, create)
+    if not create:
+        o = order.records_dir(owned('records', path))
+        if os.path.realpath(o) != os.path.realpath(r) and o.is_dir() and order._legacy(str(o)):
+            return _as_given(path, o)
     if not create and not r.is_dir() and pathlib.Path(path).is_dir():
         return pathlib.Path(path)
     return _as_given(path, r)
@@ -588,12 +594,16 @@ def step_handoff(d):
     h = d / 'handoff.md'
     if h.is_file():
         return h
+
+    def near(a):
+        t = order.task_dir(a)
+        for twin in (a, (t / a.name) if t is not None else None, order.records_dir(a)):
+            if twin is not None and (twin / 'handoff.md').is_file():
+                return twin / 'handoff.md'
+        return None
     a = pathlib.Path(os.path.abspath(d))
-    t = order.task_dir(a)
-    for twin in ((t / a.name) if t is not None else None, order.records_dir(a)):
-        if twin is not None and twin != a and (twin / 'handoff.md').is_file():
-            return twin / 'handoff.md'
-    return h
+    # T-0755: a lane twin step dir (records_of) whose handoff stayed in the checkout that split it reads it there
+    return next((f for f in [near(a)] + [near(x) for x in tree_twins(a)] if f is not None), h)
 
 
 def step_dirs(task):
@@ -1017,20 +1027,18 @@ def declared_tests(text):
 TICKET_ID_RE = re.compile(r'\A---\n(?:(?!---\n).*\n)*?id:[ \t]*(T-\d+)', re.M)
 
 
-def owned(kind, path):
-    """path at the same place in the checkout that owns kind for its ticket (wtroot.owner_tree, T-0749, T-0752): the
-    ticket is the front matter id: of the nearest handoff.md at or above path (or its task folder). path unchanged
-    outside git, with no ticket, or beside no wtroot.py."""
-    p = pathlib.Path(os.path.abspath(path))
+def _ticket_top(p):
+    """(wtroot module, ticket id or None, git toplevel) for an absolute path, else None outside git or beside no
+    wtroot.py. The ticket is the front matter id: of the nearest handoff.md at or above p (or its task folder)."""
     try:
         import wtroot  # local, as in red_at_base: a copy of steps.py beside only order.py and results.py has no wtroot.py
     except ImportError:
-        return p
+        return None
     t = order.task_dir(p)
     here = next((q for q in [p, *p.parents] if q.is_dir()), None)
     top = git_toplevel(here) if here else None
     if not top:
-        return p
+        return None
     tid = None
     for q in ([t] if t is not None else []) + [p, *p.parents]:
         with contextlib.suppress(OSError, UnicodeDecodeError):
@@ -1040,10 +1048,35 @@ def owned(kind, path):
                 break
         if os.path.realpath(q) == os.path.realpath(top):
             break
-    own = wtroot.owner_tree(kind, tid, top) if tid else None
+    return wtroot, tid, top
+
+
+def owned(kind, path):
+    """path at the same place in the checkout that owns kind for its ticket (wtroot.owner_tree, T-0749, T-0752): the
+    ticket is the front matter id: of the nearest handoff.md at or above path (or its task folder). path unchanged
+    outside git, with no ticket, or beside no wtroot.py."""
+    p = pathlib.Path(os.path.abspath(path))
+    found = _ticket_top(p)
+    if not found or not found[1]:
+        return p
+    wtroot, tid, top = found
+    own = wtroot.owner_tree(kind, tid, top)
     if own is None:
         return p
     return own / os.path.relpath(os.path.realpath(p), os.path.realpath(top))
+
+
+def tree_twins(path):
+    """path at the same place in each other checkout of its ticket (wtroot.owner_trees: primary, integration, lane;
+    T-0755), [] outside git or beside no wtroot.py."""
+    p = pathlib.Path(os.path.abspath(path))
+    found = _ticket_top(p)
+    if not found:
+        return []
+    wtroot, tid, top = found
+    rel = os.path.relpath(os.path.realpath(p), os.path.realpath(top))
+    return [t / rel for t in wtroot.owner_trees(tid, top).values()
+            if t is not None and os.path.realpath(t) != os.path.realpath(top)]
 
 
 def base_sha(top, step_dir=None):
@@ -6667,6 +6700,29 @@ def selftest():
             os.chdir(here)
         check('owner tree (T-0752): swap on the main step dir reads the base-sha the lane that owns it recorded',
               rc == 0 and sb_l1 in (od / 'handoff.md').read_text(encoding='utf-8'))
+        # T-0755: the ticket's lane owns records too; dispatch.py prepare --tree <lane> wrote the builder and verifier
+        # results in the lane twin, and next on the main checkout's step dir (handoff only) reads them there
+        (lane_r / '.lane.json').write_text(json.dumps({'lane': 'sb-lane', 'kind': 'solo', 'tickets': ['T-0001', 'T-0002'],
+                                                       'into': 'main'}), encoding='utf-8')
+        rk = main_r / 'sdlc' / '0002-rec'
+        (rk / 'step-1').mkdir(parents=True)
+        (rk / 'handoff.md').write_text('---\nid: T-0002\ntitle: rec\n---\n\n## Goal\nx\n', encoding='utf-8')
+        (rk / 'step-1' / 'handoff.md').write_text(S_HANDOFF, encoding='utf-8')
+        lk = lane_r / 'sdlc' / '0002-rec' / 'step-1'
+        lk.mkdir(parents=True)
+        for name, text in (('builder-L2.md', DONE), ('verifier-L1.md', PASS)):
+            (lk / name).write_text(hdr(name, text), encoding='utf-8')
+        (lk / 'runs.jsonl').write_text('{"file": "builder-L2.md"}\n{"file": "verifier-L1.md"}\n', encoding='utf-8')
+        check('owner tree (T-0755): next on the main step dir reads the builder and verifier results in the lane twin -> done',
+              nxt(rk / 'step-1', 'done')
+              and os.path.realpath(step_handoff(records_of(rk / 'step-1'))) == os.path.realpath(rk / 'step-1' / 'handoff.md'))
+        real_owned = owned
+        globals()['owned'] = lambda kind, path: pathlib.Path(os.path.abspath(path))
+        try:
+            check('owner tree (T-0755) negative control: with the owner lookup bypassed next reads the main step dir -> build L2',
+                  nxt(rk / 'step-1', 'build L2'))
+        finally:
+            globals()['owned'] = real_owned
         (lane_r / '.lane.json').unlink()
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
