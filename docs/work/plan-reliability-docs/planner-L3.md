@@ -29,7 +29,7 @@ Contract dependents (`git grep -l fleet_collect -- plugins scripts`): `fleet_det
 - (guard) `python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest`
 - (guard) `python3 plugins/sdlc-lite/scripts/fleet_detect.py selftest`
 - (guard) `python3 plugins/sdlc-lite/scripts/fleet_status.py selftest`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/fleet_collect.py -e docs/kpi/002-restart-recovery-minutes.md -e docs/kpi/003-blocked-builders-per-wave.md -e docs/kpi/004-unsatisfiable-criteria-caught.md)"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/fleet_collect.py -e docs/kpi/002-restart-recovery-minutes.md -e docs/kpi/003-blocked-builders-per-wave.md -e docs/kpi/004-unsatisfiable-criteria-caught.md)"`
 
 ## Step 2: record leaves the attempt running when no result exists yet
 level: L2
@@ -48,7 +48,7 @@ Contract dependents (`git grep -n "no result file at\|returned no result" -- plu
 - `out=$(python3 plugins/sdlc-lite/scripts/dispatch.py selftest 2>&1) && for l in 'record with no result file and empty stdin exits 2 and leaves the attempt running' 'record after the late result file appears completes the attempt' 'record --no-result closes an attempt with no result file as failed, exit 1' 'negative control: error text on stdin with no result file still closes the attempt failed'; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
 - (red) `python3 plugins/sdlc-lite/scripts/dispatch.py record --help | grep -qF -- '--no-result'`
 - (guard) `out=$(python3 plugins/sdlc-lite/scripts/dispatch.py selftest 2>&1) && printf '%s\n' "$out" | grep -qxF 'ok: a verifier with no report on disk is rejected: exit 1, a message naming the path, no runs.jsonl line'`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e docs/references/sdlc-internals.md)"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e docs/references/sdlc-internals.md)"`
 
 ## Step 3: prepare --tree names the lane worktree as Tree and base
 level: L3
@@ -71,7 +71,7 @@ Contract dependents: the selftest case "a verifier prompt for a lane worktree ha
 - (red) `grep -qF 'prepare --tree' plugins/sdlc-lite/agents/conductor.md`
 - (guard) `out=$(python3 plugins/sdlc-lite/scripts/dispatch.py selftest 2>&1) && printf '%s\n' "$out" | grep -qxF 'ok: a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree'`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml -e docs/references/sdlc-internals.md)"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml -e docs/references/sdlc-internals.md)"`
 
 ## Step 4: Restart sweep, reused parent pids, and a safe prune --add
 level: L2
@@ -103,7 +103,7 @@ Contract dependents (`git grep -n "dispatch.py recover\|prune --add\|run_lifecyc
 - (guard) `out=$(python3 plugins/sdlc-lite/scripts/dispatch.py selftest 2>&1) && printf '%s\n' "$out" | grep -qxF 'ok: a second prepare with a running attempt and a live parent refuses'`
 - (guard) `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml -e plugins/sdlc-lite/skills/chain/SKILL.md -e docs/references/sdlc-internals.md)"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/dispatch.py -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml -e plugins/sdlc-lite/skills/chain/SKILL.md -e docs/references/sdlc-internals.md)"`
 
 ## Step 5: Lint refuses circular criteria and records every refusal
 level: L3
@@ -122,7 +122,7 @@ Contract dependents: `dispatch.py prepare` runs `steps.py lint <step dir>` for b
 - (red) `out=$(python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1) && for l in '(circ) lint refuses a criterion that reads its own step verifier result' '(circ) negative control: the same criterion with a held clause passes lint' '(circ) negative control: a criterion that reads an earlier step verifier result passes lint'; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
 - (red) `out=$(python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1) && for l in '(circ) a lint refusal appends one line to refusals.jsonl in the task dir' '(circ) the same refusal of the same plan is written once'; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
 - (guard) `python3 plugins/sdlc-lite/scripts/steps.py selftest`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py)"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py)"`
 
 ## Step 6: Replay a scope-versus-tests heuristic and decide
 level: L2
@@ -139,7 +139,7 @@ Write `docs/reports/<YYYY-MM-DD>-scope-test-lint-replay.md` (the build date): a 
 - (red) `for t in mcp-enablement.test.ts replay.test.ts test/engine/semantic.mjs test/engine/exports.mjs; do cat docs/reports/*-scope-test-lint-replay.md | grep -qF "$t" || exit 1; done`
 - (red) `cat docs/reports/*-scope-test-lint-replay.md | grep -qxE 'Verdict: (build|do not build)'`
 - (guard) `python3 plugins/sdlc-lite/scripts/docs_check.py`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxE 'docs/reports/[0-9]{4}-[0-9]{2}-[0-9]{2}-scope-test-lint-replay\.md')"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxE 'docs/reports/[0-9]{4}-[0-9]{2}-[0-9]{2}-scope-test-lint-replay\.md')"`
 
 ## Step 7: Measure verifier minutes and decide on a delta verifier
 level: L1
@@ -154,7 +154,7 @@ Run `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since <
 - (red) `for t in 'fleet_collect.py collect' ultimate-tokens ui-kit-maison; do cat docs/reports/*-verifier-minutes.md | grep -qF "$t" || exit 1; done`
 - (red) `cat docs/reports/*-verifier-minutes.md | grep -qxE 'Verdict: (build a delta verifier|do not build a delta verifier)'`
 - (guard) `python3 plugins/sdlc-lite/scripts/docs_check.py`
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxE 'docs/reports/[0-9]{4}-[0-9]{2}-[0-9]{2}-verifier-minutes\.md')"`
+- (guard) `test -z "$( { git diff --name-only "${SDLC_BASE_SHA:?}" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxE 'docs/reports/[0-9]{4}-[0-9]{2}-[0-9]{2}-verifier-minutes\.md')"`
 
 ## Step 8: Gates green
 level: L2
@@ -167,7 +167,7 @@ Not a ticket to file: the integration check after steps 1 to 7 land on one branc
 - (guard) `python3 plugins/sdlc-lite/scripts/docs_check.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- (guard) `git diff --check "$SDLC_BASE_SHA"`
+- (guard) `git diff --check "${SDLC_BASE_SHA:?}"`
 
 ## Assumptions
 - `prepare` already recovers dead-parent attempts, so candidate 1 needs no prepare change: verified by `dispatch.py:443-466` and `645-648`, and by maison's `.sdlc/tickets/.0154-wire-standalone-scripts-and-regenerate-once/verifier-L3.attempt.json` (finished_at 16:09:03Z) and `verifier-L3-2.attempt.json` (started_at 16:09:04Z), parent pids 26358, 32887, 3278, all dead (`ps -p`).

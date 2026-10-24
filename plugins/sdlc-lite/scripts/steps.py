@@ -1501,6 +1501,18 @@ def pins_sha(text):
     return bool(SHA_RE.search(ANCESTRY_RE.sub(' ', text)))
 
 
+BASE_SHA_USE_RE = re.compile(r'\$\{?SDLC_BASE_SHA(?![\w])')
+BASE_SHA_GUARD_RE = re.compile(r'\$\{SDLC_BASE_SHA:\?|(?<![\w$])(?:export\s+)?SDLC_BASE_SHA=')
+
+
+def unguarded_base_sha(text):
+    """True when a span reads $SDLC_BASE_SHA with neither a ${SDLC_BASE_SHA:?} guard nor an
+    `export SDLC_BASE_SHA=` (or a plain SDLC_BASE_SHA= assignment) anywhere in it (T-0754). A role
+    launched by dispatch.py prepare has the variable unset, and `"$SDLC_BASE_SHA"` then expands to
+    an empty argument that a `2>/dev/null`, `! cmd`, or `$(...)` emptiness test reads as a pass."""
+    return bool(BASE_SHA_USE_RE.search(text) and not BASE_SHA_GUARD_RE.search(text))
+
+
 def fixed_set_count(text):
     """True when a span counts over a changing set (a glob, ls, or find) and compares the count
     with a literal integer of 2 or more."""
@@ -2456,6 +2468,12 @@ def lint_steps(plan, steps, tree=None):
                                 '  compare against HEAD at build start (`HEAD`, `HEAD~1`) instead: '
                                 'a fixed sha goes stale on the first sync from main '
                                 '(only `git merge-base --is-ancestor <sha> HEAD` may name a sha)')
+            if unguarded_base_sha(text):
+                findings.append(f'steps: {plan} step {n}: plan defect: acceptance criterion names $SDLC_BASE_SHA '
+                                f'without a guard: {text}\n'
+                                '  unset, it expands to an empty argument and an emptiness test passes vacuously: '
+                                'write "${SDLC_BASE_SHA:?}" for it, or start the span with '
+                                '`export SDLC_BASE_SHA=<sha> &&`')
             sub = forbidden_git(text)
             if sub:
                 findings.append(f'steps: {plan} step {n}: plan defect: acceptance criterion runs git {sub}, which '
@@ -5198,11 +5216,11 @@ def selftest():
         check('(t0347) a count with a named command does not warn', rc == 0 and 'cites a count' not in err)
 
         # (t0475) a criterion span that counts or greps commit subjects warns and exits 0
-        d = task(plan=PLAN.replace('- one works', "- `git log --oneline $SDLC_BASE_SHA..HEAD | grep -c 'feat: x' | grep -qx 3`"))
+        d = task(plan=PLAN.replace('- one works', "- `git log --oneline ${SDLC_BASE_SHA:?}..HEAD | grep -c 'feat: x' | grep -qx 3`"))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(t0475) a git log commit-subject criterion warns history-shaped criterion and exits 0',
               rc == 0 and out == 'steps lint: ok\n' and 'history-shaped criterion' in err and 'step 1' in err)
-        d = task(plan=PLAN.replace('- one works', '- `git rev-list --count $SDLC_BASE_SHA..HEAD | grep -qx 3`'))
+        d = task(plan=PLAN.replace('- one works', '- `git rev-list --count ${SDLC_BASE_SHA:?}..HEAD | grep -qx 3`'))
         rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
         check('(t0475) a git rev-list --count criterion warns', rc == 0 and 'history-shaped criterion' in err)
         d = task(plan=PLAN.replace('- one works', '- `git diff --quiet HEAD -- scripts/steps.py` and `grep -c "x" scripts/steps.py`'))
@@ -5398,7 +5416,7 @@ def selftest():
         # (k8) a criterion that requires a clean whole-tree diff: lint and split refuse; a pathspec, a
         # commit-to-commit range, a negated --quiet, a plain listing, and diff-tree pass
         df = 'git ' + 'diff'
-        for form in (f'{df} --quiet', f'{df} --exit-code HEAD', f'{df} --quiet "$SDLC_BASE_SHA"',
+        for form in (f'{df} --quiet', f'{df} --exit-code HEAD', f'{df} --quiet "${{SDLC_BASE_SHA:?}}"',
                      f'test -z "$({df} --name-only HEAD)"'):
             d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
             refused(f'(k8) split refuses a criterion that requires a clean whole-tree diff ({form}), writes nothing',
@@ -5825,7 +5843,7 @@ def selftest():
         (rt / '.agents' / 'skills' / 'recipe').mkdir(parents=True)
         subprocess.run(['git', 'init', '-q', str(rt)], check=True, capture_output=True)
         (rt / '.agents' / 'skills' / 'recipe' / 'SKILL.md').write_text('x\n', encoding='utf-8')
-        RT_SCOPE = ('- `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; '
+        RT_SCOPE = ('- `{ git diff --name-only "${SDLC_BASE_SHA:?}" -- . ":(exclude).sdlc"; '
                     'git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } '
                     '| grep -vxF -e src/styles/a.css | { ! grep -q .; }`')
         rt_step = STEP1.replace('- one works', RT_SCOPE)
@@ -6100,7 +6118,7 @@ def selftest():
         next_refused('next error: a handoff with no level line and no builder result', d)
 
         # SDLC_BASE_SHA: split --only sets it to HEAD at the toplevel, never inherited from the caller
-        d = o_repo('(guard) `test "$SDLC_BASE_SHA" = "$(git rev-parse HEAD)"`', commit='o-base')
+        d = o_repo('(guard) `test "${SDLC_BASE_SHA:?}" = "$(git rev-parse HEAD)"`', commit='o-base')
         saved = os.environ.get('SDLC_BASE_SHA')
         os.environ['SDLC_BASE_SHA'] = 'inherited-bogus'
         try:
@@ -6113,10 +6131,26 @@ def selftest():
         check('(o) split --only runs a guard with SDLC_BASE_SHA = HEAD, overriding the caller env',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
         p = tmp / 'base-lint.md'
-        p.write_text(guard_plan('`git diff --name-only "$SDLC_BASE_SHA"`'), encoding='utf-8')
+        p.write_text(guard_plan('`git diff --name-only "${SDLC_BASE_SHA:?}"`'), encoding='utf-8')
         rc, out, _ = run_main(['lint', str(p)])
         check('lint does not flag git diff --name-only "$SDLC_BASE_SHA" as pinning a sha',
               rc == 0 and out.strip() == 'steps lint: ok')
+
+        # T-0754: a criterion naming $SDLC_BASE_SHA needs a ${SDLC_BASE_SHA:?} guard or an export in the same span
+        for form, ok_ in (('`test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- plugins 2>/dev/null)"`', False),
+                          ('`git rev-list --count $SDLC_BASE_SHA..HEAD | grep -qx 0`', False),
+                          ('`test -z "$(git diff --name-only "${SDLC_BASE_SHA:?}" -- plugins 2>/dev/null)"`', True),
+                          ('`export SDLC_BASE_SHA=HEAD && test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- plugins)"`', True)):
+            d = task(plan=PLAN.replace('- one works', f'- {form}'))
+            if ok_:
+                rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+                check(f'(T-0754) lint accepts a guarded or unnamed base: {form}', rc == 0 and out.strip() == 'steps lint: ok')
+            else:
+                refused(f'(T-0754) lint refuses an unguarded $SDLC_BASE_SHA: {form}', ['lint', str(d / 'planner-L2.md')], d,
+                        needles=('plan defect', 'without a guard', '${SDLC_BASE_SHA:?}'))
+        d = task(plan=PLAN.replace('- one works', '- Compare against `$SDLC_BASE_SHA` (prose, not a command), then run `test -d plugins`.'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(T-0754) lint accepts $SDLC_BASE_SHA named in prose outside a command span', rc == 0 and out.strip() == 'steps lint: ok')
 
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)])
         before = snapshot(d)
@@ -6493,7 +6527,7 @@ def selftest():
         (r / 'sdlc').mkdir()
         d = s_step([], where=r / 'sdlc')
         (d / 'base-sha').write_text(first + '\n', encoding='utf-8')
-        new = '`test "$SDLC_BASE_SHA" = "$(head -n 1 sdlc/base-sha)" && test "$SDLC_BASE_SHA" != "$(git rev-parse HEAD)"`'
+        new = '`test "${SDLC_BASE_SHA:?}" = "$(head -n 1 sdlc/base-sha)" && test "${SDLC_BASE_SHA:?}" != "$(git rev-parse HEAD)"`'
         for name, text in pair + [('verifier-L1.md', swap_v(new=new))]:
             (d / name).write_text(hdr(name, text), encoding='utf-8')
         rc, out, err = run_main(['swap', str(d)])
@@ -6563,7 +6597,7 @@ def selftest():
                                                        'into': 'main'}), encoding='utf-8')
         (lane_r / 'sdlc' / '0001-own' / 'step-1').mkdir(parents=True)
         (lane_r / 'sdlc' / '0001-own' / 'step-1' / 'base-sha').write_text(sb_l1 + '\n', encoding='utf-8')
-        for name, text in pair + [('verifier-L1.md', swap_v(new=f'`test "$SDLC_BASE_SHA" = {sb_l1}`'))]:
+        for name, text in pair + [('verifier-L1.md', swap_v(new=f'`test "${{SDLC_BASE_SHA:?}}" = {sb_l1}`'))]:
             (od / name).write_text(hdr(name, text), encoding='utf-8')
         here = os.getcwd()
         os.chdir(lane_r)
@@ -6603,7 +6637,7 @@ def selftest():
 
         # widen: a conductor scope decision adds paths to the one scope criterion. Each case builds a
         # throwaway repo with one empty commit; the step dir is <repo>/sdlc, recorded base-sha = HEAD.
-        W_LIST = '{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude)sdlc"; ' \
+        W_LIST = '{ git diff --name-only "${SDLC_BASE_SHA:?}" -- . ":(exclude)sdlc"; ' \
                  'git ls-files --others --exclude-standard -- . ":(exclude)sdlc"; }'
         W_FORMS = {'F': f'{W_LIST} | grep -vxF -e a.txt | {{ ! grep -q .; }}',
                    'E': f'{W_LIST} | grep -vxE "a\\.txt" | {{ ! grep -q .; }}',
@@ -6684,7 +6718,7 @@ def selftest():
                                 '- `e.txt`: allowed by a conductor scope decision (steps.py widen)\n'))
 
         # deny-path guard: git diff --name-only <base> -- . ':(exclude)<path>' | { ! grep -q .; }
-        D_SPAN = 'git diff --name-only "$SDLC_BASE_SHA" -- . \':(exclude)sdlc\' \':(exclude)a.txt\' | { ! grep -q .; }'
+        D_SPAN = 'git diff --name-only "${SDLC_BASE_SHA:?}" -- . \':(exclude)sdlc\' \':(exclude)a.txt\' | { ! grep -q .; }'
         r, d = w_repo(w_handoff(f'(guard) `{D_SPAN}`', '`test -d .`'))
         git_add = lambda *a: subprocess.run(['git', '-C', str(r), 'add', '-N'] + list(a), check=True,
                                             capture_output=True)
@@ -6712,10 +6746,10 @@ def selftest():
         check('widen: (d) a deny-path guard rerun with listed paths prints widen: already applied, writes nothing',
               rc == 0 and out.strip() == 'widen: already applied' and snapshot(d) == before)
         # forms the deny rewrite cannot handle stay refused
-        r, d = w_repo(w_handoff('`git diff --name-only "$SDLC_BASE_SHA" | wc -l | grep -qx 0`'))
+        r, d = w_repo(w_handoff('`git diff --name-only "${SDLC_BASE_SHA:?}" | wc -l | grep -qx 0`'))
         widen_refused('(d) a git diff --name-only span with neither allow-list nor exclude is still refused', d,
                       ['b.txt'], 'no criterion line has a command span with git diff --name-only and a grep -v allow-list')
-        r, d = w_repo(w_handoff('`git diff --name-only "$SDLC_BASE_SHA" -- . \':(exclude)x\' | cat; '
+        r, d = w_repo(w_handoff('`git diff --name-only "${SDLC_BASE_SHA:?}" -- . \':(exclude)x\' | cat; '
                                 'git diff --name-only -- \':(exclude)y\' | { ! grep -q .; }`'))
         widen_refused('(d) a deny-path span with two exclude runs is refused', d, ['b.txt'], 'pathspec runs')
 
@@ -6801,7 +6835,7 @@ def selftest():
         widen_refused('(c) no step handoff', d, ['b.txt'], 'no step handoff')
 
         # (d) the span sees SDLC_BASE_SHA from <step dir>/base-sha, not HEAD: without base-sha it is red
-        d_span = f'test "$SDLC_BASE_SHA" != "$(git rev-parse HEAD)" && {W_FORMS["F"]}'
+        d_span = f'test "${{SDLC_BASE_SHA:?}}" != "$(git rev-parse HEAD)" && {W_FORMS["F"]}'
         for with_base in (True, False):
             r, d = w_repo(w_handoff(f'`{d_span}`'))
             g = ['git', '-C', str(r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
@@ -7192,7 +7226,7 @@ def selftest():
             return f'{front}## Goal\ng\n{tail}'
 
         def l_scope(form):
-            return f'- (guard) `git diff --name-only "$SDLC_BASE_SHA" | {form} | grep -q . && exit 1 || exit 0`'
+            return f'- (guard) `git diff --name-only "${{SDLC_BASE_SHA:?}}" | {form} | grep -q . && exit 1 || exit 0`'
 
         L_F1 = 'grep -vxF -e docs/a.md -e docs/b.md'
         L_F2 = 'grep -vxF -e docs/c.md'
