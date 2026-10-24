@@ -2,7 +2,7 @@
 id: T-0734
 title: "One rule for which checkout owns each sdlc record"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: dropped     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,6 @@ Root-cause review 2026-10-22: 8 issues share one cause, the tools span three che
 2. `git grep -nE "records_dir|base-sha|end-sha|merge_gate" plugins/sdlc-lite/scripts/{dispatch,fanout,lanes,steps}.py` shows each read and write of those kinds going through the helper (list any deliberate exception in the Outcome).
 3. A selftest case per kind writes from one tree and reads from another and passes; with the helper bypassed, at least one case fails (state it).
 4. `dispatch.py`, `fanout.py`, `lanes.py` and `steps.py` selftests (through gate_lock), `check.py` and `check-packaging.py` pass; `git diff --check <base sha>` exits 0.
+
+## Outcome
+Split 2026-10-24 into T-0749 (rule and helper), then T-0750 (dispatch.py), T-0751 (fanout.py), T-0752 (lanes.py, steps.py), each a solo run.

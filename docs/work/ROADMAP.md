@@ -8,10 +8,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
-| T-0734 | [0734-tree-ownership-rule](0734-tree-ownership-rule/handoff.md) | One rule for which checkout owns each sdlc record | chore | L3 | P2 | none | 🔵 ready |
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🔵 ready |
+| T-0749 | [0749-owner-tree-rule-helper](0749-owner-tree-rule-helper/handoff.md) | One owner-tree rule and helper for sdlc records | chore | L2 | P2 | none | 🔵 ready |
+| T-0750 | [0750-dispatch-owner-tree](0750-dispatch-owner-tree/handoff.md) | dispatch.py reads and writes records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🔵 ready |
+| T-0751 | [0751-fanout-owner-tree](0751-fanout-owner-tree/handoff.md) | fanout.py reads config and records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🔵 ready |
+| T-0752 | [0752-lanes-steps-owner-tree](0752-lanes-steps-owner-tree/handoff.md) | lanes.py and steps.py read and write records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🔵 ready |
 
-Closed: 707 done, 29 dropped (git log or .NNNN-* folders)
+Closed: 707 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
