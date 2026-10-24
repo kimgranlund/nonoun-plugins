@@ -513,6 +513,20 @@ def lane_start(tree, floor=''):
     return lane_record_base(tree) or floor
 
 
+def host_fork(tree):
+    """T-0757: in a host worktree (<main checkout>/.claude/worktrees/<leaf>), the commit the host cut it from: its merge
+    base with the remote default branch the host cuts from (fanout.remote_default), which may be older or newer than
+    prep's base; '' elsewhere or when the repo has no such branch."""
+    import fanout  # local like lanes: fanout imports this module inside its functions
+    top = git('rev-parse', '--show-toplevel', cwd=tree).stdout.strip()
+    common = git('rev-parse', '--path-format=absolute', '--git-common-dir', cwd=tree).stdout.strip()
+    if not top or not common or os.path.realpath(os.path.dirname(top)) != os.path.realpath(
+            os.path.join(os.path.dirname(common), fanout.HOST_WORKTREES)):
+        return ''
+    ref = fanout.remote_default(top)
+    return git('merge-base', 'HEAD', 'refs/remotes/' + ref, cwd=tree).stdout.strip() if ref else ''
+
+
 def build_base(directory, records=None, tree=None, role=None):
     """The build-start commit run.sh stores in base-sha (T-0381), in this order: (1) a base the handoff names (a line
     `base: <sha>`), else (2) the sha recorded at the step's first dispatch, kept valid, else (3) HEAD of the execution
@@ -524,7 +538,8 @@ def build_base(directory, records=None, tree=None, role=None):
     (default owned_records, the owner tree's records dir: for a handoff dir in another checkout than the execution tree,
     its twin there, T-0717, T-0750); a base the handoff names is also read from the twin's handoffs. A verifier with nothing named or recorded in a lane gets the lane start (lane_start), not the lane HEAD,
     which after a resumed driver is its own WIP commit (T-0546); it says so only for a guessed fork point, not a fanout record (T-0745). When the lane merged main after its start or its
-    recorded base, a verifier gets the lane's merge point with main instead, so the diff holds the lane's work and none of main's (T-0748). A solo dispatch's base_sha counts only in the tree it was recorded in (its
+    recorded base, a verifier gets the lane's merge point with main instead, so the diff holds the lane's work and none of main's (T-0748). A verifier
+    in a host worktree with nothing named gets the commit the host cut it from (host_fork, T-0757). A solo dispatch's base_sha counts only in the tree it was recorded in (its
     tree, else the handoff's checkout): one recorded in the main checkout is not a lane tree's base (T-0578)."""
     cwd = tree if tree else exec_tree(directory)
     records = Path(records) if records is not None else owned_records(directory, cwd, 'base-sha')
@@ -585,6 +600,10 @@ def build_base(directory, records=None, tree=None, role=None):
         base, why = commit(m.group(1)), 'named in the handoff'
     def below_floor(sha):  # an ancestor of HEAD older than the lane's merge point with main: the lane merged main since
         return bool(floor) and ancestor(sha) and git('merge-base', '--is-ancestor', floor, sha, cwd=cwd).returncode != 0
+
+    if not base and role == 'verifier':  # T-0757: a host lane starts where the host cut it, not at prep's recorded base
+        base = host_fork(cwd)
+        why = 'the host worktree cut point' if base else ''
 
     if not base and ancestor(stored) and not below_floor(stored):
         base, why = commit(stored), 'recorded at the first dispatch (base-sha)'
@@ -1473,7 +1492,7 @@ def sweep_tmp(tree, scratch):
                 and os.path.realpath(scratch) != os.path.realpath(str(wtroot.scratch_root(tree))):
             shutil.rmtree(scratch, ignore_errors=True)
         for v, p in wtroot.sweep(tree, apply=True):
-            if v in ('removed', 'unmarked', 'failed'):
+            if v in ('removed', 'failed') or (v == 'unmarked' and wtroot.mine(p, tree)):  # T-0764: not another repo's
                 say(wtroot.lines([(v, p)])[0])
     except OSError as e:
         say('could not sweep: %s' % e)
@@ -4702,6 +4721,45 @@ def selftest():
              and lanes.read_json(hrd / 'agent-aaa.lane.json').get('tickets') == ['T-0763']
              and own('T-0763') == os.path.realpath(atree) and own('T-0764') == own(None) and (hrd / 'T-0764-solo.lane.json').is_file()
              and 'builder-L2 completed' in s1 and n1rc == 0 and '/agent-aaa/.sdlc/runtime/tasks/t-0763/builder-L2.md' in n1)
+        # T-0757: the host cuts its worktree from origin/main, not prep's base: older (the 0.36 rehearsal, the claim unpushed)
+        # or ahead of it (T-0756). The verifier's Base sha is the cut point, so its diff to the lane HEAD holds only the lane.
+        import lanes
+        for tag, ahead in (('cut from an older commit than prep\'s base', False), ('cut from origin ahead of prep\'s base', True)):
+            hr = mk(tmp / ('adv-host-' + ('ahead' if ahead else 'older')))
+            bare = tmp / ('adv-host-%s.git' % ('ahead' if ahead else 'older'))
+            gt(tmp, 'init', '-q', '--bare', '-b', 'main', str(bare))
+            gt(hr, 'branch', '-M', 'main')
+            gt(hr, 'remote', 'add', 'origin', str(bare))
+            gt(hr, 'push', '-q', 'origin', 'main')
+            (hr / ('ahead.txt' if ahead else 'claim.txt')).write_text('x\n')
+            gt(hr, 'add', 'ahead.txt' if ahead else 'claim.txt')
+            gt(hr, 'commit', '-qm', 'origin moves on' if ahead else 'claim')
+            if ahead:
+                gt(hr, 'push', '-q', 'origin', 'main')
+                gt(hr, 'reset', '-q', '--hard', 'HEAD~1')
+            hbase = gt(hr, 'rev-parse', 'HEAD')
+            hlane = hr / fanout.HOST_WORKTREES / pname
+            gt(hr, 'worktree', 'add', '-q', '-b', 'worktree-' + pname, str(hlane), 'origin/main')
+            hcut = gt(hlane, 'rev-parse', 'HEAD')
+            put(hlane / '.sdlc' / 't' / 'handoff.md')
+            (hlane / 'lane.txt').write_text('lane\n')
+            gt(hlane, 'add', 'lane.txt')
+            gt(hlane, 'commit', '-qm', 'T-0001 lane')
+            htask = hr / '.sdlc' / 't'
+            hd = {'subagent_type': 'sdlc-lite:solo-L2', 'name': pname, 'model': 'opus', 'effort': 'medium', 'prompt': 'p', 'tier': 'L2', 'prune': False,
+                  'ticket': 'T-0001', 'branch': 'worktree-' + pname, 'worktree': fanout.HOST_WORKTREES + '/' + pname, 'handoff': '.sdlc/t/handoff.md',
+                  'verifier': 'python3 dispatch.py prepare verifier L2 x', 'result': str(order.records_dir(htask) / (pname + '.md')), 'base_sha': hbase}
+            hd['attempt_id'] = fanout.write_solo_row(htask, 'L2', pname + '.md')
+            hfile = order.records_dir(htask, create=True) / (pname + '.dispatch.json')
+            hfile.write_text(json.dumps(fanout.solo_record(hd, htask, 'L2', hr), indent=2) + '\n', encoding='utf-8')
+            Path(hd['result']).write_text('## Report\ndone\n', encoding='utf-8')
+            lanes.host_record(pname, branch='worktree-' + pname, into='fanout/x', tickets=['T-0001'], base=hbase, cwd=str(hr))
+            hrc, _, hnxt, _, _ = adv_ticket('host-' + tag, str(hfile), hr)
+            hgot = (hnxt or {}).get('base_sha') or ''
+            hdiff = gt(hlane, 'diff', '--name-only', hgot, 'HEAD') if hgot else ''
+            case('T-0757 advance on a host lane %s: the verifier Base sha is the host cut point %s, not prep\'s base %s, and its '
+                 'diff to the lane HEAD holds only the lane commit (got %s, diff %r)' % (tag, hcut[:12], hbase[:12], hgot[:12], hdiff),
+                 hrc == 0 and hgot == hcut != hbase and hdiff == 'lane.txt' and 'Base sha: ' + hcut in hnxt['prompt'])
         # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
         # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
         import solo_run

@@ -501,3 +501,26 @@
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:2304 the match is case-insensitive and needs no colon, so a first line such as `Blocked on nothing; unblocked` also reads as blocked (probe returned that line); the contract shape is `blocked: <question>`, so anchoring on `blocked:` or the `solo blocked` pointer would be tighter.
 - note: redck.py deviations printed no process deviation lines for this artifacts dir.
+
+## T-0764: prep and record print no sweep lines for other repos (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1475 `record` still prints one `unmarked:` line per own-repo folder, with no summary line (observed: two lines for u-a and u-b). The Goal says "at most one summary line for this repo", and only `lanes.sweep` (the prep path) collapses them.
+- decide: plugins/sdlc-lite/scripts/wtroot.py:250 (`sweep`, unchanged) removes a dead-owner folder past the limit in another repo's scratch dir, and both record and lanes sweep print `removed <other repo path>`. This happens at base too and is the documented design ("every repo's scratch dir"), so "never delete another repo's folder" holds only for unmarked folders.
+- fix-now: docs/references/sdlc-internals.md:169 still says the sweep lists an unmarked folder, without saying that only this repo's own folders are named now (T-0764).
+
+## T-0757: The verifier of a host lane diffs against the commit the host cut the worktree from (2026-10-24)
+
+- note: Conductor probes run against a scratch repo with an origin bare remote and a host worktree under `.claude/worktrees/w1`, calling `dispatch.build_base(role='verifier')`. (a) origin moved ahead and was fetched, lane unmerged: base stays the cut point (6cf45a0c60ad), not origin's new head. (b) lane merged origin/main after the cut: base becomes the merge point (d6c1151f10e9 = origin/main), so the two rules agree and the diff holds only the lane's own commits. A handoff `base: <sha>` line still wins (returned the named sha, named flag True). `host_fork` returns '' for the non-host worktree, so a lanes.py lane under `../<repo>.worktrees` is unaffected; the existing lane cases (T-0546, T-0748) stay green in the full selftest.
+- note: plugins/sdlc-lite/scripts/dispatch.py host_fork is placed before the recorded-base branch, so in a host worktree it also overrides a recorded `base-sha` for a verifier. This is the intended T-0757 behavior (the solo brief's Base sha line still names prep's base, the Open item in the handoff).
+
+## T-0759: A host-lane solo brief names one report path (2026-10-24)
+
+- note: conductor question 1 (can the solo Write a relative path): the Report file line says "write your report to exactly this path with the Write tool" with a relative path, but the same brief's write instruction (fanout.py:574-575, SOLO_SUBAGENT_PROMPT) says `write the report to <rel> under your worktree root (the directory you start in)`, so the brief does tell the solo what to resolve it against; the absolute path is still left for the solo to compose.
+- note: conductor question 2 (solo-report check with a relative path): observed in a scratch tree mimicking the worktree layout, `results.py solo-report .sdlc/runtime/tasks/t1/T-0001-solo.md --handoff .sdlc/t1/handoff.md` run from that root gives rc=1 on a report missing the span's exit line and rc=0 on a full one; the brief's `--handoff` is also worktree-relative (fanout.py:2220), so both paths resolve from the solo's starting directory.
+- note: conductor question 3 (block-role-write hook): plugins/sdlc-lite/hooks/block-role-write.sh exits 0 for any role not in SDLC_READONLY_ROLES (plugins/sdlc-lite/hooks/_role.sh:34 lists scout researcher architect archaeologist planner plan-reviewer verifier filer), so a solo's Write passes untouched.
+- note: docs/work/0759-solo-report-path-one/handoff.md Outcome says case 30c was "the only miss" in its negative control; reverting only the fix line also fails case 22, so that control must have reverted case 22's update too. The criterion holds either way.
+
+## T-0761: settle without --forward leaves main where it is (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:125 says "--forward only adds the diverged case (merge main in, run the gates)", but with --forward a fast-forward branch is gated too (T-0701, settle_forward at fanout.py:3197-3221); skills/fanout/SKILL.md:31 likewise ties "gate it" to the diverged case only. The cmd_settle docstring and sdlc-internals.md:206 state the T-0701 case correctly.
+- note: the new T-0761 case overlaps case 28's `fanout/ff` assertion (both fail under the same mutation); it adds only the `settled: ... is in main` output check.

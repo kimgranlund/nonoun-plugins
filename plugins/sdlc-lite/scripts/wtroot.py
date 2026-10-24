@@ -46,7 +46,8 @@ so a throwaway repo's scratch is swept too; an emptied scratch dir of a repo goe
 owner younger than the limit (default 2 hours, lanes.py passes lane_min_age_hours) prints `kept <path>: recent`;
 else `would remove <path>` (dry run) or, with --apply, its registered worktrees are removed with git worktree remove
 --force, the folder is deleted, and it prints `removed <path>`. An unmarked run.sh prefix (<role>-<pid>) is left to
-reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep().
+reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep() and print an unmarked folder only
+when mine() says it sits under this repo's scratch dir or tmp roots (T-0764); lanes.py sweep prints several as one line.
 
 Owner trees (T-0749). OWNERS maps each kind of sdlc state (records, base-sha, end-sha, config, branch, worktree,
 roadmap, router, ticket-close, lane-close) to the checkouts that own it, in order: primary (the main checkout), integration
@@ -57,7 +58,7 @@ host_dirs, lane_record; T-0750). owner_tree(kind, ticket, cwd) returns the first
 with the note naming a script that disagrees today. The rule table is in docs/references/sdlc-internals.md.
 
 Importable: main_top, bare_parent, default_root, root, legacy_roots, is_legacy, host_owned, tmp_root, tmp_roots,
-scratch_root, scratch_dir, cache_root, evidence_dir, mark, owner, live, sweep, OWNERS, owner_trees, owner_rule, owner_tree,
+scratch_root, scratch_dir, mine, cache_root, evidence_dir, mark, owner, live, sweep, OWNERS, owner_trees, owner_rule, owner_tree,
 lanes_root, host_dirs, lane_record.
 """
 import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
@@ -286,6 +287,12 @@ def sweep(cwd='.', hours=None, apply=False, now=None, parents=None):
             except OSError:
                 pass
     return out
+
+
+def mine(path, cwd='.'):
+    """True when path sits under this repo's scratch dir or one of its tmp roots (T-0764): the sweep names an unmarked
+    folder only for the repo that owns it."""
+    return any(_under(path, r) for r in [scratch_root(cwd)] + tmp_roots(cwd))
 
 
 def lines(res):
