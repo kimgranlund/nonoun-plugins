@@ -30,3 +30,9 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case pins the documented behavior of plain settle on main; with the change reverted it fails (state the FAIL line); if the behavior was intended, the case pins it and the skill text says so.
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Finding: intended. `cmd_settle` (docstring, case 28 `fanout/ff`, and `references/main.md` for the light gate path) always fast-forwards the current branch when the integration branch is a fast-forward of it; `--forward` only adds the diverged case (merge main in, regenerate, run `--gate`) and its refusals. The skill text implied otherwise, so it was the docs that were wrong, not the code.
+Change: new selftest case `T-0761 plain settle` in `fanout.py` (no --forward, no --gate, main moves to the integration tip); settle section of the `fanout.py` docstring states the rule; `skills/fanout/SKILL.md` `--forward` row now says without it `settle` only fast-forwards (17,973 of 18,000 chars); `skills/fanout/references/main.md` gains "What plain settle does" (to leave main alone: do not settle, or `--catch-up`).
+Negative control: with the ff block made conditional on `a.forward`, the selftest FAILs, first on `T-0761 plain settle: no --forward and no --gate, a fast-forward integration branch still moves main from 95873e7 to its tip 786449a, got rc=1 main=95873e7 ...` (plus cases 28, T-0565, T-0489, T-0481). Reverted.
+Checks: fanout selftest exit 0 (PASS), check.py exit 0, check-packaging.py exit 0, `git diff --check c6d6b586` exit 0.

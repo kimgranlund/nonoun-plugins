@@ -28,7 +28,7 @@ Arguments: `$ARGUMENTS`
 | `--rewrite-refs` | Rewrite files that cite a closed ticket folder to its `.NNNN-<slug>` path; added only when the user picks it in step 2 | off | `--rewrite-refs` |
 | `--lane auto\|solo\|full` | The lane of every ticket; `auto` follows `steps.py lane` per ticket | `auto` | `--lane full` |
 | `--max-lanes N` | The most lanes running at once | 4 | `--max-lanes 2` |
-| `--forward` | With `settle`: bring the integration branch into main by fast-forward, first merging main into it when it diverged (step 6) | off | `settle fanout/wave3 --forward` |
+| `--forward` | With `settle`: first merge main into a diverged integration branch and gate it (step 6); without it `settle` only fast-forwards | off | `settle fanout/wave3 --forward` |
 | `--catch-up` | With `settle`: merge main into the integration branch under the merge lock with the roadmap, router and notes files regenerated, and stop: no gates, main unmoved, the tree kept | off | `settle fanout/wave3 --catch-up` |
 | `--force` | With `prep`: open every lane although the load is over the gate lock's max_load (else 1). With `settle --forward` or `--catch-up`: skip the running-role check, which otherwise refuses (exit 2) while a role runs against the integration branch | off | `settle fanout/wave3 --forward --force` |
 | `queue` | Print the land order of the lanes dir: the `merge.lock` holder as `landing` (`stale holder` when its pid is dead), then each waiting `fanout.py land`, or `queue: empty`; takes `--lanes-dir` and `--integration` | - | `queue --lanes-dir ../<repo>.worktrees/wave3` |
