@@ -14,13 +14,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 A /chain step run with `dispatch.py prepare --tree <lane>` advances: `steps.py next`, `resume` and `plan_done.py` read the step's builder and verifier records from the tree that owns them (the lane twin, per the Owner trees table), the same place `dispatch.py record` now writes them (T-0750).
 
 ## Intent
-- Do: route `steps.records_of` and `step_handoff` (and the `plan_done.py` reads) through `wtroot.owner_tree('records', ...)` the way `steps.base_sha` already does (`steps.owned`, T-0752). Keep the current behaviour for a task with no lane.
-- Non-goals: other kinds; dispatch.py.
+- Do: route `steps.records_of` and `step_handoff`, the `plan_done.py` reads, and `dispatch.py status` (T-0750 verifier: from main it printed `no attempts` while the lane twin held the running verifier) through `wtroot.owner_tree('records', ...)` the way `steps.base_sha` already does (`steps.owned`, T-0752). Keep the current behaviour for a task with no lane.
+- Non-goals: other kinds; other dispatch.py commands.
 - Done when: the criteria pass.
 
 ## Context
 T-0750 (2026-10-24) moved records, base-sha and end-sha for a ticket with a lane into the lane twin, including `prepare --tree <lane>` from the primary checkout (#55). T-0752 left `steps.records_of` and `step_handoff` reading the tree of the dir they are given, as a deliberate exception, so `steps.py next` run from primary would not see a verdict recorded in the lane.
 
 ## Acceptance criteria
-1. A `steps.py` selftest case: a builder and verifier result recorded in the lane twin for a primary task dir with a lane record; `steps.py next <primary task dir>` reports the step done; with the helper call bypassed it fails (state the FAIL line). Same for `plan_done.py` if it reads records itself.
-2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 (and `plan_done.py selftest` if it has one), `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+1. A `steps.py` selftest case: a builder and verifier result recorded in the lane twin for a primary task dir with a lane record; `steps.py next <primary task dir>` reports the step done; with the helper call bypassed it fails (state the FAIL line). Same for `plan_done.py` if it reads records itself, and for `dispatch.py status <primary task dir>` listing the lane twin's attempt.
+2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 (and `plan_done.py selftest` if it has one, and `dispatch.py selftest`), `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
