@@ -2173,7 +2173,9 @@ def rebind_solo_host(sd, agent_id):
     branch = next((br for p, br in worktrees(top) if os.path.realpath(p) == wt), None)
     if branch is None or not fanout.host_record_path(Path(top), name).is_file():
         return
-    print(fanout.rebind_host_record(Path(top), name, leaf, branch or 'worktree-' + leaf, sd.get('ticket')))
+    got = fanout.rebind_host_record(Path(top), name, leaf, branch or 'worktree-' + leaf, sd.get('ticket'))
+    if got:
+        print(got)
 
 
 def solo_report_file(sd, transcript=None, no_result=False, agent_id=None):
