@@ -2308,6 +2308,23 @@ def host_record_path(top, name):
     return lanes.Ctx(str(top)).root / 'host' / f'{name}.lane.json'
 
 
+def rebind_host_record(top, name, leaf, branch, tid, into=None, start=None):
+    """Rebind the provisional host record <name>.lane.json to <leaf>.lane.json on branch (the tree the host made, named
+    agent-<agent_id>), keeping its into and base (into and start when it gives none), and remove the provisional one;
+    the `host record: ...` line to print. fanout land after a merge (T-0452) and dispatch.py record/advance with
+    --agent-id (T-0763) call it."""
+    prov = host_record_path(top, name)
+    old = lanes.read_json(prov) or {}
+    try:
+        lanes.host_record(leaf, branch=branch, into=into or old.get('into'), tickets=old.get('tickets') or [tid],
+                          base=old.get('base_sha') or old.get('base') or start, cwd=str(top))
+    except (lanes.LaneError, OSError) as e:
+        return f'host record: not written ({e})'
+    with contextlib.suppress(OSError):
+        prov.unlink()
+    return f'host record: {host_record_path(top, leaf)} (rebound from {prov.name})'
+
+
 def write_host_record(ctx, name, branch, tid, base=None):
     """Write the host lane record of a sub-agent lane (kind host, into the integration branch); its path, or why not."""
     try:
@@ -2822,14 +2839,7 @@ def land_lanes(ctx, t, outcome):
         name = subagent_name(t.id)
         if outcome != 'merged' or wt.name == name:
             return []
-        prov = host_record_path(top, name)
-        old = lanes.read_json(prov) or {}
-        got = write_host_record(ctx, wt.name, ctx['lane'].branch, t.id, base=old.get('base_sha') or old.get('base'))
-        if got.startswith('not written'):
-            return [f'host record: {got}']
-        with contextlib.suppress(OSError):
-            prov.unlink()
-        return [f'host record: {got} (rebound from {prov.name})']
+        return [rebind_host_record(top, name, wt.name, ctx['lane'].branch, t.id, into=ctx['integration'], start=ctx['start'])]
     tids = rec.get('tickets') or []
     if rec.get('kind') != 'fanout' or not tids or tids[-1] != t.id:
         return []

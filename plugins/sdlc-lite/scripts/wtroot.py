@@ -360,35 +360,9 @@ def lane_record(path, cwd='.', hosts=None):
     return {}
 
 
-def _unbound_host_lane(ticket, trees, primary, hosts):
-    """(tree, record) for ticket's provisional host record (fanout prep's <id>-solo, rebound only at land) when Claude
-    Code named the tree agent-<id> instead (T-0763): the one host-owned tree with no record, else of several the one
-    holding the solo's report <lane>.md under a runtime/tasks dir; (None, {}) when none or still ambiguous."""
-    listed = {Path(p).name for p, _ in trees}
-    recs = []
-    for h in hosts:
-        for f in sorted(Path(h).glob('*.lane.json')):
-            try:
-                r = json.loads(f.read_text(encoding='utf-8'))
-            except (OSError, ValueError):
-                continue
-            if isinstance(r, dict) and ticket in (r.get('tickets') or []) and r.get('kind') == 'host' \
-                    and f.name[:-len('.lane.json')] not in listed:
-                recs.append(r)
-    free = [p for p, _ in trees if p != primary and host_owned(p) == 'Claude Code' and not lane_record(p, p, hosts)]
-    if len(recs) != 1 or not free:
-        return None, {}
-    leaf = str(recs[0].get('lane') or '')
-    if len(free) > 1:
-        free = [p for p in free if leaf and any(any(Path(p).glob(g % leaf)) for g in ('*/runtime/tasks/*/%s.md',
-                                                                                       '*/*/runtime/tasks/*/%s.md'))]
-    return (free[0], recs[0]) if len(free) == 1 else (None, {})
-
-
 def owner_trees(ticket=None, cwd='.'):
     """{'primary', 'integration', 'lane'}: the main checkout, the lane worktree whose record lists ticket (else the
-    agent-<id> tree of a provisional host record, _unbound_host_lane, else the current tree when it is not the main
-    checkout), and the worktree holding that lane's into branch when it is not the
+    current tree when it is not the main checkout), and the worktree holding that lane's into branch when it is not the
     main checkout; None for a tree that does not exist."""
     primary = main_top(cwd)
     primary = os.path.realpath(primary) if primary else None
@@ -405,8 +379,6 @@ def owner_trees(ticket=None, cwd='.'):
         if ticket and ticket in (r.get('tickets') or []) and r.get('kind') != 'integration':
             lane, rec = p, r
             break
-    if lane is None and ticket:
-        lane, rec = _unbound_host_lane(ticket, trees, primary, hosts)
     here = _top(cwd)
     if lane is None and here and here != primary:  # T-0750: also a ticket no lane record lists, run from a linked tree
         lane, rec = here, lane_record(here, cwd, hosts)
@@ -494,24 +466,14 @@ def owner_selftest():
                lanes_root(lane) == lr and owner_tree('base-sha', 'T-0004', repo) == hostd
                and owner_tree('config', 'T-0004', hostd) == integ and lane_record(hostd, hostd).get('base_sha') == 'abc')
         (repo / '.sdlc' / 'config').unlink()
-        # T-0763: fanout prep's provisional host record <id>-solo names a tree Claude Code called agent-<id> instead
-        ag1, ag2 = repo / '.claude' / 'worktrees' / 'agent-e1', repo / '.claude' / 'worktrees' / 'agent-e2'
-        g(repo, 'worktree', 'add', '-q', '-b', 'worktree-agent-e1', str(ag1), 'HEAD')
+        ag = repo / '.claude' / 'worktrees' / 'agent-e1'
+        g(repo, 'worktree', 'add', '-q', '-b', 'worktree-agent-e1', str(ag), 'HEAD')
         (sib / 'host' / 'T-0005-solo.lane.json').write_text(json.dumps({'lane': 'T-0005-solo', 'kind': 'host',
-                                                                       'branch': 'worktree-T-0005-solo',
                                                                        'tickets': ['T-0005'], 'into': 'integ'}))
-        expect('a provisional host record and one unbound agent-* tree: that tree is the lane, from primary (T-0763)',
-               owner_tree('records', 'T-0005', repo) == ag1 and owner_tree('config', 'T-0005', repo) == integ)
-        g(repo, 'worktree', 'add', '-q', '-b', 'worktree-agent-e2', str(ag2), 'HEAD')
-        expect('two unbound agent-* trees and no solo report in either: still ambiguous, primary keeps records (T-0763)',
-               owner_tree('records', 'T-0005', repo) == repo)
-        (ag2 / '.sdlc' / 'runtime' / 'tasks' / 'e').mkdir(parents=True)
-        (ag2 / '.sdlc' / 'runtime' / 'tasks' / 'e' / 'T-0005-solo.md').write_text('solo done\n')
-        expect('two unbound agent-* trees: the one holding the solo report <lane>.md is the lane (T-0763)',
-               owner_tree('records', 'T-0005', repo) == ag2)
+        expect('a provisional host record binds no agent-* tree it does not name: records stay in primary until '
+               'dispatch.py rebinds it (T-0763)', owner_tree('records', 'T-0005', repo) == repo)
         (sib / 'host' / 'T-0005-solo.lane.json').unlink()
-        for a in (ag1, ag2):
-            g(repo, 'worktree', 'remove', '--force', str(a))
+        g(repo, 'worktree', 'remove', '--force', str(ag))
         expect('a ticket no lane record lists, run from a linked tree: that tree is the lane (T-0750)',
                owner_tree('records', 'T-0009', solo) == solo)
         expect('no ticket: the current tree is the lane', owner_tree('records', None, lane) == lane

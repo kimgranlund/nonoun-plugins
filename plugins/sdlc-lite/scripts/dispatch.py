@@ -2160,6 +2160,22 @@ def host_report_copy(result, agent_id=None):
     return hits[0] if len(hits) == 1 else None
 
 
+def rebind_solo_host(sd, agent_id):
+    """T-0763: once a prep solo's agent id is known, rebind its provisional host record <name>.lane.json to the tree the
+    host made, .claude/worktrees/agent-<agent_id> on its branch (fanout.rebind_host_record, as fanout land does), so
+    wtroot.owner_tree finds that tree by name; nothing when the tree is not a listed worktree or no such record exists."""
+    name, leaf = sd.get('name') or '', 'agent-%s' % agent_id
+    top = wtroot.main_top(sd['artifacts_dir']) if agent_id and name and name != leaf else None
+    if not top:
+        return
+    import fanout
+    wt = os.path.realpath(os.path.join(top, '.claude', 'worktrees', leaf))
+    branch = next((br for p, br in worktrees(top) if os.path.realpath(p) == wt), None)
+    if branch is None or not fanout.host_record_path(Path(top), name).is_file():
+        return
+    print(fanout.rebind_host_record(Path(top), name, leaf, branch or 'worktree-' + leaf, sd.get('ticket')))
+
+
 def solo_report_file(sd, transcript=None, no_result=False, agent_id=None):
     """The report of a recorded solo whose dispatch names a result (T-0682): the file when it holds text, else its host
     worktree copy (host_report_copy, T-0740) copied there, else the transcript's final message written there (a lone
@@ -2524,6 +2540,7 @@ def main(argv):
                 return rerecord(args.dispatch)
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
+                rebind_solo_host(sd, args.agent_id)  # T-0763: record and advance --agent-id bind the host record to its tree
                 gone = solo_report_file(sd, args.transcript, args.no_result, args.agent_id) if sd.get('result') else 0
                 import solo_run
                 if gone == 1:  # T-0719: --no-result closes a stalled solo failed and clears its live marker
@@ -3539,29 +3556,6 @@ def selftest():
              % out.getvalue()[-200:], rc6 == 0 and out.getvalue().splitlines() == ['step-1/verifier-L2 completed verifier-L2 parent_pid=None']
              and not order.records_dir(rr / '.sdlc' / 't755').is_dir())
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw6)], capture_output=True)
-        # T-0763: a fanout solo whose only lane is the host worktree Claude Code named agent-<id>, while prep's host
-        # record still has the provisional name <id>-solo (rebound only at land): status and next from the main
-        # checkout read the records in that worktree, not `no attempts` and a missing builder result
-        lw7 = rr / '.claude' / 'worktrees' / 'agent-t763'
-        gt(rr, 'worktree', 'add', '-q', '-b', 'worktree-agent-t763', str(lw7), 'HEAD')
-        hrec7 = wtroot.host_dirs(rr)[0] / 'T-0763-solo.lane.json'
-        put(hrec7, json.dumps({'lane': 'T-0763-solo', 'kind': 'host', 'branch': 'worktree-T-0763-solo',
-                               'tickets': ['T-0763'], 'into': 'main'}))
-        put(rr / '.sdlc' / 't763' / 'handoff.md', '---\nid: T-0763\ntitle: host lane records\n---\n\n## Goal\nx\n')
-        tw7 = R(lw7 / '.sdlc' / 't763')
-        put(tw7 / 'verifier-L2.attempt.json', json.dumps({'attempt_id': 't763', 'status': 'completed', 'role': 'verifier',
-                                                          'level': 'L2'}))
-        put(tw7 / 'builder-L2.md', '<!-- role=builder level=L2 model=opus effort=low -->\n## Status\ndone\n\n## Changes\nx\n\n## Checks\nx\n')
-        with cwd(rr), contextlib.redirect_stdout(io.StringIO()) as out:
-            rc7 = main(['status', str(rr / '.sdlc' / 't763')])
-        nx7 = script('steps.py', 'next', rr / '.sdlc' / 't763', cwd=str(rr))
-        case('host lane (T-0763): status and next on a main-checkout task dir read the records in the agent-<id> host '
-             'worktree of a provisional <id>-solo host record, got status %r, next rc=%s %r'
-             % (out.getvalue()[-160:], nx7.returncode, (nx7.stdout + nx7.stderr)[-200:]),
-             rc7 == 0 and out.getvalue().splitlines() == ['verifier-L2 completed verifier-L2 parent_pid=None']
-             and nx7.returncode == 0 and '/.claude/worktrees/agent-t763/.sdlc/runtime/tasks/t763/builder-L2.md' in nx7.stdout)
-        hrec7.unlink()
-        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw7)], capture_output=True)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw4)], capture_output=True)
         if mbase_was is not None:
             mbase.write_text(mbase_was)
@@ -4653,6 +4647,59 @@ def selftest():
             case('T-0747 advance on an L2 prep solo dispatch (%s) prepares the verifier at L3 on %s: Tree and Handoff name it' % (tag, 'the host worktree' if want_lane else 'main'),
                  prc == 0 and pnxt is not None and pnxt['role'] == 'verifier' and pnxt['level'] == 'L3' and pnxt['tree'] == want_tree
                  and 'Tree: %s ' % want_tree in pnxt['prompt'] and 'Handoff: %s' % want_hand in pnxt['prompt'])
+        # T-0763: two prep solos in flight, each with its provisional host record <id>-solo; the host named the trees
+        # agent-<id>. Before A's advance neither tree binds (wtroot reads a record only by the tree it names), so status and
+        # next on A from main read main and B's tree never answers for A; advance --agent-id rebinds A's record to its own
+        # tree, after which status and next from main read A's records there, while B stays unbound.
+        import lanes
+        hr = mk(tmp / 'adv-prep-host')
+        hrd = lanes.Ctx(str(hr)).root / 'host'
+
+        def host_solo(tid, aid):
+            hname = tid + '-solo'
+            htask = hr / '.sdlc' / tid.lower()
+            put(htask / 'handoff.md', '---\nid: %s\ntitle: host lane\nsize: L2\n---\n\n## Goal\nx\n' % tid)
+            lanes.host_record(hname, branch='worktree-' + hname, into='main', tickets=[tid], base='b' * 40, cwd=str(hr))
+            hd = {'subagent_type': 'sdlc-lite:solo-L2', 'name': hname, 'model': 'opus', 'effort': 'medium', 'prompt': 'p', 'tier': 'L2',
+                  'prune': False, 'ticket': tid, 'branch': 'worktree-' + hname, 'worktree': fanout.HOST_WORKTREES + '/' + hname,
+                  'handoff': '.sdlc/%s/handoff.md' % tid.lower(), 'verifier': 'python3 dispatch.py prepare verifier L2 x',
+                  'result': str(order.records_dir(htask) / (hname + '.md')), 'base_sha': None}
+            hd['attempt_id'] = fanout.write_solo_row(htask, 'L2', hname + '.md')
+            hfile = order.records_dir(htask, create=True) / (hname + '.dispatch.json')
+            hfile.write_text(json.dumps(fanout.solo_record(hd, htask, 'L2', hr), indent=2) + '\n', encoding='utf-8')
+            htree = hr / fanout.HOST_WORKTREES / ('agent-' + aid)
+            subprocess.run(['git', '-C', str(hr), 'worktree', 'add', '-q', '-b', 'worktree-agent-' + aid, str(htree)], check=True)
+            put(htree / '.sdlc' / tid.lower() / 'handoff.md', '---\nid: %s\ntitle: host lane\nsize: L2\n---\n\n## Goal\nx\n' % tid)
+            twin = order.records_dir(htree / '.sdlc' / tid.lower(), create=True)
+            put(twin / (hname + '.md'), '## Report\ndone\n')
+            put(twin / 'builder-L2.md', '<!-- role=builder level=L2 model=opus effort=low -->\n## Status\ndone\n\n## Changes\nx\n\n## Checks\nx\n')
+            put(twin / 'builder-L2.attempt.json', json.dumps({'attempt_id': aid, 'status': 'completed', 'role': 'builder', 'level': 'L2'}))
+            return htask, hfile, htree
+
+        def host_seen(htask):
+            with cwd(hr), contextlib.redirect_stdout(io.StringIO()) as so:
+                main(['status', str(htask)])
+            nx = script('steps.py', 'next', htask, cwd=str(hr))
+            return so.getvalue(), nx.returncode, nx.stdout + nx.stderr
+        own = lambda tid: os.path.realpath(wtroot.owner_tree('records', tid, hr))  # noqa: E731
+        atask, afile, atree = host_solo('T-0763', 'aaa')
+        btask, bfile, btree = host_solo('T-0764', 'bbb')
+        s0, n0rc, n0 = host_seen(atask)
+        case('T-0763 two prep solos in flight, before advance: A is unbound and status and next on A read main, never B\'s '
+             'tree, got status %r next rc=%s %r' % (s0[-120:], n0rc, n0[-160:]),
+             own('T-0763') == own(None) and own('T-0764') == own(None)
+             and s0.startswith('no attempts in ') and n0rc == 1 and 'agent-bbb' not in s0 + n0)
+        arc, aout, _, _, _ = adv_ticket('prep-host', str(afile), hr, '--agent-id', 'aaa')
+        s1, n1rc, n1 = host_seen(atask)
+        case('T-0763 advance --agent-id on A\'s prep solo rebinds host/T-0763-solo.lane.json to agent-aaa (branch '
+             'worktree-agent-aaa), then status and next on A from main read agent-aaa; B stays unbound, got rc=%s %r, '
+             'status %r next rc=%s %r' % (arc, aout[:200], s1[-120:], n1rc, n1[-160:]),
+             arc == 0 and '/host/agent-aaa.lane.json (rebound from T-0763-solo.lane.json)' in aout
+             and not (hrd / 'T-0763-solo.lane.json').exists()
+             and lanes.read_json(hrd / 'agent-aaa.lane.json').get('branch') == 'worktree-agent-aaa'
+             and lanes.read_json(hrd / 'agent-aaa.lane.json').get('tickets') == ['T-0763']
+             and own('T-0763') == os.path.realpath(atree) and own('T-0764') == own(None) and (hrd / 'T-0764-solo.lane.json').is_file()
+             and 'builder-L2 completed' in s1 and n1rc == 0 and '/agent-aaa/.sdlc/runtime/tasks/t-0763/builder-L2.md' in n1)
         # T-0682: record on a solo dispatch reads the report file its brief names: present, it prints the path; missing with
         # no transcript, exit 2 with the row unrecorded; missing with a transcript, the final message is written there.
         import solo_run
