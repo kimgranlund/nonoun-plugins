@@ -286,6 +286,7 @@ out=$(run "$sw" "$(pj "git worktree add /tmp/x HEAD")" "${swenv[@]}"); rc=$?
 [[ $rc -eq 2 ]] || fail "block-stray-worktree denies /tmp/x: exit $rc, want 2"
 grep -q builder <<<"$out" || fail "block-stray-worktree /tmp/x: stderr lacks the role"
 grep -q -- '--detach' <<<"$out" || fail "block-stray-worktree /tmp/x: stderr lacks the allowed form"
+grep -qF '"$SDLC_TMP_WORKTREES/<name>"' <<<"$out" || fail "block-stray-worktree /tmp/x with SDLC_TMP_WORKTREES set: stderr lacks the variable form"
 for c in "git worktree add -b tmpbr \"$tw/x\" HEAD" "git worktree add -B tmpbr \"$tw/x\" HEAD" \
   "git worktree add --orphan \"$tw/x\"" "git worktree add --orphan -b tmpbr \"$tw/x\"" \
   "git -C . worktree add /tmp/x HEAD" "git worktree add \"$tw/x\"" \
@@ -937,6 +938,9 @@ for c in "git worktree add --detach \"\$SDLC_TMP_WORKTREES/base\" HEAD" "git wor
   out=$(run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")"); rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for a sub-agent with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
   grep -q 'literal prefix' <<<"$out" || fail "block-stray-worktree '$c' with the variable unset: stderr lacks the literal-prefix advice"
+  # T-0735: the allowed form names the literal prefix, not the variable the sub-agent's shell lacks
+  ! grep -qF '$SDLC_TMP_WORKTREES/<name>' <<<"$out" || fail "block-stray-worktree '$c' with the variable unset: the allowed form names \$SDLC_TMP_WORKTREES"
+  grep -qF "\"$swroot/tmp/<name>\"" <<<"$out" || fail "block-stray-worktree '$c' with the variable unset: the allowed form lacks the literal prefix $swroot/tmp"
   run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" SDLC_TMP_WORKTREES= >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for a sub-agent with SDLC_TMP_WORKTREES empty: exit $rc, want 2"
   run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" SDLC_TMP_WORKTREES="$wtp" >/dev/null; rc=$?
@@ -1087,6 +1091,7 @@ for c in "rm -rf \$SDLC_TMP_WORKTREES/scratch" "rm -rf \${SDLC_TMP_WORKTREES}/sc
   out=$(run "$rmh" "$(rmsub "$c")"); rc=$?
   [[ $rc -eq 2 ]] || fail "block-role-rm denies '$c' for a sub-agent with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
   grep -q 'literal prefix' <<<"$out" || fail "block-role-rm '$c' with the variable unset: stderr lacks the literal-prefix advice"
+  ! grep -qF '$SDLC_TMP_WORKTREES/<name>' <<<"$out" || fail "block-role-rm '$c' with the variable unset: stderr offers \$SDLC_TMP_WORKTREES/<name> (T-0735)"
   run "$rmh" "$(rmsub "$c")" SDLC_TMP_WORKTREES= >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-role-rm denies '$c' for a sub-agent with SDLC_TMP_WORKTREES empty: exit $rc, want 2"
   run "$rmh" "$(rmsub "$c")" SDLC_TMP_WORKTREES="$rmtop.worktrees/tmp/verifier-L1-x" >/dev/null; rc=$?

@@ -119,7 +119,8 @@ either), takes no lock, and skips recovery.
 Brief. The run.sh prompt (Handoff, Artifacts dir), then a Report file line and a one-line pointer line (T-0646), then a Tree line, a
 throwaway-worktree prefix line (<worktree root>/tmp/<Agent name>, wtroot.py root), a scratch line
 ($TMPDIR/sdlc-lite/<repo key>/<Agent name>), the search scope line (SEARCH_SCOPE, T-0702), and for builder and verifier a Base sha line,
-since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier for a ticket with a ready ref
+since a sub-agent cannot read SDLC_BASE_SHA from its environment; the line tells it to run a command naming
+$SDLC_BASE_SHA after `export SDLC_BASE_SHA=<base> &&` (T-0735). A verifier for a ticket with a ready ref
 (refs/sdlc/ready/<id>, lanes.py ready, T-0590) also gets `Review sha: <its sha>`, stored as review_sha, and takes Base sha
 from the `Lane-Base:` line of that snapshot commit when it is an ancestor and the handoff names no base (T-0717); prepare says so on stderr when the tree has
 moved since the pin (stale). A verifier whose records dir holds end-sha (written by record for a completed builder: the
@@ -1370,7 +1371,10 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                        'Bash timeout under 600000 ms; never run_in_background or Monitor. Never run the full check.sh; run the checks the '
                        'criteria name. Never use git stash; the stash stack is shared across sessions.')
         if base:
-            prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
+            # T-0735: a sub-agent's shell has no SDLC_BASE_SHA (run.sh exported it), and a criterion naming it expands to ''
+            prompt += ('\nBase sha: %s (the commit this build started from; diff scope criteria against it). Your shell has no '
+                       'SDLC_BASE_SHA: run a criterion or command that names $SDLC_BASE_SHA as written, after '
+                       '`export SDLC_BASE_SHA=%s &&` in the same Bash call' % (base, base))
         if range_line:
             prompt += '\n' + range_line
         if review:
@@ -3120,6 +3124,8 @@ def selftest():
                                       % (w / 'handoff.md', R(w), R(w) / 'builder-L1.md'))
              and '\nEnd with one line: `builder <status> %s` (status is your Status or Verdict value, else done), nothing else.\nTree: ' % (R(w) / 'builder-L1.md') in got['prompt']
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
+        case('T-0735 the brief has the builder export SDLC_BASE_SHA before a criterion that names it',
+             'Your shell has no SDLC_BASE_SHA: run a criterion or command that names $SDLC_BASE_SHA as written, after `export SDLC_BASE_SHA=%s &&` in the same Bash call' % head in got['prompt'])
         case('T-0707 the brief tells the role to write worktree and rm paths literally, never through a shell variable',
              'Write each worktree and rm path literally as the full path under the prefix this line names, never through a shell variable such as $T, $S or $SDLC_TMP_WORKTREES' in got['prompt'])
         own = json.loads((Path(got['tmp_prefix']) / '.owner.json').read_text())
