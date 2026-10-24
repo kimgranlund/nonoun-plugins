@@ -2,7 +2,7 @@
 id: T-0760
 title: "dispatch.py advance does not route a blocked solo as done"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,13 @@ The failing test lands before or with the fix.
 - Selftest cases `T-0760 advance on a L2 / L1 solo dispatch whose report says blocked ...` pass. Negative control (fix disabled): `FAIL: T-0760 advance on a L2 solo dispatch whose report says blocked prints stop: blocked and prepares no verifier` and the same for L1.
 - `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 12f046a9` exit 0.
 - Not done: a one-line note in `skills/fanout/SKILL.md` (it is at the 18,000 character limit); the dispatch.py header carries the behavior.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 12f046a92ed1
+- Changed: see commits
+- Commits: 9c87a0e T-0760: advance routes a blocked solo report as stop: blocked
+- Check: 1 A `dispatch.py` selftest case: advance on a solo dispatch whose report says `blocked` prints bloc...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:2304 the match is... -> notes.md
+- Follow-up: note: redck.py deviations printed no process deviation lines for this... -> notes.md

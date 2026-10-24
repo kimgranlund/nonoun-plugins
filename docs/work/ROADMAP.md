@@ -11,12 +11,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0757 | [0757-host-lane-verifier-base](0757-host-lane-verifier-base/handoff.md) | The verifier of a host lane diffs against the commit the host cut the worktree from | bug | L2 | P2 | none | 🟡 claimed |
 | T-0758 | [0758-land-command-host-branch](0758-land-command-host-branch/handoff.md) | The land command prep prints names the branch the host actually made | bug | L1 | P2 | none | 🔵 ready |
 | T-0759 | [0759-solo-report-path-one](0759-solo-report-path-one/handoff.md) | A host-lane solo brief names one report path | bug | L1 | P2 | none | 🔵 ready |
-| T-0760 | [0760-advance-solo-blocked](0760-advance-solo-blocked/handoff.md) | dispatch.py advance does not route a blocked solo as done | bug | L1 | P2 | none | 🟡 claimed |
 | T-0761 | [0761-settle-no-forward-keeps-main](0761-settle-no-forward-keeps-main/handoff.md) | settle without --forward leaves main where it is | bug | L1 | P2 | none | 🔵 ready |
 | T-0763 | [0763-owner-host-lane-records](0763-owner-host-lane-records/handoff.md) | dispatch status and steps next from main see a host lane's records | bug | L2 | P2 | none | 🟡 claimed |
 | T-0764 | [0764-sweep-noise-other-repos](0764-sweep-noise-other-repos/handoff.md) | prep and record print no sweep lines for other repos | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 717 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 718 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
