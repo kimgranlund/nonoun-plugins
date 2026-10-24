@@ -2,7 +2,7 @@
 id: T-0759
 title: "A host-lane solo brief names one report path"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,15 @@ The failing test lands before or with the fix.
 - Tests: new case 30c (host brief names the one relative path, no main-checkout path); case 22 now expects the relative path in both lines.
 - Negative control (fix absent, case 30c present): `fanout selftest: FAIL` with `case 30c host brief: the Report file line and the end line name the worktree-relative .sdlc/runtime/tasks/t1/T-0001-solo.md and the prompt holds no main-checkout path '.../host-dirty/.sdlc/runtime/tasks/t1/T-0001-solo.md'`, the only miss.
 - Checks: `gate_lock.py run ... fanout.py selftest` exit 0 (PASS), `dispatch.py selftest` exit 0 (PASS, record and advance), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check b1f910d9` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: b1f910d927cf
+- Changed: see commits
+- Commits: 6f4b362 T-0759: a host-lane solo brief names one worktree-relative report path
+- Check: 1 A `fanout.py` selftest case: the host-lane brief's `Report file:` and end line name the same work...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plug...: pass
+- Follow-up: note: conductor question 1 can the solo Write a relative path: the Report... -> notes.md
+- Follow-up: note: conductor question 2 solo-report check with a relative path... -> notes.md
+- Follow-up: note: conductor question 3 block-role-write hook... -> notes.md
+- Follow-up: note: docs/work/0759-solo-report-path-one/handoff.md Outcome says case... -> notes.md
