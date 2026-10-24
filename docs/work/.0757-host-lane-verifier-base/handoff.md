@@ -2,7 +2,7 @@
 id: T-0757
 title: "The verifier of a host lane diffs against the commit the host cut the worktree from"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,13 @@ The failing test lands before or with the fix.
 - Docs: `skills/handoff-format/references/step-handoff-rules.md` names the host-worktree verifier base.
 - Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (PASS); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 1c6715a9` exit 0.
 - Open: the solo brief's `Base sha:` line still names prep's base (prep cannot know the host cut point before the spawn); land's `--base` pins the integration start, which is unaffected.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 1c6715a9c5ce
+- Changed: see commits
+- Commits: 0cf1c33 T-0757: The verifier of a host lane diffs against the commit the host cut the worktree from
+- Check: 1 A dispatch.py selftest case: advance on a host lane cut from an older commit than prep's base giv...: pass
+- Check: 2 gate_lock selftest exit 0, check.py exit 0, check-packaging.py passes, `git diff --check <base>` ...: pass
+- Follow-up: note: Conductor probes run against a scratch repo with an origin bare... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py host_fork is placed before... -> notes.md

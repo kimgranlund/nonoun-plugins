@@ -8,13 +8,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
-| T-0757 | [0757-host-lane-verifier-base](0757-host-lane-verifier-base/handoff.md) | The verifier of a host lane diffs against the commit the host cut the worktree from | bug | L2 | P2 | none | 🟡 claimed |
 | T-0758 | [0758-land-command-host-branch](0758-land-command-host-branch/handoff.md) | The land command prep prints names the branch the host actually made | bug | L1 | P2 | none | 🔵 ready |
 | T-0759 | [0759-solo-report-path-one](0759-solo-report-path-one/handoff.md) | A host-lane solo brief names one report path | bug | L1 | P2 | none | 🟡 claimed |
 | T-0761 | [0761-settle-no-forward-keeps-main](0761-settle-no-forward-keeps-main/handoff.md) | settle without --forward leaves main where it is | bug | L1 | P2 | none | 🟡 claimed |
 | T-0763 | [0763-owner-host-lane-records](0763-owner-host-lane-records/handoff.md) | dispatch status and steps next from main see a host lane's records | bug | L2 | P2 | none | 🟡 claimed |
 
-Closed: 719 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 720 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
