@@ -2209,7 +2209,7 @@ def host_base_refusal(ctx):
         return ''
     base = git(ctx['top'], 'rev-parse', 'HEAD').stdout.strip()
     return (f'base {base} is not on {ref}, the branch the host cuts each sub-agent worktree from, and the solo there can run '
-            f'no git: push it first (git push origin HEAD:{ref.split("/", 1)[1]}), then rerun prep')
+            f'no git: push it first (git push origin HEAD:{ref.split("/", 1)[1]}; when the remote may already have it, git fetch origin first), then rerun prep')
 
 
 def subagent_dispatch(ctx, t, tier):
