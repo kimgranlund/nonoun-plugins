@@ -443,3 +443,10 @@
 ## T-0747: advance prepares a prep solo's verifier on the lane worktree (2026-10-22)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:2307 the verifier brief's handoff is now the lane copy, whose records dir lacks the prep dispatch json, so base resolution prints `nothing recorded for this step: Base sha is the lane start ...` on stderr. The picked base is still the prep HEAD in both probes, so this is a misleading message, not a wrong base.
+
+## T-0749: One owner-tree rule and helper for sdlc records (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/wtroot.py:_lane_rec: decide: the host-record root ignores `lanes_root:`, but `lanes.config` (lanes.py:373) honours it and `dispatch.lane_record_base` finds host records through `lanes.discover`, so it follows `lanes_root:`. With `lanes_root:` set the helper finds no host lane and falls back to primary. This is latent until T-0750 routes dispatch through the helper. Recommend fixing it as the first change in T-0750, together with collapsing the `lane_record_base` lookup, rather than reopening T-0749; there is no regression today because no caller uses the helper.
+- decide: plugins/sdlc-lite/scripts/wtroot.py:309 and the config row of the table: note: the #58 note says `wtroot._config_root` reads the current tree. It reads `worktree_root:` from the main checkout (`main_top`) in a non-bare repo and has nothing to do with `merge_gate`, so the clause is inaccurate; it is harmless prose, but T-0751 should reword it.
+- decide: API coverage for T-0750 to T-0752: the kinds those tickets name (records, base-sha, end-sha; config, lane-close; branch, worktree) all exist in `OWNERS`. The helper returns only a tree, so callers still join `order.records_dir` or `.sdlc/config` themselves; that is enough for the three tickets as written.
+- decide: No `is_lane` or integration-tree-exists signal is exposed apart from `owner_trees`; T-0751 will need `owner_trees(...)['integration']` where `config_root` takes `integ_exists`, which is available.

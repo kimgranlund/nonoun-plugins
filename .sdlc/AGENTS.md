@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:814c6de0b5a1 -->
+<!-- sdlc-lite:managed:start v1 sha256:c5d3395d238d -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -17,13 +17,12 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0750 dispatch.py reads and writes records through the owner-tree helper (docs/work/0750-dispatch-owner-tree)
   - T-0751 fanout.py reads config and records through the owner-tree helper (docs/work/0751-fanout-owner-tree)
   - T-0752 lanes.py and steps.py read and write records through the owner-tree helper (docs/work/0752-lanes-steps-owner-tree)
-- claimed: 2
+- claimed: 1
   - T-0735 Audit for run.sh-era assumptions in prepare-launched roles (docs/work/0735-runsh-assumption-audit), claimed by sdlc-lite-author 2026-10-24
-  - T-0749 One owner-tree rule and helper for sdlc records (docs/work/0749-owner-tree-rule-helper), claimed by sdlc-lite-author 2026-10-24
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 707
+- done: 708
 - dropped: 30
 
 ## Procedures

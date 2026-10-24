@@ -2,7 +2,7 @@
 id: T-0749
 title: "One owner-tree rule and helper for sdlc records"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,16 @@ Split from T-0734 (root-cause review 2026-10-22): 8 issues share one cause, the 
 - Negative control: a scratch copy (`<scratchpad>/T-0749-negctl/wtroot.py`) with `config` mapped to `('primary',)` exits 1 with `FAIL: config is owned by the integration tree, from primary and from the lane (got ['repo', 'repo'])` and `FAIL: a host record (no .lane.json) names the lane and its integration tree (T-0745)`.
 - Checks: `wtroot.py selftest` exit 0, `check.py` exit 0 (through gate_lock), `scripts/check-packaging.py` exit 0, `git diff --check 16f3c066` exit 0.
 - Open for T-0750 to T-0752: `owner_trees` duplicates the lane and host-record discovery `dispatch.lane_record_base` does through `lanes.discover`; routing the scripts through the helper should collapse that seam. The helper reads `.lane.json` `into` for the integration tree; `lanes_root:` config overrides of the host-record root are not read.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 16f3c066c7bc
+- Changed: see commits
+- Commits: 3b19879 T-0749: one owner-tree rule and helper for sdlc records
+- Check: 1 Rule table in `docs/references/sdlc-internals.md` names the helper and has a row per Intent kind: pass
+- Check: 2 Selftest has one case per kind across primary, integration and lane trees; a deliberately wrong m...: pass
+- Check: 3 Selftest passes, `check.py` exits 0, `check-packaging.py` passes, `git diff --check <base>` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/wtroot.py:_lane_rec: decide: the... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/wtroot.py:309 and the config row of the... -> notes.md
+- Follow-up: decide: API coverage for T-0750 to T-0752: the kinds those tickets name... -> notes.md
+- Follow-up: decide: No is_lane or integration-tree-exists signal is exposed apart from... -> notes.md
