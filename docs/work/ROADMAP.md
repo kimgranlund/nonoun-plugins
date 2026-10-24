@@ -11,9 +11,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0735 | [0735-runsh-assumption-audit](0735-runsh-assumption-audit/handoff.md) | Audit for run.sh-era assumptions in prepare-launched roles | chore | L2 | P2 | none | 🟡 claimed |
 | T-0750 | [0750-dispatch-owner-tree](0750-dispatch-owner-tree/handoff.md) | dispatch.py reads and writes records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
 | T-0751 | [0751-fanout-owner-tree](0751-fanout-owner-tree/handoff.md) | fanout.py reads config and records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
-| T-0752 | [0752-lanes-steps-owner-tree](0752-lanes-steps-owner-tree/handoff.md) | lanes.py and steps.py read and write records through the owner-tree helper | chore | L2 | P2 | T-0749 | 🟡 claimed |
 
-Closed: 708 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 709 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -78,3 +77,6 @@ Closed: 708 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/wtroot.py:309 and the config row of the table: note: the #58 note says `wtroot._config_root` reads the current tree. It reads `worktree_root:` from the main checkout (`main_top`) in a non-bare repo and has nothing to do with `merge_gate`, so the clause is inaccurate; it is harmless prose, but T-0751 should reword it. (from T-0749: One owner-tree rule and helper for sdlc records (2026-10-24))
 - decide: API coverage for T-0750 to T-0752: the kinds those tickets name (records, base-sha, end-sha; config, lane-close; branch, worktree) all exist in `OWNERS`. The helper returns only a tree, so callers still join `order.records_dir` or `.sdlc/config` themselves; that is enough for the three tickets as written. (from T-0749: One owner-tree rule and helper for sdlc records (2026-10-24))
 - decide: No `is_lane` or integration-tree-exists signal is exposed apart from `owner_trees`; T-0751 will need `owner_trees(...)['integration']` where `config_root` takes `integ_exists`, which is available. (from T-0749: One owner-tree rule and helper for sdlc records (2026-10-24))
+- decide: Conductor check (existing selftests unchanged): the 257cf42c..28278a1d diff holds no hunk in the lanes.py selftest. The steps.py selftest diff is one added block and removes nothing. No existing assertion was edited. (from T-0752: lanes.py and steps.py read and write records through the owner-tree helper (2026-10-24))
+- decide: Conductor check (plain solo flow): in a throwaway repo I ran the new `lanes.py open smoke --kind solo --ticket T-0001`. It recorded `branch:` and `worktree:` in main and committed `T-0001: record lane T-0001-smoke`. `close --discard` of the locked lane was refused (`locked: me T-0001`) identically by the base 257cf42c script and the built one. After `git worktree unlock`, `close` removed the tree and cleared both lines in main (`closed T-0001-smoke (ancestor)`), the same effect the T-0713 selftest cases pin. I did not run `finish` live; the lanes selftest `finish` cases pass unchanged. (from T-0752: lanes.py and steps.py read and write records through the owner-tree helper (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/lanes.py:1431: a host lane under a custom `lanes_root:` still resolves to primary until T-0750, as the Outcome states; not a defect for this ticket. (from T-0752: lanes.py and steps.py read and write records through the owner-tree helper (2026-10-24))
