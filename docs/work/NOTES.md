@@ -632,3 +632,9 @@
 - fix-now: plugins/sdlc-lite/skills/chain/references/step-rules.md:7 says `(an L1 solo prints close)` for `steps.py next`, without the T-0779 `verify L1` route.
 - fix-now: docs/references/sdlc-internals.md:192 says the unrun criterion is left `for the verifier to run` but does not say an L1 solo now gets an L1 verifier for it.
 - note: plugins/sdlc-lite/scripts/results.py:349 `host_unrun` matches the substring anywhere in the report, so prose that quotes the marker also routes an L1 solo to a verifier; this errs toward an extra verifier, never a missed one.
+
+## T-0777: land overlap ignores lanes already landed and removed (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/lanes.py:737 `evaluate` now calls the shared `landed_and_gone`, and its behavior is unchanged. On the built tree, `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exited 0 and printed `ok: host removed: ...` and `ok: mutant HOST-GONE: without the ancestor test ...`. In a throwaway worktree I replaced only the `merge-base --is-ancestor` clause inside `landed_and_gone` with `True`. The selftest then exited 1 with `FAIL: host removed unmerged: ... want agent-z alone holding the integration tree open, got 0: closed wave-1 (ancestor)`, so dropping the ancestor test still fails the case.
+- note: The added `not Path(path).is_dir()` in `landed_and_gone` does nothing extra in `evaluate`, which already gates on `not o['exists']`. git grep finds no other caller and no other HOST-GONE needle outside lanes.py, apart from closed ticket text.
+- note: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` on this lane exited 1, with a single FAIL in the `T-0763 two prep solos in flight` case. That is the stale expectation main fixed in d7f1537f after this lane branched. The build does not touch dispatch.py.
