@@ -126,6 +126,10 @@ settle (T-0438, T-0452)
   keeps the branch and exits 1. Exception (T-0770, GitHub #78): when this settle fast-forwarded the current branch and
   the close refuses only because lanes are still open into the integration branch, it prints `settled: <current
   branch> advanced; integration kept (lanes open: <names>)` and exits 0, so exit 1 stays "nothing merged" or a real failure.
+  When this settle moved the current branch and host lanes (worktree-agent-* records into the integration branch) were
+  involved (T-0778), it ends with `next: git push origin <branch>` when the branch is now ahead of its remote default
+  (prep refuses an unpushed base, T-0756) and one `git branch -d worktree-agent-<id>` per such branch still present that
+  the current branch holds; it pushes and deletes nothing.
   Plain settle moves the current branch (main) whenever the integration branch fast-forwards, with no --forward and no
   --gate (T-0761, pinned by selftest); --forward only adds the diverged case (merge main in, run the gates) and its
   refusals.
@@ -3246,6 +3250,7 @@ def cmd_settle(a):
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
         return 2
+    nxt = settle_next_steps(a, cwd, head) if advanced else []
     wt, cur = None, None
     for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
         if line.startswith('worktree '):
@@ -3261,13 +3266,38 @@ def cmd_settle(a):
         r = dict(rc=1, message=str(e))
     if r['rc'] and advanced and r.get('row') == '4':  # T-0770, GitHub #78: main moved, only the close waits on open lanes
         print(f"settled: {head or 'HEAD'} advanced; integration kept (lanes open: {r['message'].partition(': ')[2]})")
+        print(*nxt, sep='\n') if nxt else None
         return 0
     if r['rc']:
         print(f"lane still open: {wt} ({first_line(r['message'], 'rc=%s' % r['rc'])})")
         return 1
     print(r['message'])
     print(f'settled: {a.integration} is in {head or "HEAD"}; its worktree and branch are removed (archive {r.get("archive")})')
+    print(*nxt, sep='\n') if nxt else None
     return 0
+
+
+def settle_next_steps(a, cwd, head):
+    """T-0778: the lines settle prints after it moved the current branch, for a run that had host lanes
+    (`worktree-agent-*` records whose `into` is the integration branch): `next: git push origin <branch>` when the branch is
+    now ahead of its remote default (prep refuses an unpushed base, T-0756), then `git branch -d <branch>` for each such
+    branch still present that the current branch now holds. Printed only; settle never pushes or deletes."""
+    if not head:
+        return []
+    recs = [d['branch'] for d in lanes.discover(lanes.Ctx(str(cwd)))
+            if d.get('kind') == 'host' and HOST_BRANCH.fullmatch(d.get('branch') or '')
+            and (d.get('into') or '').removeprefix('refs/heads/') == a.integration]
+    if not recs:
+        return []
+    out = []
+    ref = remote_default(cwd)
+    if ref == f'origin/{head}' and git(cwd, 'merge-base', '--is-ancestor', 'HEAD', f'refs/remotes/{ref}').returncode:
+        out.append(f'next: git push origin {head}')
+    for b in dict.fromkeys(recs):
+        if git(cwd, 'rev-parse', '-q', '--verify', f'refs/heads/{b}').returncode == 0 \
+                and git(cwd, 'merge-base', '--is-ancestor', f'refs/heads/{b}', 'HEAD').returncode == 0:
+            out.append(f'git branch -d {b}')
+    return out
 
 
 def running_roles(a, cwd):
@@ -5990,6 +6020,57 @@ def selftest():
         expect(f'T-0770 settle with a lane open, nothing merged: a rerun (main already holds the branch) keeps exit 1 and '
                f'`lane still open`, got rc={st.returncode} out={st.stdout!r} err={st.stderr!r}',
                st.returncode == 1 and 'lane still open' in st.stdout and 'advanced' not in st.stdout)
+        # T-0778: after settle moves main with host lanes (worktree-agent-* records into the integration branch) it prints
+        # the push prep will want (T-0756) and one `git branch -d` per landed host branch still present; it runs neither
+        sn = tmp / 'settle-next'
+        sized_repo(sn, ['L1'], {'.gitignore': gi})
+        sn_bare = tmp / 'settle-next-origin.git'
+        sh(tmp, 'init', '-q', '--bare', str(sn_bare))
+        sh(sn, 'remote', 'add', 'origin', str(sn_bare))
+        sh(sn, 'push', '-q', 'origin', 'main')
+        sn_lanes = tmp / 'settle-next-lanes'
+
+        def next_integration(name, fname):
+            sh(sn, 'branch', name, 'main')
+            wt_ = sn_lanes / name.replace('/', '-') / 'integration'
+            sh(sn, 'worktree', 'add', '-q', str(wt_), name)
+            (wt_.parent / 'logs').mkdir(exist_ok=True)
+            (wt_.parent / 'merge.lock').touch()
+            (wt_ / fname).write_text('x\n', encoding='utf-8')
+            sh(wt_, 'add', '-A')
+            sh(wt_, 'commit', '-q', '-m', f'lane work {fname}')
+            return wt_
+
+        def host_landed(branch, name, into):
+            sh(sn, 'branch', branch, into)  # at the integration tip: landed, its worktree already gone
+            sys.modules['lanes'].host_record(name, branch, into, 'T-0001', cwd=str(sn))
+
+        next_integration('fanout/nx', 'nx.txt')
+        host_landed('worktree-agent-n1', 'agent-n1', 'fanout/nx')
+        st = verb(sn, 'settle', 'fanout/nx')
+        expect(f'T-0778 settle with a landed host lane: main is ahead of origin/main, so settle prints `next: git push origin main` '
+               f'and `git branch -d worktree-agent-n1` after the settled line, pushes and deletes nothing, got rc={st.returncode} '
+               f'out={st.stdout!r} err={st.stderr!r}',
+               st.returncode == 0 and re.search(r'settled: fanout/nx is in main.*\nnext: git push origin main\ngit branch -d worktree-agent-n1\n',
+                                                st.stdout, re.S)
+               and sh(sn, 'rev-parse', 'origin/main').stdout != sh(sn, 'rev-parse', 'main').stdout
+               and sh(sn, 'rev-parse', '--verify', '-q', 'refs/heads/worktree-agent-n1').returncode == 0)
+        sh(sn, 'push', '-q', 'origin', 'main')
+        next_integration('fanout/nx2', 'nx2.txt')
+        st = verb(sn, 'settle', 'fanout/nx2')
+        expect(f'T-0778 settle with no host lane: no next lines, got rc={st.returncode} out={st.stdout!r}',
+               st.returncode == 0 and 'settled: fanout/nx2 is in main' in st.stdout and 'next:' not in st.stdout
+               and 'git branch -d' not in st.stdout)
+        sh(sn, 'push', '-q', 'origin', 'main')
+        next_integration('fanout/nx3', 'nx3.txt')
+        host_landed('worktree-agent-n3', 'agent-n3', 'fanout/nx3')
+        sh(sn, 'branch', 'worktree-agent-n4', sh(sn, 'commit-tree', '-p', 'main', '-m', 'unlanded', 'main^{tree}').stdout.strip())
+        sys.modules['lanes'].host_record('agent-n4', 'worktree-agent-n4', 'fanout/nx3', 'T-0001', cwd=str(sn))
+        st = verb(sn, 'settle', 'fanout/nx3')
+        expect(f'T-0778 settle with a host lane still open: the kept line is followed by the push and the landed branch only '
+               f'(worktree-agent-n3), not the unlanded worktree-agent-n4, got rc={st.returncode} out={st.stdout!r} err={st.stderr!r}',
+               st.returncode == 0 and 'integration kept (lanes open: agent-n4)' in st.stdout and 'next: git push origin main' in st.stdout
+               and 'git branch -d worktree-agent-n3' in st.stdout and 'worktree-agent-n4' not in st.stdout.replace('agent-n4)', ''))
 
         def tree_of(repo_, branch):
             wt_, cur_ = None, None
