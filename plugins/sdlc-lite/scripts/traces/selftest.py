@@ -727,6 +727,30 @@ def _fanout_prefixed():
                        ('beta', 2, 1): 1}, got
 
 
+@case('fanout: a land red line with the log path and failing line still places its rc (T-0768)')
+def _fanout_red_tail():
+    from .sources import fanout
+    from .detectors import hygiene
+    tail1 = ' (log /nowhere/lanes/logs/gate-alpha-T-0001-1-a1.log): [fanout-x] FAIL project checks rc=3'
+    tail2 = ' (log /nowhere/lanes/logs/gate-beta-T-0002-2-a1.log)'
+    with tempfile.TemporaryDirectory() as lanes:
+        _fanout_prefixed_files(lanes)
+        for rel, old, new in (('logs/fanout.log', 'red: test -e OK rc=1', 'red: test -e OK rc=1' + tail1),
+                              ('logs/fanout.log', 'red: true | false rc=1', 'red: true | false rc=1' + tail2),
+                              ('report.md', 'red: true \\| false rc=1', 'red: true \\| false rc=1' + tail2)):
+            path = os.path.join(lanes, rel)
+            text = open(path, encoding='utf-8').read()
+            assert old in text, (rel, old)
+            open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+        got = [(g['lane'], g['ticket'], g['k'], g['attempt'], g['rc']) for g in fanout.read(lanes)['gate_logs']]
+        assert got == [('alpha', 'T-0001', 1, 1, 1), ('alpha', 'T-0001', 1, 2, None),
+                       ('beta', 'T-0002', 1, 1, None), ('beta', 'T-0002', 2, 1, 1)], got
+    m = fanout.RED_RE.match('red: echo rc=5; false rc=1' + tail1)
+    assert m and (m.group(1), m.group(2)) == ('echo rc=5; false', '1'), m
+    assert hygiene._outcome_signal('red: false rc=1' + tail2) and hygiene._outcome_signal('red: false rc=1 (log /l) (no node_modules)')
+    assert not hygiene._outcome_signal('merged (log /l)')
+
+
 # --- git ----------------------------------------------------------------------------------------
 
 _GIT_CFG = ('-c', 'user.name=traces', '-c', 'user.email=traces@example.invalid',

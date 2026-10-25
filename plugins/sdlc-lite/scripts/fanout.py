@@ -332,7 +332,7 @@ run
        that itself exits 3 stays `red: <gate> rc=3`), output to
        logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
        the highest attempt already logged for that gate, so it grows on each rerun); the first red one runs `git reset --hard <pre-merge HEAD>`
-       (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
+       (`red: <gate> rc=<n> (log <path>)`, then `: <last failure line>` when the log has one; T-0768). All green: copy the lane's <rel>/<slug>/ in when the integration
        tree tracks nothing there (a gitignored trail), copy the lane's records dir into the
        integration runtime records dir (copy_lane_records), run `tickets.py --root <rel> close <slug>` there (with
        --rewrite-refs when given: in numbered mode, files outside the ticket folder that cite
@@ -611,6 +611,18 @@ def git_out(cwd, *args):
 def first_line(text, default=''):
     lines = [ln.strip() for ln in (text or '').splitlines() if ln.strip()]
     return lines[0] if lines else default
+
+
+FAIL_LINE = re.compile(r'\bFAIL\b|\bError\b|\berror:|\bnot ok\b|\bexit(?:ed)?(?: code| status| with)?[ =:]+[1-9]|\brc=[1-9]')
+
+
+def gate_fail_line(text, limit=200):
+    """T-0768: the last log line that looks like a failure (FAIL, Error, error:, not ok, a non-zero exit); '' when none."""
+    for ln in reversed((text or '').splitlines()):
+        ln = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', ln).strip()
+        if ln and FAIL_LINE.search(ln):
+            return ln if len(ln) <= limit else ln[:limit - 3] + '...'
+    return ''
 
 
 def cell(text):
@@ -1977,7 +1989,11 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 hint = ''
                 if (integ / 'package.json').is_file() and not (integ / 'node_modules').exists():
                     hint = ' (no node_modules in the gate worktree: start the gate with `npm ci && ...`)'
-                return f'red: {gate} rc={rc}{hint}', cell
+                try:  # T-0768: name the gate log and the line that failed, as the sync path names its log
+                    bad = gate_fail_line(glog.read_text(errors='replace'))
+                except OSError:
+                    bad = ''
+                return f'red: {" ".join(gate.split())} rc={rc} (log {glog}){": " + bad if bad else ""}{hint}', cell
         folder = integ / trel / t.slug
         rec_trees = owner_dirs(ctx, 'records', t.id, lane=lane.dir)  # an external lane has no lane dir: ctx['lane_wt']
         if len(rec_trees) > 1:  # the lane owns the records; the primary fallback is read in place, never copied in
@@ -4434,7 +4450,7 @@ def selftest():
                       '--gate', 'false', 'alpha@ext=T-0002')
         got = report_rows(erl)
         expect(f'external red gate: exit 1 with red: false rc=1, got {proc.returncode} {got} stderr={proc.stderr!r}',
-               proc.returncode == 1 and got.get('T-0002') == 'red: false rc=1')
+               proc.returncode == 1 and str(got.get('T-0002')).startswith('red: false rc=1 (log '))
         expect('external red gate: the integration branch stays at its base',
                em0 and sh(er, 'rev-parse', 'fanout/ext-red').stdout.strip() == em0)
         expect('external red gate: the ext tip is unchanged', e0 and sh(er, 'rev-parse', 'ext').stdout.strip() == e0)
@@ -5445,6 +5461,18 @@ def selftest():
                and re.search(r'^status: ready\b', sh(ld, 'show', f'{integ}:.sdlc/t4/handoff.md').stdout, re.M))
         expect(f'case 23 land prune (T-0368): a land that did not merge queues nothing (negative control), got {pruned(ld)}',
                'T-0004-solo' not in pruned(ld))
+        # T-0768 (issue #76): a red land names the gate log and the last failing line, on one line
+        lrl = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate',
+                   'echo "FAIL  project checks (npm run check:standards)"; echo "tail noise"; false')
+        red_line = (re.search(r'\| T-0004 \| (red: .*?) \| ', lrl.stdout) or [None, ''])[1]
+        log_m = re.search(r'\(log (\S+gate-[^ )]+-T-0004-1-a\d+\.log)\)', red_line)
+        expect(f'case 23 land (T-0768): a red land names the gate log and the failing line, got {red_line!r}',
+               lrl.returncode == 1 and log_m is not None and pathlib.Path(log_m.group(1)).is_file()
+               and re.search(r'\): (\[\S+\] )?FAIL\s+project checks \(npm run check:standards\)$', red_line) is not None)
+        lrn = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'echo quiet; false')
+        red_line = (re.search(r'\| T-0004 \| (red: .*?) \| ', lrn.stdout) or [None, ''])[1]
+        expect(f'case 23 land (T-0768): a log with no failing line is named alone, got {red_line!r}',
+               re.fullmatch(r'red: echo quiet; false rc=1 \(log \S+\)', red_line) is not None)
         lv = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'echo "Ran 0 tests in 0.000s"')
         expect(f'case 23 land: a gate that ran no tests is refused, got rc={lv.returncode} out={lv.stdout[-300:]!r}',
                lv.returncode == 1 and 'gate vacuous' in lv.stdout and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before)

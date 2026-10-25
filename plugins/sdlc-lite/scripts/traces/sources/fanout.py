@@ -21,7 +21,7 @@ read(lanes_dir) returns one dict:
   problems     the paths of files that could not be read, which are skipped.
 A line's run id is its `[fanout-<12 hex>] ` prefix, None without one; run_ids lists the distinct
 ids of a log's lines in first-seen order (None included), and run_id_lines pairs each with the
-1-based number of its first line. A gate log's rc is the n of a `red: <gate> rc=<n>` outcome that
+1-based number of its first line. A gate log's rc is the n of a `red: <gate> rc=<n>` outcome (which may end ` (log <path>)` and a failure line, T-0768) that
 a fanout.log line or report row records for that lane, ticket, and gate (the gate k is found from
 the report's gate commands, else it is the highest k logged in that run), placed on the newest
 attempt that carries the recording run's id (a legacy record, with no id, on the legacy log);
@@ -36,7 +36,7 @@ TICKET = r'T-\d{4}'
 EVENT_RE = re.compile(r'^\[(' + LANE + r')\] (' + TICKET + r') (.*)$')
 GATE_RE = re.compile(r'^gate-(' + LANE + r')-(' + TICKET + r')-(\d+)(?:-a(\d+))?\.log$')
 DRIVER_RE = re.compile(r'^(' + LANE + r')-(' + TICKET + r')\.log$')
-RED_RE = re.compile(r'^red: (.*) rc=(-?\d+)$')
+RED_RE = re.compile(r'^red: (.*?) rc=(-?\d+)(?: \(log [^)]*\).*)?$')  # T-0768: the land line's tail after rc
 ROW_RE = re.compile(r'^\|(.*)\|\s*$')
 TICK_RE = re.compile(r'`([^`]*)`')
 
