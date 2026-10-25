@@ -9,7 +9,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0765 | [0765-amend-red-to-guard](0765-amend-red-to-guard/handoff.md) | steps.py amend and swap can retag a red-at-base criterion to guard | bug | L2 | P2 | none | 🔵 ready |
-| T-0766 | [0766-inherited-red-lane-step](0766-inherited-red-lane-step/handoff.md) | An inherited red from an earlier step of the same lane routes back into the task | bug | L2 | P2 | none | 🟡 claimed |
 | T-0767 | [0767-close-rewrites-outside-paths](0767-close-rewrites-outside-paths/handoff.md) | tickets.py close keeps no absolute path outside the repo | bug | L1 | P2 | none | 🔵 ready |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🔵 ready |
 | T-0769 | [0769-land-ticket-open-integration](0769-land-ticket-open-integration/handoff.md) | land reads the ticket status where it closed it | bug | L1 | P2 | none | 🟡 claimed |
@@ -26,7 +25,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0781 | [0781-steps-next-verifier-wins](0781-steps-next-verifier-wins/handoff.md) | steps.py next lets a later verifier verdict win over an inherited-red build | bug | L1 | P2 | none | 🔵 ready |
 | T-0782 | [0782-disk-scan-heredoc](0782-disk-scan-heredoc/handoff.md) | block-disk-scan does not refuse a heredoc body | bug | L1 | P2 | none | 🔵 ready |
 
-Closed: 725 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 726 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -107,3 +106,5 @@ Closed: 725 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/fanout.py:2211: note: for a base on a non-main branch the message suggests `git push origin HEAD:main`, which pushes that branch to main; correct for what the host cuts from, but worth a human read before running. (from T-0756: A host-worktree solo brief asks for no git sync (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/dispatch.py:1475 `record` still prints one `unmarked:` line per own-repo folder, with no summary line (observed: two lines for u-a and u-b). The Goal says "at most one summary line for this repo", and only `lanes.sweep` (the prep path) collapses them. (from T-0764: prep and record print no sweep lines for other repos (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/wtroot.py:250 (`sweep`, unchanged) removes a dead-owner folder past the limit in another repo's scratch dir, and both record and lanes sweep print `removed <other repo path>`. This happens at base too and is the documented design ("every repo's scratch dir"), so "never delete another repo's folder" holds only for unmarked folders. (from T-0764: prep and record print no sweep lines for other repos (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/steps.py:3342: note: the safety claim holds. Every new return None path (merge with a parent on `into`, no lane record, no base-sha, git error, base an ancestor of `into`) falls back to the pre-ticket `inherited`. A wrong `lane red` needs a base off `into` with no merge-from-`into` between the fork point and the base yet a main-born red; `lanes.py` and `fanout.py` contain no rebase, so lane trees take `into` only by merge, and the one residual (a lane commit made after a resync still reads `inherited`) errs the conservative way. (from T-0766: An inherited red from an earlier step of the same lane routes back into the task (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/board.py:149: note: carried from verifier-L2.md, still true: the board renders a builder Status `inherited red` with the ask-the-user wording whatever `steps.py next` prints, so a `lane red` step shows the old wording. (from T-0766: An inherited red from an earlier step of the same lane routes back into the task (2026-10-24))

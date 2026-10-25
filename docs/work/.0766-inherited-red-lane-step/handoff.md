@@ -2,7 +2,7 @@
 id: T-0766
 title: "An inherited red from an earlier step of the same lane routes back into the task"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,16 @@ Reproduced on main: the new selftest cases failed before the fix (an inherited r
 - Criterion 2: `steps.py selftest` under gate_lock exit 0, `check.py` exit 0, `check-packaging.py` PASS, `git diff --check 73aefc97` exit 0.
 - Verifier rework (verifier-L2 decide notes): (1) a merge between the fork point and the base with a parent on `into` (a resync that may have brought the red from main) now keeps `inherited`; case `next lane red (T-0766): a base that is a resync merge of a red into branch -> inherited`, red with the merge rule removed (`- next lane red (T-0766): a base that is a resync merge of a red into branch -> inherited`). (2) the lane record is read through `wtroot.lane_record(top, top)`, so a host lane's `host/<leaf>.lane.json` counts; case `next lane red (T-0766): a host lane record on a lane-committed base -> lane red`, red with only `<toplevel>/.lane.json` read (`- next lane red (T-0766): a host lane record on a lane-committed base -> lane red`). The fanout.py step 3 doc line now says a `lane red` step is not the inherited-red outcome. Rerun: steps selftest under gate_lock exit 0, check.py exit 0, check-packaging.py PASS, `git diff --check 73aefc97` exit 0.
 - Residual: the rule tracks where the base came from; it does not rerun the failing span (the records hold none). Any merge with a parent on `into` keeps `inherited`, so lane commits made after a resync still read `inherited`: the conservative side.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 73aefc974fea
+- Changed: see commits
+- Commits: 926b3ce T-0766: keep inherited across a resync merge of into, read host lane records; 0ea29db T-0766: an inherited red on a lane-committed base routes back into the task as lane red
+- Check: 1 A `steps.py` selftest case reproduces the issue's report and passes; with the change reverted it ...: pass
+- Check: 2 selftest under gate_lock, `check.py`, `check-packaging.py`, `git diff --check <base sha>`: pass
+- Check: 3 Conductor re-check, probe 1 (resync merge): pass
+- Check: 4 Conductor re-check, probe 2 (host lane): pass
+- Check: 5 Conductor re-check, stale fanout doc: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:3342: note: the safety claim holds -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/board.py:149: note: carried from... -> notes.md

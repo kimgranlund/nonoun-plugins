@@ -538,3 +538,8 @@
 
 - note: `steps.py next` keeps the inherited-red-before-verifier ordering (builder reports it as a deliberate follow-up, T-0766 editing that route); the board and `steps.py next` can now disagree for that case until the follow-up lands.
 - note: no selftest case pins a done ticket with a `step-*/*.running` marker in board.py itself; the guard is covered only by the fleet_status selftest.
+
+## T-0766: An inherited red from an earlier step of the same lane routes back into the task (2026-10-24)
+
+- decide: plugins/sdlc-lite/scripts/steps.py:3342: note: the safety claim holds. Every new return None path (merge with a parent on `into`, no lane record, no base-sha, git error, base an ancestor of `into`) falls back to the pre-ticket `inherited`. A wrong `lane red` needs a base off `into` with no merge-from-`into` between the fork point and the base yet a main-born red; `lanes.py` and `fanout.py` contain no rebase, so lane trees take `into` only by merge, and the one residual (a lane commit made after a resync still reads `inherited`) errs the conservative way.
+- decide: plugins/sdlc-lite/scripts/board.py:149: note: carried from verifier-L2.md, still true: the board renders a builder Status `inherited red` with the ask-the-user wording whatever `steps.py next` prints, so a `lane red` step shows the old wording.

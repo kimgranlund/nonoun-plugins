@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:dd30e97482c3 -->
+<!-- sdlc-lite:managed:start v1 sha256:57ddb450e6b1 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -27,15 +27,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0780 Give the fanout skill room under its size limit (docs/work/0780-fanout-skill-headroom)
   - T-0781 steps.py next lets a later verifier verdict win over an inherited-red build (docs/work/0781-steps-next-verifier-wins)
   - T-0782 block-disk-scan does not refuse a heredoc body (docs/work/0782-disk-scan-heredoc)
-- claimed: 4
-  - T-0766 An inherited red from an earlier step of the same lane routes back into the task (docs/work/0766-inherited-red-lane-step), claimed by sdlc-lite-author 2026-10-24
+- claimed: 3
   - T-0769 land reads the ticket status where it closed it (docs/work/0769-land-ticket-open-integration), claimed by sdlc-lite-author 2026-10-24
   - T-0774 dispatch.py record tries the transcript before stdin and never blocks (docs/work/0774-record-stdin-last), claimed by sdlc-lite-author 2026-10-24
   - T-0775 land merges a lane runs.jsonl into the primary one instead of overwriting it (docs/work/0775-land-runs-jsonl-merge), claimed by sdlc-lite-author 2026-10-24
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 725
+- done: 726
 - dropped: 30
 
 ## Procedures
