@@ -149,7 +149,9 @@ record is the post-launch half (T-0278, design section 3). It takes <stem>.dispa
 result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty,
 else (with --transcript) the transcript's last assistant message; a max_tokens stop is refused as truncated (T-0343)
 (stdin with a "## " heading line is a result, any other stdin is the sub-agent's error text, except a one-line placeholder under 40
-characters with no error word, which yields to a complete transcript result, T-0685). In run.sh's order
+characters with no error word, which yields to a complete transcript result, T-0685). record never waits on stdin: a tty, a closed
+stdin, or a pipe that shows no data or EOF within about a second reads as empty (T-0774), so a non-interactive tool call that leaves
+stdin open reaches the transcript. In run.sh's order
 it then does the following.
   header       writes <!-- role= level= model= effort= --> from the dispatch over any header the role wrote, then
                the body, to the result path.
@@ -2392,11 +2394,36 @@ def advance_ticket(d, attempt):
     return 0
 
 
-def read_stdin():
+STDIN_WAIT_S = 1.0  # T-0774: how long record waits for a piped stdin to show data or EOF before treating it as empty
+
+
+def read_stdin(wait=STDIN_WAIT_S):
+    """The text piped on stdin, never blocking: a tty, a closed stdin, or a pipe that shows neither data nor EOF within
+    `wait` seconds (an open pipe a non-interactive tool call never closes, T-0774) reads as empty. After the first bytes
+    each further chunk gets a fifth of `wait`, so a writer that stays open still ends the read."""
     try:
-        return '' if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()
+        if sys.stdin is None or sys.stdin.isatty():
+            return ''
+        fd = sys.stdin.fileno()
     except (OSError, ValueError):
         return ''
+    import select
+    chunks, timeout = [], wait
+    while True:
+        try:
+            if not select.select([fd], [], [], timeout)[0]:
+                break
+            data = os.read(fd, 65536)
+        except (OSError, ValueError):  # no select on this stream (Windows pipes), or the descriptor went away
+            try:
+                return sys.stdin.read()
+            except (OSError, ValueError):
+                break
+        if not data:
+            break
+        chunks.append(data)
+        timeout = wait / 5
+    return b''.join(chunks).decode('utf-8', errors='replace')
 
 
 def main(argv):
@@ -4280,6 +4307,34 @@ def selftest():
         case('record --agent-id with placeholder stdin x and a complete transcript ignores the stdin and records the transcript',
              q.returncode == 0 and 'ignored stdin' in q.stderr and Path(got['result']).read_text().startswith('<!-- role=builder')
              and len(lines_of(rb / '.sdlc' / 'a3')) == 1)
+        # T-0774: an open stdin pipe that never closes (a non-interactive tool call) must not block record; the transcript is the result.
+        # A hang is bounded by a timeout so the selftest fails instead of waiting.
+        def record_open_stdin(nm, feed=None):
+            put(rb / '.sdlc' / nm / 'handoff.md')
+            rc_, g_, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
+            outf, errf = rb / (nm + '.out'), rb / (nm + '.err')
+            with outf.open('w') as fo, errf.open('w') as fe:
+                pr = subprocess.Popen([sys.executable, str(HERE / 'dispatch.py'), 'record', '--agent-id', 'ag-solo', g_['dispatch_file']],
+                                      stdin=subprocess.PIPE, stdout=fo, stderr=fe, env=env_find, text=True)
+                try:
+                    if feed:
+                        pr.stdin.write(feed)
+                        pr.stdin.flush()
+                    try:
+                        code = pr.wait(timeout=20)
+                    except subprocess.TimeoutExpired:
+                        code = None
+                        pr.kill()
+                        pr.wait()
+                finally:
+                    pr.stdin.close()
+            return code, g_
+        code_, got = record_open_stdin('a4')
+        case('T-0774 record --agent-id with an open empty stdin pipe does not hang and records the transcript',
+             code_ == 0 and Path(got['result']).read_text().startswith('<!-- role=builder') and len(lines_of(rb / '.sdlc' / 'a4')) == 1)
+        code_, got = record_open_stdin('a5', 'Error: session limit reached\n')
+        case('T-0774 record reads error text from an open stdin pipe that never closes: exit 1 and the limit marker',
+             code_ == 1 and (R(rb / '.sdlc' / 'a5') / 'builder-L1.limit').is_file())
         # T-0349: truncated stdin, error stdin beside an interim heading, tool-use turns before the final text.
         def amsg(text, stop='end_turn', tool=False):
             c = ([{'type': 'tool_use', 'id': 't', 'name': 'Bash', 'input': {}}] if tool else []) + ([{'type': 'text', 'text': text}] if text else [])
