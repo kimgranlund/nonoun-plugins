@@ -13,7 +13,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🟡 claimed |
 | T-0777 | [0777-land-overlap-removed-lane](0777-land-overlap-removed-lane/handoff.md) | land overlap ignores lanes already landed and removed | bug | L1 | P2 | none | 🔵 ready |
 | T-0778 | [0778-settle-host-next-steps](0778-settle-host-next-steps/handoff.md) | settle names the push and the leftover host branches | bug | L1 | P2 | none | 🔵 ready |
-| T-0779 | [0779-host-brief-sandbox-limits](0779-host-brief-sandbox-limits/handoff.md) | The host-lane solo brief says which criteria the sandbox blocks | bug | L1 | P2 | none | 🔵 ready |
+| T-0779 | [0779-host-brief-sandbox-limits](0779-host-brief-sandbox-limits/handoff.md) | The host-lane solo brief says which criteria the sandbox blocks | bug | L1 | P2 | none | 🟡 claimed |
 | T-0780 | [0780-fanout-skill-headroom](0780-fanout-skill-headroom/handoff.md) | Give the fanout skill room under its size limit | chore | L1 | P2 | none | 🔵 ready |
 
 Closed: 735 done, 30 dropped (git log or .NNNN-* folders)
