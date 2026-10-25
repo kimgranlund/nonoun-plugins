@@ -2,7 +2,7 @@
 id: T-0783
 title: "The fanout skill says when a sub-agent round needs main pushed"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,14 @@ Third 0.36 rehearsal (2026-10-25, /Users/kimgranlund/Projects/nonoun/live036c-ru
 
 ## Outcome
 Added the push-between-rounds rule to `plugins/sdlc-lite/skills/fanout/references/main.md` (a `prep` base the remote lacks is refused, so a second sub-agent round after a `settle` that moved main needs the push; the user decides through AskUserQuestion) and one short line in `SKILL.md` (16,726 of 18,000 characters) that keeps "fanout.py never pushes". `agents/conductor.md` does not describe the round loop, so it is unchanged. Checks: `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 173b12073249
+- Changed: see commits
+- Commits: 49ffea4 T-0783: fanout skill says a second sub-agent round needs main on the remote, asked of the user
+- Check: 1 The skill text (SKILL.md or a linked reference) states the push-between-rounds rule and that the ...: pass
+- Check: 2 `python3 scripts/check-packaging.py` passes (SKILL.md under 18,000 characters), `python3 plugins/...: pass
+- Follow-up: note: plugins/sdlc-lite/skills/fanout/SKILL.md:75 the old conductor-wide... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/skills/fanout/references/main.md:11 "push now, or... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/skills/fanout/references/main.md:11 says a second... -> notes.md
