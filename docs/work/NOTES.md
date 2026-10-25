@@ -612,3 +612,10 @@
 
 - note: plugins/sdlc-lite/skills/fanout/references/lane-lifecycle.md:9 still says an integration tree with uncommitted tracked changes is refused as `integration dirty` and does not mention the T-0772 bookkeeping exception. SKILL.md:37 states it, but the moved paragraph was stale already at base.
 - note: plugins/sdlc-lite/skills/fanout/SKILL.md:58 mentions a `stop: blocked` after a solo report inside the full-ticket item, but full tickets run /chain builders, not a solo, so the clause fits item 3 better.
+
+## T-0768: fanout.py land names the gate log and failing line on red (2026-10-24)
+
+- fix-now: plugins/sdlc-lite/scripts/fanout.py:82 the land docstring still says `red: <gate> rc=<n>`; line 331 and `references/land.md` give the new form.
+- fix-now: docs/references/sdlc-internals.md:190 still says a red gate appends the npm hint to `red: <gate> rc=<n>`; the land line now carries ` (log <path>)` and an optional `: <line>` before the hint.
+- fix-now: plugins/sdlc-lite/scripts/fanout.py:1976 `glog.read_text(...)` reads the whole gate log into memory before scanning it from the end; a bounded tail read would find the same last failing line with bounded memory.
+- note: plugins/sdlc-lite/scripts/traces/sources/fanout.py:39 the tail group `\(log [^)]*\)` fails to match a log path that contains `)`; lanes paths do not today.

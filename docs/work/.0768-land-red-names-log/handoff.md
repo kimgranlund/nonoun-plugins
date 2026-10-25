@@ -2,7 +2,7 @@
 id: T-0768
 title: "fanout.py land names the gate log and failing line on red"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,15 @@ Reproduced on main (baac64db): the gate red path in `merge_gate_close` returned 
 `traces/sources/fanout.py` `RED_RE` was anchored at `rc=<n>$`, so `_place_rc` and the `integration-reset` detector (via `hygiene._outcome_signal`) went silent on the new line. It is now `^red: (.*?) rc=(-?\d+)(?: \(log [^)]*\).*)?$` (lazy gate group, optional ` (log <path>)` tail with any failure line or hint), docstrings in `sources/fanout.py` and `detectors/hygiene.py` updated. A grep of `plugins/sdlc-lite` (scripts, hooks, adapters) found no other reader of `red:` lines; `RED_RE` is used only in those two files.
 - Test: new traces case `fanout: a land red line with the log path and failing line still places its rc (T-0768)`, including a gate containing ` rc=5` and a failure line containing `rc=3`. Negative control: with the old regex in a scratch copy the case fails (the failure-line `rc=3` is placed on alpha's gate and beta's rc is lost).
 - Checks: `traces.py selftest` PASS and `fanout.py selftest` PASS via gate_lock, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check baac64db` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: baac64dbd9c7
+- Changed: see commits
+- Commits: 571fb74 T-0768: traces red reader accepts the land line's log and failure tail; 778c7e8 T-0768: fanout land red names the gate log and failing line
+- Check: 1 A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it...: pass
+- Check: 2 selftest via gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff --chec...: pass
+- Follow-up: fix-now: plugins/sdlc-lite/scripts/fanout.py:82 the land docstring still... -> notes.md
+- Follow-up: fix-now: docs/references/sdlc-internals.md:190 still says a red gate appends... -> notes.md
+- Follow-up: fix-now: plugins/sdlc-lite/scripts/fanout.py:1976 glog.read_text.. -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/traces/sources/fanout.py:39 the tail... -> notes.md
