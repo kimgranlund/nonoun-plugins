@@ -2,7 +2,7 @@
 id: T-0785
 title: "steps.py next from main sees a solo report that is still only in the lane"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,13 @@ The failing test lands before or with the fix.
 - Selftest: `next solo host lane (T-0785): ...` (a host lane, record `agent-t0785.lane.json` under `wtroot.lanes_root`, twin with report, verifier pass, attempt and verifier runs row; main with the dispatch record, report copy and solo row) passes.
 - Negative control (the twin lookup reverted): steps selftest exit 1, `steps selftest: FAIL, these did not hold:` / `- next solo host lane (T-0785): from main before land, the host twin holds the solo report and verifier pass and main holds the solo dispatch record -> close`, the only failure.
 - `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; dispatch.py selftest (gate_lock) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0 (PASS); `git diff --check 327b2bd0` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 327b2bd08cc9
+- Changed: see commits
+- Commits: fdebba4 T-0785: steps.py next from main reads a host lane twin's solo report when main holds the dispatch record
+- Check: 1 steps.py selftest case reproduces the observation, fails with the change reverted: pass
+- Check: 2 gate_lock selftest, check.py, check-packaging.py, git diff --check: pass
+- Follow-up: note: stale-record question, steps.py:3296-3303: the main checkout is... -> notes.md
+- Follow-up: decide: dispatch.py record leaves the solo dispatch record in main, because... -> notes.md
