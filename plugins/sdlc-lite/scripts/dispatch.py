@@ -2199,6 +2199,23 @@ def rebind_solo_host(sd, agent_id):
         print(got)
 
 
+def solo_dispatch_to_owner(dispatch_file, sd):
+    """T-0786: copy a solo's dispatch record (and its attempt file, when one exists) into the records dir of the tree that
+    owns the ticket's records (owned_records, T-0750), the twin rebind_solo_host bound, so it sits beside the report and
+    verifier results there; the original stays, as record and advance go on reading it. Nothing when main owns them."""
+    src = Path(dispatch_file).resolve()
+    task = Path(sd['handoff']).parent if sd.get('handoff') else order.task_dir(sd['artifacts_dir'])
+    if task is None or not Path(task).is_dir():
+        return
+    dst = owned_records(task, create=True)
+    if dst.resolve() == src.parent:
+        return
+    for f in (src, src.with_name(src.name[:-len('.dispatch.json')] + '.attempt.json')):
+        if f.is_file():
+            shutil.copyfile(str(f), str(dst / f.name))
+            print('solo dispatch: %s' % (dst / f.name))
+
+
 def solo_report_file(sd, transcript=None, no_result=False, agent_id=None):
     """The report of a recorded solo whose dispatch names a result (T-0682): the file when it holds text, else its host
     worktree copy (host_report_copy, T-0740) copied there, else the transcript's final message written there (a lone
@@ -2597,6 +2614,7 @@ def main(argv):
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
                 rebind_solo_host(sd, args.agent_id)  # T-0763: record and advance --agent-id bind the host record to its tree
+                solo_dispatch_to_owner(args.dispatch, sd)  # T-0786: the dispatch record joins the report in the owner twin
                 gone = solo_report_file(sd, args.transcript, args.no_result, args.agent_id) if sd.get('result') else 0
                 import solo_run
                 if gone == 1:  # T-0719: --no-result closes a stalled solo failed and clears its live marker
@@ -4807,6 +4825,16 @@ def selftest():
              and lanes.read_json(hrd / 'agent-aaa.lane.json').get('tickets') == ['T-0763']
              and own('T-0763') == os.path.realpath(atree) and own('T-0764') == own(None) and (hrd / 'T-0764-solo.lane.json').is_file()
              and 'builder-L2 completed' in s1 and n1rc == 0 and '/agent-aaa/.sdlc/runtime/tasks/t-0763/builder-L2.md' in n1)
+        # T-0786: record --agent-id on B's prep solo rebinds its host record, and the dispatch record joins the report and
+        # results in B's owner twin records dir, so readers there need no cross-tree fallback for it
+        bo = io.StringIO()
+        with clean_env(SDLC_DISPATCH_PARENT_PID=live_pid), cwd(hr), contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(bo):
+            brc = main(['record', '--agent-id', 'bbb', str(bfile)])
+        btwin = order.records_dir(btree / '.sdlc' / 't-0764')
+        case('T-0786 record --agent-id on B\'s prep solo with a host twin puts T-0764-solo.dispatch.json in the twin\'s records '
+             'dir (%s), the main copy kept, got rc=%s %r' % (btwin, brc, bo.getvalue()[-240:]),
+             brc == 0 and own('T-0764') == os.path.realpath(btree) and (btwin / bfile.name).is_file()
+             and solo_dispatch(btwin / bfile.name) == solo_dispatch(bfile) and bfile.is_file())
         # T-0757: the host cuts its worktree from origin/main, not prep's base: older (the 0.36 rehearsal, the claim unpushed)
         # or ahead of it (T-0756). The verifier's Base sha is the cut point, so its diff to the lane HEAD holds only the lane.
         import lanes
