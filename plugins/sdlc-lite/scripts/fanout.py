@@ -307,7 +307,9 @@ run
        the later lane has started its merge is not reordered. Then
        under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
        uncommitted tracked changes there refuse the ticket first (`integration dirty: <first path>`;
-       no merge, reset, or gate runs, so the edit survives); else the paths of
+       no merge, reset, or gate runs, so the edit survives), except that when every one is a file
+       `tickets.py roadmap` regenerates or notes.md (as `tickets.py new` or `roadmap` leave them),
+       they are committed as one `bookkeeping: <paths>` commit and the land goes on (#80); then the paths of
        `git diff --name-only HEAD...<ref>` join the lane's merged paths (the report's Overlap
        lines), then
        `git merge --no-ff -m "Merge <lane branch>: <id>" <lane branch>` through merge_generated (a
@@ -1878,7 +1880,20 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         if p.returncode:
             return f'integration status failed: {first_line(p.stderr, f"rc={p.returncode}")}', cell
         if p.stdout.strip():
-            return f'integration dirty: {p.stdout.splitlines()[0][3:]}', cell
+            # only regenerable bookkeeping (roadmap, router, mailbox, notes.md, as `tickets.py new` or `roadmap`
+            # leave it) is committed as one bookkeeping commit (#80); any other tracked change still refuses
+            dirty = [ln[3:] for ln in p.stdout.splitlines() if ln.strip()]
+            try:
+                gen = generated_files(integ, integ / rel)[0]
+            except tickets.Fail:
+                gen = {}
+            rest = [d for d in dirty if d not in gen]
+            if rest:
+                return f'integration dirty: {rest[0]}', cell
+            if git(integ, 'add', '--', *dirty).returncode or \
+                    git(integ, 'commit', '-q', '-m', f'bookkeeping: {", ".join(dirty)}').returncode:
+                return f'integration dirty: {dirty[0]}', cell
+            say(ctx, lane, t.id, f'bookkeeping: committed {", ".join(dirty)}')
         p = git(integ, 'diff', '--name-only', f'HEAD...{ref}')
         if p.returncode == 0:
             lane.files.update(ln for ln in p.stdout.splitlines() if ln)
@@ -4076,6 +4091,23 @@ def selftest():
         expect(f'integration dirty: the edit survives in the integration worktree, got {diff!r}', '+human' in diff)
         merges = sh(xr, 'rev-list', '--merges', '--count', 'fanout/xr').stdout.strip()
         expect(f'integration dirty: fanout/xr has no merge commits, got {merges!r}', merges == '0')
+
+        # 5e. Issue #80: `tickets.py roadmap` run in the integration worktree leaves the router and the roadmap
+        # modified; land commits them as one bookkeeping commit and merges, instead of `integration dirty`.
+        br, bl = tmp / 'integ-bookkeeping', tmp / 'blanes'
+        make_repo(br, [('a', 'T-0001', 'ready')], {'.sdlc/AGENTS.md': 'stale router\n', '.sdlc/roadmap.md': 'stale\n'})
+        proc = fanout(br, 'a=T-0001', '--integration', 'fanout/br', '--lanes-dir', str(bl),
+                      '--driver', f'(cd ../integration && {shlex.quote(sys.executable)} '
+                                  f'{shlex.quote(str(SCRIPTS / "tickets.py"))} roadmap); echo x > work.txt',
+                      '--gate', 'test -z "$(git status --porcelain --untracked-files=no)"')
+        got = report_rows(bl)
+        expect(f'integration bookkeeping: outcome is merged, got {got.get("T-0001")!r} stderr={proc.stderr!r}',
+               got.get('T-0001') == 'merged')
+        subj = sh(br, 'log', '--format=%s', 'fanout/br').stdout.splitlines()
+        expect(f'integration bookkeeping: fanout/br has a bookkeeping commit, got {subj!r}',
+               any(s.startswith('bookkeeping:') for s in subj))
+        left = sh(bl / 'integration', 'status', '--porcelain', '--untracked-files=no').stdout
+        expect(f'integration bookkeeping: the integration tree is clean, got {left!r}', not left.strip())
 
         # 6. A full stub-driver run in the default lanes dir (the sibling <parent>/<name>.worktrees/fanout, T-0563, no
         # --lanes-dir, no ignore line): lane commits, merges and closes, with the main tree's status left clean.

@@ -36,3 +36,10 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Reproduced on main: the new fanout selftest case 5e (`tickets.py roadmap` run in the integration worktree before land) gave `integration dirty: .sdlc/AGENTS.md`, as #80 reports.
+- Fix: `merge_gate_close` in `plugins/sdlc-lite/scripts/fanout.py` commits tracked changes as one `bookkeeping: <paths>` commit when every one is a file `generated_files` names (roadmap, router, mailbox entry files, notes.md); any other tracked change still refuses with `integration dirty: <first such path>` (case 5d unchanged and green). Docs: the fanout.py usage text and `docs/references/sdlc-internals.md`. The fanout SKILL.md sits at its 18,000 character limit, so it is unchanged.
+- Negative control (case 5e run before the fix): `integration bookkeeping: outcome is merged, got 'integration dirty: .sdlc/AGENTS.md' stderr=''`, plus the bookkeeping-commit and clean-tree lines.
+- Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check <base>` exit 0.
+- Not done: moving `skips.md` to the records dir. It has about ten writers and readers outside `record_lane` (steps.py step cap, dispatch.py lane gate, lane override, replan and time approvals, tickets.py `skips_path` and `add_skip_line`), and moving only `record_lane` would split the file so close misses the lane record. In a fanout lane skips.md is committed with the lane and moved at close, so land never sees it dirty; the leftover is an untracked file on main when `steps.py lane` runs in the primary checkout. Suggested follow-up ticket: one skips.md location helper for every writer and reader.
