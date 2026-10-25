@@ -434,6 +434,8 @@ MERGE_UNION_GATE_RE = re.compile(r'\s*merge_union_gate\s*:\s*([^#]*?)\s*(?:#.*)?
 LIGHT_SCOPE_RE = re.compile(r'\s*light_scope\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0481: one or more globs per line
 MERGE_GATE_RE = re.compile(r'\s*merge_gate\s*:\s*light\s*(?:#.*)?')  # T-0481: the light gate class opt-in
 PROFILE_RE = re.compile(r'\s*profile\s*:\s*(\S+)\s*(?:#.*)?')  # T-0510: `profile: inner-loop` opt-in
+PRE_VERIFY_ROLE_RE = re.compile(r'\s*pre_verify_role\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0732: `<role> L<n>`
+PRE_VERIFY_PATHS_RE = re.compile(r'\s*pre_verify_paths\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0732: one or more globs per line
 LOCAL_GATE_RE = re.compile(r'\s*local_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
 FULL_GATE_RE = re.compile(r'\s*full_gate\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0510: one command per line
 HANDOFF_PROFILE_DEFAULT_RE = re.compile(r'(?m)^\s*profile\s*:\s*default\b')  # T-0510: a ticket's opt-out line
@@ -802,6 +804,35 @@ def light_scope_globs(root):
             if g not in out:
                 out.append(g)
     return out
+
+
+def pre_verify(root):
+    """The review a repo requires between build and verify (T-0732, #61): (role, level, globs) from a
+    `pre_verify_role: <role> L<n>` line and the globs on every `pre_verify_paths: <glob> [<glob>...]` line in <root>/config
+    (the hash_bound comment rules; each glob a git :(glob) pathspec from the repository root). None when the file or the
+    role line is missing, so a repo without it routes as before. Raises Fail on a role line that is not `<role> L<n>`, two
+    role lines, or a role line with no paths, so a required review never silently reads as off."""
+    path = root / 'config'
+    if not path.is_file():
+        return None
+    roles, globs = [], []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = PRE_VERIFY_ROLE_RE.fullmatch(line)
+        if m:
+            roles.append(m.group(1))
+        m = PRE_VERIFY_PATHS_RE.fullmatch(line)
+        for g in (m.group(1).split() if m else []):
+            if g not in globs:
+                globs.append(g)
+    if not roles:
+        return None
+    m = re.fullmatch(r'([a-z][a-z-]*)\s+(L\d)', roles[0])
+    if len(roles) > 1 or m is None or not globs:
+        raise Fail(f'{path}: pre_verify_role needs one `<role> L<n>` line and at least one pre_verify_paths glob '
+                   f'(got role {roles!r}, paths {globs!r})')
+    return m.group(1), m.group(2), globs
 
 
 def merge_gate_declared(root):
