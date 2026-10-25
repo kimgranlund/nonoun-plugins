@@ -2,7 +2,7 @@
 id: T-0773
 title: "Lane commits never add a node_modules symlink; open warns when lane_setup is unset"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,15 @@ The failing test lands before or with the fix.
 - Negative control: with the `info/exclude` lines and the note removed from `lanes.py`, the lanes selftest prints `FAIL: node_modules: node_modules: want main with the committed fin2.txt and no node_modules symlink | node_modules: open with package.json and no lane_setup want the note`. With the land and open excludes removed, the fanout selftest prints `FAIL ... case 25 lane commit: artifacts excluded ...` and `case 30b host worktree (T-0773): the land commit holds y.txt but no node_modules symlink ... tree=[..., 'node_modules', 'scratch-note.txt', 'y.txt']`.
 - Checks: `gate_lock.py run ... lanes.py selftest` exit 0, `fanout.py selftest` PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check d49b31c2` exit 0.
 - Not changed: the solo agent text and `run-operations.md` still show the plain `git add -A -- . ':(exclude,glob)...'` line; the exclude makes it safe for any lane opened by `lanes.py`.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: d49b31c2ba41
+- Changed: see commits
+- Commits: e76db01 T-0773: lane commits never add a node_modules symlink; open warns when lane_setup is unset
+- Check: 1 A `lanes.py` selftest case reproduces the issue's report and passes; with the change reverted it ...: pass
+- Check: 2 lanes selftest via gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff ...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:1427 add_exclude is idempotent -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:257 /node_modules is anchored at... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:1584 the line goes into the... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:2819 builds a full lanes.Ctx on... -> notes.md

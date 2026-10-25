@@ -564,3 +564,10 @@
 
 - note: fanout.py:1708 `move_closed_records` copytree(old, new, dirs_exist_ok=True) still overwrites files at the new records dir, runs.jsonl included, if that dir already exists on a numbered-mode rename; not reachable in the observed flow, left alone by the builder, candidate follow-up only if it is ever seen.
 - note: fanout.py:1968 `shutil.copytree(src, folder, dirs_exist_ok=True)` for a legacy (folder-borne) records ticket could overwrite folder/runs.jsonl; guarded by the folder being untracked in the integration tree.
+
+## T-0773: Lane commits never add a node_modules symlink; open warns when lane_setup is unset (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/lanes.py:1427 add_exclude is idempotent. Five calls with NODE_MODULES left exactly one `/node_modules` line in info/exclude (probe.py in the scratch dir).
+- note: plugins/sdlc-lite/scripts/lanes.py:257 `/node_modules` is anchored at the top. A probe showed a top-level symlink hidden from status and `git add -A`, while a nested `pkg/node_modules` symlink was still listed and staged. Nested packages are neither affected nor protected.
+- decide: plugins/sdlc-lite/scripts/lanes.py:1584 the line goes into the shared common-dir info/exclude, so it applies to the main checkout and every worktree. Edits to tracked files in a tracked top-level node_modules still show as `M`. A new untracked file inside that tracked directory is now hidden, which only matters for a repo that tracks node_modules without a `.gitignore` entry for it.
+- note: plugins/sdlc-lite/scripts/fanout.py:2819 builds a full `lanes.Ctx` on each host-lane land just to read `.common`. The cost is small, but the selftest does not measure it.
