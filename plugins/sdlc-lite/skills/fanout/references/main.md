@@ -9,3 +9,7 @@ When `.sdlc/config` has a `merge_gate: light` line, light merges reached the int
 ## What plain settle does
 
 `settle <integration>` without `--forward` still moves main: when the integration branch is a fast-forward of the current branch it fast-forwards it (no gates run, none needed) and closes the tree; a diverged branch is refused (exit 2) and left whole. Only `--forward` merges main into a diverged branch and runs `--gate` before the fast-forward. To leave main where it is, do not run `settle` (or run `settle --catch-up`, which never moves main).
+
+## PR merge
+
+PR merge: the plugin ships no PR merge script; a project's own must keep two invariants, and `settle --forward` keeps both for the local path. (a) The branch head contains the base tip before the merge (`git merge-base --is-ancestor origin/main HEAD`, by rebase or merge commit; never a squash of a branch cut before the last merge). (b) The gates ran at that head sha and none is pending (`gh pr checks <n> --watch --fail-fast` is the GitHub form; read-only).

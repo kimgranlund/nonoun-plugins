@@ -1,6 +1,6 @@
 # Landing a sub-agent lane
 
-Detail for the fanout skill's `## Sub-agent lanes` items 3 and 4.
+Detail for the fanout skill's `## Sub-agent lanes` items 3 to 5.
 
 ## Verifier (levels L2 and L3)
 
@@ -25,3 +25,15 @@ The gate lock exports `SDLC_GATE_WORKERS` to every gate, but a test runner reads
 ## Roll
 
 A lane that `board.py --lanes` shows as Merge `rolling` (verified, on a base main contains, touching no `hash_bound: <glob>` path that `.sdlc/config` declares for hash-bound and generated files) can skip the integration branch: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py roll <branch> --ticket <id> --gate "<cmd>"...` merges it in a scratch worktree at main's tip, gates it, closes the ticket, and fast-forwards main. Any other lane is `integration (<reason>)`, merges nothing, and goes through `land`; `main not advanced` means git refused the fast-forward in your checkout (a local change in the way) and main is untouched.
+
+## Sync a running lane
+
+After landing a ticket that touches `.agents/`, `AGENTS.md` or `.claude/`, run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py sync --paths .agents/,AGENTS.md,.claude/ <lane>` on each running lane so it gets the new guidance as one commit. `fanout.py sync <lane> --gate "<cmd>"` (add `--regen "<cmd>"` when `.sdlc/config` declares `hash_bound:` files) brings a running lane level with its integration branch: generated and hash-bound files resolve without a hand merge, and `sync conflict: <paths>` (exit 2, nothing changed) names the real conflicts for an L2 builder.
+
+## Full tickets in sub-agent mode
+
+A `full` ticket is driven by the parent conductor, not by a lane process: the parent dispatches each role of `/chain` as a sub-agent against the lane tree prep printed (`<lanes-dir>/<lane>` on branch `<integration>-<lane>`, made with the `lanes.py open` command prep prints on its `tree:` line; `land` closes that tree after the lane's last ticket merged). A sub-agent shares the parent's cwd and a Bash call resets it, so each brief carries a `Tree: <path>` line and tells the role to `cd <path> &&` in every Bash call and to edit only under that tree. The parent reads only `steps.py next` and the records: per role completion it calls `dispatch.py advance --agent-id <id> <dispatch_file>` with the completion notice figures and nothing on stdin (it records the way `dispatch.py record --agent-id <id>` does, reading the result from the sub-agent transcript; never extract the final message yourself), which records, prints the `TaskStop` and runs `steps.py next`, then prepares the next builder or verifier against the same tree (or prints `stop: <action> <reason>`); send the TaskStop and the next Agent spawn in the same response. After the chain it commits `<id>: <title>` in the tree and lands `<integration>-<lane>`; the lane runs no filer, and `land` closes the ticket. The headless conductor per lane is the default of `run`, and on Claude needs `SDLC_CLAUDE_EXEC=1`.
+
+The `lane red` stop (T-0766): `steps.py next` prints `lane red` instead of `inherited` when the step's recorded base-sha is not an ancestor of the into branch named by the lane record and no resync merge from into sits between the fork point and the base, so an earlier step of the lane committed the red; the conductor replans and does not fix main first.
+
+The blocked solo stop (T-0760): `dispatch.py advance` on a solo whose report starts `blocked` (or `solo blocked`) prints `stop: blocked <report>: <line>; answer or fix what it names, then rerun the solo` and prepares no verifier at any level.

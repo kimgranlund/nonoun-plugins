@@ -26,3 +26,16 @@ T-0760, T-0766 and T-0758 (2026-10-24) each had to drop or shorten a SKILL.md li
 1. `wc -c < plugins/sdlc-lite/skills/fanout/SKILL.md` prints at most 16500.
 2. Every fact removed from SKILL.md is present in a linked `references/` file (list the moves in the Outcome), and SKILL.md names the T-0760 and T-0766 behaviours.
 3. `python3 scripts/check-packaging.py` passes, `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+SKILL.md went from 17,997 to 16,379 characters. Moves (each full text is verbatim in the target, SKILL.md keeps a short linked line):
+- Run-from-root paragraph (wip commit, `dirty before sync`, `integration dirty`) to `references/lane-lifecycle.md` "Stops and dirty trees"; SKILL.md keeps a shorter line that also states the T-0772 `bookkeeping: <paths>` commit.
+- External lane paragraph to `references/lane-lifecycle.md` "External lanes".
+- Step 3 hook sentence (`hooks/block-background.sh` and the SDLC_HEADLESS launcher rule) to `references/lane-lifecycle.md` "Headless runs"; SKILL.md keeps `SDLC_HEADLESS=1`.
+- Legacy lane root (`migrate-worktrees.sh`) sentence to `references/lane-lifecycle.md` "Legacy lane roots".
+- Sub-agent step 4 `sync` paragraph (generated files, `--regen`, `sync conflict`) to `references/land.md` "Sync a running lane".
+- Sub-agent step 5 (full ticket driven by the parent) to `references/land.md` "Full tickets in sub-agent mode".
+- PR merge paragraph to `references/main.md` "PR merge"; SKILL.md keeps both invariants' commands because `check.py` item "merge ops" requires them there.
+Added lines: T-0760 (`stop: blocked` from `advance`, step 3) and T-0766 (`lane red`, Report), with the rules also written in `references/land.md`; T-0772 in the run-from-root line.
+Not added: T-0770 (the fix has not landed; settle still exits 1 then) and T-0765 (the amend retag lives in the chain skill, not fanout).
+Checks: `wc -c` 16379; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8e8a3653` exit 0.
