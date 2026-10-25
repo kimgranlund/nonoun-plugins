@@ -4776,7 +4776,8 @@ def selftest():
         case('T-0763 two prep solos in flight, before advance: A is unbound and status and next on A read main, never B\'s '
              'tree, got status %r next rc=%s %r' % (s0[-120:], n0rc, n0[-160:]),
              own('T-0763') == own(None) and own('T-0764') == own(None)
-             and s0.startswith('no attempts in ') and n0rc == 1 and 'agent-bbb' not in s0 + n0)
+             and s0.startswith('no attempts in ') and n0rc == 0 and n0.startswith('solo L2')  # T-0776: next routes a solo ticket
+             and 'agent-bbb' not in s0 + n0)
         arc, aout, _, _, _ = adv_ticket('prep-host', str(afile), hr, '--agent-id', 'aaa')
         s1, n1rc, n1 = host_seen(atask)
         case('T-0763 advance --agent-id on A\'s prep solo rebinds host/T-0763-solo.lane.json to agent-aaa (branch '
