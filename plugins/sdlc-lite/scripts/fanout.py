@@ -48,7 +48,7 @@ prep
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
   (worktree-<id>-solo, known before the spawn) and its `worktree` (host-owned .claude/worktrees/<id>-solo), and a `prompt` brief
   that tells the solo to leave its change uncommitted and write its report at the worktree copy of the Report file,
-  named by that one worktree-relative path in the Report file line, the end line and the write instruction (T-0759; the dispatch `result` stays the primary path), because the host worktree sandbox refuses its git and any write outside the worktree (SOLO_SUBAGENT_PROMPT, T-0740;
+  named by that one worktree-relative path in the Report file line, the end line and the write instruction (T-0759; the dispatch `result` stays the primary path), because the host worktree sandbox refuses its git and any write outside the worktree (SOLO_SUBAGENT_PROMPT, T-0740; the brief also tells it to report a criterion needing git or a quoted Bash argument as `not run (host sandbox)`, T-0779;
   the headless SOLO_PROMPT says never commit); `land` commits a dirty host lane as `<id>: <title>`. For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
   solo reports (`dispatch.py prepare verifier L2`, or L3 for the tickets steps.py verifier-level names; SOLO_VERIFIER, T-0356); its result is committed on the
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
@@ -592,7 +592,9 @@ SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nArtifacts dir: {artifacts}\
                         'write outside it (T-0740): leave your changes uncommitted (never run git add or git commit), '
                         'fanout.py land commits them as `{id}: {title}` on your branch; write the report to {host_report} '
                         'under your worktree root (the directory you start in), where dispatch.py record and fanout.py '
-                        'land read it. Never push, open a PR, or publish: fanout.py land merges your branch, runs '
+                        'land read it. The sandbox also refuses a Bash command with a quoted argument: report a criterion that needs that or git as '
+                        '`<exact command> not run (host sandbox)`, never rewrite it: a verifier runs it, at any level. '
+                        'Never push, open a PR, or publish: fanout.py land merges your branch, runs '
                         'the gates, and closes the ticket.')
 
 
@@ -6608,6 +6610,11 @@ def selftest():
                                 str(pathlib.Path(hwd.get('result') or hw).with_suffix('.dispatch.json'))],
                                cwd=str(hw), env=gate_env(), capture_output=True, text=True, timeout=120)
         hres = pathlib.Path(hwd.get('result') or hw / 'none')
+        # case 30d (T-0779): the host sandbox refuses git and any Bash command with a quoted argument, so the brief tells the solo to
+        # report such a criterion as `not run (host sandbox)` with the exact command, not to rewrite it or skip it silently
+        expect(f'case 30d host brief: it names the sandbox limits and the `not run (host sandbox)` report line, got {hw_prompt!r}',
+               'quoted argument' in hw_prompt and '`<exact command> not run (host sandbox)`' in hw_prompt
+               and 'never rewrite it' in hw_prompt)
         expect(f'case 30b host worktree: dispatch.py record --agent-id y takes the report from the worktree copy, got '
                f'rc={hwrec.returncode} out={hwrec.stdout[-400:]!r} err={hwrec.stderr[-400:]!r}',
                hwrec.returncode == 0 and hres.is_file() and hres.read_text() == 'solo report T-0740\n')
