@@ -2,7 +2,7 @@
 id: T-0765
 title: "steps.py amend and swap can retag a red-at-base criterion to guard"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,13 @@ The failing test lands before or with the fix.
 - Reverted controls (full plugin copies in a scratch dir): with the run-at-base proof reverted to the checkpoint-trusting version, FAIL on the amend retag, budget, refusal, and both swap cases; with the `next` change reverted, FAIL on `(amend) T-0765: next offers amend for a retag pair after the replan is spent`.
 - Docs: `skills/chain/references/step-rules.md` item 10, `docs/specs/sdlc-lite/cost-control.md`, `docs/references/sdlc-internals.md`, and the steps.py usage text (next, swap, amend).
 - Checks: `gate_lock.py run ... steps.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check dc548c5b` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: e8490aab6762
+- Changed: see commits
+- Commits: 992a081 T-0765: prove a red-to-guard retag by running the span at base; next offers it; a18d398 T-0765: steps.py amend and swap can retag a red-at-base criterion to guard
+- Check: 1 A steps.py selftest case reproduces the issue's report and passes; with the change reverted it fa...: pass
+- Check: 2 selftest via gate_lock exits 0, check.py exits 0, check-packaging.py passes, `git diff --check <b...: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:1106 base_sha with :4512... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:3517 and :4708 amend_retag... -> notes.md
