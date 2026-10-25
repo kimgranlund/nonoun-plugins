@@ -12,7 +12,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0767 | [0767-close-rewrites-outside-paths](0767-close-rewrites-outside-paths/handoff.md) | tickets.py close keeps no absolute path outside the repo | bug | L1 | P2 | none | 🟡 claimed |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🔵 ready |
 | T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🔵 ready |
-| T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🔵 ready |
+| T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🟡 claimed |
 | T-0773 | [0773-lane-exclude-node-modules](0773-lane-exclude-node-modules/handoff.md) | Lane commits never add a node_modules symlink; open warns when lane_setup is unset | bug | L1 | P2 | none | 🟡 claimed |
 | T-0775 | [0775-land-runs-jsonl-merge](0775-land-runs-jsonl-merge/handoff.md) | land merges a lane runs.jsonl into the primary one instead of overwriting it | bug | L2 | P2 | none | 🟡 claimed |
 | T-0776 | [0776-steps-next-solo-task](0776-steps-next-solo-task/handoff.md) | steps.py next works on a solo ticket task folder | bug | L1 | P2 | none | 🔵 ready |
