@@ -373,6 +373,10 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 (amend_retag, T-0765) -> amend L<level> (apply it with steps.py amend, then rebuild at that
                 level); else replan, the reason naming why no amend.
                 An amend-routed block is never counted for a rebuild or a bump.
+              no verifier result counts after the build, a pre_verify_role in .sdlc/config (T-0732) and
+                a diff since base-sha touching pre_verify_paths -> review L<declared level> until a
+                result of that role counts after the build; its Verdict changes-required -> rebuild
+                L<level>; a pass falls through to verify
               no verifier result counts after the build  -> verify L<verifier level>,
                 but done when batch_verified(step dir) names a task-dir verifier result: the
                 newest task-dir verifier-*.md (order.py) whose ## Verified section lists
@@ -3278,6 +3282,50 @@ def declared_hits(cwd, globs, *diff, untracked=False):
     return sorted(out)
 
 
+def pre_verify_hits(path, tree, base):
+    """T-0732 (#61): (role, level, hits) when the .sdlc/config that owns path declares pre_verify_role (tickets.pre_verify)
+    and the work in tree since base (committed, uncommitted and untracked; HEAD when base is empty) touches a
+    pre_verify_paths glob, hits the matching paths; None when nothing is declared or touched. Raises tickets.Fail on a
+    malformed declaration and ValueError when git fails, so a required review is never skipped silently."""
+    import tickets
+    state = sdlc_roots.state_of(os.path.abspath(path))
+    declared = tickets.pre_verify(state) if state is not None else None
+    if declared is None:
+        return None
+    role, level, globs = declared
+    hits = declared_hits(tree, globs, base or 'HEAD', untracked=True)
+    return (role, level, hits) if hits else None
+
+
+def pre_verify_action(step_dir, d, b, read):
+    """T-0732: the action before the verifier of build b in step records dir d when the build touches pre_verify_paths:
+    review at the declared level while no result of the declared role counts after b, rebuild at b's level when the
+    newest one says changes-required, None when it passed (or nothing is declared or touched); stop on a malformed
+    declaration or a git failure."""
+    import tickets
+    top = exec_toplevel(step_dir)
+    try:
+        pre = pre_verify_hits(step_dir, top, base_sha(top, step_dir)) if top else None
+    except (tickets.Fail, ValueError) as e:
+        return 'stop', None, f'pre_verify: {e}', read
+    if pre is None:
+        return None
+    role, level, hits = pre
+    r = order.newest(d, role)
+    if r is None or not order.counts_after(r, b):
+        return ('review', int(level[1:]), f'{os.path.basename(b)} touches pre_verify_paths ({", ".join(hits[:3])}); '
+                f'{role} {level} reviews before the verifier (.sdlc/config pre_verify_role)', read)
+    verdict = results._key_body_value(results._lines(r), 'Verdict')[1].strip().lower()
+    if verdict == 'changes-required':
+        return ('rebuild', result_level(b), f'{os.path.basename(r)} says changes-required; rebuild at L{result_level(b)} '
+                'with its findings', read + [r])
+    if verdict not in ('pass', 'pass-with-notes'):
+        return ('stop', None, f'{os.path.basename(r)} has Verdict "{verdict or "none"}", not pass or changes-required; '
+                'read it (a blocked review names a question)', read + [r])
+    read.append(r)
+    return None
+
+
 def is_plan_defect(path):
     body = section(path, 'For the next attempt') or []
     first = next((line.strip() for line in body if line.strip()), '')
@@ -3561,6 +3609,9 @@ def next_action(step_dir):
             want = f'{d.resolve().name}/{os.path.basename(b)}'
             return ('done', None,
                     f'batch verifier {os.path.basename(batch)} lists {want} with Verdict pass', read + [batch])
+        pre = pre_verify_action(step_dir, d, b, read)  # T-0732: a declared review runs between build and verify
+        if pre is not None:
+            return pre
         why ='no verifier result' if v is None else f'verifier {os.path.basename(v)} is older than the build'
         return ('verify', verifier_level(level),
                 f'{why}; build L{level} -> verifier L{verifier_level(level)}', read)
