@@ -403,7 +403,7 @@ def _steps_cases(case):
              True if ok else got, True)
         accept = os.path.join(tmp, 'accept-all')
         os.mkdir(accept)
-        for name in ('steps.py', 'order.py', 'roots.py', 'results.py'):
+        for name in sorted(n for n in os.listdir(here) if n.endswith('.py')):  # the whole scripts/ dir: steps.py's imports grow
             shutil.copy(os.path.join(here, name), os.path.join(accept, name))
         with open(os.path.join(accept, 'results.py'), 'a', encoding='utf-8') as f:
             f.write('\nvalidate = lambda path, role=None: None\nstructure_error = lambda path, role=None: None\n')
