@@ -86,7 +86,8 @@ land
   second ticket of one lane, T-0721): that land closes it with no gate, its reason and Commit cell naming the merge,
   and, after copying the sub-agent worktree's records dir (order.records_dir) into the integration worktree's runtime
   records dir (copy_lane_records; no commit on the branch) and into the main checkout's, keeping a file there at least
-  as new (lanes.carry_records prints `records: <path>`, T-0566), for a solo level L2 or L3, `no verifier result` or
+  as new (lanes.carry_records prints `records: <path>`, T-0566) except runs.jsonl, whose rows merge by attempt_id, else
+  by whole line (T-0775), for a solo level L2 or L3, `no verifier result` or
   `verifier <verdict>` read from that copy, else from the verifier results committed on the branch that the
   integration branch does not hold (git objects, newest by order.py: a branch with no worktree commits its verifier
   result into the ticket folder with `git add -f`, and the close commit untracks it), else from the main checkout's
@@ -2779,7 +2780,8 @@ runtime_records = lanes.runtime_records
 
 def copy_lane_records(src_folder, dst_folder):
     """Copy a ticket's records dir (order.records_dir) from src_folder's tree into dst_folder's runtime records dir,
-    without logs or lock files; no git command, no commit. False when nothing was copied: no records dir, a legacy
+    without logs or lock files, merging runs.jsonl rows (lanes.copy_record, T-0775); no git command, no commit. False
+    when nothing was copied: no records dir, a legacy
     ticket whose records travel in the folder itself, or SDLC_SELFTEST_NO_RECORDS_COPY=1 (the negative-control knob)."""
     if os.environ.get('SDLC_SELFTEST_NO_RECORDS_COPY') == '1':
         return False
@@ -2787,7 +2789,7 @@ def copy_lane_records(src_folder, dst_folder):
     if not src.is_dir() or src.resolve() == pathlib.Path(src_folder).resolve():
         return False
     dst = order.records_dir(runtime_records(dst_folder), create=True)
-    shutil.copytree(str(src), str(dst), dirs_exist_ok=True, ignore=RECORDS_IGNORE)
+    shutil.copytree(str(src), str(dst), dirs_exist_ok=True, ignore=RECORDS_IGNORE, copy_function=lanes.copy_record)
     return True
 
 
@@ -5559,11 +5561,30 @@ def selftest():
         expect(f'case 23 land carry: a red land prints records: <main runtime path>, got rc={lc1.returncode} '
                f'out={lc1.stdout[-400:]!r}', lc1.returncode == 1 and 'red: false' in lc1.stdout
                and f'records: {lc_rd.resolve()}' in lc1.stdout)
-        expect('case 23 land carry: a main record newer than the lane copy is kept',
-               (lc_rd / 'runs.jsonl').read_text(encoding='utf-8') == newer)
+        expect('case 23 land carry: a main runs.jsonl row newer than the lane copy is kept and the lane row merged in',
+               (lc_rd / 'runs.jsonl').read_text(encoding='utf-8').splitlines()
+               == [newer.strip(), json.dumps({'role': 'verifier', 'level': 'L3', 'model': 'fable', 'file': 'verifier-L3.md'})])
         lc2 = main_close()
         expect(f'case 23 land carry: tickets.py close in main finds the carried verdict, got rc={lc2.returncode} '
                f'out={(lc2.stdout + lc2.stderr)[-300:]!r}', lc2.returncode == 0 and (lc_rd / 'verifier-L3.md').is_file())
+        # T-0775 (rehearsal 2026-10-25): the solo row sits only in main's runs.jsonl, the verifier row in the lane's
+        # newer copy; land merges the lane rows into main (dedup by attempt_id) and never overwrites it
+        lj, lj_pin = records_repo('land-runs-merge', 1)
+        solo_row = json.dumps({'ts': '2026-10-25T00:47:08Z', 'role': 'solo', 'level': 'L2', 'attempt_id': 'solo-1'})
+        lj_main = records_dir_(lj / '.sdlc' / 't1', create=True) / 'runs.jsonl'
+        lj_main.write_text(solo_row + '\n', encoding='utf-8')
+        os.utime(lj_main, (time.time() - 3600, time.time() - 3600))
+        lj_lane = records_dir_(tmp / 'land-runs-merge-agent1' / '.sdlc' / 't1') / 'runs.jsonl'
+        lj_lane.write_text(lj_lane.read_text(encoding='utf-8') + json.dumps(
+            {'ts': '2026-10-25T00:47:08Z', 'role': 'solo', 'level': 'L2', 'attempt_id': 'solo-1', 'cost_usd': 1.0}) + '\n',
+            encoding='utf-8')
+        lj1 = verb(lj, 'land', 'worktree-agent-w1', '--ticket', 'T-0001', *lj_pin, '--gate', 'test -e w1.txt')
+        lj_rows = [json.loads(ln) for ln in lj_main.read_text(encoding='utf-8').splitlines()]
+        expect(f'case 23 land runs.jsonl merge (T-0775): main keeps its solo row once and gains the lane verifier row, got '
+               f'rc={lj1.returncode} rows={lj_rows} out={lj1.stdout[-300:]!r}',
+               lj1.returncode == 0 and 'T-0001 | merged |' in lj1.stdout
+               and [(r_['role'], r_.get('attempt_id')) for r_ in lj_rows] == [('solo', 'solo-1'), ('verifier', None)]
+               and 'cost_usd' not in lj_rows[0])
         # a host branch checked out in its worktree, its agent_id record only in that worktree's runtime records dir
         lhr = tmp / 'land-host-rec'
         sized_repo(lhr, ['L1'], {'.gitignore': gi})
