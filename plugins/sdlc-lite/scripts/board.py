@@ -44,7 +44,8 @@ ask the user, matching steps.py next), and runs.jsonl (cost). A rerun at the sam
 level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the last in
 runs.jsonl record order (order.py), never file time.
 A builder whose Status starts with "inherited red" (a gate main already made red) renders as
-🔴 inherited red · builder <level>, ask the user, and --summary counts it in 🔴<n>.
+🔴 inherited red · builder <level>, ask the user, and --summary counts it in 🔴<n>, unless a newest
+verifier after it has a pass, fail, or inherited red: verdict, which wins.
 A newest verifier after the build whose Verdict starts with "inherited red:" renders as
 🔴 inherited red · builder <level> · verifier <level>, ask the user; it counts as a verdict, so it
 breaks a no-verdict run.
@@ -146,10 +147,12 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
     last_build = builds[-1]
     if section(last_build, 'Status').startswith('blocked'):
         return '🔴', f'blocked · builder {level_of(last_build)}{tries}', LADDER['building']
-    if section(last_build, 'Status').startswith('inherited red'):
+    after = bool(verifies) and order.counts_after(verifies[-1], last_build)
+    verdict = section(verifies[-1], 'Verdict') if after else ''
+    if (section(last_build, 'Status').startswith('inherited red')
+            and not verdict.startswith(('pass', 'fail', 'inherited red:'))):
         return '🔴', f'inherited red · builder {level_of(last_build)}, ask the user{tries}', LADDER['building']
-    if verifies and order.counts_after(verifies[-1], last_build):
-        verdict = section(verifies[-1], 'Verdict')
+    if after:
         if verdict.startswith('pass'):
             return '🟢', f'pass · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['verified']
         if verdict.startswith('fail'):
@@ -211,34 +214,6 @@ def plan_steps(task: pathlib.Path):
     return steps
 
 
-def outcome_lane(task: pathlib.Path) -> str:
-    """The lane on the first non-blank line after `## Outcome` in the task handoff, else ''."""
-    try:
-        lines = (task / 'handoff.md').read_text(encoding='utf-8').splitlines()
-    except OSError:
-        return ''
-    for i, line in enumerate(lines):
-        if line.strip() == '## Outcome':
-            for nxt in lines[i + 1:]:
-                if nxt.strip():
-                    m = re.search(r'lane:\s*(solo|full|fix)\b', nxt)
-                    return m.group(1) if m else ''
-            return ''
-    return ''
-
-
-def solo_lane(task: pathlib.Path) -> bool:
-    """True when the task's lane is solo: the last `- lane:` line in the task folder's skips.md,
-    else the `## Outcome` header lane."""
-    try:
-        lanes = re.findall(r'^- lane:\s*(\S+)', (task / 'skips.md').read_text(encoding='utf-8'), re.M)
-    except OSError:
-        lanes = []
-    if lanes:
-        return lanes[-1] == 'solo'
-    return outcome_lane(task) == 'solo'
-
-
 def orphaned_attempts(task: pathlib.Path):
     """Attempts of a running dispatch whose parent died (dispatch.py status --orphans); display-only, never fails."""
     rd = order.records_dir(task)
@@ -257,8 +232,9 @@ def task_rows(task: pathlib.Path):
     running = [p for p in rd.glob('*.running')]
     steps = plan_steps(task)
     front = ticket_of(task)
-    if not running and front is not None and front[1] == 'done' and solo_lane(task):
-        # A merged, closed solo lane keeps its step folder; its builder row is not the ticket's state.
+    if not running and front is not None and front[1] == 'done' and not any(rd.glob('step-*/*.running')):
+        # A closed ticket keeps its step folders whatever its lane; their rows are not the ticket's state,
+        # unless a role is still marked running in one.
         return [(task.name, 'task', '🟢', 'closed', 100)], []
     if running and orphaned_attempts(task):
         rows.append((task.name, 'task', '🟡', 'orphaned · resume', 0))
@@ -266,11 +242,7 @@ def task_rows(task: pathlib.Path):
         role_lvl = running[-1].stem
         rows.append((task.name, 'task', '🟡', f'running · {role_lvl}', 0))
     elif not steps:
-        front = ticket_of(task)
-        if front is not None and front[1] == 'done':
-            rows.append((task.name, 'task', '🟢', 'closed', 100))
-        else:
-            rows.append((task.name, 'task', '⏳', 'not planned', 0))
+        rows.append((task.name, 'task', '⏳', 'not planned', 0))
     for n, title, lvl in steps:
         glyph, status, pct = step_row(rd / f'step-{n}', title, lvl)
         rows.append((task.name, f'{n}. {title}', glyph, status, pct))
@@ -850,19 +822,27 @@ def selftest() -> int:
             expect(f'{status} ticket summary reads shipped {word}, got {got!r}',
                    got == f'shipped {word}')
 
-        # 5d. A done ticket whose last skips.md lane is solo reads closed even with a step folder
-        # (T-0300); the same fixture at status ready is the control that still reads built.
+        # 5d. A done ticket reads closed with a step folder whatever its lane (T-0300, T-0771 #79):
+        # skips.md solo or full, Outcome header solo or full, or no lane at all; the same fixture at
+        # status ready is the control that still reads built.
+        lanes = (('skips solo', '## Lane\n- lane: solo\n', ''), ('skips full', '## Lane\n- lane: full\n', ''),
+                 ('outcome solo', None, 'solo'), ('outcome full', None, 'full'), ('no lane', None, ''))
         for status, want in (('done', ['closed']), ('ready', ['built · builder L2, awaiting verify'])):
-            sroot = tmp / f'solo-lane-{status}'
-            st = task_dir(sroot, 'soloed', front.replace('status: ready', f'status: {status}'))
-            (st / 'skips.md').write_text('## Lane\n- lane: solo\n')
-            (st / 'runs.jsonl').write_text('{"role": "solo"}\n')
-            (st / 'step-1').mkdir()
-            (st / 'step-1' / 'handoff.md').write_text('## Step 1: do it\nlevel: L2\n')
-            (st / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n')
-            srows, _ = task_rows(st)
-            got = [r[3] for r in srows]
-            expect(f'solo lane {status} ticket reads {want!r}, got {got!r}', got == want)
+            for label, skips, olane in lanes:
+                sroot = tmp / f'lane-{status}-{label.replace(" ", "-")}'
+                text = front.replace('status: ready', f'status: {status}')
+                if olane:
+                    text += f'\n## Outcome\n\n2026-10-13 · lane: {olane} L2 · verdict: pass\n'
+                st = task_dir(sroot, 'laned', text)
+                if skips:
+                    (st / 'skips.md').write_text(skips)
+                (st / 'runs.jsonl').write_text('{"role": "solo"}\n')
+                (st / 'step-1').mkdir()
+                (st / 'step-1' / 'handoff.md').write_text('## Step 1: do it\nlevel: L2\n')
+                (st / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n')
+                srows, _ = task_rows(st)
+                got = [r[3] for r in srows]
+                expect(f'{label} {status} ticket reads {want!r}, got {got!r}', got == want)
 
         # 5e. Records dir (T-0541): an open ticket whose plan, step dir and priced runs.jsonl sit only
         # in <.sdlc>/runtime/tasks/<key>/ renders its step row and cost; the legacy fixture keeps the
@@ -884,20 +864,6 @@ def selftest() -> int:
             expect(f'{label}: step row and $3.75 spent, got {out!r}', ok)
             if ok:
                 print(f'ok: {label}: step row and $3.75 spent')
-
-        # 5f. No skips.md: a done ticket whose Outcome header names lane solo reads closed with a
-        # step folder; the same fixture with lane full is the control that still reads built.
-        for lane, want in (('solo', ['closed']), ('full', ['built · builder L2, awaiting verify'])):
-            oroot = tmp / f'outcome-lane-{lane}'
-            ot = task_dir(oroot, 'outcomed', front.replace('status: ready', 'status: done')
-                          + f'\n## Outcome\n\n2026-10-13 · lane: {lane} L2 · verdict: pass\n')
-            (ot / 'runs.jsonl').write_text('{"role": "solo"}\n')
-            (ot / 'step-1').mkdir()
-            (ot / 'step-1' / 'handoff.md').write_text('## Step 1: do it\nlevel: L2\n')
-            (ot / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n')
-            orows, _ = task_rows(ot)
-            got = [r[3] for r in orows]
-            expect(f'Outcome lane {lane} done ticket reads {want!r}, got {got!r}', got == want)
 
         # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
         # name is alphabetical. With no flag, a root with tickets sorts by id with
@@ -1180,6 +1146,16 @@ def selftest() -> int:
         got = step_row(step_fixture('verifier-inherited-red', vinh), 'x', 'L2')[:2]
         expect(f'an inherited red verifier renders as 🔴 inherited red · builder · verifier, got {got}',
                got == ('🔴', 'inherited red · builder L2 · verifier L1, ask the user'))
+        # T-0771 (#79): a verifier pass after an inherited red build wins; with no verdict after it the
+        # build still reads inherited red.
+        ipass = inh + [('verifier', 'L1', 'verifier-L1.md', '## Verdict\npass\n')]
+        got = step_row(step_fixture('inherited-red-then-pass', ipass), 'x', 'L2')[:2]
+        expect(f'a verifier pass after an inherited red build renders 🟢 pass, got {got}',
+               got == ('🟢', 'pass · builder L2 · verifier L1'))
+        inv = inh + [('verifier', 'L1', 'verifier-L1.md', '## Verdict\n\n')]
+        got = step_row(step_fixture('inherited-red-no-verdict', inv), 'x', 'L2')[:2]
+        expect(f'no verdict after an inherited red build still renders 🔴 inherited red, got {got}',
+               got[0] == '🔴' and got[1].startswith('inherited red · builder L2'))
         def batch_fixture(name, rebuilt):
             t = otmp / name
             for n in (1, 2):
