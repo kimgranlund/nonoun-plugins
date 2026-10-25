@@ -2,6 +2,19 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.36.0] - 2026-10-25
+
+Report: [docs/reports/2026-10-25-release-0-36-0.md](docs/reports/2026-10-25-release-0-36-0.md). 38 tickets: one rule for which checkout owns each record (T-0749 to T-0752, T-0755), the run.sh-era assumption audit and the vacuous base-sha pass (T-0735, T-0753, T-0754), Claude Code sub-agent lanes found by four live rehearsals (T-0756 to T-0764, T-0775 to T-0779, T-0783 to T-0785), GitHub issues #73 to #82 (T-0765 to T-0774), and follow-ups (T-0780 to T-0782).
+
+### Changed
+
+- One owner-tree rule: `wtroot.owner_tree` and the Owner trees table in `docs/references/sdlc-internals.md` say which checkout owns each kind of record; `dispatch.py`, `fanout.py`, `lanes.py` and `steps.py` read and write through it, so a writer and its reader no longer pick different checkouts (T-0749 to T-0752, T-0755, T-0763, T-0769; #46, #47, #49, #55, #57, #58, #59, #77).
+- Roles launched by `dispatch.py prepare` get the base sha as an export step in every brief, and `steps.py lint` refuses a criterion that reads `$SDLC_BASE_SHA` without a top-level guard, so such a criterion can no longer pass with the variable unset (T-0735, T-0753, T-0754).
+- Sub-agent (host worktree) lanes: `prep` refuses a base the remote default branch lacks and the solo brief asks for no git; the verifier diffs against the host cut point; the printed land command works as is; one report path; a blocked solo stops; settle keeps no removed host lane open and prints the push and `git branch -d` lines; host records are rebound to `agent-<id>` at record/advance; a criterion the sandbox blocks is reported `not run (host sandbox)` and gets a verifier at any level; `steps.py next` and `dispatch.py status` from main read the lane's records (T-0756 to T-0763, T-0776 to T-0779, T-0783 to T-0785).
+- Landing a lane merges its `runs.jsonl` rows instead of overwriting main's (T-0775).
+- GitHub #73 to #82: `amend`/`swap` can retag a red-at-base criterion to `(guard)` after running it at base (T-0765); an inherited red from an earlier lane step reads `lane red` (T-0766); `close` keeps no absolute path outside the repo (T-0767); a land `red:` line names the gate log and failing line (T-0768); land reads the ticket status where it closed it (T-0769); `settle` exits 0 when it advanced main with lanes still open (T-0770); the board renders a done ticket as closed (T-0771); land commits regenerated bookkeeping instead of refusing (T-0772); lane commits never add a `node_modules` symlink (T-0773); `dispatch.py record` never blocks on stdin (T-0774).
+- The sweep lists only this repo's unmarked folders (T-0764); the `block-disk-scan` hook ignores heredoc bodies (T-0782); the fanout skill has room again (T-0780).
+
 ## [0.35.0] - 2026-10-22
 
 Report: [docs/reports/2026-10-22-release-0-35-0.md](docs/reports/2026-10-22-release-0-35-0.md). Addresses GitHub issues #68 to #72 (T-0740 to T-0746) and follow-ups T-0747 and T-0748.

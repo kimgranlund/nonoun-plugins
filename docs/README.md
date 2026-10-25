@@ -59,6 +59,7 @@
 - [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC Lite, with verifier history and known limits.
 - [Haiku 5.5 pin](reports/2026-10-07-haiku-5-5.md): dated record of moving the scout L1 row and the messenger to `claude-haiku-5-5` (T-0353): the sites changed, the grep inventory, the eval and lock, the live scout proof (the alias `haiku` resolved to `claude-haiku-5-5`), and the unrefit haiku price rate.
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
+- [Release 0.36.0](reports/2026-10-25-release-0-36-0.md): one owner-tree rule for records, the base-sha guard, Claude Code sub-agent lanes proven by live rehearsals, GitHub #73 to #82.
 - [Release 0.35.0](reports/2026-10-22-release-0-35-0.md): Claude Code sub-agent lanes (#68 to #72): host-worktree solos, dropped lanes named, light-gate installs, verifier base after a main merge.
 - [Release 0.34.0](reports/2026-10-22-release-0-34-0.md): fixes for #49 to #67 (lanes, land, dispatch, split, traces, gate_lock stall report).
 - [Release 0.33.0](reports/2026-10-22-release-0-33-0.md): gate memory watchdog (`max_rss_mb`, default 25% of RAM).
