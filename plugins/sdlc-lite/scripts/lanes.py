@@ -17,7 +17,7 @@
   lanes.py selftest
 
 Design: docs/specs/sdlc-lite/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
-open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, patch_landed, config, host_record. open_lane and close_lane
+open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, patch_landed, landed_and_gone, config, host_record. open_lane and close_lane
 return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc); finish returns the exit code
 and prints through its say= callable. open_lane takes
 keyword-only path= (the tree; the leaf is its basename), branch= (used verbatim) and check_claim=False (skip the claim
@@ -436,6 +436,13 @@ def has_ref(top, ref):
     return git(top, 'rev-parse', '--verify', '-q', ref).returncode == 0
 
 
+def landed_and_gone(top, path, branch, into):
+    """T-0762 and T-0777: True when the tree at path is gone and branch is a local ref that is an ancestor of the local
+    branch into, so the lane landed and holds nothing open (evaluate's HOST-GONE rule; fanout.py's land report)."""
+    return (not pathlib.Path(path).is_dir() and has_ref(top, f'refs/heads/{branch}')
+            and git(top, 'merge-base', '--is-ancestor', f'refs/heads/{branch}', f'refs/heads/{into}').returncode == 0)
+
+
 # ---- lane discovery and ownership -------------------------------------------------------------------------
 
 def blank(path, exists, branch=None, head=None, locked=None):
@@ -727,8 +734,8 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
                         and first_dirty(o['path']) == (None, None):  # dirty work has not landed
                     hosts.append(o['path'])
                     continue
-                if not o['exists'] and o['owner'] == 'host' and o['branch'] and has_ref(top, f'refs/heads/{o["branch"]}') \
-                        and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode:  # HOST-GONE
+                if not o['exists'] and o['owner'] == 'host' and o['branch'] \
+                        and landed_and_gone(top, o['path'], o['branch'], b):  # HOST-GONE
                     continue  # T-0762: a host record whose tree is gone and whose branch landed holds nothing open
                 names.append(o['lane'])
         if names:
@@ -3778,7 +3785,7 @@ MUTANTS = (
      'passed a symlinked path', 'C1 passes a symlinked path'),
     ('TICKETS-CSV', "+ [x.strip() for c in (csv or ()) for x in c.split(',')]:" + '  # TICKETS-CSV', ':' + '  # TICKETS-CSV',
      case_tickets_csv, 'tickets csv', '--tickets adds no ticket to the open'),
-    ('HOST-GONE', "and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o[\"branch\"]}', f'refs/heads/{b}').returncode:"
+    ('HOST-GONE', "and landed_and_gone(top, o['path'], o['branch'], b):"
      + '  # HOST-GONE', 'and True:  # HOST-GONE', case_host_removed_unmerged, 'host removed unmerged',
      'without the ancestor test a removed host tree with unmerged work no longer holds the integration tree open'),
     ('SWEEP-MINE', 'if wtroot.mine(p, ctx.top):' + '  # SWEEP-MINE', 'if True:  # SWEEP-MINE', case_sweep_other_repo,
