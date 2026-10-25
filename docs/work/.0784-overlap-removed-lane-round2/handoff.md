@@ -2,7 +2,7 @@
 id: T-0784
 title: "land overlap ignores a removed lane from an earlier round"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,13 @@ The failing test lands before or with the fix.
 - Fix: `lanes.landed_and_gone` takes an optional `commit`; with the tree gone and the branch ref deleted, a journal merge commit that resolves and is an ancestor of the integration branch also counts. `cmd_land` passes the journal's `commit` for a `merged` entry. Docs: fanout.py land section. `lanes.evaluate` is unchanged (no commit passed).
 - Red first: with the commit clause disabled, only the new case 23 "land gone lane round 2 (T-0784)" fails: `FAIL: case 23 land gone lane round 2 (T-0784): a lane landed in round 1, settled, its tree and branch removed is not listed and is no overlap, got rc=0/0/0 ... - Overlap: `agent-r1` and `agent-r2`: `shared.txt``; with the fix it passes.
 - Checks: `fanout.py selftest` via gate_lock exit 0 (PASS), `lanes.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 327b2bd0` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 327b2bd08cc9
+- Changed: see commits
+- Commits: d897cb4 T-0784: land report ignores a round-1 lane whose branch was deleted after settle
+- Check: 1 A `fanout.py` selftest case reproduces the observation and passes; with the change reverted it fa...: pass
+- Check: 2 fanout selftest via gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git ...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/fanout.py:5740 Four selftest cases are... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:20 The API line lists... -> notes.md

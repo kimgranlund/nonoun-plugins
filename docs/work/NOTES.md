@@ -649,3 +649,8 @@
 
 - note: stale-record question, `steps.py:3296-3303`: the main checkout is consulted only when the lane twin's records dir holds no solo dispatch record, then the newest record by mtime is chosen, as before. A re-dispatch's prepare writes its record in main too, so the newest attempt wins. The report is read from the twin first and main's copy second, so an older main copy cannot shadow a newer lane report. It uses mtime, not order.py, as the existing code did.
 - decide: `dispatch.py record` leaves the solo dispatch record in main, because prepare wrote it there before any lane existed (the host record is rebound only at record time, `dispatch.py:2185`), while T-0750 routes later records to the owner twin. Moving the record into the twin is a larger change across prepare and record and is outside this ticket. The reader-side fix is enough for the observed bug, but it is a workaround for that write-side split. Consider a separate ticket.
+
+## T-0784: land overlap ignores a removed lane from an earlier round (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:5740 Four selftest cases are labelled `case 23` (the T-0285, T-0777, T-0784 and T-0689 cases, at lines 5442, 5716, 5740 and 5763), so the case number does not identify the case. The ticket id in each label does.
+- note: plugins/sdlc-lite/scripts/lanes.py:20 The API line lists `landed_and_gone` but not its new optional `commit` argument. The docstring at lanes.py:440 covers it.
