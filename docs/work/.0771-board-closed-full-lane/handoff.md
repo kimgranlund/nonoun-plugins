@@ -2,7 +2,7 @@
 id: T-0771
 title: "board.py renders a done ticket as closed and lets a later verifier pass win"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,13 @@ Reproduced on main: a done ticket in a full lane (or with no lane record) render
 - Negative control, code reverted with the new tests kept: `board selftest: FAIL` with `skips full done ticket reads ['closed'], got ['built · builder L2, awaiting verify']`, the same for outcome full and no lane, and `a verifier pass after an inherited red build renders 🟢 pass, got ('🔴', 'inherited red · builder L2, ask the user')`.
 - Checks: `board.py selftest` (via gate_lock) exit 0, `fleet_status.py selftest` exit 0, `report.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` PASS, `git diff --check 73aefc97` exit 0.
 - Not changed: `steps.py next` (`steps.py:3337`) has the same ordering, but the builder inherited red return sits before the verifier read in a longer route, not a one-line fix, and T-0766 is editing that route; it needs its own follow-up.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 73aefc974fea
+- Changed: see commits
+- Commits: d392275 T-0771: board.py renders a done ticket as closed and lets a later verifier pass win
+- Check: 1 A board.py selftest case reproduces the issue's report and passes; with the change reverted it fa...: pass
+- Check: 2 gate_lock board selftest exit 0, check.py exit 0, check-packaging.py passes, git diff --check exi...: pass
+- Follow-up: note: steps.py next keeps the inherited-red-before-verifier ordering... -> notes.md
+- Follow-up: note: no selftest case pins a done ticket with a step-/.running marker in... -> notes.md

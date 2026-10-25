@@ -14,7 +14,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🔵 ready |
 | T-0769 | [0769-land-ticket-open-integration](0769-land-ticket-open-integration/handoff.md) | land reads the ticket status where it closed it | bug | L1 | P2 | none | 🔵 ready |
 | T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🔵 ready |
-| T-0771 | [0771-board-closed-full-lane](0771-board-closed-full-lane/handoff.md) | board.py renders a done ticket as closed and lets a later verifier pass win | bug | L2 | P2 | none | 🟡 claimed |
 | T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🔵 ready |
 | T-0773 | [0773-lane-exclude-node-modules](0773-lane-exclude-node-modules/handoff.md) | Lane commits never add a node_modules symlink; open warns when lane_setup is unset | bug | L1 | P2 | none | 🔵 ready |
 | T-0774 | [0774-record-stdin-last](0774-record-stdin-last/handoff.md) | dispatch.py record tries the transcript before stdin and never blocks | bug | L1 | P2 | none | 🟡 claimed |
@@ -26,7 +25,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0780 | [0780-fanout-skill-headroom](0780-fanout-skill-headroom/handoff.md) | Give the fanout skill room under its size limit | chore | L1 | P2 | none | 🔵 ready |
 | T-0781 | [0781-steps-next-verifier-wins](0781-steps-next-verifier-wins/handoff.md) | steps.py next lets a later verifier verdict win over an inherited-red build | bug | L1 | P2 | none | 🔵 ready |
 
-Closed: 724 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 725 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

@@ -533,3 +533,8 @@
 
 - note: plugins/sdlc-lite/scripts/fanout.py:2615 prints `landing the host branch <b>` for `roll` too (observed in the R2 roll probe), where the action is a roll onto main, not a land.
 - note: the probe's fanout/h holds two `T-0001: Ticket t1` commits. One is the host branch's own commit. The other is land committing the report the probe left uncommitted in the host tree (T-0740 behavior), so it is expected and not a T-0758 defect.
+
+## T-0771: board.py renders a done ticket as closed and lets a later verifier pass win (2026-10-24)
+
+- note: `steps.py next` keeps the inherited-red-before-verifier ordering (builder reports it as a deliberate follow-up, T-0766 editing that route); the board and `steps.py next` can now disagree for that case until the follow-up lands.
+- note: no selftest case pins a done ticket with a `step-*/*.running` marker in board.py itself; the guard is covered only by the fleet_status selftest.
