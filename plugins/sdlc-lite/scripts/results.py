@@ -343,6 +343,19 @@ def criterion_spans(handoff_text):
     return out
 
 
+HOST_UNRUN = 'not run (host sandbox)'
+
+
+def host_unrun(path):
+    """T-0779: True when the solo report at path holds a `not run (host sandbox)` line, a criterion the host sandbox kept the
+    solo from running; such a report needs a verifier at any level, since no one else runs that criterion before close."""
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            return HOST_UNRUN in f.read()
+    except (OSError, TypeError, ValueError):
+        return False
+
+
 def solo_report_error(report_text, spans):
     """None, or the spans a solo report that says `verify: needed` lists without an exit-code line (T-0471, the
     Run-verbatim rule in agents/solo.md): a report line holds the span exactly as written in backticks and `exit <n>`,

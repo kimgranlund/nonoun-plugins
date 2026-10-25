@@ -2345,8 +2345,8 @@ def solo_blocked(d):
 
 def advance_solo(d, agent_id=None):
     """A recorded solo (T-0688): an L2 or L3 solo carries a `verifier` command, so prepare the ticket verifier at the
-    steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line.
-    A prep solo's tree is its host worktree (solo_lane_tree): the brief's Tree and Handoff name it, while the level
+    steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line, unless its report holds a `not run (host sandbox)` criterion: then it prepares an L1
+    verifier to run it (T-0779). A prep solo's tree is its host worktree (solo_lane_tree): the brief's Tree and Handoff name it, while the level
     comes from the main checkout's handoff, which the solo under verification cannot edit (T-0747). A solo whose report
     says blocked prepares no verifier and prints `stop: blocked <report>` (T-0760)."""
     blocked = solo_blocked(d)
@@ -2354,7 +2354,8 @@ def advance_solo(d, agent_id=None):
         print('stop: blocked %s: %s; answer or fix what it names, then rerun the solo' % (d['result'], blocked))
         return 0
     handoff = Path(d['handoff'])
-    if not d.get('verifier'):
+    unrun = not d.get('verifier') and results.host_unrun(d.get('result'))  # T-0779: a criterion the host sandbox blocked
+    if not d.get('verifier') and not unrun:
         print(close_line(handoff.parent))
         return 0
     import steps
@@ -2363,6 +2364,8 @@ def advance_solo(d, agent_id=None):
     if tree and top and os.path.realpath(tree) == os.path.realpath(top):
         tree = ''
     level, reason = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))
+    if unrun:
+        level, reason = 'L1', 'the solo report holds a criterion not run (host sandbox)'
     lane = Path(tree, os.path.relpath(os.path.realpath(handoff), os.path.realpath(top))) if tree and top else None
     failed = failing_verifier_level(handoff.parent) or (failing_verifier_level(lane.parent) if lane is not None and lane.parent.is_dir() else '')
     if failed:
@@ -4689,6 +4692,21 @@ def selftest():
             rc, out, nxt, before, after = adv_ticket('solo-blocked-' + lvl, str(order.records_dir(bdir) / ('%s.dispatch.json' % bdisp['name'])), bdir.parent.parent)
             case('T-0760 advance on a %s solo dispatch whose report says blocked prints stop: blocked and prepares no verifier' % lvl,
                  rc == 0 and '\nstop: blocked ' in '\n' + out and 'plan defect' in out and nxt is None and after == before and 'next: close' not in out)
+        # T-0779: an L1 solo whose report holds a `not run (host sandbox)` criterion gets an L1 verifier to run it; without the
+        # marker it still prints the close line
+        for tag, body, want in (('unrun', '- `python3 a.py check` not run (host sandbox)\nverify: needed\n', True),
+                                ('run', '- `python3 a.py check` exit 0\nverify: needed\n', False)):
+            udir = mk(tmp / ('adv-solo-' + tag)) / '.sdlc' / 'n'
+            udir.mkdir(parents=True)
+            (udir / 'handoff.md').write_text('x\n', encoding='utf-8')
+            with clean_env(), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                udisp = solo_run.dispatch_json(str(udir), 'L1', 'brief')[1]
+            Path(udisp['result']).write_text('# report\n' + body, encoding='utf-8')
+            rc, out, nxt, before, after = adv_ticket('solo-' + tag, str(order.records_dir(udir) / ('%s.dispatch.json' % udisp['name'])), udir.parent.parent)
+            case('T-0779 advance on an L1 solo report %s a not run (host sandbox) criterion %s' % ('holding' if want else 'without',
+                 'prepares an L1 verifier' if want else 'prints the close line'),
+                 rc == 0 and ((nxt is not None and nxt['role'] == 'verifier' and nxt['level'] == 'L1' and len(after) == len(before) + 1)
+                              if want else (nxt is None and after == before and 'close' in out)))
         # T-0718: after a verifier L3 fail and a solo rebuild, advance prepares the reverify at L3 (the ticket default is L2);
         # a pass verdict at L3 leaves the default.
         for tag, vbody, want in (('fail', fail_body, 'L3'), ('pass', BODY['verifier'], 'L2')):

@@ -413,7 +413,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             dir (or an older solo-L<n>.md), with the tier and verifier from the newest solo *.dispatch.json:
               no solo report                             -> solo L<size>
               report whose first line starts blocked     -> stop (dispatch.solo_blocked)
-              no verifier result, L1 solo (null verifier) -> close
+              no verifier result, L1 solo (null verifier) -> close, or verify L1 when the report holds a criterion
+                                                            `not run (host sandbox)` (results.host_unrun, T-0779)
               no verifier result otherwise               -> verify L<ticket verifier level> (verifier-level)
               newest verifier pass -> close, fail -> stop, no verdict -> reverify, inherited -> inherited
             Errors (missing dir, no handoff level with no builder result) print one "steps next: "
@@ -3338,6 +3339,8 @@ def solo_ticket_action(d, given):
         return 'stop', None, f'{name} reports blocked ({blocked}); answer or fix what it names, then rerun the solo', read
     v = order.newest(d, 'verifier')
     if v is None:
+        if not needs_verifier and results.host_unrun(report):  # T-0779: nobody else runs a criterion the host sandbox blocked
+            return 'verify', 1, f'{name} holds a criterion not run (host sandbox); one verifier at L1 runs it', read
         if not needs_verifier:  # an L1 solo has no verifier (dispatch.advance_solo prints the close line)
             return 'close', None, f'{name} is a level L1 solo, which needs no verifier; close the ticket', read
         vl, why = ticket_verifier(text)
@@ -6500,6 +6503,13 @@ def selftest():
               nxt(solo_task('L2', 'L2', verifier=('verifier-L2.md', FAIL)), 'stop'))
         check('next solo (T-0776): an L1 solo (verifier null in its dispatch record), no verifier -> close',
               nxt(solo_task('L1', 'L1'), 'close'))
+        UNRUN = SOLO_REPORT.replace('verify: needed', '- `python3 a.py check` not run (host sandbox)\nverify: needed')
+        check('next solo (T-0779): an L1 solo report holding a not run (host sandbox) criterion, no verifier -> verify L1',
+              nxt(solo_task('L1', 'L1', report=UNRUN), 'verify L1'))
+        check('next solo (T-0779): that L1 solo with a verifier pass after it -> close',
+              nxt(solo_task('L1', 'L1', report=UNRUN, verifier=('verifier-L1.md', PASS)), 'close'))
+        check('next solo (T-0779) control: an L1 solo report with every criterion run -> close',
+              nxt(solo_task('L1', 'L1', report=SOLO_REPORT.replace('verify: needed', '- `python3 a.py check` exit 0\nverify: needed')), 'close'))
         check('next solo (T-0776): a report whose first line is blocked -> stop',
               nxt(solo_task('L2', 'L2', report='blocked: which file?\n'), 'stop'))
         check('next solo (T-0776): a solo-L2.md result with no dispatch record (the older shape) -> verify L2',

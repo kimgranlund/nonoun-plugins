@@ -587,7 +587,7 @@ SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nArtifacts dir: {artifacts}\
                         'fanout.py land commits them as `{id}: {title}` on your branch; write the report to {host_report} '
                         'under your worktree root (the directory you start in), where dispatch.py record and fanout.py '
                         'land read it. The sandbox also refuses a Bash command with a quoted argument: report a criterion that needs that or git as '
-                        '`<exact command> not run (host sandbox)`, never rewrite it, for the verifier to run. '
+                        '`<exact command> not run (host sandbox)`, never rewrite it: a verifier runs it, at any level. '
                         'Never push, open a PR, or publish: fanout.py land merges your branch, runs '
                         'the gates, and closes the ticket.')
 
