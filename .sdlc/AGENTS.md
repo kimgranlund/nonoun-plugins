@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1f8a2ffe94db -->
+<!-- sdlc-lite:managed:start v1 sha256:bd844af3cb50 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,9 +10,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 2
+- proposed: 3
   - T-0732 Project hook for a required review role between build and verify (docs/work/0732-pre-verify-review-role)
   - T-0733 dispatch.py wait blocks until a role result lands (docs/work/0733-dispatch-wait)
+  - T-0782 block-disk-scan does not refuse a heredoc body (docs/work/0782-disk-scan-heredoc)
 - ready: 12
   - T-0765 steps.py amend and swap can retag a red-at-base criterion to guard (docs/work/0765-amend-red-to-guard)
   - T-0767 tickets.py close keeps no absolute path outside the repo (docs/work/0767-close-rewrites-outside-paths)
