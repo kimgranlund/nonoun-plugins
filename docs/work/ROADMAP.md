@@ -10,7 +10,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🟡 claimed |
 | T-0777 | [0777-land-overlap-removed-lane](0777-land-overlap-removed-lane/handoff.md) | land overlap ignores lanes already landed and removed | bug | L1 | P2 | none | 🟡 claimed |
-| T-0778 | [0778-settle-host-next-steps](0778-settle-host-next-steps/handoff.md) | settle names the push and the leftover host branches | bug | L1 | P2 | none | 🔵 ready |
+| T-0778 | [0778-settle-host-next-steps](0778-settle-host-next-steps/handoff.md) | settle names the push and the leftover host branches | bug | L1 | P2 | none | 🟡 claimed |
 | T-0779 | [0779-host-brief-sandbox-limits](0779-host-brief-sandbox-limits/handoff.md) | The host-lane solo brief says which criteria the sandbox blocks | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 738 done, 30 dropped (git log or .NNNN-* folders)
