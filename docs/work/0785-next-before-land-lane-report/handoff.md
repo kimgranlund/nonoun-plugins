@@ -30,3 +30,10 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `steps.py` selftest case reproduces the observation and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Cause: before land `records_of` reads the host lane twin (its `verifier-L2.md` counts as records), but `dispatch.py record` wrote `T-0003-solo.dispatch.json` in main's records dir (rehearsal log.md:333, 335), so `solo_report` found no solo dispatch record and no `solo-L<n>.md` and `next` printed `solo L2`. The fixture follows that evidence; a twin that also holds the dispatch record already routed to `close` (the T-0776 lane case).
+- Fix: `solo_report` in `plugins/sdlc-lite/scripts/steps.py` reads the solo dispatch record from the same place in the ticket's other checkouts (`tree_twins`, `wtroot.owner_trees`) when the twin holds none, and the report from the twin first. The `next` usage text names it (T-0785).
+- Selftest: `next solo host lane (T-0785): ...` (a host lane, record `agent-t0785.lane.json` under `wtroot.lanes_root`, twin with report, verifier pass, attempt and verifier runs row; main with the dispatch record, report copy and solo row) passes.
+- Negative control (the twin lookup reverted): steps selftest exit 1, `steps selftest: FAIL, these did not hold:` / `- next solo host lane (T-0785): from main before land, the host twin holds the solo report and verifier pass and main holds the solo dispatch record -> close`, the only failure.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; dispatch.py selftest (gate_lock) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0 (PASS); `git diff --check 327b2bd0` exit 0.

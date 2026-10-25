@@ -410,7 +410,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             A solo ticket's task dir (T-0776: no builder or planner result, a ticket handoff with a front matter
             size and no `level:` line, read from the dir given, its task folder or its lane twin; the records dir
             .sdlc/runtime/tasks/<name> works as the dir given) routes by its solo report, <id>-solo.md in the records
-            dir (or an older solo-L<n>.md), with the tier and verifier from the newest solo *.dispatch.json:
+            dir (or an older solo-L<n>.md), with the tier and verifier from the newest solo *.dispatch.json (T-0785: when
+            the lane twin's records dir holds none, the one at the same place in the ticket's other checkouts, where
+            dispatch.py record wrote it before land):
               no solo report                             -> solo L<size>
               report whose first line starts blocked     -> stop (dispatch.solo_blocked)
               no verifier result, L1 solo (null verifier) -> close, or verify L1 when the report holds a criterion
@@ -3290,17 +3292,24 @@ def solo_report(d, ticket):
     file the record's `result` names: no -L<n> suffix, no result header, often no runs.jsonl row. A records dir with only a
     solo-L<n>.md result (order.newest) is the older shape: the tier is in the name and an L1 needs no verifier."""
     import dispatch
-    recs = []
-    for f in pathlib.Path(d).glob('*.dispatch.json'):
-        if (j := dispatch.solo_dispatch(f)) is not None:
-            recs.append((f.stat().st_mtime, f.name, j))
+
+    def solo_recs(r):
+        return [(f.stat().st_mtime, f.name, j) for f in pathlib.Path(r).glob('*.dispatch.json')
+                if (j := dispatch.solo_dispatch(f)) is not None]
+    recs, homes = solo_recs(d), [pathlib.Path(d)]
+    # T-0785: before land a host lane twin holds the report and verifier, while dispatch.py record wrote the solo
+    # dispatch record in the main checkout's records dir; read it at the same place in the ticket's other checkouts
+    for twin in ([] if recs else tree_twins(d)):
+        if twin.is_dir() and (recs := solo_recs(twin)):
+            homes.append(twin)
+            break
     if recs:
         j = max(recs)[2]
         tier = str(j.get('tier') or j.get('level') or '')
         names = [f'{ticket}-solo.md'] if ticket else []
         if j.get('result'):
             names.append(os.path.basename(str(j['result'])))
-        report = next((pathlib.Path(d) / n for n in names if (pathlib.Path(d) / n).is_file()), None)
+        report = next((h / n for h in homes for n in names if (h / n).is_file()), None)
         return report, int(tier[1:]) if re.fullmatch(r'L[1-5]', tier) else None, bool(j.get('verifier'))
     old = order.newest(d, 'solo')
     if old is None:
@@ -7163,6 +7172,43 @@ def selftest():
         check('next solo lane (T-0776): the main task dir reads the lane twin\'s solo report and verifier pass, and its own '
               'handoff -> close', nxt(mk, 'close'))
         (lane_r / '.lane.json').unlink()
+        # T-0785: the fourth 0.36 rehearsal before land: a host lane (its host record rebound to agent-<id>, T-0763)
+        # whose twin records dir holds the solo's <id>-solo.md, a verifier-L2.md pass and runs.jsonl with the verifier
+        # row, while dispatch.py record wrote <id>-solo.dispatch.json, a report copy and the solo row in main's records dir
+        import wtroot
+        hm = tmp / 'host-lane-repo-t0785'
+        hm.mkdir()
+        subprocess.run(['git', 'init', '-q', '-b', 'main', str(hm)], check=True, capture_output=True)
+        subprocess.run(['git', '-C', str(hm), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                        'commit', '-q', '--allow-empty', '-m', 'a'], check=True, capture_output=True)
+        ht = hm / '.claude' / 'worktrees' / 'agent-t0785'
+        subprocess.run(['git', '-C', str(hm), 'worktree', 'add', '-q', '-b', 'worktree-agent-t0785', str(ht)], check=True,
+                       capture_output=True)
+        hrec = wtroot.lanes_root(hm) / 'host' / 'agent-t0785.lane.json'
+        hrec.parent.mkdir(parents=True, exist_ok=True)
+        hrec.write_text(json.dumps({'lane': 'agent-t0785', 'kind': 'host', 'branch': 'worktree-agent-t0785', 'into': 'main',
+                                    'tickets': ['T-0003']}), encoding='utf-8')
+        hmain = solo_task('L2', 'L2', where=hm)
+        hdj = hm / '.sdlc' / 'runtime' / 'tasks' / 'add-div' / 'T-0003-solo.dispatch.json'
+        (hdj.parent / 'runs.jsonl').write_text('{"role": "solo", "level": "L2", "file": "T-0003-solo.md"}\n', encoding='utf-8')
+        htw = ht / '.sdlc' / 'runtime' / 'tasks' / 'add-div'
+        htw.mkdir(parents=True)
+        (ht / '.sdlc' / 'add-div').mkdir(parents=True)
+        shutil.copyfile(hmain / 'handoff.md', ht / '.sdlc' / 'add-div' / 'handoff.md')
+        shutil.copyfile(hdj.parent / 'T-0003-solo.md', htw / 'T-0003-solo.md')
+        (htw / 'verifier-L2.md').write_text(hdr('verifier-L2.md', PASS), encoding='utf-8')
+        (htw / 'verifier-L2.attempt.json').write_text(json.dumps({'attempt_id': 'b' * 32, 'status': 'completed',
+                                                                  'role': 'verifier', 'level': 'L2'}), encoding='utf-8')
+        (htw / 'runs.jsonl').write_text('{"role": "verifier", "level": "L2", "file": "verifier-L2.md"}\n', encoding='utf-8')
+        here = os.getcwd()
+        os.chdir(hm)
+        try:
+            check('next solo host lane (T-0785): from main before land, the host twin holds the solo report and verifier pass '
+                  'and main holds the solo dispatch record -> close',
+                  nxt(pathlib.Path('.sdlc/add-div'), 'close')
+                  and os.path.realpath(records_of(pathlib.Path('.sdlc/add-div'))) == os.path.realpath(htw))
+        finally:
+            os.chdir(here)
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
         swap_refused('(c) newest verifier a pass', s_step(pair + [('verifier-L1.md', PASS)]), 'no fail verdict')
