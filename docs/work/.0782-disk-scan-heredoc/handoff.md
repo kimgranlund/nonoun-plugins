@@ -2,7 +2,7 @@
 id: T-0782
 title: "block-disk-scan does not refuse a heredoc body"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,14 @@ T-0769 solo (2026-10-25) was refused twice by block-disk-scan (0.35.0 copy): `Bl
 - hook-selftest.sh: new T-0782 allow cases (4 heredoc shapes) and block cases (5). Negative control: with the hook reverted to HEAD the first allow case fails, FAIL line ends `...git status': exit 2, want 0`.
 - `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exit 0, `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `python3 scripts/check-packaging.py` exit 0, `git diff --check 8b232fc80d6bdb134e2dc476b830dc650bbd1159` exit 0.
 - Not covered: two heredocs on one line leave the second marker, which fails closed as before.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 8b232fc80d6b
+- Changed: see commits
+- Commits: 531ab40 T-0782: block-disk-scan ignores heredoc bodies
+- Check: 1 A `hook-selftest.sh` case: a heredoc edit whose body holds the matched text is allowed, and `find...: pass
+- Check: 2 `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0, `check.py` exits 0, `check-packaging.p...: pass
+- Follow-up: fix-now: docs/references/claude-hooks.md:31 still says the hook "fails... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/hooks/block-disk-scan.sh:49-85 evasion probe base... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/hooks/block-disk-scan.sh:53 now allows these... -> notes.md
