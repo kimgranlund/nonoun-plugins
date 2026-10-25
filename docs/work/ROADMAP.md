@@ -10,7 +10,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0765 | [0765-amend-red-to-guard](0765-amend-red-to-guard/handoff.md) | steps.py amend and swap can retag a red-at-base criterion to guard | bug | L2 | P2 | none | 🔵 ready |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🟡 claimed |
-| T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🔵 ready |
+| T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🟡 claimed |
 | T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🟡 claimed |
 | T-0776 | [0776-steps-next-solo-task](0776-steps-next-solo-task/handoff.md) | steps.py next works on a solo ticket task folder | bug | L1 | P2 | none | 🟡 claimed |
 | T-0777 | [0777-land-overlap-removed-lane](0777-land-overlap-removed-lane/handoff.md) | land overlap ignores lanes already landed and removed | bug | L1 | P2 | none | 🔵 ready |
