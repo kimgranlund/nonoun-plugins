@@ -368,8 +368,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 and Notes whose first line starts "plan defect:" and hold one amend old:/amend new: pair
                 (see amend): the step handoff no longer holds the old span and holds the new text ->
                 rebuild L<level>; else no other builder result in the dir holds a pair, the step is not
-                built, and the task's one replan is unused -> amend L<level> (apply it with steps.py
-                amend, then rebuild at that level); else replan, the reason naming why no amend.
+                built, and the task's one replan is unused, or the pair is a (red) to (guard) retag
+                (amend_retag, T-0765) -> amend L<level> (apply it with steps.py amend, then rebuild at that
+                level); else replan, the reason naming why no amend.
                 An amend-routed block is never counted for a rebuild or a bump.
               no verifier result counts after the build  -> verify L<verifier level>,
                 but done when batch_verified(step dir) names a task-dir verifier result: the
@@ -444,9 +445,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             region, a - or * list item) must hold the old span among its command spans. The new
             text starts with (guard), and carries (red) in its leading tags, exactly when that line
             does (one exception, T-0765: a retag, the new text being that (red) line's text with
-            (red) swapped for (guard) and nothing else changed, applies when <step dir>/red-checkpoint.jsonl
-            holds a redck.py control for the line and each span whose latest is pre-edit, green, and
-            recorded at the base sha; without it the retag is refused), holds at least one command span,
+            (red) swapped for (guard) and nothing else changed, applies only when each span exits 0 at
+            the base sha, run under --timeout in a throwaway detached worktree at base under the worktree
+            root tmp prefix, removed after; a checkpoint line never proves it, a pre-edit
+            red-checkpoint.jsonl control for the line and span at base that is red refuses, and no base
+            (outside git) refuses), holds at least one command span,
             no span references HEAD^1 or holds a <placeholder>, and it lints clean (the lint rules
             above). Each new span then runs under bash -c from the git toplevel of the step dir
             (else the step dir) under --timeout SECONDS (default 300), with SDLC_BASE_SHA set to
@@ -3417,11 +3420,12 @@ def next_action(step_dir):
                 why = ' (its amend is not offered: the step already had one)'
             elif step_built(d):
                 why = ' (its amend is not offered: the step is already built; only the verifier\'s swap changes it)'
-            elif used := replan_used(d):
+            elif (used := replan_used(d)) and not amend_retag(d, pair):
                 why = f' (its amend is not offered: the task already used its one replan: {used})'
             else:
                 return ('amend', level,
-                        f'{name} is blocked with a plan defect and proposes one criterion amend; '
+                        f'{name} is blocked with a plan defect and proposes one criterion amend'
+                        f'{" (a (red) to (guard) retag, not the replan)" if used else ""}; '
                         f'apply it with steps.py amend, then rebuild at L{level}', read)
         elif any(section_lines_start(b, p, 'Notes') for p in ('amend old:', 'amend new:')):
             why = (' (its amend lines are not a plan defect: note with exactly one amend old: holding one code '
@@ -4403,27 +4407,47 @@ def one_target(targets, old, refuse):
 
 def red_retag(target, new):
     """True when new is the (red) target criterion's text with its leading (red) swapped for (guard) and nothing
-    else changed (T-0765): the one tag change a swap or amend may make, and only with red_green_at_base proof."""
+    else changed (T-0765): the one tag change a swap or amend may make, and only when red_green_at_base passes."""
     text = list_item(target)[2].strip()
     return text.startswith('(red)') and not is_red_line(f'- {new}') and new == '(guard)' + text[len('(red)'):]
 
 
-def red_green_at_base(d, target, base):
-    """None when <d>/red-checkpoint.jsonl (redck.py record) proves every span of the (red) target line green at base:
-    the latest control bound to the line and span is pre-edit, green, and recorded with base_sha base (and at_sha
-    base when it names one). Else why not: a builder's word is not proof."""
+def red_green_at_base(d, target, base, timeout):
+    """None when every span of the (red) target line exits 0 at base, else why not (T-0765). A checkpoint line is
+    forgeable, so it never proves green: each span runs (run_guard, timeout) in a throwaway detached worktree at
+    base under the worktree root tmp prefix (wtroot.tmp_root), removed after. A pre-edit redck.py control bound to
+    the line and span at base whose result is red refuses before anything runs. No base (outside git) refuses."""
+    if not base:
+        return 'no base commit to run the span at (outside git)'
     import redck  # redck imports steps, so not at module top
-    es, crit = redck.entries(d), target.strip()
-    for s in line_spans(target):
-        mine = [e for e in es if e.get('type') == 'control' and e.get('span') == s
-                and e.get('criterion_sha256') == redck.criterion_hash(crit, s)]
-        if not mine:
-            return f'no redck.py control for the line and `{s}` in {d / redck.CHECKPOINT}'
-        e = mine[-1]
-        if (e.get('phase'), e.get('result')) != ('pre-edit', 'green'):
-            return f'the latest control for `{s}` is {e.get("phase")} {e.get("result")}, not pre-edit green'
-        if e.get('base_sha') != base or e.get('at_sha') not in (None, base):
-            return f'the latest control for `{s}` was recorded at {e.get("at_sha") or e.get("base_sha")}, not base {base}'
+    es, crit, spans = redck.entries(d), target.strip(), line_spans(target)
+    for s in spans:
+        if any(e.get('type') == 'control' and e.get('span') == s and e.get('base_sha') == base
+               and e.get('criterion_sha256') == redck.criterion_hash(crit, s)
+               and (e.get('phase'), e.get('result')) == ('pre-edit', 'red') for e in es):
+            return f'a pre-edit control at base {base} recorded `{s}` red in {d / redck.CHECKPOINT}'
+    top = exec_toplevel(d)
+    import wtroot  # local, as in red_at_base
+    tmp_root = wtroot.tmp_root(top) or pathlib.Path(tempfile.gettempdir())
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    holder = pathlib.Path(tempfile.mkdtemp(prefix='retag-base-', dir=tmp_root))
+    tree = holder / 'tree'
+    try:
+        r = subprocess.run(['git', '-C', top, 'worktree', 'add', '-q', '--detach', str(tree), base],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=120)
+        if r.returncode != 0:
+            return f'git worktree add at base {base} failed: {r.stderr.strip()}'
+        for s in spans:
+            rc, _ = run_guard(s, str(tree), timeout, base)
+            if rc != 0:
+                why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
+                return f'`{s}` is not green at base {base} ({why})'
+    finally:
+        subprocess.run(['git', '-C', top, 'worktree', 'remove', '--force', str(tree)], capture_output=True,
+                       stdin=subprocess.DEVNULL, timeout=120)
+        shutil.rmtree(holder, ignore_errors=True)
+        subprocess.run(['git', '-C', top, 'worktree', 'prune'], capture_output=True, stdin=subprocess.DEVNULL,
+                       timeout=120)
     return None
 
 
@@ -4497,7 +4521,7 @@ def swap(step_dir, timeout=300):
     idx, target = one_target(targets, old, refuse)
     base = base_sha(exec_toplevel(d), d)
     retag = red_retag(target, new)
-    if retag and (why := red_green_at_base(d, target, base)):
+    if retag and (why := red_green_at_base(d, target, base, timeout)):
         refuse(f'a (red) to (guard) retag needs proof the span was green at base: {why}')
     spans = check_new_text(h, target, new, refuse, retag)
 
@@ -4587,9 +4611,20 @@ def replan_used(d):
     return None
 
 
+def amend_retag(d, pair):
+    """True when the amend pair is a red_retag of the one step criterion line holding its old span (T-0765): such an
+    amend is not the task's replan. The green-at-base proof is steps.py amend's, not this check's."""
+    h = step_handoff(d)
+    if not h.is_file():
+        return False
+    _, targets = criterion_targets(h.read_text(encoding='utf-8').splitlines(keepends=True),
+                                   ('### Acceptance criteria',), pair[0])
+    return len(targets) == 1 and red_retag(targets[0][1], pair[1])
+
+
 def amend_applied(d, pair):
-    """True when the step handoff no longer holds the old span in a criterion line and one criterion line's
-    text equals the new text."""
+    """True when one criterion line's text equals the new text and every criterion line holding the old span is
+    that line (a retag keeps the span)."""
     h = step_handoff(d)
     if not h.is_file():
         return False
@@ -4644,7 +4679,7 @@ def amend(step_dir, timeout=300):
         refuse(f'the task already used its one replan: {used}')
     idx, target = one_target(targets, old, refuse)
     base = base_sha(exec_toplevel(d), d)
-    if retag and (why := red_green_at_base(d, target, base)):
+    if retag and (why := red_green_at_base(d, target, base, timeout)):
         refuse(f'a (red) to (guard) retag needs proof the span was green at base: {why}')
     spans = check_new_text(h, target, new, refuse, retag)
 
@@ -6571,11 +6606,11 @@ def selftest():
             return (f'## Status\nblocked\n\n## Notes\nplan defect: c2 names the wrong file\n'
                     f'amend old: `{old}`\namend new: {new}\n')
 
-        def a_task(files, task_files=(), task_handoff='## Goal\ng\n', n=1):
-            """A task dir with handoff.md, step-<n>/handoff.md and files in run order; task_files are
-            task-dir results in run order."""
+        def a_task(files, task_files=(), task_handoff='## Goal\ng\n', n=1, root=None):
+            """A task dir (under root, else tmp) with handoff.md, step-<n>/handoff.md and files in run order;
+            task_files are task-dir results in run order."""
             count[0] += 1
-            t = tmp / f'amend{count[0]}'
+            t = (root or tmp) / f'amend{count[0]}'
             d = t / f'step-{n}'
             d.mkdir(parents=True)
             (t / 'handoff.md').write_text(task_handoff, encoding='utf-8')
@@ -6658,49 +6693,65 @@ def selftest():
         t, d = a_task([('builder-L2.md', DONE), ('builder-L2-2.md', amend_b())])
         check('(amend) next routes', routes and a_next(d, 'replan'))
 
-        # T-0765 (issue #73): a (red) criterion proven green at base by a pre-edit redck.py control may be retagged
-        # (guard) by amend even after the task's one replan, and the retag does not spend the replan
-        RT_SPAN = 'test -f handoff.md'
-        RT_LINE = f'- (red) `{RT_SPAN}` (old check)'
-        RT_NEW = f'(guard) `{RT_SPAN}` (old check)'
-        RT_HANDOFF = A_HANDOFF.replace(f'- `{A_OLD}` (old check)', RT_LINE)
+        # T-0765 (issue #73): a (red) criterion whose spans exit 0 at the base commit (run in a throwaway worktree
+        # there, never taken from a checkpoint line) may be retagged (guard) by amend even after the task's one
+        # replan, and the retag does not spend the replan. retag.txt is committed at base; new.txt only exists now.
+        rt_repo = tmp / 'retag-repo'
+        rt_repo.mkdir()
+        rt_g = ['git', '-C', str(rt_repo), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        subprocess.run(['git', 'init', '-q', str(rt_repo)], check=True, capture_output=True)
+        (rt_repo / 'retag.txt').write_text('b\n', encoding='utf-8')
+        subprocess.run(rt_g + ['add', 'retag.txt'], check=True, capture_output=True)
+        subprocess.run(rt_g + ['commit', '-q', '-m', 'base'], check=True, capture_output=True)
+        rt_base = subprocess.run(['git', '-C', str(rt_repo), 'rev-parse', 'HEAD'], check=True, capture_output=True,
+                                 text=True).stdout.strip()
+        (rt_repo / 'new.txt').write_text('n\n', encoding='utf-8')
+        (rt_repo / 'sdlc').mkdir()
+        RT_SPAN, RT_NEWSPAN = 'test -f retag.txt', 'test -f new.txt'
 
-        def rt_control(d, span=RT_SPAN, result='green', phase='pre-edit', line=RT_LINE):
+        def rt_line(span=RT_SPAN, tag='(red)'):
+            return f'{tag} `{span}` (old check)'
+
+        def rt_control(d, span=RT_SPAN, result='green', line=None):
             import hashlib
+            line = line or f'- {rt_line(span)}'
             key = hashlib.sha256(f'{line}\n{span}'.encode('utf-8')).hexdigest()
             with (d / 'red-checkpoint.jsonl').open('a', encoding='utf-8') as f:
-                f.write(json.dumps(dict(type='control', criterion_sha256=key, base_sha=None, at_sha=None,
+                f.write(json.dumps(dict(type='control', criterion_sha256=key, base_sha=rt_base, at_sha=rt_base,
                                         criterion=line, span=span, exit=0 if result == 'green' else 1,
-                                        result=result, phase=phase)) + '\n')
+                                        result=result, phase='pre-edit')) + '\n')
 
-        def rt_task(control=None, task_handoff=other):
-            t, d = a_task([('builder-L2.md', amend_b(RT_SPAN, RT_NEW))], task_handoff=task_handoff)
-            (d / 'handoff.md').write_text(RT_HANDOFF, encoding='utf-8')
+        def rt_task(span=RT_SPAN, control=None, task_handoff=other, root=rt_repo / 'sdlc'):
+            t, d = a_task([('builder-L2.md', amend_b(span, rt_line(span, '(guard)')))], task_handoff=task_handoff,
+                          root=root)
+            (d / 'handoff.md').write_text(A_HANDOFF.replace(f'- `{A_OLD}` (old check)', f'- {rt_line(span)}'),
+                                          encoding='utf-8')
             if control is not None:
-                rt_control(d, **control)
+                rt_control(d, span, **control)
             return t, d
 
-        t, d = rt_task({})
+        t, d = rt_task()
+        offered = a_next(d, 'amend L2')
+        want = (d / 'handoff.md').read_text(encoding='utf-8').replace(rt_line(), rt_line(tag='(guard)'))
         rc, out, err = run_main(['amend', str(d)])
         task_text = (t / 'handoff.md').read_text(encoding='utf-8')
-        applied = (rc == 0 and (d / 'handoff.md').read_text(encoding='utf-8')
-                   == RT_HANDOFF.replace(RT_LINE, f'- {RT_NEW}')
+        applied = (rc == 0 and (d / 'handoff.md').read_text(encoding='utf-8') == want
                    and task_text.count('amend applied:') == 1
-                   and f'- retag applied: step 1: old `{RT_SPAN}` -> new {RT_NEW}' in task_text)
+                   and f'- retag applied: step 1: old `{RT_SPAN}` -> new {rt_line(tag="(guard)")}' in task_text)
         before = snapshot(t)
         rc, out, err = run_main(['amend', str(d)])
-        check('(amend) T-0765: a (red) line proven green at base retags to (guard) after the replan is spent, '
+        check('(amend) T-0765: a (red) line green at base retags to (guard) after the replan is spent, '
               'records retag applied:, and a rerun is already applied',
               applied and rc == 0 and out.strip() == 'amend: already applied' and snapshot(t) == before)
-        t, d = rt_task({}, task_handoff='## Goal\ng\n')
+        check('(amend) T-0765: next offers amend for a retag pair after the replan is spent', offered)
+        t, d = rt_task(task_handoff='## Goal\ng\n')
         rc, _, _ = run_main(['amend', str(d)])
         check('(amend) T-0765: the retag does not count against the replan budget', rc == 0 and replan_used(d) is None)
-        check('(amend) T-0765: a retag refuses without a pre-edit green control for the line and span',
-              amend_refused(*rt_task(), 'green at base')
-              and amend_refused(*rt_task({'result': 'red'}), 'green at base')
-              and amend_refused(*rt_task({'phase': 'retrospective'}), 'green at base')
-              and amend_refused(*rt_task({'span': 'test -d .'}), 'green at base')
-              and amend_refused(*rt_task({'line': '- (red) `test -f handoff.md`'}), 'green at base'))
+        check('(amend) T-0765: a retag refuses a span red at base even with a forged green checkpoint line, '
+              'a red pre-edit control at base, and no base outside git',
+              amend_refused(*rt_task(RT_NEWSPAN, {}), 'is not green at base')
+              and amend_refused(*rt_task(control={'result': 'red'}), 'recorded `test -f retag.txt` red')
+              and amend_refused(*rt_task(root=None), 'outside git'))
 
         # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
         # after every check, next routes to it. Spans run from the step dir (tmp is outside git).
@@ -6788,16 +6839,25 @@ def selftest():
         check('swap: (a) a (red) line swapped for a (red) text applies and keeps the tag',
               rc == 0 and err == ''
               and '  * (red) `test -f handoff.md` (new check)' in (d / 'handoff.md').read_text(encoding='utf-8'))
-        # T-0765: swap shares the retag exception, with the same proof
-        RT_S = S_HANDOFF.replace('  * `' + S_OLD + '` (old check)', '  * (red) `test -f handoff.md` (old check)')
-        d = s_step(pair + [('verifier-L1.md', swap_v('test -f handoff.md', '(guard) `test -f handoff.md` (old check)'))],
-                   handoff=RT_S)
-        swap_refused('(c) T-0765: a (red) to (guard) retag with no green-at-base control', d, 'green at base')
-        rt_control(d, line='* (red) `test -f handoff.md` (old check)')
+        # T-0765: swap shares the retag exception, with the same run at base (the retag-repo fixture above)
+        def rt_swap(span):
+            count[0] += 1
+            w = rt_repo / 'sdlc' / f'swap{count[0]}'
+            w.mkdir()
+            h = S_HANDOFF.replace('  * `' + S_OLD + '` (old check)', f'  * {rt_line(span)}')
+            fs = pair + [('verifier-L1.md', swap_v(span, rt_line(span, '(guard)')))]
+            for name, text in fs:
+                (w / name).write_text(hdr(name, text), encoding='utf-8')
+            (w / 'runs.jsonl').write_text(''.join(f'{{"file": "{x}"}}\n' for x, _ in fs), encoding='utf-8')
+            return s_step([], handoff=h, where=w), h
+        d, _ = rt_swap(RT_NEWSPAN)
+        rt_control(d, RT_NEWSPAN, line=f'* {rt_line(RT_NEWSPAN)}')
+        swap_refused('(c) T-0765: a (red) to (guard) retag of a span red at base, a forged green line beside it', d,
+                     'is not green at base')
+        d, h = rt_swap(RT_SPAN)
         rc, out, err = run_main(['swap', str(d)])
-        check('swap: T-0765: a (red) line proven green at base retags to (guard)',
-              rc == 0 and (d / 'handoff.md').read_text(encoding='utf-8')
-              == RT_S.replace('* (red) `test', '* (guard) `test'))
+        check('swap: T-0765: a (red) line green at base retags to (guard)',
+              rc == 0 and (d / 'handoff.md').read_text(encoding='utf-8') == h.replace('* (red) `', '* (guard) `'))
         swap_refused('(c) new text with no command span',
                      s_step(pair + [('verifier-L1.md', swap_v(new='the file exists'))]), 'no runnable')
         swap_refused('(c) new span with an unquoted || join',
