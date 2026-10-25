@@ -436,11 +436,17 @@ def has_ref(top, ref):
     return git(top, 'rev-parse', '--verify', '-q', ref).returncode == 0
 
 
-def landed_and_gone(top, path, branch, into):
+def landed_and_gone(top, path, branch, into, commit=None):
     """T-0762 and T-0777: True when the tree at path is gone and branch is a local ref that is an ancestor of the local
-    branch into, so the lane landed and holds nothing open (evaluate's HOST-GONE rule; fanout.py's land report)."""
-    return (not pathlib.Path(path).is_dir() and has_ref(top, f'refs/heads/{branch}')
-            and git(top, 'merge-base', '--is-ancestor', f'refs/heads/{branch}', f'refs/heads/{into}').returncode == 0)
+    branch into, so the lane landed and holds nothing open (evaluate's HOST-GONE rule; fanout.py's land report).
+    T-0784: with the branch ref deleted too (settle prints `git branch -d` for it), a land journal's merge commit that
+    is an ancestor of into says the same, as a second round's integration branch cut from main holds it."""
+    if pathlib.Path(path).is_dir():
+        return False
+    if has_ref(top, f'refs/heads/{branch}'):
+        return git(top, 'merge-base', '--is-ancestor', f'refs/heads/{branch}', f'refs/heads/{into}').returncode == 0
+    return bool(commit) and has_ref(top, f'{commit}^{{commit}}') \
+        and git(top, 'merge-base', '--is-ancestor', commit, f'refs/heads/{into}').returncode == 0
 
 
 # ---- lane discovery and ownership -------------------------------------------------------------------------
