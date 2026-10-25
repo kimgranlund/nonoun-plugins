@@ -11,7 +11,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0765 | [0765-amend-red-to-guard](0765-amend-red-to-guard/handoff.md) | steps.py amend and swap can retag a red-at-base criterion to guard | bug | L2 | P2 | none | 🔵 ready |
 | T-0767 | [0767-close-rewrites-outside-paths](0767-close-rewrites-outside-paths/handoff.md) | tickets.py close keeps no absolute path outside the repo | bug | L1 | P2 | none | 🔵 ready |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🔵 ready |
-| T-0769 | [0769-land-ticket-open-integration](0769-land-ticket-open-integration/handoff.md) | land reads the ticket status where it closed it | bug | L1 | P2 | none | 🟡 claimed |
 | T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🔵 ready |
 | T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🔵 ready |
 | T-0773 | [0773-lane-exclude-node-modules](0773-lane-exclude-node-modules/handoff.md) | Lane commits never add a node_modules symlink; open warns when lane_setup is unset | bug | L1 | P2 | none | 🔵 ready |
@@ -25,7 +24,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0781 | [0781-steps-next-verifier-wins](0781-steps-next-verifier-wins/handoff.md) | steps.py next lets a later verifier verdict win over an inherited-red build | bug | L1 | P2 | none | 🟡 claimed |
 | T-0782 | [0782-disk-scan-heredoc](0782-disk-scan-heredoc/handoff.md) | block-disk-scan does not refuse a heredoc body | bug | L1 | P2 | none | 🔵 ready |
 
-Closed: 726 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 727 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -108,3 +107,4 @@ Closed: 726 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/wtroot.py:250 (`sweep`, unchanged) removes a dead-owner folder past the limit in another repo's scratch dir, and both record and lanes sweep print `removed <other repo path>`. This happens at base too and is the documented design ("every repo's scratch dir"), so "never delete another repo's folder" holds only for unmarked folders. (from T-0764: prep and record print no sweep lines for other repos (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/steps.py:3342: note: the safety claim holds. Every new return None path (merge with a parent on `into`, no lane record, no base-sha, git error, base an ancestor of `into`) falls back to the pre-ticket `inherited`. A wrong `lane red` needs a base off `into` with no merge-from-`into` between the fork point and the base yet a main-born red; `lanes.py` and `fanout.py` contain no rebase, so lane trees take `into` only by merge, and the one residual (a lane commit made after a resync still reads `inherited`) errs the conservative way. (from T-0766: An inherited red from an earlier step of the same lane routes back into the task (2026-10-24))
 - decide: plugins/sdlc-lite/scripts/board.py:149: note: carried from verifier-L2.md, still true: the board renders a builder Status `inherited red` with the ask-the-user wording whatever `steps.py next` prints, so a `lane red` step shows the old wording. (from T-0766: An inherited red from an earlier step of the same lane routes back into the task (2026-10-24))
+- decide: plugins/sdlc-lite/scripts/lanes.py:988 The reverse edge: a ticket closed by hand in main while the integration tree still reads it claimed now prints `ticket still open` (main is consulted only for ids the integration tree lacks). Before the change main's `done` won. No criterion covers it; an unlikely order, since land closes on the integration branch first. (from T-0769: land reads the ticket status where it closed it (2026-10-24))

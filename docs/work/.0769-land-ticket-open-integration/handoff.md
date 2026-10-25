@@ -2,7 +2,7 @@
 id: T-0769
 title: "land reads the ticket status where it closed it"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,14 @@ The failing test lands before or with the fix.
 
 ## Outcome
 Reproduced on main (ff181d81): the new `lanes.py` selftest case `close done in integration` failed with `FAIL: close done in integration: close done in integration: T-0001 is done in wave/1 but close reported it open: 0: closed T-0001-one (ancestor) ... ticket still open: T-0001` before the fix (that run is the reverted state: the case was added first, the code unchanged). `do_close` now resolves `wtroot.owner_tree('ticket-close', None, <lane path>)` before the lane tree is removed and reads status through `close_tree` (the integration tree holding `into`, else main; main for a ticket that tree lacks). Docs: the lanes.py header, the `ticket-close` row of `docs/references/sdlc-internals.md` and `wtroot.OWNERS`. Checks: lanes.py selftest exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `wtroot.py owner-selftest` ok.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: ff181d810440
+- Changed: see commits
+- Commits: 775737f T-0769: lanes close reads ticket status in the tree that owns ticket-close
+- Check: 1 A `lanes.py` selftest case reproduces the issue's report and passes; with the change reverted it ...: pass
+- Check: 2 `gate_lock.py ... lanes.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, an...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:944 Conductor check, this repo's... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:996-1003 Fallback order is the... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:988 The reverse edge: a ticket... -> notes.md
