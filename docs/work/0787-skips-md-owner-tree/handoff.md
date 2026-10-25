@@ -34,3 +34,10 @@ Writers of `skips.md`: `steps.py` lane (about line 288 doc, 336 append), `dispat
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Outcome
+- `steps.skips_path(task)` is the one place `skips.md` is resolved: a main-checkout task folder whose ticket a lane owns maps to the lane twin (`steps.owned('skips', ...)`, new `skips` kind in `wtroot.OWNERS`, row added to the Owner trees table); any other tree (the lane, the integration tree `fanout.py land` writes) keeps its own file, as does a folder the owner tree lacks.
+- Routed through it: `steps.py` lane record, solo skips, `lane_action` read, step cap read and write; `dispatch.py` `lane_gate`, `ticket_time`, and the prepare writers (lane override, replan and time approvals).
+- Criterion 1: new steps selftest case `owner tree (T-0787)` beside the T-0755 owner cases. Red before the fix and with the redirect disabled: `steps selftest: FAIL, these did not hold: - owner tree (T-0787): lane on the main task folder appends the lane line to the lane twin's skips.md, main untouched`.
+- Criterion 2: `grep -n "'skips.md'" plugins/sdlc-lite/scripts/dispatch.py plugins/sdlc-lite/scripts/steps.py` shows only `steps.py` `skips_path` and selftest fixtures.
+- Criterion 3: steps and dispatch selftests through gate_lock exit 0, `wtroot.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 66f650ed` exit 0.

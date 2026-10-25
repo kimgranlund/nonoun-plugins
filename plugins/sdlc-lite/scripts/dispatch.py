@@ -45,7 +45,8 @@ base-sha, end-sha, runs.jsonl) goes in order.records_dir of the handoff dir, <ne
 task dir that already holds records keeps them in place), in the checkout that owns them (owned_records: the handoff dir
 at the same path in wtroot.owner_tree, the ticket's lane when one exists, else the execution tree; T-0750), so a
 --tree <lane> prepare for a main-checkout handoff records in the lane; the brief's Artifacts dir line names it. The handoff gates
-read the handoff dir, and skips.md stays in the task folder (order.task_dir). status and recover map a task or step
+read the handoff dir, and skips.md stays in the task folder (order.task_dir; steps.skips_path, the lane twin of a main-checkout
+task folder a lane owns, T-0787). status and recover map a task or step
 dir to its records dir; status reads the owner tree's twin of it when that holds attempts (T-0755).
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
@@ -702,7 +703,8 @@ def lane_gate(role, directory, plugin):
     handoff = lane_dir / 'handoff.md' if lane_dir is not None else None
     if handoff is None or not handoff.is_file() or not re.search(r'^id: *T-[0-9]+', handoff.read_text(encoding='utf-8', errors='replace'), re.M):
         return None
-    skips = lane_dir / 'skips.md'
+    import steps  # same scripts/ dir
+    skips = steps.skips_path(lane_dir)
     if skips.is_file():
         recorded = [l for l in skips.read_text(encoding='utf-8', errors='replace').splitlines() if re.match(r'(- )?lane: ', l, re.I)]
         if recorded and not re.match(r'(- )?lane: *solo', recorded[-1], re.I):
@@ -1012,7 +1014,8 @@ def ticket_time(ticket, tree=None):
     if size not in TICKET_MINUTES:
         return None
     try:
-        approved = [int(m.group(1)) for m in TIME_APPROVED_RE.finditer((Path(ticket) / 'skips.md').read_text(encoding='utf-8'))]
+        import steps  # same scripts/ dir
+        approved = [int(m.group(1)) for m in TIME_APPROVED_RE.finditer(steps.skips_path(ticket).read_text(encoding='utf-8'))]
     except OSError:
         approved = []
     return ticket_minutes(ticket, tree), max(approved, default=0) + TICKET_MINUTES[size], TICKET_MINUTES[size], size
@@ -1433,13 +1436,14 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             return dispatch
         if notify:
             unregistered_receiver(notify, toplevel)
+        import steps  # same scripts/ dir
         for line in (['lane override: ' + lane_override] if lane_override else []) + ([replan_approved] if replan_approved else []):
-            skips = Path(order.task_dir(directory) or directory) / 'skips.md'
+            skips = steps.skips_path(order.task_dir(directory) or directory)
             if line not in (skips.read_text(encoding='utf-8').splitlines() if skips.is_file() else []):
                 with skips.open('a', encoding='utf-8') as f:
                     f.write(line + '\n')
         if time_approved:  # in the ticket folder, where ticket_time reads it
-            with (Path(time_ticket) / 'skips.md').open('a', encoding='utf-8') as f:
+            with steps.skips_path(time_ticket).open('a', encoding='utf-8') as f:
                 f.write(time_approved + '\n')
         attempt = dict(attempt_id=uuid.uuid4().hex, name=stem, agent_name=name, role=role, level=level, backend='claude',
                        transport='subagent', model=model, effort=effort, routing_reason=dispatch['routing_reason'],
