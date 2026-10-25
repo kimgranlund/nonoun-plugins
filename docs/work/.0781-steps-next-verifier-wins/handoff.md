@@ -2,7 +2,7 @@
 id: T-0781
 title: "steps.py next lets a later verifier verdict win over an inherited-red build"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,13 @@ T-0771 builder (2026-10-25): board.py is fixed; `steps.py next` has the same ord
 
 ## Outcome
 `steps.py` next now takes the builder's inherited red only when no verifier verdict (pass, fail, inherited) is newer by `order.py`; T-0766's `lane red` route is unchanged when the inherited red is the newest result. `build_status` became `build_status_or_none` at the blocked check so an inherited build with a newer verdict falls through to the verifier routing. Three selftest cases added (inherited then pass -> done, inherited then fail -> rebuild L2, pass then inherited -> inherited). Negative control: with the guard removed the first two cases print as failed ("next inherited (T-0781): an inherited builder then a verifier pass -> done" and "... then a verifier fail -> rebuild L2"). `steps.py selftest` (via gate_lock) exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check e8638766` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: e86387668164
+- Changed: see commits
+- Commits: a0c4f56 T-0781: steps.py next lets a later verifier verdict win over an inherited-red build
+- Check: 1 A steps.py selftest case: an inherited-red builder result followed by a verifier pass reads done;...: pass
+- Check: 2 gate_lock steps.py selftest exits 0, check.py exits 0, check-packaging.py passes, git diff --chec...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:3396 the build_status ->... -> notes.md
+- Follow-up: note: contract dependents of next_action run green: fanout.py selftest... -> notes.md
