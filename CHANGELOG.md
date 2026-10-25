@@ -2,6 +2,20 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. Progressive Context is versioned separately.
 
+## [0.37.0] - 2026-10-25
+
+Report: [docs/reports/2026-10-25-release-0-37-0.md](docs/reports/2026-10-25-release-0-37-0.md). 4 tickets: a pre-verify review role (T-0732, #61), `dispatch.py wait` (T-0733, #63), and the two owner-tree follow-ups 0.36.0 left open (T-0786, T-0787, #80).
+
+### Added
+
+- Opt-in pre-verify review: `.sdlc/config` lines `pre_verify_role: <role> L<n>` and `pre_verify_paths: <glob>...` make `steps.py next` print `review L<n>` before `verify` when a build touches a glob, and `dispatch.py advance` prepares that review for a step build or an L2 or L3 solo; a `changes-required` review sends the step back with its findings (T-0732, #61).
+- `dispatch.py wait [--timeout S] <dispatch.json>` blocks until a role's result lands or its attempt leaves running; the conductor starts it in the background after an interactive spawn (T-0733, #63).
+
+### Changed
+
+- `steps.py lane` run from the main checkout on a lane's ticket writes `skips.md` in the lane's tree, through one `steps.skips_path` helper and a `skips` row in the Owner trees table, so main stays clean and the next land does not refuse (T-0787, #80).
+- `record` and `advance` copy a solo's dispatch record into the tree that owns the solo's other records, and `steps.py` picks the newest solo record by its `runs.jsonl` row instead of file time (T-0786).
+
 ## [0.36.0] - 2026-10-25
 
 Report: [docs/reports/2026-10-25-release-0-36-0.md](docs/reports/2026-10-25-release-0-36-0.md). 38 tickets: one rule for which checkout owns each record (T-0749 to T-0752, T-0755), the run.sh-era assumption audit and the vacuous base-sha pass (T-0735, T-0753, T-0754), Claude Code sub-agent lanes found by four live rehearsals (T-0756 to T-0764, T-0775 to T-0779, T-0783 to T-0785), GitHub issues #73 to #82 (T-0765 to T-0774), and follow-ups (T-0780 to T-0782).
