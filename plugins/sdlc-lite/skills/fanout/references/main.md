@@ -8,7 +8,7 @@ When `.sdlc/config` has a `merge_gate: light` line, light merges reached the int
 
 ## What plain settle does
 
-`settle <integration>` without `--forward` still moves main: when the integration branch is a fast-forward of the current branch it fast-forwards it (no gates run, none needed) and closes the tree; a diverged branch is refused (exit 2) and left whole. Only `--forward` merges main into a diverged branch and runs `--gate` before the fast-forward. To leave main where it is, do not run `settle` (or run `settle --catch-up`, which never moves main).
+`settle <integration>` without `--forward` still moves main: when the integration branch is a fast-forward of the current branch it fast-forwards it (no gates run, none needed) and closes the tree; a diverged branch is refused (exit 2) and left whole. Only `--forward` merges main into a diverged branch and runs `--gate` before the fast-forward. When main advanced but lanes are still open into the integration branch, the tree and branch are kept and settle prints `settled: main advanced; integration kept (lanes open: <names>)` and exits 0 (T-0770); exit 1 means nothing merged or a failed close. To leave main where it is, do not run `settle` (or run `settle --catch-up`, which never moves main).
 
 ## PR merge
 
