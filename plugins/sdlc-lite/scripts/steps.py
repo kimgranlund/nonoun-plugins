@@ -356,6 +356,10 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest builder Status inherited red: <tests> -> inherited (a gate already red at
                 the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
+                But lane red (T-0766) when the step's recorded base-sha is not an ancestor of
+                the into branch named by the .lane.json at the base-sha checkout's toplevel:
+                an earlier step of the lane committed the red, so the conductor replans; no
+                lane record, no base-sha, or a git error keeps inherited.
               newest builder Status blocked              -> replan, except Notes whose
                 first line starts "stale lane:" (missing merged prerequisites, not a plan defect) -> resplit:
                 rebase the lane, move the step dir to step-<n>.superseded-<k>, steps.py split --only <n>;
@@ -382,6 +386,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest verifier Verdict inherited red: <tests> -> inherited (a gate already red at
                 the pre-build HEAD; ask the conductor). Never counted as a fail or a no-verdict
                 run, and it breaks a no-verdict run; a bare "inherited red" with no colon is no verdict.
+                The same lane red rule applies.
               newest verifier Verdict pass               -> done, except a Verdict pass beside a Criteria line that
                 is unmet-dependency or deferred (fail closed) -> reverify L<level of that verifier>
               fail whose ## For the next attempt starts "unmet-dependency:" or "deferred:" and every held
@@ -3305,6 +3310,36 @@ def batch_verified(step_dir):
     return None
 
 
+def lane_red(d, result):
+    """The reason for a 'lane red' action on an inherited-red result in records dir d whose build base is off the
+    lane's into branch (T-0766, GitHub #74): the base holds commits of this lane (an earlier step), so a red there is
+    the lane's, not main's. None, the inherited route kept, outside a lane (no .lane.json with into at the base-sha
+    checkout's toplevel), with no recorded base-sha, or when git cannot decide."""
+    with contextlib.suppress(OSError, UnicodeDecodeError, ValueError, AttributeError, TypeError,
+                             subprocess.SubprocessError):
+        own = owned('base-sha', d)
+        base = ((own / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
+        top = git_toplevel(own)
+        into = json.loads((pathlib.Path(top) / '.lane.json').read_text(encoding='utf-8')).get('into')
+        if not (base and into):
+            return None
+        g = ['git', '-C', top]
+        ref = f'refs/heads/{into}'
+        if subprocess.run(g + ['rev-parse', '--verify', '-q', ref], capture_output=True, stdin=subprocess.DEVNULL,
+                          timeout=30).returncode:
+            ref = into
+        r = subprocess.run(g + ['merge-base', '--is-ancestor', base, ref], capture_output=True,
+                           stdin=subprocess.DEVNULL, timeout=30)
+        if r.returncode != 1:
+            return None
+        fork = subprocess.run(g + ['merge-base', base, ref], capture_output=True, text=True,
+                              stdin=subprocess.DEVNULL, timeout=30).stdout.strip()
+        return (f'{os.path.basename(result)} reports inherited red, but its build base {base[:7]} is not on {into} '
+                f'(fork point {fork[:7] or "unknown"}): an earlier step of this lane made the gate red; back into '
+                'the task (replan), never fix main first, a fail, a bump, or a reverify')
+    return None
+
+
 def next_action(step_dir):
     """Return (action, level or None, reason, [result paths read]). Reads only; never file times.
     Ordering comes from order.py alone (ordered, newest, counts_after). A step dir on the task side reads its
@@ -3336,6 +3371,8 @@ def next_action(step_dir):
         return ('stop', None,
                 f'{runs} consecutive builder results with no Status (newest {name}); ask the user', read)
     if build_status_or_none(b) == 'inherited':
+        if why := lane_red(d, b):
+            return 'lane red', None, why, read
         return ('inherited', None,
                 f'{os.path.basename(b)} reports inherited red (gate already red at the pre-build HEAD); '
                 'ask the conductor, not a fail, rebuild, bump, or replan', read)
@@ -3400,6 +3437,8 @@ def next_action(step_dir):
                 f'{runs} consecutive verifier results with no verdict at build L{level} (newest {name}); ask the user',
                 read)
     if verdict_or_none(v) == 'inherited':
+        if why := lane_red(d, v):
+            return 'lane red', None, why, read
         return ('inherited', None,
                 f'{os.path.basename(v)} reports inherited red (gate already red at the pre-build HEAD); '
                 'ask the conductor, not a fail, rebuild, bump, or replan', read)
@@ -6148,6 +6187,36 @@ def selftest():
         check('next rebuild: an inherited verifier, rebuild, then a fail at L2 -> rebuild L2 (inherited not a fail)',
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', V_INHERITED),
                            ('builder-L2-2.md', DONE), ('verifier-L1-2.md', FAIL)]), 'rebuild L2'))
+        # T-0766 (GitHub #74): a lane whose earlier step committed the red; the build base holds that commit, which
+        # is not on the lane's into branch, so the red is the lane's own, not main's
+        lr = tmp / 'lane-red'
+        lg = ['git', '-C', str(lr), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        subprocess.run(['git', 'init', '-q', '-b', 'main', str(lr)], check=True, capture_output=True)
+        subprocess.run(lg + ['commit', '-q', '--allow-empty', '-m', 'main green'], check=True, capture_output=True)
+        fork = subprocess.run(lg + ['rev-parse', 'HEAD'], check=True, capture_output=True, text=True).stdout.strip()
+        subprocess.run(lg + ['checkout', '-q', '-b', 'lane/x'], check=True, capture_output=True)
+        subprocess.run(lg + ['commit', '-q', '--allow-empty', '-m', 'step 3 renames .mjs to .ts'], check=True,
+                       capture_output=True)
+        tip = subprocess.run(lg + ['rev-parse', 'HEAD'], check=True, capture_output=True, text=True).stdout.strip()
+        (lr / '.lane.json').write_text(json.dumps({'lane': 'x', 'kind': 'chain', 'branch': 'lane/x', 'into': 'main'}),
+                                       encoding='utf-8')
+        lsd = lr / 'sdlc' / 'step-5'
+        lsd.mkdir(parents=True)
+        (lsd / 'handoff.md').write_text('## Task goal\ng\n\n## Step 5: x\nlevel: L2\n', encoding='utf-8')
+        (lsd / 'builder-L2.md').write_text(hdr('builder-L2.md', INHERITED), encoding='utf-8')
+        (lsd / 'runs.jsonl').write_text('{"file": "builder-L2.md"}\n', encoding='utf-8')
+        (lsd / 'base-sha').write_text(tip + '\n', encoding='utf-8')
+        check('next lane red (T-0766): inherited red on a base an earlier lane step committed, off into -> lane red',
+              nxt(lsd, 'lane red'))
+        (lsd / 'base-sha').write_text(fork + '\n', encoding='utf-8')
+        check('next lane red (T-0766) control: inherited red on a base that is on into -> inherited',
+              nxt(lsd, 'inherited'))
+        (lsd / 'base-sha').write_text(tip + '\n', encoding='utf-8')
+        (lsd / 'builder-L2.md').write_text(hdr('builder-L2.md', DONE), encoding='utf-8')
+        (lsd / 'verifier-L1.md').write_text(hdr('verifier-L1.md', V_INHERITED), encoding='utf-8')
+        (lsd / 'runs.jsonl').write_text('{"file": "builder-L2.md"}\n{"file": "verifier-L1.md"}\n', encoding='utf-8')
+        check('next lane red (T-0766): a verifier inherited red on a base off into -> lane red',
+              nxt(lsd, 'lane red'))
         check('next rebuild: a fail verifier still -> rebuild L2',
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)]), 'rebuild L2'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order
