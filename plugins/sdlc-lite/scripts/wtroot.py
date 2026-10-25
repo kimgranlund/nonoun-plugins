@@ -327,7 +327,7 @@ OWNERS = {
     'router': (('integration', 'primary'), 'tickets.record_branch and tickets.py close (regenerated where they write)',
                'roles reading .sdlc/AGENTS.md', 'as branch'),
     'ticket-close': (('integration', 'primary'), 'fanout.py land (tickets.py close on the integration branch)',
-                     'lanes.py finish step 6 closes in primary when land did not',
+                     'lanes.py finish step 6 closes in primary when land did not; lanes.py close reads the status for ticket still open here (T-0769)',
                      '#59: the closed folder lands on integration while the lane keeps an open copy'),
     'lane-close': (('primary',), 'lanes.py close_lane run from primary (archive ref, carried records, `lane closed` commit)',
                    'lanes.py finish, archive list and restore',

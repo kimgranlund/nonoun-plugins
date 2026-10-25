@@ -51,7 +51,8 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   Claim rule (8.1): a T-<digits> id is local when --root exists: open refuses `ticket <id> not claimed: set
   claimed_by: first` or `no ticket <id>`. Any other id prints `claim <id> in its tracker (assignee) before work; not
   checked here`. After a close by row 9, row 10 or pr merged, close prints `ticket still open: <id>` for each local
-  ticket of the record whose status is neither done nor dropped.
+  ticket of the record whose status is neither done nor dropped, read in the tree owning ticket-close (wtroot.owner_tree:
+  the integration tree holding the lane's into branch, else main; main for a ticket that tree lacks, T-0769).
 
   Ticket branch (T-0530): the CLI open writes `branch: <lane branch>` after each local ticket's `claimed_by:` (through
   tickets.record_branch, which regenerates the roadmap and router) and prints `ticket <id>: branch: <b>`; with it goes
@@ -940,6 +941,7 @@ def do_close(ctx, d, outcome, info, dry):
     carried = []
     # T-0752: the tree that owns the branch: and worktree: lines, read while the lane record still exists
     owner = wtroot.owner_tree('branch', None, d['path']) if d['exists'] else None
+    closer = wtroot.owner_tree('ticket-close', None, d['path']) if d['exists'] else None  # T-0769, read at the end
     if d['exists']:
         if how != 'discarded':  # a discarded lane's verdict must not close the ticket in main
             try:
@@ -983,11 +985,22 @@ def do_close(ctx, d, outcome, info, dry):
     if pl:
         lines.append(pl)
     if how != 'discarded':
-        metas = local_tickets(top)
+        metas = local_tickets(close_tree(ctx, closer, into))
+        metas += [(p, m) for p, m in local_tickets(top) if m.get('id') not in {x.get('id') for _, x in metas}]  # not in that tree
         for t in d['tickets']:
             if LOCAL_ID.fullmatch(str(t)) and any(m.get('id') == t and m.get('status') not in ('done', 'dropped') for _, m in metas):
                 lines.append(f'ticket still open: {t}')
     return result(0, '\n'.join(lines), lane=name, path=d['path'], branch=b, archive=ref, row=how)
+
+
+def close_tree(ctx, closer, into):
+    """T-0769 (#77): the tree `ticket still open` reads ticket status in: the one owning ticket-close (wtroot.owner_tree,
+    resolved before the lane tree is removed), since fanout.py land closes the ticket on the integration branch and main
+    still reads it open. A lane whose tree is already gone has no record for the helper to read, so closer None takes the
+    worktree holding into; no such tree with a .sdlc takes the main checkout."""
+    into = short_branch(into)
+    wt = closer if closer is not None else next((Path(w['path']) for w in worktrees(ctx.top) if into and w['branch'] == into), None)
+    return wt if wt is not None and (wt / '.sdlc').is_dir() else ctx.top
 
 
 def clear_integration_record(ctx, d, into, owner=None):
@@ -3117,6 +3130,32 @@ def case_close_integration_record(script, base):
     return fails
 
 
+def case_close_done_in_integration(script, base):
+    """T-0769 (#77): a ticket closed on the integration branch (status done there, still claimed in main) is not
+    reported `ticket still open` by the close that lands its lane; a ticket still open in the integration tree is."""
+    t = Fixture(base, script, 'closedone')
+    h, h2 = '.sdlc/0001-one/handoff.md', '.sdlc/0002-two/handoff.md'
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n', h: ticket_file('T-0001', claimed=True),
+                             h2: ticket_file('T-0002', claimed=True)})
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    leaf, tree, b = t.open('one', 'T-0001', '--kind', 'solo', '--into', ib)
+    leaf2, tree2, b2 = t.open('two', 'T-0002', '--kind', 'solo', '--into', ib)
+    for tr, br in ((tree, b), (tree2, b2)):
+        t.work(tr)
+        t.g('merge', '--no-ff', '-q', '-m', f'merge {br}', f'refs/heads/{br}', cwd=integ)
+    t.commit('close T-0001', {h: (integ / h).read_text().replace('status: claimed', 'status: done')}, cwd=integ)
+    if 'status: claimed' not in (t.top / h).read_text():
+        return ['close done in integration: main already reads the ticket as done']
+    fails = []
+    rc, o = t.lanes('close', leaf)
+    if rc or 'ticket still open: T-0001' in o.splitlines():
+        fails.append(f'close done in integration: T-0001 is done in {ib} but close reported it open: {rc}: {o}')
+    rc, o = t.lanes('close', leaf2)
+    if rc or 'ticket still open: T-0002' not in o.splitlines():
+        fails.append(f'close done in integration: T-0002 is open in {ib} but close did not say so: {rc}: {o}')
+    return fails
+
+
 def case_open_upstream(script, base):
     """T-0609: in a main that tracks an upstream (a repo landing by PR), open commits nothing on main and leaves it
     clean, so main stays fast-forwardable to origin."""
@@ -3944,6 +3983,8 @@ def run_selftest(script, src, base):
              'open --into an integration tree waits for the merge.lock land holds before it commits the record (T-0725)')
         need('close integration record', case_close_integration_record(script, base),
              'close clears branch: and worktree: in the integration tree that holds the record and commits it there (T-0695)')
+        need('close done in integration', case_close_done_in_integration(script, base),
+             'a ticket done on the integration branch is not reported still open after its lane closes; one open there is (T-0769)')
         need('open upstream', case_open_upstream(script, base),
              'a main tracking an upstream gets no record commit and stays clean and level with origin (T-0609)')
         need('open local finish', case_open_local_finish(script, base),

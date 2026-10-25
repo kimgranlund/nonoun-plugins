@@ -182,7 +182,7 @@ The tools span three checkouts: primary (the main checkout), integration (the wo
 | `worktree` (ticket `worktree:` line) | integration, primary | `lanes.py open`, beside `branch:` | `lanes.py` close (cleared with `branch:`) | as `branch` |
 | `roadmap` | integration, primary | `tickets.record_branch` and `tickets.py close`, regenerated where they write | `fanout.merge_generated` resolves its merge conflicts | as `branch` |
 | `router` | integration, primary | `tickets.record_branch` and `tickets.py close`, regenerated where they write | roles reading `.sdlc/AGENTS.md` | as `branch` |
-| `ticket-close` (status done, closed folder) | integration, primary | `fanout.py land` (`tickets.py close` on the integration branch) | `lanes.py finish` step 6 closes in primary when land did not | #59: the closed folder lands on integration while the lane keeps an open copy |
+| `ticket-close` (status done, closed folder) | integration, primary | `fanout.py land` (`tickets.py close` on the integration branch) | `lanes.py finish` step 6 closes in primary when land did not; `lanes.py` close reads the status for `ticket still open` in this tree (T-0769, #77), main for a ticket that tree lacks | #59: the closed folder lands on integration while the lane keeps an open copy |
 | `lane-close` (archive ref, carried records, `lane closed` commit) | primary | `lanes.py` `close_lane`, run from primary | `lanes.py finish`, `archive list` and `restore` | #46/#57: close commits in primary while land merges into integration; only the `branch:` clear goes to integration (T-0695) |
 
 ## `scripts/fanout.py`

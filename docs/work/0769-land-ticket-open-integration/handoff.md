@@ -36,3 +36,6 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `lanes.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Reproduced on main (ff181d81): the new `lanes.py` selftest case `close done in integration` failed with `FAIL: close done in integration: close done in integration: T-0001 is done in wave/1 but close reported it open: 0: closed T-0001-one (ancestor) ... ticket still open: T-0001` before the fix (that run is the reverted state: the case was added first, the code unchanged). `do_close` now resolves `wtroot.owner_tree('ticket-close', None, <lane path>)` before the lane tree is removed and reads status through `close_tree` (the integration tree holding `into`, else main; main for a ticket that tree lacks). Docs: the lanes.py header, the `ticket-close` row of `docs/references/sdlc-internals.md` and `wtroot.OWNERS`. Checks: lanes.py selftest exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `wtroot.py owner-selftest` ok.
