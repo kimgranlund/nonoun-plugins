@@ -2,7 +2,7 @@
 id: T-0733
 title: "dispatch.py wait blocks until a role result lands"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,13 @@ The failing test lands before or with the fix, never after.
 - Negative control (non-test hunks reverted): `FAIL: wait: a running attempt with no result times out with exit 1 and a wait: timeout line`, plus the three other wait cases FAIL; `dispatch selftest: FAIL`, exit 1.
 - `agents/conductor.md` "How you run roles": start `dispatch.py wait` in the background after an interactive spawn; Claude and Codex agents regenerated (`sdlc-conductor-l1.toml`).
 - Checks: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 66f650ed` exit 0.
+
+## Outcome
+
+2026-10-25 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 66f650ede6c6
+- Changed: see commits
+- Commits: 34a28f8 T-0733: dispatch.py wait blocks until a role result lands
+- Check: 1 A dispatch.py selftest case reproduces the issue's repro and passes; with the change reverted it ...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py ...: pass
+- Check: 3 `check.py` exits 0, `check-packaging.py` passes, `git diff --check <base sha>` exits 0: pass
+- Follow-up: note: conductor check done -> notes.md
