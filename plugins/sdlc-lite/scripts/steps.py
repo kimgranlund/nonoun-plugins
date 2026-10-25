@@ -357,9 +357,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
                 But lane red (T-0766) when the step's recorded base-sha is not an ancestor of
-                the into branch named by the .lane.json at the base-sha checkout's toplevel:
-                an earlier step of the lane committed the red, so the conductor replans; no
-                lane record, no base-sha, or a git error keeps inherited.
+                the into branch named by the lane record of the base-sha checkout's toplevel
+                (its .lane.json or host record, wtroot.lane_record) and no merge between the
+                fork point and the base has a parent on into: an earlier step of the lane
+                committed the red, so the conductor replans; such a resync merge, no lane
+                record, no base-sha, or a git error keeps inherited.
               newest builder Status blocked              -> replan, except Notes whose
                 first line starts "stale lane:" (missing merged prerequisites, not a plan defect) -> resplit:
                 rebase the lane, move the step dir to step-<n>.superseded-<k>, steps.py split --only <n>;
@@ -3313,14 +3315,17 @@ def batch_verified(step_dir):
 def lane_red(d, result):
     """The reason for a 'lane red' action on an inherited-red result in records dir d whose build base is off the
     lane's into branch (T-0766, GitHub #74): the base holds commits of this lane (an earlier step), so a red there is
-    the lane's, not main's. None, the inherited route kept, outside a lane (no .lane.json with into at the base-sha
-    checkout's toplevel), with no recorded base-sha, or when git cannot decide."""
-    with contextlib.suppress(OSError, UnicodeDecodeError, ValueError, AttributeError, TypeError,
+    the lane's, not main's. None, the inherited route kept, when a merge between the fork point and the base has a
+    parent on into (a resync that may have brought the red), outside a lane (no lane record with into for the base-sha
+    checkout's toplevel: its .lane.json or its host record, wtroot.lane_record), with no recorded base-sha, or when
+    git cannot decide."""
+    with contextlib.suppress(OSError, UnicodeDecodeError, ValueError, AttributeError, TypeError, ImportError,
                              subprocess.SubprocessError):
         own = owned('base-sha', d)
         base = ((own / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
         top = git_toplevel(own)
-        into = json.loads((pathlib.Path(top) / '.lane.json').read_text(encoding='utf-8')).get('into')
+        import wtroot  # local, as in _ticket_top
+        into = wtroot.lane_record(top, top).get('into')
         if not (base and into):
             return None
         g = ['git', '-C', top]
@@ -3334,6 +3339,14 @@ def lane_red(d, result):
             return None
         fork = subprocess.run(g + ['merge-base', base, ref], capture_output=True, text=True,
                               stdin=subprocess.DEVNULL, timeout=30).stdout.strip()
+        # a merge between the fork point and the base that brought into in (a resync) may have brought the red too
+        merges = subprocess.run(g + ['rev-list', '--merges', '--parents', f'{fork}..{base}' if fork else base],
+                                capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+        if merges.returncode or any(
+                subprocess.run(g + ['merge-base', '--is-ancestor', parent, ref], capture_output=True,
+                               stdin=subprocess.DEVNULL, timeout=30).returncode == 0
+                for line in merges.stdout.splitlines() for parent in line.split()[1:]):
+            return None
         return (f'{os.path.basename(result)} reports inherited red, but its build base {base[:7]} is not on {into} '
                 f'(fork point {fork[:7] or "unknown"}): an earlier step of this lane made the gate red; back into '
                 'the task (replan), never fix main first, a fail, a bump, or a reverify')
@@ -6217,6 +6230,27 @@ def selftest():
         (lsd / 'runs.jsonl').write_text('{"file": "builder-L2.md"}\n{"file": "verifier-L1.md"}\n', encoding='utf-8')
         check('next lane red (T-0766): a verifier inherited red on a base off into -> lane red',
               nxt(lsd, 'lane red'))
+        (lsd / 'verifier-L1.md').unlink()
+        (lsd / 'builder-L2.md').write_text(hdr('builder-L2.md', INHERITED), encoding='utf-8')
+        (lsd / 'runs.jsonl').write_text('{"file": "builder-L2.md"}\n', encoding='utf-8')
+        # a host lane keeps its record under the lanes root (host/<leaf>.lane.json), not at its toplevel
+        import wtroot
+        (lr / '.lane.json').unlink()
+        host = wtroot.host_dirs(str(lr))[0]
+        host.mkdir(parents=True, exist_ok=True)
+        (host / f'{lr.name}.lane.json').write_text(json.dumps({'lane': lr.name, 'kind': 'host', 'into': 'main'}),
+                                                   encoding='utf-8')
+        check('next lane red (T-0766): a host lane record on a lane-committed base -> lane red',
+              nxt(lsd, 'lane red'))
+        # a resync merge of a red into branch: the red may come from into, so it stays inherited
+        subprocess.run(lg + ['checkout', '-q', 'main'], check=True, capture_output=True)
+        subprocess.run(lg + ['commit', '-q', '--allow-empty', '-m', 'main red'], check=True, capture_output=True)
+        subprocess.run(lg + ['checkout', '-q', 'lane/x'], check=True, capture_output=True)
+        subprocess.run(lg + ['merge', '-q', '--no-ff', '--no-edit', 'main'], check=True, capture_output=True)
+        resync = subprocess.run(lg + ['rev-parse', 'HEAD'], check=True, capture_output=True, text=True).stdout.strip()
+        (lsd / 'base-sha').write_text(resync + '\n', encoding='utf-8')
+        check('next lane red (T-0766): a base that is a resync merge of a red into branch -> inherited',
+              nxt(lsd, 'inherited'))
         check('next rebuild: a fail verifier still -> rebuild L2',
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)]), 'rebuild L2'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order

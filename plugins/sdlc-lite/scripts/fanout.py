@@ -288,7 +288,9 @@ run
        `inherited red: <tests>`, a gate already red at the pre-build HEAD) the outcome is
        `inherited red: step-<n>: <tests>`, the tests read from the verifier's Verdict line when
        the verifier reported the inherited red, else from the builder result's Status line. No lane commit, merge, or close; as for any stop,
-       the lane tree is WIP-committed on the lane branch and kept there for inspection.
+       the lane tree is WIP-committed on the lane branch and kept there for inspection. A step printing `lane red`
+       (an earlier step of the lane committed the red, T-0766) is not this outcome: the lane's /chain replans, and a
+       gate still red stops the lane at the merge gate.
     4. commit in the lane: `git add -A` minus run artifacts (*.log, .run.lock, *.running; LANE_ADD), `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
     5. first, outside the lock, the overlap wait: lanes rank by their position in the spec list,
