@@ -528,3 +528,8 @@
 ## T-0763: dispatch status and steps next from main see a host lane's records (2026-10-24)
 
 - note: the case 30b selftest assertion was not seen red with the guard removed through the full fanout selftest (about 9 minutes per run); the guard-removed behavior was observed directly with the probe above (base moves, false line prints), which is the same condition the assertion checks.
+
+## T-0758: The land command prep prints names the branch the host actually made (2026-10-24)
+
+- note: plugins/sdlc-lite/scripts/fanout.py:2615 prints `landing the host branch <b>` for `roll` too (observed in the R2 roll probe), where the action is a roll onto main, not a land.
+- note: the probe's fanout/h holds two `T-0001: Ticket t1` commits. One is the host branch's own commit. The other is land committing the report the probe left uncommitted in the host tree (T-0740 behavior), so it is expected and not a T-0758 defect.
