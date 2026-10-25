@@ -30,3 +30,9 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the observation and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Cause: `fanout.py land` reports every ticket in the lanes dir's land journal, so a lane landed earlier whose host worktree was removed still got a table row, a Lane line and an Overlap pair.
+- Fix: `lanes.landed_and_gone` (the T-0762 HOST-GONE test, now one helper that `lanes.evaluate` also uses) and `cmd_land` skips a prior journal entry whose recorded worktree is gone and whose branch is an ancestor of the integration branch. Docs: fanout.py land section, lanes.py API line; the HOST-GONE mutant needle follows the renamed line.
+- Red first: case 23 "land gone lane (T-0777)" failed before the fix with `FAIL: case 23 land gone lane (T-0777): landed branches whose worktrees are gone are not listed and are no overlap, got rc=0 ... - Overlap: `agent-g1` and `agent-g2`: `shared.txt``; its control (worktrees still standing, rows and overlap kept) passed both before and after.
+- Checks: `fanout.py selftest` via gate_lock exit 0 (PASS), `lanes.py selftest` exit 0 (HOST-GONE mutant ok), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check aec100f3` exit 0.
