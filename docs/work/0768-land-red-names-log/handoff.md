@@ -36,3 +36,10 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Reproduced on main (baac64db): the gate red path in `merge_gate_close` returned `red: {gate} rc={rc}` with `glog` in scope. Fixed in `plugins/sdlc-lite/scripts/fanout.py`: the line is now `red: <gate, whitespace collapsed> rc=<n> (log <glog>): <last failure line>` (new `gate_fail_line`: last log line matching FAIL, Error, error:, not ok, or a non-zero exit/rc; log path alone when none), still one line. `references/land.md` and the fanout docstring describe it.
+
+- Tests: case 23 gained two land cases (a gate printing `FAIL  project checks (npm run check:standards)` before failing; a gate with no failing line), and the two existing exact-match `red: false rc=1` assertions (external red gate) became prefix matches.
+- Negative control: in a scratch copy of the plugin with the one `return` reverted, `fanout.py selftest` fails with `case 23 land (T-0768): a red land names the gate log and the failing line, got 'red: echo "FAIL project checks (npm run check:standards)"; echo "tail noise"; false rc=1'`.
+- Checks: `fanout.py selftest` via gate_lock exit 0 (PASS), `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check baac64db` exit 0.
