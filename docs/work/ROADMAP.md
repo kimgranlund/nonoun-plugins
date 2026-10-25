@@ -9,16 +9,16 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0765 | [0765-amend-red-to-guard](0765-amend-red-to-guard/handoff.md) | steps.py amend and swap can retag a red-at-base criterion to guard | bug | L2 | P2 | none | 🔵 ready |
-| T-0766 | [0766-inherited-red-lane-step](0766-inherited-red-lane-step/handoff.md) | An inherited red from an earlier step of the same lane routes back into the task | bug | L2 | P2 | none | 🔵 ready |
+| T-0766 | [0766-inherited-red-lane-step](0766-inherited-red-lane-step/handoff.md) | An inherited red from an earlier step of the same lane routes back into the task | bug | L2 | P2 | none | 🟡 claimed |
 | T-0767 | [0767-close-rewrites-outside-paths](0767-close-rewrites-outside-paths/handoff.md) | tickets.py close keeps no absolute path outside the repo | bug | L1 | P2 | none | 🔵 ready |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🔵 ready |
 | T-0769 | [0769-land-ticket-open-integration](0769-land-ticket-open-integration/handoff.md) | land reads the ticket status where it closed it | bug | L1 | P2 | none | 🔵 ready |
 | T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🔵 ready |
-| T-0771 | [0771-board-closed-full-lane](0771-board-closed-full-lane/handoff.md) | board.py renders a done ticket as closed and lets a later verifier pass win | bug | L2 | P2 | none | 🔵 ready |
+| T-0771 | [0771-board-closed-full-lane](0771-board-closed-full-lane/handoff.md) | board.py renders a done ticket as closed and lets a later verifier pass win | bug | L2 | P2 | none | 🟡 claimed |
 | T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🔵 ready |
 | T-0773 | [0773-lane-exclude-node-modules](0773-lane-exclude-node-modules/handoff.md) | Lane commits never add a node_modules symlink; open warns when lane_setup is unset | bug | L1 | P2 | none | 🔵 ready |
-| T-0774 | [0774-record-stdin-last](0774-record-stdin-last/handoff.md) | dispatch.py record tries the transcript before stdin and never blocks | bug | L1 | P2 | none | 🔵 ready |
-| T-0775 | [0775-land-runs-jsonl-merge](0775-land-runs-jsonl-merge/handoff.md) | land merges a lane runs.jsonl into the primary one instead of overwriting it | bug | L2 | P2 | none | 🔵 ready |
+| T-0774 | [0774-record-stdin-last](0774-record-stdin-last/handoff.md) | dispatch.py record tries the transcript before stdin and never blocks | bug | L1 | P2 | none | 🟡 claimed |
+| T-0775 | [0775-land-runs-jsonl-merge](0775-land-runs-jsonl-merge/handoff.md) | land merges a lane runs.jsonl into the primary one instead of overwriting it | bug | L2 | P2 | none | 🟡 claimed |
 | T-0776 | [0776-steps-next-solo-task](0776-steps-next-solo-task/handoff.md) | steps.py next works on a solo ticket task folder | bug | L1 | P2 | none | 🔵 ready |
 | T-0777 | [0777-land-overlap-removed-lane](0777-land-overlap-removed-lane/handoff.md) | land overlap ignores lanes already landed and removed | bug | L1 | P2 | none | 🔵 ready |
 | T-0778 | [0778-settle-host-next-steps](0778-settle-host-next-steps/handoff.md) | settle names the push and the leftover host branches | bug | L1 | P2 | none | 🔵 ready |
