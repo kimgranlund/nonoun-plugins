@@ -36,3 +36,7 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `tickets.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+
+Reproduced on main: close copied a sibling-workspace and a home-directory path into notes.md verbatim and never looked at the closed handoff. `relative_paths` now also writes any path under the home directory or the repo's parent directory as `../<sibling>/...` (`_outside_paths`, relative to the main checkout), keeping the in-repo and lanes-root rewrites; `path_bases` returns that reference as a third element and fanout's use is unchanged. close prints the `absolute path in a tracked work record` warning for each line of the handoff it just closed that still holds one. Selftest cases `(T-0767)` fixtures use temp dirs and a temp HOME. Negative control with both changes reverted: both new cases fail (`FAIL, these did not bite: (T-0767) close writes a sibling workspace ...` and `(T-0767) close warns on an absolute path left in the closed handoff`). `tickets.py selftest`, `fanout.py selftest`, `check.py`, `check-packaging.py` exit 0; `git diff --check` clean.

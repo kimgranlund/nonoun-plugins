@@ -185,8 +185,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             Inside git it prints `warning: <file>:<line>: absolute path in a tracked work record` (exit stays 0,
             at most 5 lines, then `<N> more`) for each line holding /Users/, /home/, /var/folders/ or /private/tmp/
             in a tracked notes.md, open ticket handoff.md or <root>/gate-ledger.jsonl; closed handoffs are not
-            scanned. close writes every path under the repo as repo-relative and under the lanes root as
-            `<lane>:<rest>` in notes.md and ## Outcome (T-0662)
+            scanned afterwards. close writes every path under the repo as repo-relative and under the lanes root as
+            `<lane>:<rest>` in notes.md and ## Outcome (T-0662), and a path in the home directory or the repo's
+            parent directory (a sibling workspace) as `../<sibling>/...`; it prints the same warning for each line
+            of the handoff it just closed that still holds an absolute path (T-0767)
             It prints `warning: plugin_min: ...` (exit stays 0) when a `plugin_min:` line in <root>/config is
             above the running plugin's manifest version, or malformed (scripts/plugin_min.py, T-0593)
             Last, it fails each done ticket whose skips.md records lane solo, lean, fix, or full (the last
@@ -1876,6 +1878,17 @@ def abs_path_warnings(root, ts):
     return out
 
 
+def closed_abs_paths(label, text):
+    """T-0767: `warning: <label>:<line>: absolute path in a tracked work record` per line of the handoff text close
+    just wrote that holds ABS_PATH_RE (abs_path_warnings never scans a closed handoff afterwards); at most
+    PLACEHOLDER_SHOWN lines, then one count line."""
+    out = [f'warning: {label}:{i}: absolute path in a tracked work record'
+           for i, ln in enumerate(text.splitlines(), 1) if ABS_PATH_RE.search(ln)]
+    if len(out) > PLACEHOLDER_SHOWN:
+        out[PLACEHOLDER_SHOWN:] = [f'warning: {len(out) - PLACEHOLDER_SHOWN} more absolute paths in {label}']
+    return out
+
+
 def successor_lines(root, ts):
     """T-0528: for each open ticket with `successor:`, the ready-to-run close line when the local successor is
     done, or a note naming a successor in another repository, which is never resolved."""
@@ -3335,26 +3348,34 @@ def path_spellings(xs):
 
 
 def path_bases(root):
-    """(tops, lanes) for relative_paths: the git toplevel of root and its main checkout, and the lanes root
-    (wtroot.root), each in every path_spellings form. Empty lanes outside git."""
+    """(tops, lanes, ref) for relative_paths: the git toplevel of root and its main checkout, and the lanes root
+    (wtroot.root), each in every path_spellings form (empty lanes outside git), and the main checkout (else the
+    toplevel) that a path outside the repo is written relative to (T-0767)."""
     import wtroot  # same scripts/ dir
     top = file_base(root)
     tops = [top, wtroot.main_top(top)]
-    return path_spellings(tops), path_spellings([wtroot.root(top)] if tops[1] else [])
+    return path_spellings(tops), path_spellings([wtroot.root(top)] if tops[1] else []), str(tops[1] or top)
 
 
 def relative_paths(text, root=None, bases=None, extra_lanes=()):
     """T-0662: text with every absolute path under the repo toplevel (or its main checkout) made repo-relative and
     every one under the lanes root (path_bases, plus extra_lanes) written `<lane>:<rest>`, the longest prefix first.
-    Text with no such path comes back unchanged."""
+    T-0767: a path left in the home directory or in the repo's parent directory (a sibling workspace) is written
+    relative to the repo (`../<sibling>/...`). Text with no such path comes back unchanged."""
     if not text or '/' not in text:
         return text
-    tops, lanes = bases if bases is not None else path_bases(root)
+    tops, lanes, *rest = bases if bases is not None else path_bases(root)
     lanes = lanes + path_spellings(extra_lanes)
     keys = sorted([(t.rstrip('/') + '/', False) for t in tops] + [(x.rstrip('/') + '/', True) for x in lanes],
                   key=lambda k: len(k[0]), reverse=True)
     if not keys:
         return text
+    out = _inside_paths(text, keys)
+    return _outside_paths(out, rest[0]) if rest and rest[0] else out
+
+
+def _inside_paths(text, keys):
+    """relative_paths for the paths under the repo and the lanes root (keys: (prefix/, is_lane))."""
     lane_of = {k: is_lane for k, is_lane in keys}
     pat = re.compile('(' + '|'.join(re.escape(k) for k, _ in keys) + r')([^/\s:`\'")\]]+/?)?')
 
@@ -3363,6 +3384,23 @@ def relative_paths(text, root=None, bases=None, extra_lanes=()):
         if not lane_of[m.group(1)]:
             return rest
         return rest[:-1] + ':' if rest.endswith('/') else rest
+    return pat.sub(sub, text)
+
+
+def _outside_paths(text, ref):
+    """T-0767: text with every path under the home directory or under ref's parent directory written relative to
+    ref (`../<sibling>/...`), the longest prefix first; the home directory itself and `/` are left alone."""
+    dirs = [os.path.expanduser('~'), os.path.dirname(ref.rstrip('/'))]
+    spellings = path_spellings([d for d in dirs if os.path.isabs(d) and d.rstrip('/')])
+    if not spellings:
+        return text
+    pat = re.compile(r"(?<![\w/.~-])(" + '|'.join(re.escape(x.rstrip('/')) for x in spellings)
+                     + r")(/[^\s:`'\")\]]*)")
+    ref_real = os.path.realpath(ref)
+
+    def sub(m):
+        got = os.path.relpath(os.path.realpath(m.group(1)), ref_real)
+        return got + m.group(2)
     return pat.sub(sub, text)
 
 
@@ -3903,6 +3941,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     acked = warnings.splitlines() if ack_warnings is not None and warnings else []
     body += outcome(verdict, follow_lines, acked)
     h.write_bytes((head + body).encode('utf-8'))
+    stray = closed_abs_paths(f'{h.parent.name}/handoff.md', head + body)  # T-0767
     ref_drop(root, CLAIM_REFS + pid)  # T-0588: a done ticket holds no claim
     move_skips(d)
     moved = move_records(d)  # T-0669: run records leave the ticket folder; an undotted leftover empties and goes
@@ -3929,7 +3968,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if ack_warnings is not None:
         out += f'; warnings acknowledged: {ack_warnings.strip()}'
     out += ''.join('; ' + x for x in deferred)
-    return out + rewrote + cite_note + lane_report(root, pid) + ''.join('\n' + m for m in moved)
+    return out + rewrote + cite_note + lane_report(root, pid) + ''.join('\n' + m for m in moved + stray)
 
 
 OUTCOME_DATE_RE = re.compile(r'^(\d{4}-\d{2}-\d{2}) · lane:', re.M)
@@ -8128,6 +8167,34 @@ def selftest():
                        f'{"holding /Users/x/repo/a.py" if want else "with no absolute path"}: rc={rc} {out!r} {err!r}',
                        rc == 0 and ('absolute path in a tracked work record' in out) == want
                        and (not want or '.sdlc/notes.md:3: absolute path' in out))
+        if have_git:  # (T-0767) a sibling workspace or a home-directory path outside the repo is written relative to it
+            wtop = pathlib.Path(tmp) / 'oc-ws'
+            wsib = wtop.parent / 'oc-ws-sib'
+            with tempfile.TemporaryDirectory() as fake_home:
+                hsib = pathlib.Path(fake_home) / 'Projects' / 'other' / 'lib'
+                old_home = os.environ.get('HOME')
+                os.environ['HOME'] = fake_home
+                try:
+                    r, d = oc_root('ws', git=True, note=f'- note: see {wsib}/src/c.py:5\n- note: see {hsib}/d.py:7')
+                    hand = d / 'handoff.md' if (d / 'handoff.md').is_file() else d.parent / ('.' + d.name) / 'handoff.md'
+                    hand.write_text(hand.read_text(encoding='utf-8') + '\nSee /Users/x/repo/a.py\n', encoding='utf-8')
+                    rc, out, err = run(r, 'close', ('tk',), filer=False)
+                    notes_t = layout_paths(r).notes.read_text(encoding='utf-8') if layout_paths(r).notes.is_file() else ''
+                    otext = handoff(d).partition('\n## Outcome\n')[2]
+                    want = (f'../oc-ws-sib/src/c.py:5', os.path.relpath(os.path.realpath(hsib), os.path.realpath(wtop)) + '/d.py:7')
+                finally:
+                    if old_home is None:
+                        os.environ.pop('HOME', None)
+                    else:
+                        os.environ['HOME'] = old_home
+            expect(f'(T-0767) close writes a sibling workspace and a home-directory path relative to the repo into '
+                   f'NOTES.md, and no absolute prefix reaches NOTES.md or the Outcome: rc={rc} {err!r} want={want!r} notes={notes_t!r} '
+                   f'outcome={otext!r}',
+                   rc == 0 and all(w in notes_t for w in want)
+                   and all(str(a) not in x and os.path.realpath(a) not in x
+                           for x in (notes_t, otext) for a in (wsib, hsib)))
+            expect(f'(T-0767) close warns on an absolute path left in the closed handoff: {out!r}',
+                   'absolute path in a tracked work record' in out and '/handoff.md:' in out)
         # (T-0543 outcome) a close over a passing verifier appends ## Outcome: lane, verdict, Check and Commits lines
         r, d = oc_root('outcome', git=have_git)
         if have_git:
