@@ -3308,8 +3308,11 @@ def solo_report(d, ticket):
     import dispatch
 
     def solo_recs(r):
-        return [(f.stat().st_mtime, f.name, j) for f in pathlib.Path(r).glob('*.dispatch.json')
-                if (j := dispatch.solo_dispatch(f)) is not None]
+        # T-0786: order.py's newest rule, never mtime: a record whose attempt_id has a runs.jsonl row ranks by that
+        # row's line, after the unrecorded ones, which rank by name
+        rows = {str(rec.get('attempt_id')): i for i, rec in order.records(r) if rec.get('attempt_id')}
+        return [((1, rows[a]) if (a := str(j.get('attempt_id'))) in rows else (0, -1, f.name), f.name, j)
+                for f in pathlib.Path(r).glob('*.dispatch.json') if (j := dispatch.solo_dispatch(f)) is not None]
     recs, homes = solo_recs(d), [pathlib.Path(d)]
     # T-0785: before land a host lane twin holds the report and verifier, while dispatch.py record wrote the solo
     # dispatch record in the main checkout's records dir; read it at the same place in the ticket's other checkouts
@@ -7236,6 +7239,19 @@ def selftest():
                   and os.path.realpath(records_of(pathlib.Path('.sdlc/add-div'))) == os.path.realpath(htw))
         finally:
             os.chdir(here)
+        # T-0786: two solo dispatch records with mtimes reversed against their runs.jsonl order (and names too): the newest
+        # is the one whose solo row comes later in runs.jsonl (order.py's rule), here the L2 one, never the newer mtime
+        nrd = tmp / 'solo-newest-t0786'
+        nrd.mkdir()
+        for fname, aid, tier, at in (('b-solo.dispatch.json', 'x' * 32, 'L1', 2000000000), ('a-solo.dispatch.json', 'y' * 32, 'L2', 1000000000)):
+            (nrd / fname).write_text(json.dumps({'name': fname[:-14], 'role': 'solo', 'tier': tier, 'level': tier, 'attempt_id': aid,
+                                                 'artifacts_dir': str(nrd), 'verifier': None if tier == 'L1' else 'v'}), encoding='utf-8')
+            os.utime(nrd / fname, (at, at))
+        (nrd / 'runs.jsonl').write_text('{"role": "solo", "attempt_id": "%s"}\n{"role": "solo", "attempt_id": "%s"}\n' % ('x' * 32, 'y' * 32),
+                                        encoding='utf-8')
+        got = solo_report(nrd, 'T-0003')
+        check('solo report newest dispatch (T-0786): two records with mtimes reversed against runs.jsonl order -> the later '
+              'runs.jsonl row (L2, verifier) wins, got %r' % (got,), got[1:] == (2, True))
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
         swap_refused('(c) newest verifier a pass', s_step(pair + [('verifier-L1.md', PASS)]), 'no fail verdict')
