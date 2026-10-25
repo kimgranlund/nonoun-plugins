@@ -559,3 +559,8 @@
 
 - note: plugins/sdlc-lite/scripts/steps.py:3396 the build_status -> build_status_or_none swap cannot hide a real blocked build: b's status is non-None at that line (the None case returns at steps.py:3373), and build_status (steps.py:3177) returns the same value for done/blocked and only raised for inherited, which is the path this ticket now lets through. Confirmed by a 75-sequence matrix comparing steps.next_action with board.step_row over builder {done, blocked, inherited} x verifier {pass, fail, inherited red, no verdict} in orders B, B>V, done>V>B, B>V>V: 0 category mismatches at a0c4f56b (the one textual diff is `stop` vs `stop · no verdict x2`, same route) versus 11 inherited-builder mismatches at the base sha.
 - note: contract dependents of next_action run green: fanout.py selftest PASS, board.py selftest PASS, `python3 -m traces.selftest` exit 0 (from plugins/sdlc-lite/scripts); dispatch.py:2282 consumes only action names, and no new action name was added.
+
+## T-0775: land merges a lane runs.jsonl into the primary one instead of overwriting it (2026-10-24)
+
+- note: fanout.py:1708 `move_closed_records` copytree(old, new, dirs_exist_ok=True) still overwrites files at the new records dir, runs.jsonl included, if that dir already exists on a numbered-mode rename; not reachable in the observed flow, left alone by the builder, candidate follow-up only if it is ever seen.
+- note: fanout.py:1968 `shutil.copytree(src, folder, dirs_exist_ok=True)` for a legacy (folder-borne) records ticket could overwrite folder/runs.jsonl; guarded by the folder being untracked in the integration tree.

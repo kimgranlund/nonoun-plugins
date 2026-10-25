@@ -2,7 +2,7 @@
 id: T-0775
 title: "land merges a lane runs.jsonl into the primary one instead of overwriting it"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,13 @@ The failing test lands before or with the fix.
 - Selftest: fanout.py case 23 `land runs.jsonl merge (T-0775)` builds the rehearsal shape (solo row only in main and older, verifier row in the lane's newer copy, plus the same solo attempt_id in the lane). The T-0566 assertions in fanout.py case 23 and lanes.py `case_carry` now expect the merge.
 - Negative control (fix reverted, tests kept): `fanout selftest: FAIL` with `case 23 land runs.jsonl merge (T-0775): main keeps its solo row once and gains the lane verifier row, got rc=0 rows=[{'role': 'verifier', ...}, {... 'attempt_id': 'solo-1', 'cost_usd': 1.0}]`; lanes.py `FAIL: carry: carry: a main runs.jsonl newer than the lane copy was overwritten or missed the lane row (T-0775)`.
 - Checks: fanout.py selftest through gate_lock exit 0, lanes.py selftest exit 0, check.py exit 0, check-packaging.py PASS, `git diff --check 73aefc97` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 73aefc974fea
+- Changed: see commits
+- Commits: 9f769d6 T-0775: land merges a lane runs.jsonl into the primary one instead of overwriting it
+- Check: 1 A fanout.py selftest case reproduces the observation and passes; with the change reverted it fails: pass
+- Check: 2 selftest through gate_lock exit 0, check.py exit 0, check-packaging.py passes, git diff --check e...: pass
+- Follow-up: note: fanout.py:1708 move_closed_records copytreeold, new... -> notes.md
+- Follow-up: note: fanout.py:1968 shutil.copytreesrc, folder, dirs_exist_ok=True for a... -> notes.md
