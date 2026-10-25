@@ -2,7 +2,7 @@
 id: T-0774
 title: "dispatch.py record tries the transcript before stdin and never blocks"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,13 @@ The failing test lands before or with the fix.
 Reproduced on main: `record --agent-id ag-solo <dispatch>` with stdin an open pipe that never closes hung in `read_stdin` (`sys.stdin.read()`) before the transcript was tried. Fix in `plugins/sdlc-lite/scripts/dispatch.py`: `read_stdin` now never blocks (a tty, a closed stdin, or a pipe with no data or EOF within `STDIN_WAIT_S` = 1s reads as empty; once bytes arrive, each further chunk waits a fifth of that). Piped final messages and error text still work, so the documented flow (conductor.md, skills: nothing on stdin, stdin only for a role with no transcript) needed no change; the record docstring and `docs/references/sdlc-internals.md` now state the no-block rule. Two selftest cases (open empty pipe records the transcript; error text on an open pipe still fails with the limit marker) are bounded by a 20s kill.
 Negative control (old `read_stdin` restored): `FAIL: T-0774 record --agent-id with an open empty stdin pipe does not hang and records the transcript` and `FAIL: T-0774 record reads error text from an open stdin pipe that never closes: exit 1 and the limit marker`; selftest exit 1. With the fix: `dispatch selftest: PASS`, exit 0.
 Checks: `gate_lock.py run ... dispatch.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 73aefc974fea2655331a98580390ed4a32d5b959` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 73aefc974fea
+- Changed: see commits
+- Commits: 534fd72 T-0774: dispatch.py record never blocks on stdin
+- Check: 1 A `dispatch.py` selftest case reproduces the issue's report and passes; with the change reverted ...: pass
+- Check: 2 gate_lock selftest exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff --check <b...: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:2397 After the first bytes... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:4317 The new selftest cases... -> notes.md
