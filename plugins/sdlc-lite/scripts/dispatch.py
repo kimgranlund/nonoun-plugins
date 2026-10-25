@@ -2243,7 +2243,8 @@ def previous_attempt(steps, step_dir, handoff):
     v, b = order.newest(rd, 'verifier'), order.newest(rd, 'builder')
     heading = 'For the next attempt'
     import roots
-    pre = tickets.pre_verify(roots.state_of(os.path.abspath(step_dir)))  # T-0732: a changes-required pre-verify review
+    state = roots.state_of(os.path.abspath(step_dir))  # None for a legacy step dir outside any .sdlc
+    pre = tickets.pre_verify(state) if state is not None else None  # T-0732: a changes-required pre-verify review
     r = order.newest(rd, pre[0]) if pre and b is not None else None
     if (r is not None and order.counts_after(r, b) and (v is None or not order.counts_after(v, r))
             and results._key_body_value(results._lines(r), 'Verdict')[1].strip().lower() == 'changes-required'):
@@ -2319,7 +2320,8 @@ def advance(dispatch_file, rec, agent_id=None):
     role = ADVANCE_ROLE.get(action)
     if action == 'review' and level is not None:  # T-0732: the review role .sdlc/config declares
         import roots
-        role = tickets.pre_verify(roots.state_of(os.path.abspath(handoff.parent)))[0]
+        state = roots.state_of(os.path.abspath(handoff.parent))
+        role = (tickets.pre_verify(state) or (None,))[0] if state is not None else None
     if role is None or level is None:
         print('stop: %s %s' % (action, reason))
         return 0
@@ -4850,6 +4852,27 @@ def selftest():
             case('T-0732 advance on a %s pre-verify review of a step prepares %s %s on the step handoff' % (verdict[0], *want),
                  rc == 0 and nxt is not None and (nxt['role'], nxt['level']) == want and Path(nxt['handoff']).name == 'handoff.md'
                  and (tag == 'pass' or section_of(Path(nxt['handoff']), 'Previous attempt') == ['From %s:' % Path(rev['result']).name, verdict[1]]))
+        # a step dir outside any .sdlc state root (the legacy layout) still advances a verifier fail to a rebuild, and a
+        # .sdlc/config with no pre_verify_role line routes a touching build straight to the verifier
+        lg = mk(tmp / 'adv-pre-legacy')
+        put(lg / 'work' / 't' / 'step-1' / 'handoff.md', '## Task goal\ng\n\n## Step 1: x\nlevel: L2\n')
+        go(lg, 'builder', 'L2', 'work/t/step-1/handoff.md', body=BODY['builder'], agent_id='ag-b')
+        _, lv, _ = prep(lg, 'verifier', 'L1', 'work/t/step-1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        Path(lv['result']).write_text(fail_body, encoding='utf-8')
+        try:
+            rc, out, nxt, before, after = adv_ticket('pre-legacy', lv['dispatch_file'], lg)
+        except TypeError as x:
+            rc, nxt = repr(x), None
+        case('T-0732 advance on a verifier fail in a step dir outside .sdlc prepares the rebuild without error',
+             rc == 0 and nxt is not None and (nxt['role'], nxt['level']) == ('builder', 'L2'))
+        nc = mk(tmp / 'adv-pre-noline')
+        put(nc / '.sdlc' / 'config', 'pre_verify_paths: packages/tokens/src/**\nlane_ports: 47400-47499\n')
+        _, bgot, _ = prep(nc, 'builder', 'L2', step + '/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        put(nc / 'packages' / 'tokens' / 'src' / 't.json', '{}\n')
+        Path(bgot['result']).write_text(BODY['builder'], encoding='utf-8')
+        rc, out, nxt, before, after = adv_ticket('pre-noline', bgot['dispatch_file'], nc)
+        case('T-0732 a .sdlc/config with no pre_verify_role line routes a step build touching the paths to verifier L1',
+             rc == 0 and nxt is not None and (nxt['role'], nxt['level']) == ('verifier', 'L1'))
         # a review with no pass or changes-required verdict (a blocked one) stops: the declared review is never skipped
         sp = mk(tmp / 'adv-pre-step-blocked')
         put(sp / '.sdlc' / 'config', PRE)
