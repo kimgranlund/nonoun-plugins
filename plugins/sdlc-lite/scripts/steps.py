@@ -3383,14 +3383,17 @@ def next_action(step_dir):
                     read)
         return ('stop', None,
                 f'{runs} consecutive builder results with no Status (newest {name}); ask the user', read)
-    if build_status_or_none(b) == 'inherited':
+    nv = order.newest(d, 'verifier')
+    # T-0781 (#79): a verifier verdict after the inherited red wins, the order board.py step_row uses (T-0771)
+    verdict_after = nv is not None and order.counts_after(nv, b) and verdict_or_none(nv) is not None
+    if build_status_or_none(b) == 'inherited' and not verdict_after:
         if why := lane_red(d, b):
             return 'lane red', None, why, read
         return ('inherited', None,
                 f'{os.path.basename(b)} reports inherited red (gate already red at the pre-build HEAD); '
                 'ask the conductor, not a fail, rebuild, bump, or replan', read)
     builders = [x for x in builders if build_status_or_none(x) in ('done', 'blocked')]
-    if build_status(b) == 'blocked':
+    if build_status_or_none(b) == 'blocked':
         notes = section(b, 'Notes') or []
         first = next((line.strip() for line in notes if line.strip()), '')
         if first.startswith('stale lane:'):
@@ -6200,6 +6203,14 @@ def selftest():
         check('next rebuild: an inherited verifier, rebuild, then a fail at L2 -> rebuild L2 (inherited not a fail)',
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', V_INHERITED),
                            ('builder-L2-2.md', DONE), ('verifier-L1-2.md', FAIL)]), 'rebuild L2'))
+        # T-0781 (GitHub #79): a verifier verdict newer than an inherited red build wins, as board.py step_row does
+        check('next inherited (T-0781): an inherited builder then a verifier pass -> done',
+              nxt(step(2, [('builder-L2.md', INHERITED), ('verifier-L1.md', PASS)]), 'done'))
+        check('next inherited (T-0781): an inherited builder then a verifier fail -> rebuild L2',
+              nxt(step(2, [('builder-L2.md', INHERITED), ('verifier-L1.md', FAIL)]), 'rebuild L2'))
+        check('next inherited (T-0781): a verifier pass, then an inherited builder -> inherited (newest result)',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', PASS), ('builder-L2-2.md', INHERITED)]),
+                  'inherited'))
         # T-0766 (GitHub #74): a lane whose earlier step committed the red; the build base holds that commit, which
         # is not on the lane's into branch, so the red is the lane's own, not main's
         lr = tmp / 'lane-red'
