@@ -25,7 +25,7 @@ Two gaps in the spec's `lane-close.sh`, reproduced in a throwaway repo [V]:
 Other facts the design leans on:
 
 - fanout.py makes `<lanes-dir>/<lane>` on `<integration>-<lane>` and `<lanes-dir>/integration`, with the default lanes dir `<toplevel>/.worktrees/fanout`, and keeps them [V].
-- The host makes its host-owned `.claude/worktrees/<name>` on `worktree-<name>` for `isolation: worktree`; prep names solo lanes `<id>-solo`, and land also resolves a host-named `worktree-agent-<hex>` branch through the agent id in `runs.jsonl` [V]. The plugin cannot choose that path [I: no host setting is known to this design].
+- The host makes its host-owned `.claude/worktrees/<name>` on `worktree-<name>` for `isolation: worktree`; prep names solo lanes `<id>-solo`, and land also resolves a host-named `worktree-agent-<hex>` branch through the agent id in `runs.jsonl` [V]; the printed `worktree-<id>-solo` land name, which is no branch, resolves to the host branch its host record names once `dispatch.py record --agent-id` or `advance --agent-id` rebound it (T-0763); with no such record, or two, land refuses and names the `worktree-agent-*` candidates, since a branch cut from main holds every open ticket (T-0758). The plugin cannot choose that path [I: no host setting is known to this design].
 - solo_run.py `--worktree NAME`, and its default when a second solo is live, makes `<toplevel>/.worktrees/<name>` on branch `<name>` and never removes it [V].
 - run.sh and dispatch.py make detached `.worktrees/tmp/<role>-<pid>` trees and remove them; `reap-tmp-worktrees.sh` removes those of dead owners [V]. They are out of scope.
 - `fanout.py land` queues a merged solo for `dispatch.py prune`; `prune --done` only edits the queue [V].

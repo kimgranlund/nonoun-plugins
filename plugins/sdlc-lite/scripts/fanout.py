@@ -69,7 +69,9 @@ prep
 land
   `land <branch>` takes the ticket from `--ticket` or from a worktree-<id>-solo branch name, resolves it from git
   objects on the branch (so the branch needs no `external_branch:` registration), and refuses (exit 2, nothing
-  created) a branch that is not a local branch, the integration branch, a ticket that is done or absent on the branch,
+  created) a branch that is not a local branch (a printed worktree-<id>-solo name that is no branch resolves to the host
+  branch worktree-agent-<agent_id> its host lane record names (dispatch.py record/advance --agent-id rebinds it); with no
+  record naming one, or two, the land is refused naming the worktree-agent-* candidates, T-0758), the integration branch, a ticket that is done or absent on the branch,
   or an integration worktree path that is something else. It then follows the external-lane path of `run` unchanged:
   the overlap wait, the integration-dirty refusal, `git merge --no-ff` as `Merge <branch>: <id>` (merge_generated:
   a conflict only in the generated roadmap, router and mailbox files or notes.md is resolved and `tickets.py roadmap`
@@ -494,6 +496,9 @@ selftest
   a host-owned worktree under .claude/worktrees/agent-x rebinds it to agent-x.lane.json. Case 30b (T-0740): a host
   worktree solo that left its change uncommitted and its report at the worktree copy: the brief asks for no commit,
   `dispatch.py record --agent-id` copies the report, and land commits `<id>: <title>`, merges, and carries the report.
+  Case 23 (T-0758): the printed `land worktree-<id>-solo --ticket <id>` lands the host branch worktree-agent-<agent_id> (via its
+  rebound host lane record); with no record naming it, or two, the land is refused naming the worktree-agent-* branches
+  and the dispatch.py record --agent-id step, and a sibling's branch (cut from main, so holding every open ticket) is never landed.
   Case 31 (roll scratch): after a merged
   roll and after a refused one, <lanes-dir>/rolling is absent and `git worktree list` names no rolling tree. Case 32
   (full lane close): a tree made with prep's printed `lanes.py open` line for two tickets stays after the first land
@@ -2605,8 +2610,45 @@ def branch_repo(a):
         raise Refuse(str(e))
     tip = git(cwd, 'rev-parse', '-q', '--verify', f'refs/heads/{a.branch}^{{commit}}')
     if tip.returncode:
+        found = host_branch_of(cwd, top, root, a)
+        if found:
+            print(f'fanout: {a.branch} is not a local branch; landing the host branch {found}', file=sys.stderr)
+            a.branch = found
+            tip = git(cwd, 'rev-parse', '-q', '--verify', f'refs/heads/{a.branch}^{{commit}}')
+    if tip.returncode:
         raise Refuse(f'{a.branch} is not a local branch with a commit')
     return cwd, top, root, rel, tdir, tip.stdout.strip()
+
+
+def host_branch_of(cwd, top, root, a):
+    """The host branch `worktree-agent-<agent_id>` behind a printed `worktree-<id>-solo` name that is no local branch
+    (T-0758: the host, not fanout, names a sub-agent's branch), or '' when a.branch is not that name or none is found.
+    Only a host lane record naming the ticket decides (dispatch.py record/advance --agent-id rebinds it, T-0763): a branch
+    cut from main holds every open ticket, so a scan of the branches would land a sibling's work. With no such record
+    and worktree-agent-* branches present, or two records, Refuse names them."""
+    m = SUBAGENT_BRANCH.fullmatch(a.branch)
+    if not m:
+        return ''
+    tid = norm_tid(a.ticket) if a.ticket else norm_tid(m.group(1).upper())
+    local = [x[len('refs/heads/'):] for x in git_out(cwd, 'for-each-ref', '--format=%(refname)', 'refs/heads/').splitlines()]
+    recs = {}  # host branch -> the tickets its host lane record names
+    for rp in sorted(host_record_path(top, 'x').parent.glob('*.lane.json')):
+        try:
+            rec = json.loads(rp.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        if isinstance(rec, dict) and HOST_BRANCH.fullmatch(str(rec.get('branch'))) and rec['branch'] in local:
+            recs.setdefault(rec['branch'], set()).update(rec.get('tickets') or [])
+    found = sorted(b for b, ids in recs.items() if tid in ids)
+    if len(found) > 1:
+        raise Refuse(f'{a.branch} is not a local branch and {tid} has {len(found)} host branches ({", ".join(found)}); '
+                     f'land the right one by name with --ticket {tid}')
+    cands = [b for b in local if HOST_BRANCH.fullmatch(b)]
+    if not found and cands:
+        raise Refuse(f'{a.branch} is not a local branch and no host lane record names a worktree-agent-* branch for {tid} '
+                     f'(candidates: {", ".join(cands)}); run dispatch.py record --agent-id <id> or advance --agent-id <id> '
+                     f'first, or land the branch by name with --ticket {tid}')
+    return found[0] if found else ''
 
 
 def branch_ticket(a, root, branch):
@@ -5382,6 +5424,35 @@ def selftest():
         lz = verb(ld, 'land', 'worktree-agent-zzz', *pin, '--ticket', 'T-0007', '--gate', 'test -e fz.txt')
         expect(f'case 23 land host branch: no record, --ticket given: solo lane, merged and closed, got rc={lz.returncode} '
                f'out={lz.stdout[-400:]!r}', lz.returncode == 0 and '- Lane for `T-0007`: solo' in lz.stdout)
+        # T-0758: the land command prep prints names worktree-<id>-solo, but the host made worktree-agent-<agent_id>
+        lh2 = tmp / 'land-host'
+        sized_repo(lh2, ['S', 'S'], {'.gitignore': gi})
+        pin_h = ('--integration', 'fanout/h', '--lanes-dir', str(tmp / 'land-host-lanes'), '--base', 'main')
+        make_branch(lh2, 'worktree-agent-h1', {'g1.txt': 'one\n'}, 'T-0001: Ticket t1')
+        make_branch(lh2, 'worktree-agent-h2', {'g2.txt': 'two\n'}, 'T-0002: Ticket t2')  # a sibling's work, also cut from main
+        lr2 = verb(lh2, 'land', 'worktree-T-0001-solo', '--ticket', 'T-0001', *pin_h, '--gate', 'true')
+        expect(f'case 23 land (T-0758): no record names a host branch, two worktree-agent-* branches hold T-0001 open: refused naming both '
+               f'and the record step, nothing merged, got rc={lr2.returncode} err={lr2.stderr!r}',
+               lr2.returncode == 2 and 'worktree-agent-h1' in lr2.stderr and 'worktree-agent-h2' in lr2.stderr
+               and 'dispatch.py record --agent-id' in lr2.stderr and sh(lh2, 'rev-parse', '--verify', '-q', 'fanout/h').returncode != 0)
+        # the host record as dispatch.py record --agent-id leaves it (T-0763): the provisional <id>-solo record rebound to agent-<id>
+        sys.modules['lanes'].host_record('T-0001-solo', branch='worktree-T-0001-solo', into='fanout/h', tickets=['T-0001'], base='main', cwd=str(lh2))
+        rebind_host_record(lh2, 'T-0001-solo', 'agent-h1', 'worktree-agent-h1', 'T-0001')
+        sys.modules['lanes'].host_record('agent-h9', branch='worktree-agent-h2', into='fanout/h', tickets=['T-0001'], base='main', cwd=str(lh2))
+        lr6 = verb(lh2, 'land', 'worktree-T-0001-solo', '--ticket', 'T-0001', *pin_h, '--gate', 'true')
+        expect(f'case 23 land (T-0758): two host records name T-0001: refused naming both, got rc={lr6.returncode} err={lr6.stderr!r}',
+               lr6.returncode == 2 and 'worktree-agent-h1' in lr6.stderr and 'worktree-agent-h2' in lr6.stderr
+               and sh(lh2, 'rev-parse', '--verify', '-q', 'fanout/h').returncode != 0)
+        host_record_path(lh2, 'agent-h9').unlink()
+        lr3 = verb(lh2, 'land', 'worktree-T-0001-solo', '--ticket', 'T-0001', *pin_h, '--gate', 'test -e g1.txt')
+        expect(f'case 23 land (T-0758): the rebound host record names worktree-agent-h1: the printed worktree-<id>-solo command lands it, '
+               f'got rc={lr3.returncode} out={lr3.stdout[-300:]!r} err={lr3.stderr!r}',
+               lr3.returncode == 0 and 'T-0001 | merged |' in lr3.stdout and 'landing the host branch worktree-agent-h1' in lr3.stderr
+               and sh(lh2, 'cat-file', '-e', 'fanout/h:g1.txt').returncode == 0 and sh(lh2, 'cat-file', '-e', 'fanout/h:g2.txt').returncode != 0)
+        sh(lh2, 'branch', '-D', 'worktree-agent-h1', 'worktree-agent-h2')
+        lr5 = verb(lh2, 'land', 'worktree-T-0009-solo', '--ticket', 'T-0009', *pin_h, '--gate', 'true')
+        expect(f'case 23 land (T-0758): no host branch at all: the old refusal stays, got rc={lr5.returncode} '
+               f'err={lr5.stderr!r}', lr5.returncode == 2 and 'worktree-T-0009-solo is not a local branch with a commit' in lr5.stderr)
         # level L2: no verifier result, a failing one, then a passing one on the branch
         make_branch(ld, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
         lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
