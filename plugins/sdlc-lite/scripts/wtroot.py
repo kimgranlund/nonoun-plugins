@@ -49,8 +49,8 @@ else `would remove <path>` (dry run) or, with --apply, its registered worktrees 
 reap-tmp-worktrees.sh and not listed. lanes.py sweep and dispatch.py record call sweep() and print an unmarked folder only
 when mine() says it sits under this repo's scratch dir or tmp roots (T-0764); lanes.py sweep prints several as one line.
 
-Owner trees (T-0749). OWNERS maps each kind of sdlc state (records, base-sha, end-sha, config, branch, worktree,
-roadmap, router, ticket-close, lane-close) to the checkouts that own it, in order: primary (the main checkout), integration
+Owner trees (T-0749). OWNERS maps each kind of sdlc state (records, base-sha, end-sha, skips, config, branch,
+worktree, roadmap, router, ticket-close, lane-close) to the checkouts that own it, in order: primary (the main checkout), integration
 (the worktree holding the lane's into branch, when not the main checkout) and lane (the worktree whose .lane.json or host
 record lists the ticket, else the current tree when it is a linked one). A host record is <lanes root>/host/<leaf>.lane.json,
 the lanes root a lanes_root: line of the main checkout's .sdlc/config as lanes.config reads it, else root (lanes_root,
@@ -314,6 +314,9 @@ OWNERS = {
     'end-sha': (('lane', 'primary'), 'dispatch.py record for a builder (dispatch.owned_records, T-0750)',
                 'dispatch.step_end for the verifier Diff range (the object must exist in the execution tree)',
                 '#47: end-sha records the end tree before a review fix, so a later fix in the lane falls outside it'),
+    'skips': (('lane', 'primary'), 'steps.py lane and the step cap, dispatch.py prepare (lane override, replan and time approvals) via steps.skips_path (T-0787)',
+              'steps.py lane, step cap and solo skips, dispatch.py lane_gate and ticket_time (steps.skips_path)',
+              'steps.skips_path moves only a main-checkout task folder; fanout.py land writes the integration tree\'s own copy'),
     'config': (('integration', 'primary'), 'the repo owner (.sdlc/config: merge_gate, light_scope)',
                'fanout.py run, prep and land gate_class and light_refusal via fanout.owner_root (T-0722, T-0751)',
                '#58: lanes.py reads the primary config only; wtroot._config_root reads the current tree'),
@@ -420,7 +423,7 @@ def owner_selftest():
     def g(cwd, *a):
         subprocess.run(['git', '-C', str(cwd), *a], check=True, capture_output=True)
 
-    want = {'records': 'lane', 'base-sha': 'lane', 'end-sha': 'lane', 'config': 'integration', 'branch': 'integration',
+    want = {'records': 'lane', 'base-sha': 'lane', 'end-sha': 'lane', 'skips': 'lane', 'config': 'integration', 'branch': 'integration',
             'worktree': 'integration', 'roadmap': 'integration', 'router': 'integration', 'ticket-close': 'integration',
             'lane-close': 'primary'}
     with tempfile.TemporaryDirectory() as t:

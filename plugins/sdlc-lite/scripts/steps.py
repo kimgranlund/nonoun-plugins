@@ -285,7 +285,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             criteria that pins an exact label or string (the words verbatim, exact or literal label/string/text/
             wording/name, or label); else L2 (Sonnet high), L1 and L2 tickets included. Stdout: the level, then
             "reason: <text>" and "read: <handoff.md>"; exit 0; exit 1 when the dir has no handoff.md. Writes nothing.
-  lane      lane <task dir>: pick the task's lane, solo, lean, or full, and append it to <task dir>/skips.md.
+  lane      lane <task dir>: pick the task's lane, solo, lean, or full, and append it to <task dir>/skips.md
+            (in the ticket's lane twin when <task dir> is in the main checkout and a lane owns it: skips_path, T-0787).
             Stdout: the lane, then one "reason: <text>" line per reason, then one "read: <path>" line per
             file read (<task dir>/handoff.md when it exists, the newest planner-*.md by order.py when
             there is one, <task dir>/skips.md when it existed before this call); exit 0. For lane solo it also
@@ -1104,6 +1105,19 @@ def tree_twins(path):
     rel = os.path.relpath(os.path.realpath(p), os.path.realpath(top))
     return [t / rel for t in wtroot.owner_trees(tid, top).values()
             if t is not None and os.path.realpath(t) != os.path.realpath(top)]
+
+
+def skips_path(task):
+    """<task>/skips.md, the one place every skips.md reader and writer resolves it (T-0787): for a task folder in the
+    main checkout, the same file in the tree that owns skips for its ticket (owned: the lane, when one lists it), so a
+    lane's steps.py lane or approval run from main leaves main clean. A task folder in any other tree (the lane, or
+    the integration tree fanout.py land writes) keeps its own file, as does one whose owner tree lacks the folder."""
+    p = pathlib.Path(task) / 'skips.md'
+    found = _ticket_top(pathlib.Path(os.path.abspath(p)))
+    if not found or not found[1] or os.path.realpath(found[0].main_top(found[2]) or '') != os.path.realpath(found[2]):
+        return p
+    own = owned('skips', p)
+    return own if own.parent.is_dir() and os.path.realpath(own) != os.path.realpath(p) else p
 
 
 def base_sha(top, step_dir=None):
@@ -2619,7 +2633,7 @@ APPROVAL_RE = re.compile(r'[^:]*[^\s:][^:]*:\s*\S')  # "<who: why>": a name, a c
 
 def step_cap_approved(task_dir, plan):
     """True when the task folder's skips.md holds `step cap approved: <plan file name>: ...`."""
-    f = pathlib.Path(task_dir) / 'skips.md'
+    f = skips_path(task_dir)
     head = f'step cap approved: {os.path.basename(plan)}: '
     try:
         return any(x.startswith(head) for x in f.read_text(encoding='utf-8').splitlines())
@@ -2642,7 +2656,7 @@ def step_cap_or_fail(plan, task_dir, steps, target, approved=None):
     if cap is None or len(steps) <= cap or step_cap_approved(task_dir, plan):
         return
     if approved:
-        with (pathlib.Path(task_dir) / 'skips.md').open('a', encoding='utf-8') as f:
+        with skips_path(task_dir).open('a', encoding='utf-8') as f:
             f.write(f'step cap approved: {os.path.basename(plan)}: {approved}\n')
         print(f'steps: step cap approved: {len(steps)} steps for size {size} (cap {cap}): {approved}', file=sys.stderr)
         return
@@ -4187,7 +4201,7 @@ def lane_action(task):
     t = task_of(task)
     if not t.is_dir():
         raise Fail(f'steps lane: no such directory: {t}')
-    h, skips = t / 'handoff.md', t / 'skips.md'
+    h, skips = t / 'handoff.md', skips_path(t)
     read = []
     size, review_line, ticket_k = None, False, 0
     if h.is_file():
@@ -4334,7 +4348,7 @@ def write_solo_skips(task, size=None):
     it too. SDLC_SELFTEST_NO_SKIPPED=1 turns it off (a selftest's negative control). An OSError is a Fail."""
     if os.environ.get('SDLC_SELFTEST_NO_SKIPPED') == '1':
         return False
-    p = pathlib.Path(task) / 'skips.md'
+    p = skips_path(task)
     try:
         if not p.is_file():
             return False
@@ -4353,7 +4367,7 @@ def write_solo_skips(task, size=None):
 def record_lane(task, lane, point, reasons):
     """Append the lane record to <task>/skips.md; for lane solo also the planner and filer ## Skipped
     entries (write_solo_skips), so any caller can close the ticket by reason. An OSError is a Fail naming the path."""
-    p = pathlib.Path(task) / 'skips.md'
+    p = skips_path(task)
     try:
         old = None
         if p.is_file():
@@ -7158,6 +7172,19 @@ def selftest():
                   nxt(rk / 'step-1', 'build L2'))
         finally:
             globals()['owned'] = real_owned
+        # T-0787: lane on the main checkout's task folder of a ticket its lane owns appends the lane line to the lane
+        # twin's skips.md (skips_path), so main stays clean and the next land does not refuse
+        (lane_r / '.lane.json').write_text(json.dumps({'lane': 'sb-lane', 'kind': 'solo', 'tickets': ['T-0004'],
+                                                       'into': 'main'}), encoding='utf-8')
+        for where in (main_r, lane_r):
+            (where / 'sdlc' / '0004-skips').mkdir(parents=True)
+            (where / 'sdlc' / '0004-skips' / 'handoff.md').write_text(
+                '---\nid: T-0004\ntitle: skips\nsize: L3\n---\n\n## Goal\nx\n', encoding='utf-8')
+        rc, out, _ = run_main(['lane', str(main_r / 'sdlc' / '0004-skips')])
+        lane_sk = lane_r / 'sdlc' / '0004-skips' / 'skips.md'
+        check('owner tree (T-0787): lane on the main task folder appends the lane line to the lane twin\'s skips.md, '
+              'main untouched', rc == 0 and not (main_r / 'sdlc' / '0004-skips' / 'skips.md').exists()
+              and lane_sk.is_file() and '- lane: ' in lane_sk.read_text(encoding='utf-8'))
         # T-0776: a solo ticket whose lane owns the records: the ticket handoff (size, no level line) stays in the main
         # checkout's .sdlc/<task>, the solo report, its dispatch record and the verifier are in the lane's records dir
         # (a lane records dir counts as holding records once it has a result file or runs.jsonl, records_of)
