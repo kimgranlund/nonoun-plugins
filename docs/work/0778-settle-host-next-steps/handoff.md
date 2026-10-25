@@ -30,3 +30,6 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the observation and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`fanout.py settle` now ends with a `next:` line naming the remote update for the branch (only when the branch is ahead of its remote default) and one `git branch -d worktree-agent-<id>` per landed host branch still present, when host lane records (worktree-agent-*) point into the integration branch and settle moved the branch. Both exit-0 paths print them; nothing is sent to the remote or deleted. Selftest cases `T-0778` (3 cases) cover the full close, no host lane (no lines), and a kept integration with a landed and an unlanded host branch. Negative control: with the print neutralised the selftest exits 1 and lists both T-0778 host-lane FAIL lines. Checks: fanout selftest, check.py, check-packaging.py, `git diff --check 34c60d88` all exit 0. Docs: fanout.py header and `skills/fanout/references/main.md`.
