@@ -40,3 +40,10 @@ The failing test lands before or with the fix, never after.
 1. A `dispatch.py` selftest case reproduces the issue's repro and passes; with the change reverted it fails (state the FAIL line in the Outcome).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
 3. `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- `dispatch.py wait [--timeout S] <dispatch.json>` (next to `status`): polls every 2s, exits 0 with the attempt's `status()` line once the result file is non-empty or the attempt leaves running (a solo_run.py dispatch waits on the result alone), exit 1 with `wait: timeout after <S>s; ...` on stderr, exit 2 for an unreadable dispatch file.
+- Selftest cases (after the time-budget status cases): timeout, still blocking while running, result lands, attempt leaves running.
+- Negative control (non-test hunks reverted): `FAIL: wait: a running attempt with no result times out with exit 1 and a wait: timeout line`, plus the three other wait cases FAIL; `dispatch selftest: FAIL`, exit 1.
+- `agents/conductor.md` "How you run roles": start `dispatch.py wait` in the background after an interactive spawn; Claude and Codex agents regenerated (`sdlc-conductor-l1.toml`).
+- Checks: `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 66f650ed` exit 0.

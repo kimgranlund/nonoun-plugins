@@ -19,6 +19,8 @@
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
                                           transcript also shows `last activity <age>`, and `silent` after 30 minutes without a write (T-0476);
                                           a running one past its role's time budget ends `over-budget <age> (budget <n>m)` (T-0555)
+  dispatch.py wait [--timeout S] <dispatch.json>   block until the result file is non-empty or the attempt leaves running, then print
+                                          its status line (exit 0); exit 1 with a `wait: timeout` line after S seconds (T-0733)
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text), then one `over-budget:` line per
                                           running attempt past its role's time budget, naming the check (a stdin wait, a stall) and the person
   dispatch.py recover --root DIR [--open] the same for every attempt under DIR/.sdlc, with each orphan's prepare command (T-0414);
@@ -1061,6 +1063,30 @@ def status(directory, orphans_only=False):
         where = order.records_dir(base)
         lines.append('no attempts in %s' % directory + ('; try %s' % where if where != Path(os.path.abspath(directory)) else ''))
     return lines
+
+
+def wait(dispatch_file, timeout=None, interval=2.0):
+    """T-0733 (GitHub #63): poll until the dispatch's result file is non-empty or its attempt leaves running, then print the
+    attempt's status() line and return 0; past timeout seconds print `wait: timeout ...` on stderr and return 1. Run it as a
+    background Bash call after a spawn, so the session wakes on the file and not on a completion notice that can come late."""
+    try:
+        d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
+        result = Path(d['result'])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise Refuse(2, 'dispatch.py: cannot read the dispatch file %s: %s' % (dispatch_file, e))
+    attempt = Path(d['attempt_file']) if d.get('attempt_file') else None  # a solo_run.py dispatch has none: wait on the result alone
+    deadline = None if timeout is None else time.monotonic() + timeout
+    while True:
+        state = attempt_state(read_attempt(attempt)) if attempt and attempt.is_file() else 'running'
+        if (result.is_file() and result.stat().st_size) or state != 'running':
+            stem = attempt.name[:-len('.attempt.json')] if attempt else result.stem
+            line = next((l for l in status(attempt.parent) if l.split(' ', 1)[0] == stem), None) if attempt else None
+            print(line or '%s %s result %s' % (stem, state, result))
+            return 0
+        if deadline is not None and time.monotonic() >= deadline:
+            print('wait: timeout after %gs; %s is still running with no result at %s' % (timeout, Path(dispatch_file).name, result), file=sys.stderr)
+            return 1
+        time.sleep(interval)
 
 
 def inner_loop(path):
@@ -2476,6 +2502,9 @@ def main(argv):
     st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
     st.add_argument('directory')
     st.add_argument('--orphans', action='store_true', help='print only orphaned attempts')
+    wt = sub.add_parser('wait', help='block until the result file is non-empty or the attempt leaves running, then print its status line')
+    wt.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
+    wt.add_argument('--timeout', type=float, metavar='S', help='give up after S seconds with exit 1 (default: wait until it lands)')
     rc_ = sub.add_parser('recover', help='mark orphaned attempts interrupted')
     rc_.add_argument('directory', nargs='?', help='the handoff dir to recover')
     rc_.add_argument('--root', metavar='DIR', help='instead of a handoff dir: sweep every attempt under DIR/.sdlc (run once after a host or session restart)')
@@ -2541,6 +2570,13 @@ def main(argv):
     if args.cmd == 'started':
         try:
             return started(args.dispatch, args.agent_id)
+        except Refuse as r:
+            for line in r.lines:
+                print(line, file=sys.stderr)
+            return r.rc
+    if args.cmd == 'wait':
+        try:
+            return wait(args.dispatch, args.timeout)
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -3138,6 +3174,26 @@ def selftest():
         rec = at(16 * 60, recover_root, str(tr))
         case('time budget: recover --root names it too', any(l.startswith('over-budget: ') and 'builder-L2' in l for l in rec))
         case('negative control: recover --root flags nothing inside the budget', not any('over-budget' in l for l in recover_root(str(tr))))
+
+        # T-0733 (GitHub #63): wait blocks on the running attempt and returns once its result lands or it leaves running.
+        waitcmd = [sys.executable, str(HERE / 'dispatch.py'), 'wait', '--timeout']
+        p = subprocess.run(waitcmd + ['1', ob['dispatch_file']], cwd=str(tr), capture_output=True, text=True)
+        case('wait: a running attempt with no result times out with exit 1 and a wait: timeout line',
+             p.returncode == 1 and p.stdout == '' and 'wait: timeout after 1s' in p.stderr)
+        w = subprocess.Popen(waitcmd + ['30', ob['dispatch_file']], cwd=str(tr), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        time.sleep(0.5)
+        case('negative control: wait still blocks while the attempt runs with no result', w.poll() is None)
+        Path(ob['result']).write_text('## Status\ndone\n')
+        wout = w.communicate(timeout=60)[0]
+        case('wait: the result landing ends it with exit 0 and the status line, got %r' % wout,
+             w.returncode == 0 and wout.startswith('builder-L2 running builder-L2 ') and 'report-unrecorded' in wout)
+        Path(ob['result']).unlink()
+        ob_att = Path(ob['attempt_file']).read_text()
+        Path(ob['attempt_file']).write_text(json.dumps({**json.loads(ob_att), 'status': 'completed'}))
+        p = subprocess.run(waitcmd + ['30', ob['dispatch_file']], cwd=str(tr), capture_output=True, text=True)
+        case('wait: an attempt that left running ends it with exit 0 and its status line, got %r' % p.stdout,
+             p.returncode == 0 and p.stdout.startswith('builder-L2 completed builder-L2 '))
+        Path(ob['attempt_file']).write_text(ob_att)
 
         # T-0690: status from a task folder lists the step-<n> attempts in its records dir, and says so when a dir holds none.
         put(tr / '.sdlc' / 'sx' / 'handoff.md')
