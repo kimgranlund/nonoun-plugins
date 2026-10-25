@@ -12,7 +12,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0766 | [0766-inherited-red-lane-step](0766-inherited-red-lane-step/handoff.md) | An inherited red from an earlier step of the same lane routes back into the task | bug | L2 | P2 | none | 🟡 claimed |
 | T-0767 | [0767-close-rewrites-outside-paths](0767-close-rewrites-outside-paths/handoff.md) | tickets.py close keeps no absolute path outside the repo | bug | L1 | P2 | none | 🔵 ready |
 | T-0768 | [0768-land-red-names-log](0768-land-red-names-log/handoff.md) | fanout.py land names the gate log and failing line on red | bug | L1 | P2 | none | 🔵 ready |
-| T-0769 | [0769-land-ticket-open-integration](0769-land-ticket-open-integration/handoff.md) | land reads the ticket status where it closed it | bug | L1 | P2 | none | 🔵 ready |
+| T-0769 | [0769-land-ticket-open-integration](0769-land-ticket-open-integration/handoff.md) | land reads the ticket status where it closed it | bug | L1 | P2 | none | 🟡 claimed |
 | T-0770 | [0770-settle-forward-exit-advanced](0770-settle-forward-exit-advanced/handoff.md) | settle --forward exits 0 after advancing main with lanes still open | bug | L1 | P2 | none | 🔵 ready |
 | T-0772 | [0772-integration-bookkeeping-clean](0772-integration-bookkeeping-clean/handoff.md) | Ticket and lane commands leave no tracked file dirty in the integration tree | bug | L2 | P2 | none | 🔵 ready |
 | T-0773 | [0773-lane-exclude-node-modules](0773-lane-exclude-node-modules/handoff.md) | Lane commits never add a node_modules symlink; open warns when lane_setup is unset | bug | L1 | P2 | none | 🔵 ready |

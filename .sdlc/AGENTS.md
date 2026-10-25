@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:9306da2bd870 -->
+<!-- sdlc-lite:managed:start v1 sha256:1f8a2ffe94db -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,11 +13,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 - proposed: 2
   - T-0732 Project hook for a required review role between build and verify (docs/work/0732-pre-verify-review-role)
   - T-0733 dispatch.py wait blocks until a role result lands (docs/work/0733-dispatch-wait)
-- ready: 13
+- ready: 12
   - T-0765 steps.py amend and swap can retag a red-at-base criterion to guard (docs/work/0765-amend-red-to-guard)
   - T-0767 tickets.py close keeps no absolute path outside the repo (docs/work/0767-close-rewrites-outside-paths)
   - T-0768 fanout.py land names the gate log and failing line on red (docs/work/0768-land-red-names-log)
-  - T-0769 land reads the ticket status where it closed it (docs/work/0769-land-ticket-open-integration)
   - T-0770 settle --forward exits 0 after advancing main with lanes still open (docs/work/0770-settle-forward-exit-advanced)
   - T-0772 Ticket and lane commands leave no tracked file dirty in the integration tree (docs/work/0772-integration-bookkeeping-clean)
   - T-0773 Lane commits never add a node_modules symlink; open warns when lane_setup is unset (docs/work/0773-lane-exclude-node-modules)
@@ -27,8 +26,9 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0779 The host-lane solo brief says which criteria the sandbox blocks (docs/work/0779-host-brief-sandbox-limits)
   - T-0780 Give the fanout skill room under its size limit (docs/work/0780-fanout-skill-headroom)
   - T-0781 steps.py next lets a later verifier verdict win over an inherited-red build (docs/work/0781-steps-next-verifier-wins)
-- claimed: 3
+- claimed: 4
   - T-0766 An inherited red from an earlier step of the same lane routes back into the task (docs/work/0766-inherited-red-lane-step), claimed by sdlc-lite-author 2026-10-24
+  - T-0769 land reads the ticket status where it closed it (docs/work/0769-land-ticket-open-integration), claimed by sdlc-lite-author 2026-10-24
   - T-0774 dispatch.py record tries the transcript before stdin and never blocks (docs/work/0774-record-stdin-last), claimed by sdlc-lite-author 2026-10-24
   - T-0775 land merges a lane runs.jsonl into the primary one instead of overwriting it (docs/work/0775-land-runs-jsonl-merge), claimed by sdlc-lite-author 2026-10-24
 - paused: 0
