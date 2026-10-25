@@ -607,3 +607,8 @@
 - fix-now: plugins/sdlc-lite/skills/fanout/SKILL.md:75 still says settle prints `lane still open` with exit 1 when it cannot close, with no mention of the new exit-0 `settled: main advanced; integration kept (lanes open: ...)` line; references/main.md was updated but the skill body the conductor reads first was not.
 - note: plugins/sdlc-lite/agents/conductor.md:57 and plugins/sdlc-lite/skills/run-plan/references/run-rules.md:37 describe settle as always removing the integration tree; with lanes open it now exits 0 and keeps the tree, so a later settle or sweep is needed to retire it (the old exit 1 also kept it, so no caller reads it wrong).
 - note: plugins/sdlc-lite/scripts/lanes.py:1374-1379 `finish` now continues to its close step instead of stopping at `settle` when other lanes are open into the integration branch; the integration tree stays, so the `ldir` rmtree guard skips it, and lanes.py selftest stays green.
+
+## T-0780: Give the fanout skill room under its size limit (2026-10-24)
+
+- note: plugins/sdlc-lite/skills/fanout/references/lane-lifecycle.md:9 still says an integration tree with uncommitted tracked changes is refused as `integration dirty` and does not mention the T-0772 bookkeeping exception. SKILL.md:37 states it, but the moved paragraph was stale already at base.
+- note: plugins/sdlc-lite/skills/fanout/SKILL.md:58 mentions a `stop: blocked` after a solo report inside the full-ticket item, but full tickets run /chain builders, not a solo, so the clause fits item 3 better.

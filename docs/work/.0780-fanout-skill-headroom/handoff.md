@@ -2,7 +2,7 @@
 id: T-0780
 title: "Give the fanout skill room under its size limit"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,14 @@ SKILL.md went from 17,997 to 16,379 characters. Moves (each full text is verbati
 Added lines: T-0760 (`stop: blocked` from `advance`, step 3) and T-0766 (`lane red`, Report), with the rules also written in `references/land.md`; T-0772 in the run-from-root line.
 Not added: T-0770 (the fix has not landed; settle still exits 1 then) and T-0765 (the amend retag lives in the chain skill, not fanout).
 Checks: `wc -c` 16379; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check 8e8a3653` exit 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 8e8a36530db1
+- Changed: see commits
+- Commits: 091b9d3 T-0780: give the fanout skill room under its size limit
+- Check: 1 `wc -c < plugins/sdlc-lite/skills/fanout/SKILL.md` prints at most 16500: pass
+- Check: 2 Every removed fact is present in a linked references/ file, and SKILL.md names the T-0760 and T-0...: pass
+- Check: 3 `python3 scripts/check-packaging.py` passes, `python3 plugins/sdlc-lite/scripts/check.py` exits 0...: pass
+- Follow-up: note: plugins/sdlc-lite/skills/fanout/references/lane-lifecycle.md:9... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/skills/fanout/SKILL.md:58 mentions a stop... -> notes.md
