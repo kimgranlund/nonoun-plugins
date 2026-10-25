@@ -36,3 +36,13 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `lanes.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Reproduced on main: a `node_modules` symlink in a lane is committed by finish and by fanout's lane commit, and land's host-lane auto-commit swept both it and an untracked `scratch-note.txt` (case 30b red output showed both in the lane tree).
+- Fix: `lanes.py open` adds `/node_modules` to the git common dir's `info/exclude` (the issue's proposal), so status, a builder's `git add -A`, finish's commit and fanout's `LANE_ADD` all skip the symlink. `fanout.py land` adds the same exclude before it commits a host lane, because a host lane never ran `open`. A pathspec exclude was tried and dropped: `git add -A -- . ':(exclude)node_modules'` exits 1 when the path is also ignored.
+- `lanes.py open` prints `note: package.json but no lane_setup: in .sdlc/config; ...` when `package.json` exists and `lane_setup:` is unset; quiet when set.
+- Untracked files: land now prints `land: committing untracked: <files>` (first 10, then `+N more`) before the host-lane commit, so a stray scratch file is visible before it merges. A short list, not a refusal; the solo's legitimate new files are on it too.
+- Tests: `lanes.py` case `node_modules` (finish with a symlink, open note with and without `lane_setup`); `fanout.py` case 25 (symlink in a headless lane) and case 30b (host lane: symlink absent from the commit, scratch-note named).
+- Negative control: with the `info/exclude` lines and the note removed from `lanes.py`, the lanes selftest prints `FAIL: node_modules: node_modules: want main with the committed fin2.txt and no node_modules symlink | node_modules: open with package.json and no lane_setup want the note`. With the land and open excludes removed, the fanout selftest prints `FAIL ... case 25 lane commit: artifacts excluded ...` and `case 30b host worktree (T-0773): the land commit holds y.txt but no node_modules symlink ... tree=[..., 'node_modules', 'scratch-note.txt', 'y.txt']`.
+- Checks: `gate_lock.py run ... lanes.py selftest` exit 0, `fanout.py selftest` PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check d49b31c2` exit 0.
+- Not changed: the solo agent text and `run-operations.md` still show the plain `git add -A -- . ':(exclude,glob)...'` line; the exclude makes it safe for any lane opened by `lanes.py`.
