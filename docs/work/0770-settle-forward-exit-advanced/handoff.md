@@ -36,3 +36,8 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Reproduced on main: a plain `settle` that fast-forwarded main and then met `lanes still open into <integration>` printed `lane still open` and exited 1. Fixed in `cmd_settle` (`plugins/sdlc-lite/scripts/fanout.py`): when this settle fast-forwarded the current branch and the close refuses with lanes-open row 4, it prints `settled: main advanced; integration kept (lanes open: <names>)`, keeps the tree and branch, and exits 0. Exit 1 stays for a refused close with nothing merged (a rerun) and for the other close refusals (not a plugin lane, no worktree). Docstring, the module-doc exit-code line and `skills/fanout/references/main.md` updated.
+- Selftest case `T-0770 settle with a lane open` (two expects) added beside T-0761. Negative control (condition forced false): FAIL `T-0770 settle with a lane open: ... got rc=1 ... lane still open: ... (lanes still open into fanout/openlane: T-0770-open)`; restored, selftest PASS.
+- `gate_lock.py run ... fanout.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check a048fea3` exit 0.
