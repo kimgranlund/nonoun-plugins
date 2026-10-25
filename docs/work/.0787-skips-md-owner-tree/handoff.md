@@ -2,7 +2,7 @@
 id: T-0787
 title: "steps.py lane writes skips.md in the tree that owns the ticket"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ The failing test lands before or with the fix, never after.
 - Criterion 1: new steps selftest case `owner tree (T-0787)` beside the T-0755 owner cases. Red before the fix and with the redirect disabled: `steps selftest: FAIL, these did not hold: - owner tree (T-0787): lane on the main task folder appends the lane line to the lane twin's skips.md, main untouched`.
 - Criterion 2: `grep -n "'skips.md'" plugins/sdlc-lite/scripts/dispatch.py plugins/sdlc-lite/scripts/steps.py` shows only `steps.py` `skips_path` and selftest fixtures.
 - Criterion 3: steps and dispatch selftests through gate_lock exit 0, `wtroot.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 66f650ed` exit 0.
+
+## Outcome
+
+2026-10-25 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 66f650ede6c6
+- Changed: see commits
+- Commits: 59d915e T-0787: steps.py lane writes skips.md in the tree that owns the ticket
+- Check: 1 steps selftest case, lane open, `steps.py lane <main ticket folder>` leaves main clean and append...: pass
+- Check: 2 dispatch writers use the same helper, no `'skips.md'` path built outside it: pass
+- Check: 3 selftests, check.py, packaging, diff check: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:1110-1120: decide: readers do... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/steps.py:1110-1120: note: the... -> notes.md
