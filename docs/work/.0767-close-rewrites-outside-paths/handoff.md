@@ -2,7 +2,7 @@
 id: T-0767
 title: "tickets.py close keeps no absolute path outside the repo"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,15 @@ The failing test lands before or with the fix.
 ## Outcome
 
 Reproduced on main: close copied a sibling-workspace and a home-directory path into notes.md verbatim and never looked at the closed handoff. `relative_paths` now also writes any path under the home directory or the repo's parent directory as `../<sibling>/...` (`_outside_paths`, relative to the main checkout), keeping the in-repo and lanes-root rewrites; `path_bases` returns that reference as a third element and fanout's use is unchanged. close prints the `absolute path in a tracked work record` warning for each line of the handoff it just closed that still holds one. Selftest cases `(T-0767)` fixtures use temp dirs and a temp HOME. Negative control with both changes reverted: both new cases fail (`FAIL, these did not bite: (T-0767) close writes a sibling workspace ...` and `(T-0767) close warns on an absolute path left in the closed handoff`). `tickets.py selftest`, `fanout.py selftest`, `check.py`, `check-packaging.py` exit 0; `git diff --check` clean.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: e2fe086ea9ef
+- Changed: see commits
+- Commits: d161019 T-0767: close writes sibling-workspace and home paths relative and warns on a stray path in the closed handoff
+- Check: 1 A `tickets.py` selftest case reproduces the issue's report and passes; with the change reverted i...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/tickets.py s...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:3357 path_bases now returns... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:3390 I ran relative_paths... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/tickets.py:3397 _outside_paths also... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:3392 the docstring says the... -> notes.md
