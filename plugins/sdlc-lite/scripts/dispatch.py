@@ -2395,12 +2395,14 @@ def advance_ticket(d, attempt):
 
 
 STDIN_WAIT_S = 1.0  # T-0774: how long record waits for a piped stdin to show data or EOF before treating it as empty
+STDIN_STREAM_S = 10.0  # once data flows, the longest pause between chunks before record stops reading and warns
 
 
 def read_stdin(wait=STDIN_WAIT_S):
     """The text piped on stdin, never blocking: a tty, a closed stdin, or a pipe that shows neither data nor EOF within
     `wait` seconds (an open pipe a non-interactive tool call never closes, T-0774) reads as empty. After the first bytes
-    each further chunk gets a fifth of `wait`, so a writer that stays open still ends the read."""
+    each further chunk gets STDIN_STREAM_S, so a slow writer is read whole; a writer that stays open past that still
+    ends the read, with a stderr warning that the text may be cut short."""
     try:
         if sys.stdin is None or sys.stdin.isatty():
             return ''
@@ -2412,6 +2414,9 @@ def read_stdin(wait=STDIN_WAIT_S):
     while True:
         try:
             if not select.select([fd], [], [], timeout)[0]:
+                if chunks:
+                    print(f'dispatch.py: warning: stdin still open after {timeout:g}s with no more data; read '
+                          f'{sum(map(len, chunks))} bytes, which may be cut short', file=sys.stderr)
                 break
             data = os.read(fd, 65536)
         except (OSError, ValueError):  # no select on this stream (Windows pipes), or the descriptor went away
@@ -2422,7 +2427,7 @@ def read_stdin(wait=STDIN_WAIT_S):
         if not data:
             break
         chunks.append(data)
-        timeout = wait / 5
+        timeout = STDIN_STREAM_S
     return b''.join(chunks).decode('utf-8', errors='replace')
 
 
@@ -4321,7 +4326,7 @@ def selftest():
                         pr.stdin.write(feed)
                         pr.stdin.flush()
                     try:
-                        code = pr.wait(timeout=20)
+                        code = pr.wait(timeout=40)
                     except subprocess.TimeoutExpired:
                         code = None
                         pr.kill()
@@ -4335,6 +4340,13 @@ def selftest():
         code_, got = record_open_stdin('a5', 'Error: session limit reached\n')
         case('T-0774 record reads error text from an open stdin pipe that never closes: exit 1 and the limit marker',
              code_ == 1 and (R(rb / '.sdlc' / 'a5') / 'builder-L1.limit').is_file())
+        # T-0774 verifier: a writer that pauses mid-stream (0.6 s, past the old 0.2 s chunk wait) is read whole, not cut short.
+        slow = subprocess.run('%s -c "import sys,time; sys.stdout.write(\'A\'*70000); sys.stdout.flush(); time.sleep(0.6); '
+                              'sys.stdout.write(\'B\'*70000)" | %s -c "import sys; sys.path.insert(0, \'%s\'); import dispatch; '
+                              'print(len(dispatch.read_stdin()))"' % (sys.executable, sys.executable, HERE),
+                              shell=True, capture_output=True, text=True, timeout=60)
+        case('T-0774 record reads a slow writer whole: a 140000-byte message with a 0.6 s pause mid-stream, got %r %r'
+             % (slow.stdout.strip(), slow.stderr[-200:]), slow.stdout.strip() == '140000' and 'cut short' not in slow.stderr)
         # T-0349: truncated stdin, error stdin beside an interim heading, tool-use turns before the final text.
         def amsg(text, stop='end_turn', tool=False):
             c = ([{'type': 'tool_use', 'id': 't', 'name': 'Bash', 'input': {}}] if tool else []) + ([{'type': 'text', 'text': text}] if text else [])
