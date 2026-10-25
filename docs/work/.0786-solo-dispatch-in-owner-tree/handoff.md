@@ -2,7 +2,7 @@
 id: T-0786
 title: "The solo dispatch record lives in the tree that owns the solo's records"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,13 @@ T-0785 verifier (2026-10-25): prepare writes the solo dispatch record in main be
 - T-0785 reader fallback: kept. Lanes prepped before this change hold their dispatch record only in main, and a twin copy is made only once `record --agent-id` or `advance --agent-id` runs.
 - Cases: dispatch `T-0786 record --agent-id on B's prep solo with a host twin puts T-0764-solo.dispatch.json in the twin's records dir`; steps `solo report newest dispatch (T-0786): two records with mtimes reversed against runs.jsonl order`. Negative control (each change reverted): dispatch prints `FAIL: T-0786 record --agent-id on B's prep solo with a host twin puts T-0764-solo.dispatch.json in the twin's records dir ...` and `dispatch selftest: FAIL`; steps prints `steps selftest: FAIL` with the T-0786 case `got (None, 1, False)`.
 - Checks: dispatch and steps selftests through gate_lock exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 66f650ed` exit 0.
+
+## Outcome
+
+2026-10-25 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 66f650ede6c6
+- Changed: see commits
+- Commits: 6d3e19c T-0786: the solo dispatch record lives in the tree that owns the solo's records
+- Check: 1 dispatch.py selftest case: after `record --agent-id` on a prep solo with a host twin the dispatch...: pass
+- Check: 2 steps.py case shows the newest dispatch record is chosen by order.py, not mtime (mtimes reversed ...: pass
+- Check: 3 selftests through gate_lock exit 0, `check.py` exit 0, `check-packaging.py` passes, `git diff --c...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:1646 prune_solo_name still... -> notes.md

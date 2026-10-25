@@ -663,3 +663,7 @@
 ## T-0733: dispatch.py wait blocks until a role result lands (2026-10-25)
 
 - note: conductor check done. `codex_roles.py generate --check` prints `Codex agent definitions verified` (rc 0) and `claude_roles.py generate --check` prints `Claude agent definitions verified (23 files)` (rc 0), so the new conductor.md line and the regenerated sdlc-conductor-l1.toml agree. The Claude agent definitions are unchanged by the diff; only the Codex toml carries the line.
+
+## T-0786: The solo dispatch record lives in the tree that owns the solo's records (2026-10-25)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:1646 `prune_solo_name` still picks the newest solo `*.dispatch.json` by `st_mtime`, against the order.py rule in plugins/sdlc-lite/AGENTS.md:25. It is outside the handoff's named `steps.solo_report` scope; the same-name copies this change makes in the twin do not change its result.
