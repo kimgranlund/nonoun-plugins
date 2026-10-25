@@ -25,3 +25,6 @@ Third 0.36 rehearsal (2026-10-25, /Users/kimgranlund/Projects/nonoun/live036c-ru
 ## Acceptance criteria
 1. The skill text (SKILL.md or a linked reference) states the push-between-rounds rule and that the push is asked of the user; `grep -n "push" plugins/sdlc-lite/skills/fanout/SKILL.md plugins/sdlc-lite/skills/fanout/references/*.md` shows it.
 2. `python3 scripts/check-packaging.py` passes (SKILL.md under 18,000 characters), `python3 plugins/sdlc-lite/scripts/check.py` exits 0, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+Added the push-between-rounds rule to `plugins/sdlc-lite/skills/fanout/references/main.md` (a `prep` base the remote lacks is refused, so a second sub-agent round after a `settle` that moved main needs the push; the user decides through AskUserQuestion) and one short line in `SKILL.md` (16,726 of 18,000 characters) that keeps "fanout.py never pushes". `agents/conductor.md` does not describe the round loop, so it is unchanged. Checks: `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check` exit 0.
