@@ -79,7 +79,7 @@ land
   printed as `union-merged: <paths>`, checked by its `merge_union_gate:` before the merge commit (`union gate red: <cmd>`
   resets the merge) and forces the full gate class, T-0683; any other conflict is aborted as `merge conflict`: the parent asks the sub-agent, by name, to merge the integration branch on its side,
   then lands again), each --gate through gate_lock.py (a vacuous gate is `gate vacuous`, a red one resets the merge:
-  `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
+  `red: <gate> rc=<n> (log <path>)[: <last failing line>]`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
   nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
   unless an earlier land's merge carried the branch tip and the ticket is still open on the integration branch (a
