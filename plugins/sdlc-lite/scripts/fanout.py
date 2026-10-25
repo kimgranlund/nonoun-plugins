@@ -374,7 +374,8 @@ run
   spec order whose merged paths (step 5) intersect, the shared paths sorted, or the single line
   `- Overlap: none`) and prints it.
   A landed lane (`land`) lists every ticket landed so far in the lanes dir except one whose recorded worktree is gone and whose branch
-  is an ancestor of the integration branch (`lanes.landed_and_gone`, T-0777): it is closed, so it is no row and no overlap.
+  is an ancestor of the integration branch, or whose branch was deleted and whose journal merge commit is (`lanes.landed_and_gone`,
+  T-0777, T-0784): it is closed, so it is no row and no overlap.
   An external lane's Commit cell is the merge commit when the merge made one, the integration HEAD (the previous `close` commit) when it merged nothing new, else the branch tip's sha7.
   Exit 0 only when every ticket is `merged`, else 1; 2 for a refusal. checkout, switch, reset and
   commit run only inside the lanes dir; nothing is pushed.
@@ -2993,7 +2994,8 @@ def cmd_land(a):
     listed, kinds = [], {}  # not `lanes`: the module is used in this function
     for tid, rec in prior.items():
         if tid != t.id and rec.get('worktree') and lanes.landed_and_gone(
-                ctx['top'], rec['worktree'], rec['branch'], ctx['integration']):
+                ctx['top'], rec['worktree'], rec['branch'], ctx['integration'],
+                rec['commit'] if rec['outcome'] == 'merged' else None):
             continue  # T-0777: landed and its worktree removed, so the lane is closed: not listed, no overlap
         ln = lane if tid == t.id else Lane(rec['lane'], [tid], rec['branch'])
         ln.branch, ln.results, ln.files = rec['branch'], [(tid, rec['outcome'], rec['commit'])], set(rec.get('files') or [])
@@ -5735,6 +5737,29 @@ def selftest():
                f'got rc={lg3.returncode} out={lg3.stdout[-600:]!r} err={lg3.stderr[-300:]!r}',
                lg3.returncode == 0 and '| agent-g3 | T-0003 | merged |' in lg3.stdout and '- Overlap: none' in lg3.stdout
                and 'agent-g1' not in lg3.stdout and 'agent-g2' not in lg3.stdout)
+        # case 23 gone lane round 2 (T-0784): round 1 lands T-0001 and settles (tree removed, lane branch deleted, as
+        # settle prints `git branch -d`); round 2 cuts a new integration branch of the same name from main and lands a
+        # lane touching the same file: the report lists no round-1 lane and no overlap with it
+        lr2 = tmp / 'land-gone-r2'
+        sized_repo(lr2, ['L1', 'L1'], {'.gitignore': gi, 'shared.txt': 'top\n' + ''.join(f'mid {n}\n' for n in range(20)) + 'bottom\n'})
+        for k_, (old_, new_) in enumerate((('top', 'top a'), ('bottom', 'bottom b')), 1):
+            wtr = tmp / f'land-gone-r2-agent{k_}'
+            sh(lr2, 'worktree', 'add', '-q', '-b', f'worktree-agent-r{k_}', str(wtr), 'main')
+            (wtr / 'shared.txt').write_text((lr2 / 'shared.txt').read_text().replace(old_ + '\n', new_ + '\n', 1), encoding='utf-8')
+            sh(wtr, 'add', '-A')
+            sh(wtr, 'commit', '-q', '-m', f'T-000{k_}: Ticket t{k_}')
+        lr2_pin = ('--integration', 'fanout/r', '--lanes-dir', str(tmp / 'land-gone-r2-lanes'), '--base', 'main')
+        lr21 = verb(lr2, 'land', 'worktree-agent-r1', '--ticket', 'T-0001', *lr2_pin, '--gate', 'true')
+        lr2s = verb(lr2, 'settle', 'fanout/r')
+        sh(lr2, 'worktree', 'remove', '--force', str(tmp / 'land-gone-r2-agent1'))
+        sh(lr2, 'branch', '-D', 'worktree-agent-r1')
+        lr22 = verb(lr2, 'land', 'worktree-agent-r2', '--ticket', 'T-0002', *lr2_pin, '--gate', 'true')
+        expect(f'case 23 land gone lane round 2 (T-0784): a lane landed in round 1, settled, its tree and branch removed is not '
+               f'listed and is no overlap, got rc={lr21.returncode}/{lr2s.returncode}/{lr22.returncode} out={lr22.stdout[-600:]!r} '
+               f'err={lr22.stderr[-300:]!r}',
+               lr21.returncode == 0 and lr2s.returncode == 0 and lr22.returncode == 0
+               and '| agent-r2 | T-0002 | merged |' in lr22.stdout and '- Overlap: none' in lr22.stdout
+               and 'agent-r1' not in lr22.stdout)
         # case 23 reuse (T-0689): an integration worktree opened by `lanes.py open --kind integration` is reused by prep and land
         ri, ri_tree, ri_lanes = tmp / 'reuse-integ', tmp / 'reuse-integ-tree', tmp / 'reuse-integ-lanes'
         sized_repo(ri, ['L1', 'L1'], {'.gitignore': gi})

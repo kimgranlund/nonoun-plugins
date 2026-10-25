@@ -30,3 +30,9 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the observation and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+- Cause: on the kept rehearsal state `lanes.landed_and_gone` returns False for the round-1 entry: the recorded worktree is gone (true), but the branch `worktree-agent-a3ec2829004940e86` no longer exists, because settle prints `git branch -d <lane branch>` and the conductor ran it (log line 240, "Deleted branch ... was 88bc197"). The test required the lane branch as a local ref, so it never reached the ancestry check; round 2's new `fanout/rehearsal` was fine (cut from main, which holds the round-1 merge commit `34ff398`, an ancestor).
+- Fix: `lanes.landed_and_gone` takes an optional `commit`; with the tree gone and the branch ref deleted, a journal merge commit that resolves and is an ancestor of the integration branch also counts. `cmd_land` passes the journal's `commit` for a `merged` entry. Docs: fanout.py land section. `lanes.evaluate` is unchanged (no commit passed).
+- Red first: with the commit clause disabled, only the new case 23 "land gone lane round 2 (T-0784)" fails: `FAIL: case 23 land gone lane round 2 (T-0784): a lane landed in round 1, settled, its tree and branch removed is not listed and is no overlap, got rc=0/0/0 ... - Overlap: `agent-r1` and `agent-r2`: `shared.txt``; with the fix it passes.
+- Checks: `fanout.py selftest` via gate_lock exit 0 (PASS), `lanes.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check 327b2bd0` exit 0.
