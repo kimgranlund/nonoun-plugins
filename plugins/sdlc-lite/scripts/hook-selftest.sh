@@ -383,6 +383,24 @@ for at in sdlc-lite:solo-L1 sdlc-lite:builder-L2 solo-0702 0702-solo-L2 0697-ver
 done
 run "$ds" "$(jq -n --arg c "$fw / -name x" '{agent_type:"ticket-author",agent_id:"a1",tool_name:"Bash",tool_input:{command:$c}}')" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-disk-scan teammate ticket-author: exit $rc, want 0"
+# T-0782: a heredoc body is data fed to stdin, not a command, so a python3 - <<'EOF' file edit
+# whose text mentions a search passes; the command line around it, a body with no terminator,
+# and a heredoc fed to a shell are still judged whole.
+hd=$(printf "cd /tmp/x && python3 - <<'EOF'\ns = '%s / -name x'\nopen('f', 'w').write(s)\nEOF\ngit status" "$fw")
+for c in "$hd" "$(printf 'cat > f <<EOF\n%s ~ -name x\nEOF' "$fw")" \
+  "$(printf 'cat > f <<-EOF\n\t%s / -name x\n\tEOF' "$fw")" "$(printf 'python3 - <<"EOF"\n%s -r x /\nEOF' "$gw")"; do
+  run "$ds" "$(pj "$c")" SDLC_ROLE=solo >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-disk-scan allows the heredoc body of '$c': exit $rc, want 0"
+done
+for c in "$(printf "python3 - <<'EOF'\nprint(1)\nEOF\n%s / -name x" "$fw")" \
+  "$(printf "%s / -name x <<'EOF'\nbody\nEOF" "$fw")" \
+  "$(printf "python3 - <<'EOF'\n%s / -name x" "$fw")" \
+  "$(printf "bash <<'EOF'\n%s / -name x\nEOF" "$fw")" \
+  "$(printf "cat <<'EOF' | sh\n%s / -name x\nEOF" "$fw")"; do
+  out=$(run "$ds" "$(pj "$c")" SDLC_ROLE=solo); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-disk-scan blocks '$c': exit $rc, want 2"
+  grep -q solo <<<"$out" || fail "block-disk-scan '$c': stderr lacks the role"
+done
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
