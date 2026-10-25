@@ -10,7 +10,7 @@ opened are a report.md and <repo>/.sdlc/config, to find the line an external bra
 <repo>/docs/layout.md, for the reports homes; the only other filesystem reads are whether a report's
 integration worktree still exists and whether a worktree holds a KEEP_MARKER or a .lane.json.
 
-A lost-edit signal of a lanes dir: a report row or fanout.log line whose outcome is `red: ... rc=<n>`
+A lost-edit signal of a lanes dir: a report row or fanout.log line whose outcome is `red: ... rc=<n>` (a land adds ` (log <path>)` and a failure line)
 or starts `integration dirty`, a report Commit cell or fanout.log line starting `wip `, and (for
 the lanes dir whose integration worktree git.read took the reflog from) a `wip(<id>): ...` commit
 in aux["git"]["commits"].
