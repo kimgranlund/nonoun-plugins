@@ -985,10 +985,10 @@ def do_close(ctx, d, outcome, info, dry):
     if pl:
         lines.append(pl)
     if how != 'discarded':
-        metas = local_tickets(close_tree(ctx, closer, into))
-        metas += [(p, m) for p, m in local_tickets(top) if m.get('id') not in {x.get('id') for _, x in metas}]  # not in that tree
+        metas = local_tickets(close_tree(ctx, closer, into)) + local_tickets(top)  # done in either tree counts (T-0769 verifier)
         for t in d['tickets']:
-            if LOCAL_ID.fullmatch(str(t)) and any(m.get('id') == t and m.get('status') not in ('done', 'dropped') for _, m in metas):
+            st = [m.get('status') for _, m in metas if m.get('id') == t]
+            if LOCAL_ID.fullmatch(str(t)) and st and not any(x in ('done', 'dropped') for x in st):
                 lines.append(f'ticket still open: {t}')
     return result(0, '\n'.join(lines), lane=name, path=d['path'], branch=b, archive=ref, row=how)
 
