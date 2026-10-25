@@ -832,9 +832,45 @@ def runtime_records(task_dir):
     return Path(order._base(p)) / 'runtime' / 'tasks' / os.path.basename(p).lstrip('.')
 
 
+def merge_runs(src, dst):
+    """T-0775: append to the runs.jsonl dst each line of the runs.jsonl src that dst lacks, keeping every dst line; a
+    line is present when dst holds its attempt_id (dst's row wins), else the same whole line. Returns True when dst
+    changed."""
+    def key(line):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            row = None
+        return ('a', row['attempt_id']) if isinstance(row, dict) and row.get('attempt_id') else ('l', line)
+    d = Path(dst)
+    have = d.read_text(encoding='utf-8') if d.is_file() else ''
+    seen = {key(ln.strip()) for ln in have.splitlines() if ln.strip()}
+    add = []
+    for ln in Path(src).read_text(encoding='utf-8').splitlines():
+        k = key(ln.strip())
+        if ln.strip() and k not in seen:
+            seen.add(k)
+            add.append(ln.strip() + '\n')
+    if not add:
+        return False
+    d.parent.mkdir(parents=True, exist_ok=True)
+    d.write_text(have + ('\n' if have and not have.endswith('\n') else '') + ''.join(add), encoding='utf-8')
+    return True
+
+
+def copy_record(src, dst):
+    """copytree's copy_function for a records dir: a runs.jsonl merges into dst (merge_runs), any other file overwrites."""
+    if os.path.basename(src) == 'runs.jsonl':
+        merge_runs(src, dst)
+    else:
+        shutil.copy2(src, dst)
+    return dst
+
+
 def copy_newer(src, dst):
     """Copy the files under records dir src into dst, without logs or lock files, keeping (never overwriting or
-    deleting) a dst file at least as new as its source. Returns the number of files copied."""
+    deleting) a dst file at least as new as its source, except runs.jsonl, whose rows merge (merge_runs, T-0775).
+    Returns the number of files copied."""
     n = 0
     for dirpath, _, files in os.walk(str(src)):
         for f in files:
@@ -842,6 +878,9 @@ def copy_newer(src, dst):
                 continue
             s = Path(dirpath) / f
             d = Path(dst) / s.relative_to(src)
+            if f == 'runs.jsonl':
+                n += merge_runs(s, d)
+                continue
             if d.exists() and d.stat().st_mtime >= s.stat().st_mtime:
                 continue
             d.parent.mkdir(parents=True, exist_ok=True)
@@ -2421,8 +2460,8 @@ def case_carry(script, base):
             continue
         if rc or len(carried) != 1 or not samepath(carried[0], t.top / key) or not got:
             fails.append(f'carry: the lane records did not reach the main checkout: {rc}: {o}')
-        if (t.top / key / 'runs.jsonl').read_text() != 'main\n':
-            fails.append('carry: a main record newer than the lane copy was overwritten')
+        if (t.top / key / 'runs.jsonl').read_text() != 'main\nlane\n':
+            fails.append('carry: a main runs.jsonl newer than the lane copy was overwritten or missed the lane row (T-0775)')
     return fails
 
 
