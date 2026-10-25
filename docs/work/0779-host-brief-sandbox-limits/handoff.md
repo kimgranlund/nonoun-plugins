@@ -30,3 +30,8 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `fanout.py` selftest case reproduces the observation and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`SOLO_SUBAGENT_PROMPT` in `plugins/sdlc-lite/scripts/fanout.py` now tells the host-lane solo that the sandbox refuses a Bash command with a quoted argument (and git), and to report such a criterion as `<exact command> not run (host sandbox)`, never rewritten, for the verifier to run. `results.py solo_report_error` accepts that line in place of `exit <n>` beside `verify: needed`. Docs: `docs/references/sdlc-internals.md`.
+- Red: fanout selftest case 30d with the brief sentence removed fails: `case 30d host brief: it names the sandbox limits and the `not run (host sandbox)` report line, got ...`; results selftest with the regex change reverted fails: `MISS: T-0779: a span reported not run (host sandbox) beside verify: needed passes`.
+- Green: `fanout.py selftest` PASS, `results.py selftest` PASS, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check e8490aab` exit 0.

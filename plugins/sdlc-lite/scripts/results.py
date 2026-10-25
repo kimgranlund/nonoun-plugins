@@ -345,11 +345,12 @@ def criterion_spans(handoff_text):
 
 def solo_report_error(report_text, spans):
     """None, or the spans a solo report that says `verify: needed` lists without an exit-code line (T-0471, the
-    Run-verbatim rule in agents/solo.md): a report line holds the span exactly as written in backticks and `exit <n>`."""
+    Run-verbatim rule in agents/solo.md): a report line holds the span exactly as written in backticks and `exit <n>`,
+    or `not run (host sandbox)` (T-0779): the host worktree sandbox refuses git and a quoted argument, the verifier runs it."""
     if not re.search(r'(?m)^\s*(?:[-*] )?verify: needed\b', report_text):
         return None
     lines = report_text.splitlines()
-    missing = [s for s in spans if not any(f'`{s}`' in ln and re.search(r'\bexit \d+\b', ln) for ln in lines)]
+    missing = [s for s in spans if not any(f'`{s}`' in ln and re.search(r'\bexit \d+\b|\bnot run \(host sandbox\)', ln) for ln in lines)]
     if not missing:
         return None
     return 'verify: needed without an exit-code line for: ' + '; '.join(f'`{s}`' for s in missing)
@@ -631,6 +632,10 @@ def selftest():
          solo_report_error(short, sp) is not None and 'b.py selftest' in solo_report_error(short, sp), True)
     para = 'files: x\n- `python3 a.py check` exit 0\n- `python3 b.py` exit 0\nverify: needed\n'
     case('observed red: a paraphrased span (not verbatim) is flagged', solo_report_error(para, sp) is not None, True)
+    host = 'files: x\n- `python3 a.py check` exit 0\n- `python3 b.py selftest` not run (host sandbox)\nverify: needed\n'
+    case('T-0779: a span reported not run (host sandbox) beside verify: needed passes', solo_report_error(host, sp), None)
+    bare = 'files: x\n- `python3 a.py check` exit 0\n- `python3 b.py selftest` not run\nverify: needed\n'
+    case('T-0779 control: a bare not run without (host sandbox) is flagged', solo_report_error(bare, sp) is not None, True)
     noexit = 'files: x\n- `python3 a.py check` ok\n- `python3 b.py selftest` ok\nverify: needed\n'
     case('observed red: span lines with no exit code are flagged', solo_report_error(noexit, sp) is not None, True)
     rp, hp = write('solo-report.md', short), write('solo-handoff.md', ho)
