@@ -619,3 +619,8 @@
 - fix-now: docs/references/sdlc-internals.md:190 still says a red gate appends the npm hint to `red: <gate> rc=<n>`; the land line now carries ` (log <path>)` and an optional `: <line>` before the hint.
 - fix-now: plugins/sdlc-lite/scripts/fanout.py:1976 `glog.read_text(...)` reads the whole gate log into memory before scanning it from the end; a bounded tail read would find the same last failing line with bounded memory.
 - note: plugins/sdlc-lite/scripts/traces/sources/fanout.py:39 the tail group `\(log [^)]*\)` fails to match a log path that contains `)`; lanes paths do not today.
+
+## T-0778: settle names the push and the leftover host branches (2026-10-24)
+
+- note: plugins/sdlc-lite/hooks/block-publish.sh:29 matches `git push` text even when it is only a mention, whenever the command falls back to the raw scan: a shell word such as `bash` anywhere in the command, or interpreter inline code such as `python3 -c`. My own probe command (`printf ... | SDLC_ROLE=solo bash plugins/sdlc-lite/hooks/block-publish.sh` with `git push origin main` in its JSON) was refused with `Blocked for sdlc role 'verifier': publishing is the user's call.` This fits the builder's account that its commit was refused because the Outcome text held a push command. The Outcome now says "naming the remote update" instead (handoff.md Outcome). I did not find the builder's transcript, so I could not quote the builder's own refusal.
+- note: plugins/sdlc-lite/scripts/fanout.py:3270 compares only against `remote_default` (origin/HEAD, else origin/main or origin/master). A settle on a branch other than the remote default therefore prints no push line. That matches what T-0756 prep checks.
