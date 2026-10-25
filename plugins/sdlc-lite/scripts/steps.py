@@ -3305,6 +3305,9 @@ def pre_verify_action(step_dir, d, b, read):
     if verdict == 'changes-required':
         return ('rebuild', result_level(b), f'{os.path.basename(r)} says changes-required; rebuild at L{result_level(b)} '
                 'with its findings', read + [r])
+    if verdict not in ('pass', 'pass-with-notes'):
+        return ('stop', None, f'{os.path.basename(r)} has Verdict "{verdict or "none"}", not pass or changes-required; '
+                'read it (a blocked review names a question)', read + [r])
     read.append(r)
     return None
 

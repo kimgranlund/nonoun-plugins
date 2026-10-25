@@ -2237,12 +2237,20 @@ ADVANCE_ROLE = {'build': 'builder', 'rebuild': 'builder', 'verify': 'verifier', 
 def previous_attempt(steps, step_dir, handoff):
     """Before advance prepares a rebuild after a verifier fail: append that verifier's ## For the next attempt to the step
     handoff under ## Previous attempt (/chain 4.4), made when missing, earlier lines kept. Any other rebuild (no Status,
-    an applied amend) has no newer verifier and adds nothing."""
+    an applied amend) has no newer verifier and adds nothing. After a changes-required pre-verify review (T-0732) it appends
+    that review's ## Findings instead."""
     rd = steps.records_of(step_dir)
     v, b = order.newest(rd, 'verifier'), order.newest(rd, 'builder')
-    if v is None or b is None or not order.counts_after(v, b) or steps.verdict_or_none(v) != 'fail':
+    heading = 'For the next attempt'
+    import roots
+    pre = tickets.pre_verify(roots.state_of(os.path.abspath(step_dir)))  # T-0732: a changes-required pre-verify review
+    r = order.newest(rd, pre[0]) if pre and b is not None else None
+    if (r is not None and order.counts_after(r, b) and (v is None or not order.counts_after(v, r))
+            and results._key_body_value(results._lines(r), 'Verdict')[1].strip().lower() == 'changes-required'):
+        v, heading = r, 'Findings'
+    elif v is None or b is None or not order.counts_after(v, b) or steps.verdict_or_none(v) != 'fail':
         return
-    notes = [l for l in (steps.section(v, 'For the next attempt') or []) if l.strip()]
+    notes = [l for l in (steps.section(v, heading) or []) if l.strip()]
     if not notes:
         return
     lines = handoff.read_text(encoding='utf-8').splitlines()
@@ -4840,7 +4848,19 @@ def selftest():
             Path(rev['result']).write_text(ui_review % verdict, encoding='utf-8')
             rc, out, nxt, before, after = adv_ticket('pre-step-' + tag, rev['dispatch_file'], sp)
             case('T-0732 advance on a %s pre-verify review of a step prepares %s %s on the step handoff' % (verdict[0], *want),
-                 rc == 0 and nxt is not None and (nxt['role'], nxt['level']) == want and Path(nxt['handoff']).name == 'handoff.md')
+                 rc == 0 and nxt is not None and (nxt['role'], nxt['level']) == want and Path(nxt['handoff']).name == 'handoff.md'
+                 and (tag == 'pass' or section_of(Path(nxt['handoff']), 'Previous attempt') == ['From %s:' % Path(rev['result']).name, verdict[1]]))
+        # a review with no pass or changes-required verdict (a blocked one) stops: the declared review is never skipped
+        sp = mk(tmp / 'adv-pre-step-blocked')
+        put(sp / '.sdlc' / 'config', PRE)
+        _, bgot, _ = prep(sp, 'builder', 'L2', step + '/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        put(sp / 'packages' / 'tokens' / 'src' / 't.json', '{}\n')
+        Path(bgot['result']).write_text(BODY['builder'], encoding='utf-8')
+        rc, out, rev, before, after = adv_ticket('pre-step-blocked', bgot['dispatch_file'], sp)
+        Path(rev['result']).write_text('## Mode\nblocked: which token set?\n\n## Decisions\nNone\n\n## Findings\nNone\n', encoding='utf-8')
+        rc, out, nxt, before, after = adv_ticket('pre-step-blocked-2', rev['dispatch_file'], sp)
+        case('T-0732 advance on a blocked pre-verify review of a step prints stop: and prepares no verifier',
+             rc == 0 and '\nstop: stop ' in '\n' + out and nxt is None and after == before)
         # T-0747: advance on the L2 solo dispatch `fanout.py prep` writes prepares the verifier on the host worktree the solo built
         # in (found by the agent id, else the branch, else the recorded tree): the brief's Tree and Handoff name that tree's copy.
         # The level comes from main's copy (pinned L3 here), so a lane copy that drops the pin does not lower it; no worktree
