@@ -2,7 +2,7 @@
 id: T-0732
 title: "Project hook for a required review role between build and verify"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -51,3 +51,13 @@ The failing test lands before or with the fix, never after.
 - Docs: sdlc-internals.md (Pre-verify review paragraph), conductor.md advance line, chain SKILL.md and step-rules.md action lists.
 - Limitation: solo reports have no order.py rank, so advance on a solo always reruns the review (after a verifier fail too); the step path is state based.
 - Verifier fix: `previous_attempt` and the `review` role lookup in `advance` now guard a step dir outside any `.sdlc` state root (`roots.state_of` None), which crashed every legacy-layout rebuild with a TypeError. New cases: a verifier fail in a step dir outside `.sdlc` advances to a builder L2 rebuild (red before the guard: `FAIL: T-0732 advance on a verifier fail in a step dir outside .sdlc prepares the rebuild without error`), and a `.sdlc/config` with no `pre_verify_role` line routes a touching build to verifier L1. dispatch.py selftest exit 0, check.py exit 0, check-packaging.py PASS, `git diff --check 66f650ed` exit 0.
+
+## Outcome
+
+2026-10-25 · lane: full L2 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 66f650ede6c6
+- Changed: see commits
+- Commits: 494552c T-0732: guard a step dir outside .sdlc in previous_attempt and the review lookup; a2738b4 T-0732: stop on a verdictless pre-verify review; carry its findings into the rebuild; 72d7ce7 T-0732: pre_verify_role review between build and verify
+- Check: 1 A dispatch.py selftest case reproduces the issue's repro and passes; with the change reverted it ...: pass
+- Check: 2 gate_lock dispatch selftest exits 0: pass
+- Check: 3 check.py exit 0, check-packaging passes, git diff --check clean: pass
+- Follow-up: decide: dispatch.py advance_solo reruns the review after a verifier fail no... -> notes.md

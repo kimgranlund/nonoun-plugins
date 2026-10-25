@@ -667,3 +667,7 @@
 ## T-0786: The solo dispatch record lives in the tree that owns the solo's records (2026-10-25)
 
 - note: plugins/sdlc-lite/scripts/dispatch.py:1646 `prune_solo_name` still picks the newest solo `*.dispatch.json` by `st_mtime`, against the order.py rule in plugins/sdlc-lite/AGENTS.md:25. It is outside the handoff's named `steps.solo_report` scope; the same-name copies this change makes in the twin do not change its result.
+
+## T-0732: Project hook for a required review role between build and verify (2026-10-25)
+
+- decide: dispatch.py `advance_solo` reruns the review after a verifier fail (no order.py rank for solo reports); the Outcome's Limitation line records it as a follow-up.
