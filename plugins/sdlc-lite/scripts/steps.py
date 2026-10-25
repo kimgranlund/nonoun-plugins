@@ -406,6 +406,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               A plan-defect fail, swap-routed or not, is never counted for a rebuild or a bump.
               A verifier with no verdict is never counted as a fail. A builder with no Status is
               never a done or a fail, never adds a bump, and is never a verifier's paired builder.
+            A solo ticket's task dir (T-0776: no builder or planner result, a ticket handoff with a front matter
+            size and no `level:` line, read from the dir given or its lane twin) routes by its solo result:
+              no solo result                             -> solo L<size>
+              solo report whose ## Output starts blocked -> stop
+              solo-L1, no verifier after it              -> close (an L1 solo has no verifier)
+              solo-L2 or L3, no verifier after it        -> verify L<ticket verifier level> (verifier-level)
+              newest verifier pass -> close, fail -> stop, no verdict -> reverify, inherited -> inherited
             Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
   open      open <task dir> [--explain] (T-0408): print one line "<ref>\t<state>\t<subject or owner>" per held
@@ -3250,8 +3257,12 @@ def is_plan_defect(path):
     return first.startswith('plan defect:')
 
 
-def handoff_level(d):
+def handoff_level(d, given=None):
+    """The `level: L<n>` of a step handoff: the records dir d's, else the dir as given, which on either side of a lane
+    reaches the task folder (step_handoff: its twin, the lane tree); Fail when there is none (T-0776)."""
     h = step_handoff(d)
+    if not h.is_file() and given is not None:
+        h = step_handoff(given)
     if not h.is_file():
         raise Fail(f'steps next: no builder result and no {h} to read a level from')
     for line in h.read_text(encoding='utf-8').splitlines():
@@ -3259,6 +3270,59 @@ def handoff_level(d):
         if m:
             return int(m.group(1))
     raise Fail(f'steps next: no builder result and {h} has no "level: L1".."level: L5" line')
+
+
+def solo_ticket_action(d, given):
+    """T-0776: (action, level or None, reason, [paths read]) for a solo ticket's task dir (no builder result, no planner
+    result): the level comes from the ticket handoff's front matter size (tickets.parse maps the aliases), not a `level:`
+    line, and the handoff is read from the dir as given or its lane twin (step_handoff). None when the dir is not one: it
+    holds a planner result, or its handoff carries no ticket size and no solo result stands."""
+    import tickets
+    if order.newest(d, 'planner') is not None:
+        return None
+    h = step_handoff(d)
+    if not h.is_file():
+        h = step_handoff(given)
+    text = h.read_text(encoding='utf-8') if h.is_file() else ''
+    size = str((tickets.parse(text) or {}).get('size', ''))
+    s = order.newest(d, 'solo')
+    if s is None:
+        if size not in tickets.ENUMS['size']:
+            return None
+        return 'solo', int(size[1:]), f'solo ticket {size} (no builder, planner or solo result); run the solo at L{size[1:]}', [str(h)]
+    read = [s]
+    err = results.structure_error(s, 'solo')
+    if err is not None:
+        return 'invalid result', None, f'{s}: {err}', read
+    if not h.is_file():
+        raise Fail(f'steps next: a solo result and no {h} to read the ticket from')
+    read.append(str(h))
+    name, level = os.path.basename(s), result_level(s)
+    first = next((x.strip() for x in (section(s, 'Output') or []) if x.strip()), '')
+    if re.match(r'(?:solo\s+)?blocked\b', first, re.I):
+        return 'stop', None, f'{name} reports blocked ({first}); answer or fix what it names, then rerun the solo', read
+    v = order.newest(d, 'verifier')
+    if v is None or not order.counts_after(v, s):
+        if level == 1:  # an L1 solo has no verifier (dispatch.py advance_solo prints the close line)
+            return 'close', None, f'{name} is a level L1 solo, which needs no verifier; close the ticket', read
+        vl, why = ticket_verifier(h.read_text(encoding='utf-8'))
+        return ('verify', int(vl[1:]),
+                f'{"no verifier result" if v is None else "verifier " + os.path.basename(v) + " is older than the solo"}; '
+                f'solo L{level} -> one batched verifier at {vl} ({why})', read)
+    read.append(v)
+    err = results.structure_error(v, 'verifier')
+    if err is not None:
+        return 'invalid result', None, f'{v}: {err}', read
+    word = verdict_or_none(v)
+    vname = os.path.basename(v)
+    if word == 'pass':
+        return 'close', None, f'newest verifier {vname} passed; close the ticket', read
+    if word == 'fail':
+        return ('stop', None, f'{vname} failed; send its ## For the next attempt to the solo by name, then advance the '
+                'solo\'s dispatch again', read)
+    if word is None:
+        return 'reverify', result_level(v), f'{vname} has no verdict (pass/fail) under ## Verdict; rerun the verifier at the same level', read
+    return 'inherited', None, f'{vname} reports inherited red; ask the conductor, not a fail, rebuild, or replan', read
 
 
 BATCH_PATH_RE = re.compile(r'(?<![\w./-])step-\d+/builder-L\d+(?:-\d+)?\.md(?![\w.-])')
@@ -3363,7 +3427,12 @@ def next_action(step_dir):
     builders = order.ordered(d, 'builder')
     b = order.newest(d, 'builder')
     if b is None:
-        n = handoff_level(d)
+        try:
+            n = handoff_level(d, step_dir)
+        except Fail:
+            if (solo := solo_ticket_action(d, step_dir)) is not None:
+                return solo
+            raise
         return 'build', n, f'no builder result; handoff level L{n}', []
     err = results.structure_error(b, 'builder')
     if err is not None:
@@ -6284,6 +6353,43 @@ def selftest():
         (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\n', encoding='utf-8')
         next_refused('next error: a handoff with no level line and no builder result', d)
 
+        # T-0776: a solo ticket (front matter size, no `level:` line, no planner or builder result) in the .sdlc layout:
+        # the handoff is .sdlc/<task>/handoff.md and the records dir .sdlc/runtime/tasks/<task>
+        SOLO_OUT = '## Output\nfiles: x\nverify: needed\n'
+
+        def solo_task(size, files=(), body='', where=None):
+            count[0] += 1
+            t = (where or tmp / f'solo-ticket{count[0]}') / '.sdlc' / 'add-div'
+            t.mkdir(parents=True)
+            (t / 'handoff.md').write_text(f'---\nid: T-0001\ntitle: "x"\nsize: {size}\n---\n\n## Goal\ng\n{body}',
+                                          encoding='utf-8')
+            if files:
+                rd = t.parent / 'runtime' / 'tasks' / 'add-div'
+                rd.mkdir(parents=True)
+                for name, text in files:
+                    (rd / name).write_text(hdr(name, text), encoding='utf-8')
+                (rd / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n, _ in files), encoding='utf-8')
+            return t
+
+        check('next solo (T-0776): a solo ticket of size L2 with no result -> solo L2',
+              nxt(solo_task('L2'), 'solo L2'))
+        check('next solo (T-0776): a size alias (M) reads as its level -> solo L2', nxt(solo_task('M'), 'solo L2'))
+        check('next solo (T-0776): a solo-L2 report, no verifier -> verify L2 (the ticket verifier level)',
+              nxt(solo_task('L2', [('solo-L2.md', SOLO_OUT)]), 'verify L2'))
+        check('next solo (T-0776): a ticket whose criteria pin an exact label -> verify L3',
+              nxt(solo_task('L2', [('solo-L2.md', SOLO_OUT)], '\n## Acceptance criteria\n- [ ] prints the exact label\n'),
+                  'verify L3'))
+        check('next solo (T-0776): a verifier pass after the solo -> close',
+              nxt(solo_task('L2', [('solo-L2.md', SOLO_OUT), ('verifier-L2.md', PASS)]), 'close'))
+        check('next solo (T-0776): a verifier fail after the solo -> stop',
+              nxt(solo_task('L2', [('solo-L2.md', SOLO_OUT), ('verifier-L2.md', FAIL)]), 'stop'))
+        check('next solo (T-0776): a solo-L1 report needs no verifier -> close',
+              nxt(solo_task('L1', [('solo-L1.md', SOLO_OUT)]), 'close'))
+        check('next solo (T-0776): a solo report that says blocked -> stop',
+              nxt(solo_task('L2', [('solo-L2.md', '## Output\nblocked: which file?\n')]), 'stop'))
+        check('next solo (T-0776) control: a task dir with a planner result is not a solo ticket -> refused',
+              not run_main(['next', str(solo_task('L2', [('planner-L3.md', '## Goal\ng\n')]))])[0] == 0)
+
         # SDLC_BASE_SHA: split --only sets it to HEAD at the toplevel, never inherited from the caller
         d = o_repo('(guard) `: "${SDLC_BASE_SHA:?}" && test "$SDLC_BASE_SHA" = "$(git rev-parse HEAD)"`', commit='o-base')
         saved = os.environ.get('SDLC_BASE_SHA')
@@ -6837,6 +6943,20 @@ def selftest():
                   nxt(rk / 'step-1', 'build L2'))
         finally:
             globals()['owned'] = real_owned
+        # T-0776: a solo ticket whose lane owns the records: the ticket handoff (size, no level line) stays in the main
+        # checkout's .sdlc/<task>, the solo report is in the lane's .sdlc/runtime/tasks/<task>
+        (lane_r / '.lane.json').write_text(json.dumps({'lane': 'sb-lane', 'kind': 'solo', 'tickets': ['T-0001'],
+                                                       'into': 'main'}), encoding='utf-8')
+        mk = solo_task('L2', where=main_r)
+        lrec = lane_r / '.sdlc' / 'runtime' / 'tasks' / 'add-div'
+        lrec.mkdir(parents=True)
+        (lrec / 'solo-L2.md').write_text(hdr('solo-L2.md', SOLO_OUT), encoding='utf-8')
+        (lrec / 'runs.jsonl').write_text('{"file": "solo-L2.md"}\n', encoding='utf-8')
+        check('next solo lane (T-0776): the main task dir reads the lane twin\'s solo report and its own handoff -> verify L2',
+              nxt(mk, 'verify L2'))
+        (lrec / 'verifier-L2.md').write_text(hdr('verifier-L2.md', PASS), encoding='utf-8')
+        (lrec / 'runs.jsonl').write_text('{"file": "solo-L2.md"}\n{"file": "verifier-L2.md"}\n', encoding='utf-8')
+        check('next solo lane (T-0776): a verifier pass in the lane twin -> close', nxt(mk, 'close'))
         (lane_r / '.lane.json').unlink()
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')

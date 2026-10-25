@@ -30,3 +30,10 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `steps.py` selftest case reproduces the observation and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`steps.py next` on a solo ticket's task dir (ticket handoff with front matter `size:`, no `level:` line, no planner or builder result) now routes by the solo result: no report -> `solo L<size>`, solo-L1 report -> `close`, solo-L2/L3 report -> `verify L<ticket verifier level>`, verifier pass -> `close`, fail -> `stop`, blocked report -> `stop`. The handoff is read through `step_handoff` from the dir given or its lane twin, the results through `records_of` (T-0755 owner tree). `handoff_level` and the step routes of T-0766 and T-0781 are unchanged. Docs: the `next` usage text in `steps.py` and `skills/chain/references/step-rules.md`.
+
+Checks: `steps.py selftest` (through gate_lock) exit 0; `check.py` exit 0; `scripts/check-packaging.py` exit 0; `git diff --check f7d88cd3` exit 0.
+Negative control (the two `next_action` lines reverted in a scratch copy): selftest FAIL, 10 cases, first `next solo (T-0776): a solo ticket of size L2 with no result -> solo L2`, last `next solo lane (T-0776): a verifier pass in the lane twin -> close`.
+Not covered: a ticket handoff present only in the lane tree (no ticket id above the path in main, so no twin lookup).
