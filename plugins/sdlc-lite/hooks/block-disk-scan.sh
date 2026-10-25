@@ -25,9 +25,15 @@
 # kept when they are one plain word or only "$VAR", "${VAR}" (a trailing / allowed), and
 # otherwise replaced by one placeholder word so the positions of the other words hold;
 # unquoted backslashes and comments are removed. Fails closed, scanning the raw text with a
-# looser match, when python3 is missing or errors, when a quote is unterminated, when the
-# command holds a heredoc (<<), or when a shell or evaluator (bash, sh, zsh, dash, ksh, fish,
-# eval, ssh, su) appears as a command word, so bash -c "find / -name x" stays blocked.
+# looser match, when python3 is missing or errors, when a quote is unterminated, when a
+# heredoc (<<) is left that cannot be stripped, or when a shell or evaluator (bash, sh, zsh,
+# dash, ksh, fish, eval, ssh, su) appears as a command word, so bash -c "find / -name x" stays
+# blocked.
+# A heredoc body (<<X, <<'X', <<-X, closed by its terminator line) is data fed to stdin, so
+# it is cut from the command before matching, together with its <<X marker, and a text that
+# only mentions a search there passes (T-0782); the command line around it is still judged. A
+# body with no terminator line, or a command with a shell or evaluator word once the bodies
+# are cut (cat <<EOF | bash), is judged whole, bodies included.
 # shellcheck source=_role.sh
 . "$(dirname "${BASH_SOURCE[0]}")/_role.sh"
 input=$(cat)
@@ -39,6 +45,44 @@ cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 pf=$(tr -d "\\\\'\"" <<<"$cmd")
 re='(^|[^[:alnum:]_-])(find|bfs|fd|fdfind|rg|ag|e?grep|du|ls|tree|mdfind)([^[:alnum:]_-]|$)'
 [[ $pf =~ $re ]] || exit 0
+
+# Cut each heredoc marker and its body; prints the command unchanged when a body has no
+# terminator line or a shell or evaluator word is left (its stdin may be code to run).
+read -r -d '' stripper <<'PY' || true
+import re, sys
+
+cmd = sys.argv[1]
+MARK = re.compile(r"(?<!<)<<(-?)[ \t]*(?:'([^'\n]+)'|\"([^\"\n]+)\"|\\?([A-Za-z0-9_]+))")
+SHELL_WORD = (r'(?:^|[\s;&|(`{/])(?:bash|sh|zsh|dash|ksh|fish|eval|ssh|su)'
+              r'(?=$|[\s;&|)`}<>])')
+out, pos = [], 0
+while True:
+    m = MARK.search(cmd, pos)
+    if not m:
+        out.append(cmd[pos:])
+        break
+    delim = m.group(2) or m.group(3) or m.group(4)
+    eol = cmd.find('\n', m.end())
+    if eol < 0:
+        print(cmd, end='')
+        sys.exit(0)
+    end, consumed = None, eol + 1
+    for line in cmd[eol + 1:].split('\n'):
+        if (line.lstrip('\t') if m.group(1) else line) == delim:
+            end = consumed + len(line)
+            break
+        consumed += len(line) + 1
+    if end is None:
+        print(cmd, end='')
+        sys.exit(0)
+    out.append(cmd[pos:m.start()] + cmd[m.end():eol])
+    pos = end
+res = ''.join(out)
+print(cmd if re.search(SHELL_WORD, res) else res, end='')
+PY
+if [[ $cmd == *'<<'* ]] && stripped=$(python3 -c "$stripper" "$cmd" 2>/dev/null); then
+  cmd=$stripped
+fi
 
 block() {
   echo "Blocked for sdlc role '$role': searching the whole filesystem or a home folder (find /, find ~, rg x /, grep -r x \$HOME, du /, ls -R /, tree /, mdfind without -onlyin) can run for many minutes with no output and stall the run; | head does not stop it when nothing matches. Search a bounded path instead: the repository (.), a named subfolder such as ~/.claude/plugins, or \$CLAUDE_PLUGIN_ROOT." >&2
