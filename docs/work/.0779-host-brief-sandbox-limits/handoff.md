@@ -2,7 +2,7 @@
 id: T-0779
 title: "The host-lane solo brief says which criteria the sandbox blocks"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,16 @@ A solo report holding a `not run (host sandbox)` line needs a verifier at any le
 - Red with `host_unrun` returning False: dispatch selftest `FAIL: T-0779 advance on an L1 solo report holding a not run (host sandbox) criterion prepares an L1 verifier`; steps selftest `next solo (T-0779): an L1 solo report holding a not run (host sandbox) criterion, no verifier -> verify L1`. Controls (marker absent -> close line / `close`) pass in both.
 - Green: fanout, results, steps selftests PASS; `check.py` exit 0; `check-packaging.py` exit 0; `git diff --check e8490aab` exit 0.
 - Open, not from this change: `dispatch.py selftest` fails `T-0763 two prep solos in flight, before advance ...` (expects `steps next` rc 1, T-0776 now prints `solo L2` rc 0) on main too; every other dispatch case passes.
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 8e8a36530db1
+- Changed: see commits
+- Commits: 366bfcc T-0779: a solo report with a not run (host sandbox) criterion gets a verifier at any level; 871ad5a T-0779: host-lane solo brief names the sandbox limits and the not run (host sandbox) report line
+- Check: 1 A `fanout.py` selftest case reproduces the observation and passes; with the change reverted it fa...: pass
+- Check: 2 `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py se...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:4776 dispatch.py selftest... -> notes.md
+- Follow-up: fix-now: plugins/sdlc-lite/agents/conductor.md:41 still says after an L1... -> notes.md
+- Follow-up: fix-now: plugins/sdlc-lite/skills/chain/references/step-rules.md:7 says an... -> notes.md
+- Follow-up: fix-now: docs/references/sdlc-internals.md:192 says the unrun criterion is... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/results.py:349 host_unrun matches the... -> notes.md

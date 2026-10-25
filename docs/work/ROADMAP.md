@@ -9,9 +9,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0732 | [0732-pre-verify-review-role](0732-pre-verify-review-role/handoff.md) | Project hook for a required review role between build and verify | feature | L2 | P2 | none | ⏳ proposed |
 | T-0733 | [0733-dispatch-wait](0733-dispatch-wait/handoff.md) | dispatch.py wait blocks until a role result lands | feature | L2 | P2 | none | ⏳ proposed |
 | T-0777 | [0777-land-overlap-removed-lane](0777-land-overlap-removed-lane/handoff.md) | land overlap ignores lanes already landed and removed | bug | L1 | P2 | none | 🟡 claimed |
-| T-0779 | [0779-host-brief-sandbox-limits](0779-host-brief-sandbox-limits/handoff.md) | The host-lane solo brief says which criteria the sandbox blocks | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 740 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 741 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
