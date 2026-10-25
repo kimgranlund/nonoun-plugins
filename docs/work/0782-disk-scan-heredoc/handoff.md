@@ -25,3 +25,9 @@ T-0769 solo (2026-10-25) was refused twice by block-disk-scan (0.35.0 copy): `Bl
 ## Acceptance criteria
 1. A `hook-selftest.sh` case: a heredoc edit whose body holds the matched text is allowed, and `find / -name x` on the command line is still refused; with the change reverted the heredoc case fails (state the FAIL line).
 2. `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+`hooks/block-disk-scan.sh` now cuts each heredoc marker and body (`<<X`, `<<'X'`, `<<"X"`, `<<-X`, closed by its terminator line) before matching, so a `python3 - <<'EOF'` edit whose text mentions a search command passes. A body with no terminator, a leftover shell or evaluator word (`bash <<EOF`, `cat <<EOF | sh`), and a search on the command line itself are judged whole and still blocked. Cause: any `<<` made the analyzer fail closed to the raw-text loose match, which read the body.
+- hook-selftest.sh: new T-0782 allow cases (4 heredoc shapes) and block cases (5). Negative control: with the hook reverted to HEAD the first allow case fails, FAIL line ends `...git status': exit 2, want 0`.
+- `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exit 0, `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `python3 scripts/check-packaging.py` exit 0, `git diff --check 8b232fc80d6bdb134e2dc476b830dc650bbd1159` exit 0.
+- Not covered: two heredocs on one line leave the second marker, which fails closed as before.
