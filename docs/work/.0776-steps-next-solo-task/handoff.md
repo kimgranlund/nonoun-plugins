@@ -2,7 +2,7 @@
 id: T-0776
 title: "steps.py next works on a solo ticket task folder"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,14 @@ read: /Users/kimgranlund/Projects/nonoun/live036b/.sdlc/runtime/tasks/add-div/ve
 Checks: `steps.py selftest` through gate_lock exit 0; `check.py` exit 0; `scripts/check-packaging.py` exit 0; `git diff --check f7d88cd3` exit 0.
 Negative control (the `next_action` solo hook reverted in a scratch copy): selftest FAIL, 11 cases; the add-div case reads `FAIL: next solo (T-0776): the live036b add-div shape (T-0003-solo.md, verifier-L2.md pass, runs.jsonl with only the verifier row) -> close`.
 Not covered: a lane records dir that holds only a solo report and its dispatch record (no result file, no runs.jsonl) is not taken as the records owner by `records_of`/`order._legacy`; it counts once a verifier result or runs.jsonl is there. A ticket handoff present only in the lane tree is not found either (no ticket id above the path in main).
+
+## Outcome
+
+2026-10-24 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: f7d88cd3b486
+- Changed: see commits
+- Commits: 0960c28 T-0776: read the solo report the way dispatch writes it; 1d61316 T-0776: steps.py next works on a solo ticket task folder
+- Check: 1 A `steps.py` selftest case reproduces the observation and passes; with the change reverted it fai...: pass
+- Check: 2 selftest through gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes, `git diff --...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:3283 and :3317 call... -> notes.md
+- Follow-up: note: import dispatch is local to solo_report/solo_ticket_action and... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/tickets.py:2396 also has a solo_reportd... -> notes.md

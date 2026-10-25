@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a5ae08379b01 -->
+<!-- sdlc-lite:managed:start v1 sha256:86e24d535c2b -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -19,15 +19,14 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0779 The host-lane solo brief says which criteria the sandbox blocks (docs/work/0779-host-brief-sandbox-limits)
   - T-0780 Give the fanout skill room under its size limit (docs/work/0780-fanout-skill-headroom)
   - T-0782 block-disk-scan does not refuse a heredoc body (docs/work/0782-disk-scan-heredoc)
-- claimed: 4
+- claimed: 3
   - T-0765 steps.py amend and swap can retag a red-at-base criterion to guard (docs/work/0765-amend-red-to-guard), claimed by sdlc-lite-author 2026-10-24
   - T-0768 fanout.py land names the gate log and failing line on red (docs/work/0768-land-red-names-log), claimed by sdlc-lite-author 2026-10-24
   - T-0770 settle --forward exits 0 after advancing main with lanes still open (docs/work/0770-settle-forward-exit-advanced), claimed by sdlc-lite-author 2026-10-24
-  - T-0776 steps.py next works on a solo ticket task folder (docs/work/0776-steps-next-solo-task), claimed by sdlc-lite-author 2026-10-24
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 733
+- done: 734
 - dropped: 30
 
 ## Procedures
