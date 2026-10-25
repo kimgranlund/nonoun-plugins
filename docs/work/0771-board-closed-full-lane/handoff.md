@@ -36,3 +36,15 @@ The failing test lands before or with the fix.
 ## Acceptance criteria
 1. A `board.py` selftest case reproduces the issue's report and passes; with the change reverted it fails (state the FAIL line).
 2. `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/board.py selftest` exits 0, `check.py` exits 0, `check-packaging.py` passes, and `git diff --check <base sha>` exits 0.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: pending verify
+
+Reproduced on main: a done ticket in a full lane (or with no lane record) rendered its step rows, and a verifier pass after an inherited red build still rendered 🔴.
+
+- `plugins/sdlc-lite/scripts/board.py`: `task_rows` renders any `status: done` ticket as one 🟢 closed row whatever its lane, unless a step still holds a `.running` marker (fleet_status's `ticket-done-board-open` flag depends on that row); `solo_lane` and `outcome_lane` are gone (no other caller) and the dead done branch under `not steps` with them. `step_row` checks a builder's inherited red only when no pass, fail, or `inherited red:` verdict comes after the build, so a later verifier verdict wins. Module docstring updated; no other doc describes this rule.
+- Selftest: case 5d now covers skips.md solo and full, Outcome solo and full, and no lane (5f folded in), with the status ready control; two new step_row cases (inherited red then pass reads 🟢 pass; inherited red then no verdict still reads 🔴).
+- Negative control, code reverted with the new tests kept: `board selftest: FAIL` with `skips full done ticket reads ['closed'], got ['built · builder L2, awaiting verify']`, the same for outcome full and no lane, and `a verifier pass after an inherited red build renders 🟢 pass, got ('🔴', 'inherited red · builder L2, ask the user')`.
+- Checks: `board.py selftest` (via gate_lock) exit 0, `fleet_status.py selftest` exit 0, `report.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` PASS, `git diff --check 73aefc97` exit 0.
+- Not changed: `steps.py next` (`steps.py:3337`) has the same ordering, but the builder inherited red return sits before the verifier read in a longer route, not a one-line fix, and T-0766 is editing that route; it needs its own follow-up.
