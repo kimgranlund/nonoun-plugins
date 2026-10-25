@@ -123,7 +123,9 @@ settle (T-0438, T-0452)
   refs/archive/<UTC date>/<integration> is written before the tree is removed (`--force`, so an untracked copied
   .sdlc/config does not stop it) and the branch deleted, and the close message prints. A close that refuses (not a
   plugin lane, lanes still open into the branch, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
-  keeps the branch and exits 1.
+  keeps the branch and exits 1. Exception (T-0770, GitHub #78): when this settle fast-forwarded the current branch and
+  the close refuses only because lanes are still open into the integration branch, it prints `settled: <current
+  branch> advanced; integration kept (lanes open: <names>)` and exits 0, so exit 1 stays "nothing merged" or a real failure.
   Plain settle moves the current branch (main) whenever the integration branch fast-forwards, with no --forward and no
   --gate (T-0761, pinned by selftest); --forward only adds the diverged case (merge main in, run the gates) and its
   refusals.
@@ -3163,7 +3165,10 @@ def cmd_settle(a):
     through lanes.close_lane, which writes refs/archive/<UTC date>/<branch> before it removes the tree and deletes the
     branch. A branch that is neither merged nor a fast-forward is refused (exit 2) and left whole; a close that refuses
     (not a plugin lane, lanes still open into it, no worktree) prints `lane still open: <path or branch> (<outcome>)`,
-    keeps the branch and exits 1. Local only, never a push. --require-covered (T-0481) first reads the newest
+    keeps the branch and exits 1, except that a close refused only because lanes are still open into it, after this
+    settle fast-forwarded the current branch (T-0770, GitHub #78), prints `settled: <branch> advanced; integration kept
+    (lanes open: <names>)` and exits 0: the branch moved, only the retirement waits. Local only, never a push.
+    --require-covered (T-0481) first reads the newest
     gate-ledger.jsonl entry on the branch (require_covered) and refuses (exit 2, nothing merged) an uncovered tip.
     --forward (T-0489, needs --gate) first brings a diverged branch level with the current branch through settle_forward
     (merge, regenerate, cover under the merge lock; T-0701: an integration branch that already holds the current
@@ -3172,6 +3177,7 @@ def cmd_settle(a):
     unless --force. --catch-up (T-0681) runs only that merge (settle_catch_up) and stops: no cover, no fast-forward, the
     worktree and branch kept."""
     cwd = pathlib.Path.cwd()
+    advanced = False
     try:
         if a.forward and a.catch_up:
             raise Refuse('settle: --catch-up and --forward exclude each other; nothing merged')
@@ -3205,6 +3211,7 @@ def cmd_settle(a):
             if p.returncode:
                 raise Refuse(f'{a.integration} is not a fast-forward of {head}: {(p.stderr or p.stdout).strip().splitlines()[0] if (p.stderr or p.stdout).strip() else p.returncode}; '
                              f'stop with state written, the branch is kept')
+            advanced = True
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
         return 2
@@ -3221,6 +3228,9 @@ def cmd_settle(a):
         r = lanes.close_lane(wt, into=head or 'HEAD', cwd=str(owner_dirs({'cwd': cwd}, 'lane-close')[0]))
     except lanes.LaneError as e:
         r = dict(rc=1, message=str(e))
+    if r['rc'] and advanced and r.get('row') == '4':  # T-0770, GitHub #78: main moved, only the close waits on open lanes
+        print(f"settled: {head or 'HEAD'} advanced; integration kept (lanes open: {r['message'].partition(': ')[2]})")
+        return 0
     if r['rc']:
         print(f"lane still open: {wt} ({first_line(r['message'], 'rc=%s' % r['rc'])})")
         return 1
@@ -5901,6 +5911,25 @@ def selftest():
                f'out={st.stdout!r} err={st.stderr!r}',
                st.returncode == 0 and sh(sv, 'rev-parse', 'main').stdout.strip() == tip_p != main_p
                and 'settled: fanout/plainff is in main' in st.stdout)
+        # T-0770 (GitHub #78): main advanced, but a host lane is still open into the integration branch, so the close
+        # refuses. That is a settled run, exit 0 with the kept line; a refused close with nothing merged stays exit 1 (the
+        # `fanout/plain` case above, the second settle below).
+        wt_h, tip_h = integration_with('fanout/openlane', 'h.txt')
+        open_tip = sh(sv, 'commit-tree', '-p', 'main', '-m', 'open lane work', 'main^{tree}').stdout.strip()
+        sh(sv, 'branch', 'worktree-T-0770-open', open_tip)  # a commit the integration branch lacks keeps the lane open
+        sys.modules['lanes'].host_record('T-0770-open', 'worktree-T-0770-open', 'fanout/openlane', 'T-0770', cwd=str(sv))
+        main_h = sh(sv, 'rev-parse', 'main').stdout.strip()
+        st = verb(sv, 'settle', 'fanout/openlane')
+        expect(f'T-0770 settle with a lane open: main moves from {main_h[:7]} to {tip_h[:7]} and settle exits 0 printing '
+               f'`settled: main advanced; integration kept (lanes open: T-0770-open)`, tree and branch kept, got '
+               f'rc={st.returncode} main={sh(sv, "rev-parse", "main").stdout.strip()[:7]} out={st.stdout!r} err={st.stderr!r}',
+               st.returncode == 0 and sh(sv, 'rev-parse', 'main').stdout.strip() == tip_h != main_h
+               and 'settled: main advanced; integration kept (lanes open: T-0770-open)' in st.stdout
+               and wt_h.exists() and sh(sv, 'rev-parse', '--verify', '-q', 'refs/heads/fanout/openlane').returncode == 0)
+        st = verb(sv, 'settle', 'fanout/openlane')
+        expect(f'T-0770 settle with a lane open, nothing merged: a rerun (main already holds the branch) keeps exit 1 and '
+               f'`lane still open`, got rc={st.returncode} out={st.stdout!r} err={st.stderr!r}',
+               st.returncode == 1 and 'lane still open' in st.stdout and 'advanced' not in st.stdout)
 
         def tree_of(repo_, branch):
             wt_, cur_ = None, None
