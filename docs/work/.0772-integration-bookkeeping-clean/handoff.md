@@ -2,7 +2,7 @@
 id: T-0772
 title: "Ticket and lane commands leave no tracked file dirty in the integration tree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,14 @@ The failing test lands before or with the fix.
 - Negative control (case 5e run before the fix): `integration bookkeeping: outcome is merged, got 'integration dirty: .sdlc/AGENTS.md' stderr=''`, plus the bookkeeping-commit and clean-tree lines.
 - Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fanout.py selftest` exit 0, `check.py` exit 0, `check-packaging.py` exit 0, `git diff --check <base>` exit 0.
 - Not done: moving `skips.md` to the records dir. It has about ten writers and readers outside `record_lane` (steps.py step cap, dispatch.py lane gate, lane override, replan and time approvals, tickets.py `skips_path` and `add_skip_line`), and moving only `record_lane` would split the file so close misses the lane record. In a fanout lane skips.md is committed with the lane and moved at close, so land never sees it dirty; the leftover is an untracked file on main when `steps.py lane` runs in the primary checkout. Suggested follow-up ticket: one skips.md location helper for every writer and reader.
+
+## Outcome
+
+2026-10-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: bd7ded57e5e8
+- Changed: see commits
+- Commits: 09931b0 T-0772: land commits regenerable bookkeeping instead of refusing integration dirty
+- Check: 1 A `fanout.py` selftest case reproduces the issue's report and passes; with the change reverted it...: pass
+- Check: 2 gate_lock selftest, `check.py`, `check-packaging.py`, `git diff --check`: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1883-1896: decide: notes.md is... -> notes.md
+- Follow-up: decide: docs/work/0772-integration-bookkeeping-clean/handoff.md: the Goal... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/fanout.py:1886-1889: note: the... -> notes.md
