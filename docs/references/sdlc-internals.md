@@ -148,7 +148,7 @@ Owner trees (T-0752): lanes.py picks the tree for records, `branch:` and `worktr
 
 - `lanes_root: <path>`, default `wtroot.py root`: the sibling `<main checkout parent>/<repo>.worktrees` (T-0563; the legacy `.claude/worktrees` and `.worktrees` are read for one release), or a `worktree_root:` line, or a bare clone's `<bare parent>/lanes` (T-0561); a set path is relative to the main worktree's toplevel.
 - `lane_into: <ref>`, default none (main).
-- `lane_setup: <cmd>`, default none; runs in a new tree. A repeated line adds a command; they run in order and the first failure stops the rest (T-0692).
+- `lane_setup: <cmd>`, default none; runs in a new tree. A repeated line adds a command; they run in order and the first failure stops the rest (T-0692). With a `package.json` and no `lane_setup:` line, `open` prints a note that the new tree has no `node_modules`. `open` also adds `/node_modules` to the git common dir's `info/exclude`, and `fanout.py land` does the same before it commits a host lane, so a `node_modules` symlink (which `.gitignore`'s `node_modules/` does not match) is never staged; land prints `land: committing untracked: <files>` before that commit (T-0773).
 - `lane_ports: <lo>-<hi>`, default off.
 - `lane_stale_days: <n>`, default 10.
 - `lane_min_age_hours: <n>`, default 2.

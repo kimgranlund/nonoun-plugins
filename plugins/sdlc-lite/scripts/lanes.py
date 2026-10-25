@@ -208,6 +208,8 @@ or when no lane holds the ticket. dispatch.py prepare verifier reads the same re
 from the snapshot's Lane-Base: trailer (pin(), the Python API it shares). Every close deletes
 refs/sdlc/ready/<id> for each local ticket of the record.
 
+Open also adds /node_modules to <git common dir>/info/exclude (T-0773): .gitignore's node_modules/ does not match a symlink.
+
 Record fields. .lane.json at the tree root, written by open, added to <git common dir>/info/exclude; a host record
 <lanes root>/host/<name>.lane.json has the same fields.
   lane      the lane name (the tree leaf)          kind      fanout, integration or solo (host for a host record)
@@ -228,7 +230,8 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
                             or a worktree_root: line (T-0561); a set path is relative to the main worktree's toplevel
   lane_into: <ref>          default none (main)
   lane_setup: <cmd>         run in a new tree; repeat the line for several commands, run in order, the first failure stops the rest;
-                            open prints and records setup: ok or setup: failed rc=<n> (<cmd>) and keeps the lane (T-0692)
+                            open prints and records setup: ok or setup: failed rc=<n> (<cmd>) and keeps the lane (T-0692);
+                            with package.json and no lane_setup: line, open prints a note instead (T-0773)
   lane_ports: <lo>-<hi>     off when absent; open picks the lowest free port under a flock on <lanes root>/lanes.lock
   lane_stale_days: <n>      default 10        lane_min_age_hours: <n>  default 2
   lane_keep: <branch>...    sweep keeps these  lane_names:, lane_sweep:  read and returned only (fanout owns them)
@@ -251,6 +254,7 @@ import roots  # same scripts/ dir: the work-root record prefixes (T-0626)
 Path = pathlib.Path
 RECORD = '.lane.json'
 LOCAL_SETTINGS = '.claude/settings.local.json'
+NODE_MODULES = '/node_modules'  # T-0773, #81: .gitignore's `node_modules/` does not match a symlink; the lane exclude does
 FIELDS = ('lane', 'kind', 'branch', 'base', 'base_sha', 'into', 'tickets', 'port', 'opened', 'run_id', 'setup', 'lock')
 KINDS = ('fanout', 'integration', 'solo')
 LOCAL_ID = re.compile(r'T-\d+')
@@ -1577,6 +1581,7 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
                 rec['lock'], lock_line = reason, f'locked: {reason}'
         write_record(tree, rec)
     add_exclude(ctx.common)
+    add_exclude(ctx.common, NODE_MODULES)
     if git(top, 'check-ignore', '-q', LOCAL_SETTINGS).returncode:  # T-0724: host-personal, so a lane's `git add -A` never stages it
         add_exclude(ctx.common, LOCAL_SETTINGS)
     local = Path(top, '.claude', 'settings.local.json')  # gitignored, so a new worktree lacks it; copy only this file, never log it
@@ -1644,6 +1649,9 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
                     lines.append(f'not committed: {h} (dirty before open); commit it yourself')
     if rec['port']:
         lines.append(f'port {rec["port"]}')
+    if not ctx.cfg['lane_setup'] and Path(top, 'package.json').is_file():  # T-0773: a new tree has no node_modules
+        lines.append('note: package.json but no lane_setup: in .sdlc/config; the new tree has no node_modules '
+                     '(set lane_setup: to an install command; a node_modules symlink is no fix)')
     if ctx.cfg['lane_setup']:
         rec['setup'] = 'ok'
         for cmd in ctx.cfg['lane_setup']:  # T-0692: in order, the first failure stops the rest
@@ -3342,6 +3350,29 @@ def case_lane_setup(script, base):
     return fails
 
 
+def case_node_modules(script, base):
+    """T-0773 (#81): .gitignore's `node_modules/` does not match a symlink, so a lane's commit and close must leave a
+    node_modules symlink alone; open warns when package.json exists and lane_setup: is unset, and is quiet when it is set."""
+    t, leaf, tree, b = finish_fixture(script, base, 'nodemod', gate='test -e fin2.txt')
+    t.commit('ignore node_modules', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\nnode_modules/\n'})
+    (tree / 'node_modules').symlink_to(t.top)  # added by hand to the lane, as in the report
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    fails = [] if rc == 0 else [f'node_modules: finish want exit 0, got {rc}: {o}']
+    if t.ok('cat-file', '-e', 'main:node_modules') or not t.ok('cat-file', '-e', 'main:fin2.txt'):
+        fails.append('node_modules: want main with the committed fin2.txt and no node_modules symlink')
+    t2 = Fixture(base, script, 'nodemod-open')
+    t2.ticket(7, 'Seven', claimed=True)
+    t2.commit('pkg', {'package.json': '{}\n'})
+    rc, o = t2.lanes('open', 'a', '--ticket', 'T-7', '--root', '.none')
+    if rc or 'note: package.json but no lane_setup:' not in o:
+        fails.append(f'node_modules: open with package.json and no lane_setup want the note, got {rc}: {o}')
+    t2.write({'.sdlc/config': 'lane_setup: true\n'})
+    rc, o = t2.lanes('open', 'b', '--ticket', 'T-7', '--root', '.none')
+    if rc or 'no lane_setup' in o:
+        fails.append(f'node_modules: open with lane_setup set want no note, got {rc}: {o}')
+    return fails
+
+
 def case_host_record(script, base):
     t = Fixture(base, script, 'hostrec')
     t.write({'.sdlc/config': 'lane_ports: 47110-47130\n'})
@@ -3963,6 +3994,8 @@ def run_selftest(script, src, base):
              'plugin_min above the manifest refuses open with exit 2 and the host command, nothing left; equal opens')
         need('lane_setup', case_lane_setup(script, base),
              'two lane_setup: lines run in order; a failing first line records failed with its command and skips the second (T-0692)')
+        need('node_modules', case_node_modules(script, base),
+             'a node_modules symlink in a lane is never committed and finish closes clean; open warns on package.json without lane_setup (T-0773)')
         need('codex agents', case_codex_agents(script, base),
              'a lane in an onboarded repo gets current .codex/agents; a repo never onboarded gets none')
         need('C10', case_c10(script, base) + case_archive_twice(script, base) + case_archive_clash(script, base),

@@ -2816,6 +2816,10 @@ def land_ticket(ctx, lock):
     if (ctx['kinds'][t.id][0] == 'solo' and wt and pathlib.Path(wt).is_dir()
             and (SUBAGENT_BRANCH.fullmatch(lane.branch) or HOST_BRANCH.fullmatch(lane.branch))):
         # T-0740: the host worktree sandbox refuses the solo's git, so it leaves its change uncommitted; land commits it
+        lanes.add_exclude(lanes.Ctx(str(ctx['cwd'])).common, lanes.NODE_MODULES)  # T-0773: no lane open ran for a host lane
+        new = git_out(wt, 'ls-files', '--others', '--exclude-standard').splitlines()
+        if new:  # T-0773: land commits every untracked file, so a stray scratch file is visible before it merges
+            say(ctx, lane, t.id, 'land: committing untracked: ' + ', '.join(new[:10]) + (f' (+{len(new) - 10} more)' if len(new) > 10 else ''))
         sha = wip_commit(wt, t.id, '', message=f'{t.id}: {t.title}')
         if sha:
             say(ctx, lane, t.id, f'committed the host lane: {sha}')
@@ -5699,13 +5703,14 @@ def selftest():
         sized_repo(ar, ['S'], {'.gitignore': gi})
         pa = fanout(ar, 'alpha=T-0001', '--integration', 'fanout/ar', '--lanes-dir', str(tmp / 'ar-lanes'), '--gate', 'true',
                     '--driver', 'echo k > keep.txt; echo l > verifier-L3.log; : > .run.lock; : > x.running; '
-                                'mkdir -p .sdlc/t1; echo l > .sdlc/t1/v.log; echo a > .sdlc/t1/a.attempt.json')
+                                'mkdir -p .sdlc/t1; echo l > .sdlc/t1/v.log; echo a > .sdlc/t1/a.attempt.json; '
+                                'ln -s /nonexistent-t0773 node_modules')  # T-0773: a node_modules symlink
         # the lane commit is the merge's second parent: the close commit moves the folder's records out of git
         mg_ar = sh(ar, 'rev-list', '--merges', '-1', 'fanout/ar').stdout.strip()
         ls_ar = sh(ar, 'ls-tree', '-r', '--name-only', f'{mg_ar}^2').stdout.split() if mg_ar else []
         expect(f'case 25 lane commit: artifacts excluded, keep.txt and attempt.json kept, got rc={pa.returncode} '
                f'out={pa.stdout[-300:]!r} tree={ls_ar}',
-               'keep.txt' in ls_ar and '.sdlc/t1/a.attempt.json' in ls_ar
+               'keep.txt' in ls_ar and '.sdlc/t1/a.attempt.json' in ls_ar and 'node_modules' not in ls_ar
                and not [f for f in ls_ar if f.endswith(('.log', '.run.lock', '.running'))])
 
         # case 26 (T-0341): the printed prep commit command leaves artifacts unstaged (the skill's verifier commit is gone:
@@ -6404,6 +6409,8 @@ def selftest():
         hagent = hw / '.claude' / 'worktrees' / 'agent-y'
         sh(hw, 'worktree', 'add', '-q', '-b', 'worktree-agent-y', str(hagent), 'main')
         (hagent / 'y.txt').write_text('y\n', encoding='utf-8')  # the solo's change, left uncommitted
+        (hagent / 'scratch-note.txt').write_text('junk\n', encoding='utf-8')  # T-0773: a stray file land commits, and names
+        (hagent / 'node_modules').symlink_to(hw)  # T-0773: a node_modules symlink, which .gitignore's `node_modules/` misses
         (hagent / hw_rel).parent.mkdir(parents=True, exist_ok=True)
         (hagent / hw_rel).write_text('solo report T-0740\n', encoding='utf-8')  # its report at the worktree copy
         hwrec = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', '--agent-id', 'y',
@@ -6435,6 +6442,12 @@ def selftest():
                f'err={hwl.stderr[-300:]!r}',
                hwl.returncode == 0 and hw_subj == 'T-0001: Ticket t1' and 'merged' in hwl.stdout
                and hres.is_file() and hres.read_text() == 'solo report T-0740\n')
+        hw_tree = sh(hw, 'ls-tree', '-r', '--name-only', 'worktree-agent-y').stdout.split()
+        hw_line = next((ln for ln in hwl.stdout.splitlines() if 'land: committing untracked: ' in ln), '')
+        expect(f'case 30b host worktree (T-0773): the land commit holds y.txt but no node_modules symlink, and land names the '
+               f'untracked files it commits, got tree={hw_tree} out={hwl.stdout[-600:]!r}',
+               'y.txt' in hw_tree and 'node_modules' not in hw_tree and 'scratch-note.txt' in hw_line
+               and 'node_modules' not in hw_line)
 
         # case 32 (T-0452): a full lane tree made with prep's printed lanes.py open line closes after its last ticket lands
         fl = tmp / 'full-lane'
