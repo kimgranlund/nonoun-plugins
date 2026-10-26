@@ -2,7 +2,7 @@
 id: T-0791
 title: "new design plugin from the user-level design skills"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0789]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -50,3 +50,25 @@ Checks: `python3 scripts/check-packaging.py` exit 0; `node scripts/check-kit.mjs
 - `cd plugins/design/skills/mathematical-design-system && node scripts/check-curvature.mjs` exits 0.
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 - `test -z "$(find plugins/design -name .DS_Store -o -name node_modules -o -name __pycache__ -o -name .git -o -name resources -o -type l)"` exits 0.
+
+## Outcome
+
+2026-10-25 · lane: full L3 · verdict: pass · verifier: verifier-L3 (fable) · base: e64133fd12a4
+- Changed: see commits
+- Commits: a7a1dbf T-0791: record the solo L3 lane choice in skips.md; eccc80c T-0791: peer Codex categories and outcome notes; 11e172f T-0791: outcome and acceptance criteria; c4ce660 T-0791: allowlist broken links carried over from the design skills; 8ec1a88 T-0791: add the design plugin
+- Check: 1 `python3 scripts/check-packaging.py` exits 0 (catalogs, manifests, skill names and sizes, design ...: pass
+- Check: 2 `cd plugins/design/skills/base-ui && node scripts/check-kit.mjs` exits 0: pass
+- Check: 3 `cd plugins/design/skills/mathematical-design-system && node scripts/check-geometry.mjs` exits 0: pass
+- Check: 4 `cd plugins/design/skills/mathematical-design-system && node scripts/check-curvature.mjs` exits 0: pass
+- Check: 5 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Check: 6 `test -z "$(find plugins/design -name .DS_Store -o -name node_modules -o -name __pycache__ -o -na...: pass
+- Follow-up: note: docs/reports/broken-links-allowlist.md:7 on conductor choice 1... -> notes.md
+- Follow-up: decide: plugins/design/skills/base-ui/references/pre-differential/skill-ent... -> notes.md
+- Follow-up: note: plugins/design/skills/ui-kit-inspector/examples/README.md:9 on... -> notes.md
+- Follow-up: note: scripts/check-packaging.py:67 on conductor choice 3: check_design... -> notes.md
+- Follow-up: note: scripts/check-packaging.py:30 the hardcoded catalog set... -> notes.md
+- Follow-up: fix-now: README.md:3 says "Two independently installable plugins" above the... -> notes.md
+- Follow-up: note: docs/references/plugin-compatibility.md:19 describes... -> notes.md
+- Follow-up: note: plugins/design/skills/make-figma-agent-connector/intent.md:2 and... -> notes.md
+- Follow-up: note: plugins/design/skills/wireframe-review/scripts/export-type-snapshot... -> notes.md
+- Follow-up: note: plugins/design/skills/component-variants/ui-kit.lock.json:1 and... -> notes.md

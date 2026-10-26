@@ -7,11 +7,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0788 | [0788-solo-review-rerun](0788-solo-review-rerun/handoff.md) | advance on a solo reruns the pre-verify review after a verifier fail | bug | L1 | P2 | none | ⏳ proposed |
-| T-0791 | [0791-design-plugin](0791-design-plugin/handoff.md) | new design plugin from the user-level design skills | feature | L3 | P2 | T-0789 | 🟡 claimed |
 | T-0790 | [0790-context-skills-into-progressive-context](0790-context-skills-into-progressive-context/handoff.md) | move the context skills into the context plugin | feature | L3 | P2 | T-0789, T-0793 | ⏳ proposed |
 | T-0794 | [0794-guidance-gate-rename](0794-guidance-gate-rename/handoff.md) | dispatch.py prepare refuses a lane that renames a guidance file its handoff names | bug | L2 | P2 | none | ⏳ proposed |
 
-Closed: 752 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 753 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -108,3 +107,4 @@ Closed: 752 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/steps.py:1110-1120: decide: readers do not find skips.md lines written in the old location. `skips_path` returns the lane twin whenever its folder exists, not when the file exists. A probe (main checkout plus a lane listing T-0004, main's `skips.md` holding `- lane: full ...`, `step cap approved: plan.md: me: why`, `lane override: solo`, uncommitted, none in the lane) printed `step_cap_approved ... False`, and `steps.py lane` ignored the old override and wrote only to the lane's `skips.md`. This affects only in-flight tickets whose old lines are uncommitted in main (committed ones are in the lane's copy too); the effect is a re-decided lane or a re-asked approval, not data loss. A fallback to the main file when the lane twin lacks it, for reads, would close it. (from T-0787: steps.py lane writes skips.md in the tree that owns the ticket (2026-10-25))
 - decide: plugins/sdlc-lite/scripts/steps.py:1110-1120: note: the integration-tree case meets the Goal. `skips_path` redirects only a task folder in the main checkout (`main_top == top`); a folder in the lane or in an integration worktree keeps its own file, so `fanout.py land` there still writes its own copy by design, and the Goal (main stays clean when `steps.py lane` runs from main) holds. `fanout.py` has its own `skips.md` path builders (fanout.py:2589) outside this helper and outside criterion 2's scope; not changed. (from T-0787: steps.py lane writes skips.md in the tree that owns the ticket (2026-10-25))
 - decide: dispatch.py `advance_solo` reruns the review after a verifier fail (no order.py rank for solo reports); the Outcome's Limitation line records it as a follow-up. (from T-0732: Project hook for a required review role between build and verify (2026-10-25))
+- decide: plugins/design/skills/base-ui/references/pre-differential/skill-entry-history.md:43 whether the 21 `Projects/ui-kit` links across base-ui and wireframe-review should become plain text in the sources, so the allowlist shrinks and the plugin stays identical to them. (from T-0791: new design plugin from the user-level design skills (2026-10-25))
