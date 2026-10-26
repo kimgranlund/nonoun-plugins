@@ -679,3 +679,9 @@
 ## T-0793: rename the progressive-context plugin to context (2026-10-25)
 
 - note: `.github/workflows/release-check.yml` names no plugin path, so CI triggers need no change.
+
+## T-0792: new dev-tools plugin from the user-level machine and harness skills (2026-10-25)
+
+- note: `plugins/dev-tools/skills/closed-loop-run/SKILL.md:106` (also lines 170, 174, 210) now only says "Read references/taxonomy-and-hardening.md before acting"; the cause-class rule and the evaluator-integrity MUST rule are one hop away, so a model that skips the read loses them. Accepted trade for the size limit.
+- note: `scripts/check-packaging.py` link scan now masks inline code spans too; a real link written inside backticks would no longer be checked. Intentional per the Outcome.
+- note: `plugins/dev-tools/AGENTS.md` and `.claude-plugin/plugin.json` are consistent with the root `AGENTS.md`, which still says "Progressive Context (to be renamed `context`, T-0793)"; the rename landed on main, so the merge will touch those lines.
