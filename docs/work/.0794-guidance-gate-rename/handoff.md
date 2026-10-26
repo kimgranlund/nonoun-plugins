@@ -2,7 +2,7 @@
 id: T-0794
 title: "dispatch.py prepare refuses a lane that renames a guidance file its handoff names"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,11 @@ Checks:
 - `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (dispatch selftest: PASS, 0 FAIL lines).
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
 - `git diff --check 1a3ac0c391f886cd048efae4f8320f811ebab0ac` exit 0.
+
+## Outcome
+
+2026-10-25 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 1a3ac0c391f8
+- Changed: see commits
+- Commits: 6444722 T-0794: lane guidance gate skips paths the lane's own diff removed
+- Check: 1 selftest case: a lane that renamed a named guidance file since its base prepares without the miss...: pass
+- Check: 2 dispatch selftest through gate_lock exits 0, check.py exits 0, git diff --check exits 0: pass
