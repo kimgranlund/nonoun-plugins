@@ -11,7 +11,7 @@
     "shortDescription": "UI construction, geometry, palettes, inspector jigs, wireframes and design critique.",
     "longDescription": "UI construction, Differential Forms geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique.",
     "developerName": "Kim Granlund",
-    "category": "Design",
+    "category": "Developer Tools",
     "capabilities": [
       "Read",
       "Write"

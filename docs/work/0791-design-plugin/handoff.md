@@ -37,7 +37,11 @@ Model, effort and permission defaults in the skills stay as they are.
 - 56 broken relative links came over from the sources: links to a UI-KIT checkout on this Mac, historical files written from the skill root, five targets already missing in the source skills, and one to the dropped `resources/reports/`. They are listed in `docs/reports/broken-links-allowlist.md` with reasons so `check.py` item 32 stays green.
 - Pre-existing, not changed: `component-variants/ui-kit.lock.json` (version 1.0.0) and `wireframe-review/ui-kit.lock.json` do not match base-ui's identity, so `component-variants/scripts/check-build.mjs` fails in the source and in the plugin alike; the locks say to update them only after a kit review.
 
-Checks: `python3 scripts/check-packaging.py` exit 0; `node scripts/check-kit.mjs` (base-ui) exit 0; `node scripts/check-geometry.mjs` and `node scripts/check-curvature.mjs` (mathematical-design-system) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` exit 0.
+- Codex category values copy the peers (`Developer Tools` in the manifest, `Productivity` in the catalog), the only values with load evidence here; no check validates the field.
+- `git diff --check` over the whole lane flags trailing whitespace only in copied files: the two font `OFL.txt` licenses, generated `geometry-runtime/` and `proportion-lab/dist/` modules, and a few base-ui, wireframe-review and proportion-lab sources. They stay byte-identical to the sources (base-ui is sealed).
+- Left for the integrator after T-0791, T-0792 and T-0793 land: `README.md` line 3 says "Two independently installable plugins" and its Claude install line names two plugins; `docs/references/plugin-compatibility.md` lines 15 and 16 say "both".
+
+Checks: `python3 scripts/check-packaging.py` exit 0; `node scripts/check-kit.mjs` (base-ui) exit 0; `node scripts/check-geometry.mjs` and `node scripts/check-curvature.mjs` (mathematical-design-system) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` on the shared-file edits exit 0.
 
 ## Acceptance criteria
 - `python3 scripts/check-packaging.py` exits 0 (catalogs, manifests, skill names and sizes, design cross-skill links).
