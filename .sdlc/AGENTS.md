@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:fe9e3617c683 -->
+<!-- sdlc-lite:managed:start v1 sha256:9757f2de4b8c -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -17,12 +17,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0792 new dev-tools plugin from the user-level machine and harness skills (docs/work/0792-dev-tools-plugin)
   - T-0793 rename the progressive-context plugin to context (docs/work/0793-rename-progressive-context-plugin)
 - ready: 0
-- claimed: 1
-  - T-0789 repository charter for four plugins (docs/work/0789-plugin-charter), claimed by sdlc-lite-author 2026-10-25
+- claimed: 0
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 749
+- done: 750
 - dropped: 30
 
 ## Procedures

@@ -671,3 +671,7 @@
 ## T-0732: Project hook for a required review role between build and verify (2026-10-25)
 
 - decide: dispatch.py `advance_solo` reruns the review after a verifier fail (no order.py rank for solo reports); the Outcome's Limitation line records it as a follow-up.
+
+## T-0789: repository charter for four plugins (2026-10-25)
+
+- note: AGENTS.md:31 the new Read for the task row for design and dev-tools links nothing yet by design; T-0791 and T-0792 should replace it with links to each plugin's AGENTS.md.

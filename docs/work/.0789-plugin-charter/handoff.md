@@ -2,7 +2,7 @@
 id: T-0789
 title: "repository charter for four plugins"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,13 @@ Checks:
 - `! grep -n 'two peer plugins\|the two plugins' AGENTS.md` exits 0.
 - `grep -c 'design\*\* (planned\|dev-tools\*\* (planned' AGENTS.md` prints 2.
 - `git diff --check` exits 0.
+
+## Outcome
+
+2026-10-25 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: c117ce52a1fb
+- Changed: see commits
+- Commits: 1591a66 T-0789: acceptance criteria; 02500ff T-0789: record outcome; 42fdd3e T-0789: repository charter names four plugins
+- Check: 1 `! grep -n 'two peer plugins\|the two plugins' AGENTS.md` exits 0 (Done when: grep prints nothing): pass
+- Check: 2 `grep -c 'design\*\* (planned\|dev-tools\*\* (planned' AGENTS.md` prints 2 (Done when: each new p...: pass
+- Check: 3 `git diff --check` exits 0: pass
+- Follow-up: note: AGENTS.md:31 the new Read for the task row for design and dev-tools... -> notes.md
