@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cross-Harness Plugin Author"
+  short_description: "Author Claude and Codex plugins together"
+  default_prompt: "Use $author-cross-harness-plugins to create a plugin that works in both Claude Code and Codex."

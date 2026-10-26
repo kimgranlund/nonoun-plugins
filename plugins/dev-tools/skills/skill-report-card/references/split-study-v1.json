@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "batchId": "split-consumption-confirmation-2026-10-11-1",
+  "sources": {
+    "metrics": {
+      "relativePath": "evaluator/metrics.json",
+      "sha256": "f4ea411914f3aeb004fba23576fc3b97c136348931acdcf9316ad099d00a7bb5"
+    },
+    "revision": {
+      "relativePath": "evaluator/revision-new-results.json",
+      "sha256": "3cbb58066d3c93195876583f4946a5fba6fd18420b5bb8f78c2f0008ee7e439e"
+    },
+    "qualification": {
+      "relativePath": "evaluator/qualification.json",
+      "sha256": "272f3737983898e6da012f5f9fda685132d6784011f13db065c9f606512120b5"
+    },
+    "preservation": {
+      "relativePath": "evaluator/preservation.json",
+      "sha256": "45aa71891727832d232e894114a658f7e50fc4f69e517d4ad9ddb51258381bda"
+    },
+    "protocol": {
+      "relativePath": "evaluator/protocol.json",
+      "sha256": "f680a4446f5be217b3a81e55d4b68f63b835ba00a046ae41067f41de2052ba64"
+    },
+    "generation": {
+      "relativePath": "sealed/03-revision/002-reservation/generated/generation.json",
+      "sha256": "d04582ac5022646dc1a806a499df62f00718190135ca5e4291673aa4bb199378"
+    }
+  },
+  "reportSHA256": "5c538e7a452bcae6778daeec19fc6887cda649dbf1e52eb3bfeaa791e77506ae"
+}

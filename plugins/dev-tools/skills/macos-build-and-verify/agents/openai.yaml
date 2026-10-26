@@ -1,0 +1,4 @@
+interface:
+  display_name: "LG Controls macOS Build"
+  short_description: "Build and visually verify the LG Controls Mac app"
+  default_prompt: "Use $macos-build-and-verify to build and check the LG Controls Mac app."

@@ -1,0 +1,26 @@
+episode:
+  id: E-001
+  objective: ""
+  observed: ""
+  expected: ""
+  scope:
+    allowed: []
+    forbidden: []
+  invariants: []
+  hypotheses: []
+  verification:
+    direct: ""
+    local: ""
+    representative: ""
+  budget:
+    attempts: 4
+    wall_time: null
+    cost: null
+    change_radius: local
+    architecture_changes: false
+  stop:
+    no_progress_after: 2
+    confidence_floor: null
+  attempts: []
+  terminal_state: null
+  residual_risk: []

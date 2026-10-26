@@ -27,8 +27,8 @@ def check(root):
             source = entry['source']['path'] if host == 'codex' else entry['source']
             require(source == f'./plugins/{name}', f'{host}: wrong source for {name}')
             require((root / source).is_dir(), f'{host}: missing source for {name}')
-    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'progressive-context'},
-            'catalogs must contain both peer plugins')
+    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'progressive-context', 'dev-tools'},
+            'catalogs must contain every peer plugin')
     for name in sorted(catalogs[0]):
         plugin = root / 'plugins' / name
         codex = json.loads((plugin / '.codex-plugin/plugin.json').read_text())
@@ -42,7 +42,8 @@ def check(root):
             require(text.startswith('---\n'), f'{skill}: missing frontmatter')
             # The host re-injects a skill body after compaction, capped at 20,000 characters (T-0659).
             require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
-        require((plugin / 'skills' / name / 'SKILL.md').is_file(), f'{name}: missing entry point')
+        # A skill collection such as dev-tools has no skill named after the plugin.
+        require((plugin / 'skills' / name / 'SKILL.md').is_file() or name == 'dev-tools', f'{name}: missing entry point')
     sdlc = root / 'plugins/sdlc-lite'
     require(not (sdlc / 'hooks/hooks.json').exists(), 'Claude hooks leak into Codex discovery')
     manifest = json.loads((sdlc / '.claude-plugin/plugin.json').read_text())
@@ -56,9 +57,9 @@ def check(root):
     for skill in (sdlc / 'skills').glob('*/SKILL.md'):
         if skill.parent.name != 'sdlc-lite':
             require('${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
-    for path in (root / 'plugins/progressive-context/skills').rglob('*.md'):
-        # Contract templates use illustrative paths inside fenced examples.
-        text = re.sub(r'```.*?```', '', path.read_text(), flags=re.S)
+    for path in [p for n in ('progressive-context', 'dev-tools') for p in (root / 'plugins' / n / 'skills').rglob('*.md')]:
+        # Contract templates use illustrative paths inside fenced examples and inline code.
+        text = re.sub(r'`[^`\n]*`', '', re.sub(r'```.*?```', '', path.read_text(), flags=re.S))
         for target in re.findall(r'\]\(([^)]+)\)', text):
             if '://' not in target and not target.startswith('#'):
                 require((path.parent / target.split('#')[0]).exists(), f'{path}: broken link {target}')

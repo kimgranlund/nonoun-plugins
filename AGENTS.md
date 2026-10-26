@@ -9,7 +9,7 @@ All paths and shell commands in this file are relative to the repository root.
 - **Progressive Context** (to be renamed `context`, T-0793) owns durable intent, capability contracts, context navigation, context routing, system mapping, evidence, and qualification for reuse.
 - **SDLC Lite** owns work execution: tickets, plans, roles, runs, verification, escalation, and closure.
 - **design** (planned, T-0791) owns UI construction, geometry, palettes, and design review.
-- **dev-tools** (planned, T-0792) owns machine, repo, and harness care.
+- **dev-tools** owns machine, repo, and harness care.
 - Integrate through links to authoritative records. Keep execution status and capability qualification distinct.
 - Repository maintenance instructions are not automatically shipped as consumer skill context.
 
@@ -28,7 +28,8 @@ All paths and shell commands in this file are relative to the repository root.
 |---|---|
 | Progressive Context (to be renamed `context`, T-0793) skill or references | [Plugin guidance](plugins/progressive-context/AGENTS.md) |
 | SDLC Lite roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
-| design or dev-tools plugin (planned, T-0791, T-0792; no plugin guidance exists yet) | The ownership lines above; link each plugin's `AGENTS.md` here once it exists |
+| design plugin (planned, T-0791; no plugin guidance exists yet) | The ownership lines above; link the plugin's `AGENTS.md` here once it exists |
+| dev-tools skills or references | [Plugin guidance](plugins/dev-tools/AGENTS.md) |
 | Codex execution or generated agents | [Codex execution guide](docs/references/codex-role-execution.md) |
 | Claude hook behavior | [Hook maintenance](docs/references/claude-hooks.md) |
 | Marketplace or host packaging | [Compatibility report](docs/references/plugin-compatibility.md) and `scripts/check-packaging.py` |
