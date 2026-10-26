@@ -2,6 +2,24 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
+## [0.38.0] - 2026-10-26
+
+Report: [docs/reports/2026-10-26-release-0-38-0.md](docs/reports/2026-10-26-release-0-38-0.md). 6 tickets: the repository now ships four peer plugins (T-0789 to T-0793) and one dispatch gate fix (T-0794). SDLC Lite behavior changes only in the gate fix.
+
+### Added
+
+- Two new peer plugins in the same marketplace: `design` 0.1.0 with 8 UI, geometry, palette and design review skills (T-0791), and `dev-tools` 0.1.0 with 7 machine, repo and harness care skills (T-0792). The repository charter names four plugins (T-0789).
+- The `context` plugin 0.3.0 adds `context-fog-of-war`, `context-routing-review`, `generative-systems`, `system-atlas` and `icm-architect` (T-0790); see [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
+
+### Changed
+
+- The `progressive-context` plugin is renamed `context` (install id `context@sdlc-lite`) and lives in `plugins/context/`; its skill keeps the name `progressive-context` (T-0793).
+- `scripts/check-packaging.py` checks all four plugins in both catalogs, and the links and names in the context, design and dev-tools skills (T-0790 to T-0793).
+
+### Fixed
+
+- `dispatch.py prepare` no longer refuses a lane whose own commits since its base renamed or deleted a guidance file the handoff names; a lane that merely lacks the file still refuses (T-0794).
+
 ## [0.37.0] - 2026-10-25
 
 Report: [docs/reports/2026-10-25-release-0-37-0.md](docs/reports/2026-10-25-release-0-37-0.md). 4 tickets: a pre-verify review role (T-0732, #61), `dispatch.py wait` (T-0733, #63), and the two owner-tree follow-ups 0.36.0 left open (T-0786, T-0787, #80).

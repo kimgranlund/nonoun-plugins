@@ -15,7 +15,7 @@ Context works directly in either host. SDLC Lite supports native Codex execution
 
 Codex: add this repository as a marketplace with `codex plugin marketplace add /absolute/path/to/sdlc-lite`, then select the plugins in the app. The catalog is `.agents/plugins/marketplace.json`.
 
-Claude Code: `/plugin marketplace add /absolute/path/to/sdlc-lite`, then install any of `context@sdlc-lite`, `sdlc-lite@sdlc-lite` and `dev-tools@sdlc-lite`. Its catalog is `.claude-plugin/marketplace.json`.
+Claude Code: `/plugin marketplace add /absolute/path/to/sdlc-lite`, then install any of `context@sdlc-lite`, `sdlc-lite@sdlc-lite`, `design@sdlc-lite` and `dev-tools@sdlc-lite`. Its catalog is `.claude-plugin/marketplace.json`.
 
 Start a fresh chat after installation. No plugin installs itself or modifies your user configuration.
 
