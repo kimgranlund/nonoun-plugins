@@ -1,0 +1,2158 @@
+{
+  "schemaVersion": 1,
+  "scope": "Authored usage guidance for maintained canonical demonstration members; family/dedicated contracts own component semantics and state applicability. No new behavior or verification authority.",
+  "sourceRegistry": "references/style/components/specimens.json",
+  "members": [
+    {
+      "id": "checkbox",
+      "family": "choices",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "fieldset:has(.collection)",
+      "ownerSelectors": [
+        ".collection",
+        "#all"
+      ],
+      "operate": [
+        "Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together."
+      ],
+      "inspect": [
+        "A partial available selection makes All collections indeterminate. The archived checkbox remains checked and unavailable.",
+        "The confirmation checkbox is a separate invalid example; it is not an invalid collection item. Checking it clears the error and its description reference; unchecking restores both.",
+        "Pointer-toggle a checkbox off: its boundary remains when no focus ring is displayed. Tab to it: the visible ring replaces the boundary without resizing the mark."
+      ],
+      "requiredPeers": [
+        "#all",
+        ".collection"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:choices"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:choices"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "radio",
+      "family": "choices",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "fieldset:has([name=delivery])",
+      "ownerSelectors": [
+        "input[name=delivery]"
+      ],
+      "operate": [
+        "Tab to the delivery group and use native radio arrows or activate an available label."
+      ],
+      "inspect": [
+        "Daily and Weekly are mutually exclusive; Instant remains disabled. Mixed is not a radio state."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:choices"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:choices"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "choice-card",
+      "family": "choices",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "fieldset:has(.review-route)",
+      "ownerSelectors": [
+        ".review-route"
+      ],
+      "operate": [
+        "Activate a required review-route label to choose Local or Peer."
+      ],
+      "inspect": [
+        "The chosen route clears its related error and removes the error description reference through the example controller. This radio-backed card does not demonstrate checkbox mixed.",
+        "Checkbox-backed cards elsewhere are separate examples, not states of this radio group."
+      ],
+      "requiredPeers": [
+        ".review-route",
+        "#review-route-error"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:choices"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:choices"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "switch",
+      "family": "switch",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".switch__root",
+      "ownerSelectors": [
+        "#notifications"
+      ],
+      "operate": [
+        "Toggle Local save confirmations using its label or Space."
+      ],
+      "inspect": [
+        "The native checked value owns the track position. The managed switch remains checked and disabled."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:switch"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:switch"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "range",
+      "family": "range",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(> #volume)",
+      "ownerSelectors": [
+        "#volume",
+        "#volume-number"
+      ],
+      "operate": [
+        "Tab to Volume and use native range arrows; use Exact volume to enter a value in steps of five between 0 and 100."
+      ],
+      "inspect": [
+        "With the controller, the slider, numeric alternative, Current output and painted progress synchronize. Native slider value remains usable without that synchronization."
+      ],
+      "requiredPeers": [
+        "#volume",
+        "#volume-number",
+        "#volume-output"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:range"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:range"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "range-disabled",
+      "family": "range",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(> #disabled-range)",
+      "ownerSelectors": [
+        "#disabled-range"
+      ],
+      "operate": [],
+      "inspect": [
+        "Inspect the managed range at 60. It is unavailable; a keyboard-focus or editing task does not apply."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:range"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:range"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "text-field",
+      "family": "fields",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(> #workspace)",
+      "ownerSelectors": [
+        "#workspace"
+      ],
+      "operate": [
+        "Edit Workspace or clear its required value."
+      ],
+      "inspect": [
+        "This isolated field supports native editing/required constraints; it does not save. Save, stale status and restoring the snapshot belong to the actions specimen that includes this field."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:fields"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:fields"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "input-group",
+      "family": "fields",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(#query)",
+      "ownerSelectors": [
+        "#query"
+      ],
+      "operate": [
+        "Enter or clear a record identifier in Search."
+      ],
+      "inspect": [
+        "The prefix is decoration and the input owns editing/focus. This example does not execute a search."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:fields"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:fields"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "readonly-field",
+      "family": "fields",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(> #readonly-reference)",
+      "ownerSelectors": [
+        "#readonly-reference"
+      ],
+      "operate": [
+        "Focus and select the read-only reference text."
+      ],
+      "inspect": [
+        "The reference can be inspected; editing is unavailable."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:fields"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:fields"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "disabled-field",
+      "family": "fields",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(> #disabled-field)",
+      "ownerSelectors": [
+        "#disabled-field"
+      ],
+      "operate": [],
+      "inspect": [
+        "Inspect the unavailable workspace. Native editing and a normal Tab stop do not apply."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:fields"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:fields"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "invalid-group",
+      "family": "fields",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(#group-invalid)",
+      "ownerSelectors": [
+        "#group-invalid"
+      ],
+      "operate": [
+        "Focus or edit Invalid reference to inspect its input-group geometry."
+      ],
+      "inspect": [
+        "The authored invalid attribute and error are an illustration; this specimen has no numeric validation/repair controller. Editing alone must not be described as clearing its error."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:fields"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:fields"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "actions",
+      "family": "actions",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".actions__root:has(> #save)",
+      "ownerSelectors": [
+        "#save",
+        "#reset"
+      ],
+      "operate": [
+        "Enter a workspace name and activate Save; edit it again to inspect stale status; activate Restore saved value.",
+        "Clear the workspace then activate Save to inspect the local validation error."
+      ],
+      "inspect": [
+        "Save updates only the local snapshot. Restore uses that snapshot, not a fixed initial value. The notification dependency controls local confirmation visibility."
+      ],
+      "requiredPeers": [
+        "#workspace",
+        "#workspace-error",
+        "#workspace-help",
+        "#save",
+        "#reset",
+        "#saved",
+        "#save-confirmation",
+        "#notifications"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:actions"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:actions"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "busy-action",
+      "family": "actions",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "#local-check-example",
+      "ownerSelectors": [
+        "#simulate-check"
+      ],
+      "operate": [
+        "Activate Run local check simulation and wait for completion."
+      ],
+      "inspect": [
+        "Running disables the action and sets aria-busy while status changes. Completion restores availability and reports that no external action occurred."
+      ],
+      "requiredPeers": [
+        "#simulate-check",
+        "#check-status"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:actions"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:actions"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "segments",
+      "family": "navigation",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".segments__root",
+      "ownerSelectors": [
+        ".segments__root button"
+      ],
+      "operate": [
+        "Activate Comfortable or Compact."
+      ],
+      "inspect": [
+        "The selected pressed state changes with the activated option. The example controller changes the #records-section density when present, otherwise #catalog; it does not promise that only the segment container changes. The disabled option remains unavailable."
+      ],
+      "requiredPeers": [
+        ".segments__root button"
+      ],
+      "requiredPeerAlternatives": [
+        [
+          "#records-section",
+          "#catalog"
+        ]
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:navigation"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:navigation"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "tabs",
+      "family": "navigation",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".tabs__list",
+      "ownerSelectors": [
+        ".tabs__list [role=tab]"
+      ],
+      "operate": [
+        "Tab to the selected tab; use Left/Right arrows or Home/End to select an available tab."
+      ],
+      "inspect": [
+        "Selection moves focus and displays the associated panel. The unavailable tab is skipped."
+      ],
+      "requiredPeers": [
+        "#tab-summary",
+        "#tab-history",
+        "#tab-unavailable",
+        "#panel-summary",
+        "#panel-history",
+        "#panel-unavailable"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:navigation"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:navigation"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "destination-links",
+      "family": "navigation",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "nav:has(.nav__item)",
+      "ownerSelectors": [
+        "a.nav__item"
+      ],
+      "operate": [
+        "Activate Catalog or Records to follow the local destination."
+      ],
+      "inspect": [
+        "These are links, not tab-selection controls. The authored aria-current marks Catalog; this fixture has no current-route updater."
+      ],
+      "requiredPeers": [
+        "#catalog",
+        "#records-section"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:navigation"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:navigation"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "breadcrumbs",
+      "family": "navigation",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "nav:has(.breadcrumbs__root)",
+      "ownerSelectors": [
+        ".breadcrumbs__root a"
+      ],
+      "operate": [
+        "Activate Studio to follow the local Catalog destination."
+      ],
+      "inspect": [
+        "Components is the authored current item, not another action. Inspect baseline/inline alignment separately from link activation."
+      ],
+      "requiredPeers": [
+        "#catalog"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:navigation"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:navigation"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "table",
+      "family": "collections",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".table__viewport",
+      "ownerSelectors": [
+        "#filter",
+        "#sort",
+        "#all-rows",
+        ".row-check"
+      ],
+      "operate": [
+        "Choose a status; use Select visible rows; activate Name to toggle sort direction.",
+        "Choose Archived for an empty result, then All to recover."
+      ],
+      "inspect": [
+        "Check actual visible rows, selected values/count and row order as well as aria markers. Filtering retains existing selections; select-visible changes only shown rows.",
+        "When columns extend beyond the view, the persistent scroll hint names the keyboard-reachable local table region; scroll to inspect every scoped column."
+      ],
+      "requiredPeers": [
+        "#filter",
+        "#sort",
+        "#all-rows",
+        ".row-check",
+        "#records-empty",
+        "#selection-count",
+        "tbody tr"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:collections"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:collections"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "list",
+      "family": "identity",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".list__root",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect wrapped identity rows. This is a static list, with no list selection, sorting or filtering controller. Table data behavior must not be assigned to it."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:identity"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:identity"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "avatar",
+      "family": "identity",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".avatar__root",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect initials and the embedded image in the same avatar geometry. These are authored illustrations, not upload or image-loading workflows."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:identity"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:identity"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "badge",
+      "family": "identity",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".badge__root",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect the static Active badge. It does not change status or perform an operation."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:identity"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:identity"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "notice",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".notice__root:not(#example-error)",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect the static notice wording and container. No save occurred in this specimen; actual local status is demonstrated with actions."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "progress",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(#progress)",
+      "ownerSelectors": [
+        "#progress"
+      ],
+      "operate": [],
+      "inspect": [
+        "Inspect a determinate value of 40 out of 100. No import runs or increments this value."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "loading",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".field__root:has(#indeterminate-progress)",
+      "ownerSelectors": [
+        "#indeterminate-progress"
+      ],
+      "operate": [],
+      "inspect": [
+        "Inspect the native indeterminate progress element with no value. This is an illustrative loading state, not running work."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "empty",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".empty__root",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect the static empty-state message. Filtering and recovery controls are demonstrated in the table specimen."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "error",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "#example-error",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect the illustrative error message. There is no retry operation in this static example."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "skeleton",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[aria-busy]",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect the decorative skeleton and its labelled busy wrapper. No request is running; the skeleton is hidden from the accessibility tree."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "divider",
+      "family": "feedback",
+      "source": "assets/recipes/components.html",
+      "memberSelector": ".divider__root",
+      "ownerSelectors": [],
+      "operate": [],
+      "inspect": [
+        "Inspect the divider between content groups. It has no interactive state."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:feedback"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:feedback"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "details",
+      "family": "disclosure",
+      "source": "assets/recipes/native-patterns.html",
+      "memberSelector": "details.disclosure__root",
+      "ownerSelectors": [
+        "#native-details-one > summary",
+        "#native-details-two > summary"
+      ],
+      "operate": [
+        "Activate a summary by pointer or by Enter/Space when focused."
+      ],
+      "inspect": [
+        "Where named native-disclosure groups are supported, inspect that opening one closes the other. Record group behavior separately from summary focus and body presentation."
+      ],
+      "requiredPeers": [
+        "#native-details-one",
+        "#native-details-two"
+      ],
+      "dependencies": {
+        "recipe": "recipe-5",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:disclosure"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:disclosure"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide",
+      "platformBoundary": "These instructions describe source-declared native behavior. Observe each operation in a supported recorded browser; selector presence does not establish activation, coordination, dismissal or focus return."
+    },
+    {
+      "id": "dialog",
+      "family": "overlay",
+      "source": "assets/recipes/native-patterns.html",
+      "memberSelector": "dialog.dialog__root",
+      "ownerSelectors": [
+        "#native-dialog-open"
+      ],
+      "operate": [
+        "Activate Review preferences; close with Close or Escape."
+      ],
+      "inspect": [
+        "Inspect native modal focus and focus return to the opening action. No preference changes are submitted."
+      ],
+      "requiredPeers": [
+        "#native-dialog-open",
+        "#native-dialog",
+        "#native-dialog [command=close]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-5",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:overlay"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": [
+          {
+            "sourceKey": "optional-runtime-6",
+            "purpose": "Place the caret at the end of a natively focused text autofocus field; it does not open, close or choose initial dialog focus."
+          }
+        ]
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:overlay"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide",
+      "platformBoundary": "These instructions describe source-declared native behavior. Observe each operation in a supported recorded browser; selector presence does not establish activation, coordination, dismissal or focus return."
+    },
+    {
+      "id": "native-select",
+      "family": "native-select",
+      "source": "assets/recipes/native-select.html",
+      "memberSelector": ".select__root > select",
+      "ownerSelectors": [
+        "#workspace"
+      ],
+      "operate": [
+        "Focus Workspace and use the platform native selection interaction to choose Workshop."
+      ],
+      "inspect": [
+        "The native value/options own selection. Locked is a disabled option, not a disabled select. Platform-popup keyboard verification is separate from slot/caret styling."
+      ],
+      "requiredPeers": [],
+      "dependencies": {
+        "recipe": "recipe-7",
+        "authority": {
+          "sourceKey": "contract-8",
+          "selectionKey": "whole"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-8",
+        "selectionKey": "whole"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide",
+      "platformBoundary": "These instructions describe source-declared native behavior. Observe each operation in a supported recorded browser; selector presence does not establish activation, coordination, dismissal or focus return."
+    },
+    {
+      "id": "account-panel",
+      "family": "navigation-menu",
+      "source": "assets/recipes/native-patterns.html",
+      "memberSelector": "#native-nav-panel",
+      "ownerSelectors": [
+        "#native-nav-trigger"
+      ],
+      "operate": [
+        "Activate Account; follow a destination or dismiss the native popover with Escape/outside activation."
+      ],
+      "inspect": [
+        "Use ordinary Tab navigation for destination links. This panel is not an ARIA command menu and owns no custom arrow-key selection.",
+        "Record native dismissal and focus behavior for the supported browser; no all-browser result is attached."
+      ],
+      "requiredPeers": [
+        "#native-nav-trigger",
+        "#native-nav-panel",
+        "#native-overview",
+        "#native-preferences"
+      ],
+      "dependencies": {
+        "recipe": "recipe-5",
+        "authority": {
+          "sourceKey": "contract-9",
+          "selectionKey": "whole"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-9",
+        "selectionKey": "whole"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide",
+      "platformBoundary": "These instructions describe source-declared native behavior. Observe each operation in a supported recorded browser; selector presence does not establish activation, coordination, dismissal or focus return."
+    },
+    {
+      "id": "team-panel",
+      "family": "navigation-menu",
+      "source": "assets/recipes/native-patterns.html",
+      "memberSelector": "#native-team-panel",
+      "ownerSelectors": [
+        "#native-team-trigger"
+      ],
+      "operate": [
+        "Activate Team; follow a destination or dismiss the native popover with Escape/outside activation."
+      ],
+      "inspect": [
+        "The paired trigger and panel use a distinct anchor. Native dismissal and trigger focus must be verified for the recorded browser."
+      ],
+      "requiredPeers": [
+        "#native-team-trigger",
+        "#native-team-panel",
+        "#native-overview",
+        "#native-preferences"
+      ],
+      "dependencies": {
+        "recipe": "recipe-5",
+        "authority": {
+          "sourceKey": "contract-9",
+          "selectionKey": "whole"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": null,
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-9",
+        "selectionKey": "whole"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide",
+      "platformBoundary": "These instructions describe source-declared native behavior. Observe each operation in a supported recorded browser; selector presence does not establish activation, coordination, dismissal or focus return."
+    },
+    {
+      "id": "combobox",
+      "family": "combobox",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-workflow-combobox]",
+      "ownerSelectors": [
+        "[data-workflow-combobox]"
+      ],
+      "operate": [
+        "Filter locally; Arrow keys move active descendant without changing committed value; Enter/pointer commit; Escape/blur restore; disabled options cannot commit."
+      ],
+      "inspect": [
+        "Inspect inherited geometry, focus, narrow layout and no-script fallback. Single local selection; not remote search, multi-select or a command menu."
+      ],
+      "requiredPeers": [
+        "[data-workflow-combobox]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:combobox"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:combobox"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "drawer",
+      "family": "drawer",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-workflow-drawer]",
+      "ownerSelectors": [
+        "[data-workflow-drawer]"
+      ],
+      "operate": [
+        "Native modal focus containment and Escape/close return; destination navigation closes and focuses the destination."
+      ],
+      "inspect": [
+        "Inspect inherited geometry, focus, narrow layout and no-script fallback. Modal navigation panel; not nonmodal inspector or a nested modal stack."
+      ],
+      "requiredPeers": [
+        "[data-workflow-drawer]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:drawer"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:drawer"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "stepper",
+      "family": "stepper",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-workflow-stepper]",
+      "ownerSelectors": [
+        "[data-workflow-stepper]"
+      ],
+      "operate": [
+        "Validate current step before advancing, preserve fields on Back, review all fields before local save; edit makes success stale.",
+        "Choose Horizontal or Vertical and Inline or Center below to compare all four renderings; Default uses horizontal centered labels and vertical inline labels."
+      ],
+      "inspect": [
+        "Inspect inherited geometry, focus, narrow layout and no-script fallback. Bounded local form; not server transactions, async branching or approval authorization.",
+        "Indicator is an ol with native numbering once; current/completed/upcoming text labels agree with aria-current after Next and Back.",
+        "After Next or Back, focus lands on the new panel heading; ordinary editing and initial mount do not steal focus.",
+        "Connectors join markers in horizontal center, follow text in horizontal inline, and avoid labels in vertical center. Changing presentation preserves current stage and field values."
+      ],
+      "requiredPeers": [
+        "[data-workflow-stepper]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:stepper"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:stepper"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "multiselect",
+      "family": "multiselect",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"multiselect\"]",
+      "ownerSelectors": [
+        "[data-extended=\"multiselect\"]"
+      ],
+      "operate": [
+        "Filter retains selection; disabled selected choices cannot be removed."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Async search, virtual lists and token-input combobox behavior."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"multiselect\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:multiselect"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:multiselect"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "tooltip",
+      "family": "tooltip",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"tooltip\"]",
+      "ownerSelectors": [
+        "[data-extended=\"tooltip\"]"
+      ],
+      "operate": [
+        "Focus or hover reveals; Escape dismisses; hover may enter the tooltip."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Interactive content, essential instructions available only on hover, or touch-only discovery."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"tooltip\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:tooltip"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:tooltip"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "toast",
+      "family": "toast",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"toast\"]",
+      "ownerSelectors": [
+        "[data-extended=\"toast\"]"
+      ],
+      "operate": [
+        "Maximum three persistent local notifications; dismiss returns focus to adjacent notification or trigger."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Auto-expiry, cross-page delivery, server messages or emergency alerts."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"toast\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:toast"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:toast"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "pagination",
+      "family": "pagination",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"pagination\"]",
+      "ownerSelectors": [
+        "[data-extended=\"pagination\"]"
+      ],
+      "operate": [
+        "Three records per page; filter resets page; empty results announced; buttons preserve focus."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Remote pagination, URL routing or virtualized datasets."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"pagination\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:pagination"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:pagination"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "tree",
+      "family": "tree",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"tree\"]",
+      "ownerSelectors": [
+        "[data-extended=\"tree\"]"
+      ],
+      "operate": [
+        "Arrows traverse/expand/collapse; Home/End, typeahead, sibling expansion and Enter selection."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Lazy loading, drag-and-drop, multiselection or route navigation."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"tree\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:tree"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:tree"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "date-picker",
+      "family": "date-picker",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"date-picker\"]",
+      "ownerSelectors": [
+        "[data-extended=\"date-picker\"]"
+      ],
+      "operate": [
+        "Arrows and week edges move days; PageUp/Down changes month, Shift changes year; selection commits, Escape cancels."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Range selection, time zones, non-Gregorian calendars or missing min/max bounds."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"date-picker\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:date-picker"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:date-picker"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "data-grid",
+      "family": "data-grid",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"data-grid\"]",
+      "ownerSelectors": [
+        "[data-extended=\"data-grid\"]"
+      ],
+      "operate": [
+        "Roving cell focus; Enter/F2 edits; Enter commits valid data, Escape cancels; Tab commits then moves cell."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Spreadsheet formulas, dynamic columns, sorting, virtualization or multi-cell selection."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"data-grid\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:data-grid"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:data-grid"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "rich-text",
+      "family": "rich-text",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-extended=\"rich-text\"]",
+      "ownerSelectors": [
+        "[data-extended=\"rich-text\"]"
+      ],
+      "operate": [
+        "Select text then apply bold, italic or plain text; paste inserts text only; local save exposes restricted semantic HTML."
+      ],
+      "inspect": [
+        "Inspect geometry, narrow layout, keyboard focus and native fallback. Full document editing, links, images, lists, collaborative editing or guaranteed undo history."
+      ],
+      "requiredPeers": [
+        "[data-extended=\"rich-text\"]"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:rich-text"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:rich-text"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "record-selection",
+      "family": "collections",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-record-selection]",
+      "ownerSelectors": [
+        "button.record-choice__root"
+      ],
+      "operate": [
+        "Activate a claim by click, Enter or Space, then move focus away."
+      ],
+      "inspect": [
+        "One claim remains pressed, its adjacent detail updates, and selected rest paint includes an underline in both schemes."
+      ],
+      "requiredPeers": [
+        "[data-record-title]",
+        "[data-record-detail]",
+        "button.record-choice__root"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:collections"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:collections"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "nested-choice",
+      "family": "choices",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "#workspace-choices",
+      "ownerSelectors": [
+        "#workspace-studio",
+        "#workspace-research",
+        "#prefer-studio"
+      ],
+      "operate": [
+        "Select Research workspace, then toggle Prefer Design studio by its label and Space."
+      ],
+      "inspect": [
+        "The checkbox does not change the selected workspace; Design studio options remain within its own choice container. Primary radio alone controls selected container paint."
+      ],
+      "requiredPeers": [
+        "#workspace-studio",
+        "#workspace-research",
+        "#prefer-studio"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:choices"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:choices"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    },
+    {
+      "id": "operations-task",
+      "family": "collections",
+      "source": "assets/recipes/components.html",
+      "memberSelector": "[data-operations-task]",
+      "ownerSelectors": [
+        "[data-operation]",
+        "[data-operation-resolve]"
+      ],
+      "operate": [
+        "Select the second incident with Enter, inspect Evidence and the bounded plan, then resolve it.",
+        "At narrow width, scroll the named queue region to inspect priority and owner."
+      ],
+      "inspect": [
+        "Incident identity and status share the first column; long titles wrap, short words remain whole.",
+        "Detail, evidence, plan and Resolve share one task group in DOM and visual order. Queue and detail align at their start rather than stretching to equal height.",
+        "Selection updates detail and pressed state together; resolving updates the selected row status and disables repeat resolution."
+      ],
+      "requiredPeers": [
+        "[data-operation-title]",
+        "[data-operation-evidence]",
+        "[data-operation-plan]",
+        "[data-operation-resolve]",
+        "[data-operation-status]",
+        "#operation-scroll-hint"
+      ],
+      "dependencies": {
+        "recipe": "recipe-2",
+        "authority": {
+          "sourceKey": "contract-3",
+          "selectionKey": "families:collections"
+        },
+        "styles": [
+          "stylesheet-0",
+          "stylesheet-10",
+          "stylesheet-11",
+          "stylesheet-12",
+          "stylesheet-13"
+        ],
+        "controller": "application-controller-4",
+        "optionalRuntime": []
+      },
+      "capability": {
+        "status": "declared-maintained-example",
+        "authoritySourceKey": "contract-3",
+        "selectionKey": "families:collections"
+      },
+      "observations": {
+        "status": "unverified",
+        "compatibleExternalReportsRequired": true
+      },
+      "instructionAuthority": "authored-guide"
+    }
+  ],
+  "limits": [
+    "Do not apply the family state union to each member. Native impossibilities and host-dependent behaviors remain explicitly unavailable or conditional.",
+    "An owner-state result does not verify reflected wrapper/subpart presentation.",
+    "Instructions must match extracted controls and exact controller/DOM peers; missing peers make the demonstration incomplete, not a new capability."
+  ],
+  "sourceBindings": {
+    "stylesheet-0": {
+      "path": "assets/wireframe.css",
+      "kind": "stylesheet",
+      "sha256": "9ab7c869f188beea9b171ccb480e485794bd97dd32bbd700dfc84ddda108733a"
+    },
+    "registry-1": {
+      "path": "references/style/components/specimens.json",
+      "kind": "registry",
+      "sha256": "69844ee6b8394a18ebdae0f2824b8046b9a163df3e3eacdfe85a2dfa4857961c"
+    },
+    "recipe-2": {
+      "path": "assets/recipes/components.html",
+      "kind": "recipe",
+      "sha256": "e967ee1a75936a3bc4d442200a6021c6c5d032a6a11305442acb70b0a17dffad"
+    },
+    "contract-3": {
+      "path": "references/style/components/contract.json",
+      "kind": "contract",
+      "sha256": "8723603e115906e0d4401e1ce8eb5c36aa914741833ad398af656459fd8bebbe"
+    },
+    "application-controller-4": {
+      "path": "assets/recipes/components.js",
+      "kind": "application-controller",
+      "sha256": "32a62cc24d830f38d4e89564aaab3a7d47a39dbba981105eefae2ec5b540203f"
+    },
+    "recipe-5": {
+      "path": "assets/recipes/native-patterns.html",
+      "kind": "recipe",
+      "sha256": "eb12d0e6698d1a406ae45236fd37b1cdd57090e36dea05de064defbcc231c650"
+    },
+    "optional-runtime-6": {
+      "path": "assets/recipes/modal-autofocus.js",
+      "kind": "optional-runtime",
+      "sha256": "e6bdc217dab923d3f45e3bd3cea6a6b7ca573ed3615c846b53f26750b2c6b2c4"
+    },
+    "recipe-7": {
+      "path": "assets/recipes/native-select.html",
+      "kind": "recipe",
+      "sha256": "aac78bc2beb7680ea22e22dc55e17a29912c366b884cdea1c3f335fa86e0bbed"
+    },
+    "contract-8": {
+      "path": "references/style/select/contract.json",
+      "kind": "contract",
+      "sha256": "2bc9578e696b504c6831920a5a79e552ed86e27823906476f73f32763df81b28"
+    },
+    "contract-9": {
+      "path": "references/style/navigation-menu/contract.json",
+      "kind": "contract",
+      "sha256": "d2f16875e318dddc82d2544e7bc3601c42ba42614e70f0f0f193e5e16353553f"
+    },
+    "stylesheet-10": {
+      "path": "assets/foundation/ultimate-tokens/colors.css",
+      "kind": "stylesheet",
+      "sha256": "1e39d0c3d15e13664c1e038a0a4a57638248122c540654b57088ec841b9b4b28"
+    },
+    "stylesheet-11": {
+      "path": "assets/foundation/ultimate-tokens/typography.css",
+      "kind": "stylesheet",
+      "sha256": "e837ce1922a05b324c4655d98f39f87ded0d4107214b2281fbc379364c7777a2"
+    },
+    "stylesheet-12": {
+      "path": "assets/foundation/maison/geometry.css",
+      "kind": "stylesheet",
+      "sha256": "7bef1b330cc17ee1ae3c7dbd1077c790767222b4e52b7080b89300426835799f"
+    },
+    "stylesheet-13": {
+      "path": "assets/foundation/maison/layout.css",
+      "kind": "stylesheet",
+      "sha256": "c1c52634fb5a4e5bfa9165ea41345e636e7bb8ec23b4c39c04111188489e5584"
+    }
+  },
+  "dependencyIdentity": "Keyed hashes are the prepared integration snapshot; validate or regenerate these bindings whenever an input changes. Compiled external evidence must bind the current guide and dependency hashes.",
+  "sourceRegistryKey": "registry-1"
+}

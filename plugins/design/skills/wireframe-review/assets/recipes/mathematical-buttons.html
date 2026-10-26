@@ -1,0 +1,31 @@
+<main id="geometry-examples" class="page__root page-flow__root page__flow reading-flow__root">
+  <header class="heading-group__root"><h1>Shared button geometry</h1><p>Reference specimens at 20px, 36px and 64px. These buttons demonstrate sizing; they do not save data.</p></header>
+  <section class="card__root flow__root">
+    <h2>20px · n = 5</h2>
+    <div class="actions__root" data-tier="widget" data-scale="sm" data-size="sm">
+      <button type="button">Save</button>
+      <button type="button"><span data-slot="icon" class="ph-icon" data-ph="check" aria-hidden="true"></span><span data-slot="label">Save</span></button>
+      <button type="button" data-icon-only aria-label="Confirm 20px specimen"><span data-slot="icon" class="ph-icon" data-ph="check" aria-hidden="true"></span></button>
+    </div>
+    <p>11px text · 10px icon · 5px gap and radius</p>
+  </section>
+  <section class="card__root flow__root">
+    <h2>36px · n = 9</h2>
+    <div class="actions__root" data-tier="product" data-scale="md" data-size="md">
+      <button type="button">Save</button>
+      <button type="button"><span data-slot="icon" class="ph-icon" data-ph="check" aria-hidden="true"></span><span data-slot="label">Save</span></button>
+      <button type="button" data-icon-only aria-label="Confirm 36px specimen"><span data-slot="icon" class="ph-icon" data-ph="check" aria-hidden="true"></span></button>
+    </div>
+    <p>15px text · 18px icon · 9px gap and radius</p>
+  </section>
+  <section class="card__root flow__root">
+    <h2>64px · n = 16</h2>
+    <div class="actions__root" data-tier="brand" data-scale="md" data-size="lg">
+      <button type="button">Save</button>
+      <button type="button"><span data-slot="icon" class="ph-icon" data-ph="check" aria-hidden="true"></span><span data-slot="label">Save</span></button>
+      <button type="button" data-icon-only aria-label="Confirm 64px specimen"><span data-slot="icon" class="ph-icon" data-ph="check" aria-hidden="true"></span></button>
+    </div>
+    <p>22px text · 32px icon · 16px gap and radius</p>
+  </section>
+  <details class="disclosure__root" id="geometry-notes"><summary>Spacing and enlarged text</summary><div class="disclosure__content disclosure__body flow__root"><p>Label-side margins are twice n. Icon-side margins and icon-to-label gaps equal n. The border sits inside those margins.</p><p>Both implementations let wrapped or enlarged text grow beyond the nominal frame. Each button keeps its own sizing context.</p></div></details>
+</main>

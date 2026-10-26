@@ -1,0 +1,301 @@
+{
+  "sourceHash": "f65946369510c78d37d2d682bc4420770ccac6bcbf899ba7ef7ed4cc8e7f27cc",
+  "generatorSha256": "13d62323996c617ec00c0fd0281eba25779bdc4a83cbff0ad0ea7380f6bc82f4",
+  "guideSha256": "d51d795afbf80eb71f4f6b46f0167b5c1c3f9eec9aa136e8e956c24fd5336885",
+  "outputSha256": "a477d543b8f9383e633aad3300bc40359944d9d971acc58376f2cbb854540d0f",
+  "verifierSha256": "bc2630c763fd4b0cb164cf62c53b5638dc17ff9e67a8572350de409416d73b73",
+  "records": [
+    {
+      "scheme": "light",
+      "geometry": {
+        "tier": "source-default",
+        "scale": "source-default",
+        "size": "source-default"
+      },
+      "engine": "chromium",
+      "version": "151.0.7922.34",
+      "width": 360,
+      "javaScriptEnabled": false,
+      "members": 46,
+      "sourceInstructionParity": true,
+      "guideContextParity": true,
+      "sharedDependenciesOnce": true,
+      "horizontalOverflow": false,
+      "outcome": "pass"
+    },
+    {
+      "scheme": "dark",
+      "geometry": {
+        "tier": "source-default",
+        "scale": "source-default",
+        "size": "source-default"
+      },
+      "engine": "chromium",
+      "version": "151.0.7922.34",
+      "width": 360,
+      "javaScriptEnabled": false,
+      "members": 46,
+      "sourceInstructionParity": true,
+      "guideContextParity": true,
+      "sharedDependenciesOnce": true,
+      "horizontalOverflow": false,
+      "outcome": "pass"
+    },
+    {
+      "scheme": "light",
+      "geometry": {
+        "tier": "source-default",
+        "scale": "source-default",
+        "size": "source-default"
+      },
+      "engine": "chromium",
+      "version": "151.0.7922.34",
+      "width": 1399,
+      "javaScriptEnabled": false,
+      "members": 46,
+      "sourceInstructionParity": true,
+      "guideContextParity": true,
+      "sharedDependenciesOnce": true,
+      "horizontalOverflow": false,
+      "outcome": "pass"
+    },
+    {
+      "scheme": "dark",
+      "geometry": {
+        "tier": "source-default",
+        "scale": "source-default",
+        "size": "source-default"
+      },
+      "engine": "chromium",
+      "version": "151.0.7922.34",
+      "width": 1399,
+      "javaScriptEnabled": false,
+      "members": 46,
+      "sourceInstructionParity": true,
+      "guideContextParity": true,
+      "sharedDependenciesOnce": true,
+      "horizontalOverflow": false,
+      "outcome": "pass"
+    }
+  ],
+  "faults": [
+    {
+      "id": "missing member",
+      "rejected": true,
+      "predicate": "missing member"
+    },
+    {
+      "id": "wrong family",
+      "rejected": true,
+      "predicate": "member source routing"
+    },
+    {
+      "id": "wrong selector",
+      "rejected": true,
+      "predicate": "member source routing"
+    },
+    {
+      "id": "invented observed result",
+      "rejected": true,
+      "predicate": "authored\\/observed authority"
+    },
+    {
+      "id": "missing instructions",
+      "rejected": true,
+      "predicate": "missing instructions"
+    },
+    {
+      "id": "stale source",
+      "rejected": true,
+      "predicate": "stale dependency"
+    },
+    {
+      "id": "wrong style type",
+      "rejected": true,
+      "predicate": "stylesheet dependency"
+    },
+    {
+      "id": "missing optional helper",
+      "rejected": true,
+      "predicate": "optional dialog caret helper"
+    },
+    {
+      "id": "native controller invented",
+      "rejected": true,
+      "predicate": "native boundary\\/controller"
+    }
+  ],
+  "renderFaults": [
+    {
+      "id": "remove observation boundary",
+      "width": 360,
+      "scheme": "light",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "false visible observation",
+      "width": 360,
+      "scheme": "light",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "remove instruction",
+      "width": 360,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Instruction parity checkbox operate\n+ actual - expected\n\n+ []\n- [\n-   'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n- ]\n"
+    },
+    {
+      "id": "misroute guide",
+      "width": 360,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n    },\n+   family: 'fields',\n-   family: 'choices',\n    id: 'checkbox',\n    inspect: [\n      'A partial available selection makes All collections indeterminate. The archived checkbox remains checked and unavailable.',\n      'The confirmation checkbox is a separate invalid example; it is not an invalid collection item. Checking it clears the error and its description reference; unchecking restores both.'\n    ],\n"
+    },
+    {
+      "id": "false observed claim",
+      "width": 360,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n      compatibleExternalReportsRequired: true,\n+     status: 'observed'\n-     status: 'unverified'\n    },\n    operate: [\n      'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n    ],\n    ownerSelectors: [\n"
+    },
+    {
+      "id": "duplicate shared dependencies",
+      "width": 360,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Expected values to be strictly equal:\n\n2 !== 1\n"
+    },
+    {
+      "id": "remove observation boundary",
+      "width": 360,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "false visible observation",
+      "width": 360,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "remove instruction",
+      "width": 360,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Instruction parity checkbox operate\n+ actual - expected\n\n+ []\n- [\n-   'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n- ]\n"
+    },
+    {
+      "id": "misroute guide",
+      "width": 360,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n    },\n+   family: 'fields',\n-   family: 'choices',\n    id: 'checkbox',\n    inspect: [\n      'A partial available selection makes All collections indeterminate. The archived checkbox remains checked and unavailable.',\n      'The confirmation checkbox is a separate invalid example; it is not an invalid collection item. Checking it clears the error and its description reference; unchecking restores both.'\n    ],\n"
+    },
+    {
+      "id": "false observed claim",
+      "width": 360,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n      compatibleExternalReportsRequired: true,\n+     status: 'observed'\n-     status: 'unverified'\n    },\n    operate: [\n      'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n    ],\n    ownerSelectors: [\n"
+    },
+    {
+      "id": "duplicate shared dependencies",
+      "width": 360,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Expected values to be strictly equal:\n\n2 !== 1\n"
+    },
+    {
+      "id": "remove observation boundary",
+      "width": 1399,
+      "scheme": "light",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "false visible observation",
+      "width": 1399,
+      "scheme": "light",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "remove instruction",
+      "width": 1399,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Instruction parity checkbox operate\n+ actual - expected\n\n+ []\n- [\n-   'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n- ]\n"
+    },
+    {
+      "id": "misroute guide",
+      "width": 1399,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n    },\n+   family: 'fields',\n-   family: 'choices',\n    id: 'checkbox',\n    inspect: [\n      'A partial available selection makes All collections indeterminate. The archived checkbox remains checked and unavailable.',\n      'The confirmation checkbox is a separate invalid example; it is not an invalid collection item. Checking it clears the error and its description reference; unchecking restores both.'\n    ],\n"
+    },
+    {
+      "id": "false observed claim",
+      "width": 1399,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n      compatibleExternalReportsRequired: true,\n+     status: 'observed'\n-     status: 'unverified'\n    },\n    operate: [\n      'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n    ],\n    ownerSelectors: [\n"
+    },
+    {
+      "id": "duplicate shared dependencies",
+      "width": 1399,
+      "scheme": "light",
+      "rejected": true,
+      "error": "Expected values to be strictly equal:\n\n2 !== 1\n"
+    },
+    {
+      "id": "remove observation boundary",
+      "width": 1399,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "false visible observation",
+      "width": 1399,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(text.includes('observations remain unverified'))\n"
+    },
+    {
+      "id": "remove instruction",
+      "width": 1399,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Instruction parity checkbox operate\n+ actual - expected\n\n+ []\n- [\n-   'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n- ]\n"
+    },
+    {
+      "id": "misroute guide",
+      "width": 1399,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n    },\n+   family: 'fields',\n-   family: 'choices',\n    id: 'checkbox',\n    inspect: [\n      'A partial available selection makes All collections indeterminate. The archived checkbox remains checked and unavailable.',\n      'The confirmation checkbox is a separate invalid example; it is not an invalid collection item. Checking it clears the error and its description reference; unchecking restores both.'\n    ],\n"
+    },
+    {
+      "id": "false observed claim",
+      "width": 1399,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    capability: {\n      authoritySourceKey: 'contract-3',\n      selectionKey: 'families:choices',\n      status: 'declared-maintained-example'\n...\n      compatibleExternalReportsRequired: true,\n+     status: 'observed'\n-     status: 'unverified'\n    },\n    operate: [\n      'Toggle an available collection by its label or Space; toggle All collections to select the available collection inputs together.'\n    ],\n    ownerSelectors: [\n"
+    },
+    {
+      "id": "duplicate shared dependencies",
+      "width": 1399,
+      "scheme": "dark",
+      "rejected": true,
+      "error": "Expected values to be strictly equal:\n\n2 !== 1\n"
+    }
+  ],
+  "limits": [
+    "Authored instruction/source routing and negative controls only; no state-transition, owner paint, native-popup, AT, all-browser, zoom or generation acceptance."
+  ]
+}

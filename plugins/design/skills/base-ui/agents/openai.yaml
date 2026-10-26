@@ -1,0 +1,4 @@
+interface:
+  display_name: "Base UI"
+  short_description: "Build interfaces with Differential Forms components"
+  default_prompt: "Use $base-ui to build an interface with Differential Forms, using mathematical-design-system for geometry and the shared component contracts and recipes."

@@ -1,0 +1,120 @@
+{
+  "records": [
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "light",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "dark",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "scheme": "light",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "scheme": "dark",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "light",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "none"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "dark",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "none"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "scheme": "light",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "none"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "scheme": "dark",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "none"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "light",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "dark",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "scheme": "light",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "scheme": "dark",
+      "navLabel": "pass",
+      "recordActivationAndRestPaint": "pass",
+      "tableCueAndKeyboardScroll": "pass",
+      "computedScrollbarWidth": "auto"
+    }
+  ],
+  "controls": [
+    "icon-sized label rejected",
+    "unpainted selection rejected",
+    "missing scroll description detected"
+  ],
+  "limits": [
+    "Authored source fixture checks, not generation efficacy, installed Safari, AT, touch or full system acceptance."
+  ]
+}

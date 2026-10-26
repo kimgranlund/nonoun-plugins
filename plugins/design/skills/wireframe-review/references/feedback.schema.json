@@ -1,0 +1,438 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewer": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    },
+    "choices": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/choice"
+      }
+    },
+    "pageOverrides": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        }
+      }
+    },
+    "comments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/comment"
+      }
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "$ref": "#/$defs/intent"
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "intent": {
+                "$ref": "#/$defs/intent"
+              },
+              "variants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "enum": [
+                        "A",
+                        "B",
+                        "C"
+                      ]
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tradeoff": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "rationale",
+                    "tradeoff"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "variants"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "units"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "revision",
+    "reviewer",
+    "summary",
+    "updatedAt",
+    "choices",
+    "pageOverrides",
+    "comments"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "choice": {
+      "type": "object",
+      "properties": {
+        "selectedVariant": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "A",
+            "B",
+            "C",
+            null
+          ]
+        },
+        "states": {
+          "type": "object",
+          "properties": {
+            "A": {
+              "enum": [
+                "unreviewed",
+                "selected",
+                "considered",
+                "rejected"
+              ]
+            },
+            "B": {
+              "enum": [
+                "unreviewed",
+                "selected",
+                "considered",
+                "rejected"
+              ]
+            },
+            "C": {
+              "enum": [
+                "unreviewed",
+                "selected",
+                "considered",
+                "rejected"
+              ]
+            }
+          },
+          "required": [
+            "A"
+          ],
+          "additionalProperties": false
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "selectedVariant",
+        "states",
+        "note"
+      ],
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "enum": [
+            "site",
+            "page",
+            "unit",
+            "element",
+            "decision"
+          ]
+        },
+        "pageId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "unitId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "variantId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "A",
+            "B",
+            "C",
+            null
+          ]
+        },
+        "elementId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "viewport": {
+          "enum": [
+            "desktop",
+            "mobile",
+            "all"
+          ]
+        },
+        "position": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "y": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "scope",
+        "pageId",
+        "unitId",
+        "variantId",
+        "elementId",
+        "viewport",
+        "position"
+      ],
+      "additionalProperties": false
+    },
+    "comment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "quote": {
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "layout",
+            "content",
+            "navigation",
+            "visual",
+            "question",
+            "other"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "must-change",
+            "suggestion"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "open",
+            "resolved"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+        },
+        "response": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "disposition": {
+              "enum": [
+                "applied",
+                "retained",
+                "needs-clarification",
+                "not-applicable"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "disposition",
+            "message",
+            "revision"
+          ],
+          "additionalProperties": false
+        },
+        "migration": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "fromRevision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fromTarget": {
+              "$ref": "#/$defs/target"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "fromRevision",
+            "fromTarget",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "target",
+        "quote",
+        "category",
+        "priority",
+        "text",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "response",
+        "migration"
+      ],
+      "additionalProperties": false
+    },
+    "intent": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "means": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constraints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uncertainty": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

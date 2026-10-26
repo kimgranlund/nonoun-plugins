@@ -1,0 +1,15 @@
+# Source-derived reference sheets
+
+Built index, design-token, color, component and gap sheets from the installed core/default corpus. Added repeatable build-sheets.mjs and check-sheets.mjs plus conditional SKILL routing and a reference-sheets workflow. This is a single reference design, not an A/B/C review artifact.
+
+Coverage: 728 indexed token declarations (437 non-color, 291 color); 11 component-family contracts; two dedicated select/menu contracts; five composition-family declarations; remaining wf-* profile classes exposed as declaration-only entries. All indexed names appear once on their owning sheet. Source CSS is extracted through Chromium CSSOM with selector/conditional context; original bytes are copied with SHA-256 hashes. Browser defaults are product/md/md in both schemes. Scoped variables without root defaults stay explicitly unresolved.
+
+Each item has a disclosure for implementation, manifest/declaration and source context. Illustrative bindings are labelled; absent per-token guidance and not-for entries are reported rather than invented. Component examples reuse the source catalog and local runtime. Select/menu standalone runtime limits remain visible. The source declarations were not changed to fill gaps.
+
+The gaps register contains 22 grouped records, including per-domain context gaps, scoped defaults, missing family not-for fields, unregistered classes, specimen state coverage and browser limits. This is a separate follow-up inventory, not completed remediation.
+
+Verification: source snapshots and current input bytes match their hashes; token and family inventories match the authoritative indexes/contracts; all local navigation/source/anchor links resolve; default values match actual browser-resolved values in both schemes; 20 responsive page/scheme/width cases pass. Exercised disclosures, search, all native page-select routes, checkbox/switch/range, tabs, geometry-size changes, table filtering/sorting/selection, modal Escape and iframe schemes. Header/content alignment and anchor clearance pass. Negative coverage checks detect removal of an item from either token sheet. A repeat build produced byte-identical generated pages/data/styles before the final license-source addition; final source/license-inclusive build and verification pass.
+
+Viewed narrow index and desktop component screenshots. Chromium only: no Safari/Firefox, assistive technology or complete browser-zoom audit. Color ratios cover two explicit profile foreground/background pairs in each scheme, not the full palette. The initial verifier selectors were corrected for nested disclosures and the gap sheet's absence of disclosures; complete verification was then rerun. This is authored reference-site verification, not a fresh-agent efficacy evaluation.
+
+Output and machine evidence: /Users/kimgranlund/.codex/skill-previews/wireframe-review/sheets/{index.html,tokens.html,colors.html,components.html,gaps.html,inventory.json,gaps.json,verification.json}. Static preview uses http://127.0.0.1:8773/index.html while the local server runs. Rebuild commands live in references/workflows/reference-sheets.md.

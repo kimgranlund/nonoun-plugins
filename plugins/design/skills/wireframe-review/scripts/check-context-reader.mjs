@@ -1,0 +1,17 @@
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import assert from 'node:assert/strict';import crypto from 'node:crypto';import {spawnSync} from 'node:child_process';import {fileURLToPath} from 'node:url';
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'context-reader-test-')),corpus=path.join(root,'corpus');fs.mkdirSync(corpus);fs.writeFileSync(path.join(corpus,'entry.md'),'First\nSecond é\nThird');fs.writeFileSync(path.join(root,'outside.md'),'outside');fs.symlinkSync(path.join(root,'outside.md'),path.join(corpus,'escape.md'));const script=fileURLToPath(new URL('./read-context.mjs',import.meta.url)),log=path.join(root,'reads.jsonl');const run=(...args)=>spawnSync(process.execPath,[script,corpus,...args],{encoding:'utf8'});
+let p=run('entry.md',log,'2','2','100');assert.equal(p.status,0);let r=JSON.parse(p.stdout);assert.equal(r.content,'Second é');assert(!r.truncated);assert.equal(r.returnedSHA256,crypto.createHash('sha256').update(r.content).digest('hex'));
+p=run('entry.md',log,'1','3','4');assert.equal(p.status,0);r=JSON.parse(p.stdout);assert.equal(r.content,'Firs');assert(r.truncated);assert.equal(r.returnedBytes,4);assert.equal(fs.readFileSync(log,'utf8').trim().split('\n').length,2);
+assert.notEqual(run('escape.md',log).status,0);assert.notEqual(run('entry.md',path.join(corpus,'badlog')).status,0);assert.notEqual(run('entry.md',log,'0').status,0);console.log('PASS context range/hash, truncation, append, symlink escape, corpus write and invalid range checks');
+
+fs.writeFileSync(path.join(corpus,'sections.md'),'# Guide\n## One\nKeep\n```md\n## Fake\n```\n### Nested\nAlso keep\n## Two\nExclude');
+p=run('sections.md',log,'--section','One','1000');assert.equal(p.status,0);r=JSON.parse(p.stdout);assert(r.content.includes('Also keep'));assert(r.content.includes('## Fake'));assert(!r.content.includes('Exclude'));assert.equal(r.requested.section,'One');assert.equal(r.requested.start,2);assert.equal(r.requested.end,8);
+assert.notEqual(run('sections.md',log,'--section','Fake').status,0);assert.notEqual(run('sections.md',log,'--section','Missing').status,0);
+fs.writeFileSync(path.join(corpus,'duplicate.md'),'## Same\nFirst\n## Same\nSecond');assert.notEqual(run('duplicate.md',log,'--section','Same').status,0);
+p=run('sections.md',log,'--section','One','8');assert.equal(p.status,0);assert(JSON.parse(p.stdout).truncated);console.log('PASS section boundaries, nested content, fenced headings, ambiguity and section truncation');
+
+// Reuse is bound to the same complete range and source bytes, not path alone.
+p=run('entry.md',log,'2','2','100','--once');assert.equal(p.status,0);r=JSON.parse(p.stdout);assert.equal(r.reused,true);assert.equal(r.returnedBytes,0);assert(!('content' in r));
+fs.writeFileSync(path.join(corpus,'entry.md'),'First\nChanged é\nThird');p=run('entry.md',log,'2','2','100','--once');assert.equal(p.status,0);r=JSON.parse(p.stdout);assert.equal(r.content,'Changed é');assert(!r.reused);
+p=run('sections.md',log,'--section','Two','3','--once');assert.equal(p.status,0);assert(JSON.parse(p.stdout).truncated);p=run('sections.md',log,'--section','Two','1000','--once');assert.equal(p.status,0);r=JSON.parse(p.stdout);assert(!r.reused);assert(r.content.includes('Exclude'));assert(!r.truncated);
+p=run('entry.md',path.join(root,'fresh-session.jsonl'),'2','2','100','--once');assert.equal(p.status,0);assert.equal(JSON.parse(p.stdout).content,'Changed é');console.log('PASS session-local reuse, changed-source invalidation, incomplete-read recovery and fresh-session controls');

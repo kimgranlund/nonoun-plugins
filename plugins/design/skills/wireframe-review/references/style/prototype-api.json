@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "source": "assets/prototype-runtime.js",
+  "scope": "Supplied before --controller code in the assembled module. Lexical controller scope, not a Window API; standalone recipe helpers are separate unless explicitly concatenated. Implementation: base-ui assets/ui-runtime.js plus assets/review-runtime-adapter.js; assets/prototype-runtime.js is a generated compatibility bundle.",
+  "capabilities": [
+    {
+      "name": "registerPrototype",
+      "signature": "registerPrototype({unitId,initialState,reduce,render,bind})",
+      "prerequisites": "Unique actual leaf ID; cloneable state, reducer and render callbacks. Register using the supplied lexical registerPrototype; document-wide startup closures do not bind preview DOM. Query mounted root only inside render/bind.",
+      "timing": "Register once before shell mount. bind is scoped to root and aborted on unmount.",
+      "result": "No value; invalid/duplicate registration throws. dispatch commits synchronous state/render.",
+      "limits": "Session state per leaf/proposal; no cross-leaf sync or reload persistence.",
+      "callbacks": {
+        "render": "render(root,state): mounted leaf Element and cloned state; synchronous committed paint",
+        "reduce": "reduce(state,action): cloned state and dispatched action; return cloneable next state",
+        "bind": "bind({root,on,dispatch,signal}): one object argument; return cleanup function or undefined",
+        "on": "on(type,selector,handler): delegated root listener; handler(event,target,dispatch); target is matching contained Element",
+        "dispatch": "dispatch(action): reduce then synchronously repaint matching mounted views",
+        "cleanup": "Listeners registered through on abort on unmount; cleanup() releases other resources. signal is AbortSignal. No Window API."
+      }
+    },
+    {
+      "name": "revisePrototypePlan",
+      "signature": "revisePrototypePlan(state,patch)",
+      "timing": "Reducer scope/budget/permission edit.",
+      "result": "Patched state with incremented planRevision and approvedRevision=null.",
+      "limits": "Caller identifies consequential edits; helper does not validate domain data."
+    },
+    {
+      "name": "approvePrototypePlan",
+      "signature": "approvePrototypePlan(state)",
+      "timing": "Reducer after required domain validation.",
+      "result": "State with approvedRevision equal to current planRevision.",
+      "limits": "Local approval only; no operational authorization."
+    },
+    {
+      "name": "prototypePlanApproved",
+      "signature": "prototypePlanApproved(state)",
+      "timing": "Read current local approval during render/reduce.",
+      "result": "Boolean current revision matches non-null approval.",
+      "limits": "No external permission check."
+    },
+    {
+      "name": "focusWorkflowStep",
+      "signature": "focusWorkflowStep(form,index,{panelSelector}={})",
+      "prerequisites": "Connected visible destination heading in ordered [data-step]/[data-stage] panels, or explicit selector.",
+      "timing": "After committed Next/Back render only; never initial mount, typing or every render.",
+      "result": "Sets tabindex=-1, focuses destination heading, returns actual focus success; false for absent/disconnected/hidden target.",
+      "limits": "Not automatic; caller supplies actual destination index and verifies activation. Asynchronous renders must complete first."
+    }
+  ]
+}

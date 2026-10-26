@@ -1,0 +1,38 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "examples": [
+      {
+        "component": "button",
+        "label": "Add item",
+        "leading": {
+          "part": "icon-slot",
+          "icon": "plus",
+          "size": "md"
+        },
+        "trailing": {
+          "part": "icon-slot",
+          "icon": "caret-down",
+          "size": "sm"
+        }
+      },
+      {
+        "component": "button",
+        "label": "Kim Granlund",
+        "leading": {
+          "part": "avatar",
+          "size": "lg"
+        },
+        "trailing": {
+          "part": "count-badge",
+          "value": 3,
+          "size": "sm"
+        }
+      },
+      {
+        "component": "button",
+        "label": "Start action"
+      }
+    ]
+  }
+}

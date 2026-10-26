@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-tier="product" data-scale="md" data-size="md" data-radius="round"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wireframe review</title><style>@@STYLE@@</style></head>
+<body>
+@@STATIC@@
+<header class="top"><div class="project-identity"><div class="project-heading"><strong id="project-title">Wireframe review</strong><small id="revision"></small></div></div><div class="actions"><button id="color-scheme" data-icon-only data-scheme="system" aria-label="Color scheme: System. Switch to Light"><span data-slot="icon" aria-hidden="true"><i class="phosphor-icon"></i></span></button><button id="open-decisions" aria-controls="review-panel"><span data-slot="label">Decisions</span></button><label><select aria-label="Page" id="page"></select></label><label><select aria-label="Viewport" id="viewport"><option value="desktop">Desktop · 1200px</option><option value="mobile">Mobile · 390px</option></select></label><button id="open-feedback" type="button" commandfor="feedback-dialog" command="show-modal" aria-haspopup="dialog"><span data-slot="label">Feedback</span></button></div></header>
+<div id="notice" class="sr-only" role="status" aria-live="polite"></div>
+<nav class="toolbar" aria-label="Review controls">
+<label><select aria-label="Decision unit" id="unit"></select></label>
+<label><select aria-label="View" id="view"><option value="compare">Compare A / B / C</option><option value="inspect">Inspect one proposal</option><option value="selection">My selection</option></select></label>
+<label><select aria-label="Preview variant" id="preview"><option>A</option><option>B</option><option>C</option></select></label>
+
+<label><select aria-label="Apply leaf choices" id="apply-scope"><option value="global">Across pages</option><option value="page">This page only</option></select></label>
+<button id="annotate" aria-pressed="false"><span data-slot="label">Annotate: off</span></button>
+</nav>
+<div class="workspace"><main><div class="canvas-context"><button id="back-compare" hidden><span data-slot="icon" aria-hidden="true"><i class="ph-icon" data-ph="arrow-left" aria-hidden="true"></i></span><span data-slot="label">Back to compare</span></button><p id="context"></p></div><div id="canvas"></div></main>
+<aside id="review-panel" aria-label="Feedback" data-layout="context">
+<header class="panel-heading"><div><small class="eyebrow">DESIGN REVIEW</small><h2>Review workspace</h2></div><span id="open-count" class="badge"></span></header>
+<nav id="panel-tabs" class="segments" aria-label="Review panel"><button data-panel-tab="current" aria-pressed="true"><span data-slot="label">Selection</span></button><button data-panel-tab="overview" aria-pressed="false"><span data-slot="label">Decisions</span></button></nav>
+<section class="panel-section" data-panel-section="current"><button class="section-toggle" aria-expanded="true"><span data-slot="label">Current decision</span><span class="disclosure-mark" aria-hidden="true">−</span></button><div class="section-body">
+<div id="current-context"></div><details id="intent-context"><summary>What this should accomplish</summary><div id="intent-content"></div></details><div id="global-summary"></div><div id="current-choice"></div>
+<label>Decision notes<textarea id="unit-note-text" rows="2" placeholder="What works, what prevents the intended outcome, or what is missing?"></textarea></label><p class="field-help">Saved with this decision across pages.</p>
+<div class="section-title"><h3>Feedback</h3><span id="comment-count" class="badge"></span></div>
+<button id="missing-approach"><span data-slot="label">Something is missing</span></button><p class="field-help">You can question every approach or describe a conditional choice without choosing a proposal.</p><div class="note-tools"><label>Add feedback to<select id="note-scope"><option value="decision">This decision, across alternatives</option><option value="unit">This proposal</option><option value="page">This page</option><option value="site">Whole artifact</option></select></label><label id="note-variant-label">Proposal<select id="note-variant"><option>A</option><option>B</option><option>C</option></select></label><button id="add-note"><span data-slot="label">Add note</span></button></div>
+<label>Show<select id="filter"><option value="current">Current decision</option><option value="all">All comments</option><option value="page">This page</option><option value="open">Open comments</option></select></label><div id="comments"></div>
+</div></section>
+<section class="panel-section" data-panel-section="overview"><button class="section-toggle" aria-expanded="false"><span data-slot="label">Decision overview</span><span class="disclosure-mark" aria-hidden="true">−</span></button><div class="section-body">
+<div class="progress-heading"><strong id="decision-progress"></strong><span class="hint">Global choices</span></div><progress id="review-progress"></progress>
+<label>Find a decision<input id="decision-search" type="search" placeholder="Search pages and sections"></label>
+<p class="state-key"><span>○ Untouched</span><span>◐ Considered</span><span>✓ Chosen</span><span>× Rejected</span></p><div id="selections"></div>
+</div></section>
+<section class="panel-section" data-panel-section="handoff"><button class="section-toggle" aria-expanded="false"><span data-slot="label">Review handoff</span><span class="disclosure-mark" aria-hidden="true">−</span></button><div class="section-body">
+<label id="summary-field">Overall feedback<textarea id="summary" rows="3" placeholder="What should change across the artifact?"></textarea></label>
+<div id="handoff-summary"></div><label>Your name <span class="optional">Optional</span><input id="reviewer" maxlength="200" autocomplete="name"></label>
+<div class="actions"><button id="handoff-copy"><span data-slot="label">Copy feedback JSON</span></button><button id="handoff-download"><span data-slot="label">Download JSON</span></button></div>
+<p class="hint">Choices express design preferences. Export includes every comment, including feedback on other proposals.</p>
+</div></section>
+</aside></div>
+<dialog id="feedback-dialog" aria-labelledby="feedback-title"><header class="decisions-dialog-heading"><h2 id="feedback-title">Feedback</h2><button id="close-feedback" type="button" commandfor="feedback-dialog" command="close"><span data-slot="label">Close</span></button></header><p>Copy feedback into your chat, download a backup, or import a saved review.</p><div class="feedback-options"><button id="copy"><span data-slot="label">Copy feedback JSON</span></button><button id="download"><span data-slot="label">Download JSON</span></button><button id="import"><span data-slot="label">Import JSON</span></button><input id="import-file" type="file" accept="application/json,.json" hidden></div></dialog>
+<dialog id="comment-dialog"><form id="comment-form"><h2 id="comment-heading">Add feedback</h2><p id="comment-target"></p><blockquote id="comment-quote"></blockquote>
+<label>Feedback<textarea id="comment-text" placeholder="What works, what prevents the intended outcome, or what is missing?" required rows="5"></textarea></label><div class="form-row"><label>Category<select id="category"><option value="other">No category needed</option><option>layout</option><option>content</option><option>navigation</option><option>visual</option><option>question</option></select></label><label>Priority<select id="priority"><option value="suggestion">Suggestion</option><option value="must-change">Must change</option></select></label><label>Status<select id="status"><option value="open">Open</option><option value="resolved">Resolved</option></select></label></div>
+<p id="response"></p><div class="actions"><button type="submit"><span data-slot="label">Save feedback</span></button><button type="button" id="cancel-comment"><span data-slot="label">Cancel</span></button><button type="button" id="delete-comment"><span data-slot="label">Delete</span></button></div></form></dialog>
+<dialog id="json-dialog"><h2>Copy feedback</h2><p>Copy this entire JSON document and paste it into your agent chat.</p><textarea id="json-text" rows="18" readonly aria-label="Feedback JSON"></textarea><button id="close-json" type="button" commandfor="json-dialog" command="close"><span data-slot="label">Close</span></button></dialog>
+<script type="module">@@SCRIPT@@</script>
+</body></html>

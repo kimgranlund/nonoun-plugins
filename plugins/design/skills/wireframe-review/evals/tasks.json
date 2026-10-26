@@ -1,0 +1,13 @@
+{
+ "protocol":1,
+ "development":[
+  {"id":"workspace","brief":"Create a workspace chooser with native selection, optional identity icon, disabled destination and a smaller nested preference control. Support long labels and light/dark schemes."},
+  {"id":"approval","brief":"Create an agent-plan approval surface showing scope, budget, evidence gaps and two reversible alternatives. Approval is a disabled illustrative action until required evidence exists."},
+  {"id":"revision","brief":"Create a product navigation and content surface, then revise it to accommodate a long localized destination label without losing keyboard access or alignment."}
+ ],
+ "holdout":[
+  {"id":"reconcile","brief":"Create a view for comparing conflicting evidence with citations and uncertainty, recording a decision without hiding dissent."},
+  {"id":"branches","brief":"Create a branch comparison interaction where a user can preview, preserve and select alternatives without erasing the original."},
+  {"id":"delegation","brief":"Create a delegation surface with scope, budget, approval thresholds and an interrupted task that can be resumed safely. Separate direction from execution authority."}
+ ]
+}

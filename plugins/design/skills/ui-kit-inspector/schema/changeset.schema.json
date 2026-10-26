@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Jig change set",
+  "description": "jig.changeset/1: what a jig hands back. Constants that moved, overrides of derived values, the checks that ran, and the reason. Three rules live in scripts/validate-changeset.mjs because a schema cannot say them: R1 from differs from to, R2 change paths are unique, R3 passed is true exactly when failures is empty.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "kind", "base", "createdAt", "context", "changes", "overrides", "checks", "effects", "note"],
+  "properties": {
+    "$schema": { "description": "The format name. An importer keys on it.", "const": "jig.changeset/1" },
+    "kind": { "description": "What the jig tunes.", "enum": ["system", "component", "layout", "theme"] },
+    "base": {
+      "description": "What the change set was made against. An importer refuses a set whose base it does not hold.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "source"],
+      "anyOf": [{ "required": ["sha256"] }, { "required": ["version"] }],
+      "properties": {
+        "system": { "type": "string", "minLength": 1 },
+        "source": { "description": "The file the constants live in, relative to the project root, or a package name.", "type": "string", "minLength": 1 },
+        "sha256": { "description": "The hash of the bytes of source.", "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "version": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string" }
+      }
+    },
+    "createdAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$" },
+    "context": {
+      "description": "The viewpoint the person had (canvas width, content length, theme). It changes nothing.",
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+    },
+    "changes": { "description": "Constants that moved.", "type": "array", "items": { "$ref": "#/definitions/change" } },
+    "overrides": { "description": "Derived values pinned off their formula. Never a constant.", "type": "array", "items": { "$ref": "#/definitions/override" } },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "proposed"],
+      "properties": {
+        "contract": { "description": "The host system's own rules. Null when the host states none.", "anyOf": [{ "type": "null" }, { "$ref": "#/definitions/check" }] },
+        "proposed": { "description": "Checks the jig proposes. Not the host's rules.", "$ref": "#/definitions/check" }
+      }
+    },
+    "effects": { "description": "Derived values that moved because of the changes. For verifying, not for editing.", "type": "array", "items": { "$ref": "#/definitions/effect" } },
+    "note": { "description": "The human reason. It may be empty.", "type": "string" },
+    "extensions": { "description": "Free space for one tool's own data. Other tools keep it and ignore it.", "type": "object" }
+  },
+  "definitions": {
+    "scalar": { "type": ["string", "number", "boolean"] },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "from", "to", "home"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "from": { "$ref": "#/definitions/scalar" },
+        "to": { "$ref": "#/definitions/scalar" },
+        "home": { "description": "Where the constant is written today. Null when it has no home yet.", "anyOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+        "label": { "type": "string" },
+        "hint": { "type": "string" }
+      }
+    },
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "from", "to"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "at": { "type": "string" },
+        "formula": { "type": "string" },
+        "from": { "$ref": "#/definitions/scalar" },
+        "to": { "$ref": "#/definitions/scalar" },
+        "reason": { "type": "string" }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failures"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "failures": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "from", "to"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "at": { "type": "string" },
+        "from": { "$ref": "#/definitions/scalar" },
+        "to": { "$ref": "#/definitions/scalar" }
+      }
+    }
+  }
+}

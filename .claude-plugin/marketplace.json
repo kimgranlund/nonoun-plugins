@@ -18,6 +18,11 @@
       "name": "dev-tools",
       "source": "./plugins/dev-tools",
       "description": "Machine, repo and harness care: verification loops, flaky gates, port zombies, bare repos, macOS builds, cross-harness plugins, skill report cards."
+    },
+    {
+      "name": "design",
+      "source": "./plugins/design",
+      "description": "UI construction, Differential Forms geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique."
     }
   ],
   "metadata": {

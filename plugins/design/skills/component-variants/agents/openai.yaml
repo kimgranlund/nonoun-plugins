@@ -1,0 +1,4 @@
+interface:
+  display_name: "Component Variants"
+  short_description: "Compare working components and copy richer feedback"
+  default_prompt: "Use $component-variants to create working alternatives for this component with a simple comparison page and copyable feedback."

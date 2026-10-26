@@ -1,0 +1,41 @@
+{
+  "palettes": [
+    {
+      "name": "Neutral",
+      "hue": 267,
+      "chroma": 29,
+      "skew": -20,
+      "lift": 0,
+      "anchor": "#576485",
+      "on": true
+    },
+    {
+      "name": "Primary",
+      "hue": 267,
+      "chroma": 95,
+      "skew": -20,
+      "lift": 0,
+      "anchor": "#0C5DCC",
+      "on": true
+    },
+    {
+      "name": "Danger",
+      "hue": 27,
+      "chroma": 55,
+      "skew": -20,
+      "lift": -5,
+      "anchor": "#AD1A0D",
+      "on": true
+    }
+  ],
+  "curve": "logistic",
+  "tension": 0,
+  "lmin": 5,
+  "lmax": 100,
+  "damp": 80,
+  "hueSpace": "cam16",
+  "theme": "auto",
+  "export": {
+    "colorPrefix": "md-color"
+  }
+}

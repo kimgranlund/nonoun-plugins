@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proportion — A Mathematical Design Study</title>
+<meta name="description" content="An interactive study of interface geometry using Differential Forms.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap">
+<style>:root{color-scheme:light;--surface-lowest:#e9e9e6;--surface-low:#efefec;--surface-mid:#f5f5f2;--surface-high:#fafaf7;--surface-highest:#fff;--ink:#20201f;--muted-ink:#62625d;--accent:#bf3024;--guide-inset:#d6817a66;--guide-gap:#7e8e7666;--guide-slot:#6b63a9;--mono:'IBM Plex Mono',ui-monospace,monospace;font-family:system-ui,sans-serif;color:var(--ink);background:var(--surface-lowest)}
+[data-theme=dark]{color-scheme:dark;--surface-lowest:#1a1a19;--surface-low:#222221;--surface-mid:#2b2b29;--surface-high:#333330;--surface-highest:#3d3d39;--ink:#eee;--muted-ink:#b8b8b1;--accent:#ff8c78}
+*{box-sizing:border-box;scrollbar-width:none}::-webkit-scrollbar{display:none}body{margin:0}button,input,select,textarea{font:inherit;color:inherit}button,select{cursor:pointer}button{background:var(--surface-highest);border:0}a{color:inherit}button:disabled{opacity:.45;cursor:default}button:hover:not(:disabled),select:hover{filter:brightness(.97)}:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--ink);outline-offset:0;position:relative;z-index:30}button:focus-visible,[role=option]:focus-visible{z-index:30!important}input[type=range]{accent-color:var(--ink);min-width:0;width:100%;margin:0}p{line-height:1.55}h1,h2,h3,h4,p{margin:0}h2{font-size:26px;letter-spacing:-.045em;line-height:1.2}h3{font-size:20px;letter-spacing:-.025em}h4{font-size:16px}svg{display:block}fieldset{margin:0;padding:0;border:0}summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}summary:after{content:'⌄';margin-inline-start:auto;transition:transform .15s}details:not([open])>summary:after{transform:rotate(-90deg)}summary{display:flex;align-items:center;gap:16px}.skip-link{position:fixed;top:8px;left:8px;z-index:100;padding:12px;background:var(--surface-highest);transform:translateY(-200%)}.skip-link:focus{transform:none}.page{max-width:1680px;margin:auto;padding:28px 32px}.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:24px}.wordmark{font-size:22px;font-weight:800;letter-spacing:-.055em;text-decoration:none}.caption,.sample-label,.readout,.readouts,.formula,output,.status{font-family:var(--mono);font-weight:400}.caption{font-size:12px;line-height:1.5;color:var(--muted-ink)}.section-nav{display:flex;flex-wrap:wrap;gap:10px 20px;padding-block:24px}.section-nav a{font-size:12px;text-decoration:none;color:var(--muted-ink)}.section-nav a:hover{text-decoration:underline;color:var(--ink)}.hero{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:end;padding:44px 0 64px}.hero h1{font-size:clamp(56px,7vw,104px);line-height:.95;letter-spacing:-.075em;font-weight:750}.hero h1 span{color:var(--accent)}.hero>div{max-width:440px}.hero p+p{margin-top:20px}.workbench{display:grid;grid-template-columns:260px minmax(0,1fr);gap:40px;align-items:start}.inspector{position:sticky;top:16px;max-height:calc(100dvh - 32px);overflow:auto;padding:12px;background:var(--surface-mid);border-radius:12px;font-size:12px}.inspector-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.inspector h2{font-size:20px;letter-spacing:-.04em}.inspector button{padding:8px 10px;border-radius:6px}.status{font-size:10px;line-height:1.6;color:var(--muted-ink);margin:14px 0;overflow-wrap:anywhere}.inspector details{margin-top:8px;background:var(--surface-high);border-radius:8px}.inspector summary{font-weight:650;padding:12px}.inspector-body{padding:0 12px 12px;display:grid;gap:12px}.setting{display:grid;grid-template-columns:80px minmax(30px,1fr) 38px;align-items:center;gap:8px;min-height:28px}.setting output{text-align:end;font-size:10px}.select-setting{grid-template-columns:minmax(65px,1fr) minmax(0,1.2fr)}.setting select{min-width:0;width:100%;padding:7px 4px;background:var(--surface-low);border:0;border-radius:4px;font-size:12px}.hint{font-size:11px;color:var(--muted-ink);line-height:1.5}.inspector>.hint{padding:16px 4px 4px}.guide-controls{display:grid;gap:4px}.guide-controls legend{font-size:11px;color:var(--muted-ink);padding:0 0 8px}.switch-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:28px;cursor:pointer}.switch-setting>span{display:flex;align-items:center;gap:8px}.guide-key{display:inline-block;width:10px;height:10px}.inset-key{background:var(--guide-inset)}.gap-key{background:var(--guide-gap)}.slot-key{border:1px dashed var(--guide-slot)}.switch-setting input{appearance:none;width:28px;height:16px;border-radius:99px;background:var(--muted-ink);margin:0;position:relative;flex:none;cursor:pointer}.switch-setting input:before{content:'';position:absolute;width:12px;height:12px;border-radius:50%;inset:2px auto auto 2px;background:var(--surface-highest)}.switch-setting input:checked{background:var(--ink)}.switch-setting input:checked:before{left:14px}.field-wrap{background:var(--surface-low);border-radius:4px}.field-wrap textarea{resize:vertical;width:100%;display:block;border:0;padding:8px;background:transparent;min-height:100px;font:11px/1.6 var(--mono)}.field-wrap:has(textarea:focus-visible){outline:3px solid var(--ink);outline-offset:0}.field-wrap textarea:focus-visible{outline:0}.inspector-actions{display:flex;gap:8px}main{min-width:0}.study{padding:0 0 56px;scroll-margin-top:20px}.study+.study{padding-top:32px}.study-title{margin-bottom:20px}.study-title h2{display:flex;gap:16px;align-items:baseline}.number{color:var(--accent);font-size:23px;letter-spacing:-.05em}.study-title p{font:12px/1.5 var(--mono);color:var(--muted-ink);margin-top:8px}.note{font-size:14px;color:var(--muted-ink);max-width:78ch;margin-bottom:22px}.nested-study{margin-top:32px}.nested-study h3{margin-bottom:12px}.scroll-hint{margin:12px 0}.comparison-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(300px,1fr);gap:16px;overflow:auto;padding:6px 6px 16px;margin-inline:-6px;scroll-snap-type:x proximity;scroll-padding:6px}.density-column,.comparison-cell{min-width:0;scroll-snap-align:start}.density-column>h3,.comparison-cell>h3{position:sticky;top:0;padding:12px 0;background:var(--surface-lowest);z-index:2;font-size:17px}.specimen,.sample{min-width:0}.specimen{background:var(--surface-mid);padding:20px;border-radius:12px;margin-bottom:12px}.sample{display:flex;flex-wrap:wrap;align-items:center;gap:16px}.arrangement{display:grid;gap:10px;margin-block:20px}.arrangement:first-child{margin-top:0}.arrangement h4,.arrangement>p:first-child{font:11px/1.5 var(--mono);color:var(--muted-ink)}.shape-pair{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.shape-pair>div{display:grid;justify-items:start;gap:6px}.readout,.readouts{font-size:11px;line-height:1.7;color:var(--muted-ink);overflow-wrap:anywhere;margin-top:12px}.readout dl,dl.readout{display:grid;grid-template-columns:1fr auto;gap:4px 12px}.readout dt,.readout dd{margin:0}.formula{font-size:11px;line-height:1.7;padding:14px;background:var(--surface-low);border-radius:8px;margin-block:16px;overflow-wrap:anywhere}.formula summary{font:inherit;font-weight:600}.formula p{margin-top:10px}.footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;font:11px/1.5 var(--mono);color:var(--muted-ink);padding-top:32px}
+/* Resolver outputs are applied once, in CSS pixels. Appearance never changes their budget. */
+.df-control,.df-chip{display:inline-flex;align-items:center;justify-content:center;min-height:var(--height);padding:var(--pad);gap:var(--gap);border:var(--border) solid transparent;border-radius:var(--radius);font-size:var(--font);line-height:var(--line);background:var(--surface-highest);color:var(--ink);overflow:visible;position:relative;flex-shrink:0;vertical-align:middle;max-width:none}.df-control[aria-pressed=true],.df-chip[aria-pressed=true],.df-control[aria-selected=true]{background:var(--ink);color:var(--surface-highest)}.df-control.secondary,.df-control.outline{border-color:var(--muted-ink);background:transparent}.slot{width:var(--slot);height:var(--slot);min-width:var(--slot);flex:0 0 var(--slot);display:grid;place-items:center;overflow:hidden}.slot>i{font-size:var(--icon);line-height:1}.slot>svg{width:var(--icon);height:var(--icon);flex:none}.slot.media>svg,.media>svg{width:100%;height:100%}.media{width:var(--slot);height:var(--slot);flex:0 0 var(--slot);display:grid;place-items:center;overflow:hidden}.label{min-height:var(--slot);display:flex;align-items:center;margin-inline:var(--edge-start) var(--edge-end);min-width:0;white-space:nowrap}.df-composite,.df-card{padding:var(--pad);gap:var(--gap);border:var(--border) solid transparent;border-radius:var(--radius);display:flex;flex-direction:column;position:relative;overflow:visible;min-width:0}.df-composite{background:var(--surface-low)}.df-composite>.df-control{justify-content:flex-start}.df-card{background:var(--surface-mid)}.df-card>h4{line-height:1.3}.df-card>p{font-size:14px}.df-card .sample{gap:var(--gap)}.input-shell{display:flex;align-items:center;padding:var(--pad);gap:var(--gap);min-height:var(--height);border-radius:var(--radius);border:var(--border) solid transparent;background:var(--surface-highest);position:relative;overflow:visible;min-width:0}.df-input{min-width:0;width:100%;flex:1;line-height:var(--line);font-size:var(--font);min-height:var(--slot);border:0;background:transparent;padding:0;margin-inline:var(--edge-start,0px) var(--edge-end,0px)}.input-shell:has(.df-input:focus-visible){outline:3px solid var(--ink);outline-offset:0;z-index:30}.df-input:focus-visible{outline:0}.input-example{position:relative;margin-block:16px}.input-example>label{display:block;font-size:12px;margin-bottom:8px}.adornment{display:flex;align-items:center;flex:none;background:transparent}.popup{position:absolute;z-index:40;top:100%;inset-inline-start:0;min-width:150px;box-shadow:0 6px 18px #0002}.popup[hidden]{display:none}.df-record{display:flex;align-items:center;padding-block:var(--pad);padding-inline:var(--cell-pad,var(--pad));gap:var(--gap);min-height:var(--height,auto);border:var(--border,0px) solid transparent;border-radius:var(--radius,0px);background:var(--surface-high);overflow:visible}.df-record>.copy{min-width:0;flex:1}.df-record p{white-space:normal}.collection-table{border-collapse:separate;border-spacing:0 var(--row-gap,2px);width:100%;font-size:var(--font,14px);line-height:var(--line,20px)}.collection-table th,.collection-table td{padding-block:var(--pad);padding-inline:var(--cell-pad);border:var(--border,0px) solid transparent;background:var(--surface-high);text-align:start;vertical-align:middle}.collection-table th:first-child,.collection-table td:first-child{padding-inline-start:var(--outer-pad,var(--pad))}.collection-table th:last-child,.collection-table td:last-child{padding-inline-end:var(--outer-pad,var(--pad))}.cell-slot{min-height:var(--slot);display:flex;align-items:center}.collection-table caption{text-align:start;font:12px/1.5 var(--mono);padding-bottom:10px}.collection-table th{font-weight:600}.collection-table .numeric{text-align:end}.collection-table .numeric .cell-slot{justify-content:flex-end}.data-list{margin:0;display:grid;gap:var(--row-gap,2px)}.data-list .df-record{justify-content:space-between}.data-list dt,.data-list dd{margin:0}.guide-margins :is(.df-control,.df-chip,.df-card,.df-composite,.input-shell,.df-record){background-image:linear-gradient(var(--guide-inset),var(--guide-inset));background-origin:border-box;background-clip:padding-box}.guide-margins :is(.df-control,.df-chip)>.label{background:var(--surface-highest);color:var(--ink)}.guide-gaps .df-composite,.guide-gaps .sample{background-color:var(--guide-gap)}.guide-slots .slot,.guide-slots .media,.guide-slots .label{outline:1px dashed var(--guide-slot);outline-offset:-1px}.geometry-conflict{outline:1px dashed var(--accent);outline-offset:0}.feedback{font-size:12px;color:var(--muted-ink);margin-block:12px}
+@media(max-width:1000px){.page{padding:24px}.workbench{grid-template-columns:228px minmax(0,1fr);gap:24px}.setting{grid-template-columns:72px minmax(24px,1fr) 32px;gap:5px}.select-setting{grid-template-columns:1fr 1.2fr}.inspector{padding:8px}.inspector-body{padding-inline:8px}.hero{gap:32px}.study-title h2{font-size:23px}.comparison-grid{grid-auto-columns:minmax(290px,1fr)}}
+@media(max-width:650px){.page{padding:16px}.masthead{align-items:start}.masthead .caption{text-align:end;max-width:145px;font-size:10px}.section-nav{gap:10px 16px}.hero{grid-template-columns:1fr;padding:20px 0 36px;gap:24px}.hero h1{font-size:64px}.workbench{grid-template-columns:minmax(0,1fr);gap:28px}.inspector{position:relative;top:auto;max-height:none;overflow:visible}.inspector details{display:block}.inspector-body{padding:0 12px 12px}.setting{grid-template-columns:110px minmax(60px,1fr) 45px}.select-setting{grid-template-columns:1fr 1fr}.inspector .hint{max-width:60ch}.study{padding-bottom:32px}.study+.study{padding-top:16px}.study-title h2{font-size:25px}.comparison-grid{grid-auto-columns:minmax(280px,85%)}.specimen{padding:16px}.footer{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+@media(forced-colors:active){.switch-setting input{appearance:auto}.switch-setting input:before{display:none}.df-control,.df-chip{border-color:ButtonText}.slot,.media{forced-color-adjust:none}}
+/* Application parts, preserving resolver budgets and native interaction. */
+.df-control.filled{background:var(--ink);color:var(--surface-highest)}.df-control.outlined{background:var(--surface-highest);color:var(--ink);border-color:var(--muted-ink)}.df-control[aria-selected=true]{background:var(--ink);color:var(--surface-highest)}.arrangement>.df-control{justify-self:start}.readout>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px}.readout>div>dd{text-align:end}.readout{display:block!important}.sample.inputs{align-items:start}.sample.inputs>.input-example{flex:1 1 240px;min-width:0;max-width:100%;width:240px}.choices{margin-block:24px}.choices>label{display:inline-flex;align-items:center;gap:8px;font-size:14px}.choices input{appearance:none;position:relative;display:inline-grid;place-items:center;width:var(--choice);height:var(--choice);margin:0;flex:none;background:var(--surface-highest);border:1px solid var(--muted-ink);border-radius:var(--checkbox-radius);cursor:pointer}.choices input[type=checkbox]:checked{background:var(--ink)}.choices input[type=checkbox]:checked:after{content:'✓';color:var(--surface-highest);font-size:12px}.choices input[type=radio]{border-radius:50%}.choices input[type=radio]:checked:after{content:'';width:55%;height:55%;border-radius:50%;background:var(--ink)}.choices input[role=switch]{width:var(--switch-width);height:var(--switch-height);border-radius:999px;background:var(--surface-highest)}.choices input[role=switch]:after{content:'';position:absolute;width:calc(var(--switch-height) * .8);height:calc(var(--switch-height) * .8);inset-inline-start:calc(var(--switch-height) * .1 - 1px);border-radius:50%;background:var(--ink)}.choices input[role=switch]:checked:after{content:'';inset-inline-start:auto;inset-inline-end:calc(var(--switch-height) * .1 - 1px);background:var(--surface-highest)}.df-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--surface-low)}.role-table{border-collapse:separate;border-spacing:16px;width:max-content;min-width:100%;font-size:13px}.role-table th{text-align:start;background:var(--surface-lowest);z-index:2}.role-table thead th{position:sticky;top:0;padding-block:12px}.role-table td{vertical-align:top;min-width:250px;max-width:300px}.role-table tbody>tr>th{position:sticky;left:0;min-width:85px;padding:8px;vertical-align:top}.data-list dt,.data-list dd{flex:1;min-width:0}.data-list dt{font-weight:600}.data-list dd{text-align:end}.data-list .df-record{padding-inline:var(--outer-pad,var(--pad))}.collection-table td:not(:first-child),.collection-table th:not(:first-child){padding-inline-start:calc(var(--cell-pad) + var(--gap) / 2)}.collection-table td:not(:last-child),.collection-table th:not(:last-child){padding-inline-end:calc(var(--cell-pad) + var(--gap) / 2)}
+/* Paint guides do not participate in geometry or obscure authored artwork. */
+.guide-margins :is(.df-control,.df-chip,.df-card,.df-composite,.input-shell,.df-record){background-image:none;box-shadow:inset 0 0 0 var(--pad) var(--guide-inset)}.guide-margins :is(.df-control,.df-chip)>.label{background:transparent;color:inherit}.guide-gaps .sample{background-color:transparent}.guide-gaps .df-composite{background-color:var(--guide-gap)}.guide-gaps :is(.df-control,.input-shell)>.label{position:relative}.guide-gaps :is(.df-control,.input-shell)>.label:not(:first-child):before,.guide-gaps :is(.df-control,.input-shell)>.label:not(:last-child):after{content:'';position:absolute;pointer-events:none;top:0;bottom:0;width:var(--gap);background:var(--guide-gap)}.guide-gaps :is(.df-control,.input-shell)>.label:not(:first-child):before{right:calc(100% + var(--edge-start))}.guide-gaps :is(.df-control,.input-shell)>.label:not(:last-child):after{left:calc(100% + var(--edge-end))}
+.guide-gaps .input-shell>.adornment{position:relative}.guide-gaps .input-shell>.adornment:not(:first-child):before,.guide-gaps .input-shell>.adornment:not(:last-child):after{content:'';position:absolute;pointer-events:none;top:0;bottom:0;width:var(--gap);background:var(--guide-gap)}.guide-gaps .input-shell>.adornment:not(:first-child):before{right:100%}.guide-gaps .input-shell>.adornment:not(:last-child):after{left:100%}
+.listbox-option>.label{flex:1}.listbox-option.outlined,.action-menu>.df-control.outlined{border-color:transparent;background:var(--surface-high)}.listbox-option[aria-selected=true]{background:var(--ink);color:var(--surface-highest)}.listbox-option:hover:not([aria-selected=true]),.action-menu>.df-control:hover{background:var(--surface-highest)}
+.df-control.neutral{background:var(--surface-high);border-color:transparent;color:var(--ink)}.df-control.neutral[aria-selected=true]{background:var(--ink);color:var(--surface-highest)}.choices input{border-width:var(--choice-border,0px)}.choices input[role=switch]:after{inset-inline-start:calc(var(--switch-height) * .1 - var(--choice-border,0px))}.choices input[role=switch]:checked:after{inset-inline-start:auto;inset-inline-end:calc(var(--switch-height) * .1 - var(--choice-border,0px))}
+.data-list{font-size:var(--font);line-height:var(--line)}.data-list dd{text-align:start}
+.data-list{align-content:start;align-self:start}.density-column>.collection-table+.data-list{margin-top:16px}
+
+/* Proportion editorial identity: appearance roles, independent of resolver geometry. */
+:root{--surface-lowest:#f7f5ee;--surface-low:#efede5;--surface-mid:#eae7de;--surface-high:#f7f5ee;--surface-highest:#fffaf2;--ink:#252525;--muted-ink:#595952;--accent:#c9281c;--on-accent:#fffaf2;--type-display:clamp(56px,7.5vw,112px);--type-heading:32px;--type-subhead:24px;--type-title:18px;--type-body:16px;--type-caption:12px;--type-label:12px;font-size:var(--type-body)}
+[data-theme=dark]{--surface-lowest:#1c1b18;--surface-low:#24231f;--surface-mid:#2d2b26;--surface-high:#35322c;--surface-highest:#403c34;--ink:#f7f5ee;--muted-ink:#c3bfb3;--accent:#ee6655;--on-accent:#211b18}
+.masthead{border-top:8px solid var(--accent);padding-top:16px}
+.hero h1{font-size:var(--type-display);line-height:.9;letter-spacing:-.065em;font-weight:700}
+.study-title h2{font-size:var(--type-heading);font-weight:700;letter-spacing:-.035em}
+.study h3{font-size:var(--type-subhead);font-weight:700;letter-spacing:-.025em}
+.study h4{font-size:var(--type-title)}
+.hero p,.study>.note{font-size:var(--type-body);line-height:1.5}
+.caption,.study-title p{font-size:var(--type-caption);font-family:var(--mono);font-weight:400}
+.inspector{background:var(--surface-low)}.inspector details{background:var(--surface-lowest)}
+.df-control.filled:not(.neutral),.df-control[aria-selected=true],.df-control.neutral[aria-selected=true]{background:var(--accent);color:var(--on-accent)}
+input[type=range]{accent-color:var(--accent)}.switch-setting input:checked{background:var(--accent)}
+.type-roles{margin:0 0 32px;padding:16px;background:var(--surface-low);border-radius:8px}
+.type-roles summary{font-size:var(--type-label);font-weight:700}.type-roles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:24px}
+.type-role{min-width:0}.type-role dt{font:400 11px/1.5 var(--mono);color:var(--muted-ink);margin-bottom:8px}.type-role dd{margin:0;overflow-wrap:anywhere}
+.type-display{font-size:clamp(40px,5vw,64px);line-height:.95;font-weight:700;letter-spacing:-.05em}.type-heading{font-size:var(--type-heading);line-height:1.15;font-weight:700;letter-spacing:-.035em}.type-subhead{font-size:var(--type-subhead);line-height:1.25;font-weight:700}.type-body{font-size:var(--type-body);line-height:1.5}.type-caption{font:400 var(--type-caption)/1.5 var(--mono)}
+@media(max-width:650px){.study-title h2{font-size:26px}.study h3{font-size:21px}}
+
+/* Content roles belong to the content, never to a control's slot metrics. */
+.df-card :is(h3,h4).type-title{font-size:var(--type-title);line-height:1.3;font-weight:600;letter-spacing:-.015em}
+.df-card p.type-body,.cell-slot.type-body{font-size:var(--type-body);line-height:1.5;font-weight:400}
+.collection-table th .type-body,.data-list dt .type-body{font-weight:600}
+.df-card p.type-caption{font:400 var(--type-caption)/1.5 var(--mono);color:var(--muted-ink)}
+
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to examples</a>
+<div class="page">
+<header class="masthead"><a href="#" class="wordmark">PROPORTION</a><span class="caption">A mathematical design study / 2026</span></header>
+<nav class="section-nav" aria-label="Study sections"><a href="#buttons">01 Buttons</a><a href="#button-densities">02 Button geometry</a><a href="#listbox-densities">03 Listbox geometry</a><a href="#menus">04 Menus & listboxes</a><a href="#data">05 Tables & data-lists</a><a href="#containers">06 Containers</a><a href="#spacing-rules">07 Spacing families</a><a href="#radius-study">08 Curvature</a></nav>
+<section class="hero" aria-labelledby="study-heading"><h1 id="study-heading">Order.<br><span>By design.</span></h1><div><p>A living study of the relationships behind an interface. Change a variable. Watch a system respond.</p><p class="caption">Differential Forms · content + spacing + border</p></div></section>
+<details class="type-roles"><summary>Typography · Display / Heading / Subhead / Body / Caption</summary><dl class="type-roles-grid"><div class="type-role"><dt>Display · editorial emphasis</dt><dd class="type-display">Order by design.</dd></div><div class="type-role"><dt>Heading · 32px</dt><dd class="type-heading">Clear relationships</dd></div><div class="type-role"><dt>Subhead · 24px</dt><dd class="type-subhead">Content comes first</dd></div><div class="type-role"><dt>Body · 16px / 1.5</dt><dd class="type-body">A consistent hierarchy gives every example a clear place in the study.</dd></div><div class="type-role"><dt>Caption · IBM Plex Mono 400 · 12px</dt><dd class="type-caption">Resolved values · CSS pixels</dd></div></dl></details>
+<div class="workbench">
+<aside class="inspector" aria-label="Geometry inspector">
+<div class="inspector-heading"><h2>Inspector</h2><button type="button" id="reset">Reset</button></div>
+<p id="status" role="status" aria-live="polite" class="status">Loading geometry…</p>
+<details open><summary>Foundation</summary><div class="inspector-body">
+<label class="setting" for="unit"><span>Base unit</span><input id="unit" type="range" min="3" max="6" step="0.25" value="4"><output for="unit" id="unit-value">4px</output></label>
+<label class="setting" for="border"><span>Border</span><input id="border" type="range" min="0" max="2" step="0.25" value="0"><output for="border" id="border-value">0px</output></label>
+<label class="setting select-setting" for="theme"><span>Appearance</span><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+</div></details>
+<details open><summary>Density</summary><div class="inspector-body">
+<label class="setting select-setting" for="controlDensity"><span>Controls</span><select id="controlDensity"><option value="compact">Compact</option><option value="default" selected>Default</option><option value="loose">Loose</option></select></label>
+<label class="setting select-setting" for="collectionDensity"><span>Collections</span><select id="collectionDensity"><option value="compact">Compact</option><option value="default" selected>Default</option><option value="loose">Loose</option></select></label>
+<label class="setting select-setting" for="cardDensity"><span>Cards</span><select id="cardDensity"><option value="compact">Compact</option><option value="default" selected>Default</option><option value="loose">Loose</option></select></label>
+<p class="hint">Each family has its own spacing. Nested controls keep their Control density.</p>
+</div></details>
+<details open><summary>Spacing & guides</summary><div class="inspector-body">
+<label class="setting" for="labelEdge"><span>Label edge</span><input id="labelEdge" type="range" min="0" max="3" step="0.25" value="1.5"><output for="labelEdge" id="labelEdge-value">1.5u</output></label>
+<label class="setting" for="inset"><span>Composite inset</span><input id="inset" type="range" min="0" max="1.5" step="0.25" value="0"><output for="inset" id="inset-value">0u</output></label>
+<p class="hint">Label edge stays constant across densities. Chips use half; inputs do not double the opposite edge.</p>
+<fieldset class="guide-controls"><legend>Guides</legend><label class="switch-setting"><span><i class="guide-key inset-key"></i>Insets</span><input id="guideMargins" type="checkbox" role="switch"></label><label class="switch-setting"><span><i class="guide-key gap-key"></i>Gaps</span><input id="guideGaps" type="checkbox" role="switch"></label><label class="switch-setting"><span><i class="guide-key slot-key"></i>Slot boundaries</span><input id="guideSlots" type="checkbox" role="switch"></label></fieldset>
+</div></details>
+<details><summary>Curvature</summary><div class="inspector-body">
+<label class="setting select-setting" for="controlCurve"><span>Controls</span><select id="controlCurve"><option value="sharpest">Sharpest</option><option value="sharp">Sharp</option><option value="default">Default</option><option value="soft" selected>Soft</option><option value="softest">Softest · pill</option></select></label>
+<label class="setting select-setting" for="containerCurve"><span>Containers</span><select id="containerCurve"><option value="sharpest">Sharpest</option><option value="sharp">Sharp</option><option value="default">Default</option><option value="soft" selected>Soft</option><option value="softest">Softest</option></select></label>
+<p class="hint">Zero inset makes attached composite children square. Ordinary cards and input adornments keep their own shape rules.</p>
+</div></details>
+<details><summary>Comparison</summary><div class="inspector-body"><label class="setting select-setting" for="rowState"><span>Listbox appearance</span><select id="rowState"><option value="none">None selected</option><option value="all">All selected</option><option value="actual" selected>Actual selection</option></select></label><p class="hint">Preview selection paint without changing your chosen specimen voice.</p></div></details>
+<details><summary>Configuration</summary><div class="inspector-body"><label for="configuration">Saved configuration</label><div class="field-wrap"><textarea id="configuration" rows="6" spellcheck="false" aria-describedby="configuration-hint"></textarea></div><p id="configuration-hint" class="hint">Copy the current settings or paste a saved configuration to restore it.</p><div class="inspector-actions"><button id="copyConfig" type="button">Copy</button><button id="applyConfig" type="button">Apply</button></div></div></details>
+<p class="hint">The inspector stays fixed in scale. Only specimens respond to geometry settings.</p>
+</aside>
+<main id="main">
+<section class="study" id="buttons"><div class="study-title"><h2><span class="number">01</span>Buttons</h2><p>Preserve the content. Resolve the surrounding space.</p></div><p class="note">Control slots stay 6u square. Chip slots stay 4u. Border occupies its owner’s interior once, including when transparent.</p><div id="buttons-content"></div></section>
+<section class="study" id="button-densities"><div class="study-title"><h2><span class="number">02</span>Button geometry</h2><p>Five arrangements · three densities · Sharpest and Pill</p></div><p class="note">Compare label, icon, glyph, avatar and logo arrangements. Label edges depend on exposed content, not density or curvature. Shape pairs retain the same dimensions.</p><p class="scroll-hint caption">Scroll horizontally or focus the comparison and use arrow keys.</p><div id="button-density-grid" class="comparison-grid" role="region" aria-label="Button arrangements across three densities" tabindex="0"></div></section>
+<section class="study" id="listbox-densities"><div class="study-title"><h2><span class="number">03</span>Listbox geometry</h2><p>Icon, avatar and logo rows</p></div><p class="note">Each listbox is an explicit composite. Requested inset sets its gap; child spacing resolves without shrinking text or slots.</p><div id="listbox-density-grid" class="comparison-grid" role="region" aria-label="Listbox rows across three densities" tabindex="0"></div></section>
+<section class="study" id="menus"><div class="study-title"><h2><span class="number">04</span>Menus & listboxes</h2><p>Actions, selections and composed inputs.</p></div><p class="note">Use the arrow keys to navigate listboxes and Enter to select. Input adornments use chips inside neutral wrappers; their shape is independent of attached-composite rules.</p><div id="menus-content"></div></section>
+<section class="study" id="data"><div class="study-title"><h2><span class="number">05</span>Tables & data-lists</h2><p>Alignment makes relationships legible.</p></div><p class="note">Collection density controls row spacing. Multiline copy grows the row while preserving slots and the density of nested actions.</p><div id="data-content"></div></section>
+<section class="study" id="containers"><div class="study-title"><h2><span class="number">06</span>Containers</h2><p>Ordinary cards preserve their children’s geometry.</p></div><p class="note">Card inset and gap use 3u / 4.5u / 6u. Card density never applies composite subtraction to a nested control.</p><div id="container-grid" class="comparison-grid" role="region" aria-label="Cards across three densities" tabindex="0"></div><article id="nested-composition" class="nested-study"><h3>One card · independent families</h3><p class="note">The card, collection and controls each resolve their own density. Change one family in the inspector to compare.</p><div id="nested-content"></div></article></section>
+<section class="study" id="spacing-rules"><div class="study-title"><h2><span class="number">07</span>Spacing families</h2><p>Compact / Default / Loose</p></div><p class="note">Controls use inset 0.5u / 1u / 2u; collections use 1u / 2u / 3u; cards use 3u / 4.5u / 6u. These are independent lookups, not a cascading multiplier.</p><div id="density-comparison" class="comparison-grid" role="region" aria-label="Spacing families across densities" tabindex="0"></div></section>
+<section class="study" id="radius-study"><div class="study-title"><h2><span class="number">08</span>Composable curvature</h2><p>Shape follows the owning component.</p></div><p class="note">Soft is 3u. Softest controls are capsules; Softest containers use 4u. Attached composites consume the effective parent inset once and preserve their child slots.</p><div id="radius-comparison" class="comparison-grid" role="region" aria-label="Curvature and attached composites" tabindex="0"></div></section>
+</main></div>
+<footer class="footer"><span>PROPORTION / DIFFERENTIAL FORMS</span><span>An adopted design convention, not a perceptual law.</span></footer>
+</div><script>(()=>{
+                                                      
+                                                                              
+                                                                                                                                  
+function inputs(input                = {}) {
+ const {unit=4,border=0,density='default',curvature='soft',labelEdgeUnits=1.5}=input;
+ if (!Number.isFinite(unit)||unit<3||unit>6) throw new RangeError('unit must be 3..6 CSS px');
+ if (!Number.isFinite(border)||border<0||border>unit/2) throw new RangeError('border must be 0..u/2');
+ if (!Number.isFinite(labelEdgeUnits)||labelEdgeUnits<0||labelEdgeUnits>3) throw new RangeError('label edge must be 0..3u');
+ const index=['compact','default','loose'].indexOf(density);
+ if(index<0) throw new RangeError('unknown density');
+ if(!['sharpest','sharp','default','soft','softest'].includes(curvature)) throw new RangeError('unknown curvature');
+ return {unit,border,density,curvature,labelEdgeUnits,index};
+}
+
+                                            
+/** Nominal radius; CSS additionally fits to actual box width. */
+function resolveCurvature(curvature           , unit        , height        , family                       ='control', width=Infinity) {
+ const coefficients={sharpest:0,sharp:1,default:2,soft:3,softest:4};
+ const requested=curvature==='softest' && family==='control' ? height/2 : coefficients[curvature]*unit;
+ return Math.max(0,Math.min(requested,height/2,width/2));
+}
+function resolveNestedRadius(parentRadius       ,edgeDistance       ,childHeight       ,requestedInset       ) {
+ return requestedInset===0 ? 0 : Math.min(childHeight/2,Math.max(0,parentRadius-edgeDistance));
+}
+
+
+
+function resolveControl(input              ={}) {
+ const x=inputs(input),u=x.unit,b=x.border;
+ const slot=6*u,inset=[.5,1,2][x.index]*u,gap=[0,1,2][x.index]*u,height=slot+2*inset;
+ return {unit:u,border:b,slot,inset,padding:inset-b,gap,height,fontSize:2*u+6,lineHeight:5*u,labelEdge:x.labelEdgeUnits*u,radius:resolveCurvature(x.curvature,u,height),iconSizes:{sm:Math.min(4*u,slot-2*b),md:Math.min(5*u,slot-2*b),lg:slot-2*b}};
+}
+function resolveLabelEdges(edge       ,leading        ,trailing        ,doubleOpposite=true) {
+ return {start:leading?0:edge*(trailing&&doubleOpposite?2:1),end:trailing?0:edge*(leading&&doubleOpposite?2:1)};
+}
+
+
+
+
+function resolveChip(input              ={}) {
+ const x=inputs(input),c=resolveControl(input),slot=4*x.unit,height=slot+2*c.inset;
+ return {...c,slot,height,labelEdge:c.labelEdge/2,fontSize:2*x.unit+4,lineHeight:slot,radius:resolveCurvature(x.curvature,x.unit,height),iconSize:slot-2*x.border};
+}
+function resolveBadge(input              ={},contentWidth=0) {
+ const x=inputs(input),c=resolveControl(input),height=4*x.unit,inset=.5*x.unit;
+ if(!Number.isFinite(contentWidth)||contentWidth<0) throw new RangeError('contentWidth must be nonnegative');
+ return {height,minWidth:height,width:Math.max(height,contentWidth+2*inset),inlineInset:inset,paddingInline:inset-x.border,border:x.border,fontSize:2*x.unit+2,radius:Math.min(c.radius,height/2)};
+}
+function resolveChoice(input              ={}) {
+ const x=inputs(input),c=resolveControl(input),u=x.unit;
+ return {...c,artwork:4*u,checkboxRadius:u,radioRadius:2*u,switchWidth:9*u,switchHeight:5*u,switchInset:.5*u,switchPadding:.5*u-x.border,switchThumb:4*u};
+}
+
+
+
+function resolveCollection(input              ={}) {
+ const x=inputs(input),inset=[1,2,3][x.index]*x.unit;
+ return {inset,gap:inset,rowSeparation:.5*x.unit,paddingBlock:inset-x.border,cellPaddingInline:inset/2-x.border,outerCellPaddingInline:inset-x.border,radius:resolveCurvature(x.curvature,x.unit,Infinity,'container')};
+}
+function resolveCard(input              ={}) {
+ const x=inputs(input),inset=[3,4.5,6][x.index]*x.unit;
+ return {inset,gap:inset,padding:inset-x.border,radius:resolveCurvature(x.curvature,x.unit,Infinity,'container')};
+}
+
+                                              
+
+
+
+/** Shared border policy; arbitrary recursive nesting is not supported. */
+function resolveComposite(input                                                                    ={}) {
+ if(input.childFamily!==undefined&&!['control','chip'].includes(input.childFamily)) throw new RangeError('unknown composite child family');
+ const c=input.childFamily==='chip'?resolveChip(input):resolveControl(input),requestedInset=(input.insetUnits??0)*c.unit;
+ if(!Number.isFinite(requestedInset)||requestedInset<0||requestedInset>1.5*c.unit) throw new RangeError('composite inset must be 0..1.5u');
+ const effectiveInset=Math.max(c.border,requestedInset),childInset=Math.max(c.border,c.inset-effectiveInset),childHeight=c.slot+2*childInset;
+ return {requestedInset,effectiveInset,padding:effectiveInset-c.border,gap:requestedInset,radius:c.radius,
+ child:{...c,inset:childInset,padding:childInset-c.border,height:childHeight,radius:resolveNestedRadius(c.radius,effectiveInset,childHeight,requestedInset)},
+ singleRowHeight:childHeight+2*effectiveInset};
+}
+
+                                              
+
+
+
+
+/** Chip adornments preserve their own slot; containing input grows as needed. */
+function resolveComposedInput(input              ={}) {
+ const x=inputs(input),control=resolveControl(input),chip=resolveChip(input);
+ const height=Math.max(control.height,chip.height+2*control.inset);
+ const radius=resolveCurvature(x.curvature,x.unit,height);
+ const distanceInline=control.inset,distanceBlock=(height-chip.height)/2;
+ return {...control,height,minWidth:height,radius,adornment:{...chip,minWidth:chip.height,
+  distanceInline,distanceBlock,radiusInline:Math.max(0,radius-distanceInline),
+  radiusBlock:Math.min(chip.height/2,Math.max(0,radius-distanceBlock))}};
+}
+
+                                              
+
+/** Collection density and container curvature; no composite subtraction. */
+function resolveMultiline(input              ={}) {
+ const row=resolveCollection(input),unit=input.unit??4,slot=6*unit;
+ return {...row,slot,padding:row.paddingBlock,titleMinHeight:slot,descriptionGap:unit,
+  minHeight:slot+2*row.inset,labelEdge:0,height:'auto'         };
+}
+
+
+const defaults={unit:4,border:0,controlDensity:'default',collectionDensity:'default',cardDensity:'default',controlCurve:'soft',containerCurve:'soft',labelEdge:1.5,inset:0,theme:'light',rowState:'actual',guideMargins:false,guideGaps:false,guideSlots:false};
+let state={...defaults},voice='Helvetica',appliedVoice='Helvetica',currency='USD';
+const densities=['compact','default','loose'];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const px=n=>`${Math.round(n*100)/100}px`;
+const input=(density=state.controlDensity,curvature=state.controlCurve)=>({unit:state.unit,border:state.border,density,curvature,labelEdgeUnits:state.labelEdge});
+const vars=g=>`--height:${g.height??0}px;--slot:${g.slot??6*state.unit}px;--pad:${g.padding??g.paddingBlock??0}px;--gap:${g.gap??0}px;--radius:${g.radius}px;--border:${g.border??g.child?.border??state.border}px;--font:${g.fontSize??2*state.unit+6}px;--line:${g.lineHeight??5*state.unit}px;--icon:${g.iconSizes?.sm??g.iconSize??4*state.unit}px;--cell-pad:${g.cellPaddingInline??0}px`;
+const icon=(name='circle')=>`<i class="ph ph-${name}" aria-hidden="true"></i>`;
+function slot(kind,g){
+ if(!kind)return '';
+ if(kind==='avatar')return `<span class="slot media avatar" style="border-radius:50%" aria-hidden="true"><svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#d5af6b"/><circle cx="12" cy="8" r="4" fill="#242424"/><path d="M2 24a10 10 0 0 1 20 0" fill="#242424"/></svg></span>`;
+ if(kind==='logo')return `<span class="slot media logo" style="border-radius:${px(Math.max(0,g.radius-g.inset))}" aria-hidden="true"><svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#c52c22"/><path d="M0 0h8v16h16v8H0" fill="#242424"/></svg></span>`;
+ return `<span class="slot ${kind}" style="border-radius:${px(Math.max(0,g.radius-g.inset))}" aria-hidden="true">${icon(kind==='glyph'?'caret-right':'circle')}</span>`;
+}
+function control(g,label,opts={}){
+ const edges=resolveLabelEdges(g.labelEdge,!!opts.leading,!!opts.trailing,opts.doubleOpposite!==false);
+ const tag=opts.tag||'button';
+ return `<${tag} ${tag==='button'?'type="button"':''} class="df-control ${opts.chip?'df-chip':''} ${opts.outline?'outlined':'filled'} ${opts.className||''}" style="${vars(g)};--edge-start:${edges.start}px;--edge-end:${edges.end}px" ${opts.attrs||''}>${slot(opts.leading,g)}<span class="label">${esc(label)}</span>${slot(opts.trailing,g)}</${tag}>`;
+}
+const readout=entries=>`<dl class="readout">${entries.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+const formula=(text,entries)=>`<details class="formula"><summary>Current formulas</summary><p>${esc(text)}</p>${readout(entries)}</details>`;
+const set=(id,html)=>{if($(id))$(id).innerHTML=html;};
+function buttons(){
+ const g=resolveControl(input()),chip=resolveChip(input()),badge=resolveBadge(input()),choice=resolveChoice(input());
+ const composed=resolveComposedInput(input()),a=composed.adornment;
+ const adorn=(label,attrs='')=>control({...a,radius:a.radiusBlock},label,{chip:true,outline:true,trailing:attrs.includes('currency-trigger')?'glyph':null,attrs});
+ set('buttons-content',`${formula('Control: slot = 6u; H = slot + 2 × inset. Padding = inset − border. Label edges are density-independent.',[['Slot',px(g.slot)],['Height',px(g.height)],['Inset',px(g.inset)],['Gap',px(g.gap)],['Label edge',px(g.labelEdge)]])}
+ <div class="sample">${control(g,'Action',{leading:'icon',attrs:'data-action="action"'})}${control(g,'Continue',{trailing:'glyph',outline:true,attrs:'data-action="action"'})}${control(chip,'Filter',{chip:true,attrs:'data-action="filter"'})}<span class="df-badge" style="min-height:${px(badge.height)};padding-inline:${px(badge.paddingInline)};border:${px(badge.border)} solid transparent;border-radius:${px(badge.radius)};font-size:${px(badge.fontSize)}">New</span></div>
+ <div class="sample choices" style="--choice-border:${px(choice.border)};--choice:${px(choice.artwork)};--checkbox-radius:${px(choice.checkboxRadius)};--switch-width:${px(choice.switchWidth)};--switch-height:${px(choice.switchHeight)}"><label><input type="checkbox"> Notifications</label><label><input type="radio" name="delivery" checked> Daily</label><label><input type="radio" name="delivery"> Weekly</label><label><input type="checkbox" role="switch"> Live preview</label></div>
+ <h3>Composed inputs</h3><p class="note">Adornment chips retain their slots. The input grows around them; each action owns its focus indicator.</p>
+ <div class="sample inputs">
+ <div class="input-example"><label for="amount">Amount</label><div class="input-shell" style="${vars(composed)}"><span class="adornment">${adorn(currency,'id="currency-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="currency-popup"')}</span><input class="df-input" id="amount" inputmode="decimal" value="125.00" style="margin-inline:0 ${px(g.labelEdge)}" aria-label="Amount"></div><div id="currency-popup" class="popup" hidden></div></div>
+ <div class="input-example"><label for="search">Search</label><div class="input-shell" style="${vars(composed)}"><input class="df-input" id="search" type="text" value="Typography" style="margin-inline:${px(g.labelEdge)} 0"><span class="adornment">${adorn('Clear','data-action="clear"')}</span></div></div>
+ <div class="input-example"><label for="quantity">Quantity</label><div class="input-shell" style="${vars(composed)}"><span class="adornment">${adorn('−','data-action="decrement" aria-label="Decrease quantity"')}</span><input class="df-input" id="quantity" type="number" value="2" min="0" max="20"><span class="adornment">${adorn('+','data-action="increment" aria-label="Increase quantity"')}</span></div></div>
+ <div class="input-example"><label for="website">Website</label><div class="input-shell" style="${vars(composed)}"><span class="adornment">${control(a,'https://',{tag:'span',chip:true,outline:true})}</span><input class="df-input" id="website" value="example.com"><span class="adornment">${control(a,'.com',{tag:'span',chip:true,outline:true})}</span></div></div></div>
+ ${readout([['Composed height',px(composed.height)],['Chip height',px(a.height)],['Chip radius inline / block',`${px(a.radiusInline)} / ${px(a.radiusBlock)}`]])}<p id="button-status" role="status"></p>`);
+ document.querySelectorAll('#buttons-content .adornment .df-control').forEach(el=>el.style.borderRadius=`${a.radiusInline}px / ${a.radiusBlock}px`);
+}
+const arrangements=[['Label only','Action',null,null],['Icon + label','Action','icon',null],['Label + glyph','Action',null,'glyph'],['Avatar + label','Profile','avatar',null],['Label + logo','Studio',null,'logo']];
+function densityButtons(){
+ set('button-density-grid',densities.map(d=>{
+ const g=resolveControl(input(d));
+ return `<article class="density-column comparison-cell"><h3>${d}</h3><div class="specimen">${arrangements.map(([name,label,leading,trailing])=>{
+ const edges=resolveLabelEdges(g.labelEdge,!!leading,!!trailing);
+ return `<div class="arrangement"><p class="caption">${name}</p>${control(g,label,{leading,trailing})}<div class="shape-pair">${['sharpest','softest'].map(curve=>control(resolveControl(input(d,curve)),label,{leading,trailing,outline:true,attrs:`aria-label="${curve==='sharpest'?'Sharp':'Pill'} ${name}"`})).join('')}</div><p class="caption">Sharp / Pill · edge ${px(edges.start)} / ${px(edges.end)}</p></div>`;
+ }).join('')}</div>${readout([['Height',px(g.height)],['Slot',px(g.slot)],['Margin',px(g.inset)],['Gap',px(g.gap)],['Radius',px(g.radius)]])}</article>`;
+ }).join(''));
+}
+function listbox(density=state.controlDensity,id='voice-listbox',family='control'){
+ const g=resolveComposite({...input(density),insetUnits:state.inset,childFamily:family});
+ const labels=family==='chip'?['USD','EUR','GBP']:['Helvetica','Georgia','Monospace'];
+ return `<div class="df-composite listbox" id="${id}" role="listbox" aria-label="${family==='chip'?'Currency':'Typeface'}" style="${vars(g)}">${labels.map((label,i)=>{
+ const actual=label===(family==='chip'?currency:voice),selected=family==='chip'?actual:state.rowState==='all'||(state.rowState==='actual'&&actual);
+ return control(g.child,label,{leading:family==='chip'?null:['icon','avatar','logo'][i],trailing:'glyph',outline:false,className:'listbox-option neutral',attrs:`role="option" aria-selected="${selected}" tabindex="${actual?0:-1}" data-voice="${family==='chip'?'':label}" data-currency="${family==='chip'?label:''}"`});
+ }).join('')}</div>`;
+}
+function listboxes(){
+ set('listbox-density-grid',densities.map(d=>{const g=resolveComposite({...input(d),insetUnits:state.inset});return `<article class="density-column comparison-cell"><h3>${d}</h3><div class="specimen">${listbox(d,`voice-${d}`)}</div>${readout([['Child height',px(g.child.height)],['Slot',px(g.child.slot)],['Composite inset',px(g.effectiveInset)],['Gap',px(g.gap)],['Parent / child radius',`${px(g.radius)} / ${px(g.child.radius)}`]])}</article>`;}).join(''));
+ const g=resolveComposite({...input(),insetUnits:state.inset});
+ set('menus-content',`${formula('Attached composite: effective inset = max(border, requested inset); gap = requested inset. Child inset = max(border, control inset − effective inset). Zero requested inset gives attached children zero curvature.',[['Parent radius',px(g.radius)],['Child radius',px(g.child.radius)],['Child height',px(g.child.height)]])}<div class="comparison-grid"><article><h3>Action menu</h3><div class="df-composite action-menu" role="menu" aria-label="Study actions" style="${vars(g)}">${[['guides','Toggle spacing guides'],['compact','Use compact density'],['restore','Restore defaults']].map(([action,label],i)=>control(g.child,label,{outline:false,className:'neutral',attrs:`role="menuitem" tabindex="${i?'-1':'0'}" data-action="${action}"`})).join('')}</div></article><article><h3>Single-selection listbox</h3>${listbox()}</article></div><p class="note">Arrow keys move; Home / End jump; Enter or Space chooses. Selection changes only the typeface specimen.</p>`);
+}
+function collection(d,type){
+ const c=resolveCollection({...input(d,state.containerCurve)}),m=resolveMultiline({...input(d,state.containerCurve)});
+ const style=`${vars({...c,slot:m.slot})};--row-gap:${px(c.rowSeparation)};--cell-pad:${px(c.cellPaddingInline)};--outer-pad:${px(c.outerCellPaddingInline)}`;
+ if(type==='table')return `<table class="collection-table" style="${style}"><caption>Geometry values</caption><thead><tr><th scope="col">Token</th><th scope="col">Value</th></tr></thead><tbody>${[['Base unit',px(state.unit)],['Control slot',px(m.slot)],['Multiline row','Content grows naturally while keeping the full text and slot height.']].map(([label,value])=>`<tr><th scope="row"><span class="cell-slot type-body">${label}</span></th><td><span class="cell-slot type-body">${value}</span></td></tr>`).join('')}</tbody></table>`;
+ return `<dl class="data-list" style="${style}">${[['Base unit',px(state.unit)],['Control slot',px(m.slot)],['Multiline content','Rows use collection density, with room for a longer description rather than a fixed-height crop.']].map(([label,value])=>`<div class="df-record"><dt><span class="cell-slot type-body">${label}</span></dt><dd><span class="cell-slot type-body">${value}</span></dd></div>`).join('')}</dl>`;
+}
+function data(){
+ set('data-content',`${formula('Collection inset = 1u / 2u / 3u; cell padding = inset / 2 − border; outer cell padding = inset − border. Multiline minimum height = 6u + 2 × collection inset; content may grow.',[['Current collection density',state.collectionDensity],['Current minimum row',px(resolveMultiline(input(state.collectionDensity)).minHeight)]])}<h3>Current collection density</h3><div class="comparison-grid">${collection(state.collectionDensity,'table')}${collection(state.collectionDensity,'list')}</div><h3>Across three densities</h3><div class="comparison-grid">${densities.map(d=>`<article class="density-column"><h3>${d}</h3>${collection(d,'table')}${collection(d,'list')}${readout([['Minimum row',px(resolveMultiline(input(d)).minHeight)],['Cell padding',px(resolveCollection(input(d)).cellPaddingInline)],['Column gap',px(resolveCollection(input(d)).gap)]])}</article>`).join('')}</div>`);
+}
+function cards(){
+ const g=resolveCard(input(state.cardDensity,state.containerCurve));
+ set('container-grid',densities.map(d=>{const c=resolveCard(input(d,state.containerCurve));return `<article class="density-column"><h3>${d}</h3><div class="df-card" style="${vars(c)}"><h4 class="type-title">Container</h4><p class="type-body">Ordinary cards keep their own padding and curvature.</p>${control(resolveControl(input()),'Independent control',{outline:true})}</div>${readout([['Inset / gap',px(c.inset)],['Padding',px(c.padding)],['Radius',px(c.radius)]])}</article>`;}).join(''));
+ set('nested-content',`<div class="df-card" style="${vars(g)}"><div><h3 class="type-title">Typography settings</h3><p class="type-body">Choose a voice for the specimens.</p></div>${listbox(state.controlDensity,'nested-listbox')}<div class="sample">${control(resolveControl(input()),'Apply voice',{attrs:'data-action="apply-voice"'})}${control(resolveControl(input()),'Use Helvetica',{outline:true,attrs:'data-action="default-voice"'})}</div><p class="type-caption" id="voice-status" role="status">Applied: ${esc(appliedVoice)}</p><p class="type-body" id="typeface-specimen" style="font-family:${appliedVoice==='Georgia'?'Georgia,serif':appliedVoice==='Monospace'?'monospace':'Helvetica,Arial,sans-serif'}">The quick brown fox jumps over the lazy dog.</p></div>${readout([['Card density',state.cardDensity],['Control density',state.controlDensity],['Card inset',px(g.inset)]])}`);
+}
+function roles(){
+ set('density-comparison',`<table class="role-table"><thead><tr><th scope="col">Density</th><th scope="col">Page / card</th><th scope="col">Attached group</th><th scope="col">Collection</th><th scope="col">Control</th></tr></thead><tbody>${densities.map(d=>{const c=resolveCard(input(d,state.containerCurve)),co=resolveComposite({...input(d),insetUnits:state.inset}),r=resolveCollection(input(d,state.containerCurve)),g=resolveControl(input(d));return `<tr><th scope="row">${d}</th><td><div class="df-card" style="${vars(c)}"><h4 class="type-title">Content</h4><p class="type-body">A page brings related content together.</p></div>${readout([['Inset / gap',px(c.inset)]])}</td><td><div class="df-composite" style="${vars(co)}">${control(co.child,'One',{outline:true})}${control(co.child,'Two',{outline:true})}</div>${readout([['Inset',px(co.effectiveInset)],['Gap',px(co.gap)]])}</td><td>${collection(d,'list')}${readout([['Inset',px(r.inset)],['Gap',px(r.gap)]])}</td><td>${control(g,'Action',{leading:'icon'})}${readout([['Inset',px(g.inset)],['Gap',px(g.gap)]])}</td></tr>`;}).join('')}</tbody></table>`);
+}
+function radii(){
+ set('radius-comparison',['sharpest','sharp','default','soft','softest'].map(curve=>{const g=resolveComposite({...input(state.controlDensity,curve),insetUnits:state.inset});return `<article class="comparison-cell"><h3>${curve}</h3><div class="df-composite" style="${vars(g)}">${control(g.child,'First',{outline:true})}${control(g.child,'Second',{outline:true})}</div>${readout([['Outer radius',px(g.radius)],['Child radius',px(g.child.radius)],['Inset',px(g.effectiveInset)]])}</article>`;}).join(''));
+}
+function validate(candidate){
+ if(!['light','dark'].includes(candidate.theme)||!['none','all','actual'].includes(candidate.rowState))throw Error('Unknown theme or listbox appearance.');
+ for(const d of [candidate.controlDensity,candidate.collectionDensity,candidate.cardDensity])resolveControl({unit:candidate.unit,border:candidate.border,density:d,curvature:candidate.controlCurve,labelEdgeUnits:candidate.labelEdge});
+ resolveCard({unit:candidate.unit,border:candidate.border,density:candidate.cardDensity,curvature:candidate.containerCurve});
+ resolveComposite({unit:candidate.unit,border:candidate.border,density:candidate.controlDensity,curvature:candidate.controlCurve,labelEdgeUnits:candidate.labelEdge,insetUnits:candidate.inset});
+ for(const k of ['guideMargins','guideGaps','guideSlots'])if(typeof candidate[k]!=='boolean')throw Error('Guide values must be true or false.');
+}
+function announce(message){if($('status'))$('status').textContent=message;}
+function render(){
+ const currentFields=[...document.querySelectorAll('#buttons-content input')].map(el=>({value:el.value,checked:el.checked}));
+ validate(state);document.documentElement.dataset.theme=state.theme;
+ for(const [key,cl]of [['guideMargins','guide-margins'],['guideGaps','guide-gaps'],['guideSlots','guide-slots']])document.body.classList.toggle(cl,state[key]);
+ buttons();densityButtons();listboxes();data();cards();roles();radii();
+ document.querySelectorAll('#buttons-content input').forEach((el,i)=>{if(currentFields[i]){el.value=currentFields[i].value;el.checked=currentFields[i].checked;}});
+ document.querySelectorAll('.df-control,.input-shell,.df-card,.df-composite,.df-record').forEach(el=>{const css=getComputedStyle(el);el.title=`Padding ${css.paddingTop} block / ${css.paddingLeft} inline; gap ${css.gap}; border ${css.borderTopWidth}; radius ${css.borderTopLeftRadius}`;});
+ document.querySelectorAll('.slot,.label,.cell-slot').forEach(el=>{const r=el.getBoundingClientRect(),css=getComputedStyle(el);el.title=`Slot ${px(r.width)} × ${px(r.height)}; label edges ${css.marginInlineStart} / ${css.marginInlineEnd}`;});
+ for(const [key,value]of Object.entries(state)){const el=$(key);if(el){if(el.type==='checkbox')el.checked=value;else el.value=value;const out=$(`${key}-value`);if(out)out.textContent=typeof value==='number'?String(value):value;}}
+ if($('border'))$('border').max=state.unit/2;
+ try{localStorage.setItem('proportion-differential-forms-v1',JSON.stringify(state));}catch{}
+ announce(`Differential Forms · u ${state.unit}px · border ${state.border}px · independent family densities. Geometry valid.`);
+}
+for(const key of Object.keys(defaults))$(key)?.addEventListener('input',e=>{
+ const next={...state,[key]:e.target.type==='checkbox'?e.target.checked:typeof defaults[key]==='number'?Number(e.target.value):e.target.value};
+ if(key==='unit')next.border=Math.min(next.border,next.unit/2);
+ try{validate(next);state=next;render();}catch(error){announce(error.message);}
+});
+$('reset')?.addEventListener('click',()=>{state={...defaults};render();});
+$('copyConfig')?.addEventListener('click',async()=>{const text=JSON.stringify({version:1,...state},null,2);$('configuration').value=text;try{await navigator.clipboard.writeText(text);announce('Configuration copied.');}catch{announce('Configuration ready in the text field.');}});
+$('applyConfig')?.addEventListener('click',()=>{try{const parsed=JSON.parse($('configuration').value);if(parsed.version!==1)throw Error('Expected configuration version 1.');const next={...defaults};for(const key of Object.keys(defaults))if(key in parsed)next[key]=parsed[key];validate(next);state=next;render();announce('Configuration applied.');}catch(error){announce(`Configuration not applied: ${error.message}`);}});
+function currencyPopup(open){
+ const popup=$('currency-popup'),trigger=$('currency-trigger');if(!popup)return;
+ if(open){popup.innerHTML=listbox(state.controlDensity,'currency-options','chip');popup.hidden=false;trigger.setAttribute('aria-expanded','true');popup.querySelector('[tabindex="0"]').focus();}else{popup.hidden=true;trigger.setAttribute('aria-expanded','false');}
+}
+document.addEventListener('click',e=>{
+ const button=e.target.closest('button');
+ if(button?.id==='currency-trigger'){currencyPopup($('currency-popup').hidden);return;}
+ if(button?.dataset.currency){currency=button.dataset.currency;currencyPopup(false);const label=$('currency-trigger').querySelector('.label');label.textContent=currency;$('currency-trigger').focus();return;}
+ if(button?.dataset.voice){const groupId=button.closest('[role="listbox"]').id;voice=button.dataset.voice;listboxes();cards();$(groupId)?.querySelector(`[data-voice="${voice}"]`)?.focus();return;}
+ const action=button?.dataset.action;
+ if(action==='guides'){state.guideMargins=!state.guideMargins;state.guideGaps=state.guideMargins;state.guideSlots=state.guideMargins;render();}
+ if(action==='compact'){state.controlDensity='compact';render();}
+ if(action==='restore'){state={...defaults};render();}
+ if(action==='apply-voice'||action==='default-voice'){if(action==='default-voice')voice='Helvetica';appliedVoice=voice;cards();document.querySelector(`[data-action="${action}"]`)?.focus();}
+ if(action==='clear'){$('search').value='';$('search').focus();}
+ if(action==='increment'||action==='decrement'){const el=$('quantity');action==='increment'?el.stepUp():el.stepDown();el.dispatchEvent(new Event('input',{bubbles:true}));}
+ if(action==='action'||action==='filter')$('button-status').textContent=action==='filter'?'Filter toggled.':'Action completed.';
+ if(!$('currency-popup')?.hidden&&!e.target.closest('.input-example'))currencyPopup(false);
+});
+document.addEventListener('keydown',e=>{
+ const group=e.target.closest('[role="listbox"],[role="menu"]');
+ if(e.key==='Escape'&&!$('currency-popup')?.hidden){currencyPopup(false);$('currency-trigger').focus();return;}
+ if(e.key==='Tab'&&!$('currency-popup')?.hidden)currencyPopup(false);
+ if(!group)return;const options=[...group.querySelectorAll('[role="option"],[role="menuitem"]')],index=options.indexOf(document.activeElement);let next=index;
+ if(e.key==='ArrowDown')next=(index+1)%options.length;else if(e.key==='ArrowUp')next=(index-1+options.length)%options.length;else if(e.key==='Home')next=0;else if(e.key==='End')next=options.length-1;else return;
+ e.preventDefault();options.forEach((el,i)=>el.tabIndex=i===next?0:-1);options[next].focus();
+});
+try{const saved=JSON.parse(localStorage.getItem('proportion-differential-forms-v1')||'null');if(saved){validate(saved);state={...defaults,...saved};}}catch{}
+render();
+window.proportionStudy={getState:()=>({...state}),render};
+
+})();</script>
+</body></html>

@@ -1,0 +1,22 @@
+<main class="page__root page__flow product__root" data-review-id="compound-save">
+  <header class="heading-group__root"><h1>Session plan</h1><p>Local demonstration. Save lasts until this page is reloaded.</p></header>
+  <form class="card__root section__flow" novalidate>
+    <div class="field__root"><label for="title">Title</label><input id="title" required value="Planning"></div>
+    <fieldset class="field-group__root" data-surface="plain"><legend>Format</legend><div class="options__root">
+      <label class="choice__root"><input class="radio__control" id="basic" name="format" type="radio" value="basic" checked><span>Basic</span></label>
+      <label class="choice__root"><input class="radio__control" id="extended" name="format" type="radio" value="extended"><span>Extended</span></label>
+    </div></fieldset>
+    <div class="field__root"><label for="capacity">Capacity</label><input id="capacity" type="number" min="1" max="20" required value="4"><output id="capacity-summary" for="capacity">4 places</output></div>
+    <fieldset class="field-group__root" data-surface="plain"><legend>Participants</legend><div class="options__root">
+      <label class="choice__root"><input class="checkbox__control" id="alpha" data-person="alpha" type="checkbox" checked><span>Alpha</span></label>
+      <label class="choice__root"><input class="checkbox__control" id="beta" data-person="beta" type="checkbox"><span>Beta</span></label>
+    </div><output id="participants">alpha</output></fieldset>
+    <div class="cluster__root"><button id="save" type="button">Save</button><button id="restore" type="button">Restore saved plan</button></div>
+    <p id="status" role="status">Unsaved</p><p id="confirmation" hidden>Current plan saved locally.</p>
+  </form>
+  <section class="flow__root"><h2>View preferences</h2>
+    <label class="choice__root"><input class="checkbox__control" id="confirmations" type="checkbox" checked><span>Show save confirmation</span></label>
+    <div class="field__root"><label for="filter">Filter participant summary</label><input id="filter" type="search"></div>
+    <p id="filtered-participants">alpha</p>
+  </section>
+</main>

@@ -1,0 +1,6 @@
+<main class="page__root page-flow__root page__flow"><article class="card__root flow__root reading-flow__root"><h1>Evidence review</h1><div id="comparison"></div><div id="intervals"></div><div id="allocation"></div><button class="button__root" type="button" data-action="review">Review draft</button><p id="review-status" role="status"></p></article></main>
+<!-- Controller assembly: prepend review-patterns.js, then call its renderers.
+comparison.innerHTML = baseUIReviewPatterns.renderComparison({id:'pair',records:[{id:'a',label:'Record A'},{id:'b',label:'Record B'}],rows:[{id:'claim',label:'Recorded temperature',cells:[{recordId:'a',state:'disputed',value:'9 degrees reported',provenance:'Unverified logger export'},{recordId:'b',state:'unknown',value:'No reading supplied',provenance:'Source missing'}]}]});
+intervals.innerHTML = baseUIReviewPatterns.renderIntervals({id:'time',domain:[0,60],intervals:[{id:'first',start:0,end:15,label:'Observed interval',timeLabel:'08:00–08:15 UTC',uncertain:false,uncertainty:'Sampling tolerance ±1 minute'}],selected:'first'});
+allocation.innerHTML = baseUIReviewPatterns.renderAllocation({id:'units',total:100,parts:[{id:'review',label:'Review',value:100},{id:'hold',label:'Hold',value:0}]});
+Host owns onAction binding, drafts, validation at commit and revision policy. -->

@@ -1,0 +1,23 @@
+{
+  "browser": "151.0.7922.34",
+  "javaScriptEnabled": false,
+  "checks": [
+    "declarative popover opens",
+    "anchor gap 4px",
+    "Tab reaches popover link",
+    "Escape closes popover",
+    "Escape restores trigger focus",
+    "outside click dismisses",
+    "named accordion closes peer",
+    "command opens modal",
+    "command closes modal",
+    "anchor flips above near viewport edge"
+  ],
+  "support": {
+    "baseSelect": true,
+    "interest": true,
+    "anchor": true,
+    "commands": true
+  },
+  "limits": "Chromium only. Automation reads state but page scripts are disabled. No screen-reader or Safari testing."
+}

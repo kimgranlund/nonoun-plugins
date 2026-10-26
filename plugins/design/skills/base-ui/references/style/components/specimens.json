@@ -1,0 +1,564 @@
+{
+  "version": 1,
+  "source": "assets/recipes/components.html",
+  "specimens": {
+    "choices": {
+      "section": 0,
+      "children": "fieldset, .field__root",
+      "members": [
+        {
+          "id": "checkbox",
+          "name": "Checkbox",
+          "selector": "fieldset:has(.collection)",
+          "classes": [
+            "checkbox__control",
+            "choice__root"
+          ]
+        },
+        {
+          "id": "radio",
+          "name": "Radio group",
+          "selector": "fieldset:has([name=delivery])",
+          "classes": [
+            "radio__control",
+            "choice__root"
+          ]
+        },
+        {
+          "id": "choice-card",
+          "name": "Choice card",
+          "selector": "fieldset:has(.review-route)",
+          "classes": [
+            "choice__card"
+          ]
+        },
+        {
+          "id": "nested-choice",
+          "name": "Workspace choice with dependent option",
+          "selector": "#workspace-choices",
+          "classes": [
+            "choice__card",
+            "choice__primary",
+            "choice__options",
+            "radio__control",
+            "checkbox__control"
+          ]
+        }
+      ]
+    },
+    "switch": {
+      "section": 0,
+      "children": ".switch__root",
+      "members": [
+        {
+          "id": "switch",
+          "name": "Switch",
+          "selector": ".switch__root",
+          "classes": [
+            "switch__root",
+            "switch__control"
+          ]
+        }
+      ]
+    },
+    "range": {
+      "section": 1,
+      "children": ".field__root:has(.range__root)",
+      "members": [
+        {
+          "id": "range",
+          "name": "Range slider",
+          "selector": ".field__root:has(> #volume)",
+          "classes": [
+            "range__root"
+          ]
+        },
+        {
+          "id": "range-disabled",
+          "name": "Disabled range",
+          "selector": ".field__root:has(> #disabled-range)",
+          "classes": [
+            "range__root"
+          ]
+        }
+      ]
+    },
+    "fields": {
+      "section": 1,
+      "children": ".field__root:not(:has(.range__root))",
+      "members": [
+        {
+          "id": "text-field",
+          "name": "Text field",
+          "selector": ".field__root:has(> #workspace)",
+          "classes": [
+            "field__root"
+          ]
+        },
+        {
+          "id": "input-group",
+          "name": "Input group",
+          "selector": ".field__root:has(#query)",
+          "classes": [
+            "input-group__root"
+          ]
+        },
+        {
+          "id": "readonly-field",
+          "name": "Read-only field",
+          "selector": ".field__root:has(> #readonly-reference)",
+          "classes": [
+            "field__root"
+          ]
+        },
+        {
+          "id": "disabled-field",
+          "name": "Disabled field",
+          "selector": ".field__root:has(> #disabled-field)",
+          "classes": [
+            "field__root"
+          ]
+        },
+        {
+          "id": "invalid-group",
+          "name": "Invalid input group",
+          "selector": ".field__root:has(#group-invalid)",
+          "classes": [
+            "input-group__root",
+            "field__error"
+          ]
+        }
+      ]
+    },
+    "actions": {
+      "section": 1,
+      "children": ".actions__root, #saved, #save-confirmation, #local-check-example, .field__root:has(#workspace)",
+      "dependencies": [
+        "#notifications"
+      ],
+      "note": "Workspace and notification controls are included as dependencies of the maintained save/restore demonstration.",
+      "members": [
+        {
+          "id": "actions",
+          "name": "Primary and secondary actions",
+          "selector": ".actions__root:has(> #save)",
+          "classes": [
+            "button__root",
+            "actions__root"
+          ]
+        },
+        {
+          "id": "busy-action",
+          "name": "Local busy lifecycle",
+          "selector": "#local-check-example",
+          "classes": [
+            "button__root",
+            "button-group__root"
+          ]
+        }
+      ]
+    },
+    "navigation": {
+      "section": 2,
+      "children": ".segments__root, .tabs__list, [role=tabpanel], nav",
+      "members": [
+        {
+          "id": "segments",
+          "name": "Segmented modes",
+          "selector": ".segments__root",
+          "classes": [
+            "segments__root"
+          ]
+        },
+        {
+          "id": "tabs",
+          "name": "Tabs",
+          "selector": ".tabs__list",
+          "classes": [
+            "tabs__list"
+          ]
+        },
+        {
+          "id": "destination-links",
+          "name": "Destination links",
+          "selector": "nav:has(.nav__item)",
+          "classes": [
+            "nav__item"
+          ]
+        },
+        {
+          "id": "breadcrumbs",
+          "name": "Breadcrumb",
+          "selector": "nav:has(.breadcrumbs__root)",
+          "classes": [
+            "breadcrumbs__root"
+          ]
+        }
+      ]
+    },
+    "collections": {
+      "section": 3,
+      "children": ".field__root, .table__viewport:has(th[data-selection] > label.choice__root > #all-rows), #records-empty, #selection-count, #records-scroll-help, [data-record-selection], [data-operations-task]",
+      "members": [
+        {
+          "id": "table",
+          "name": "Table",
+          "selector": ".table__viewport",
+          "classes": [
+            "table__root",
+            "table__viewport"
+          ]
+        },
+        {
+          "id": "record-selection",
+          "name": "Record selection and detail",
+          "selector": "[data-record-selection]",
+          "classes": [
+            "record-choice__root"
+          ]
+        },
+        {
+          "id": "operations-task",
+          "name": "Incident review and resolution",
+          "selector": "[data-operations-task]",
+          "classes": [
+            "table__root",
+            "table__viewport",
+            "record-choice__root"
+          ]
+        }
+      ]
+    },
+    "identity": {
+      "section": 3,
+      "children": ".list__root",
+      "members": [
+        {
+          "id": "list",
+          "name": "List",
+          "selector": ".list__root",
+          "classes": [
+            "list__root",
+            "list__row",
+            "list__body"
+          ]
+        },
+        {
+          "id": "avatar",
+          "name": "Avatar",
+          "selector": ".avatar__root",
+          "classes": [
+            "avatar__root"
+          ]
+        },
+        {
+          "id": "badge",
+          "name": "Status badge",
+          "selector": ".badge__root",
+          "classes": [
+            "badge__root"
+          ]
+        }
+      ]
+    },
+    "feedback": {
+      "section": 4,
+      "children": ":scope > *:not(h2)",
+      "members": [
+        {
+          "id": "notice",
+          "name": "Notice",
+          "selector": ".notice__root:not(#example-error)",
+          "classes": [
+            "notice__root"
+          ]
+        },
+        {
+          "id": "progress",
+          "name": "Determinate progress",
+          "selector": ".field__root:has(#progress)",
+          "classes": [
+            "progress__root"
+          ]
+        },
+        {
+          "id": "loading",
+          "name": "Indeterminate progress",
+          "selector": ".field__root:has(#indeterminate-progress)",
+          "classes": [
+            "progress__root"
+          ]
+        },
+        {
+          "id": "empty",
+          "name": "Empty state",
+          "selector": ".empty__root",
+          "classes": [
+            "empty__root"
+          ]
+        },
+        {
+          "id": "error",
+          "name": "Error notice",
+          "selector": "#example-error",
+          "classes": [
+            "notice__root"
+          ]
+        },
+        {
+          "id": "skeleton",
+          "name": "Loading skeleton",
+          "selector": "[aria-busy]",
+          "classes": [
+            "skeleton__root"
+          ]
+        },
+        {
+          "id": "divider",
+          "name": "Divider",
+          "selector": ".divider__root",
+          "classes": [
+            "divider__root"
+          ]
+        }
+      ]
+    },
+    "disclosure": {
+      "native": "disclosure",
+      "members": [
+        {
+          "id": "details",
+          "name": "Native disclosure",
+          "selector": "details.disclosure__root",
+          "classes": [
+            "disclosure__root",
+            "disclosure__body"
+          ]
+        }
+      ]
+    },
+    "overlay": {
+      "native": "overlay",
+      "members": [
+        {
+          "id": "dialog",
+          "name": "Native modal dialog",
+          "selector": "dialog.dialog__root",
+          "classes": [
+            "dialog__root"
+          ]
+        }
+      ]
+    },
+    "combobox": {
+      "section": 5,
+      "children": "[data-workflow-combobox]",
+      "members": [
+        {
+          "id": "combobox",
+          "name": "Searchable selection",
+          "selector": "[data-workflow-combobox]",
+          "classes": [
+            "combobox__root",
+            "combobox__list"
+          ]
+        }
+      ]
+    },
+    "drawer": {
+      "section": 6,
+      "children": "[data-workflow-drawer]",
+      "members": [
+        {
+          "id": "drawer",
+          "name": "Navigation drawer",
+          "selector": "[data-workflow-drawer]",
+          "classes": [
+            "drawer__root",
+            "drawer__host"
+          ]
+        }
+      ]
+    },
+    "stepper": {
+      "section": 7,
+      "children": "[data-workflow-stepper]",
+      "members": [
+        {
+          "id": "stepper",
+          "name": "Staged form",
+          "selector": "[data-workflow-stepper]",
+          "classes": [
+            "stepper__root",
+            "stepper__indicator"
+          ]
+        }
+      ]
+    },
+    "multiselect": {
+      "section": 8,
+      "children": "[data-extended=\"multiselect\"]",
+      "members": [
+        {
+          "id": "multiselect",
+          "name": "Multi-select",
+          "selector": "[data-extended=\"multiselect\"]",
+          "classes": [
+            "multiselect__root",
+            "selected-values__root"
+          ]
+        }
+      ]
+    },
+    "tooltip": {
+      "section": 9,
+      "children": "[data-extended=\"tooltip\"]",
+      "members": [
+        {
+          "id": "tooltip",
+          "name": "Tooltip",
+          "selector": "[data-extended=\"tooltip\"]",
+          "classes": [
+            "tooltip__host",
+            "tooltip__root"
+          ]
+        }
+      ]
+    },
+    "toast": {
+      "section": 10,
+      "children": "[data-extended=\"toast\"]",
+      "members": [
+        {
+          "id": "toast",
+          "name": "Notification queue",
+          "selector": "[data-extended=\"toast\"]",
+          "classes": [
+            "toast-queue__root",
+            "toast__root"
+          ]
+        }
+      ]
+    },
+    "pagination": {
+      "section": 11,
+      "children": "[data-extended=\"pagination\"]",
+      "members": [
+        {
+          "id": "pagination",
+          "name": "Pagination",
+          "selector": "[data-extended=\"pagination\"]",
+          "classes": [
+            "pagination__root"
+          ]
+        }
+      ]
+    },
+    "tree": {
+      "section": 12,
+      "children": "[data-extended=\"tree\"]",
+      "members": [
+        {
+          "id": "tree",
+          "name": "Tree view",
+          "selector": "[data-extended=\"tree\"]",
+          "classes": [
+            "tree__root"
+          ]
+        }
+      ]
+    },
+    "date-picker": {
+      "section": 13,
+      "children": "[data-extended=\"date-picker\"]",
+      "members": [
+        {
+          "id": "date-picker",
+          "name": "Date picker",
+          "selector": "[data-extended=\"date-picker\"]",
+          "classes": [
+            "date-picker__root",
+            "calendar__root",
+            "calendar__grid"
+          ]
+        }
+      ]
+    },
+    "data-grid": {
+      "section": 14,
+      "children": "[data-extended=\"data-grid\"]",
+      "members": [
+        {
+          "id": "data-grid",
+          "name": "Editable grid",
+          "selector": "[data-extended=\"data-grid\"]",
+          "classes": [
+            "data-grid__root"
+          ]
+        }
+      ]
+    },
+    "rich-text": {
+      "section": 15,
+      "children": "[data-extended=\"rich-text\"]",
+      "members": [
+        {
+          "id": "rich-text",
+          "name": "Basic rich text",
+          "selector": "[data-extended=\"rich-text\"]",
+          "classes": [
+            "rich-text__root",
+            "rich-editor__root"
+          ]
+        }
+      ]
+    }
+  },
+  "metadataAuthority": "Names and selectors identify source demonstrations only; capabilities and state applicability are read from the family contract. Selector presence is not state verification.",
+  "dedicated": {
+    "native-select": {
+      "source": "assets/recipes/native-select.html",
+      "requiredSelectors": [
+        ".field__root",
+        "label[for=workspace]",
+        ".select__root > select#workspace",
+        ".select__root > [data-slot=indicator]"
+      ],
+      "members": [
+        {
+          "id": "native-select",
+          "name": "Native select",
+          "selector": ".select__root > select",
+          "statesSource": "states"
+        }
+      ]
+    },
+    "navigation-menu": {
+      "source": "assets/recipes/native-patterns.html",
+      "requiredSelectors": [
+        "style",
+        "[data-native-navigation]",
+        "#native-nav-trigger",
+        "#native-team-trigger",
+        "#native-nav-panel",
+        "#native-team-panel",
+        "#native-overview",
+        "#native-preferences"
+      ],
+      "members": [
+        {
+          "id": "account-panel",
+          "name": "Account destination panel",
+          "selector": "#native-nav-panel",
+          "statesSource": "behavior"
+        },
+        {
+          "id": "team-panel",
+          "name": "Team destination panel",
+          "selector": "#native-team-panel",
+          "statesSource": "behavior"
+        }
+      ]
+    }
+  }
+}

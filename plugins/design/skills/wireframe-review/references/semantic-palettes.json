@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 2,
+  "source": "assets/foundation/semantic-palettes/source.json",
+  "sourceFormat": "color-tokens@2",
+  "ownership": "Source values are supplied export; semantic roles and primary alias are base-ui decisions. Export has zero semantic tokens. Existing md-color roles and unannotated components remain compatible.",
+  "intents": {
+    "material": "material",
+    "primary": "color-1",
+    "info": "info",
+    "success": "success",
+    "warning": "warning",
+    "danger": "danger"
+  },
+  "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+  "roles": {
+    "solid": {
+      "group": "prime",
+      "light": "prime",
+      "dark": "bright"
+    },
+    "on-solid": {
+      "group": "base",
+      "light": "950",
+      "dark": "950"
+    },
+    "hover": {
+      "group": "prime",
+      "light": "bright",
+      "dark": "brighter"
+    },
+    "active": {
+      "group": "prime",
+      "light": "brighter",
+      "dark": "brightest"
+    },
+    "soft": {
+      "group": "base",
+      "light": "100",
+      "dark": "900"
+    },
+    "on-soft": {
+      "group": "base",
+      "light": "900",
+      "dark": "100"
+    },
+    "soft-hover": {
+      "group": "base",
+      "light": "150",
+      "dark": "850"
+    },
+    "soft-active": {
+      "group": "base",
+      "light": "200",
+      "dark": "800"
+    },
+    "border": {
+      "group": "base",
+      "light": "600",
+      "dark": "400"
+    }
+  },
+  "schemes": [
+    "light",
+    "dark"
+  ],
+  "components": [
+    {
+      "class": "button__root",
+      "appearances": [
+        "solid",
+        "soft",
+        "outline",
+        "ghost"
+      ],
+      "defaultAppearance": "solid"
+    },
+    {
+      "class": "notice__root",
+      "appearances": [
+        "soft",
+        "solid"
+      ],
+      "defaultAppearance": "soft"
+    },
+    {
+      "class": "badge__root",
+      "appearances": [
+        "soft",
+        "solid"
+      ],
+      "defaultAppearance": "soft"
+    },
+    {
+      "class": "field__root",
+      "appearances": [
+        "soft"
+      ],
+      "defaultAppearance": "soft"
+    }
+  ],
+  "attribute": "data-intent",
+  "appearanceAttribute": "data-appearance",
+  "recipe": "assets/recipes/semantic-palettes.html",
+  "constraints": [
+    "Apply intent to the supported component itself; intent on arbitrary ancestor containers is unsupported.",
+    "Do not combine secondary class with explicit intent; use data-appearance.",
+    "Not inherited by nested components. Labels/status text communicate meaning without color.",
+    "Field intent paints helper/error text and input border; does not set aria-invalid or supply validation.",
+    "Outline and ghost use an opaque paired soft surface to guarantee a known backdrop.",
+    "Disabled buttons retain paired paint with full opacity and a dashed border; disabled semantics are native.",
+    "Forced-colors uses system colors; palette fidelity is not forced.",
+    "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
+  ],
+  "sourceCSS": "assets/foundation/semantic-palettes/source.css",
+  "sourceParity": "Generator verifies all 748 CSS declarations numerically against JSON before embedding source CSS verbatim.",
+  "colorGroupPolicy": {
+    "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
+    "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
+    "pairing": "This export uses Base 950 on solid Primes in both schemes. White on prime fails normal text contrast. State progression is explicitly mapped and tested, not inferred from sample names.",
+    "scope": "Applies to opt-in semantic components. Existing legacy md-color roles and unannotated selection controls are unchanged."
+  }
+}

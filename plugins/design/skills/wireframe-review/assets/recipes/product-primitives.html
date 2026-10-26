@@ -1,0 +1,24 @@
+<style>.product-account__root:has(#product-account-panel:popover-open) #product-account-trigger [data-slot=indicator]{transform:rotate(180deg)}</style>
+<section id="product-overview" class="section__root product__root flow__root" data-review-id="product-primitives">
+  <aside class="sidebar__root" aria-label="Workspace">
+    <header class="sidebar__header"><p class="sidebar__identity">Example workspace</p></header>
+    <nav class="sidebar__body" aria-label="Destinations">
+      <a class="navigation__item nav__item" href="#product-overview" aria-current="page"><i class="ph-icon" data-ph="squares-four" aria-hidden="true"></i><span data-slot="label">A destination with a longer name</span><span></span></a>
+    </nav>
+    <footer class="sidebar__footer navigation-recipe__root">
+      <div class="product-account__root" data-review-id="product-account-menu"><button type="button" class="navigation__row nav__row native-menu__trigger menu__trigger" id="product-account-trigger" data-review-id="product-account-trigger" popovertarget="product-account-panel" style="anchor-name:--ui-product-account"><span data-slot="icon" aria-hidden="true"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor"><path fill="currentColor" stroke="none" d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></svg></span><span>Account</span><span data-slot="indicator" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path fill="currentColor" stroke="none" d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></svg></span></button><nav class="native-menu__root menu__content" id="product-account-panel" popover="auto" aria-label="Account destinations" style="position-anchor:--ui-product-account"><a class="navigation__row nav__row" href="#product-overview"><span>Overview</span></a><a class="navigation__row nav__row" href="#budget"><span>Preferences</span></a></nav></div>
+    </footer>
+  </aside>
+  <fieldset class="field-group__root"><legend>Plan preferences</legend>
+    <div class="flow__root">
+  <div class="field__root"><label class="field__label" for="budget">Budget</label><input id="budget" data-review-id="budget" type="number" min="1" value="10"><span class="field__description field__help">Minutes available for the local simulation.</span></div>
+
+    <div class="options__root">
+      <label class="choice__root"><input type="checkbox" data-review-id="access"><span>Step-free access and an accessible restroom are required.</span></label>
+      <label class="choice__root choice-card__root choice__card"><input type="radio" name="plan" value="sample" data-review-id="plan"><span class="choice__body"><strong>Collect another sample</strong><span class="choice__description">Ten minutes, read only. Resolves uncertainty before committing to a direction.</span></span></label>
+    </div>
+    </div>
+  </fieldset>
+  <button type="button" data-review-id="approve">Approve current plan</button>
+  <p role="status" data-review-id="status">Approval required</p>
+</section>

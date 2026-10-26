@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minimal host jig</title>
+<!--
+  A system jig for the host in host/. One page, no build step, nothing from the network.
+
+  What a script or another agent can rely on (the jig contract):
+    [data-jig="system"]        the panel root, with the kind of jig
+    [data-jig-canvas]          the live canvas root
+    [data-jig-constant="/x"]   each control that edits a constant; the value is the change's path
+    window.jig.changeSet()     the current change set (jig.changeset/1), valid at all times
+    window.jig.importSet(text) applies a change set onto the base; returns refusal reasons, empty when applied
+
+  Check it with: node scripts/check-jig.mjs examples/minimal-system-jig/jig.html
+-->
+<link rel="stylesheet" href="host/tokens.css">
+<link rel="stylesheet" href="host/components.css">
+<style>
+  /* The jig's own styles. Every class starts with jig- so nothing here touches the host's components. */
+  html, body { margin: 0; }
+  body { background: #f4f4f5; color: #18181b; font: 13px/1.4 system-ui, sans-serif; }
+  .jig-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 100vh; }
+  .jig-stage { min-width: 0; padding: 24px; overflow-x: auto; }
+  [data-jig-canvas] { box-sizing: border-box; margin: 0 auto; outline: 1px dashed #a1a1aa; outline-offset: 6px; }
+  [data-jig] { box-sizing: border-box; min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 16px; background: #fff; border-left: 1px solid #d4d4d8; }
+  @media (max-width: 720px) {
+    .jig-layout { grid-template-columns: minmax(0, 1fr); }
+    .jig-stage { padding: 16px; }
+    [data-jig] { border-left: 0; border-top: 1px solid #d4d4d8; }
+  }
+  .jig-head { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .jig-head h1 { margin: 0; font-size: 15px; }
+  .jig-button { font: inherit; padding: 4px 10px; border: 1px solid #a1a1aa; border-radius: 4px; background: #fff; color: inherit; cursor: pointer; }
+  .jig-menu { position: absolute; z-index: 1; top: 100%; right: 0; display: grid; min-width: 160px; margin-top: 4px; padding: 4px; background: #fff; border: 1px solid #a1a1aa; border-radius: 6px; box-shadow: 0 4px 12px rgb(0 0 0 / 0.15); }
+  .jig-menu[hidden], .jig-was[hidden] { display: none; }
+  .jig-menu button { font: inherit; padding: 6px 8px; border: 0; border-radius: 4px; background: none; color: inherit; text-align: left; cursor: pointer; }
+  .jig-menu button:hover, .jig-menu button:focus-visible { background: #e4e4e7; }
+  .jig-muted, .jig-unit, .jig-formula { color: #52525b; }
+  .jig-status { min-height: 1.4em; margin: 0; }
+  .jig-group { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+  .jig-group > legend, .jig-title { margin: 0 0 4px; padding: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .jig-group p { margin: 0; }
+  .jig-choice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+  .jig-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px 16px; align-items: center; gap: 4px 8px; }
+  .jig-scrub { cursor: ew-resize; touch-action: none; user-select: none; }
+  .jig-num, .jig-text { box-sizing: border-box; width: 100%; font: inherit; padding: 4px 6px; border: 1px solid #a1a1aa; border-radius: 4px; background: #fff; color: inherit; }
+  .jig-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .jig-was, .jig-wide { grid-column: 1 / -1; }
+  .jig-was { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 8px; border-left: 3px solid #b45309; }
+  .jig-reset { font: inherit; padding: 0 6px; border: 1px solid #a1a1aa; border-radius: 4px; background: #fff; color: inherit; cursor: pointer; }
+  .jig-read { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
+  .jig-checks { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .jig-checks li { padding-left: 8px; border-left: 3px solid #15803d; }
+  .jig-checks li[data-state="fail"] { border-left-color: #b91c1c; font-weight: 600; }
+  .jig-checks li[data-state="note"] { border-left-color: #a1a1aa; }
+  .jig-json { max-height: 280px; margin: 0; padding: 8px; overflow: auto; background: #f4f4f5; border-radius: 4px; font: 12px/1.4 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+  .jig-import { display: grid; gap: 8px; padding: 8px; border: 1px solid #a1a1aa; border-radius: 6px; }
+  .jig-import[hidden] { display: none; }
+  .jig-errors { margin: 0; padding-left: 18px; color: #b91c1c; }
+  .jig-probe { position: absolute; top: 0; left: 0; height: 0; visibility: hidden; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="jig-layout">
+
+  <main class="jig-stage" aria-label="Canvas">
+    <!-- The host's own markup, copied from host/index.html and drawn at true pixels: no zoom, no scale. -->
+    <div data-jig-canvas>
+      <section class="card">
+        <h2 class="card-title">Sign in</h2>
+        <p class="card-text">Use the email you registered with.</p>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input class="input" type="email" placeholder="you@example.com">
+        </label>
+        <div class="actions">
+          <button class="button" type="button">Cancel</button>
+          <button class="button button-primary" type="button">Continue</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <aside data-jig="system" aria-label="Jig">
+    <div class="jig-head">
+      <h1>Minimal host jig</h1>
+      <button class="jig-button" id="more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">Actions</button>
+      <div class="jig-menu" id="menu" role="menu" aria-labelledby="more" hidden>
+        <button type="button" role="menuitem" id="copy-json">Copy JSON</button>
+        <button type="button" role="menuitem" id="copy-prompt">Copy as prompt</button>
+        <button type="button" role="menuitem" id="import-open">Import</button>
+        <button type="button" role="menuitem" id="reset-all">Reset all</button>
+      </div>
+    </div>
+    <p class="jig-status" id="summary"></p>
+    <p class="jig-status jig-muted" id="status" role="status"></p>
+
+    <div class="jig-import" id="imp" hidden>
+      <label for="imp-text">Paste a change set, or a prompt that holds one</label>
+      <textarea class="jig-text" id="imp-text" rows="5" spellcheck="false"></textarea>
+      <ul class="jig-errors" id="imp-errs"></ul>
+      <div class="jig-choice">
+        <button class="jig-button" id="imp-apply" type="button">Apply</button>
+        <button class="jig-button" id="imp-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Context is where you stand while looking. It is kept apart from the constants and never exports as a change. -->
+    <fieldset class="jig-group">
+      <legend>Context</legend>
+      <p class="jig-muted">A viewpoint. It changes nothing in the system.</p>
+      <div class="jig-choice" role="radiogroup" aria-label="Canvas width">
+        <span>Canvas width</span>
+        <label><input type="radio" name="width" value="280"> 280</label>
+        <label><input type="radio" name="width" value="360"> 360</label>
+        <label><input type="radio" name="width" value="520"> 520</label>
+      </div>
+      <div class="jig-choice" role="radiogroup" aria-label="Label length">
+        <span>Label length</span>
+        <label><input type="radio" name="content" value="short"> Short</label>
+        <label><input type="radio" name="content" value="long"> Long</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="jig-group" id="constants">
+      <legend>Constants</legend>
+      <p class="jig-muted">Arrow keys step by 1, with Shift by 10, with Alt by 0.1. Drag a label to scrub.</p>
+    </fieldset>
+
+    <fieldset class="jig-group" id="derived">
+      <legend>Derived</legend>
+      <p class="jig-muted">These follow the constants. Card padding can be pinned off its formula: that is an override, not a change.</p>
+    </fieldset>
+
+    <section class="jig-group" aria-labelledby="contract-title">
+      <h2 class="jig-title" id="contract-title">Host rules</h2>
+      <p class="jig-muted">From host/README.md. These are the host's contract.</p>
+      <ul class="jig-checks" id="contract"></ul>
+    </section>
+
+    <section class="jig-group" aria-labelledby="proposed-title">
+      <h2 class="jig-title" id="proposed-title">Proposed by this jig</h2>
+      <p class="jig-muted">Suggestions, not rules of the host.</p>
+      <ul class="jig-checks" id="proposed"></ul>
+    </section>
+
+    <div class="jig-group">
+      <label class="jig-title" for="note">Why</label>
+      <textarea class="jig-text" id="note" rows="2" placeholder="The reason for these changes. It travels with the change set."></textarea>
+    </div>
+
+    <section class="jig-group" aria-labelledby="json-title">
+      <h2 class="jig-title" id="json-title">Change set</h2>
+      <pre class="jig-json" id="json" tabindex="0" aria-labelledby="json-title"></pre>
+    </section>
+  </aside>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---- what this jig is bound to ---- */
+  /* sha256 is the hash of the bytes of host/tokens.css. When that file changes, update it: shasum -a 256 host/tokens.css */
+  var BASE = { system: "minimal-host", source: "host/tokens.css", sha256: "30da002eb484f0f1bb77107cc0bdbef366372f5c3ea8c461e5730c72999d947f" };
+  var CONSTANTS = [
+    { path: "/unit", prop: "--unit", label: "Unit", unit: "px", min: 1, max: 16 },
+    { path: "/radius", prop: "--radius", label: "Radius", unit: "px", min: 0, max: 48 },
+    { path: "/font-size", prop: "--font-size", label: "Font size", unit: "px", min: 8, max: 32 },
+    { path: "/accent-hue", prop: "--accent-hue", label: "Accent hue", unit: "", min: 0, max: 360 },
+    { path: "/border-width", prop: "--border-width", label: "Border width", unit: "px", min: 0, max: 8 }
+  ];
+  var DERIVED = [
+    { target: "--control-height", label: "Control height", formula: "unit * 8" },
+    { target: "--control-padding", label: "Control padding", formula: "unit * 3" },
+    { target: "--card-padding", label: "Card padding", formula: "unit * 6", override: true, min: 0, max: 96 },
+    { target: "--accent", label: "Accent", formula: "oklch(0.55 0.18 accent-hue)", color: true }
+  ];
+  var CONTENT = {
+    ".card-title": "Sign in to your workspace account",
+    ".card-text": "Use the email address you registered with, or the one your administrator gave you.",
+    ".field-label": "Work email address",
+    ".button:not(.button-primary)": "Cancel and go back",
+    ".button-primary": "Continue to verification"
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var root = document.documentElement, canvas = document.querySelector("[data-jig-canvas]");
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+  var round = function (v) { return Math.round(v * 100) / 100; };
+
+  /* ---- measure, do not re-derive: a probe resolves the host's own calc() ---- */
+  var probe = document.createElement("div"); probe.className = "jig-probe"; document.body.appendChild(probe);
+  function measure(d) {
+    if (d.color) { probe.style.color = "var(" + d.target + ")"; return getComputedStyle(probe).color; }
+    probe.style.width = "var(" + d.target + ")"; return round(parseFloat(getComputedStyle(probe).width));
+  }
+
+  /* ---- state: the base is read from the host's CSS at load, before any edit ---- */
+  var base = {}, values, overrides = {}, ctx = { content: "short", width: 360 }, note = "";
+  CONSTANTS.forEach(function (k) { base[k.path] = parseFloat(getComputedStyle(root).getPropertyValue(k.prop)); });
+  values = clone(base);
+  var BASE_DERIVED = {}; DERIVED.forEach(function (d) { BASE_DERIVED[d.target] = measure(d); });
+  var SHORT = {}; Object.keys(CONTENT).forEach(function (sel) { SHORT[sel] = canvas.querySelector(sel).textContent; });
+
+  /* Edits are written on the root element, where the host declares its constants. A derived value
+     (a calc over a var) resolves where it is declared, so a constant set on a child would not move it. */
+  function write(withOverrides) {
+    CONSTANTS.forEach(function (k) {
+      if (values[k.path] === base[k.path]) root.style.removeProperty(k.prop); else root.style.setProperty(k.prop, values[k.path] + k.unit);
+    });
+    DERIVED.forEach(function (d) {
+      if (withOverrides && overrides[d.target]) root.style.setProperty(d.target, overrides[d.target].to + "px"); else root.style.removeProperty(d.target);
+    });
+  }
+  /* What the formulas give under the current constants, with overrides lifted for the measurement. */
+  function derive() { write(false); var out = {}; DERIVED.forEach(function (d) { out[d.target] = measure(d); }); write(true); return out; }
+
+  /* ---- checks: the host's rules and the jig's own proposals stay in separate lists ---- */
+  var CONTRACT = [
+    { id: "C1", text: "A control is at least 24 px tall", fails: function (v, d) { var h = d["--control-height"]; return h < 24 && "control height " + h + " is under 24"; } },
+    { id: "C2", text: "The radius is at most half the control height", fails: function (v, d) { var h = d["--control-height"]; return v["/radius"] > h / 2 && "radius " + v["/radius"] + " is over half the control height " + h; } }
+  ];
+  var PROPOSED = [
+    { id: "P1", text: "A control is at most 36 px tall, so a form stays dense", fails: function (v, d) { var h = d["--control-height"]; return h > 36 && "control height " + h + " is over 36"; } },
+    { id: "P2", text: "The font size is at most half the control height", fails: function (v, d) { var h = d["--control-height"]; return v["/font-size"] > h / 2 && "font size " + v["/font-size"] + " is over half the control height " + h; } },
+    { id: "P3", text: "The border is thinner than the unit", fails: function (v) { return v["/border-width"] >= v["/unit"] && "border width " + v["/border-width"] + " is not under the unit " + v["/unit"]; } }
+  ];
+  function run(list, dv) { return list.map(function (c) { return { id: c.id, text: c.text, failure: c.fails(values, dv) || "" }; }); }
+  function notes(dv) { var h = dv["--control-height"]; return h < 44 ? ["N1 control height " + h + " is under a 44 px touch target"] : []; }
+  var failures = function (results) { return results.filter(function (r) { return r.failure; }).map(function (r) { return r.id + " " + r.failure; }); };
+
+  /* ---- the change set ---- */
+  function changesList() {
+    return CONSTANTS.filter(function (k) { return values[k.path] !== base[k.path]; }).map(function (k) {
+      return { path: k.path, label: k.label, from: base[k.path], to: values[k.path], home: BASE.source + " :root " + k.prop };
+    });
+  }
+  /* An override that equals what the formula gives is no override, so it is left out. */
+  function overridesList(dv) {
+    return DERIVED.filter(function (d) { return overrides[d.target] && overrides[d.target].to !== dv[d.target]; }).map(function (d) {
+      var o = overrides[d.target], out = { target: d.target, at: o.at, formula: d.formula, from: dv[d.target], to: o.to };
+      if (o.reason.trim()) out.reason = o.reason.trim();
+      return out;
+    });
+  }
+  function effectsList(dv) {
+    return DERIVED.filter(function (d) { return dv[d.target] !== BASE_DERIVED[d.target]; }).map(function (d) {
+      return { target: d.target, from: BASE_DERIVED[d.target], to: dv[d.target] };
+    });
+  }
+  function changeSet() {
+    var dv = derive(), contract = failures(run(CONTRACT, dv)), proposed = failures(run(PROPOSED, dv));
+    return { $schema: "jig.changeset/1", kind: "system", base: clone(BASE), createdAt: new Date().toISOString(),
+      context: { content: ctx.content, width: ctx.width },
+      changes: changesList(), overrides: overridesList(dv),
+      checks: { contract: { passed: contract.length === 0, failures: contract }, proposed: { passed: proposed.length === 0, failures: proposed, notes: notes(dv) } },
+      effects: effectsList(dv), note: note.trim() };
+  }
+  function promptText() {
+    return ["Apply this jig change set to the project.", "",
+      "1. base.source is the file the constants live in. Its sha256 must equal base.sha256. If it does not, stop and say the base moved.",
+      "2. For each entry in changes, edit the place named in home from the value in from to the value in to. If the value there is not from, stop.",
+      "3. Each entry in overrides pins one derived value at one spot. It is an exception, not a new constant: keep the formula for everything else.",
+      "4. checks.contract holds the host's own rules; a failure there needs a decision before this lands. checks.proposed holds the jig's suggestions.",
+      "5. effects lists what moves as a result. Use it to verify the edit, not to edit from. context is only the viewpoint. note is the reason.", "",
+      "```json", JSON.stringify(changeSet(), null, 2), "```"].join("\n");
+  }
+
+  /* ---- import: a change set pasted back in. A refusal applies nothing. ---- */
+  function importSet(text) {
+    var m = /```(?:json)?\s*([\s\S]*?)```/.exec(String(text)), o, errs = [], plan = [];
+    try { o = JSON.parse(m ? m[1] : String(text)); } catch (e) { return ["Not JSON: " + e.message]; }
+    if (!o || o.$schema !== "jig.changeset/1") return ["Not a jig change set: $schema is not jig.changeset/1."];
+    var theirs = o.base || {};
+    if (!["sha256", "version"].some(function (id) { return typeof BASE[id] === "string" && theirs[id] === BASE[id]; })) errs.push("Made against a different base: no identity field matches " + BASE.source + " here.");
+    (Array.isArray(o.changes) ? o.changes : []).forEach(function (c) {
+      var k = CONSTANTS.filter(function (x) { return c && x.path === c.path; })[0];
+      if (!k) errs.push(String(c && c.path) + ": no such constant here");
+      else if (c.from !== base[k.path]) errs.push(c.path + ": from " + c.from + ", but the base here is " + base[k.path]);
+      else if (typeof c.to !== "number" || !isFinite(c.to) || c.to < k.min || c.to > k.max) errs.push(c.path + ": to must be a number from " + k.min + " to " + k.max);
+      else plan.push(function () { values[k.path] = c.to; });
+    });
+    (Array.isArray(o.overrides) ? o.overrides : []).forEach(function (r) {
+      var d = DERIVED.filter(function (x) { return r && x.override && x.target === r.target; })[0];
+      if (!d || typeof r.to !== "number" || !isFinite(r.to)) errs.push("override " + String(r && r.target) + ": not recognised here");
+      else plan.push(function () { overrides[d.target] = { to: r.to, at: typeof r.at === "string" ? r.at : "width " + ctx.width, reason: typeof r.reason === "string" ? r.reason : "" }; });
+    });
+    if (errs.length) return errs;
+    values = clone(base); overrides = {};          /* onto the base, not onto the current edits */
+    plan.forEach(function (fn) { fn(); });
+    if (o.context && (o.context.content === "short" || o.context.content === "long")) ctx.content = o.context.content;
+    if (o.context && [280, 360, 520].indexOf(o.context.width) >= 0) ctx.width = o.context.width;
+    note = typeof o.note === "string" ? o.note : "";
+    update(); return [];
+  }
+
+  /* ---- rows: a number field that steps with the arrow keys and scrubs from its label ---- */
+  function row(host, id, label, unit, lo, hi) {
+    var el = document.createElement("div"); el.className = "jig-row";
+    el.innerHTML = '<label class="jig-scrub" for="' + id + '" title="Drag to scrub">' + label + '</label>' +
+      '<input class="jig-num" id="' + id + '" type="text" inputmode="decimal" autocomplete="off" role="spinbutton" aria-valuemin="' + lo + '" aria-valuemax="' + hi + '">' +
+      '<span class="jig-unit">' + unit + '</span>' +
+      '<div class="jig-was" hidden><span></span><button class="jig-reset" type="button" aria-label="Reset ' + label + '">Reset</button></div>';
+    host.appendChild(el);
+    return { el: el, label: el.querySelector("label"), input: el.querySelector("input"), was: el.querySelector(".jig-was"), text: el.querySelector(".jig-was span"), reset: el.querySelector(".jig-reset") };
+  }
+  function spin(r, get, set, lo, hi) {
+    var clamp = function (v) { return Math.min(hi, Math.max(lo, Math.round(v * 10) / 10)); };
+    var step = function (e) { return e.shiftKey ? 10 : e.altKey ? 0.1 : 1; };
+    r.input.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault(); set(clamp(get() + (e.key === "ArrowUp" ? 1 : -1) * step(e)));
+    });
+    r.input.addEventListener("change", function () { var v = parseFloat(r.input.value); if (isFinite(v)) set(clamp(v)); else update(); });
+    var drag = null, end = function () { drag = null; };
+    r.label.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, v: get() }; r.label.setPointerCapture(e.pointerId); });
+    r.label.addEventListener("pointermove", function (e) { if (drag) set(clamp(drag.v + Math.round((e.clientX - drag.x) / 4) * step(e))); });
+    r.label.addEventListener("pointerup", end); r.label.addEventListener("pointercancel", end);
+  }
+  function show(input, v) { var s = String(v); if (input.value !== s) input.value = s; input.setAttribute("aria-valuenow", s); }
+
+  var rows = {}, reads = {}, orow, reason;
+  CONSTANTS.forEach(function (k) {
+    var r = rows[k.path] = row($("constants"), "k" + k.path.replace(/\//g, "-"), k.label, k.unit, k.min, k.max);
+    r.input.setAttribute("data-jig-constant", k.path);
+    spin(r, function () { return values[k.path]; }, function (v) { values[k.path] = v; update(); }, k.min, k.max);
+    r.reset.addEventListener("click", function () { values[k.path] = base[k.path]; update(); r.input.focus(); });
+  });
+  DERIVED.forEach(function (d) {
+    var line = document.createElement("div"); line.className = "jig-read";
+    line.innerHTML = "<span>" + (d.override ? "Formula" : d.label) + ' <span class="jig-formula">' + d.formula + "</span></span><output></output>";
+    if (!d.override) { $("derived").appendChild(line); reads[d.target] = line.querySelector("output"); return; }
+    /* The override row: it edits one derived value, so it carries no data-jig-constant and never exports under changes. */
+    orow = row($("derived"), "o" + d.target.replace(/^-/, ""), d.label, "px", d.min, d.max);
+    line.classList.add("jig-wide"); orow.el.insertBefore(line, orow.was); reads[d.target] = line.querySelector("output");
+    reason = document.createElement("input"); reason.className = "jig-text"; reason.type = "text"; reason.placeholder = "Why this one differs"; reason.setAttribute("aria-label", "Reason for the " + d.label + " override");
+    orow.was.parentNode.insertBefore(reason, orow.was.nextSibling); reason.classList.add("jig-wide");
+    spin(orow, function () { return overrides[d.target] ? overrides[d.target].to : derive()[d.target]; },
+      function (v) { overrides[d.target] = { to: v, at: "width " + ctx.width, reason: overrides[d.target] ? overrides[d.target].reason : "" }; update(); }, d.min, d.max);
+    orow.reset.addEventListener("click", function () { delete overrides[d.target]; update(); orow.input.focus(); });
+    reason.addEventListener("input", function () { if (overrides[d.target]) { overrides[d.target].reason = reason.value; update(); } });
+  });
+
+  /* ---- update everything from state ---- */
+  function checkList(host, results, extra) {
+    host.textContent = "";
+    results.forEach(function (r) {
+      var li = document.createElement("li"); li.setAttribute("data-state", r.failure ? "fail" : "pass");
+      li.textContent = (r.failure ? "Fails: " : "Holds: ") + r.id + " " + r.text + (r.failure ? ". Now " + r.failure + "." : "");
+      host.appendChild(li);
+    });
+    extra.forEach(function (n) { var li = document.createElement("li"); li.setAttribute("data-state", "note"); li.textContent = "Note: " + n; host.appendChild(li); });
+  }
+  var plural = function (n, word) { return n + " " + word + (n === 1 ? "" : "s"); };
+  function update() {
+    var dv = derive(), set = changeSet(), pinned = {};
+    set.overrides.forEach(function (o) { pinned[o.target] = o; });
+    canvas.style.width = ctx.width + "px";
+    Object.keys(CONTENT).forEach(function (sel) { canvas.querySelector(sel).textContent = ctx.content === "long" ? CONTENT[sel] : SHORT[sel]; });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="width"]'), function (r) { r.checked = Number(r.value) === ctx.width; });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="content"]'), function (r) { r.checked = r.value === ctx.content; });
+    CONSTANTS.forEach(function (k) {
+      var r = rows[k.path], changed = values[k.path] !== base[k.path];
+      show(r.input, values[k.path]); r.was.hidden = !changed; r.text.textContent = "was " + base[k.path] + ", now " + values[k.path];
+    });
+    DERIVED.forEach(function (d) {
+      var moved = dv[d.target] !== BASE_DERIVED[d.target], val = function (x) { return d.color ? x : x + " px"; };
+      reads[d.target].textContent = val(dv[d.target]) + (moved ? " (was " + val(BASE_DERIVED[d.target]) + ")" : "");
+      if (!d.override) return;
+      var o = pinned[d.target];
+      show(orow.input, o ? o.to : dv[d.target]); orow.was.hidden = !o; reason.hidden = !o;
+      orow.text.textContent = o ? "formula " + o.from + ", override " + o.to : "";
+      var why = o ? overrides[d.target].reason : ""; if (reason.value !== why) reason.value = why;
+    });
+    checkList($("contract"), run(CONTRACT, dv), []);
+    checkList($("proposed"), run(PROPOSED, dv), set.checks.proposed.notes);
+    if ($("note").value !== note) $("note").value = note;
+    var failing = set.checks.contract.failures.length + set.checks.proposed.failures.length;
+    $("summary").textContent = plural(set.changes.length, "change") + ", " + plural(set.overrides.length, "override") + ". " + (failing ? plural(failing, "check") + " failing." : "All checks hold.");
+    $("json").textContent = JSON.stringify(set, null, 2);
+  }
+
+  /* ---- context and note ---- */
+  document.addEventListener("change", function (e) {
+    if (e.target.name === "width") { ctx.width = Number(e.target.value); update(); }
+    if (e.target.name === "content") { ctx.content = e.target.value; update(); }
+  });
+  $("note").addEventListener("input", function () { note = $("note").value; update(); });
+
+  /* ---- one actions menu: Copy JSON, Copy as prompt, Import, Reset all ---- */
+  var menu = $("menu"), more = $("more");
+  var say = function (text) { $("status").textContent = text; };
+  var items = function () { return Array.prototype.slice.call(menu.querySelectorAll('[role="menuitem"]')); };
+  function menuOpen(open) { menu.hidden = !open; more.setAttribute("aria-expanded", String(open)); if (open) items()[0].focus(); }
+  more.addEventListener("click", function (e) { e.stopPropagation(); menuOpen(menu.hidden); });
+  menu.addEventListener("click", function () { menuOpen(false); });
+  document.addEventListener("click", function () { if (!menu.hidden) menuOpen(false); });
+  menu.addEventListener("keydown", function (e) {
+    var it = items(), i = it.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); it[(i + 1) % it.length].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); it[(i - 1 + it.length) % it.length].focus(); }
+    else if (e.key === "Home") { e.preventDefault(); it[0].focus(); }
+    else if (e.key === "End") { e.preventDefault(); it[it.length - 1].focus(); }
+    else if (e.key === "Escape") { menuOpen(false); more.focus(); }
+  });
+  /* Copying never waits on a check: a failing check is information, not a lock. */
+  function copy(text, what) {
+    var done = function (ok) { say(ok ? "Copied " + what + "." : "Copy failed. Select the change set below and copy it by hand."); };
+    var byHand = function () {
+      var t = document.createElement("textarea"), ok = false; t.value = text; document.body.appendChild(t); t.select();
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      t.remove(); done(ok);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, byHand); else byHand();
+  }
+  $("copy-json").addEventListener("click", function () { copy(JSON.stringify(changeSet(), null, 2), "the change set as JSON"); });
+  $("copy-prompt").addEventListener("click", function () { copy(promptText(), "the change set as a prompt"); });
+  $("reset-all").addEventListener("click", function () { values = clone(base); overrides = {}; update(); say("Reset every constant and override."); });
+  function importOpen(open) { $("imp").hidden = !open; $("imp-errs").textContent = ""; if (open) $("imp-text").focus(); }
+  $("import-open").addEventListener("click", function () { importOpen(true); });
+  $("imp-cancel").addEventListener("click", function () { importOpen(false); more.focus(); });
+  $("imp-apply").addEventListener("click", function () {
+    var errs = importSet($("imp-text").value);
+    if (!errs.length) { importOpen(false); say("Imported the change set onto the base."); more.focus(); return; }
+    $("imp-errs").textContent = ""; errs.forEach(function (x) { var li = document.createElement("li"); li.textContent = x; $("imp-errs").appendChild(li); });
+    say("Import refused. Nothing was applied.");
+  });
+
+  window.jig = { changeSet: changeSet, importSet: importSet };
+  update();
+})();
+</script>
+</body>
+</html>

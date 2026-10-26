@@ -1,0 +1,211 @@
+{
+  "calls": [
+    {
+      "id": "choices",
+      "bytes": 10694,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/choices.json",
+      "sha256": "69b9195788332904a498ba89ef5ca1704526acde6e7f87cf819e27783ba6e04e",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "switch",
+      "bytes": 9156,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/switch.json",
+      "sha256": "bde0fe4c450265153608c234b685c3b50148f458fc9047bf31f36fc7160d310e",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "range",
+      "bytes": 9164,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/range.json",
+      "sha256": "55c37815e3d22ff3348c2c035d71cda68e36ebc1e28acc5399109a236ecd5968",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "fields",
+      "bytes": 9674,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/fields.json",
+      "sha256": "5f4b360da7860211fe697c40eceb62d15f8ed6cd09014287c87cae42afd5e24a",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "actions",
+      "bytes": 10167,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/actions.json",
+      "sha256": "93bc620cb1b9dfe658c4f5681e8650d6522b0c8b3593fca422a925d675769356",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "navigation",
+      "bytes": 11237,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/navigation.json",
+      "sha256": "8b42e7dd93453d069bc299f2918081e9787d26606a398353a6e4f09ed58c9831",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "collections",
+      "bytes": 11106,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/collections.json",
+      "sha256": "01253bf6bd244e84e948ca65d834701b3b3102dc7210fd3eb5f6d61229262fb4",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "disclosure",
+      "bytes": 9571,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/disclosure.json",
+      "sha256": "5a8ed288f48741082402971599c69df2231d5da923080648a5c4c3cfb50ce9b3",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "feedback",
+      "bytes": 8959,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/feedback.json",
+      "sha256": "528c587ceb9316b5fab902a2698d54e1e3f23286af201ae31896e4f047a5c9b0",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "identity",
+      "bytes": 8706,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/identity.json",
+      "sha256": "db097fd3aa1cac18940e4994112760f24681118f99b3e8ebe443c34dd0aa25b1",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "overlay",
+      "bytes": 10277,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/overlay.json",
+      "sha256": "8916e9b70afc3caf180de8485132a368212e4052de7779249ed0e85dc0244947",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "combobox",
+      "bytes": 9060,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/combobox.json",
+      "sha256": "7ecddc0a76943c17cfa51647ed75e2cd2ece913990c721d9c7d49b74f06b9545",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "drawer",
+      "bytes": 8920,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/drawer.json",
+      "sha256": "354769ec566dc3a9034e7db1d1a04c637a53e54aaf56cf4f1cc4a33cd6557de6",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "stepper",
+      "bytes": 10813,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/stepper.json",
+      "sha256": "97d35b0708af37f27a4f68a02f6825ff34ea2772f45c029b079cb88d425e60d0",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "multiselect",
+      "bytes": 8834,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/multiselect.json",
+      "sha256": "139b349995752969af0497f3500c06e326506e91f3920b7aa120ed75e6562513",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "tooltip",
+      "bytes": 8912,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/tooltip.json",
+      "sha256": "ed751fedf6bbf6dc1604d4f1671653eba904ec1923e23311dc3fc3b40f5cec8d",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "toast",
+      "bytes": 8949,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/toast.json",
+      "sha256": "bbb515d35f993b49e0f2b791fb3e648a0160711f57c0c730b9558bc2bcf7623b",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "pagination",
+      "bytes": 8893,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/pagination.json",
+      "sha256": "0b6d5fcf9b0ecbd25740dd67de6eb5760ca1044fb547ac1f0aeb091bc5155122",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "tree",
+      "bytes": 8927,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/tree.json",
+      "sha256": "109d990563a0b4c90483104cd820ba18e5901c7191bad98bb093c505d650f1ea",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "date-picker",
+      "bytes": 9152,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/date-picker.json",
+      "sha256": "94cbcc70d86dd4607eb34ed20e6778da94518462a1ef6bc995384dd020204f97",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "data-grid",
+      "bytes": 8785,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/data-grid.json",
+      "sha256": "43033568df56d13e323b58c92e9a1c234488e1246e41213befbd9d7ee74c7bb4",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "rich-text",
+      "bytes": 9059,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/rich-text.json",
+      "sha256": "f0be24e73989be3a65fb5c4301bdbbb034c5f64772b08166aa20a5d656af0ee9",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "native-select",
+      "bytes": 3357,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/native-select.json",
+      "sha256": "2324f0252d173f155327c82e2388cb1b1ba1764f37c1d701c175aa60f27abe2e",
+      "contractComplete": true,
+      "sharedComplete": false
+    },
+    {
+      "id": "navigation-menu",
+      "bytes": 4555,
+      "file": "/private/tmp/wireframe-composition-q4gwyoyl/context-checks/navigation-menu.json",
+      "sha256": "9fccdb0ac72a827bc82f88458c849379300aa0e9ac2971200fb370746561bc3e",
+      "contractComplete": true,
+      "sharedComplete": false
+    }
+  ],
+  "fullCommonBytes": 70328,
+  "maximumReturnedBytes": 11237,
+  "minimumReturnedBytes": 3357,
+  "multiFamilyReturnedBytes": 21048,
+  "sharedReadOnceVerified": true,
+  "controls": [
+    "unknown-id",
+    "unknown-option",
+    "corpus-output",
+    "existing-output",
+    "unrelated-growth-stability",
+    "unsupported-version",
+    "selected-content-change"
+  ],
+  "scope": "Exact source object/shared-constraint fidelity, returned output bytes and fail-closed CLI. No model attention, downstream transport, token counts or fresh-generation efficacy claim."
+}

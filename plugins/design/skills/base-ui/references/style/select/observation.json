@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": {
+    "name": "observe-select",
+    "version": 1
+  },
+  "id": "native-select",
+  "sources": [
+    {
+      "path": "assets/recipes/native-select.html",
+      "sha256": "aac78bc2beb7680ea22e22dc55e17a29912c366b884cdea1c3f335fa86e0bbed"
+    },
+    {
+      "path": "references/style/select/contract.json",
+      "sha256": "2bc9578e696b504c6831920a5a79e552ed86e27823906476f73f32763df81b28"
+    },
+    {
+      "path": "references/style/bootstrap.md",
+      "sha256": "ec34a88349ae28daa04594e78718ebbb280637a021b4b4f2e5c84cb93da0afdd"
+    },
+    {
+      "path": "assets/control-markup.mjs",
+      "sha256": "d0d961ba64fc7e8db1daeda8c6bf691d4042a3ffd95501da4a34f0d7416ba46d"
+    },
+    {
+      "path": "scripts/compile-controls.mjs",
+      "sha256": "2e70d66fe48db09906acce1400ff35426994850607f8b51316b378d67c743883"
+    },
+    {
+      "path": "assets/wireframe.css",
+      "sha256": "7f75030f2bce0e15c80e459a3e5d6c7a358c774695aa82f16aac63f3d77934f7"
+    },
+    {
+      "path": "assets/foundation/maison/geometry.css",
+      "sha256": "7bef1b330cc17ee1ae3c7dbd1077c790767222b4e52b7080b89300426835799f"
+    },
+    {
+      "path": "assets/foundation/maison/layout.css",
+      "sha256": "c1c52634fb5a4e5bfa9165ea41345e636e7bb8ec23b4c39c04111188489e5584"
+    },
+    {
+      "path": "assets/foundation/ultimate-tokens/colors.css",
+      "sha256": "3d5b3c5d55a3a9823bab09e64d54301375863964c1066e50295d9f7f4b3f5af6"
+    }
+  ],
+  "bindings": {
+    "authored": "assets/recipes/native-select.html",
+    "compiler": "scripts/compile-controls.mjs",
+    "dynamicBuilder": "assets/control-markup.mjs#createSelectControl",
+    "presentation": "assets/wireframe.css",
+    "discovery": "references/style/discovery.json"
+  },
+  "support": {
+    "source": "observed",
+    "browser": "requires separate check-select-contract report",
+    "installedPackage": "not evaluated"
+  }
+}

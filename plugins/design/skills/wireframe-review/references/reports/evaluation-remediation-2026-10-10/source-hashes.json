@@ -1,0 +1,12 @@
+{
+  "SKILL.md": "9dd331de3a6caa745aac8d48c7097ddadd21174d0d22d0c726def4d50da752d7",
+  "scripts/generate.mjs": "22057be6bc8ff0dfb52bfcd45e1521612016bf0be88d146f4d9923b7d83d63c4",
+  "scripts/lint-artifact.mjs": "4cee5008db4476c3b89b369edd923f5487c405f182cd949031264737f3d90887",
+  "scripts/lib/artifact-lint.mjs": "4ffaf42b2fe3869ed5bec81d84674acf1fa3158c880e41309eb4ce98326c59f7",
+  "scripts/check-preventive-lint.mjs": "8e7446f52777ab6b548c764fc5d73c07472a4e4a66bca3b8d263bd4d010b5230",
+  "scripts/check-generation-pipeline.mjs": "a3411adeb992dd40a39d3710133aab7aa32c4c6c7b47d5aaf77fea20f35f5d54",
+  "references/style/components/authoring.md": "19677f380daa6136ee5632467829c82f05534160d6b81d462d05e1349db7a441",
+  "references/style/prototype-runtime.md": "6634b407e5fa367c129606db28282f30e5f8284d76c43960a3e1e76405b32a2d",
+  "references/workflows/preventive-checks.md": "e9084a4c4bbad4c36931e8e8d76af9b54075a1276233e03bc41f2761bb3a2972",
+  "references/workflows/build.md": "f55efe22964efc952fbaa12b6b3d4b95b341b8739c6dafbefc6486b7ae3a1bab"
+}

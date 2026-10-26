@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "scope": "Documentation snapshot; reported outcomes, not a new independent verification. Later evaluations do not rewrite the original 53-item register.",
+  "records": [
+    {
+      "id": "generation-delivery-publication-2026-10-10-1",
+      "title": "Task-based delivery checks",
+      "status": "Published capability",
+      "summary": "Independent acceptance, isolated scenarios and runtime API lookup are available. Ordinary artifact emission is distinct from verified delivery.",
+      "report": "references/reports/documentation-updates/generation-delivery-publication-2026-10-10-1.md",
+      "sha256": "a4004b41a4ed82ce529b2305a1aca1df651fe664a2f906e96c2a6bc7bb43c95e"
+    },
+    {
+      "id": "delivery-transfer-2026-10-10-2",
+      "title": "Latest completed transfer batch",
+      "status": "Historical sampled result",
+      "summary": "15 of 16 phases emitted; all 15 emitted artifacts passed independent scoped acceptance. Only 14 met receipt and preservation delivery qualification. These are distinct counts, not a complete reliability claim.",
+      "report": "references/reports/documentation-updates/delivery-transfer-2026-10-10-2.md",
+      "sha256": "18ef0a5401083f0c4f3d454b29e3ac9502b77e9ade7a0f77a27fd70513c808dd"
+    },
+    {
+      "id": "transfer-drift-remediation-2026-10-10-1",
+      "title": "Follow-up corrections",
+      "status": "Published; focused checks reported",
+      "summary": "Identifier composition, visibility assertions, explicit delivery mode, successor reservation and page/booking composition were corrected. No full model cohort was rerun after these corrections.",
+      "report": "references/reports/documentation-updates/transfer-drift-remediation-2026-10-10-1.md",
+      "sha256": "a49c942c89901b2be08a145345993aa4a9ec7ba3f0c5f4cd13fe476d79873a99"
+    },
+    {
+      "id": "rapid-context-quality-2026-10-10-1",
+      "title": "Rapid context screening",
+      "status": "Small-probe results; baseline retained",
+      "summary": "Six calibration attempts passed mechanical checks without repair. Dispatch through scoring took 63.07 seconds, plus 93.51 seconds of setup. Both outcome-map conditions covered all four critical outcomes; no coverage gain justified promoting the candidate. These small probes do not establish complete-delivery speed or reliability.",
+      "report": "references/reports/documentation-updates/rapid-context-quality-2026-10-10-1.md",
+      "sha256": "a1e64eef19801bd8eb20a2a6f147f26910a8123b8d5c23759695134472fb9c6c"
+    },
+    {
+      "id": "stale-guidance-2026-10-10-1",
+      "title": "Stale-guidance comparison",
+      "status": "Paired screening tie; baseline retained",
+      "summary": "Both instruction conditions passed initial/selected/cleared guidance visibility and six protected checks. No observed improvement triggered fresh-brief confirmation. The explicit target and single paired sample limit transfer claims.",
+      "report": "references/reports/documentation-updates/stale-guidance-2026-10-10-1.md",
+      "sha256": "37f8af87663d8c462af5d05ff9fb6fbb052daa7ea759df083f040678d70cdfa1"
+    },
+    {
+      "id": "pointer-focus-border-fix-2026-10-10-1",
+      "title": "Pointer-focus border correction",
+      "status": "Corrected; focused authored checks",
+      "summary": "Pointer focus without a replacement ring retains component borders. Preview and shell focus-visible rules replace borders only when rings display. Focused checks cover three Playwright engines; WebKit checkbox pointer-focus failure control is not applicable. Existing environment limitations remain.",
+      "report": "references/reports/documentation-updates/pointer-focus-border-fix-2026-10-10-1.md",
+      "sha256": "01a85429f75633ad099d0eacd7acb531777f82cc681ce1f7f880aeb03fa5101d"
+    }
+  ],
+  "remaining": [
+    "Fresh full-generation adoption after the latest corrections remains unestablished. The rapid calibration and map-only comparison are bounded probes, not complete generated-interface acceptance.",
+    "Full brief coverage, visual composition, assistive technology and native-environment parity remain bounded or unverified. Accepted limitations retain their original scope.",
+    "WebKit observer notifications retain their separate qualification. The legacy sheet row-count assertion included an unrelated incident table; current checks scope filtering and sorting to selectable record rows.",
+    "Live prototype state/theme export remains outside the wireframe feedback-shell contract."
+  ],
+  "next": "Open-ended state-clarity comparison remains proposed; the explicitly targeted stale-guidance comparison completed with a tie. Retain baseline; no new context rule promoted."
+}

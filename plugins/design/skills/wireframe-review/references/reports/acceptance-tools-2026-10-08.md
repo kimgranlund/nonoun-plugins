@@ -1,0 +1,15 @@
+# Independent acceptance tooling
+
+Added verify-acceptance.mjs and lib/acceptance.mjs for evaluator-owned, artifact-bound acceptance. It complements the existing build/declaration gate rather than replacing it. Requirements are separate from generated manifest interactions, and reports bind HTML, acceptance, runner and check-module hashes. Missing elements and unsupported checks cannot pass. See ../evaluation-checks.md for the contract and limits.
+
+Implemented detectors: scenario actions with observable assertions; selected descendant text contrast; vertical sibling gaps; useful widths; top-layer menu containment, surrounding-layout stability, Escape/focus and optional outside dismissal; native disabled/focus behavior; visible-control coverage tied to passed behavior checks. Evaluator authors remain responsible for complete requirements, sensible selectors/thresholds and honest inventory mappings. No automated inference of brief completeness or general design quality is claimed.
+
+Evidence:
+- /tmp/wireframe-acceptance-release-20261008: baseline at wide/light and narrow/dark plus nine separate mutations (contrast, gap, width, menu opening, outside dismissal, disabled state, revision invalidation, missing direction control, unbound control). Each defect must fail its intended detector.
+- /tmp/wireframe-acceptance-evidence-20261008/kit-sol-report.json: 12 cases pass the selected approval-revocation, inverse-text contrast and menu checks on the frozen Kitroom Sol output.
+- /tmp/wireframe-acceptance-evidence-20261008/archive-terra-report.json: 12 cases each fail status contrast, fieldset/action spacing, missing direction control and missing supported menu panel on the frozen Archive Terra output. This report records its exact runner/check hashes; a later scroll-normalization change precedes the Kitroom and release-fixture reports.
+- 26 existing selftests, skill metadata validation and changed documentation links pass.
+
+Added read-context.mjs: logs exact returned text, requested lines, local byte truncation, source/returned hashes and byte size. check-context-reader.mjs verifies range/hash, capped output, append and path/write guards. Logs stay outside the corpus. It cannot observe model attention, downstream tool truncation, bypass reads or command provenance; token counts remain null. Use it as the allowed read path in a controlled evaluation and audit bypasses separately.
+
+No live foundation styling or frozen generation artifact changed. No fresh-generation comparison was launched. Next: author and freeze complete task acceptance lists before dispatch, including all consequential edits and open-state controls, then compare previous/revised context with identical task/model settings. Existing targeted lists here are detector validation, not retroactive substitutes for predeclared acceptance. Chromium coverage only; composited text, full keyboard/accessibility, hidden menu-item inventory, arbitrary four-edge placement and broad visual review remain additional work.

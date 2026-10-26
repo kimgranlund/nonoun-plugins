@@ -1,0 +1,81 @@
+{
+  "relationships": [
+    {
+      "parent": "control",
+      "child": "icon-slot",
+      "inherit": [
+        "unit",
+        "border"
+      ],
+      "preserve": [
+        "slot size"
+      ],
+      "deduct": [
+        "slot border from artwork space"
+      ]
+    },
+    {
+      "parent": "input",
+      "child": "prefix/suffix/selector",
+      "family": "chip",
+      "inherit": [
+        "unit",
+        "border",
+        "control density",
+        "label edge"
+      ],
+      "preserve": [
+        "chip height",
+        "4u label/slot height",
+        "content width"
+      ],
+      "deduct": [
+        "own border from own inset",
+        "physical parent-to-child edge distances from parent radius"
+      ]
+    },
+    {
+      "parent": "composite",
+      "child": "control/chip",
+      "inherit": [
+        "unit",
+        "border",
+        "density",
+        "label edge"
+      ],
+      "override": [
+        "inset",
+        "radius"
+      ],
+      "deduct": [
+        "effective parent inset from child inset; clamp at child border"
+      ],
+      "preserve": [
+        "slot",
+        "font",
+        "label margins"
+      ]
+    },
+    {
+      "parent": "card/collection",
+      "child": "control/chip",
+      "inherit": [
+        "unit",
+        "border"
+      ],
+      "preserve": [
+        "child density",
+        "child geometry"
+      ],
+      "deduct": []
+    }
+  ],
+  "forbidden": [
+    "button inside button",
+    "interactive descendant in listbox option",
+    "automatic composite subtraction for ordinary cards",
+    "unbounded recursive inset subtraction",
+    "propagating collection density into child control density"
+  ],
+  "nestingLimit": "One composite level is verified; deeper composites require an explicit new contract."
+}

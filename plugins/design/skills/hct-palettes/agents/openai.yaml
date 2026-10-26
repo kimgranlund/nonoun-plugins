@@ -1,0 +1,4 @@
+interface:
+  display_name: "HCT Palettes"
+  short_description: "Generate HCT ramps, Primes and balanced color sets"
+  default_prompt: "Use $hct-palettes to generate a 230deg palette with maximum chroma."

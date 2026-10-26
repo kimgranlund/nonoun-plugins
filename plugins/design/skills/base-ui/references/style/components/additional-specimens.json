@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "specimens": {
+    "center__root": {
+      "source": "assets/recipes/review-center.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "choice__body": {
+      "source": "assets/recipes/review-choice-body.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "choice__description": {
+      "source": "assets/recipes/review-choice-description.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "cluster__root": {
+      "source": "assets/recipes/review-cluster.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "content__root": {
+      "source": "assets/recipes/review-content.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "eyebrow__root": {
+      "source": "assets/recipes/review-eyebrow.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "field-group__root": {
+      "source": "assets/recipes/review-field-group.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "field__label": {
+      "source": "assets/recipes/review-field-label.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "flow__root": {
+      "source": "assets/recipes/review-flow.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "grid__root": {
+      "source": "assets/recipes/review-grid.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "grid__auto": {
+      "source": "assets/recipes/review-grid-auto.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "heading-group__root": {
+      "source": "assets/recipes/review-heading-group.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "media__root": {
+      "source": "assets/recipes/review-media.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "media__large": {
+      "source": "assets/recipes/review-media-large.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "nav__row": {
+      "source": "assets/recipes/review-nav-row.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "product__root": {
+      "source": "assets/recipes/review-product.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "prose__root": {
+      "source": "assets/recipes/review-prose.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "section__root": {
+      "source": "assets/recipes/review-section.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "section__flow": {
+      "source": "assets/recipes/review-section-flow.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "sidebar__header": {
+      "source": "assets/recipes/review-sidebar-head.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "sidebar__body": {
+      "source": "assets/recipes/review-sidebar-body.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "sidebar__footer": {
+      "source": "assets/recipes/review-sidebar-footer.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "sidebar__identity": {
+      "source": "assets/recipes/review-sidebar-identity.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "stack__root": {
+      "source": "assets/recipes/review-stack.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "surface__inverse": {
+      "source": "assets/recipes/review-surface-inverse.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "stack__gap": {
+      "source": "assets/recipes/review-stack-gap.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "stack__loose": {
+      "source": "assets/recipes/review-stack-loose.html",
+      "kind": "contextual utility or subpart specimen"
+    },
+    "section__gap": {
+      "source": "assets/recipes/review-section-gap.html",
+      "kind": "contextual utility or subpart specimen"
+    }
+  }
+}

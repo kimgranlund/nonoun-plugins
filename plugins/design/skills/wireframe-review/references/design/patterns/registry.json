@@ -1,0 +1,849 @@
+{
+  "schemaVersion": "1.0",
+  "purpose": "Reason about content and task fit before selecting an arrangement. Entries are hypotheses, not mandatory templates.",
+  "principles": {
+    "shared": [
+      "Choose by intended outcome, content relationships, cardinality, evidence and action consequence.",
+      "Keep section surfaces full container width; inner content may use an intentional max-width and automatic inline margins for centered layout or readable prose.",
+      "A named pattern is an initial hypothesis. Adapt or invent a better arrangement when the content warrants it.",
+      "Prefer the best supported fit for this task; no template is universally objectively best without context and evaluation."
+    ],
+    "marketingWebsites": [
+      "Compose a sequence of audience decisions, not a sequence of interchangeable feature cards.",
+      "Use purposeful variety in density, representation and emphasis to mark changes in meaning and reduce monotonous scanning.",
+      "Inspect adjacent and page-wide repetition: semantic duplication, identical silhouette, repeated cognitive demand and repeated conversion asks.",
+      "Break a pattern where the narrative changes: recognition to mechanism, mechanism to evidence, evidence to fit, fit to commitment.",
+      "Preserve a coherent visual grammar. Novelty that adds decoding effort without advancing understanding is not valuable variety.",
+      "A repeated pattern can aid comparison or orientation. Do not enforce a fixed diversity quota or prohibit all repetition.",
+      "Place a conversion hook when the visitor has gained new grounds for acting; vary commitment appropriately, not merely button wording."
+    ],
+    "contentWebsites": [
+      "Vary discovery and topic-orientation surfaces by reader intent; preserve predictable reading and reference structures within a content type.",
+      "An editorial pause must clarify the argument rather than interrupt comprehension."
+    ],
+    "productExperiences": [
+      "Optimize for correctness, learnability, repeat-use efficiency and recovery. Stable object/action placement usually outweighs novelty.",
+      "Use consistent templates for equivalent objects and tasks; change structure when content relationships or consequences differ.",
+      "Queues suit actionable sets, detail suits one object, matrices suit comparable options, workbenches suit creation. Evaluate the fit rather than rotate them for variety."
+    ],
+    "dashboardsAndAgents": [
+      "Keep metrics and state semantics stable across views. Vary structure for a different decision, not decorative refresh.",
+      "Distinguish evidence, inference, recommendation, authority, action and outcome. Progressive detail should preserve traceability."
+    ]
+  },
+  "patterns": [
+    {
+      "id": "problem-contrast",
+      "title": "Problem contrast",
+      "intent": "Recognize the gap between a current situation and a useful change.",
+      "contentShape": "Two comparable states or tensions",
+      "selectWhen": "The audience recognizes the situation but not the value of changing it.",
+      "avoidWhen": "The two states cannot be compared fairly.",
+      "requiredContent": [
+        "Current condition",
+        "changed condition",
+        "what remains unresolved"
+      ],
+      "variantDirections": [
+        "Paired panels",
+        "editorial before/after",
+        "contrasted rows"
+      ],
+      "tradeoff": "Contrast can overstate the product’s effect.",
+      "evaluation": "Can a visitor describe the difference without inferring an unsupported outcome?",
+      "alternatives": [
+        "process-steps",
+        "product-specimen"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "process-steps",
+      "title": "Process sequence",
+      "intent": "Explain order, prerequisites and the next responsibility.",
+      "contentShape": "Ordered steps with transitions",
+      "selectWhen": "Sequence is the cause of understanding or successful completion.",
+      "avoidWhen": "Steps are actually independent features or a branching network.",
+      "requiredContent": [
+        "Steps",
+        "actor",
+        "entry and exit",
+        "exceptions"
+      ],
+      "variantDirections": [
+        "Horizontal sequence",
+        "vertical timeline",
+        "phase groups"
+      ],
+      "tradeoff": "A linear depiction can hide loops and dependencies.",
+      "evaluation": "Can someone identify the next step and what blocks it?",
+      "alternatives": [
+        "dependency-map",
+        "annotated-mechanism"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "dependency-map",
+      "title": "Dependency map",
+      "intent": "Make relationships and blockers legible.",
+      "contentShape": "Nodes, directional relationships and state",
+      "selectWhen": "The useful explanation concerns what depends on what.",
+      "avoidWhen": "The task is simply to scan unrelated benefits.",
+      "requiredContent": [
+        "Nodes",
+        "relationship meanings",
+        "blocker",
+        "owner"
+      ],
+      "variantDirections": [
+        "Connected chain",
+        "dependency lanes",
+        "hub with branches"
+      ],
+      "tradeoff": "A map can become difficult to read as relationships grow.",
+      "evaluation": "Can the reader trace one dependency and explain its consequence?",
+      "alternatives": [
+        "process-steps",
+        "comparison-matrix"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "product-specimen",
+      "title": "Inspectable specimen",
+      "intent": "Show the actual shape of a result or working object.",
+      "contentShape": "One credible object with representative fields",
+      "selectWhen": "Evaluators need to understand what they would receive or work with.",
+      "avoidWhen": "No truthful sample exists, or a decorative screenshot would stand in for evidence.",
+      "requiredContent": [
+        "Representative object",
+        "states",
+        "realistic values",
+        "sample limits"
+      ],
+      "variantDirections": [
+        "Working record",
+        "output canvas",
+        "focused detail"
+      ],
+      "tradeoff": "A single specimen can appear more representative than it is.",
+      "evaluation": "Can a reviewer explain what the object shows and what it does not prove?",
+      "alternatives": [
+        "annotated-mechanism",
+        "evidence-story"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "role-routes",
+      "title": "Role or need routes",
+      "intent": "Help people find a relevant path without reading everything.",
+      "contentShape": "Distinct audiences or task intents",
+      "selectWhen": "Different visitors need materially different explanations or actions.",
+      "avoidWhen": "Audience categories overlap so much that the route choice is arbitrary.",
+      "requiredContent": [
+        "Route label",
+        "distinguishing need",
+        "destination",
+        "fallback"
+      ],
+      "variantDirections": [
+        "Route rows",
+        "task cards",
+        "guided chooser"
+      ],
+      "tradeoff": "Asks the visitor to self-identify before learning more.",
+      "evaluation": "Can a visitor choose a route and recover from a wrong choice?",
+      "alternatives": [
+        "capability-index",
+        "comparison-matrix"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "evidence-story",
+      "title": "Evidence narrative",
+      "intent": "Let a reader assess a result in its original context.",
+      "contentShape": "Context, method, observation and limits",
+      "selectWhen": "Credibility and transferability are central to the decision.",
+      "avoidWhen": "There is no source or the content is only an invented endorsement.",
+      "requiredContent": [
+        "Context",
+        "method",
+        "observation",
+        "provenance",
+        "caveats"
+      ],
+      "variantDirections": [
+        "Case timeline",
+        "finding with source rail",
+        "compact case excerpt"
+      ],
+      "tradeoff": "A vivid example may be overgeneralized.",
+      "evaluation": "Can the reader distinguish observation from inference and assess applicability?",
+      "alternatives": [
+        "product-specimen",
+        "source-register"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "comparison-matrix",
+      "title": "Comparison matrix",
+      "intent": "Compare alternatives on shared dimensions.",
+      "contentShape": "Alternatives × meaningful attributes",
+      "selectWhen": "A decision depends on cross-option comparison with consistent definitions.",
+      "avoidWhen": "Dimensions are incomparable or the table would mostly contain marketing adjectives.",
+      "requiredContent": [
+        "Shared criteria",
+        "values",
+        "definitions",
+        "unknowns"
+      ],
+      "variantDirections": [
+        "Matrix",
+        "paired attribute rows",
+        "stacked criteria"
+      ],
+      "tradeoff": "Wide matrices are costly on narrow screens.",
+      "evaluation": "Can someone explain a tradeoff across two alternatives using the same criterion?",
+      "alternatives": [
+        "fit-boundary",
+        "role-routes"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "fit-boundary",
+      "title": "Fit and limitation band",
+      "intent": "Help the right audience recognize fit and others recognize non-fit.",
+      "contentShape": "Conditions, exclusions and alternatives",
+      "selectWhen": "A limitation materially affects whether the next step is appropriate.",
+      "avoidWhen": "It merely repeats legal boilerplate without a decision consequence.",
+      "requiredContent": [
+        "Good-fit conditions",
+        "non-fit",
+        "reasonable alternative"
+      ],
+      "variantDirections": [
+        "Fit/not-fit split",
+        "boundary callout",
+        "eligibility list"
+      ],
+      "tradeoff": "Over-compression can hide nuance.",
+      "evaluation": "Can a poor-fit visitor identify an appropriate exit?",
+      "alternatives": [
+        "objection-disclosure",
+        "comparison-matrix"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "objection-disclosure",
+      "title": "Question and answer disclosure",
+      "intent": "Resolve specific residual uncertainty without burying the main narrative.",
+      "contentShape": "Discrete questions with independent answers",
+      "selectWhen": "Secondary questions differ between readers and can be progressively disclosed.",
+      "avoidWhen": "The answer is essential to consent, price or understanding the main claim.",
+      "requiredContent": [
+        "Real questions",
+        "direct answers",
+        "meaningful order"
+      ],
+      "variantDirections": [
+        "Disclosure list",
+        "visible Q&A",
+        "grouped answer blocks"
+      ],
+      "tradeoff": "Collapsed answers may never be read.",
+      "evaluation": "Can the reader find the uncertainty that changes their decision?",
+      "alternatives": [
+        "fit-boundary",
+        "source-register"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "pilot-invitation",
+      "title": "Bounded next-step invitation",
+      "intent": "Connect accumulated understanding to an appropriate commitment.",
+      "contentShape": "Action, expected outcome, required effort and alternative",
+      "selectWhen": "The page has established enough context for a useful next action.",
+      "avoidWhen": "It interrupts before relevance is established or adds pressure without new value.",
+      "requiredContent": [
+        "Action",
+        "what happens next",
+        "effort",
+        "lower-commitment route"
+      ],
+      "variantDirections": [
+        "Action band",
+        "preparation checklist",
+        "two-path invitation"
+      ],
+      "tradeoff": "Repeated asks can create fatigue or pressure.",
+      "evaluation": "Can a visitor explain the commitment and choose to defer?",
+      "alternatives": [
+        "role-routes",
+        "staged-form"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "editorial-interlude",
+      "title": "Editorial interlude",
+      "intent": "Give one consequential idea room to register.",
+      "contentShape": "One concise claim or transition",
+      "selectWhen": "A narrative shift benefits from reduced density and a clear connection.",
+      "avoidWhen": "It is filler, an unsupported slogan or a fake quote.",
+      "requiredContent": [
+        "One idea",
+        "its role in the argument",
+        "support when needed"
+      ],
+      "variantDirections": [
+        "Large statement",
+        "question pause",
+        "compact editorial note"
+      ],
+      "tradeoff": "A pause spends scroll length and can become theatrical.",
+      "evaluation": "Does the next section gain clarity from the pause?",
+      "alternatives": [
+        "problem-contrast",
+        "evidence-story"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "annotated-mechanism",
+      "title": "Annotated mechanism",
+      "intent": "Explain how one capability produces a useful effect.",
+      "contentShape": "An object or mechanism with mapped explanations",
+      "selectWhen": "The mechanism is easier to understand visually than through feature prose.",
+      "avoidWhen": "Annotations merely restate labels or imply functionality that is not demonstrated.",
+      "requiredContent": [
+        "Object",
+        "numbered features",
+        "explanation",
+        "limitations"
+      ],
+      "variantDirections": [
+        "Numbered diagram",
+        "specimen with legend",
+        "exploded process"
+      ],
+      "tradeoff": "Too many callouts compete for attention.",
+      "evaluation": "Can the reader connect a visible part to the purpose it serves?",
+      "alternatives": [
+        "product-specimen",
+        "process-steps"
+      ],
+      "demoRenderer": true
+    },
+    {
+      "id": "capability-index",
+      "title": "Capability index",
+      "intent": "Enable scanning and selective depth across peer capabilities.",
+      "contentShape": "Independent, similarly scoped capabilities",
+      "selectWhen": "Readers know what they seek and need quick coverage.",
+      "avoidWhen": "The page needs a causal story or all entries say the same thing.",
+      "requiredContent": [
+        "Distinct capability",
+        "useful outcome",
+        "deeper route"
+      ],
+      "variantDirections": [
+        "Grouped list",
+        "concise tiles",
+        "category index"
+      ],
+      "tradeoff": "Repeated cards flatten priority and can feel monotonous.",
+      "evaluation": "Can someone find a relevant capability without opening every item?",
+      "alternatives": [
+        "role-routes",
+        "annotated-mechanism"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "metric-context",
+      "title": "Metric with context",
+      "intent": "Explain a quantity relative to a meaningful denominator or baseline.",
+      "contentShape": "Measure, unit, population, period and comparison",
+      "selectWhen": "A supported number helps answer the current question.",
+      "avoidWhen": "The number is decorative, unsourced or lacks comparable scope.",
+      "requiredContent": [
+        "Definition",
+        "value",
+        "denominator",
+        "period",
+        "source",
+        "uncertainty"
+      ],
+      "variantDirections": [
+        "Evidence strip",
+        "comparison chart",
+        "annotated figure"
+      ],
+      "tradeoff": "Large numbers can exaggerate certainty.",
+      "evaluation": "Can a reader restate exactly what the number measures?",
+      "alternatives": [
+        "evidence-story",
+        "monitoring-brief"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "source-register",
+      "title": "Source register",
+      "intent": "Make provenance and limits inspectable.",
+      "contentShape": "Claims linked to source records",
+      "selectWhen": "Trust or verification requires knowing where information came from.",
+      "avoidWhen": "Source quantity is being used as a substitute for source support.",
+      "requiredContent": [
+        "Source identity",
+        "claim relation",
+        "scope",
+        "freshness",
+        "conflict"
+      ],
+      "variantDirections": [
+        "Claim-source table",
+        "source rail",
+        "annotated bibliography"
+      ],
+      "tradeoff": "Deep detail can distract from the main decision.",
+      "evaluation": "Can a reader verify a claim and locate counterevidence?",
+      "alternatives": [
+        "evidence-story",
+        "record-detail"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "task-queue",
+      "title": "Task queue",
+      "intent": "Help a repeat user identify and advance actionable work.",
+      "contentShape": "Work items with priority, state and ownership",
+      "selectWhen": "Throughput and next responsibility matter more than a broad narrative.",
+      "avoidWhen": "Objects need extended comparison or rich editing before action.",
+      "requiredContent": [
+        "Item",
+        "scope",
+        "state",
+        "owner",
+        "priority",
+        "action"
+      ],
+      "variantDirections": [
+        "Compact list",
+        "grouped queues",
+        "triage table"
+      ],
+      "tradeoff": "Ranking may conceal work that still matters.",
+      "evaluation": "Can a user find the right next task without a wrong-scope action?",
+      "alternatives": [
+        "record-detail",
+        "workbench"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "record-detail",
+      "title": "Record detail",
+      "intent": "Explain an object’s state, history and available actions.",
+      "contentShape": "One domain object and its relationships",
+      "selectWhen": "The person acts on a known object with consequential state.",
+      "avoidWhen": "The task is primarily discovering which object matters.",
+      "requiredContent": [
+        "Identity",
+        "state",
+        "owner",
+        "relationships",
+        "history",
+        "actions"
+      ],
+      "variantDirections": [
+        "Summary with sections",
+        "split detail",
+        "timeline detail"
+      ],
+      "tradeoff": "Too much metadata can obscure the next action.",
+      "evaluation": "Can a user explain the current state and the effect of their action?",
+      "alternatives": [
+        "task-queue",
+        "workbench"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "staged-form",
+      "title": "Staged form",
+      "intent": "Collect dependent input while preserving context and recovery.",
+      "contentShape": "Dependent fields and checkpoints",
+      "selectWhen": "Earlier input changes later questions or a consequential review is needed.",
+      "avoidWhen": "A short independent form would be faster and clearer.",
+      "requiredContent": [
+        "Field meaning",
+        "validation",
+        "progress",
+        "back path",
+        "review"
+      ],
+      "variantDirections": [
+        "Single step with summary",
+        "wizard",
+        "progressive field groups"
+      ],
+      "tradeoff": "Extra stages add navigation and can hide the total effort.",
+      "evaluation": "Can a user correct earlier input without losing valid work?",
+      "alternatives": [
+        "workbench",
+        "approval-gate"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "workbench",
+      "title": "Contextual workbench",
+      "intent": "Let a person create or revise while retaining relevant reference material.",
+      "contentShape": "Working artifact, tools and supporting context",
+      "selectWhen": "Creation benefits from nearby evidence, preview or critique.",
+      "avoidWhen": "The task is one small action that needs little context.",
+      "requiredContent": [
+        "Editable artifact",
+        "save state",
+        "source",
+        "validation",
+        "next step"
+      ],
+      "variantDirections": [
+        "Split editor",
+        "canvas with inspector",
+        "focused editor"
+      ],
+      "tradeoff": "Dense tools may overwhelm occasional users.",
+      "evaluation": "Can the user complete and recover edits while understanding the saved state?",
+      "alternatives": [
+        "record-detail",
+        "staged-form"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "monitoring-brief",
+      "title": "Monitoring brief",
+      "intent": "Explain whether a situation warrants investigation.",
+      "contentShape": "Signals, baseline, freshness and exceptions",
+      "selectWhen": "A person needs timely orientation before deciding to intervene.",
+      "avoidWhen": "There is no defined decision or the user needs open-ended exploration.",
+      "requiredContent": [
+        "Scope",
+        "change",
+        "baseline",
+        "data gaps",
+        "next investigation"
+      ],
+      "variantDirections": [
+        "Exception-first",
+        "trend overview",
+        "narrative briefing"
+      ],
+      "tradeoff": "Summaries can encourage premature conclusions.",
+      "evaluation": "Can the operator distinguish a true signal from absent or incomparable data?",
+      "alternatives": [
+        "metric-context",
+        "task-queue"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "approval-gate",
+      "title": "Scoped approval",
+      "intent": "Let a person authorize a specific consequential action.",
+      "contentShape": "Versioned plan, effects and authority",
+      "selectWhen": "Execution exceeds delegated bounds or conditions have changed.",
+      "avoidWhen": "Routine permitted work merely adds a meaningless confirmation.",
+      "requiredContent": [
+        "Actor",
+        "plan version",
+        "affected set",
+        "effects",
+        "expiry",
+        "alternatives"
+      ],
+      "variantDirections": [
+        "Plan diff",
+        "approval card",
+        "review checkpoint"
+      ],
+      "tradeoff": "Too many gates create habituation and rubber-stamping.",
+      "evaluation": "Can the reviewer state precisely what is and is not authorized?",
+      "alternatives": [
+        "record-detail",
+        "source-register"
+      ],
+      "demoRenderer": false
+    },
+    {
+      "id": "option-judgment",
+      "title": "Option judgment",
+      "intent": "Support choosing among credible strategies with explicit tradeoffs.",
+      "contentShape": "Mutually distinguishable alternatives with comparable criteria",
+      "selectWhen": "The person owns a value judgment that the system should not silently make.",
+      "avoidWhen": "The differences are cosmetic or one option is an obviously invalid decoy.",
+      "requiredContent": [
+        "Shared objective",
+        "distinctions",
+        "costs",
+        "unknowns",
+        "defer/reframe route"
+      ],
+      "variantDirections": [
+        "Option canvas",
+        "weighted comparison",
+        "annotated concepts"
+      ],
+      "tradeoff": "Scores may conceal value choices.",
+      "evaluation": "Can the user explain why one option fits their intent better?",
+      "alternatives": [
+        "comparison-matrix",
+        "approval-gate"
+      ],
+      "demoRenderer": false
+    }
+  ],
+  "reasoningGuidance": {
+    "scope": "Marketing and narrative content pages; apply locally within mixed experiences. Product task surfaces retain their own workflow and consistency principles.",
+    "use": [
+      "Use these as revisitable prompts, not a required sequence, questionnaire or scoring rubric. Scale the depth to the decision.",
+      "Reason from visitor progress and available means together. Missing evidence can change the story; a strong demonstration can replace several explanations.",
+      "Treat spatial footprint, visual emphasis, information density, reading effort, disclosure depth and interaction demand as independent scale decisions. A short statement can carry more narrative weight than a large table.",
+      "Choose a module for its contribution and content relationship, then evaluate it in the page sequence. Variety earns its place through comprehension, attention or decision support.",
+      "Record concise design conclusions, assumptions and tradeoffs in the brief and relevant intent/rationale fields. Do not require a transcript of private model reasoning or new reviewer form fields.",
+      "Evaluate comprehension, qualified progression and confident decisions with explicit definitions and guardrails. Clicks are one signal; prototype preference is not evidence of business impact."
+    ],
+    "page": [
+      {
+        "topic": "Purpose",
+        "prompt": "What progress should the visitor make, and what outcome should the organization achieve?"
+      },
+      {
+        "topic": "Audience context",
+        "prompt": "What brings the visitor here? What do they already understand, doubt, need or expect?"
+      },
+      {
+        "topic": "Story",
+        "prompt": "What central idea and supporting evidence could move them toward that outcome?"
+      },
+      {
+        "topic": "Expression",
+        "prompt": "How is that story best experienced: explanation, demonstration, comparison, exploration, testimony or a combination?"
+      },
+      {
+        "topic": "Decomposition",
+        "prompt": "What meaningful, digestible parts does the story need? Each part should resolve a question, establish something or enable a decision."
+      },
+      {
+        "topic": "Scope and emphasis",
+        "prompt": "How much attention, detail and space does each part deserve?"
+      },
+      {
+        "topic": "Sequence and rhythm",
+        "prompt": "What should precede what? Where should the experience accelerate, pause, deepen or change form?"
+      },
+      {
+        "topic": "Invitation",
+        "prompt": "What next action is appropriate at each point, given the visitor’s understanding, confidence and readiness?"
+      }
+    ],
+    "module": [
+      {
+        "topic": "Contribution",
+        "prompt": "What specific job does this module perform within the larger experience?"
+      },
+      {
+        "topic": "Content and evidence",
+        "prompt": "What must it communicate or demonstrate to perform that job?"
+      },
+      {
+        "topic": "Representation",
+        "prompt": "Which pattern makes that content easiest to understand, assess or act upon?"
+      },
+      {
+        "topic": "Scale",
+        "prompt": "What prominence, density, depth and interaction does its role justify?"
+      },
+      {
+        "topic": "Relationship",
+        "prompt": "How does it connect to adjacent modules without unnecessary repetition?"
+      },
+      {
+        "topic": "Resolution",
+        "prompt": "What should the visitor understand, believe or be able to do afterward?"
+      }
+    ]
+  },
+  "experienceReasoning": {
+    "purpose": "Compose relevant lenses locally. SaaS is a product context, native is a delivery environment, and dashboard is a surface; they are not exclusive project categories.",
+    "sharedPrompts": [
+      {
+        "topic": "Progress and context",
+        "prompt": "What progress does the person need to make, and under what operating conditions?"
+      },
+      {
+        "topic": "Credible support",
+        "prompt": "What can the system support, with what constraints, evidence and authority?"
+      },
+      {
+        "topic": "Responsibilities",
+        "prompt": "What information, decisions and actions connect desired progress to available means?"
+      },
+      {
+        "topic": "Structure",
+        "prompt": "How should those responsibilities become flows, surfaces and components?"
+      },
+      {
+        "topic": "Emphasis",
+        "prompt": "What deserves prominence, detail, density or progressive disclosure?"
+      },
+      {
+        "topic": "Continuity",
+        "prompt": "How will people navigate, interrupt, resume, recover and understand the result?"
+      },
+      {
+        "topic": "Evaluation",
+        "prompt": "What observations would demonstrate useful outcomes, and what guardrails prevent misleading success?"
+      }
+    ],
+    "lenses": [
+      {
+        "id": "narrative",
+        "title": "Narrative and readiness",
+        "useWhen": "A person needs to understand relevance, assess evidence and choose a next step.",
+        "organizingIdea": "Story and increasing readiness",
+        "questions": [
+          "What must be understood or trusted before progression?",
+          "Where does a change in representation advance meaning or renew attention?",
+          "What commitment is justified at this point?"
+        ],
+        "candidateMeasures": [
+          "Comprehension",
+          "Qualified progression",
+          "Expectation accuracy"
+        ],
+        "guardrails": [
+          "Poor-fit progression",
+          "Unsupported claims",
+          "Pressure without new grounds for action"
+        ],
+        "reference": "narrative-reasoning.md"
+      },
+      {
+        "id": "native-context",
+        "title": "Native context and continuity",
+        "useWhen": "Device capabilities and interruptible sessions materially shape a task, on mobile or desktop.",
+        "organizingIdea": "Contextual journeys and continuity",
+        "questions": [
+          "What should happen quickly, and what requires sustained attention?",
+          "How do permissions, input modality, offline use and device capabilities change the task?",
+          "What survives interruption, switching devices or returning later?"
+        ],
+        "candidateMeasures": [
+          "Correct task completion",
+          "Successful re-entry",
+          "Recovery effort",
+          "Permission understanding"
+        ],
+        "guardrails": [
+          "Lost work",
+          "Unexpected permission consequences",
+          "Inaccessible input paths"
+        ],
+        "reference": "profiles/mobile.md"
+      },
+      {
+        "id": "product-work",
+        "title": "Product work and SaaS lifecycle",
+        "useWhen": "People create, manage, collaborate on or administer persistent objects.",
+        "organizingIdea": "Work, objects and lifecycle",
+        "questions": [
+          "Which objects, relationships and states organize the work?",
+          "How do roles, dependencies, concurrency and repeat use affect completion?",
+          "What establishes readiness, supports orientation and separates personal preferences from workspace policy?"
+        ],
+        "candidateMeasures": [
+          "Valid completion",
+          "Repeat-use efficiency",
+          "Rework",
+          "Successful handoffs"
+        ],
+        "guardrails": [
+          "Wrong-scope changes",
+          "Permission errors",
+          "Coordination failures",
+          "Speed at the expense of quality"
+        ],
+        "reference": "profiles/product.md"
+      },
+      {
+        "id": "analysis",
+        "title": "Analysis and intervention",
+        "useWhen": "People interpret signals, investigate causes and decide whether to act.",
+        "organizingIdea": "Questions, signals and decisions",
+        "questions": [
+          "Which question or exception deserves attention?",
+          "What baseline, denominator, time range or comparison gives a signal meaning?",
+          "How can someone move from overview to evidence, investigation and action?"
+        ],
+        "candidateMeasures": [
+          "Interpretation accuracy",
+          "Detection time",
+          "Decision quality",
+          "Action follow-through"
+        ],
+        "guardrails": [
+          "False alarms",
+          "Missed signals",
+          "Stale or misleading comparisons"
+        ],
+        "reference": "profiles/dashboard.md"
+      },
+      {
+        "id": "delegation",
+        "title": "Delegation and supervision",
+        "useWhen": "Agents propose or execute work while people supply objectives, direction, choices or authority.",
+        "organizingIdea": "Delegation with inspectable boundaries",
+        "questions": [
+          "What may be delegated, under which scope, budget and stop conditions?",
+          "When should a person direct, choose, approve or intervene?",
+          "What evidence, uncertainty, changes and results make supervision meaningful?"
+        ],
+        "candidateMeasures": [
+          "Successful outcomes",
+          "Appropriate intervention",
+          "Correction effort",
+          "Authority compliance"
+        ],
+        "guardrails": [
+          "Unauthorized actions",
+          "Missed escalation",
+          "Automation surprise",
+          "Uncalibrated confidence"
+        ],
+        "reference": "profiles/agentic.md"
+      }
+    ],
+    "unitPrompts": [
+      "What responsibility does this unit fulfill within the experience?",
+      "What information, evidence and actions are required?",
+      "Which representation fits their relationship and consequences?",
+      "What prominence, density, depth and interaction does the task justify?",
+      "Which entry, working, completion, interruption and recovery states matter?",
+      "How does this unit connect to adjacent work and preserve continuity?",
+      "What observable result would indicate successful resolution?"
+    ],
+    "use": "Prompts and measures are candidates, not required fields, fixed sequences or performance claims. Record concise conclusions and consequential uncertainty."
+  }
+}

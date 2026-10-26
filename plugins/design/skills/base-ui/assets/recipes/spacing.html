@@ -1,0 +1,29 @@
+<section class="product__root card__root flow__root" data-spacing="loose" aria-labelledby="scope-title">
+  <h2 id="scope-title">Bound the investigation</h2>
+  <div class="flow__root" data-part="fields">
+    <div class="field__root" data-part="budget">
+      <label for="scope-budget">Time budget in minutes</label>
+      <input id="scope-budget" type="number" min="5" max="60" value="20" aria-describedby="scope-help">
+      <p class="field__description field__help" id="scope-help">Simulated steps consume five minutes each.</p>
+    </div>
+    <fieldset class="field-group__root" data-surface="plain" data-part="collections">
+      <legend>Allowed collections</legend>
+      <div class="options__root">
+        <label class="choice__root"><input type="checkbox" checked><span>Municipal ledger collection</span></label>
+        <label class="choice__root"><input type="checkbox" checked><span>Local press collection with a longer label that can wrap on narrow screens</span></label>
+      </div>
+    </fieldset>
+  </div>
+  <div class="field__root" data-part="direction">
+      <label for="scope-direction">Investigation direction</label>
+      <textarea id="scope-direction" aria-describedby="direction-help">Distinguish freight access from the public ceremony.</textarea>
+      <p class="field__description field__help" id="direction-help">Changing direction requires renewed approval.</p>
+  </div>
+  <footer class="flow__root">
+  <div class="stack__root" data-spacing="tight" data-part="status">
+    <progress max="100" value="25" aria-label="Simulated progress"></progress>
+    <p>Paused at 25%. This recipe demonstrates layout.</p>
+  </div>
+  <div class="cluster__root"><span>Local simulation</span><span>No external actions</span></div>
+  </footer>
+</section>

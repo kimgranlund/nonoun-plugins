@@ -1,0 +1,2200 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "SKILL.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/app.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/control-markup.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/demos/agentic-render.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/demos/agentic.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/demos/marketing-navigation.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/demos/marketing-patterns.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/demos/scenarios.css",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/demos/scenarios.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/example.manifest.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/foundation/maison/geometry.css",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/maison/layout.css",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/maison/provenance.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/ultimate-tokens/colors.css",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/ultimate-tokens/provenance.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/ultimate-tokens/source-state.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/ultimate-tokens/typography.css",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/foundation/ultimate-tokens/typography.provenance.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/arrow-left.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/arrow-up-right.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/book-open.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/books.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/buildings.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/calendar-blank.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/caret-down.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/caret-right.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/caret-up-down.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/chart-bar.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/check.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/desktop.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/file-text.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/folder.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/gear.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/house.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/list.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/moon.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/sliders-horizontal.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/squares-four.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/sun.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/user-circle.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/icons/user-plus.svg",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/intent-brief.template.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/minimal.manifest.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/model.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/phosphor-license.txt",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/prototype-runtime.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/recipes/booking-composition.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/bounded-collection-task.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/bounded-collection-task.js",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/collection-workflow.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/collection-workflow.js",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/components.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/components.js",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/content-popover.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/extended-controller.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/recipes/list-states.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/list-states.js",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/modal-autofocus.js",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/native-fallbacks.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/native-patterns.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/native-select.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/navigation-menu.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/nesting.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/notification-choice.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/notification-choice.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/recipes/page-rhythm.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/product-primitives.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/prototype-controller.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/recipes/review-card.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-center.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-choice-body.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-choice-description.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-cluster.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-content.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-eyebrow.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-field-group.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-field-label.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-flow.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-grid-auto.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-grid.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-heading-group.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-media-large.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-media.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-nav-row.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-nav.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-navigation-recipe.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-options.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-page-flow.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-product.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-prose.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-section-flow.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-section-gap.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-section.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-sidebar-body.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-sidebar-footer.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-sidebar-head.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-sidebar-identity.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-stack-gap.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-stack-loose.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-stack.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-surface-inverse.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/review-swatch.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/semantic-colors.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/semantic-colors.js",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/sidebar.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/spacing.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/title-request.html",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "assets/recipes/title-request.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/recipes/workflow-controller.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/review-runtime-adapter.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/shell.css",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/shell.html",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "assets/wireframe.css",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "evals/plan.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "evals/tasks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/artifact-contract.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/artifact-styling.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/bidirectional-reasoning.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/capabilities.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/conditions.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/demo-suite.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/examples.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/experience-lenses.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/index.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/intent-contract.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/jev-pattern-notes.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/narrative-reasoning.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/patterns/README.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/patterns/navigation.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/patterns/navigation.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/patterns/registry.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/agentic.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/content.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/dashboard.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/marketing.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/mobile.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/platform.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/design/profiles/product.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/evaluation-checks.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/feedback-workflow.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/feedback.schema.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/foundations.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/manifest.schema.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/migration/compatibility-retirement.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/migration/ownership.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/panel-content-system.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/acceptance-tools-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/adaptive-stepper-sync-2026-10-10/canonical-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/adaptive-stepper-sync-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/component-families-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/component-support-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/composition-fixes-2026-10-10/affected-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/composition-fixes-2026-10-10/context-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/composition-fixes-2026-10-10/guide-final-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/composition-fixes-2026-10-10/published-affected-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/composition-fixes-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/context-audit-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/context-consolidation-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/corpus-audit-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates/delivery-transfer-2026-10-10-2.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates/generation-delivery-publication-2026-10-10-1.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates/pointer-focus-border-fix-2026-10-10-1.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates/rapid-context-quality-2026-10-10-1.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates/stale-guidance-2026-10-10-1.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/documentation-updates/transfer-drift-remediation-2026-10-10-1.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/drift-fixes-2026-10-10/context-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/drift-fixes-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/drift-fixes-2026-10-10/state-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/corpus-graph.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/frozen-operations-lint.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/lint-controls.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/original-evaluation.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/pipeline-results.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/evaluation-remediation-2026-10-10/source-hashes.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/extended-patterns-2026-10-10.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/chromium-1280-dark.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/chromium-1280-light.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/chromium-390-dark.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/chromium-390-light.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/firefox-1280-dark.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/firefox-1280-light.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/firefox-390-dark.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/firefox-390-light.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/verification.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/webkit-1280-dark.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/webkit-1280-light.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/webkit-390-dark.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/adaptive/webkit-390-light.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/affected-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/lifecycle/results.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/focus-grouping-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/generative-stress-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/legacy-removal-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/native-first-2026-10-09.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/native-first-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/native-patterns-2026-10-09.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/native-patterns-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/operations-retrieval-2026-10-10.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/page-rhythm-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/product-foundation-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/reference-sheets-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/remaining-drift-publication-2026-10-10/affected-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/remaining-drift-publication-2026-10-10/context-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/remaining-drift-publication-2026-10-10/guide-final-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/remaining-drift-publication-2026-10-10/published-affected-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/remaining-drift-publication-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/round-2-readiness.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/spacing-relationships-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/spacing-transfer-2026-10-08.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/adaptive-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/desktop.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/lifecycle-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/mobile.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/source-hashes.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-adaptive-2026-10-10/workflow-checks.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-layout-2026-10-10/layout.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-layout-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-layout-2026-10-10/source-hashes.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-layout-2026-10-10/states.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/horizontal-center-1200.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/horizontal-center-390.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/horizontal-inline-1200.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/horizontal-inline-390.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/verification.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/vertical-center-1200.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/vertical-center-390.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/vertical-inline-1200.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/layout/vertical-inline-390.png",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/lifecycle.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/stepper-rendering-options-2026-10-10/states.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/variant-contrast-2026-10-09.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/variant-contrast-2026-10-09.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/reports/workflow-patterns-2026-10-10.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/runtime-api.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/shell-foundations.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/style/bootstrap.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/components/README.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/components/additional-specimens.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/components/authoring.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/style/components/contract.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/components/demonstrations.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/style/components/extended-patterns.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/components/specimens.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/components/workflow-patterns.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/composition.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/contract.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/discovery.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/native-first.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/navigation-menu/contract.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/product-foundation.md",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/prototype-api.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/style/prototype-runtime.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/style/select/contract.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/select/observation.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/token-index.json",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "references/style/verification.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/ui-kit-dependency.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/verification.schema.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/build-checks.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/build-core.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/build.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/preventive-checks.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/reference-sheets.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/reuse-and-measure.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "references/workflows/sheet-evidence.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/context-batch.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/context.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/corpus-graph.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/generation.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/integration.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/peer-message.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/base-ui-extraction-2026-10-11/source-parity.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/build.log",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/catalog-check.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/compatibility-inventory.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/gaps-check.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/peer-message.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/previous-sheets.zip",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "resources/reports/canonical-catalog-publication-2026-10-11/report.md",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/attach-sheet-evidence.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/authoring-starter.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/build-demo-suite.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/build-sheets.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/build.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-acceptance.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-action-contrast.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-action-label-sizing.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-action-overlay-hosts.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-additional-specimens.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-authoring-starter.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-blank-frame-regression.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-bounded-collection-task.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-breadcrumbs.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-catalog-boundary.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-catalog-text-contrast.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-choice-context-parity.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-choice-defaults.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-collection-workflow.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-color-classification.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-color-popovers.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-component-catalog.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-component-context.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-component-fallback.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-component-review-routing.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-component-static-fallback.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-components.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-composed-states.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-composition-source.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-composition-specimens.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-contained-content.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-context-coverage.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-context-reader.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-control-boundary-contrast.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-control-paint.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-corpus-graph.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-declarations.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-dedicated-extraction.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-delivery-integration.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-delivery-remediation.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-demo-suite.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-demonstration-guidance.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-experimental-boundary.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-extended-controller.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-extended-generated.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-extended-patterns.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-feedback-navigation.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-field-descriptions.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-focus-grouping.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-focus-replacement.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-forced-colors.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-gaps-delivery.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-generation-history.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-generation-pipeline.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-heading-context.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-implementation-ownership.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-index-source-chain.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-list-states.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-modal-autofocus.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-native-fallbacks.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-native-patterns.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-nesting.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-no-legacy.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-page-rhythm.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-popover-sizing.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-popup-instances.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-popup-swatch-composition.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-preventive-lint.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-product-foundation.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-proposal-count.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-remediation-states.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-review-ids.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-runtime-startup.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-save-status.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-scrolling-flow.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-segment-geometry.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-select-contract.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-semantic-colors.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-sheet-evidence.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-sheet-fallback.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-sheet-link-switch.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-sheet-work-register.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-sheets.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-shell-fallback.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-shell.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-source-submission.py",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-spacing.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-specimen-extraction.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-staged-focus.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-standalone-token-refs.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-state-applicability.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-state-motion.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-static-select.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-stepper-layout.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-stepper-options.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-style-contract.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-text-enlargement.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-token-index-cli.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/check-token-membership.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-token-refs.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-token-rhythm.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-transfer-drift.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-ui-check-routing.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-ui-kit.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-workflow-controller.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-workflow-generated.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/check-workflow-patterns.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/compile-controls.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/component-context.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/demonstration-context.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/eval-submit.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/export-type-snapshot.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/generate-icons.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/generate-token-index.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/generate.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/init-eval-round.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/acceptance.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/artifact-lint.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/color-classification.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/lib/demonstration-guidance.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/generation-history.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/preview-capture.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/scheme.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/sheet-evidence.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/sheet-inspectors.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/lib/sheets/catalog-browser.js",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/sheets/colors.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/lib/sheets/components.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/lib/sheets/index-gaps.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/sheets/tokens.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/lib/source-preservation.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/source_submission.py",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/lib/specimen-extraction.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/lint-artifact.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/observe-select.mjs",
+      "owner": "base-ui",
+      "treatment": "forwarding entry"
+    },
+    {
+      "path": "scripts/observe-token-fonts.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/read-context.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/review-component-context.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/revision-source.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/run-eval-attempt.py",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/run-ui-check.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/select-checks.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/selftest.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/static-review.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/sync-ui-kit.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/token-index.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/token-inspection.mjs",
+      "owner": "base-ui",
+      "treatment": "generated compatibility view"
+    },
+    {
+      "path": "scripts/ui-kit.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/validate.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/verify-acceptance.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/verify-artifact.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "scripts/verify-rendered.mjs",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "ui-compatibility.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    },
+    {
+      "path": "ui-kit.lock.json",
+      "owner": "wireframe-review",
+      "treatment": "review/integration source or report"
+    }
+  ]
+}

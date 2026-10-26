@@ -1,0 +1,330 @@
+{
+  "results": [
+    {
+      "name": "valid",
+      "status": "passed-with-unverified-coverage",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 0
+        }
+      ],
+      "findings": {
+        "warnings": [],
+        "unverified": [
+          {
+            "rule": "unknown-style-owner",
+            "severity": "unverified",
+            "document": "root",
+            "selector": "",
+            "detail": "11 custom geometry selectors outside recognized component checks: main.static-review, nav, #static-unit-0, #static-unit-1, #static-unit-2, #static-unit-3, #static-unit-4, #static-unit-5, #static-unit-6, summary, div. Warning counts do not measure fidelity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "mark-anatomy",
+      "status": "passed-with-unverified-coverage",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 0
+        }
+      ],
+      "findings": {
+        "warnings": [
+          {
+            "rule": "choice-mark-anatomy",
+            "severity": "warning",
+            "document": "root/iframe[0]",
+            "selector": "input",
+            "detail": "Native checkbox in a product composition lacks wf-check; read the choices family and use its exact input anatomy"
+          },
+          {
+            "rule": "choice-mark-anatomy",
+            "severity": "warning",
+            "document": "root/iframe[3]",
+            "selector": "input",
+            "detail": "Native checkbox in a product composition lacks wf-check; read the choices family and use its exact input anatomy"
+          },
+          {
+            "rule": "choice-mark-anatomy",
+            "severity": "warning",
+            "document": "root/iframe[6]",
+            "selector": "input",
+            "detail": "Native checkbox in a product composition lacks wf-check; read the choices family and use its exact input anatomy"
+          }
+        ],
+        "unverified": [
+          {
+            "rule": "unknown-style-owner",
+            "severity": "unverified",
+            "document": "root",
+            "selector": "",
+            "detail": "11 custom geometry selectors outside recognized component checks: main.static-review, nav, #static-unit-0, #static-unit-1, #static-unit-2, #static-unit-3, #static-unit-4, #static-unit-5, #static-unit-6, summary, div. Warning counts do not measure fidelity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "compiled-select",
+      "status": "passed-with-unverified-coverage",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 0
+        }
+      ],
+      "findings": {
+        "warnings": [],
+        "unverified": [
+          {
+            "rule": "unknown-style-owner",
+            "severity": "unverified",
+            "document": "root",
+            "selector": "",
+            "detail": "11 custom geometry selectors outside recognized component checks: main.static-review, nav, #static-unit-0, #static-unit-1, #static-unit-2, #static-unit-3, #static-unit-4, #static-unit-5, #static-unit-6, summary, div. Warning counts do not measure fidelity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "token-fault",
+      "status": "failed",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 1
+        }
+      ]
+    },
+    {
+      "name": "reference-fault",
+      "status": "failed",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 1
+        }
+      ]
+    },
+    {
+      "name": "warning",
+      "status": "passed-with-unverified-coverage",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 0
+        }
+      ],
+      "findings": {
+        "warnings": [
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[0]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-top: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[0]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-right: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[0]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-bottom: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[0]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-left: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[3]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-top: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[3]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-right: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[3]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-bottom: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[3]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-left: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[6]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-top: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[6]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-right: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[6]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-bottom: 7px; check the component geometry owner before overriding"
+          },
+          {
+            "rule": "owned-geometry-literal",
+            "severity": "warning",
+            "document": "root/iframe[6]",
+            "selector": "div.wf-card",
+            "detail": "inline style: padding-left: 7px; check the component geometry owner before overriding"
+          }
+        ],
+        "unverified": [
+          {
+            "rule": "unknown-style-owner",
+            "severity": "unverified",
+            "document": "root",
+            "selector": "",
+            "detail": "11 custom geometry selectors outside recognized component checks: main.static-review, nav, #static-unit-0, #static-unit-1, #static-unit-2, #static-unit-3, #static-unit-4, #static-unit-5, #static-unit-6, summary, div. Warning counts do not measure fidelity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unverified",
+      "status": "passed-with-unverified-coverage",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 0
+        }
+      ],
+      "findings": {
+        "warnings": [],
+        "unverified": [
+          {
+            "rule": "unknown-style-owner",
+            "severity": "unverified",
+            "document": "root",
+            "selector": "",
+            "detail": "11 custom geometry selectors outside recognized component checks: main.static-review, nav, #static-unit-0, #static-unit-1, #static-unit-2, #static-unit-3, #static-unit-4, #static-unit-5, #static-unit-6, summary, div. Warning counts do not measure fidelity"
+          },
+          {
+            "rule": "external-document",
+            "severity": "unverified",
+            "document": "root/iframe[0]",
+            "selector": "iframe",
+            "detail": "Non-srcdoc frame requires separate inspection"
+          },
+          {
+            "rule": "external-document",
+            "severity": "unverified",
+            "document": "root/iframe[3]",
+            "selector": "iframe",
+            "detail": "Non-srcdoc frame requires separate inspection"
+          },
+          {
+            "rule": "external-document",
+            "severity": "unverified",
+            "document": "root/iframe[6]",
+            "selector": "iframe",
+            "detail": "Non-srcdoc frame requires separate inspection"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unavailable-browser",
+      "status": "failed",
+      "stages": [
+        {
+          "name": "compile",
+          "exit": 0
+        },
+        {
+          "name": "artifact-verification",
+          "exit": 0
+        },
+        {
+          "name": "preventive-lint",
+          "exit": 1
+        }
+      ]
+    }
+  ],
+  "existingDeliveryPreserved": true,
+  "limits": "Automatic initial-document pipeline only; no application interaction certification"
+}

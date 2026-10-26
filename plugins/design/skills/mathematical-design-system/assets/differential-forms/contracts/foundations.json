@@ -1,0 +1,62 @@
+{
+  "version": "0.2.0",
+  "units": "CSS px; coefficients expressed in u",
+  "baseUnit": {
+    "default": 4,
+    "min": 3,
+    "max": 6,
+    "step": 0.5
+  },
+  "border": {
+    "default": 0,
+    "min": 0,
+    "max": "u/2",
+    "step": 0.5,
+    "color": "transparent"
+  },
+  "density": [
+    "compact",
+    "default",
+    "loose"
+  ],
+  "curvature": [
+    "sharpest",
+    "sharp",
+    "default",
+    "soft",
+    "softest"
+  ],
+  "labelEdge": {
+    "defaultUnits": 1.5,
+    "minUnits": 0,
+    "maxUnits": 3,
+    "stepUnits": 0.25
+  },
+  "compositeInset": {
+    "defaultUnits": 0,
+    "minUnits": 0,
+    "maxUnits": 1.5,
+    "stepUnits": 0.5
+  },
+  "typography": {
+    "control": "2u + 6px",
+    "controlLineHeight": "5u",
+    "chip": "2u + 4px",
+    "badge": "2u + 2px",
+    "bodyFont": "system-ui",
+    "captionFont": "IBM Plex Mono 400",
+    "captionSize": 11
+  },
+  "icons": {
+    "sm": 4,
+    "md": 5,
+    "lg": 6
+  },
+  "layoutDefaultsUnits": {
+    "buttonGroupGap": 3,
+    "inputGroupGap": 4,
+    "pageEdge": 6,
+    "sectionSpacing": 7
+  },
+  "curvatureDefault": "soft"
+}

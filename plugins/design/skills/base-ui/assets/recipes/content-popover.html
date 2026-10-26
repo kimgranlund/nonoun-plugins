@@ -1,0 +1,9 @@
+<!-- Native opening/dismissal; shared CSS owns placement, max-block-size and scrolling. -->
+<button type="button" popovertarget="source-panel" style="anchor-name:--source-trigger">View source</button>
+<section class="popover__root" id="source-panel" popover="auto" aria-labelledby="source-title" style="position-anchor:--source-trigger;inline-size:32rem;min-inline-size:0">
+    <header class="popover__header"><h2 id="source-title">Source and context</h2><button type="button" popovertarget="source-panel" popovertargetaction="hide">Close</button></header>
+  <div class="popover__body flow__root">
+    <p>Use this nonmodal panel for supporting information. Keep required task actions visible on the main page.</p>
+    <details class="disclosure__root"><summary>Implementation</summary><div class="disclosure__content disclosure__body flow__root"><p>The panel uses the shared available-space height cap; content scrolls within it.</p><pre class="card__root"><code>&lt;section class="popover__root" popover="auto"&gt;…&lt;/section&gt;</code></pre></div></details>
+  </div>
+</section>

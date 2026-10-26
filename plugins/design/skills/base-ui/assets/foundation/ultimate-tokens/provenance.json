@@ -1,0 +1,22 @@
+{
+  "sourceProject": "ultimate-tokens",
+  "exportFunction": "exportCSS",
+  "date": "2026-10-08",
+  "prefix": "md-color",
+  "state": "source-state.json",
+  "sha256": {
+    "src/engine/exports.js": "120abf7af6b61a5f45330c152b5c237d45f3f6ae22fa917ae89a6f84e0645941",
+    "src/engine/semantic.js": "2fe3ce93874c8475059937c42b0de4bd81642ef09cd92aa8db8f8fff269962f1",
+    "docs/reference/data/role-table.json": "8df441b27f45750083feb67e50aa53e57f871f2912662969ede7a47ec3b1b809"
+  },
+  "colorValueImport": {
+    "sourceProject": "ui-kit-maison",
+    "sourcePath": "/Users/kimgranlund/Projects/maison/ui-kit-maison/src/foundation/colors/colors.css",
+    "sourceSHA256": "7d9045d5a0e8ad2e493fb2fe054b3bd0ab9cfea428cc81c9cb301d8bf41af70b",
+    "date": "2026-10-11",
+    "mapping": "Exact existing --md-color-* names from --m-color-*; remap var references; preserve numeric OKLCH values with padded decimal precision.",
+    "matchedTokens": 291,
+    "excludedSourceTokens": 1248,
+    "originalStateStatus": "source-state.json and original export metadata describe the pre-import export, not regeneration of these imported values."
+  }
+}

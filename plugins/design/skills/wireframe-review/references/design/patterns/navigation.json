@@ -1,0 +1,436 @@
+{
+  "schemaVersion": "1.0",
+  "purpose": "Choose navigation by destination structure, task and context. Defaults are starting hypotheses, not platform mandates.",
+  "families": [
+    {
+      "id": "saas-dashboard",
+      "title": "SaaS and dashboard",
+      "default": "Persistent sidebar, visible workspace identity and contextual page header. Add breadcrumbs when hierarchy warrants them.",
+      "patterns": [
+        "sidebar",
+        "scope-switcher",
+        "breadcrumbs",
+        "tabs",
+        "master-detail"
+      ],
+      "alternatives": [
+        "Expanded grouped sidebar",
+        "Compact rail with local navigation",
+        "Top-level topbar with contextual sidebar"
+      ]
+    },
+    {
+      "id": "website",
+      "title": "Desktop website",
+      "default": "Brand left, readable primary routes and distinct actions.",
+      "patterns": [
+        "website-topbar",
+        "search-command",
+        "section-navigation"
+      ],
+      "alternatives": [
+        "Brand-led discovery",
+        "Minimal conversion header",
+        "Independently centered destinations",
+        "Enterprise grouped discovery"
+      ],
+      "configuration": "Choose header composition independently of destination hierarchy. See headerCompositions and headerRules. Preserve a common row center and an intentional shared content container."
+    },
+    {
+      "id": "mobile-web",
+      "title": "Mobile website",
+      "default": "Compact brand and identifiable menu trigger; include a priority action only when space and visitor readiness justify it.",
+      "patterns": [
+        "mobile-menu",
+        "section-navigation",
+        "task-actions",
+        "bottom-destinations"
+      ],
+      "alternatives": [
+        "Drawer",
+        "Full-screen navigation",
+        "Expanding header menu with a separate contextual action bar"
+      ],
+      "configuration": "Brand and menu may align left or right, or brand may center. Keep priority actions distinct from menu controls and explain any persistent bottom bar role."
+    },
+    {
+      "id": "native-mobile",
+      "title": "Native mobile app",
+      "default": "Stable bottom destinations with contextual top navigation where primary destinations justify that structure.",
+      "patterns": [
+        "bottom-destinations",
+        "back",
+        "tabs",
+        "focused-flow",
+        "task-actions"
+      ],
+      "alternatives": [
+        "Bottom destinations plus nested navigation",
+        "Top-level tabs for a shared context",
+        "Focused task stack with explicit exit"
+      ],
+      "configuration": "Treat this as a design hypothesis. Verify current target-platform conventions before implementing native controls, gestures or adaptive behavior."
+    }
+  ],
+  "principles": [
+    "Distinguish global destinations, local location and task progression.",
+    "Keep stable ordering, meaningful labels, explicit current location and clear scope.",
+    "Separate destination navigation from actions; a floating bottom action bar is not a destination bar.",
+    "Distinguish structural alternatives from alignment or placement configurations.",
+    "Preserve appropriate filters, position, drafts and return context. Define consequences when preservation is impossible.",
+    "Use responsive changes to preserve hierarchy rather than merely hide destinations.",
+    "Keep navigation predictable across equivalent tasks. Marketing variety belongs mainly in content, not arbitrary navigation changes.",
+    "Verify current primary platform guidance for real native behavior; these authored heuristics are not compliance claims."
+  ],
+  "reviewDimensions": {
+    "anatomy": "Identity, destinations, location, utilities and actions; include only what the task needs.",
+    "behavior": "Selection, expansion, dismissal, back, persistence and scroll response.",
+    "states": "Active, expanded, unavailable, overflow, notifications and pending work when relevant.",
+    "access": "Keyboard and focus behavior, accessible naming, non-hover operation and understandable current location.",
+    "adaptation": "Long labels, narrow/wide layouts, input modalities, keyboard occlusion and platform safe areas.",
+    "measurement": "Destination finding, orientation, safe switching and return success; define context and guardrails, do not invent performance gains."
+  },
+  "patterns": [
+    {
+      "id": "sidebar",
+      "level": "global",
+      "title": "Persistent sidebar",
+      "intent": "Frequent switching among related work areas",
+      "selectWhen": "Use for repeat work with a stable destination hierarchy.",
+      "default": "For product UI: sidebar head with context switcher; body with navigation search, direct links and accordion link groups with optional dividers; footer with user menu. Keep content alongside the sidebar on wide layouts.",
+      "variants": [
+        "Expanded sidebar",
+        "Compact rail with accessible labels",
+        "Expandable grouped hierarchy"
+      ],
+      "tradeoff": "Icon-only rails demand recognition; deep nesting can hide work.",
+      "adaptation": "Retain hierarchy in a narrow drawer; do not silently discard destinations.",
+      "evaluation": "Can people find a destination and identify current workspace and location?",
+      "implementationStatus": "Rendered in product demo: work-first, lifecycle and focused groupings. Search filters destinations; native disclosures operate in Inspect/Browse. Workspace switching and account operations remain bounded prototypes.",
+      "anatomy": [
+        "sidebar-head: context switcher",
+        "sidebar-body: navigation search",
+        "sidebar-body: links and accordion groups, optional dividers",
+        "sidebar-footer: user menu"
+      ]
+    },
+    {
+      "id": "website-topbar",
+      "level": "global",
+      "title": "Website topbar",
+      "intent": "Orient visitors and expose the main routes",
+      "selectWhen": "Use when the primary information architecture is compact enough to scan.",
+      "default": "Brand left, primary destinations grouped, actions visually separate.",
+      "variants": [
+        "Direct links",
+        "Grouped dropdowns",
+        "Mega menu with meaningful categories"
+      ],
+      "tradeoff": "Larger menus expose more routes but increase scanning and maintenance.",
+      "adaptation": "Collapse before links collide; preserve grouping and priority in the mobile menu.",
+      "evaluation": "Can unfamiliar visitors predict where links lead?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "mobile-menu",
+      "level": "global",
+      "title": "Mobile website menu",
+      "intent": "Expose the full site hierarchy in limited space",
+      "selectWhen": "Use when direct header links no longer fit.",
+      "default": "Identifiable menu trigger, current context, clear close and return behavior.",
+      "variants": [
+        "Side drawer",
+        "Full-screen menu",
+        "Expanding header panel"
+      ],
+      "tradeoff": "An overlay saves space but hides routes until opened.",
+      "adaptation": "Support long labels, scrolling, keyboard access and both portrait and landscape.",
+      "evaluation": "Can visitors open, explore, dismiss and resume without losing their place?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "bottom-destinations",
+      "level": "global",
+      "title": "Bottom destination bar",
+      "intent": "Switch among stable primary destinations",
+      "selectWhen": "Use for a small set of frequently visited peer destinations.",
+      "default": "Labeled destinations, explicit active location and stable order.",
+      "variants": [
+        "Persistent destinations",
+        "Destinations with nested top navigation",
+        "Adaptive sidebar on wide layouts"
+      ],
+      "tradeoff": "Persistent chrome occupies space; many destinations weaken clarity.",
+      "adaptation": "Consider safe areas and keyboard overlap; retain destination identity when adapting.",
+      "evaluation": "Can users switch and return to the expected context?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "scope-switcher",
+      "level": "global",
+      "title": "Workspace and account switcher",
+      "intent": "Establish the identity and scope of work",
+      "selectWhen": "Use when multiple accounts, organizations or workspaces are available.",
+      "default": "Show current scope and explain consequential switching effects.",
+      "variants": [
+        "Compact switcher",
+        "Searchable scope list",
+        "Dedicated organization chooser"
+      ],
+      "tradeoff": "Fast switching can cause wrong-scope actions if identity is subtle.",
+      "adaptation": "Keep current scope visible in compact layouts and allow long names.",
+      "evaluation": "Can people tell where a change will apply before acting?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "search-command",
+      "level": "global",
+      "title": "Search and command entry",
+      "intent": "Find known destinations, objects or actions",
+      "selectWhen": "Use as a shortcut alongside discoverable navigation.",
+      "default": "Distinguish destination results, objects and executable actions.",
+      "variants": [
+        "Global search",
+        "Command palette",
+        "Scoped object search"
+      ],
+      "tradeoff": "Expert speed can conceal discoverability and action consequences.",
+      "adaptation": "Provide an explicit entry point without requiring keyboard shortcuts.",
+      "evaluation": "Can people distinguish navigation from execution and recover from a mistaken query?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "breadcrumbs",
+      "level": "local",
+      "title": "Breadcrumbs",
+      "intent": "Explain hierarchical location",
+      "selectWhen": "Use when ancestry helps orientation or movement to a parent.",
+      "default": "Show meaningful ancestors and current location; do not imply browsing history.",
+      "variants": [
+        "Full ancestry",
+        "Collapsed middle ancestors",
+        "Parent-focused compact trail"
+      ],
+      "tradeoff": "Long trails consume space and may imply a hierarchy the product does not have.",
+      "adaptation": "Keep current and useful parent context when collapsing ancestors.",
+      "evaluation": "Does the trail reflect the real hierarchy and lead to expected parents?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "tabs",
+      "level": "local",
+      "title": "Peer-view tabs",
+      "intent": "Switch views within a shared context",
+      "selectWhen": "Use when views share an object or clear parent context.",
+      "default": "Clear active view, stable labels and defined persistence of work.",
+      "variants": [
+        "Inline tabs",
+        "Scrollable tab strip",
+        "Compact view select"
+      ],
+      "tradeoff": "Too many tabs obscure information architecture.",
+      "adaptation": "Expose overflow; retain selected view and keyboard access.",
+      "evaluation": "Can users predict what changes and what context remains?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "local-sidebar",
+      "level": "local",
+      "title": "Local navigation",
+      "intent": "Navigate a substantial subsection",
+      "selectWhen": "Use for documentation, settings or complex subsections.",
+      "default": "Keep subsection identity and current item clear.",
+      "variants": [
+        "Flat local list",
+        "Grouped local hierarchy",
+        "Tree for genuinely hierarchical objects"
+      ],
+      "tradeoff": "Multiple navigation columns can compete for attention.",
+      "adaptation": "Move local routes to a contextual menu while keeping global scope distinct.",
+      "evaluation": "Can people distinguish global destinations from local content?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "section-navigation",
+      "level": "local",
+      "title": "Section navigation",
+      "intent": "Move within a long document or page",
+      "selectWhen": "Use when readers benefit from direct access to meaningful sections.",
+      "default": "Human-readable anchors with an identifiable current section where useful.",
+      "variants": [
+        "Sticky table of contents",
+        "Anchor strip",
+        "Section select"
+      ],
+      "tradeoff": "Sticky chrome costs reading space; inaccurate active tracking can mislead.",
+      "adaptation": "Use a compact select or disclosure when the list dominates the viewport.",
+      "evaluation": "Can readers reach a section and retain context without headings being obscured?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "back",
+      "level": "local",
+      "title": "Back and return",
+      "intent": "Return to the expected previous context",
+      "selectWhen": "Use for nested records, flows and narrow master-detail layouts.",
+      "default": "Distinguish parent navigation, history back and cancel; preserve relevant work context.",
+      "variants": [
+        "Labeled return link",
+        "Contextual back control",
+        "Platform-native back affordance"
+      ],
+      "tradeoff": "An ambiguous back action can discard work or return somewhere unexpected.",
+      "adaptation": "Follow researched host-platform conventions when implementing actual native behavior.",
+      "evaluation": "Are filters, position and unfinished work preserved or explicitly resolved?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "master-detail",
+      "level": "local",
+      "title": "Master-detail navigation",
+      "intent": "Inspect records while retaining collection context",
+      "selectWhen": "Use for repeated scanning and opening of items.",
+      "default": "Retain selection and collection scope while showing the record.",
+      "variants": [
+        "Split list and detail",
+        "Resizable panes",
+        "Successive list and detail screens"
+      ],
+      "tradeoff": "Split panes reduce detail space and can complicate bulk selection.",
+      "adaptation": "Use successive views on narrow layouts with a reliable return path.",
+      "evaluation": "Can people inspect several records without repeatedly rebuilding context?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "stepper",
+      "level": "task",
+      "title": "Guided steps",
+      "intent": "Complete dependent stages with clear progress",
+      "selectWhen": "Use where prerequisites or consequences justify staged work.",
+      "default": "Name meaningful stages and explain revisiting, validation and saved progress.",
+      "variants": [
+        "Linear sequence",
+        "Revisitable stages",
+        "Conditional stages"
+      ],
+      "tradeoff": "A rigid flow can slow experts and conceal dependencies.",
+      "adaptation": "Keep current stage and progress understandable without squeezing all labels.",
+      "evaluation": "Can users complete, correct and resume the flow?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "previous-next",
+      "level": "task",
+      "title": "Sequential traversal",
+      "intent": "Move through ordered reading or review",
+      "selectWhen": "Use when sequence matters or people process a scoped set.",
+      "default": "Identify adjacent item or stage and preserve position in the set.",
+      "variants": [
+        "Previous and next links",
+        "Record review controls",
+        "Reading sequence"
+      ],
+      "tradeoff": "Sequential controls may obscure direct access to another item.",
+      "adaptation": "Keep target labels usable and avoid collision with persistent action controls.",
+      "evaluation": "Can people predict the next item and return without losing context?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "task-actions",
+      "level": "task",
+      "title": "Contextual task action bar",
+      "intent": "Complete or modify the current task",
+      "selectWhen": "Use for save, continue, submit or approval actions with a clear scope.",
+      "default": "Separate primary action, secondary choices and cancellation; show pending work.",
+      "variants": [
+        "Inline actions",
+        "Sticky footer",
+        "Floating contextual action bar"
+      ],
+      "tradeoff": "Persistent actions can obscure content and suggest readiness prematurely.",
+      "adaptation": "Account for virtual keyboards, safe areas and content clearance.",
+      "evaluation": "Can people understand scope, readiness and consequences before acting?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "focused-flow",
+      "level": "task",
+      "title": "Focused task navigation",
+      "intent": "Protect attention during bounded work",
+      "selectWhen": "Use when reducing unrelated navigation helps a consequential task.",
+      "default": "Retain identity, progress and explicit exit with recovery.",
+      "variants": [
+        "Dedicated task route",
+        "Full-screen task surface",
+        "Bounded modal flow"
+      ],
+      "tradeoff": "Reduced navigation may feel trapping without a clear exit.",
+      "adaptation": "Preserve draft and return semantics through interruption or viewport changes.",
+      "evaluation": "Can users finish, defer or leave safely?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    },
+    {
+      "id": "collection-traversal",
+      "level": "task",
+      "title": "Collection traversal",
+      "intent": "Explore a bounded or growing result set",
+      "selectWhen": "Use when a collection exceeds one practical view.",
+      "default": "Keep scope, loaded count and return position understandable.",
+      "variants": [
+        "Pagination",
+        "Load more",
+        "Continuous loading with explicit end and recovery"
+      ],
+      "tradeoff": "Continuous loading complicates locating items and reaching content after the list.",
+      "adaptation": "Preserve filters and position; ensure loading controls remain reachable.",
+      "evaluation": "Can people find an item, revisit it and understand the extent of results?",
+      "implementationStatus": "Authoring guidance; no dedicated interactive renderer guaranteed"
+    }
+  ],
+  "headerCompositions": [
+    {
+      "id": "brand-led",
+      "structure": "[Identity + destinations (+ search when justified)] [flexible space] [utilities + primary action]",
+      "selectWhen": "Visitors need several discoverable routes into a broad offering.",
+      "tradeoff": "A dense left cluster competes with the page and reaches its compact breakpoint earlier."
+    },
+    {
+      "id": "minimal",
+      "structure": "[Identity] [flexible space] [supporting link + primary action]",
+      "selectWhen": "A focused offer or campaign supports a small immediate decision set.",
+      "tradeoff": "Secondary routes need another discoverable access point; reducing navigation must not conceal necessary information."
+    },
+    {
+      "id": "centered",
+      "structure": "[equal flexible side track: identity] [destinations] [equal flexible side track: actions]",
+      "selectWhen": "A compact destination set benefits from a balanced independent center.",
+      "tradeoff": "Long labels or asymmetric side groups require earlier adaptation; space-between is not true centering."
+    },
+    {
+      "id": "enterprise",
+      "structure": "[Identity + categorized destination menus] [flexible space] [search/account/actions as needed]",
+      "selectWhen": "A deeper information architecture warrants meaningful categories.",
+      "tradeoff": "Disclosures add interaction and require clear category boundaries, focus behavior and dismissal."
+    }
+  ],
+  "headerRules": [
+    "Separate identity, destinations and utilities/actions into explicit regions.",
+    "Use smaller foundation gaps within groups and larger gaps between groups; align control centers on a shared row.",
+    "For true centering use equal flexible side columns, not space-between with unequal side widths.",
+    "Constrain the inner header with the same content alignment strategy as the page; its background remains full width.",
+    "Adapt before groups collide, considering real labels, localization, zoom and available width. Preserve destination hierarchy and keyboard access.",
+    "Information architecture (direct links, dropdowns, mega menu) is independent from header composition. Choose each for audience and content needs.",
+    "Do not invent search, account access or product actions to fill a reference layout. Omit unsupported responsibilities.",
+    "Distinguish configurable alignment from substantive A/B/C hypotheses. Use rationales tied to discovery, readiness and tradeoffs."
+  ],
+  "labelRules": [
+    "Prefer one familiar word; use at most three short words when needed for recognition.",
+    "Author destination labels separately from descriptive page titles; preserve route IDs and never mechanically truncate.",
+    "Keep destination vocabulary consistent across responsive and local navigation."
+  ],
+  "alignmentRules": [
+    "Navigation and section content share one content width cap and minimum gutter.",
+    "Backgrounds and section borders fill the wrapper; narrower reading measures nest inside the shared grid.",
+    "Balance identity, destinations and trailing utilities; use a relevant public CTA or signed-in user menu, and collapse before collision."
+  ]
+}

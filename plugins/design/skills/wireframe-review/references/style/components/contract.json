@@ -1,0 +1,2454 @@
+{
+  "version": 1,
+  "scope": "Base UI consumption recipes; stable recipe__slot API; no new engine primitives",
+  "stylesheet": "../../../assets/wireframe.css",
+  "recipe": "../../../assets/recipes/components.html",
+  "recipeRuntime": "../../../assets/recipes/components.js",
+  "geometry": {
+    "frame": "--g-height",
+    "mark": "--g-icon",
+    "text": "--g-text",
+    "unit": "--g-unit",
+    "markRadius": "--r-mark",
+    "contentSpacing": "Page100%, Container75%, Group50% of margin reference; Control wrapper25% of n; additional gap M/2.",
+    "pointerFloor": "Checkbox/radio/switch nominal row2n; label growth follows content. Range retains its24px pointer floor.",
+    "ownership": "Current standalone contract: references/geometry-spacing.md. Historical package/site recipes require separate migration.",
+    "framePolicy": "Current Control: S=3n; M=(q\u22122)n/4; H=S+2M. Fixed square icon/glyph wrappers; font-sized glyph. See geometry-spacing.md.",
+    "marginOwnership": "Margin includes the border: padding=margin-border. Page owns4d, Card3d, Tile surfaces2d; parent owns the gutter. Use plain field groups within existing cards.",
+    "margin": "--g-margin",
+    "gutter": "--g-gutter",
+    "tiers": {
+      "widget": "Tools, inspectors and dense panels",
+      "product": "Application screens",
+      "content": "Articles and documents",
+      "brand": "Marketing and hero regions"
+    },
+    "spacingTerminology": "Margin is outer-edge-to-content distance including border. Gutter is parent-owned sibling spacing. Native CSS margin, inset positioning and inset shadows retain their meanings.",
+    "source": "assets/geometry/scale.mjs",
+    "spacingUnit": "--g-d",
+    "authority": "../../geometry-spacing.md",
+    "specRules": {
+      "authority": "../../geometry-spacing.md",
+      "tableHeaderGlyph": {
+        "slot": "2n",
+        "mark": "2n - 2c",
+        "placement": "after label"
+      },
+      "badgeLabelPadding": "0",
+      "chipText": "n + 5",
+      "motionReference": "../../apple-smooth-motion.md",
+      "scope": "Historical recipe exceptions only; current Control/media slot geometry is in references/geometry-spacing.md."
+    },
+    "consumerIntegration": "../../../../mathematical-design-system/references/ui-kit-integration.md",
+    "radiusValidation": "Containment noise allowance 0.05 CSS px; physical radius excess allowance 0.001 CSS px. Preserve exact geometry. Group validity reports the whole scope; independently paint each layer from physicalExcess <= 0.001. Containment or sibling errors must not square feasible parent/sibling radii. Report real conflicts separately; consumer owns measurement, binding and cleanup."
+  },
+  "families": [
+    {
+      "id": "choices",
+      "classes": [
+        "checkbox__control",
+        "radio__control",
+        "choice__root",
+        "choice__card",
+        "choice__primary",
+        "choice__options"
+      ],
+      "semantics": "native checkbox/radio + associated label; fieldset/legend for group",
+      "states": [
+        "off",
+        "on",
+        "mixed checkbox",
+        "disabled",
+        "invalid",
+        "focus-visible"
+      ],
+      "geometry": "Nominal row and mark2n; compact text n+5; checkbox radius n/2; glyph2n-2c; radio dot2n-4c; c=n/4. Mark-to-label gutter d; no row density padding. Wrapped/enlarged labels may grow the row.",
+      "behavior": "Space checkbox, native radio arrow behavior; mixed via input.indeterminate; label activates input Pointer toggle/deselect retains the unchecked mark boundary when no ring is displayed; keyboard focus replaces it with the visible ring.",
+      "notFor": [
+        "Use radio buttons, not independent checkboxes, for one mutually exclusive value.",
+        "Use a switch for an immediately applied binary setting; checkbox choices can be submitted together."
+      ],
+      "implementation": {
+        "anatomy": "label.choice__root > input.checkbox__control|input.radio__control + span; title/description compositions use span.choice__body containing title and choice__description; flat collections use ul.list__root > li.list__row > label.choice__root with row-owned padding; grouped choices use fieldset/legend",
+        "native": "Native checked/disabled and radio exclusivity",
+        "javascript": "Set indeterminate and synchronize group selection; when an error clears, remove only its aria-describedby ID and retain other help IDs. Restore that ID when the error returns.",
+        "fallback": "Individual native controls remain usable; omit all-items control if its synchronization is unavailable",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#choices",
+          "scope": "native selection, disabled choices, first-line mark alignment, mixed/invalid application transitions and choice-card paint"
+        },
+        "selectionLimits": "Dispatch the attempted selection to the validating owner before normalizing or reverting it. Reject excess choices while retaining prior accepted items and expose a local associated explanation. Do not filter the attempted choice before the owner can detect the violation.",
+        "contentSlots": "Keep the two direct choice columns: native mark plus body. Put descriptions/metadata inside choice__body; omit decorative item IDs without a user task. Unavailable options retain disabled native-input anatomy rather than placing the body in the mark column.",
+        "groupMargin": "Use fieldset.field-group__root[data-surface=plain] within a card; border/margin belongs to the outer card. Preserve a separate group frame only when it conveys an intentional independent group."
+      },
+      "stateApplicability": {
+        "ownership": "Native input owns state; label/card reflects the associated input.",
+        "classes": {
+          "checkbox__control": [
+            "default",
+            "focus",
+            "disabled",
+            "checked",
+            "mixed",
+            "invalid",
+            "hover"
+          ],
+          "radio__control": [
+            "default",
+            "focus",
+            "disabled",
+            "checked",
+            "invalid",
+            "hover"
+          ],
+          "choice__root": [
+            "default",
+            "focus",
+            "disabled",
+            "checked",
+            "mixed",
+            "invalid",
+            "hover"
+          ],
+          "choice__card": [
+            "default",
+            "focus",
+            "disabled",
+            "checked",
+            "mixed",
+            "invalid",
+            "hover"
+          ],
+          "choice__primary": [
+            "default",
+            "checked",
+            "focus",
+            "disabled",
+            "hover"
+          ],
+          "choice__options": [
+            "default"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "selectionColor": {
+        "background": "--md-color-primary",
+        "foreground": "--md-color-primary-on-primary"
+      },
+      "groupGeometry": {
+        "anatomy": "fieldset.field-group__root > legend + div.options__root; use data-surface=plain inside an existing card, or bordered group with 3d margin and resolved card radius. Never leave a native browser border as the design.",
+        "choiceRadius": "Resolve adjusted r-card=3*k*n; semantic groups inside one surface need not add another border."
+      },
+      "nestedOptions": {
+        "anatomy": "div.choice__card > label.choice__root.choice__primary + div.choice__options containing separate checkbox labels. Do not nest controls inside the radio label.",
+        "ownership": "Primary radio alone owns selection paint; workspace-specific options stay within its container and retain independent state. Global options belong outside the choices.",
+        "geometry": "Container owns 1u padding; primary label has zero padding; options align to body column (icon + 1u) with 1u related gap."
+      },
+      "authoringExample": {
+        "markup": "assets/recipes/notification-choice.html",
+        "controller": "assets/recipes/notification-choice.js",
+        "placement": "Inner editor has no page/card margin; supplied host owns margin. Standalone wrapper may add page__root.",
+        "verify": "Check native association plus actual radio__control/checkbox__control styling, label/body gap and first-line alignment. Native association alone does not establish system geometry."
+      },
+      "canonicalClasses": {
+        "checkbox__control": "checkbox__control",
+        "choice__root": "choice__root",
+        "choice__card": "choice-card__root",
+        "choice__options": "choice__options",
+        "choice__primary": "choice__control",
+        "radio__control": "radio__control"
+      },
+      "interactionStateReference": "../../interaction-states.md"
+    },
+    {
+      "id": "switch",
+      "classes": [
+        "switch__root",
+        "switch__control"
+      ],
+      "semantics": "Native checkbox with switch role; switch__root label, switch__control, optional explicit switch__thumb and switch__label. Legacy empty tracks retain the pseudo-element thumb.",
+      "states": [
+        "off",
+        "on",
+        "disabled",
+        "focus-visible"
+      ],
+      "geometry": "Nominal row and track height 2n; label uses compact control text n+5. Row may grow for wrapped/enlarged labels. Clearance c, thumb2n-2c, width2*thumb+2c, round track corners.",
+      "behavior": "Space toggles; checked is authoritative; no mixed state",
+      "notFor": [
+        "Not for mixed state or mutually exclusive choices.",
+        "Do not imply immediate application when a separate submit action is required; use a checkbox."
+      ],
+      "implementation": {
+        "anatomy": "label.switch__root > input[type=checkbox][role=switch] + span.switch__control[aria-hidden=true] + span",
+        "native": "Native binary checked/disabled",
+        "javascript": "Persist or apply setting changes",
+        "fallback": "Native checked state remains operable; do not imply a saved remote setting",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#switch",
+          "scope": "native binary input, track geometry, disabled state and script-disabled operation; remote persistence excluded"
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native binary input owns state; track is decorative and never independently focusable.",
+        "classes": {
+          "switch__root": [
+            "default",
+            "focus",
+            "disabled",
+            "checked",
+            "hover"
+          ],
+          "switch__control": [
+            "default",
+            "focus",
+            "disabled",
+            "checked",
+            "hover"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "selectionColor": {
+        "background": "--md-color-primary",
+        "foreground": "--md-color-primary-on-primary"
+      },
+      "motion": {
+        "duration": "800.0ms",
+        "easing": "Apple Smooth sampled spring; see references/apple-smooth-motion.md",
+        "properties": [
+          "margin-inline-start",
+          "background-color"
+        ],
+        "reducedMotion": "none"
+      },
+      "trackRadius": "Control radius including presentation factors, not mark radius; retained on the smaller track and inherited by the thumb.",
+      "canonicalClasses": {
+        "switch__root": "switch__root",
+        "switch__control": "switch__control"
+      },
+      "interactionStateReference": "../../interaction-states.md"
+    },
+    {
+      "id": "range",
+      "classes": [
+        "range__root"
+      ],
+      "semantics": "native input range with label, min/max/step and output; numeric alternative for precise entry",
+      "states": [
+        "value",
+        "disabled",
+        "focus-visible"
+      ],
+      "geometry": "frame=max(height,24px); thumb=icon; rail=margin/2; thumb centered on rail",
+      "behavior": "Arrow keys step; Home/End endpoints; input/output must agree; numeric alternative uses same validation",
+      "notFor": [
+        "Not for categories or an unknown/unbounded range.",
+        "Do not make a slider the only route to an exact value; offer validated numeric entry."
+      ],
+      "implementation": {
+        "anatomy": "input.range__root[type=range] with label and min/max/step; labelled numeric alternative and output",
+        "native": "Native range and numeric keyboard entry",
+        "javascript": "Synchronize values/output and validate shared value",
+        "fallback": "Expose a single native input or a normal submitted numeric field; do not display an unsynchronized live value",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#range",
+          "scope": "native range input, local range/number synchronization and static fallback; physical touch and every invalid application policy excluded"
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native range owns value and keyboard input; value endpoints are tested separately.",
+        "classes": {
+          "range__root": [
+            "default",
+            "focus",
+            "disabled"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "selectionColor": {
+        "background": "--md-color-primary",
+        "foreground": "--md-color-primary-on-primary"
+      },
+      "progress": "Firefox uses native range progress; WebKit/Chromium use --ui-range-progress percentage. Initialize and update from (value-min)/(max-min), clamp 0..100, and repaint after programmatic value changes. CSS cannot observe live value changes alone.",
+      "canonicalClasses": {
+        "range__root": "range__root"
+      }
+    },
+    {
+      "id": "fields",
+      "classes": [
+        "field__root",
+        "field__help",
+        "field__error",
+        "input-group__root",
+        "record-picker__root"
+      ],
+      "semantics": "label/control/help or error via describedby",
+      "states": [
+        "empty",
+        "value",
+        "invalid",
+        "disabled",
+        "readonly",
+        "focus-visible"
+      ],
+      "geometry": "Control height H=2n+2d, text n+6, icon2n, margin d including border; field-label type n+5, gutter d/2. Wrapping/enlarged text may grow.",
+      "behavior": "Invalid includes visible text and programmatic state; readonly differs from disabled",
+      "notFor": [
+        "Not for navigation or actions; use links or buttons.",
+        "Do not use placeholder text as the only label or color as the only validation message."
+      ],
+      "implementation": {
+        "anatomy": "div.field__root > label[for] + native control + described help/error; optional input-group__root inside field",
+        "native": "Native editing, required, readonly and disabled",
+        "javascript": "Application validation, error summary and persistence",
+        "fallback": "Native form submission/constraint validation when an actual form endpoint exists; otherwise clearly local editing",
+        "statePaint": "input-group__root owns invalid dashed border and focus outline; disabled group dims once including prefix; readonly remains readable and focusable. Native input owns state attributes and editing semantics.",
+        "descriptions": "Persistent help remains associated across editing states. Visible errors add their ID to aria-describedby; correction/restore removes the error ID while retaining help. Application validation owns these transitions; hidden inactive errors are not current descriptions.",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#fields",
+          "scope": "editing, readonly/disabled, invalid boundary ownership and persistent/conditional descriptions; announcement behavior excluded"
+        },
+        "labelText": "Keep label text and optional required mark in one inline text run; when using separate markup for the mark, wrap both in one span so the label layout does not split them into rows.",
+        "conditionalErrors": "Use one declared input-to-error ID mapping for rendering, describedby and focus. Verify a conditional field error resolves to a visible nonempty element; hiding its requirement clears only that error and retains typed draft values.",
+        "reservationRecipe": {
+          "markup": "assets/recipes/reservation.html",
+          "controller": "assets/recipes/reservation.js",
+          "definition": "reservationDefinition",
+          "scope": "Local selection cap, conditional note, native email validity and save/restore. Consumer mounts definition explicitly; no review registration supplied."
+        },
+        "requiredMarkers": {
+          "anatomy": "label > span containing label text and an optional aria-hidden marker, with input as sibling in field__root",
+          "css": "Separate field__root labels are inline text runs (display:block); labels wrapping native controls retain their layout. Native required supplies semantics; punctuation is decorative.",
+          "verify": "Marker shares the final label text baseline at narrow width and enlarged text; marker does not occupy a standalone vertical row."
+        },
+        "composedInput": {
+          "anatomy": "input-group__root > optional input-group__leading + input-group__body (optional input-group__prefix, native input, optional input-group__suffix) + optional input-group__trailing",
+          "alignment": "Body data-align=start|end (logical) or left|right (physical).",
+          "geometry": "Shared H, type and radius. Frame owns border-inclusive d edge; body adds d/2 inline padding, yielding 1.5d text edges like buttons. Parent gap is zero; body padding supplies media-to-text spacing once. Adjacent media/actions use gutter d; body affixes d/2. Input has no second frame or inline padding.",
+          "stepper": "Trailing type=button data-input-step=down|up controls. Explicitly call bindInputSteppers(root); call returned cleanup before rebinding. Native min/max/step and keyboard behavior remain authoritative. Emits bubbling input/change. Actions hide for readonly/disabled; step=any disables discrete stepping. Programmatic value writes must dispatch input/change.",
+          "semantics": "Label names native input. Decorative affixes require equivalent meaning in label/help. Invalid state requires aria-invalid and associated visible explanation."
+        },
+        "placeholder": "Use native placeholder for format examples, never as a label. Shared --ui-placeholder uses 55% of the inherited field text color mixed with transparent; opacity 1 avoids stacked dimming and adapts to the local palette. Inherit field font family/size/tracking/alignment; regular upright text. Prefix and suffix remain separate, real value excludes placeholder text."
+      },
+      "stateApplicability": {
+        "ownership": "Native control owns editing state; field/help/error/group reflect the control and error association.",
+        "classes": {
+          "field__root": [
+            "default",
+            "focus",
+            "disabled",
+            "invalid",
+            "readonly",
+            "empty"
+          ],
+          "field__help": [
+            "default",
+            "focus",
+            "disabled",
+            "invalid",
+            "readonly",
+            "empty"
+          ],
+          "field__error": [
+            "default",
+            "focus",
+            "disabled",
+            "invalid",
+            "readonly",
+            "empty"
+          ],
+          "input-group__root": [
+            "default",
+            "focus",
+            "disabled",
+            "invalid",
+            "readonly",
+            "empty"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "semanticPalettes": {
+        "contract": "references/semantic-palettes.json",
+        "recipe": "assets/recipes/semantic-palettes.html",
+        "intents": [
+          "material",
+          "primary",
+          "info",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "components": [
+          {
+            "class": "field__root",
+            "appearances": [
+              "soft"
+            ],
+            "defaultAppearance": "soft"
+          }
+        ],
+        "constraints": [
+          "Apply intent to the supported component itself; intent on arbitrary ancestor containers is unsupported.",
+          "Do not combine secondary class with explicit intent; use data-appearance.",
+          "Not inherited by nested components. Labels/status text communicate meaning without color.",
+          "Field intent paints helper/error text and input border; does not set aria-invalid or supply validation.",
+          "Outline and ghost use an opaque paired soft surface to guarantee a known backdrop.",
+          "Disabled buttons retain paired paint with full opacity and a dashed border; disabled semantics are native.",
+          "Forced-colors uses system colors; palette fidelity is not forced.",
+          "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
+        ],
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "colorGroupPolicy": {
+          "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
+          "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
+          "pairing": "This export uses Base 950 on solid Primes in both schemes. White on prime fails normal text contrast. State progression is explicitly mapped and tested, not inferred from sample names.",
+          "scope": "Applies to opt-in semantic components. Existing legacy md-color roles and unannotated selection controls are unchanged."
+        }
+      },
+      "allocationPattern": {
+        "family": "allocation",
+        "guide": "references/review-patterns.md"
+      },
+      "fieldActionComposition": {
+        "anatomy": "div.field-action__root > div.field__root (label + input/select wrapper) + button.button__root",
+        "use": "One labelled field and its related command, aligned to control bottoms. Wrap command below when needed. Keep help after group and independent commands in their own actions__root.",
+        "recipe": "../../../assets/recipes/field-action.html",
+        "verification": "FIELD_ACTION_ANATOMY and FIELD_ACTION_ALIGNMENT; inspect both sides of wrapping thresholds."
+      },
+      "compactRecordChoice": {
+        "contract": "../select/contract.json",
+        "recipe": "../../../assets/recipes/compact-options.js",
+        "principles": [
+          "simple",
+          "clear",
+          "balanced"
+        ],
+        "use": "Optional class on field__root; concise distinct options, stable values, wrapping full record detail. Not a universal field width."
+      },
+      "canonicalClasses": {
+        "field__root": "field__root",
+        "field__error": "field__errorText",
+        "field__help": "field__description",
+        "input-group__root": "input-group__root",
+        "record-picker__root": "record-picker__root"
+      },
+      "interactionStateReference": "../../interaction-states.md",
+      "textareaComposition": {
+        "anatomy": "Header(context) \u2192 body(editor) \u2192 footer(leading tools, trailing actions)",
+        "margin": "Editor inline text inset 1.5d including border, block inset d including border. Native textarea and text-editor__root share the rule; composition container retains d.",
+        "regionGutter": "d",
+        "type": "n+6 editor; n+5 tools",
+        "behavior": "Preserve draft across input modes. State local preview, attachment and service boundaries explicitly."
+      },
+      "compositionReview": {
+        "recipe": "assets/recipes/task-composition.html",
+        "contract": "references/task-composition.md",
+        "rule": "Inspect initial, expanded and completed states for boundary ownership, readable overflow cues, helper width, baseline/text rails and next-action emphasis."
+      }
+    },
+    {
+      "id": "actions",
+      "classes": [
+        "button__root",
+        "actions__root",
+        "button-group__root",
+        "action-status__root"
+      ],
+      "semantics": "native button type=button unless deliberate submit",
+      "states": [
+        "rest",
+        "hover",
+        "active",
+        "focus-visible",
+        "disabled",
+        "busy"
+      ],
+      "geometry": "Current Control anatomy: 3n square icon/glyph wrappers, icon2n, glyph n+6, label3n high; W=n\u00d7Control ratio; E=M/2; label edge padding: base B=max(0,H/2\u2212m\u2212W); label-only adds B/2 per edge, one exposed edge adds B, occupied edges add none; independent of actual radius; required API input height=H. No empty slots. Excess wrapper budgets report conflicts without changing art or frame. See references/geometry-spacing.md. Media: 3n square, artwork3n, no internal padding; E gap remains. Media presence suppresses label edge padding on its side.",
+      "behavior": "Accessible name for icon-only; busy requires actual behavior and status, not decorative spinner",
+      "notFor": [
+        "Not for a destination URL; use an anchor.",
+        "Do not use a busy appearance without corresponding work and status."
+      ],
+      "implementation": {
+        "anatomy": "button[type] with accessible name; actions__root groups peer actions; use button__root secondary for a secondary action and button__root with data-appearance=ghost for a ghost action, not invented button-secondary__root aliases",
+        "ghostExample": "<button type=\"button\" class=\"button__root\" data-appearance=\"ghost\">Compare</button>",
+        "native": "Native activation, form submit/reset where deliberately used",
+        "javascript": "Actual operation, busy lifecycle and status",
+        "fallback": "Use genuine links/forms for no-script routes; hide or disable unavailable JS-only actions with an explanation",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#actions",
+          "scope": "group geometry, native activation/focus, disabled and actual local busy lifecycle; arbitrary operation safety excluded"
+        },
+        "neutralGhost": {
+          "attribute": "data-appearance=\"ghost\"",
+          "unsupportedClass": "ghost",
+          "rule": "Neutral ghost appearance uses the data attribute. A ghost class alone is not implemented and silently retains primary paint."
+        },
+        "labelLayout": {
+          "alignment": "Label/value/text slots flex to fill remaining space. Leading only: logical end; trailing only: logical start; label only or both sides: center. Media-only pair: space-between. Media positions follow reading order; RTL mirrors start/end.",
+          "overflow": "Default nowrap/ellipsis, min-inline-size 0; preserve full DOM accessible label. Optional text-run inherits alignment. Bare text buttons center and ellipsize. data-wrap opts into multiline; data-single-line fixed frame takes precedence.",
+          "owner": "assets/wireframe.css; current contract references/geometry-spacing.md"
+        },
+        "outerClipping": "Painted buttons own an outer content-clipping boundary matching their resolved radius. Clip descendant slots at that boundary, including intrinsic logos; keep slot dimensions, label edge padding and artwork-authored styles unchanged. This is separate from optional media-wrapper shape inheritance. Keep focus rings on the button and required-geometry conflict diagnostics in an external, unclipped layer.",
+        "mediaSlot": {
+          "anatomy": "span[data-slot=media] > img or svg; optional data-media=avatar for cover/circular mask; logo uses contain",
+          "semantics": "Use alt=\"\" or aria-hidden when redundant with label; meaningful standalone media requires an accessible name. No empty placeholder slots.",
+          "geometry": "--g-media = 3n; zero internal padding; fixed square. Arbitrary asset transparency is not wrapper padding.",
+          "shape": "Default avatar circle / logo intrinsic. Opt in with data-media-shape=control, resolveMediaRadius from assets/geometry/control.mjs and --media-required-radius. Immediate parent required radius; actual measured cap; Sharp exempt; report conflicts without clamping."
+        }
+      },
+      "colorStates": {
+        "primary": "Paired action/on-action at rest; atomic foreground/background reversal on hover. Current filled buttons have no inset stroke at rest or active. Focus retains its shared ring.",
+        "secondary": "Surface/ink at rest; action/on-action on hover and active. Current outline stroke uses --ui-control-border (default --ui-border; intent outlines --ui-intent-border), independent of text and layout geometry.",
+        "ghost": "Transparent rest; action/on-action on hover and active; border remains transparent.",
+        "verification": "Measure actual background and foreground together in both schemes at rest, focus, hover and active. Disabled hover does not change its pair. Custom surfaces and authored overrides require their own contrast check."
+      },
+      "stateApplicability": {
+        "ownership": "Button owns interaction state; action/group containers arrange buttons and have no independent activation.",
+        "classes": {
+          "button__root": [
+            "default",
+            "hover",
+            "focus",
+            "active",
+            "disabled",
+            "busy"
+          ],
+          "actions__root": [
+            "default",
+            "hover",
+            "focus",
+            "active",
+            "disabled",
+            "busy"
+          ],
+          "button-group__root": [
+            "default",
+            "hover",
+            "focus",
+            "active",
+            "disabled",
+            "busy"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "composition": "Within one task action group, emphasize the primary commit; use existing secondary/ghost appearances for reset and help. Expose one authoritative current save status near the group; draft edits replace prior success messaging without erasing the last saved snapshot. Apply draft invalidation to every save-success output, including optional notification banners. Notification preference is independent; a save confirmation is revision-bound. Retained historical receipts must identify the last saved revision.",
+      "commandRouting": {
+        "runtime": "onAction(actionName, handler) from component-context.mjs --runtime",
+        "hook": "button[type=button][data-action]; payload attributes stay on button; view cache uses separate attributes",
+        "recipe": "../../../assets/recipes/action-routing.html",
+        "controller": "../../../assets/recipes/action-routing.js",
+        "ownership": "Native button activation; runtime scopes action routing to nearest native button. A state attribute on a container is not an action."
+      },
+      "semanticPalettes": {
+        "contract": "references/semantic-palettes.json",
+        "recipe": "assets/recipes/semantic-palettes.html",
+        "intents": [
+          "material",
+          "primary",
+          "info",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "components": [
+          {
+            "class": "button__root",
+            "appearances": [
+              "solid",
+              "soft",
+              "outline",
+              "ghost"
+            ],
+            "defaultAppearance": "solid"
+          }
+        ],
+        "constraints": [
+          "Apply intent to the supported component itself; intent on arbitrary ancestor containers is unsupported.",
+          "Do not combine secondary class with explicit intent; use data-appearance.",
+          "Not inherited by nested components. Labels/status text communicate meaning without color.",
+          "Field intent paints helper/error text and input border; does not set aria-invalid or supply validation.",
+          "Outline and ghost use an opaque paired soft surface to guarantee a known backdrop.",
+          "Disabled buttons retain paired paint with full opacity and a dashed border; disabled semantics are native.",
+          "Forced-colors uses system colors; palette fidelity is not forced.",
+          "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
+        ],
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "colorGroupPolicy": {
+          "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
+          "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
+          "pairing": "This export uses Base 950 on solid Primes in both schemes. White on prime fails normal text contrast. State progression is explicitly mapped and tested, not inferred from sample names.",
+          "scope": "Applies to opt-in semantic components. Existing legacy md-color roles and unannotated selection controls are unchanged."
+        }
+      },
+      "fieldActionComposition": {
+        "anatomy": "div.field-action__root > div.field__root (label + input/select wrapper) + button.button__root",
+        "use": "One labelled field and its related command, aligned to control bottoms. Wrap command below when needed. Keep help after group and independent commands in their own actions__root.",
+        "recipe": "../../../assets/recipes/field-action.html",
+        "verification": "FIELD_ACTION_ANATOMY and FIELD_ACTION_ALIGNMENT; inspect both sides of wrapping thresholds."
+      },
+      "controlRail": {
+        "anatomy": "div.flow__root.control-rail__root > div.actions__root (secondary buttons) + details.disclosure__root",
+        "use": "Opt-in related secondary commands and disclosure share outer and text rails. Boxed controls use2u inline margin. Within narrow reading-flow__root both flatten inline borders/margins together; preserve block borders, focus and target size. Do not use for primary commits or unrelated adjacent components.",
+        "recipe": "../../../assets/recipes/control-rail.html",
+        "verification": "Measure actual text range starts and outer edges in closed/open and narrow/wide states, not padding equality alone."
+      },
+      "renderRestoration": {
+        "when": "Custom render replaces descendants whose focus or disclosure-open state should persist",
+        "runtime": "findUIElementById(root,id); retrieve component-context.mjs --runtime",
+        "recipe": "assets/recipes/render-restoration.js",
+        "ownership": "Consumer chooses persistent state and completion destination. Stable IDs are data, not selectors. Explicit navigation focus takes precedence.",
+        "removedTrigger": "restoreUIRestoration(root,snapshot,{fallbackFocusId}) restores a declared programmatically focusable status/heading if the old target is removed, hidden or disabled. No prior focus inside root means no focus steal. Return focus is restored/fallback/not-requested/unresolved; test document.activeElement after confirmation removes its trigger."
+      },
+      "canvasComposition": {
+        "guide": "references/canvas-overlays.md",
+        "recipe": "assets/recipes/canvas-overlays.html",
+        "helper": "assets/recipes/canvas-overlays.js",
+        "controller": "assets/recipes/canvas-overlays-demo.js",
+        "verification": "scripts/check-canvas-overlays.mjs",
+        "scope": "Optional nonmodal canvas overlays; selection preserves camera/layout, explicit fit accounts for overlays. Signals/problems/verified outcomes retain distinct supported meanings. Not native dialog replacement.",
+        "layout": "createCanvasOverlayLayout(root,host,{inspector,controls,player}): measured inspector exclusivity, control restoration and playback-space reservation; actual action reachability checks required",
+        "geometry": {
+          "guide": "references/canvas-overlays.md#mathematical-geometry-contract",
+          "tier": "widget",
+          "surface": "widget",
+          "margin": "2n including border",
+          "padding": "2n minus border",
+          "radius": "k\u00b72n via --r-widget, shared corner policy applied once",
+          "gutter": "n, immediate parent owned",
+          "inspector": "single header/body text rail"
+        }
+      },
+      "canonicalClasses": {
+        "actions__root": "actions__root",
+        "button__root": "button__root",
+        "button-group__root": "button-group__root"
+      },
+      "nestedControlLadder": {
+        "selector": ".button__root[data-control-ladder]",
+        "geometry": "Button \u2192 Chip \u2192 Badge uses H = 2n + k\u00b7d with k = 2, 1, 0. Apply data-control-ladder to the Button and Chip parents: each owns d/2 border-inclusive clearance per nesting edge (CSS padding d/2 \u2212 B), instead of adding full standalone padding again. At n=8, Regular/Compact/Tight heights are 32/24/16, 28/22/16 and 24/20/16. These are nominal minima; enlarged or wrapped content may grow frames. Use static elements for the containment specimen, never nested interactive buttons. Curvature remains Independent.",
+        "status": "Legacy compatibility only; not current Control anatomy."
+      },
+      "interactionStateReference": "../../interaction-states.md",
+      "compositionReview": {
+        "recipe": "assets/recipes/task-composition.html",
+        "contract": "references/task-composition.md",
+        "rule": "Inspect initial, expanded and completed states for boundary ownership, readable overflow cues, helper width, baseline/text rails and next-action emphasis."
+      }
+    },
+    {
+      "id": "navigation",
+      "classes": [
+        "tabs__list",
+        "segments__root",
+        "nav__item",
+        "breadcrumbs__root"
+      ],
+      "semantics": "tabs for panels; pressed buttons for independent mode selection; links for destinations",
+      "states": [
+        "selected/current",
+        "focus-visible",
+        "disabled"
+      ],
+      "geometry": "Segments fill available inline space; direct buttons share equal widths and stretch to the tallest label. Labels wrap within their segment; tabs retain their scrolling layout.",
+      "behavior": "Tabs require roving tabindex and arrows/Home/End; panels hidden; pressed mode changes its actual target Disabled tabs are excluded from roving focus and activation; Home/End target the first/last enabled tab.",
+      "breadcrumbLayout": "Baseline-aligned wrapping ordered list; direct li margins reset; parent gap uses local gutter. Long labels may wrap without horizontal overflow.",
+      "notFor": [
+        "Do not style radio inputs as tabs unless they actually select a form value; tabs need panel and keyboard behavior.",
+        "Breadcrumbs represent location hierarchy, not a sequential task stepper."
+      ],
+      "breadcrumbAnatomy": {
+        "host": "ol.breadcrumbs__root",
+        "parent": "nav[aria-label]",
+        "children": "direct li; ancestors are anchors; current item has aria-current=page",
+        "example": "<nav aria-label=\"Breadcrumb\"><ol class=\"breadcrumbs__root\"><li><a href=\"/\">Home</a></li><li aria-current=\"page\">Current</li></ol></nav>",
+        "invalid": "nav.breadcrumbs__root wrapping an unstyled ol"
+      },
+      "implementation": {
+        "anatomy": "nav > ol.breadcrumbs__root > li for hierarchy; tablist > buttons with matching labelled panels for tabs",
+        "native": "Links navigate; native radio groups select values",
+        "javascript": "Tabs need roving focus, arrows/Home/End and panel state; modes change their target",
+        "fallback": "Without a tab controller, expose labelled sections and ordinary anchor navigation instead of inert tab roles",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#navigation",
+          "scope": "current link/breadcrumb geometry, tab roving focus and disabled skipping, segmented paint and static section fallback"
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Navigation subpattern determines native ownership; no generic disabled-link behavior.",
+        "classes": {
+          "tabs__list": [
+            "default",
+            "focus",
+            "disabled",
+            "selected",
+            "hover"
+          ],
+          "segments__root": [
+            "default",
+            "focus",
+            "disabled",
+            "selected",
+            "hover"
+          ],
+          "nav__item": [
+            "default",
+            "focus",
+            "selected",
+            "hover"
+          ],
+          "breadcrumbs__root": [
+            "default",
+            "focus",
+            "selected",
+            "hover"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "containedRadius": {
+        "outer": "Independent control radius; explicit profile consumers resolve using group height and margin d/2 plus container margin.",
+        "margin": "Container margin d/2; data-compact removes it (0). Border is inset paint.",
+        "inner": "Inset: max(0, group radius - container margin); inherit corner shape.",
+        "scope": "Segmented options are an explicit inset pattern, alongside listbox options."
+      },
+      "filterAnatomy": {
+        "host": "div.segments__root[role=group][aria-label]",
+        "children": "direct button[type=button][aria-pressed]; one true for exclusive filtering",
+        "example": "<div class=\"segments__root\" role=\"group\" aria-label=\"Claim filter\"><button type=\"button\" aria-pressed=\"true\">All</button><button type=\"button\" aria-pressed=\"false\">Supported</button></div>",
+        "behavior": "Update every aria-pressed value and actual target together via onAction. Bind the optional maintained indicator helper for two moving backgrounds; static CSS still paints selection without it. Native Tab/Enter/Space; no listbox or tab roles for mode selection."
+      },
+      "segmentedGeometry": {
+        "marginBudget": "Container margin d/2; data-compact sets only this margin to 0. Gap d/4. Options use Hc=2n+d, half-margin padding and compact text n+5; wrapped text grows all options.",
+        "radius": "Parent independent, options inset by actual container margin. Compact keeps option dimensions and gutter.",
+        "indicators": "bindSegmentIndicators from assets/recipes/segment-indicators.js measures separate selected and hover pseudo-element backgrounds. Selected shape paints above hover; labels paint above both. Idle hover is transparent at selected bounds; fresh hover seeds there before moving/fading to its target. Leave fades and returns to selected bounds. Selection changes semantics immediately; hover never selects. Consumer owns aria-pressed and target update.",
+        "motion": "Transform/size/opacity only; shared duration/easing. Reduced motion and forced colors disable transitions. Dispatch segmentgeometrychange after external radius changes; resize and selected-attribute changes refresh automatically.",
+        "verification": "Check independent hover/selection, keyboard activation, disabled options, resize, profile changes and reduced motion; compare compact/standard option dimensions.",
+        "indicatorInset": "Selected and hover segment backgrounds share the same border protection. Compact (zero container margin) insets both by B per edge: position +B, dimensions \u22122B, radius max(0, option radius\u2212B). With standard container margins, both use the full option bounds and radius. Per-edge paint inset is max(0, option border width \u2212 container padding), so existing margins are not charged twice. Transparent hover starts at the protected selected bounds. This changes paint only, not layout or hit targets."
+      },
+      "canonicalClasses": {
+        "breadcrumbs__root": "breadcrumbs__root",
+        "nav__item": "navigation__item",
+        "segments__root": "segments__root",
+        "tabs__list": "tabs__root"
+      },
+      "interactionStateReference": "../../interaction-states.md",
+      "taskColumns": {
+        "class": "task-columns__root",
+        "anatomy": "two direct children: chooser then detail",
+        "geometry": "Flex wrap from local font-relative bases18em and32em, gap3d; preserves DOM order and wraps sooner when text grows. No viewport-only fixed sidebar.",
+        "contract": "references/task-composition.md"
+      }
+    },
+    {
+      "id": "collections",
+      "classes": [
+        "table__root",
+        "table__viewport",
+        "list__root",
+        "list__row",
+        "list__body",
+        "record-choice__root",
+        "table__hint",
+        "collection-window__root"
+      ],
+      "semantics": "native table/caption/th scope; lists for non-tabular content",
+      "states": [
+        "empty",
+        "selected",
+        "sorted",
+        "filtered"
+      ],
+      "geometry": "Control rows: S=3n; m=(q\u22122)n/4; minH=S+2m. Center minimum S slots; multiline grows. Inline cell P=m+W; block m; column gutter E=m/2. Collapsed tables reserve E/2 on internal facing cell edges, data-list grids use gap E. One row-only --ui-data-divider, no cell borders/shadows.",
+      "behavior": "Sort button updates order and aria-sort; visible filtering and all-visible selection agree; retain hidden selection when specified Empty filtered results show a recovery hint, disable all-visible selection, and retain prior row selection when the filter is cleared.",
+      "notFor": [
+        "Do not use tables for page layout or unrelated cards.",
+        "Do not expose grid roles for a static table without implementing grid keyboard interaction."
+      ],
+      "implementation": {
+        "anatomy": "table.table__root with caption, scoped headers and body inside table__viewport; non-tabular ul.list__root > li.list__row with list__body, either a direct content body or a choice__body inside an associated label.choice__root",
+        "native": "Native table/list reading order",
+        "javascript": "Sorting, filtering, selection coordination and aria-sort",
+        "fallback": "Static data stays readable; omit unavailable sorting/filter controls",
+        "listStates": "Native checkboxes own list selection; application filtering hides rows without clearing checks, and sorting moves existing rows. Announce order through a status region, not aria-sort on list items. Empty collections render no row/body content and show recovery guidance. See list-states recipe.",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#collections",
+          "scope": "static table/list semantics, filtering/sorting, retained selection, empty recovery and inherited row geometry"
+        },
+        "taskAccess": {
+          "contract": "references/review/measurements.md",
+          "recipe": "assets/recipes/task-navigation.js",
+          "verification": "scripts/lib/audit-task-access.mjs",
+          "rule": "Choose the next meaningful task and justify mobile access distance. Use bounded collections or explicit focus navigation when long content precedes it; preserve all content and keyboard access."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Collection controller owns data state; wrapper/row/body reflect data and native table/list semantics.",
+        "classes": {
+          "table__root": [
+            "default",
+            "empty",
+            "selected",
+            "sorted",
+            "filtered"
+          ],
+          "table__viewport": [
+            "default",
+            "empty",
+            "selected",
+            "sorted",
+            "filtered"
+          ],
+          "list__root": [
+            "default",
+            "empty",
+            "selected",
+            "sorted",
+            "filtered"
+          ],
+          "list__row": [
+            "default",
+            "empty",
+            "selected",
+            "sorted",
+            "filtered"
+          ],
+          "list__body": [
+            "default",
+            "empty",
+            "selected",
+            "sorted",
+            "filtered"
+          ],
+          "record-choice__root": [
+            "default",
+            "focus",
+            "selected"
+          ],
+          "table__hint": [
+            "default"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "selectionColumn": {
+        "anatomy": "th[scope=col][data-selection] contains the select-visible checkbox with accessible name; row td[data-selection] cells contain individually named checkboxes",
+        "geometry": "Column hugs the checkbox target plus inherited cell gutters; does not share surplus table width",
+        "behavior": "Header selects visible rows, reflects mixed selection, and disables when no rows are visible"
+      },
+      "recordSelection": {
+        "anatomy": "Named group of button.record-choice__root[type=button][aria-pressed] before adjacent detail; one pressed record for exclusive selection.",
+        "behavior": "Activation updates pressed state and detail together. Ordinary Tab/Enter/Space; not a listbox or multi-row checkbox selection.",
+        "paint": "Selected media-base/ink and label border; metadata keeps normal weight and no underline. After blur selection remains visible in both schemes. Visible focus outline replaces the border; pointer focus without an outline retains state border paint.",
+        "geometry": "Card options: 2u margin, 1u title/metadata gap, card radius. Direct td/th or inline records: control minimum height/radius, 0.5u block/1.5u inline margins, centered content. Wrapping grows height; no extra text-slot margin. Table sort-header styling applies only to column headers with aria-sort and excludes record choices; row headers retain these gutters.",
+        "commandRouting": {
+          "runtime": "onAction(actionName, handler) from component-context.mjs --runtime",
+          "hook": "button[type=button][data-action]; payload attributes stay on button; view cache uses separate attributes",
+          "recipe": "../../../assets/recipes/action-routing.html",
+          "controller": "../../../assets/recipes/action-routing.js",
+          "ownership": "Native button activation; runtime scopes action routing to nearest native button. A state attribute on a container is not an action."
+        }
+      },
+      "scrollAffordance": {
+        "anatomy": "Visible table__hint associated through aria-describedby with a named tabindex=0 table__viewport region; native table/caption/scoped headers remain inside.",
+        "behavior": "Hint explains horizontal scrolling if columns extend beyond the view. Keep local scrolling with hidden scrollbar chrome; the hint supplies discoverability. Do not break words to fit."
+      },
+      "operationComposition": {
+        "scope": "Incident review/resolution, not universal table layout.",
+        "order": "Chooser before detail; within one task group: detail, evidence, bounded plan, Resolve. Preserve narrow DOM order.",
+        "layout": "Optional queue/task columns align at start. Use section/field/related gaps; avoid equal-height cards and repeated margins.",
+        "firstView": "Identity/status together first, secondary metadata later. Bound/wrap titles; keep short words whole.",
+        "overflow": "Named focusable local scroll region and visible hint; inspect all columns.",
+        "recipe": "../../../assets/recipes/components.html#operations-task"
+      },
+      "recordIdentifierSizing": "record-id__root is allowed on a short-identifier-only button.record-choice__root or an inner span containing only the identifier. Both use nowrap and intrinsic max-content width; existing control margin remains authoritative. Longer labels belong outside that unbroken subpart. Table overflow stays in table__viewport.",
+      "renderRestoration": {
+        "when": "Custom render replaces descendants whose focus or disclosure-open state should persist",
+        "runtime": "findUIElementById(root,id); retrieve component-context.mjs --runtime",
+        "recipe": "assets/recipes/render-restoration.js",
+        "ownership": "Consumer chooses persistent state and completion destination. Stable IDs are data, not selectors. Explicit navigation focus takes precedence.",
+        "removedTrigger": "restoreUIRestoration(root,snapshot,{fallbackFocusId}) restores a declared programmatically focusable status/heading if the old target is removed, hidden or disabled. No prior focus inside root means no focus steal. Return focus is restored/fallback/not-requested/unresolved; test document.activeElement after confirmation removes its trigger."
+      },
+      "reviewPatterns": {
+        "comparison": "evidence-comparison",
+        "temporal": "interval-timeline",
+        "guide": "references/review-patterns.md"
+      },
+      "tableAlignment": "Use table.table__root[data-align=start] for multiline records or evidence comparisons so row headers and values share the top rail. Default alignment is unchanged.",
+      "boundedIndex": {
+        "anatomy": "Named tabindex=0 collection-window__root with adjacent visible scroll hint through aria-describedby; retain native list/group semantics inside.",
+        "behavior": "Bounds chooser height to six control frames without compressing rows; selected-detail follows in DOM order. On selection focus the detail heading where appropriate.",
+        "recipe": "../../../assets/recipes/bounded-index.html",
+        "verification": "Inspect initial narrow task distance, scroll to last item and activate it by keyboard. A passing overflow audit does not establish useful task distance."
+      },
+      "canonicalClasses": {
+        "collection-window__root": "collection-window__root",
+        "list__root": "list__root",
+        "list__body": "list__body",
+        "list__row": "list__item",
+        "record-choice__root": "record-choice__root",
+        "table__root": "table__root",
+        "table__hint": "table__description",
+        "table__viewport": "table__container"
+      },
+      "tableControlPadding": "Controls inside table cells halve their own padding, including label slots, without changing n, type, icons, cell spacing or sibling gutters. Standard button frame becomes2n+d; Chip becomes2n+d/2. Intrinsic checkbox/radio/switch marks remain2n. Sort headers use unboxed buttons with trailing caret and aria-sort; clicking reorders rows and announces the direction.",
+      "interactionStateReference": "../../interaction-states.md",
+      "sortDirection": {
+        "none": "both arrows",
+        "ascending": "up arrow",
+        "descending": "down arrow",
+        "slot": "2n",
+        "mark": "2n\u22122c",
+        "cellMargin": "P=m+W plus E/2 only at internal facing edges"
+      },
+      "sortHeaderGeometry": "Content-sized unboxed sort control: minimum 2n+d, padding d/2, negative inline margin d/2 for text-rail alignment, derived control radius, inherited header type. Center glyph marks in 2n slots. Rows grow to control plus 2m clearance; static row headers retain cell geometry.",
+      "compositionReview": {
+        "recipe": "assets/recipes/task-composition.html",
+        "contract": "references/task-composition.md",
+        "rule": "Inspect initial, expanded and completed states for boundary ownership, readable overflow cues, helper width, baseline/text rails and next-action emphasis."
+      },
+      "taskColumns": {
+        "class": "task-columns__root",
+        "anatomy": "two direct children: chooser then detail",
+        "geometry": "Flex wrap from local font-relative bases18em and32em, gap3d; preserves DOM order and wraps sooner when text grows. No viewport-only fixed sidebar.",
+        "contract": "references/task-composition.md"
+      },
+      "tableRowGeometryReference": "../../geometry-spacing.md#tables-and-data-lists"
+    },
+    {
+      "id": "disclosure",
+      "classes": [
+        "disclosure__root",
+        "disclosure__body",
+        "disclosure-stack__root"
+      ],
+      "semantics": "native details/summary",
+      "states": [
+        "closed",
+        "open",
+        "focus-visible"
+      ],
+      "geometry": "details owns control radius, border and surface for header plus expanded body. summary: full width, min=height, block padding=margin/2, inline padding=2margin; aligned with body text, text=g-text/UI font; trailing Phosphor caret=icon centered in square slot, gap=gutter, inline-end justification. Open header has square lower corners and divider. Body wrapper disclosure__body padding=2margin; nested flows own content gaps. Summary background is transparent; inner radius resolves explicitly from control radius minus border width, not inheritance. Keep overflow visible for the focus ring. In reading-flow__root, nested frames and dividers are quiet by default; only standalone or explicitly framed groups retain those borders.",
+      "behavior": "Native details/summary; matching nonempty name attributes provide exclusive groups. Use unique group names for independent accordions. See native-patterns recipe. Shared CSS suppresses the native marker and paints bundled Phosphor caret-right: inline-end when closed, down when open, with RTL support. No JavaScript decoration.",
+      "notFor": [
+        "Not a destination popup, select, or modal; use the matching native pattern.",
+        "Do not hide essential errors or required task actions in a collapsed disclosure."
+      ],
+      "implementation": {
+        "anatomy": "details.disclosure__root > summary + div.disclosure__body",
+        "native": "Native toggle and named-group exclusivity on verified platforms",
+        "javascript": "None for opening/decorative icons; content updates belong to application",
+        "fallback": "Independent native details if exclusive grouping is unsupported; no second toggle controller",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#disclosure",
+          "scope": "native toggle/group exclusivity, complete rounded border, open body and focus geometry; unsupported exclusive-group behavior not emulated"
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native details owns open state; summary owns keyboard focus and body reflects expansion.",
+        "classes": {
+          "disclosure__root": [
+            "default",
+            "focus",
+            "expanded",
+            "hover"
+          ],
+          "disclosure__body": [
+            "default",
+            "focus",
+            "expanded",
+            "hover"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "markupRule": {
+        "tag": "details",
+        "rootClass": "disclosure__root",
+        "exemptAncestorClass": "sidebar__root",
+        "children": [
+          {
+            "tag": "summary"
+          },
+          {
+            "tag": "div",
+            "class": "disclosure__body"
+          }
+        ],
+        "allowDirectText": false
+      },
+      "renderRestoration": {
+        "when": "Custom render replaces descendants whose focus or disclosure-open state should persist",
+        "runtime": "findUIElementById(root,id); retrieve component-context.mjs --runtime",
+        "recipe": "assets/recipes/render-restoration.js",
+        "ownership": "Consumer chooses persistent state and completion destination. Stable IDs are data, not selectors. Explicit navigation focus takes precedence.",
+        "removedTrigger": "restoreUIRestoration(root,snapshot,{fallbackFocusId}) restores a declared programmatically focusable status/heading if the old target is removed, hidden or disabled. No prior focus inside root means no focus steal. Return focus is restored/fallback/not-requested/unresolved; test document.activeElement after confirmation removes its trigger."
+      },
+      "readingMeasure": {
+        "contract": "references/reading-regions.md",
+        "recipe": "assets/recipes/reading-region.html",
+        "mechanism": "One reading-flow__root on the outer padded region shares inline margins below32rem. Nested disclosures now share outer boundary paint by default; descendant frames/dividers are quiet. Explicit data-nested-boundary=framed on an enclosing disclosure retains independently meaningful frames. Do not infer visual acceptance from the24ch prose audit."
+      },
+      "controlRail": {
+        "anatomy": "div.flow__root.control-rail__root > div.actions__root (secondary buttons) + details.disclosure__root",
+        "use": "Opt-in related secondary commands and disclosure share outer and text rails. Boxed controls use2u inline margin. Within narrow reading-flow__root both flatten inline borders/margins together; preserve block borders, focus and target size. Do not use for primary commits or unrelated adjacent components.",
+        "recipe": "../../../assets/recipes/control-rail.html",
+        "verification": "Measure actual text range starts and outer edges in closed/open and narrow/wide states, not padding equality alone."
+      },
+      "canonicalClasses": {
+        "disclosure__root": "disclosure__root",
+        "disclosure__body": "disclosure__content",
+        "sidebar__root": "sidebar__root"
+      },
+      "interactionStateReference": "../../interaction-states.md",
+      "compositionReview": {
+        "recipe": "assets/recipes/task-composition.html",
+        "contract": "references/task-composition.md",
+        "rule": "Inspect initial, expanded and completed states for boundary ownership, readable overflow cues, helper width, baseline/text rails and next-action emphasis. For sibling disclosures use disclosure-stack__root: only the following sibling owns separator paint; nested-boundary=quiet handles descendants."
+      }
+    },
+    {
+      "id": "feedback",
+      "classes": [
+        "notice__root",
+        "progress__root",
+        "empty__root",
+        "skeleton__root",
+        "divider__root"
+      ],
+      "semantics": "status only for live updates; native progress with label; decorative skeleton hidden",
+      "states": [
+        "determinate",
+        "loading",
+        "empty",
+        "error"
+      ],
+      "geometry": "notice margin=2margin; empty container margin=4margin; progress rail=margin/2; skeleton minimum=height",
+      "behavior": "Progress value reflects real local state; skeleton has accessible loading context; no default motion",
+      "notFor": [
+        "Do not use a live region for static decorative copy.",
+        "Do not show determinate progress without a meaningful measured value."
+      ],
+      "implementation": {
+        "anatomy": "Labelled progress.progress__root; notice__root/empty__root with meaningful text; decorative skeleton hidden",
+        "native": "Native progress semantics",
+        "javascript": "Update progress/status from actual work",
+        "fallback": "Static honest status remains visible; do not animate invented progress",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#feedback",
+          "scope": "actual local status lifecycle, labelled progress, recovery, skeleton and divider geometry; screen-reader timing excluded"
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Static feedback has no independent interaction state; individual subpatterns below define presentation states.",
+        "classes": {
+          "notice__root": [
+            "default",
+            "status",
+            "error"
+          ],
+          "progress__root": [
+            "default",
+            "loading",
+            "determinate"
+          ],
+          "empty__root": [
+            "default",
+            "empty"
+          ],
+          "skeleton__root": [
+            "default",
+            "loading"
+          ],
+          "divider__root": [
+            "default"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "semanticPalettes": {
+        "contract": "references/semantic-palettes.json",
+        "recipe": "assets/recipes/semantic-palettes.html",
+        "intents": [
+          "material",
+          "primary",
+          "info",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "components": [
+          {
+            "class": "notice__root",
+            "appearances": [
+              "soft",
+              "solid"
+            ],
+            "defaultAppearance": "soft"
+          }
+        ],
+        "constraints": [
+          "Apply intent to the supported component itself; intent on arbitrary ancestor containers is unsupported.",
+          "Do not combine secondary class with explicit intent; use data-appearance.",
+          "Not inherited by nested components. Labels/status text communicate meaning without color.",
+          "Field intent paints helper/error text and input border; does not set aria-invalid or supply validation.",
+          "Outline and ghost use an opaque paired soft surface to guarantee a known backdrop.",
+          "Disabled buttons retain paired paint with full opacity and a dashed border; disabled semantics are native.",
+          "Forced-colors uses system colors; palette fidelity is not forced.",
+          "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
+        ],
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "colorGroupPolicy": {
+          "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
+          "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
+          "pairing": "This export uses Base 950 on solid Primes in both schemes. White on prime fails normal text contrast. State progression is explicitly mapped and tested, not inferred from sample names.",
+          "scope": "Applies to opt-in semantic components. Existing legacy md-color roles and unannotated selection controls are unchanged."
+        }
+      },
+      "readingMeasure": {
+        "contract": "references/reading-regions.md",
+        "recipe": "assets/recipes/reading-region.html",
+        "mechanism": "One reading-flow__root on the outer padded card/region. At container width <=32rem nested cards, notices and disclosure summary/body use zero inline margin, square corners and block borders; block padding and flow gaps stay unchanged. Keep outer margin. Audit expanded long prose for PROSE_MEASURE (24ch floor capped by region width)."
+      },
+      "canvasComposition": {
+        "guide": "references/canvas-overlays.md",
+        "recipe": "assets/recipes/canvas-overlays.html",
+        "helper": "assets/recipes/canvas-overlays.js",
+        "controller": "assets/recipes/canvas-overlays-demo.js",
+        "verification": "scripts/check-canvas-overlays.mjs",
+        "scope": "Optional nonmodal canvas overlays; selection preserves camera/layout, explicit fit accounts for overlays. Signals/problems/verified outcomes retain distinct supported meanings. Not native dialog replacement.",
+        "layout": "createCanvasOverlayLayout(root,host,{inspector,controls,player}): measured inspector exclusivity, control restoration and playback-space reservation; actual action reachability checks required",
+        "geometry": {
+          "guide": "references/canvas-overlays.md#mathematical-geometry-contract",
+          "tier": "widget",
+          "surface": "widget",
+          "margin": "2n including border",
+          "padding": "2n minus border",
+          "radius": "k\u00b72n via --r-widget, shared corner policy applied once",
+          "gutter": "n, immediate parent owned",
+          "inspector": "single header/body text rail"
+        }
+      },
+      "canonicalClasses": {
+        "divider__root": "divider__root",
+        "empty__root": "empty__root",
+        "notice__root": "notice__root",
+        "progress__root": "progress__root",
+        "skeleton__root": "skeleton__root"
+      }
+    },
+    {
+      "id": "identity",
+      "classes": [
+        "avatar__root",
+        "badge__root"
+      ],
+      "semantics": "decorative avatar hidden when adjacent identity supplies name",
+      "states": [
+        "image",
+        "initials",
+        "status"
+      ],
+      "geometry": "Avatar diameter 2n; Badge nominal height 2n, zero label-slot padding, ordinary outer inline margin d/2 including border, count variant zero outer inline padding, type n+4.",
+      "behavior": "Status includes text; initials are not a substitute for missing accessible identity",
+      "notFor": [
+        "Do not communicate status through color or avatar alone.",
+        "An interactive avatar must be an explicitly named link or button, not a clickable span."
+      ],
+      "implementation": {
+        "anatomy": "avatar__root adjacent to named identity; badge__root includes status text",
+        "native": "Ordinary text/image semantics",
+        "javascript": "Optional image failure handling and application status updates",
+        "fallback": "Identity text remains available if image or script fails",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#identity",
+          "scope": "identity text, image-free avatar geometry and badge paint; arbitrary image-network failures excluded"
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Identity is static presentation; interactive identity must be wrapped in a named link/button.",
+        "classes": {
+          "avatar__root": [
+            "default",
+            "image",
+            "initials"
+          ],
+          "badge__root": [
+            "default",
+            "status"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "semanticPalettes": {
+        "contract": "references/semantic-palettes.json",
+        "recipe": "assets/recipes/semantic-palettes.html",
+        "intents": [
+          "material",
+          "primary",
+          "info",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "components": [
+          {
+            "class": "badge__root",
+            "appearances": [
+              "soft",
+              "solid"
+            ],
+            "defaultAppearance": "soft"
+          }
+        ],
+        "constraints": [
+          "Apply intent to the supported component itself; intent on arbitrary ancestor containers is unsupported.",
+          "Do not combine secondary class with explicit intent; use data-appearance.",
+          "Not inherited by nested components. Labels/status text communicate meaning without color.",
+          "Field intent paints helper/error text and input border; does not set aria-invalid or supply validation.",
+          "Outline and ghost use an opaque paired soft surface to guarantee a known backdrop.",
+          "Disabled buttons retain paired paint with full opacity and a dashed border; disabled semantics are native.",
+          "Forced-colors uses system colors; palette fidelity is not forced.",
+          "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
+        ],
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "colorGroupPolicy": {
+          "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
+          "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
+          "pairing": "This export uses Base 950 on solid Primes in both schemes. White on prime fails normal text contrast. State progression is explicitly mapped and tested, not inferred from sample names.",
+          "scope": "Applies to opt-in semantic components. Existing legacy md-color roles and unannotated selection controls are unchanged."
+        }
+      },
+      "canonicalClasses": {
+        "avatar__root": "avatar__root",
+        "badge__root": "badge__root"
+      },
+      "badgeCount": {
+        "anatomy": "span.badge__root[data-count] > span[data-slot=text] > span[data-slot=text-run]",
+        "geometry": "Height and minimum width2n, text n+4. All Badge label slots have zero inline padding. data-count also removes outer inline padding so a single digit is square independently of density; longer counts grow. Text Badges retain outer d/2 spacing."
+      }
+    },
+    {
+      "id": "overlay",
+      "classes": [
+        "dialog__root",
+        "popover__root",
+        "popover__header",
+        "popover__body"
+      ],
+      "semantics": "native dialog showModal; labelled title; existing navigation-menu contract for anchored overlays",
+      "states": [
+        "closed",
+        "open"
+      ],
+      "geometry": "dialog margin=4margin; viewport-bounded scrolling; content popover header wraps before title collapses; title basis=12margin bounded to available width, Close max-inline-size=100% with wrapping label, body owns scrolling",
+      "behavior": "Native dialog modality, Escape, focus containment and return; declarative commandfor/show-modal/close or application showModal controller. Do not bind both opening paths to one trigger.",
+      "notFor": [
+        "Do not use modal dialog for ordinary destination navigation; use a nonmodal destination popup.",
+        "Do not run declarative opening and a scripted opening controller on the same trigger."
+      ],
+      "implementation": {
+        "anatomy": "dialog.dialog__root with aria-labelledby and Close; unique commandfor or a single showModal controller",
+        "native": "Native modal focus/inertness/Escape when opened modally",
+        "javascript": "Validation, persistence and cancellation policy; scripted opening only when needed",
+        "fallback": "Unsupported dialog commands need a verified controller or a usable ordinary page route; never leave an inert opening control",
+        "evidence": {
+          "environmentSet": "authored-three-engine",
+          "guide": "../../reports/component-support-2026-10-09.md#overlay",
+          "scope": "hidden/modal dialog and backdrop, focused command opening/Escape return, native destination panel and content-region geometry; older-platform fallback not emulated"
+        },
+        "fallbackRecipe": "../../../assets/recipes/native-fallbacks.html"
+      },
+      "contentPopover": {
+        "recipe": "../../../assets/recipes/content-popover.html",
+        "anatomy": "button[popovertarget] with anchor-name; labelled section.popover__root[popover=auto] with matching position-anchor; direct popover__header contains title and Close, followed by direct popover__body scrolling content",
+        "behavior": "Native nonmodal dismissal; no command-menu keyboard claims; shared available-space cap and scrolling remain authoritative",
+        "customizationContract": "../navigation-menu/contract.json#customization"
+      },
+      "stateApplicability": {
+        "ownership": "Native dialog/popover owns open state; descendants own focus; header is a layout subpart.",
+        "classes": {
+          "dialog__root": [
+            "default",
+            "expanded",
+            "focus"
+          ],
+          "popover__root": [
+            "default",
+            "expanded",
+            "focus"
+          ],
+          "popover__header": [
+            "default",
+            "expanded",
+            "focus"
+          ],
+          "popover__body": [
+            "default",
+            "expanded",
+            "focus"
+          ]
+        },
+        "unlistedStates": "Not supplied by this pattern. Compose a semantically appropriate host when additional behavior is required; do not add state merely for visual completeness."
+      },
+      "autofocusCaret": "On dialog opening, collapse the autofocus text field selection to value.length. Use the optional modal-autofocus.js toggle listener. Native commands retain focus/open/close ownership. Only apply when the autofocus field is actually focused and supports selection; do not change later manual focus or selection.",
+      "canvasComposition": {
+        "guide": "references/canvas-overlays.md",
+        "recipe": "assets/recipes/canvas-overlays.html",
+        "helper": "assets/recipes/canvas-overlays.js",
+        "controller": "assets/recipes/canvas-overlays-demo.js",
+        "verification": "scripts/check-canvas-overlays.mjs",
+        "scope": "Optional nonmodal canvas overlays; selection preserves camera/layout, explicit fit accounts for overlays. Signals/problems/verified outcomes retain distinct supported meanings. Not native dialog replacement.",
+        "layout": "createCanvasOverlayLayout(root,host,{inspector,controls,player}): measured inspector exclusivity, control restoration and playback-space reservation; actual action reachability checks required",
+        "geometry": {
+          "guide": "references/canvas-overlays.md#mathematical-geometry-contract",
+          "tier": "widget",
+          "surface": "widget",
+          "margin": "2n including border",
+          "padding": "2n minus border",
+          "radius": "k\u00b72n via --r-widget, shared corner policy applied once",
+          "gutter": "n, immediate parent owned",
+          "inspector": "single header/body text rail"
+        }
+      },
+      "canonicalClasses": {
+        "dialog__root": "dialog__root",
+        "popover__root": "popover__root",
+        "popover__body": "popover__body",
+        "popover__header": "popover__header"
+      }
+    },
+    {
+      "id": "combobox",
+      "classes": [
+        "combobox__root",
+        "combobox__list"
+      ],
+      "semantics": "Native select fallback; enhanced input combobox with listbox options.",
+      "states": [
+        "default",
+        "expanded",
+        "selected",
+        "disabled",
+        "empty",
+        "focus"
+      ],
+      "geometry": "Shared control radius and frame; card 3u, group 3u, content 2u, related 1u. Drawer width and list height are bounded content constraints.",
+      "behavior": "Filter locally; Arrow keys move active descendant without changing committed value; Enter/pointer commit; Escape/blur restore; disabled options cannot commit.",
+      "notFor": [
+        "Single local selection; not remote search, multi-select or a command menu."
+      ],
+      "implementation": {
+        "anatomy": "Native select fallback; enhanced input combobox with listbox options.",
+        "native": "Native select and form value before enhancement.",
+        "javascript": "Filter locally; Arrow keys move active descendant without changing committed value; Enter/pointer commit; Escape/blur restore; disabled options cannot commit. mountWorkflowPatterns(root) returns cleanup; scope each independent instance to its root.",
+        "fallback": "Original labelled native select remains usable without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/workflow-patterns-2026-10-10.md#combobox",
+          "scope": "Authored local behavior in two widths and two schemes per listed engine; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native select fallback; enhanced input combobox with listbox options.",
+        "classes": {
+          "combobox__root": [
+            "default",
+            "expanded",
+            "selected",
+            "disabled",
+            "empty",
+            "focus"
+          ],
+          "combobox__list": [
+            "default",
+            "expanded",
+            "selected",
+            "disabled",
+            "empty",
+            "focus",
+            "hover"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer behavior from another family."
+      },
+      "canonicalClasses": {
+        "combobox__root": "combobox__root",
+        "combobox__list": "combobox__content"
+      },
+      "interactionStateReference": "../../interaction-states.md",
+      "listboxPaint": {
+        "layer": "Isolated option ::before; selected uses action/on-action; hover uses media-base/ink; selected check uses the maintained Phosphor check mask.",
+        "inset": "Per edge max(0, border width \u2212 existing container padding); reduce background dimensions and radius, preserve hit area. data-compact removes only container padding.",
+        "helper": "assets/recipes/listbox-backgrounds.js reads actual padding and option radius for custom geometry; call refresh after profile changes."
+      }
+    },
+    {
+      "id": "drawer",
+      "classes": [
+        "drawer__root",
+        "drawer__host"
+      ],
+      "semantics": "Native modal dialog, labelled heading, close button and ordinary navigation links.",
+      "states": [
+        "default",
+        "expanded",
+        "focus"
+      ],
+      "geometry": "Shared control radius and frame; card 3u, group 3u, content 2u, related 1u. Drawer width and list height are bounded content constraints.",
+      "behavior": "Native modal focus containment and Escape/close return; destination navigation closes and focuses the destination.",
+      "notFor": [
+        "Modal navigation panel; not nonmodal inspector or a nested modal stack."
+      ],
+      "implementation": {
+        "anatomy": "Native modal dialog, labelled heading, close button and ordinary navigation links.",
+        "native": "dialog.showModal provides top layer, inert background and modal focus.",
+        "javascript": "Native modal focus containment and Escape/close return; destination navigation closes and focuses the destination. mountWorkflowPatterns(root) returns cleanup; scope each independent instance to its root.",
+        "fallback": "Inline navigation links remain available without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/workflow-patterns-2026-10-10.md#drawer",
+          "scope": "Authored local behavior in two widths and two schemes per listed engine; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native modal dialog, labelled heading, close button and ordinary navigation links.",
+        "classes": {
+          "drawer__root": [
+            "default",
+            "expanded",
+            "focus"
+          ],
+          "drawer__host": [
+            "default",
+            "expanded",
+            "focus"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer behavior from another family."
+      },
+      "canonicalClasses": {
+        "drawer__root": "drawer__root",
+        "drawer__host": "drawer-host__root"
+      }
+    },
+    {
+      "id": "stepper",
+      "classes": [
+        "stepper__root",
+        "stepper__indicator"
+      ],
+      "semantics": "Ordered progress list and ordinary form sections, labels and native validation.",
+      "states": [
+        "default",
+        "invalid",
+        "status",
+        "focus"
+      ],
+      "geometry": "Frame g-height; icon g-icon; radius r-control; related gap 1u, step gap 2u. Labels wrap within their track.",
+      "behavior": "Validate current step before advancing, preserve fields on Back, review all fields before local save; edit makes success stale.",
+      "notFor": [
+        "Bounded local form; not server transactions, async branching or approval authorization."
+      ],
+      "implementation": {
+        "anatomy": "form.stepper__root contains ol.stepper__indicator[data-step-layout=adaptive][role=list] > li with data-step-indicator (aria-hidden number/check slots) and data-step-label (title and status). Decorative connectors are CSS-owned. Adaptive anatomy is the default for generated staged forms. Minimal native numbering is allowed only as an explicitly requested fallback.",
+        "native": "Native inputs, validity and ordinary form semantics.",
+        "javascript": "Validate current step before advancing, preserve fields on Back, review all fields before local save; edit makes success stale. mountWorkflowPatterns(root) returns cleanup; scope each independent instance to its root.",
+        "fallback": "All sections remain visible/editable; local save requires scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/workflow-patterns-2026-10-10.md#stepper",
+          "scope": "Authored local behavior in two widths and two schemes per listed engine; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Ordered progress list and ordinary form sections, labels and native validation.",
+        "classes": {
+          "stepper__root": [
+            "default",
+            "invalid",
+            "status",
+            "focus"
+          ],
+          "stepper__indicator": [
+            "default",
+            "current",
+            "completed",
+            "upcoming"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer behavior from another family."
+      },
+      "anatomy": {
+        "host": "form.stepper__root",
+        "indicator": "ol.stepper__indicator[aria-label] > li",
+        "current": "exactly one li[aria-current=step]",
+        "progress": "li[data-step-state=current|completed|upcoming]; visible state label, exactly one aria-current=step; completed check replaces decorative number. Back recalculates prior completion.",
+        "example": "<ol class=\"stepper__indicator\" data-step-layout=\"adaptive\" role=\"list\" aria-label=\"Stages\"><li data-step-state=\"current\" aria-current=\"step\"><span data-step-indicator aria-hidden=\"true\"><span data-step-number>1</span><span data-step-check></span></span><span data-step-label><span data-step-title>Contact</span><span data-step-state-label>Current</span></span></li><li data-step-state=\"upcoming\"><span data-step-indicator aria-hidden=\"true\"><span data-step-number>2</span><span data-step-check></span></span><span data-step-label><span data-step-title>Delivery</span><span data-step-state-label>Upcoming</span></span></li><li data-step-state=\"upcoming\"><span data-step-indicator aria-hidden=\"true\"><span data-step-number>3</span><span data-step-check></span></span><span data-step-label><span data-step-title>Review</span><span data-step-state-label>Upcoming</span></span></li></ol>",
+        "boundary": "Upcoming is not disabled/unavailable. This linear recipe does not implement unavailable/branching stages; declare and verify those separately.",
+        "slots": [
+          "data-step-indicator[aria-hidden=true] > data-step-number + data-step-check",
+          "data-step-label > data-step-title + data-step-state-label"
+        ]
+      },
+      "focusTransfer": {
+        "default": "After Next/Back render, focus destination data-step-heading or first h1-h6 with tabindex=-1. Initial mount and editing do not move focus.",
+        "recipe": "assets/ui-runtime.js#focusWorkflowStep",
+        "invalid": "Invalid advancement focuses the invalid field and retains the current stage.",
+        "remount": "Focus the new heading after DOM replacement, never a removed node.",
+        "dependency": "base-ui build.mjs supplies focusWorkflowStep before author code; review hosts supply it through their adapter.",
+        "usage": "After dispatch commits visibility, call focusWorkflowStep(form, destinationIndex). Default ordered panels: [data-step] or [data-stage]. For other anatomy pass {panelSelector: YOUR_SELECTOR}. Return false means no connected visible destination heading; verify actual focus.",
+        "activation": "Next and Back require final-artifact activation checks; initial runtime startup does not execute these handlers."
+      },
+      "grouping": "Separate catalogue, derived summary and draft actions; bound desktop reading width, stack summary after choices.",
+      "rendering": {
+        "orientation": "ol data-step-orientation=horizontal|vertical; omitted/adaptive switches at 36rem of form width.",
+        "labels": "ol data-step-label-position=inline|center; defaults: horizontal center, vertical inline.",
+        "horizontal": "center: equal space-around tracks, labels below, connector marker-to-marker. inline: labels right, connector after text to next marker.",
+        "vertical": "inline: labels right of shared marker rail. center: marker and labels centered in container; connector only in item gaps.",
+        "behavior": "Presentation preserves DOM order, values, state, validation and focus."
+      },
+      "compositionRecipe": "../../../assets/recipes/booking-composition.html: full-page gutter, responsive catalogue/summary gap and exact checkbox marks. Use the stepper demonstration for progress slots.",
+      "transitionContract": {
+        "guard": "Reducer keeps the current step when required values are empty; handlers do not dispatch an unconditional valid transition after reportValidity. Confirm checks valid review state.",
+        "focus": "After committed valid Next/Back, focus the destination panel heading with focusWorkflowStep. A persistent page heading is not a substitute for a separate newly visible panel heading.",
+        "recipe": "assets/recipes/title-request.html",
+        "controller": "assets/recipes/title-request.js",
+        "checks": "Empty and whitespace title stay on first step and focus invalid input; valid Next and Back independently focus destination and retain title; typing/remount do not focus headings."
+      },
+      "canonicalClasses": {
+        "stepper__root": "stepper__root",
+        "stepper__indicator": "stepper__indicator"
+      }
+    },
+    {
+      "id": "multiselect",
+      "classes": [
+        "multiselect__root",
+        "selected-values__root"
+      ],
+      "semantics": "Native checkbox group; filter and removable selected-value buttons.",
+      "states": [
+        "default",
+        "focus",
+        "checked",
+        "disabled",
+        "filtered"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Filter retains selection; disabled selected choices cannot be removed.",
+      "notFor": [
+        "Async search, virtual lists and token-input combobox behavior."
+      ],
+      "implementation": {
+        "anatomy": "Native checkbox group; filter and removable selected-value buttons.",
+        "native": "Native checkboxes remain usable without scripts.",
+        "javascript": "Filter retains selection; disabled selected choices cannot be removed. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Native checkboxes remain usable without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#multiselect",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native checkbox group; filter and removable selected-value buttons.",
+        "classes": {
+          "multiselect__root": [
+            "default",
+            "focus",
+            "checked",
+            "disabled",
+            "filtered"
+          ],
+          "selected-values__root": [
+            "default",
+            "focus",
+            "checked",
+            "disabled",
+            "filtered"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "canonicalClasses": {
+        "selected-values__root": "selected-values__root"
+      }
+    },
+    {
+      "id": "tooltip",
+      "classes": [
+        "tooltip__host",
+        "tooltip__root"
+      ],
+      "semantics": "Descriptive text linked by aria-describedby; manual native popover.",
+      "states": [
+        "default",
+        "focus",
+        "expanded"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Focus or hover reveals; Escape dismisses; hover may enter the tooltip.",
+      "notFor": [
+        "Interactive content, essential instructions available only on hover, or touch-only discovery."
+      ],
+      "implementation": {
+        "anatomy": "Descriptive text linked by aria-describedby; manual native popover.",
+        "native": "Description remains inline without scripts.",
+        "javascript": "Focus or hover reveals; Escape dismisses; hover may enter the tooltip. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Description remains inline without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#tooltip",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Descriptive text linked by aria-describedby; manual native popover.",
+        "classes": {
+          "tooltip__host": [
+            "default",
+            "focus",
+            "expanded"
+          ],
+          "tooltip__root": [
+            "default",
+            "focus",
+            "expanded"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "stylingRelationships": "Resolved control presentation radius; margin=2u; runtime trigger/viewport clearance=1u derived from computed panel margin.",
+      "canonicalClasses": {
+        "tooltip__root": "tooltip__root",
+        "tooltip__host": "tooltip-host__root"
+      }
+    },
+    {
+      "id": "toast",
+      "classes": [
+        "toast-queue__root",
+        "toast__root"
+      ],
+      "semantics": "Named notification region and polite status; ordinary dismiss buttons.",
+      "states": [
+        "default",
+        "focus",
+        "status"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Maximum three persistent local notifications; dismiss returns focus to adjacent notification or trigger.",
+      "notFor": [
+        "Auto-expiry, cross-page delivery, server messages or emergency alerts."
+      ],
+      "implementation": {
+        "anatomy": "Named notification region and polite status; ordinary dismiss buttons.",
+        "native": "Static explanation; producing notifications requires scripts.",
+        "javascript": "Maximum three persistent local notifications; dismiss returns focus to adjacent notification or trigger. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Static explanation; producing notifications requires scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#toast",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Named notification region and polite status; ordinary dismiss buttons.",
+        "classes": {
+          "toast-queue__root": [
+            "default",
+            "focus",
+            "status"
+          ],
+          "toast__root": [
+            "default",
+            "focus",
+            "status"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "stylingRelationships": "Widget radius and2n margin;n message/action gutter; message uses surface ink.",
+      "canonicalClasses": {
+        "toast__root": "toast__root"
+      }
+    },
+    {
+      "id": "pagination",
+      "classes": [
+        "pagination__root"
+      ],
+      "semantics": "Named navigation and aria-current page; underlying ordinary list.",
+      "states": [
+        "default",
+        "focus",
+        "filtered",
+        "empty",
+        "selected"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Three records per page; filter resets page; empty results announced; buttons preserve focus.",
+      "notFor": [
+        "Remote pagination, URL routing or virtualized datasets."
+      ],
+      "implementation": {
+        "anatomy": "Named navigation and aria-current page; underlying ordinary list.",
+        "native": "All records remain visible without scripts.",
+        "javascript": "Three records per page; filter resets page; empty results announced; buttons preserve focus. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "All records remain visible without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#pagination",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Named navigation and aria-current page; underlying ordinary list.",
+        "classes": {
+          "pagination__root": [
+            "default",
+            "focus",
+            "filtered",
+            "empty",
+            "selected"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "stylingRelationships": "Ordinary page actions use surface/ink; current page uses action/on-action; only keyboard focus uses the focus ring.",
+      "canonicalClasses": {
+        "pagination__root": "pagination__root"
+      }
+    },
+    {
+      "id": "tree",
+      "classes": [
+        "tree__root"
+      ],
+      "semantics": "Single-select tree with nested groups and roving focus.",
+      "states": [
+        "default",
+        "focus",
+        "expanded",
+        "selected"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Arrows traverse/expand/collapse; Home/End, typeahead, sibling expansion and Enter selection.",
+      "notFor": [
+        "Lazy loading, drag-and-drop, multiselection or route navigation."
+      ],
+      "implementation": {
+        "anatomy": "Single-select tree with nested groups and roving focus.",
+        "native": "Nested lists expose the whole hierarchy without scripts.",
+        "javascript": "Arrows traverse/expand/collapse; Home/End, typeahead, sibling expansion and Enter selection. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Nested lists expose the whole hierarchy without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#tree",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Single-select tree with nested groups and roving focus.",
+        "classes": {
+          "tree__root": [
+            "default",
+            "focus",
+            "expanded",
+            "selected"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "stylingRelationships": "Hierarchy nodes have no row padding. Direct label owns control typography,1u icon gutter, minimum control height, resolved radius and canonical focus ring; child group owns3u indentation.",
+      "canonicalClasses": {
+        "tree__root": "tree__root"
+      }
+    },
+    {
+      "id": "date-picker",
+      "classes": [
+        "date-picker__root",
+        "calendar__root",
+        "calendar__grid"
+      ],
+      "semantics": "Native bounded date input with optional modal calendar grid.",
+      "states": [
+        "default",
+        "focus",
+        "expanded",
+        "selected",
+        "disabled"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Arrows and week edges move days; PageUp/Down changes month, Shift changes year; selection commits, Escape cancels.",
+      "notFor": [
+        "Range selection, time zones, non-Gregorian calendars or missing min/max bounds."
+      ],
+      "implementation": {
+        "anatomy": "Native bounded date input with optional modal calendar grid.",
+        "native": "Native date input remains usable without scripts.",
+        "javascript": "Arrows and week edges move days; PageUp/Down changes month, Shift changes year; selection commits, Escape cancels. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Native date input remains usable without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#date-picker",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Native bounded date input with optional modal calendar grid.",
+        "classes": {
+          "date-picker__root": [
+            "default",
+            "focus",
+            "expanded",
+            "selected",
+            "disabled"
+          ],
+          "calendar__root": [
+            "default",
+            "focus",
+            "expanded",
+            "selected",
+            "disabled"
+          ],
+          "calendar__grid": [
+            "default",
+            "focus",
+            "expanded",
+            "selected",
+            "disabled"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "stylingRelationships": "Ordinary dates use surface/ink; selected date action/on-action; today uses muted surface; canonical focus ring is independent.",
+      "canonicalClasses": {
+        "calendar__root": "calendar__root",
+        "calendar__grid": "calendar__grid"
+      }
+    },
+    {
+      "id": "data-grid",
+      "classes": [
+        "data-grid__root"
+      ],
+      "semantics": "Two-column editable grid; native labelled inputs in fallback.",
+      "states": [
+        "default",
+        "focus",
+        "invalid"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Roving cell focus; Enter/F2 edits; Enter commits valid data, Escape cancels; Tab commits then moves cell.",
+      "notFor": [
+        "Spreadsheet formulas, dynamic columns, sorting, virtualization or multi-cell selection."
+      ],
+      "implementation": {
+        "anatomy": "Two-column editable grid; native labelled inputs in fallback.",
+        "native": "Ordinary table with native editable inputs without scripts.",
+        "javascript": "Roving cell focus; Enter/F2 edits; Enter commits valid data, Escape cancels; Tab commits then moves cell. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Ordinary table with native editable inputs without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#data-grid",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Two-column editable grid; native labelled inputs in fallback.",
+        "classes": {
+          "data-grid__root": [
+            "default",
+            "focus",
+            "invalid"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "canonicalClasses": {
+        "data-grid__root": "data-grid__root"
+      }
+    },
+    {
+      "id": "rich-text",
+      "classes": [
+        "rich-text__root",
+        "rich-editor__root"
+      ],
+      "semantics": "Multiline textbox with roving formatting toolbar and plain-text fallback.",
+      "states": [
+        "default",
+        "focus",
+        "status"
+      ],
+      "geometry": "Inherit control frame, typography and semantic colors. Use the owning component margin (card__root=3u; dedicated surfaces retain their specified margin), groups 3u, content 2u, related items 1u; u is --g-margin. Calendar width and tooltip width are bounded content constraints.",
+      "behavior": "Select text then apply bold, italic or plain text; paste inserts text only; local save exposes restricted semantic HTML.",
+      "notFor": [
+        "Full document editing, links, images, lists, collaborative editing or guaranteed undo history."
+      ],
+      "implementation": {
+        "anatomy": "Multiline textbox with roving formatting toolbar and plain-text fallback.",
+        "native": "Native textarea remains editable without scripts.",
+        "javascript": "Select text then apply bold, italic or plain text; paste inserts text only; local save exposes restricted semantic HTML. mountExtendedPatterns(root) returns cleanup.",
+        "fallback": "Native textarea remains editable without scripts.",
+        "evidence": {
+          "environments": [
+            "chromium 151.0.7922.34",
+            "firefox 153.0",
+            "webkit 26.5"
+          ],
+          "guide": "../../reports/extended-patterns-2026-10-10.md#rich-text",
+          "scope": "Authored keyboard/state cases at widths 390/1280 in light/dark; no installed Safari, screen-reader or physical-touch claim."
+        }
+      },
+      "stateApplicability": {
+        "ownership": "Multiline textbox with roving formatting toolbar and plain-text fallback.",
+        "classes": {
+          "rich-text__root": [
+            "default",
+            "focus",
+            "status"
+          ],
+          "rich-editor__root": [
+            "default",
+            "focus",
+            "status"
+          ]
+        },
+        "unlistedStates": "Not declared; do not infer from another family."
+      },
+      "stylingRelationships": "Editor uses textarea field geometry:1u block and1.5u inline margin, resolved margin radius, paired surface/ink and canonical focus ring.",
+      "canonicalClasses": {
+        "rich-editor__root": "rich-editor__root"
+      }
+    },
+    {
+      "implementation": {
+        "script": "assets/recipes/review-patterns.js",
+        "recipe": "assets/recipes/review-patterns.html",
+        "guide": "references/review-patterns.md",
+        "assembly": "Read and include script once before consumer controller; baseUIReviewPatterns is optional module-scope global. No network or auto-mount."
+      },
+      "geometry": "Use one outer task card with reading-flow__root for nested prose. Internal patterns own flow, not additional card margins.",
+      "id": "evidence-comparison",
+      "classes": [
+        "comparison__root",
+        "comparison__grid"
+      ],
+      "semantics": "Two-record evidence rows with explicitly named records, states and provenance",
+      "requires": [
+        "identity",
+        "disclosure"
+      ],
+      "behavior": "renderComparison returns escaped markup; application owns evidence states and record selection. Narrow region stacks source columns without hiding values.",
+      "canonicalClasses": {
+        "comparison__root": "comparison__root",
+        "comparison__grid": "comparison-grid__root"
+      }
+    },
+    {
+      "implementation": {
+        "script": "assets/recipes/review-patterns.js",
+        "recipe": "assets/recipes/review-patterns.html",
+        "guide": "references/review-patterns.md",
+        "assembly": "Read and include script once before consumer controller; baseUIReviewPatterns is optional module-scope global. No network or auto-mount."
+      },
+      "geometry": "Use one outer task card with reading-flow__root for nested prose. Internal patterns own flow, not additional card margins.",
+      "id": "interval-timeline",
+      "classes": [
+        "intervals__root",
+        "interval__option",
+        "interval__track",
+        "interval__fill"
+      ],
+      "semantics": "Native selectable interval buttons with equivalent time/uncertainty text and decorative proportional tracks",
+      "requires": [
+        "actions"
+      ],
+      "behavior": "renderIntervals accepts numeric domain/endpoints and authored time labels. Bar start/span encode time independently of label/control width. Use onAction and data-interval-id; retain selection/focus in application state. Never infer missing readings or safety decisions.",
+      "canonicalClasses": {
+        "interval__fill": "interval__fill",
+        "interval__option": "interval__option",
+        "interval__track": "interval__track"
+      }
+    },
+    {
+      "implementation": {
+        "script": "assets/recipes/review-patterns.js",
+        "recipe": "assets/recipes/review-patterns.html",
+        "guide": "references/review-patterns.md",
+        "assembly": "Read and include script once before consumer controller; baseUIReviewPatterns is optional module-scope global. No network or auto-mount."
+      },
+      "geometry": "Use one outer task card with reading-flow__root for nested prose. Internal patterns own flow, not additional card margins.",
+      "id": "allocation",
+      "classes": [
+        "allocation__root"
+      ],
+      "semantics": "Conserved whole-unit allocation fieldset with associated labels and total feedback",
+      "requires": [
+        "fields"
+      ],
+      "behavior": "validateAllocation accepts nonnegative safe integer total and explicit nonnegative integer parts; rejects blank, negative, fractional and overflow values; requires exact sum. renderAllocation does not mutate drafts. Host owns inputs, attempted-error timing and commit gating; revalidate at commit and bind decisions to source revision.",
+      "canonicalClasses": {}
+    },
+    {
+      "id": "kbd",
+      "classes": [
+        "kbd__root",
+        "kbd-group__root"
+      ],
+      "canonicalClasses": {
+        "kbd__root": "kbd__root",
+        "kbd-group__root": "kbd__group"
+      },
+      "semantics": "Native kbd.kbd__root for a key or whole chord. One cap displays plus-separated keys, e.g. \u2318+K, with an expanded accessible name. Passive content: no tabindex, action binding or button role.",
+      "states": [
+        "default"
+      ],
+      "geometry": "Badge sizing: minimum square 2n, type n+4, zero block padding and border-inclusive d/2 inline padding. Badge curvature context (margin d/2, frame 2n). Named keys and whole chords grow intrinsically; groups wrap between caps, never inside chords.",
+      "behavior": "Display keyboard input hints only; does not register shortcuts.",
+      "notFor": "Interactive chips or buttons.",
+      "implementation": "assets/wireframe.css",
+      "recipe": "assets/recipes/kbd.html"
+    }
+  ],
+  "limits": [
+    "Recipes expose baseline styling, not full implementations of every state.",
+    "Tree, date-picker, rich-text and grid are bounded local examples with explicit exclusions in their family contracts. Searchable combobox is single-value; multi-select uses native checkboxes.",
+    "Native disclosure markers and platform numeric spinners are browser affordances, not substitute icon assets.",
+    "State paint and segmented indicator motion use shared timing; reduced motion disables animation."
+  ],
+  "nativeRecipe": "../../../assets/recipes/native-patterns.html",
+  "implementationDefaults": {
+    "css": "Shared stylesheet owns geometry, shape, scheme and visual states. Consumers may compose layout; token usage alone does not prove readable nesting.",
+    "evidence": "../../../references/style/native-first.md",
+    "verification": "Recipe checks are bounded evidence. State coverage, assistive technology and older browser floors require separate reports.",
+    "stylesheet": "../../../assets/wireframe.css",
+    "verificationGuide": "../native-first.md",
+    "testedEnvironments": {
+      "authored-three-engine": [
+        "Chromium 151.0.7922.34",
+        "Firefox 153.0",
+        "WebKit 26.5"
+      ]
+    },
+    "unverifiedEnvironments": [
+      "installed Safari",
+      "assistive technology",
+      "physical touch",
+      "older platform versions"
+    ]
+  },
+  "classGroups": [
+    {
+      "id": "surfaces",
+      "kind": "composition",
+      "classes": [
+        "card__root",
+        "media__root",
+        "media__large",
+        "surface__inverse"
+      ],
+      "guidance": "../composition.md",
+      "use": "Card owns one surface margin. Media reserves illustrative space; inverse surfaces rebind all foreground roles. A semantic subsection need not be another card."
+    },
+    {
+      "id": "flows",
+      "kind": "layout utility",
+      "classes": [
+        "center__root",
+        "cluster__root",
+        "flow__root",
+        "grid__root",
+        "grid__auto",
+        "heading-group__root",
+        "options__root",
+        "page__flow",
+        "section__root",
+        "section__flow",
+        "section__gap",
+        "stack__root",
+        "stack__gap",
+        "stack__loose",
+        "page__root",
+        "field-action__root",
+        "control-rail__root",
+        "task-columns__root"
+      ],
+      "guidance": "../product-foundation.md",
+      "use": "Immediate parent owns layout and relationship gaps. Choose page/section/field/related context; do not accumulate per-child margins.",
+      "fieldAction": {
+        "anatomy": "div.field-action__root > div.field__root (label + input/select wrapper) + button.button__root",
+        "use": "One labelled field and its related command, aligned to control bottoms. Wrap command below when needed. Keep help after group and independent commands in their own actions__root.",
+        "recipe": "../../../assets/recipes/field-action.html",
+        "verification": "FIELD_ACTION_ANATOMY and FIELD_ACTION_ALIGNMENT; inspect both sides of wrapping thresholds."
+      },
+      "controlRail": {
+        "anatomy": "div.flow__root.control-rail__root > div.actions__root (secondary buttons) + details.disclosure__root",
+        "use": "Opt-in related secondary commands and disclosure share outer and text rails. Boxed controls use2u inline margin. Within narrow reading-flow__root both flatten inline borders/margins together; preserve block borders, focus and target size. Do not use for primary commits or unrelated adjacent components.",
+        "recipe": "../../../assets/recipes/control-rail.html",
+        "verification": "Measure actual text range starts and outer edges in closed/open and narrow/wide states, not padding equality alone."
+      },
+      "taskComposition": "references/task-composition.md"
+    },
+    {
+      "id": "type-context",
+      "kind": "context utility",
+      "classes": [
+        "content__root",
+        "product__root",
+        "prose__root",
+        "eyebrow__root"
+      ],
+      "guidance": "../product-foundation.md",
+      "use": "Choose product versus explicit editorial context. Eyebrows supplement, not replace, semantic headings."
+    },
+    {
+      "id": "field-anatomy",
+      "kind": "component subpart",
+      "classes": [
+        "choice__body",
+        "choice__description",
+        "field-group__root",
+        "field__label"
+      ],
+      "guidance": "README.md",
+      "use": "Subparts of fields/choices, not standalone controls. Plain field groups preserve semantics without a second padded surface."
+    },
+    {
+      "id": "navigation-layout",
+      "kind": "composition",
+      "classes": [
+        "nav__root",
+        "nav__row",
+        "navigation-recipe__root",
+        "sidebar__root",
+        "sidebar__body",
+        "sidebar__footer",
+        "sidebar__header",
+        "sidebar__identity"
+      ],
+      "guidance": "../product-foundation.md",
+      "use": "Shell/header/sidebar anatomy; native links and controls retain interaction ownership. Row slots preserve control geometry.",
+      "sidebarAnatomy": {
+        "source": "Maison /src/components/sidebar/sidebar.styles.css inspected via http://127.0.0.1:5187/examples/patterns.html",
+        "slots": [
+          "section",
+          "item",
+          "switcher",
+          "mark",
+          "icon",
+          "label",
+          "indicator",
+          "sub"
+        ],
+        "geometry": "outer margin/2, section gap gutter/2, row inline margin, icon gap gutter, row minimum height=height; nested link guide aligned to icon center",
+        "behavior": "Native links, details and account popover. Sidebar disclosures are unboxed navigation groups with no open-header shadow, a scoped exception to standalone contained disclosures.",
+        "paint": "Muted neutral current surface, neutral hover; foreground remains paired with surface. Shared state transitions apply. Rounded composition shells own the background; child sidebar surfaces stay transparent so square child paint cannot cover shell corners. Do not clip keyboard focus to repair paint overlap."
+      }
+    },
+    {
+      "id": "source-swatch",
+      "kind": "composition",
+      "classes": [
+        "swatch__root"
+      ],
+      "guidance": "../../workflows/reference-sheets.md",
+      "use": "Native source-inspection button with two equal decorative spans. Shared zero gap/padding and one control radius; declare exact light/dark paint and an accessible token-specific name. Native popover owns opening/dismissal."
+    },
+    {
+      "id": "record-identifier",
+      "kind": "component subpart",
+      "classes": [
+        "record-id__root"
+      ],
+      "guidance": "README.md",
+      "use": "Collections owns recordIdentifierSizing: use on a short-identifier-only record-choice button or an inner identifier span. Preserve control margin and scoped table overflow; longer labels remain outside the unbroken identifier."
+    }
+  ],
+  "stateVocabulary": [
+    "default",
+    "hover",
+    "focus",
+    "active",
+    "disabled",
+    "checked",
+    "mixed",
+    "invalid",
+    "readonly",
+    "busy",
+    "empty",
+    "expanded",
+    "selected",
+    "sorted",
+    "filtered",
+    "loading",
+    "determinate",
+    "image",
+    "initials",
+    "status",
+    "error",
+    "current",
+    "completed",
+    "upcoming"
+  ],
+  "stateEvidenceBoundary": "stateApplicability declares supported states and ownership, not test completion. planning state audit and browser reports track observed coverage separately. Subpart reflection is not independent interactivity.",
+  "essentialBoundaryPaint": {
+    "role": "--ui-label",
+    "appliesTo": [
+      "editable field borders",
+      "unchecked checkbox/radio outlines",
+      "switch tracks",
+      "slider rails",
+      "input-group boundaries"
+    ],
+    "decorativeRoles": [
+      "--ui-border",
+      "--ui-divider"
+    ],
+    "verification": "../../../scripts/check-control-boundary-contrast.mjs",
+    "scope": "Authored computed boundary paint against interior/exterior, selected glyphs, switch states and input-group focus; excludes normal slider raster paint and exhaustive interaction/accessibility coverage.",
+    "focusReplacement": "When a visible replacement focus ring is painted, its component boundary becomes transparent immediately; retain border width and restore state paint when the ring is no longer displayed. Pointer focus without a replacement ring retains the ordinary boundary, including an unchecked choice mark. Input-group paints a focus-within ring and owns that boundary; switch track owns its focus-visible ring and margin border paint; disclosure owns the summary focus-visible boundary. Do not clear unrelated ancestor borders or internal slider anatomy.",
+    "focusReplacementVerification": "../../../scripts/check-focus-replacement.mjs"
+  },
+  "stateMotion": {
+    "duration": "--ui-state-duration (800.0ms)",
+    "easing": "--ui-state-easing (Apple Smooth sampled spring)",
+    "properties": [
+      "background-color",
+      "color",
+      "border-color",
+      "outline-color",
+      "box-shadow",
+      "opacity"
+    ],
+    "scope": "Authored buttons, controls, selection rows, navigation and disclosure state paint, including supported pseudo-elements",
+    "exceptions": [
+      "Reduced motion and forced colors use zero duration",
+      "Native platform popup rendering is browser-owned",
+      "Visibility, layout, selected semantics and slider value updates remain immediate; do not use transition:all",
+      "Opposite foreground/background reversal is atomic to preserve contrast through the transition; outline and shadow retain shared motion."
+    ]
+  },
+  "runtimeAPIReference": "references/runtime-api.json",
+  "consumerVerification": {
+    "guide": "../../rendered-audit.md",
+    "rule": "Retrieve contracts again when a new family is introduced, including dynamic DOM. Audit the final application in relevant states; kit specimen checks do not validate consumer anatomy.",
+    "nativeRouting": {
+      "details/summary": "disclosure",
+      "button": "actions"
+    },
+    "audit": "../../../scripts/lib/audit-rendered.mjs",
+    "scope": "Rendered family discovery, disclosure anatomy/margin and stacked evidence gaps; not general UI conformance."
+  },
+  "containerSpacing": {
+    "cardMargin": "3u",
+    "noticeMargin": "2u",
+    "pageSectionGap": "3u",
+    "pageOuterMargin": "4u",
+    "disclosureInlineMargin": "2u on both summary and body",
+    "unit": "local --g-margin",
+    "verification": "audit-rendered checks default margins, page gap and disclosure alignment; custom layouts require separate evidence",
+    "marginUnit": "local --g-margin",
+    "gutterUnit": "local --g-gutter",
+    "measurement": "Margins include borders; CSS padding subtracts the local border width."
+  },
+  "schemeSelection": {
+    "attribute": "document.documentElement.dataset.theme",
+    "values": [
+      "light",
+      "dark"
+    ],
+    "mechanism": "Root data-theme sets CSS color-scheme, which selects light-dark() token values. Remove the attribute to follow the foundation default. Do not use data-scheme.",
+    "verification": "Change only data-theme; verify computed color-scheme and actual foreground/background change, not only attribute state."
+  },
+  "classNaming": {
+    "pattern": "recipe__slot",
+    "guide": "../../class-naming.md",
+    "compatibility": "Version 4 canonical names only; no legacy aliases. Semantic variables use --ui-*; action dispatch uses data-action."
+  },
+  "interactionStateReference": "../../interaction-states.md",
+  "pageStyleReference": "../../page-styles.md",
+  "pageLayoutPatterns": {
+    "authority": "../../page-styles.md#heading-description-and-data-layout",
+    "specDataList": {
+      "geometryAuthority": "../../../../../../Projects/ui-kit/docs/system/geometry-contract.md#compact-specification-data-lists-adopted",
+      "columns": "minmax(0, 1fr) minmax(0, 1fr)",
+      "alignment": "baseline; values trailing aligned",
+      "wrapping": "Within the value column, including formulas; preserve paired rows at narrow widths",
+      "ownership": "Teaching specifications stay outside the example canvas; product data such as invoice totals remains inside its artifact."
+    },
+    "headingDescriptionData": {
+      "heading": "Semantic heading; own spanning grid row; peer heading color",
+      "content": "Description fills column; prose and data list share top edge",
+      "responsive": "Stack heading, description, list when columns no longer fit"
+    },
+    "canvasOwnership": {
+      "contract": "../../page-styles.md#canvas-and-control-containment",
+      "recipeAnatomy": "recipe__demo > recipe__example + recipe__specification[data-context=outside]",
+      "helper": "section(id, title, description, body, specification); teaching specs use the fifth argument",
+      "exception": "Home measured-select height/width/radius annotations stay on canvas; not a general exception for teaching lists",
+      "verification": "Inspect narrow/wide wrapping and ancestry; do not infer product versus teaching ownership from dl/spec-list alone"
+    },
+    "nativeSelectContainment": {
+      "contract": "../select/contract.json",
+      "rule": "Constrain wrapper width, preserve select width:100%, and keep the decorative indicator within the painted native frame",
+      "checks": [
+        "SELECT_ANATOMY",
+        "SELECT_TEXT_FIT",
+        "SELECT_INDICATOR_BOUNDS"
+      ]
+    },
+    "artifactReview": {
+      "workflow": "../../../../../../Projects/ui-kit/apps/site/docs/artifact-review.md",
+      "boundary": "Every rendered specimen has a grid canvas; data-review-id identifies it and data-artifact identifies reusable content. Teaching specs remain outside.",
+      "requiredHomeArtifacts": [
+        "Textarea & Agent Composer",
+        "Interaction states"
+      ],
+      "evidence": [
+        "canvas screenshot",
+        "HTML and computed geometry",
+        "page and state inventory",
+        "source hashes",
+        "separate mechanical and visual statuses"
+      ],
+      "visualDefault": "pending",
+      "staleEvidence": "Rebuild and recapture; never promote stale evidence.",
+      "conditionalGeometry": "Do not resolve curvature from hidden zero-sized controls; recompute when content opens."
+    }
+  },
+  "geometryRecipeLibrary": {
+    "contract": "../../../../../../Projects/ui-kit/docs/system/recipe-library.md",
+    "entry": "../../../../../../Projects/ui-kit/apps/site/recipes/foundations.html",
+    "scope": "Local geometry-driven recipe pages; site-specific intent palette; no service integration",
+    "axes": [
+      "family",
+      "intent",
+      "appearance",
+      "native or ARIA state"
+    ],
+    "backlog": "../../../../../../Projects/ui-kit/docs/system/recipe-backlog.md",
+    "commands": {
+      "contract": "../../../../../../Projects/ui-kit/docs/system/command-recipes.md",
+      "entry": "../../../../../../Projects/ui-kit/apps/site/recipes/commands.html",
+      "state": "implemented local examples",
+      "keyboard": [
+        "Cmd/Ctrl+K",
+        "arrows",
+        "Home/End",
+        "Enter/Space",
+        "Escape",
+        "Shift+F10",
+        "ContextMenu",
+        "typeahead"
+      ],
+      "focus": "Return to invoker after dismiss/action; Tab exits context menu; outside dismissal preserves clicked focus",
+      "menuRowGeometry": "Full Control menuitem/menuitemcheckbox/menuitemradio rows: H=3n+2m; m=(q\u22122)n/4 on every edge, fixed 3n slots, W wrapper padding, E=m/2 gaps, zero button label edge padding. Outer menu padding is separate. Ordinary Listbox selection rows stay 3n. Resolve each row with resolveControlSurface and validate its measured radius independently."
+    },
+    "icons": {
+      "source": "Phosphor Web 2.1.2 via jsDelivr",
+      "weights": [
+        "thin",
+        "light",
+        "regular",
+        "bold",
+        "fill",
+        "duotone"
+      ],
+      "slot": "3n square for icon/glyph; full3n zero-padding media",
+      "glyph": "n+6, matching Control typography",
+      "scope": "Current Control slots; legacy recipe exceptions require their owning contract."
+    }
+  },
+  "referenceSiteArchitecture": {
+    "contract": "../../../../../../Projects/ui-kit/apps/site/README.md",
+    "sources": {
+      "pages": "source/pages/",
+      "runtime": "source/runtime/",
+      "helpers": "source/shared/"
+    },
+    "styles": {
+      "vendor": "styles/vendor/",
+      "shared": "styles/shared/",
+      "recipes": "styles/recipes/",
+      "pages": "styles/pages/"
+    },
+    "build": "scripts/build.mjs",
+    "scope": "Paths relative to mathematical-design-system/assets/site; build generated HTML/runtime in place and preserve maintained styles"
+  },
+  "homeHero": {
+    "contract": "../../../../../../Projects/ui-kit/apps/site/docs/home-hero.md",
+    "scope": "Reference Home and explicit adaptations; not every page",
+    "order": [
+      "measured select-only combobox trigger",
+      "action button",
+      "icon-only toggle",
+      "ghost select-only combobox trigger"
+    ],
+    "measurements": "First control: live height, auto width and resolved radius on canvas; visible by default",
+    "selection": "Separate highlight from committed value; aria-expanded/controls/activedescendant and named listbox options",
+    "toggle": "Stable accessible name, aria-pressed, initially on; independent favorite state, no chip mode",
+    "geometry": "Shared context and maintained slots; ghost changes paint only",
+    "verification": "mathematical-design-system/scripts/check-home-hero.cjs plus site checks and visual review"
+  }
+}

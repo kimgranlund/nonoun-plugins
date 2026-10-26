@@ -1,0 +1,885 @@
+{
+  "root": "/Users/kimgranlund/.codex/skills/wireframe-review",
+  "contracts": [
+    {
+      "file": "references/style/components/contract.json",
+      "version": 1
+    },
+    {
+      "file": "references/style/contract.json",
+      "version": 2
+    },
+    {
+      "file": "references/style/navigation-menu/contract.json",
+      "version": 1
+    },
+    {
+      "file": "references/style/select/contract.json",
+      "version": 1
+    }
+  ],
+  "links": [
+    {
+      "file": "SKILL.md",
+      "target": "references/design/intent-contract.md#preserve-room-for-alternatives",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/foundations.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/artifact-contract.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/product-foundation.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/workflows/build.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/product-foundation.md#page-level-rhythm",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "assets/recipes/spacing.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/design/index.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/artifact-styling.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/contract.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/composition.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/shell-foundations.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/panel-content-system.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/feedback-workflow.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/prototype-runtime.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/workflows/build.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/workflows/reference-sheets.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "evals/plan.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/navigation-menu/contract.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "assets/recipes/native-patterns.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/components/authoring.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/style/discovery.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "SKILL.md",
+      "target": "references/workflows/reference-sheets.md#output-boundaries",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "assets/intent-brief.template.md",
+      "target": "../references/design/narrative-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "assets/intent-brief.template.md",
+      "target": "../references/design/experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "evals/plan.md",
+      "target": "../references/reports/variant-contrast-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "evals/plan.md",
+      "target": "../references/evaluation-checks.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-contract.md",
+      "target": "style/prototype-runtime.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-contract.md",
+      "target": "design/index.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-styling.md",
+      "target": "style/product-foundation.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-styling.md",
+      "target": "../assets/recipes/spacing.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-styling.md",
+      "target": "style/product-foundation.md#heading-context",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-styling.md",
+      "target": "style/product-foundation.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-styling.md",
+      "target": "design/patterns/README.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/artifact-styling.md",
+      "target": "../assets/recipes/native-select.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "intent-contract.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#commerce-and-transactions",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#search-and-discovery",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#service-and-support",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#operational-and-administrative-systems",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#collaboration-and-community",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#learning-and-guidance",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#ai-assisted-experiences",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "#lifecycle-and-re-entry",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/capabilities.md",
+      "target": "demo-suite.md#agent-first-examples",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/conditions.md",
+      "target": "bidirectional-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/demo-suite.md",
+      "target": "jev-pattern-notes.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "patterns/registry.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "bidirectional-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "narrative-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "profiles/mobile.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "profiles/product.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "profiles/dashboard.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/experience-lenses.md",
+      "target": "profiles/agentic.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/marketing.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/platform.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/content.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/mobile.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/product.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/dashboard.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "patterns/README.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "bidirectional-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "intent-contract.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "capabilities.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "conditions.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "examples.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "../../assets/intent-brief.template.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "profiles/agentic.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/index.md",
+      "target": "patterns/navigation.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/intent-contract.md",
+      "target": "bidirectional-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/narrative-reasoning.md",
+      "target": "patterns/registry.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/narrative-reasoning.md",
+      "target": "profiles/marketing.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/narrative-reasoning.md",
+      "target": "bidirectional-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/narrative-reasoning.md",
+      "target": "patterns/README.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/README.md",
+      "target": "registry.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/README.md",
+      "target": "../narrative-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/README.md",
+      "target": "navigation.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/navigation.md",
+      "target": "navigation.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/navigation.md",
+      "target": "../experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/navigation.md",
+      "target": "README.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/patterns/navigation.md",
+      "target": "../conditions.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/agentic.md",
+      "target": "../experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/agentic.md",
+      "target": "../capabilities.md#ai-assisted-experiences",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/agentic.md",
+      "target": "../jev-pattern-notes.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/content.md",
+      "target": "../capabilities.md#search-and-discovery",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/content.md",
+      "target": "../capabilities.md#learning-and-guidance",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/content.md",
+      "target": "../capabilities.md#lifecycle-and-re-entry",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/dashboard.md",
+      "target": "../capabilities.md#operational-and-administrative-systems",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/dashboard.md",
+      "target": "../capabilities.md#search-and-discovery",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/dashboard.md",
+      "target": "../conditions.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/dashboard.md",
+      "target": "../experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/marketing.md",
+      "target": "../capabilities.md#commerce-and-transactions",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/marketing.md",
+      "target": "../capabilities.md#lifecycle-and-re-entry",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/marketing.md",
+      "target": "../intent-contract.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/marketing.md",
+      "target": "../narrative-reasoning.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/marketing.md",
+      "target": "../patterns/navigation.md#marketing-header-composition",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/mobile.md",
+      "target": "../capabilities.md#lifecycle-and-re-entry",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/mobile.md",
+      "target": "../conditions.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/mobile.md",
+      "target": "product.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/mobile.md",
+      "target": "../experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/platform.md",
+      "target": "product.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/platform.md",
+      "target": "../capabilities.md#search-and-discovery",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/platform.md",
+      "target": "../capabilities.md#learning-and-guidance",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/platform.md",
+      "target": "../capabilities.md#service-and-support",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/product.md",
+      "target": "../capabilities.md#operational-and-administrative-systems",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/product.md",
+      "target": "../capabilities.md#collaboration-and-community",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/product.md",
+      "target": "../capabilities.md#ai-assisted-experiences",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/design/profiles/product.md",
+      "target": "../experience-lenses.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/reports/corpus-audit-2026-10-08.md",
+      "target": "../../evals/plan.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/reports/native-first-2026-10-09.md",
+      "target": "native-first-2026-10-09.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/reports/variant-contrast-2026-10-09.md",
+      "target": "variant-contrast-2026-10-09.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/shell-foundations.md",
+      "target": "../assets/recipes/native-select.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/bootstrap.md",
+      "target": "../../assets/recipes/native-select.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/bootstrap.md",
+      "target": "native-first.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "contract.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../../assets/recipes/components.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../../assets/recipes/components.js",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "demonstrations.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../composition.md#collection-followed-by-a-task",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../../assets/recipes/collection-workflow.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../select/contract.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../navigation-menu/contract.json",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../reports/component-families-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../../assets/recipes/native-patterns.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../native-first.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../../assets/recipes/list-states.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../../assets/recipes/list-states.js",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "../../reports/component-support-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "workflow-patterns.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/README.md",
+      "target": "extended-patterns.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/authoring.md",
+      "target": "../prototype-runtime.md#user-activation-and-form-defaults",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/components/workflow-patterns.md",
+      "target": "../../../assets/recipes/workflow-controller.js",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/composition.md",
+      "target": "product-foundation.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/composition.md",
+      "target": "../../assets/recipes/nesting.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/composition.md",
+      "target": "../../assets/recipes/collection-workflow.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/composition.md",
+      "target": "../../assets/recipes/collection-workflow.js",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/composition.md",
+      "target": "../../assets/recipes/bounded-collection-task.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/composition.md",
+      "target": "../../assets/recipes/bounded-collection-task.js",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../../assets/recipes/native-patterns.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../reports/native-first-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../reports/native-patterns-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../../assets/recipes/content-popover.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../shell-foundations.md#scripts-disabled-preview",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../../assets/recipes/native-fallbacks.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/native-first.md",
+      "target": "../reports/component-support-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/product-foundation.md",
+      "target": "../../assets/recipes/spacing.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/product-foundation.md",
+      "target": "../../assets/recipes/navigation-menu.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/product-foundation.md",
+      "target": "prototype-runtime.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/product-foundation.md",
+      "target": "components/README.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/product-foundation.md",
+      "target": "../../assets/recipes/page-rhythm.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/style/product-foundation.md",
+      "target": "composition.md#nested-surfaces",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "build.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "preventive-checks.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "../style/components/README.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "../style/native-first.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "../../assets/recipes/native-patterns.html",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "../reports/context-consolidation-2026-10-09.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "../style/components/workflow-patterns.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build-checks.md",
+      "target": "../style/components/extended-patterns.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "preventive-checks.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "../evaluation-checks.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "../style/composition.md#bounded-selection-with-an-adjacent-task",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "build-checks.md#shell-and-feedback",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "build-checks.md#geometry-and-composition",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "build-checks.md#controls-and-behavior",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "build-checks.md#source-sheets-and-popovers",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "build-checks.md#generated-assets-and-construction",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "reference-sheets.md#output-boundaries",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/build.md",
+      "target": "../style/components/authoring.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/preventive-checks.md",
+      "target": "build-checks.md",
+      "scope": "corpus-local"
+    },
+    {
+      "file": "references/workflows/reference-sheets.md",
+      "target": "sheet-evidence.md",
+      "scope": "corpus-local"
+    }
+  ],
+  "errors": [],
+  "limits": "Local Markdown targets/fragments and contract version envelopes. External URLs/paths, JSON/HTML fragments and full contract semantics are separate checks."
+}

@@ -4,6 +4,7 @@
 - [Progressive Context plugin specification](specs/generative-constructs/progressive-context-plugin.md): scope and packaging decisions.
 - [Progressive Context gap analysis](specs/generative-constructs/progressive-context-gap-analysis.md): tier-by-tier gaps, ranked improvements, what not to build, and how the pattern applies to `docs/` and `.sdlc/`.
 - [Plugin compatibility and validation](references/plugin-compatibility.md): shipped behavior, dependencies and test boundaries.
+- [Design plugin guidance](../plugins/design/AGENTS.md): the design skills, how they depend on each other, and their checks.
 
 - [Native Codex role execution](references/codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](specs/repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.

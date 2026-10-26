@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fixture: console error at load</title>
+</head>
+<body>
+<!-- A fixture for check-jig.mjs. It meets the whole jig contract except one thing:
+     it logs one console error at load.
+     The checker must print exactly one fail line, for load. -->
+<div data-jig-canvas><button id="demo" type="button" style="height: 32px">Button</button></div>
+<div data-jig="system">
+  <label for="height">Control height</label>
+  <input id="height" type="number" min="16" max="64" step="1" value="32" data-jig-constant="/control-height">
+</div>
+<script>
+(function () {
+  var BASE = { system: "fixture", source: "inline", version: "1" }, base = 32, value = base;
+  var input = document.getElementById("height"), demo = document.getElementById("demo");
+  function update() { input.value = value; demo.style.height = value + "px"; }
+  function changeSet() {
+    return { $schema: "jig.changeset/1", kind: "system", base: { system: BASE.system, source: BASE.source, version: BASE.version },
+      createdAt: new Date().toISOString(), context: {},
+      changes: value === base ? [] : [{ path: "/control-height", from: base, to: value, home: null }],
+      overrides: [], checks: { contract: null, proposed: { passed: true, failures: [] } }, effects: [], note: "" };
+  }
+  function importSet(text) {
+    var m = /```(?:json)?\s*([\s\S]*?)```/.exec(String(text)), o, errs = [], next = base;
+    try { o = JSON.parse(m ? m[1] : String(text)); } catch (e) { return ["Not JSON: " + e.message]; }
+    if (!o || o.$schema !== "jig.changeset/1") return ["Not a jig change set: $schema is not jig.changeset/1."];
+    if (!o.base || o.base.version !== BASE.version) errs.push("Made against a different base: version differs.");
+    (Array.isArray(o.changes) ? o.changes : []).forEach(function (c) {
+      if (!c || c.path !== "/control-height") errs.push(String(c && c.path) + ": no such constant here");
+      else if (c.from !== base) errs.push(c.path + ": from " + c.from + ", but the base here is " + base);
+      else if (typeof c.to !== "number" || !isFinite(c.to)) errs.push(c.path + ": to is not a number");
+      else next = c.to;
+    });
+    if (errs.length) return errs;
+    value = next; update(); return [];
+  }
+  input.addEventListener("input", function () { var v = Number(input.value); if (isFinite(v)) { value = v; update(); } });
+  window.jig = { changeSet: changeSet, importSet: importSet };
+  console.error("fixture: one console error at load"); /* The defect. */
+})();
+</script>
+</body>
+</html>

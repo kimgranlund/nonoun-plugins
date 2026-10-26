@@ -1,0 +1,89 @@
+{
+  "records": [
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "light",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "dark",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "scheme": "light",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "scheme": "dark",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "light",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "dark",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "scheme": "light",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "scheme": "dark",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "light",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "dark",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "scheme": "light",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "scheme": "dark",
+      "status": "passed",
+      "negativeControl": "missing filter paint detected"
+    }
+  ],
+  "scope": "Affected filter paint/content and linear stepper state/anatomy only; no fresh-generation efficacy or accessibility certification"
+}

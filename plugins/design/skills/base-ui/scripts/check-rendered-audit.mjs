@@ -1,0 +1,65 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {auditRendered} from './lib/audit-rendered.mjs';
+import {getAssetBundle} from './api.mjs';
+const [runtime, executablePath]=process.argv.slice(2);
+if(!runtime)throw Error('Usage: check-rendered-audit.mjs PLAYWRIGHT [CHROME]');
+const families=JSON.parse(fs.readFileSync(new URL('../references/style/components/contract.json',import.meta.url))).families;
+const pw=createRequire(import.meta.url)(path.resolve(runtime));
+const browser=await pw.chromium.launch({headless:true,...(executablePath?{executablePath}:{})});
+let cases=0;
+try {
+ for(const width of [390,1440])for(const colorScheme of ['light','dark']) {
+  const p=await browser.newPage({viewport:{width,height:1000},colorScheme});
+  await p.setContent(`<style>${getAssetBundle().css}</style><main class="page__root page__flow"><ol><li><div class="flow__root" data-spacing="tight"><strong>Decision trace</strong><p>Evidence explanation</p><details class="disclosure__root"><summary>Evidence</summary><div class="disclosure__body flow__root"><pre>scripts/build.mjs</pre><button class="button__root">Inspect this event →</button></div></details></div></li></ol><aside class="sidebar__root"><details><summary>Navigation</summary><a href="#">Item</a></details></aside></main>`);
+  const inspect=()=>p.evaluate(auditRendered,{families,retrieved:families.map(f=>f.id)});
+  assert.equal((await inspect()).issues.length,0);
+  await p.locator('main > ol summary').click();
+  assert.equal((await inspect()).issues.length,0,'Valid expanded anatomy must pass');
+  assert((await p.evaluate(auditRendered,{families,retrieved:[]})).issues.some(x=>x.code==='CONTRACT_NOT_DECLARED'&&x.family==='disclosure'));
+  // Historical failure: dynamic content created without the disclosure body.
+  await p.evaluate(()=>{const b=document.querySelector('.disclosure__body');b.replaceWith(...b.childNodes);});
+  assert((await inspect()).issues.some(x=>x.code==='DISCLOSURE_ANATOMY'));
+  await p.evaluate(()=>{const d=document.querySelector('ol details'),b=document.createElement('div');b.className='disclosure__body flow__root';b.append(...[...d.children].slice(1));d.append(b);b.style.padding='0';});
+  assert((await inspect()).issues.some(x=>x.code==='DISCLOSURE_MARGIN'));
+  await p.evaluate(()=>{const b=document.querySelector('.disclosure__body');b.style.padding='';b.style.gap='0';});
+  assert((await inspect()).issues.some(x=>x.code==='CONTENT_GAP'));
+  await p.evaluate(()=>{document.querySelector('.disclosure__body').style.gap='';const f=document.querySelector('li > div');f.style.gap='0';});
+  assert((await inspect()).issues.some(x=>x.code==='CONTENT_GAP'));
+  await p.evaluate(()=>{document.querySelector('li > div').style.gap='';});
+  assert.equal((await inspect()).issues.length,0,'Restored layout must pass');
+  await p.locator('main').evaluate(e=>e.style.rowGap='calc(6 * var(--g-margin))');
+  assert((await inspect()).issues.some(x=>x.code==='PAGE_GUTTER'));
+  await p.locator('main').evaluate(e=>{e.style.rowGap='';e.insertAdjacentHTML('beforeend','<section class="card__root" style="padding:calc(4 * var(--g-margin))">Card</section>');});
+  assert((await inspect()).issues.some(x=>x.code==='CONTAINER_MARGIN'));
+  await p.locator('.card__root').evaluate(e=>e.style.padding='');
+  await p.locator('main > ol summary').evaluate(e=>e.style.paddingInline='calc(1.5 * var(--g-margin))');
+  assert((await inspect()).issues.some(x=>x.code==='DISCLOSURE_ALIGNMENT'));
+  await p.locator('main > ol summary').evaluate(e=>e.style.paddingInline='');
+  assert.equal((await inspect()).issues.length,0);
+  await p.locator('main > ol summary').evaluate(e=>e.style.paddingInline='var(--g-margin)');
+  await p.locator('main > ol .disclosure__body').evaluate(e=>e.style.padding='var(--g-margin)');
+  assert((await inspect()).issues.some(x=>x.code==='DISCLOSURE_MARGIN'),'Equal but incorrect margins must fail');
+  await p.locator('main > ol summary').evaluate(e=>e.style.paddingInline='');
+  await p.locator('main > ol .disclosure__body').evaluate(e=>e.style.padding='');
+  assert.equal((await inspect()).issues.length,0);
+  await p.locator('main').evaluate(e=>e.insertAdjacentHTML('beforeend','<table class="table__root"><tbody><tr><td data-selection><label class="choice__root"><input type="checkbox" class="checkbox__control"><span>Select the entire incident record</span></label></td><td>Record</td></tr></tbody></table>'));
+  assert((await inspect()).issues.some(x=>x.code==='SELECTION_COLUMN_OVERFLOW'));
+  await p.locator('td[data-selection]').evaluate(e=>e.innerHTML='<input type="checkbox" class="checkbox__control" aria-label="Select incident record">');
+  assert.equal((await inspect()).issues.length,0);
+  await p.locator('main > ol > li').evaluate(li=>li.replaceChildren(li.querySelector('details')));
+  assert.equal((await inspect()).issues.length,0,'A direct list-item disclosure has an intentionally touching summary/body boundary');
+  await p.locator('main > ol .disclosure__body').evaluate(e=>e.style.gap='0');
+  assert((await inspect()).issues.some(x=>x.code==='CONTENT_GAP'),'Direct disclosure still audits body content gaps');
+  await p.locator('main').evaluate(e=>e.innerHTML='<label>Mode<span class="select__root" style="width:240px"><select><option>Short</option></select><span data-slot="indicator" aria-hidden="true">⌄</span></span></label>');
+  assert.equal((await inspect()).issues.length,0,'Aligned select and indicator pass');
+  await p.locator('select').evaluate(e=>e.style.width='120px');
+  assert((await inspect()).issues.some(x=>x.code==='SELECT_INDICATOR_BOUNDS'),'Wider wrapper must expose escaped indicator');
+  await p.locator('select').evaluate(e=>e.style.width='100%');
+  assert.equal((await inspect()).issues.length,0,'Restored control frame contains its indicator');
+  await p.close();cases++;
+ }
+} finally {await browser.close();}
+console.log(`PASS ${cases} viewport/scheme cases: valid closed/open, missing retrieval, missing body, zero margin, zero body gap, zero decision gap, restoration; sidebar exception; oversized card/page gaps and mismatched disclosure text margins; equal-but-wrong disclosure margins.`);

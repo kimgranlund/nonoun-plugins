@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {compileControls} from './compile-controls.mjs';
+const good='<details class="disclosure__root"><summary>Evidence</summary><div class="disclosure__body flow__root"><p>Excerpt</p><button>Inspect</button></div></details>';
+assert.match(compileControls(good), /disclosure__root disclosure__root/);
+assert.equal(compileControls(compileControls(good)),compileControls(good));
+for(const bad of [good.replace('class="disclosure__root"',''),good.replace('<div class="disclosure__body flow__root">','').replace('</div>',''),good.replace('disclosure__body','other'),good.replace('</details>','orphan</details>'),good.replace('</details>',''),good.replace('<summary>Evidence</summary>','<div>Evidence</div>')])assert.throws(()=>compileControls(bad),/component|Component/);
+assert.equal(compileControls(`<aside class="sidebar__root"><details><summary>Group</summary><a>Item</a></details></aside>`),`<aside class="sidebar__root"><details><summary>Group</summary><a>Item</a></details></aside>`);
+assert.equal((compileControls(good.replace('Excerpt',good)).match(/disclosure__root/g)||[]).length,2);
+assert.equal(compileControls('<script>const sample="<details>";</script>'),'<script>const sample="<details>";</script>');
+assert.equal(compileControls('<!-- <details> -->'),'<!-- <details> -->');
+for(const p of fs.readdirSync(new URL('../assets/recipes/',import.meta.url)).filter(p=>p.endsWith('.html')))compileControls(fs.readFileSync(new URL('../assets/recipes/'+p,import.meta.url),'utf8'));
+console.log('PASS anatomy faults, valid nested/sidebar/raw-text controls and all maintained HTML recipes.');

@@ -1,0 +1,11 @@
+# Bootstrap and authority
+
+Load the styles listed in contract.json in order. Generated foundation CSS owns values and geometry resolution; wireframe.css owns the consumption profile. Component contracts own intended semantics, never an alternate API inventory. Generated observations identify source bytes, not tested platform support; browser reports supply that evidence separately.
+
+Document previews initialize product/md/md geometry and the chosen color scheme on their root. They use natural document height. The review shell alone owns viewport height and independent scroll regions. Scoped surfaces inherit context and override only explicitly requested axes. Independent shadow roots need their own style installation, public root context and authored select anatomy; build-time compilation does not cross dynamically created shadow boundaries.
+
+For selects, preserve native HTML. Prefer the authored `.select__root` anatomy in [the static recipe](../../assets/recipes/native-select.html): geometry slots and a local Phosphor SVG work without JavaScript. The artifact builder compiles bare selects to the same anatomy before delivery; existing wrappers remain intact. Standalone HTML must include the anatomy itself. Author a label or accessible name, option values, selected and disabled states. A static leading icon belongs in a decorative `data-slot="icon"` slot with `has-leading-icon` on the wrapper. `data-select-icon` is a build-time shorthand for an available bundled Phosphor glyph. Dynamic application markup must use authored anatomy or the explicit `createSelectControl` builder from `assets/control-markup.mjs`; no DOM scanner is installed. Geometry controls the decoration; the OS controls the native options popup. Do not promise arbitrary icons inside native option rows.
+
+Selection consumers load discovery.json, the selected leaf contract and this bootstrap. Authoring tasks additionally inspect the referenced implementation. Full file hashes belong to validation, not ordinary generation prompts. Unsupported contract versions or missing dependency paths must fail preflight explicitly rather than silently selecting another component.
+
+For the native HTML/CSS baseline and when enhancement is warranted, read [native-first components](native-first.md).

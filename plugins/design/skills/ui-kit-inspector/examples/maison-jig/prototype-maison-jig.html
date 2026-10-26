@@ -1,0 +1,1204 @@
+<title>Maison Jig</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Fraunces:opsz,wght@9..144,400..800&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@300..800&display=swap">
+<style>
+/* Layout: a live canvas on the left drawn at true pixels, and a dense inspector on the right that edits the system's constants, never its derived values. */
+:root {
+  --bg: #f1f4f8; --surface: #ffffff; --surface-2: #e7ecf3; --ink: #121a27; --ink-2: #4a5669; --line: #cbd3de;
+  --margin: #4653d8; --margin-tint: rgba(70, 83, 216, .2);
+  --gutter: #b45f09; --gutter-tint: rgba(196, 112, 20, .42);
+  --ok: #1c7c4a; --bad: #b3261e; --bad-tint: rgba(179, 38, 30, .12); --chg: #8a5a00; --chg-tint: rgba(196, 139, 20, .18);
+  --sp-page: #ffffff; --sp-card: #eef2f7; --sp-widget: #ffffff; --sp-group: #ffffff; --sp-ctl: #dde4ee; --sp-chip: #d5d9fb;
+  --display: "Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1218; --surface: #161c26; --surface-2: #202937; --ink: #e9eef5; --ink-2: #9ba8ba; --line: #303b4b;
+  --margin: #97a2ff; --margin-tint: rgba(151, 162, 255, .26);
+  --gutter: #f2a652; --gutter-tint: rgba(242, 166, 82, .4);
+  --ok: #5fcf93; --bad: #ff8a80; --bad-tint: rgba(255, 138, 128, .14); --chg: #f2c14e; --chg-tint: rgba(242, 193, 78, .16);
+  --sp-page: #161c26; --sp-card: #1e2633; --sp-widget: #161c26; --sp-group: #161c26; --sp-ctl: #2b3646; --sp-chip: #333c7a;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1218; --surface: #161c26; --surface-2: #202937; --ink: #e9eef5; --ink-2: #9ba8ba; --line: #303b4b;
+  --margin: #97a2ff; --margin-tint: rgba(151, 162, 255, .26);
+  --gutter: #f2a652; --gutter-tint: rgba(242, 166, 82, .4);
+  --ok: #5fcf93; --bad: #ff8a80; --bad-tint: rgba(255, 138, 128, .14); --chg: #f2c14e; --chg-tint: rgba(242, 193, 78, .16);
+  --sp-page: #161c26; --sp-card: #1e2633; --sp-widget: #161c26; --sp-group: #161c26; --sp-ctl: #2b3646; --sp-chip: #333c7a;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin-inline: auto; padding-inline: 16px; padding-block: 22px 56px; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 4.6vw, 38px); line-height: 1.05; letter-spacing: -.02em; margin: 0; }
+h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; margin: 0; }
+p { margin: 0; }
+.lede { color: var(--ink-2); font-size: 15px; max-width: 70ch; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+@media (max-width: 940px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.canvas { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* inspector */
+.jig { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; max-block-size: calc(100vh - 20px); min-width: 0; }
+@media (max-width: 940px) { .jig { position: static; max-block-size: none; } }
+.jig-head { position: relative; padding: 10px 12px; border-block-end: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.jig-title { display: flex; align-items: center; gap: 8px; }
+.jig-title strong { font-family: var(--display); font-size: 17px; font-weight: 700; }
+.count { font-size: 12px; color: var(--ink-2); margin-inline-start: auto; }
+.count.has { color: var(--chg); font-weight: 600; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { font: inherit; font-size: 12.5px; font-weight: 500; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+.btn.pri { background: var(--margin); border-color: var(--margin); color: var(--surface); }
+.btn:focus-visible, .jig summary:focus-visible, .jig input:focus-visible, .jig select:focus-visible, .seg label:has(input:focus-visible) { outline: 2px solid var(--margin); outline-offset: 1px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.jig-body { overflow-y: auto; padding-block-end: 6px; }
+.jig details { border-block-end: 1px solid var(--line); position: relative; }
+.help { position: absolute; inset-block-start: 7px; inset-inline-end: 10px; inline-size: 20px; block-size: 20px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font: 600 11px/1 var(--mono); cursor: pointer; }
+.help:hover, .help[aria-expanded="true"] { color: var(--margin); border-color: var(--margin); }
+.help:focus-visible { outline: 2px solid var(--margin); outline-offset: 1px; }
+.tip { position: fixed; inset: auto; margin: 0; inline-size: min(320px, calc(100vw - 32px)); max-block-size: min(70vh, 520px); overflow-y: auto; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-family: var(--text); font-size: 12.5px; line-height: 1.45; box-shadow: 0 8px 28px rgba(0, 0, 0, .18); z-index: 20; }
+.tip h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.tip p { margin: 0 0 8px; max-width: none; }
+.tip p:last-child, .tip dl:last-child { margin-block-end: 0; }
+.tip dl { margin: 0 0 8px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; }
+.tip dt { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; }
+.tip dd { margin: 0; }
+.jig summary { list-style: none; cursor: pointer; padding: 8px 40px 8px 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+.jig summary::-webkit-details-marker { display: none; }
+.jig summary::before { content: "▸"; font-size: 10px; color: var(--ink-2); inline-size: 10px; }
+.jig details[open] > summary::before { content: "▾"; }
+.jig summary .sub { margin-inline-start: auto; font-weight: 400; font-size: 12px; color: var(--ink-2); font-family: var(--mono); }
+.sec { padding: 2px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); margin-block-start: 4px; display: flex; gap: 8px; align-items: baseline; }
+.grp .mono { text-transform: none; letter-spacing: 0; margin-inline-start: auto; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; min-block-size: 26px; }
+.row.chg { background: var(--chg-tint); margin-inline: -6px; padding-inline: 6px; border-radius: 5px; }
+.lab { font-size: 12.5px; color: var(--ink); cursor: ew-resize; user-select: none; touch-action: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lab small { color: var(--ink-2); font-family: var(--mono); font-size: 11px; margin-inline-start: 6px; }
+.ctl-in { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
+.jig .ctl-in input[type="number"], .jig .ctl-in select { border: 0; background: transparent; border-radius: 0 4px 4px 0; }
+.jig .ctl-in > :only-child { border-radius: 4px; }
+.ctl-in input[type="number"]:focus-visible, .ctl-in select:focus-visible { outline: 0; }
+.ctl-in:has(input:focus-visible), .ctl-in:has(select:focus-visible) { outline: 2px solid var(--margin); outline-offset: 1px; }
+.chg > .ctl-in { border-color: var(--chg); }
+.ctl-in .rst { align-self: stretch; padding-inline: 5px 2px; border-radius: 4px 0 0 4px; }
+.ctl-in .rst:focus-visible { outline: 2px solid var(--margin); outline-offset: -2px; }
+.jig input[type="number"] { font-family: var(--mono); font-size: 12.5px; inline-size: 68px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); text-align: end; }
+.jig select { font: inherit; font-size: 12.5px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); max-inline-size: 190px; }
+.quad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.quad label { display: block; font-size: 10.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; cursor: ew-resize; user-select: none; touch-action: none; }
+.quad input[type="number"] { inline-size: 100%; display: block; margin-block-start: 1px; }
+.quad label .sym { font-family: var(--mono); }
+.quad label .sym { font-style: normal; opacity: .7; }
+.quad label.chg input { border-color: var(--chg); background: var(--chg-tint); }
+.rst { font: inherit; font-size: 12px; line-height: 1; color: var(--chg); background: none; border: 0; padding: 3px; cursor: pointer; border-radius: 4px; visibility: hidden; }
+.chg .rst { visibility: visible; }
+.seg { display: flex; background: var(--surface-2); border-radius: 7px; padding: 2px; gap: 2px; }
+.seg label { flex: 1; min-width: 0; text-align: center; font-size: 12px; padding: 4px 3px; border-radius: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--surface); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.lvl { display: grid; grid-template-columns: 58px minmax(0, 1fr) 62px 62px; gap: 6px; align-items: center; font-size: 12.5px; min-block-size: 26px; }
+.lvl .f { font-family: var(--mono); font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lvl input[type="number"] { inline-size: 100%; }
+.lvl input.pin { border-color: var(--chg); background: var(--chg-tint); }
+.lvl.head { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); min-block-size: 0; }
+.lvl.res { color: var(--ink-2); }
+.lvl .v { font-family: var(--mono); text-align: end; padding-inline-end: 6px; }
+.hint { font-size: 12px; color: var(--ink-2); }
+.warn { font-size: 12px; color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chipm { font-family: var(--mono); font-size: 11px; padding: 2px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--ok); }
+.chipm.bad { color: var(--bad); border-color: var(--bad); background: var(--bad-tint); font-weight: 500; }
+.fails { margin: 0; padding-inline-start: 16px; font-family: var(--mono); font-size: 11.5px; color: var(--bad); display: flex; flex-direction: column; gap: 3px; }
+textarea { font: inherit; font-size: 12.5px; inline-size: 100%; min-block-size: 54px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); resize: vertical; }
+
+/* canvas blocks */
+.read { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: baseline; font-size: 13px; color: var(--ink-2); }
+.read b { color: var(--ink); font-weight: 500; font-size: 15px; font-family: var(--mono); }
+.read .rung { font-family: var(--mono); color: var(--ink); }
+.block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.stage { overflow-x: auto; padding: 2px; }
+.off { border: 1px dashed var(--bad); color: var(--bad); border-radius: 8px; padding: 18px; font-family: var(--mono); font-size: 13px; }
+.spec { min-width: 300px; max-width: 720px; line-height: 1.4; font-family: var(--f-content, var(--text)); }
+.lv { position: relative; display: flex; flex-direction: column; outline: var(--bw, 1px) solid var(--line); outline-offset: calc(-1 * var(--bw, 1px)); }
+.lv.page { --mar: var(--pm); padding: var(--pm); border-radius: var(--pr); background: var(--sp-page); }
+.lv.card { --mar: var(--cm); padding: var(--cm); border-radius: var(--cr); background: var(--sp-card); margin-inline: calc(-1 * var(--cm)); margin-block-end: calc(-1 * var(--cm)); }
+.lv.widget { --mar: var(--wm); padding: var(--wm); border-radius: var(--wr); background: var(--sp-widget); margin-inline: calc(-1 * var(--wm)); flex-direction: row; align-items: center; }
+.lv.group { --mar: var(--gm); padding: calc(var(--gm) - var(--n)); border-radius: var(--gr); background: var(--sp-group); margin-inline: calc(-1 * var(--gm)); }
+.spec .lv { --band: 0 0 #0000; --elev: 0 0 #0000; box-shadow: var(--band), var(--elev); }
+.spec.show-m .lv { --band: inset 0 0 0 var(--mar) var(--margin-tint); }
+.spec.show-e .lv.widget { --elev: var(--el1); }
+.spec.show-e .lv.card { --elev: var(--el2); }
+.ctl.pri { background: var(--accent, var(--margin)); color: var(--on-accent, #fff); }
+.spec .t { font-size: var(--body); min-width: 0; display: flex; flex-direction: column; }
+.spec .t strong { font-size: var(--title); font-weight: var(--w-title, 600); line-height: var(--lh-title, 1.4); }
+.spec .t .meta { font-family: var(--f-code, var(--mono)); font-size: var(--lab); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lv.widget .t { flex: 1; }
+.ctl { block-size: var(--h); min-inline-size: var(--h); padding-inline: var(--n); border-radius: var(--rc, var(--n)); display: flex; align-items: center; font-size: var(--ctl); font-weight: var(--w-ctl, 400); font-family: var(--f-content, var(--text)); color: var(--ink); background: var(--sp-ctl); border: 0; flex: none; }
+.spec.show-m .ctl.band { box-shadow: inset 0 0 0 var(--n) var(--margin-tint); }
+.ctl .clab { padding-inline: var(--lm); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.opt { background: transparent; inline-size: 100%; flex: 0 0 auto; }
+.opt .clab { text-align: start; }
+.opt.sel { background: var(--sp-ctl); }
+.ico { inline-size: var(--ico); block-size: var(--ico); flex: none; display: grid; place-items: center; }
+.ico::before { content: ""; inline-size: var(--gly); block-size: var(--gly); border-radius: 50%; background: var(--ink-2); }
+.chip { block-size: var(--chip-h); padding-inline: var(--c); border-radius: var(--rchip); background: var(--sp-chip); display: inline-flex; align-items: center; font-size: var(--lab); font-weight: var(--w-lab, 500); flex: none; }
+.chip span { padding-inline: var(--c); }
+.spec.show-m .chip { box-shadow: inset 0 0 0 var(--c) var(--margin-tint); }
+.brow { display: flex; justify-content: flex-end; margin-inline-end: calc(-1 * var(--n)); margin-block-end: calc(-1 * var(--n)); }
+.lv.widget > .ctl { margin-block: calc(-1 * var(--n)); margin-inline-end: calc(-1 * var(--n)); }
+.gy, .gx { flex: none; display: grid; place-items: center; font-family: var(--mono); font-size: 10px; line-height: 1; color: var(--gutter); font-style: normal; overflow: hidden; }
+.gy { block-size: var(--g); } .gx { inline-size: var(--g); align-self: stretch; }
+.g-p { --g: var(--pg); } .g-c { --g: var(--cg); } .g-w { --g: var(--wg); } .g-k { --g: var(--kg, 0px); }
+.spec.show-g .gy, .spec.show-g .gx { background: repeating-linear-gradient(135deg, var(--gutter-tint) 0 2px, transparent 2px 5px); }
+.gy b { background: var(--sp-page); padding: 1px 3px; border-radius: 2px; font-weight: 500; }
+.spec:not(.show-g) .gy b, .gy.tiny b { display: none; }
+.toggles { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.toggles label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.types { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.ty { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 12px; border-block-end: 1px solid var(--line); }
+.ty:last-child { border-block-end: 0; }
+.ty .who { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 6px; }
+.ty .who b { color: var(--ink); font-weight: 500; }
+.ty.chg .who b { color: var(--chg); }
+.ty .smp { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.15; padding-block: 1px; }
+.ty .smp.caps { text-transform: uppercase; letter-spacing: .08em; }
+pre { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; max-block-size: 420px; overflow-y: auto; }
+.said { font-size: 12.5px; color: var(--ok); }
+.said:empty { display: none; }
+.pagetip { position: fixed; z-index: 15; pointer-events: none; max-inline-size: min(300px, calc(100vw - 16px)); padding: 6px 9px; border-radius: 7px; background: var(--ink); color: var(--bg); font-family: var(--text); font-size: 12px; line-height: 1.35; box-shadow: 0 4px 16px rgba(0, 0, 0, .22); }
+.pagetip b { font-weight: 600; display: block; }
+.pagetip small { display: block; opacity: .78; font-size: 11px; margin-block-start: 1px; }
+.jig .hit { outline: 2px solid var(--margin); outline-offset: 1px; border-radius: 5px; background: var(--margin-tint); }
+.jig .up { outline: 1.5px dashed var(--margin); outline-offset: 1px; border-radius: 5px; }
+.jig .down { outline: 1.5px dotted var(--gutter); outline-offset: 1px; border-radius: 5px; }
+[data-pick] { cursor: pointer; }
+.spec .picked { outline: 2px solid var(--margin); outline-offset: 2px; z-index: 2; }
+.spec .pick-up { outline: 1.5px dashed var(--margin); outline-offset: -2px; }
+.spec .pick-down { outline: 1.5px dotted var(--gutter); outline-offset: -2px; }
+.ty.picked { background: var(--margin-tint); }
+.more { margin-inline-start: 6px; inline-size: 28px; block-size: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: 700 15px/1 var(--text); cursor: pointer; padding: 0 0 5px; }
+.more:focus-visible, .menu button:focus-visible, .tab:focus-visible, .health:focus-visible, .mx button:focus-visible, .jig input[type="text"]:focus-visible { outline: 2px solid var(--margin); outline-offset: 1px; }
+.menu { position: absolute; inset-block-start: 40px; inset-inline-end: 10px; z-index: 12; min-inline-size: 200px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: 0 8px 28px rgba(0, 0, 0, .18); display: flex; flex-direction: column; }
+.menu[hidden] { display: none; }
+.menu button { font: inherit; font-size: 13px; text-align: start; padding: 6px 10px; border: 0; border-radius: 5px; background: none; color: var(--ink); cursor: pointer; }
+.menu button:hover:not(:disabled), .menu button:focus-visible { background: var(--surface-2); }
+.menu button:disabled { opacity: .45; cursor: default; }
+.menu hr { border: 0; border-block-start: 1px solid var(--line); margin: 4px 0; inline-size: 100%; }
+.health { font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--ok); cursor: pointer; margin-inline-start: 8px; }
+.health.bad { color: var(--bad); border-color: var(--bad); background: var(--bad-tint); }
+.srow { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 6px; align-items: center; font-size: 11.5px; color: var(--ink-2); }
+@media (max-width: 520px) { .ty { grid-template-columns: 120px minmax(0, 1fr); } }
+.tabs { display: flex; gap: 2px; background: var(--surface-2); border-radius: 7px; padding: 2px; }
+.tab { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; padding: 5px 4px; border: 0; border-radius: 5px; background: none; color: var(--ink-2); cursor: pointer; position: relative; }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.tab.has-hit::after { content: ""; position: absolute; inset-block-start: 4px; inset-inline-end: 6px; inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--margin); }
+#ctxbox details { border-block-end: 0; }
+#ctxbox .sec { padding-inline: 0; padding-block-end: 0; }
+#ctxbox summary { padding-inline-start: 0; padding-block: 2px 6px; }
+#ctxbox .help { inset-block-start: 0; inset-inline-end: 0; }
+.prt { display: grid; grid-template-columns: minmax(0, 1fr) 96px 40px; gap: 6px; align-items: center; font-size: 12.5px; min-block-size: 22px; }
+.prt.head { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); min-block-size: 0; }
+.prt .f { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+.prt .v { font-family: var(--mono); text-align: end; }
+.prt.chgt .v { color: var(--chg); font-weight: 600; }
+.jig input[type="text"] { font: inherit; font-size: 12.5px; min-inline-size: 0; inline-size: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); }
+.prl { display: flex; flex-direction: column; gap: 4px; }
+.prl .row { grid-template-columns: minmax(0, 1fr) auto auto; }
+.prl .btn { padding: 3px 7px; font-size: 12px; }
+.chipm.note { color: var(--chg); border-color: var(--chg); background: var(--chg-tint); }
+.fails li.nt { color: var(--chg); }
+.parts { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.parts[hidden] { display: none; }
+.p-check { inline-size: var(--p-cb); block-size: var(--p-cb); border-radius: var(--p-cbr); background: var(--accent); display: grid; place-items: center; }
+.p-check i { inline-size: var(--p-ck); block-size: var(--p-ck); background: var(--on-accent); clip-path: polygon(12% 50%, 0 64%, 38% 100%, 100% 24%, 86% 12%, 36% 72%); }
+.p-radio { inline-size: var(--p-cb); block-size: var(--p-cb); border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; }
+.p-radio i { inline-size: var(--p-rd); block-size: var(--p-rd); border-radius: 50%; background: var(--accent); }
+.p-switch { inline-size: var(--p-sw); block-size: var(--p-st); padding: var(--c); border-radius: 999px; background: var(--accent); display: flex; justify-content: flex-end; }
+.p-switch i { inline-size: var(--p-th); block-size: var(--p-th); border-radius: 50%; background: var(--on-accent); }
+.p-badge { block-size: var(--p-bd); padding-inline: calc(2 * var(--c)); border-radius: var(--p-cbr); display: inline-flex; align-items: center; font-size: var(--lab); font-weight: var(--w-lab, 500); background: var(--sp-chip); }
+.p-avatar { inline-size: var(--p-av); block-size: var(--p-av); border-radius: 50%; background: var(--sp-ctl); display: grid; place-items: center; font-size: var(--ctl); font-weight: 600; }
+.p-prog { inline-size: 120px; block-size: var(--p-pg); border-radius: 999px; background: var(--sp-ctl); overflow: hidden; }
+.p-prog i { display: block; inline-size: 62%; block-size: 100%; background: var(--accent); }
+.parts .picked, .lay.picked { outline: 2px solid var(--margin); outline-offset: 2px; }
+.lay { block-size: 56px; border: 1px dashed var(--line); border-radius: 6px; display: flex; justify-content: center; background: var(--surface); overflow: hidden; }
+.lay-page { block-size: 100%; background: var(--margin-tint); display: flex; }
+.lay-content { flex: 1; min-width: 0; background: var(--sp-page); display: flex; justify-content: center; }
+.lay-col { block-size: 100%; background: var(--sp-card); outline: 1px solid var(--line); }
+.vw { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.vw input { flex: 1; min-width: 0; max-inline-size: 320px; }
+.mxw { overflow-x: auto; }
+.mx { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.mx th { font-weight: 500; color: var(--ink-2); text-align: start; padding: 2px 10px 2px 0; white-space: nowrap; }
+.mx thead th { text-align: center; padding: 2px 4px; }
+.mx td { padding: 1px; }
+.mx button { font: inherit; inline-size: 46px; padding: 3px 0; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.mx button.chg { border-color: var(--chg); background: var(--chg-tint); }
+.mx button.off { color: var(--bad); border-color: var(--bad); }
+.mx button.cur { outline: 2px solid var(--margin); outline-offset: 1px; }
+.tyk { display: grid; grid-template-columns: 78px repeat(3, minmax(0, 1fr)) 18px; gap: 4px; align-items: center; font-size: 12.5px; min-block-size: 26px; }
+.tyk.head { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); min-block-size: 0; }
+.tyk .nm { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tyk input[type="number"] { inline-size: 100%; }
+.cell.chg input { border-color: var(--chg); background: var(--chg-tint); }
+#imp { display: flex; flex-direction: column; gap: 6px; }
+#imp[hidden] { display: none; }
+#imp textarea { font-family: var(--mono); font-size: 11.5px; min-block-size: 90px; }
+.stage.base { outline: 2px dashed var(--chg); outline-offset: 2px; border-radius: 8px; }
+.tagb { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--chg); border: 1px solid var(--chg); border-radius: 999px; padding: 1px 7px; }
+.spec .lv, .spec .ctl, .spec .chip { corner-shape: var(--corner, round); }
+.spec.show-f .ctl.foc { outline: var(--fw, 2px) solid var(--margin); outline-offset: var(--fo, 2px); }
+.mos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.mo { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mo .dot { block-size: 30px; border-radius: 6px; background: var(--sp-chip); }
+.mo b { font-size: 13px; font-weight: 600; }
+.mo small { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+.mo.picked { outline: 2px solid var(--margin); outline-offset: 2px; }
+@media (max-width: 520px) { .mos { grid-template-columns: minmax(0, 1fr); } }
+.spec[data-hl="page"] .lv.page, .spec[data-hl="card"] .lv.card, .spec[data-hl="widget"] .lv.widget, .spec[data-hl="group"] .lv.group, .spec[data-hl="control"] .ctl, .spec[data-hl="chip"] .chip { outline: 2px solid var(--margin); outline-offset: -2px; }
+</style>
+
+<div class="wrap">
+  <header class="block">
+    <h1>Maison Jig</h1>
+    <p class="lede">Tune the constants the whole system derives from, watch everything recompute, and copy the result as one portable change set. Drag any label to scrub its value, click it to see what it drives, and paste a change set back in with Import. This prototype runs on the reference implementation, not on the kit's live tokens.</p>
+  </header>
+
+  <div class="cols">
+    <div class="canvas">
+      <div class="block">
+        <div class="read" id="read" aria-live="polite"></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="show-m" checked>Margins</label>
+          <label><input type="checkbox" id="show-g" checked>Gutters</label>
+          <label><input type="checkbox" id="show-f">Focus ring</label>
+          <label><input type="checkbox" id="show-e">Elevation</label>
+          <label><input type="checkbox" id="show-long">Long labels</label>
+          <label><input type="checkbox" id="show-rtl">Right to left</label>
+          <label><input type="checkbox" id="show-base">Before (base system)</label>
+        </div>
+      </div>
+      <div class="stage" id="stage">
+        <div class="off" id="off" hidden></div>
+        <div class="spec show-m show-g" id="spec">
+          <div class="lv page">
+            <div class="t"><strong>Page</strong><span class="meta" data-meta="page"></span></div>
+            <i class="gy g-p" data-g="page"><b></b></i>
+            <div class="lv card">
+              <div class="t"><strong>Card</strong><span class="meta" data-meta="card"></span></div>
+              <i class="gy g-c" data-g="card"><b></b></i>
+              <div class="lv widget">
+                <div class="t"><strong>Widget</strong><span class="meta" data-meta="widget"></span></div>
+                <i class="gx g-w"></i>
+                <button type="button" class="ctl band" tabindex="-1"><span class="clab">Undo</span></button>
+              </div>
+              <i class="gy g-c" data-g="card"><b></b></i>
+              <div class="lv group">
+                <div class="ctl opt sel band"><span class="ico"></span><i class="gx g-k"></i><span class="clab">Group of controls</span><i class="gx g-k"></i><span class="chip"><span>Chip</span></span></div>
+                <div class="ctl opt"><span class="ico"></span><i class="gx g-k"></i><span class="clab">They touch, ringed by c</span></div>
+              </div>
+              <i class="gy g-c" data-g="card"><b></b></i>
+              <div class="brow">
+                <button type="button" class="ctl band" tabindex="-1"><span class="clab">Cancel</span></button>
+                <i class="gx g-w"></i>
+                <button type="button" class="ctl band foc pri" tabindex="-1"><span class="clab">Save</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="block">
+        <h2>Parts at this rung</h2>
+        <div class="parts" id="parts">
+          <span class="p-check" title="Checkbox"><i></i></span><span class="p-radio" title="Radio"><i></i></span><span class="p-switch" title="Switch"><i></i></span>
+          <span class="p-badge" title="Badge">Badge</span><span class="p-avatar" title="Avatar">KG</span><span class="p-prog" title="Progress bar"><i></i></span>
+        </div>
+      </div>
+      <div class="block">
+        <h2>Type at this rung</h2>
+        <div class="types" id="types"></div>
+      </div>
+      <div class="block">
+        <h2>Motion at this rung</h2>
+        <div class="mos" id="mos">
+          <div class="mo" data-motion="short"><div class="dot"></div><b>Short: a state change</b><small></small></div>
+          <div class="mo" data-motion="medium"><div class="dot"></div><b>Medium: a widget enters</b><small></small></div>
+          <div class="mo" data-motion="long"><div class="dot"></div><b>Long: a card or page enters</b><small></small></div>
+        </div>
+        <div class="toggles">
+          <button type="button" class="btn" id="mo-play">Play</button>
+          <label><input type="checkbox" id="mo-reduced">Reduced motion</label>
+        </div>
+      </div>
+      <div class="block">
+        <h2>Layout</h2>
+        <div class="lay" id="lay"><div class="lay-page" id="lay-page"><div class="lay-content"><div class="lay-col" id="lay-col"></div></div></div></div>
+        <p class="hint mono" id="lay-read"></p>
+        <label class="vw">Preview width <input type="range" id="vw" min="320" max="1600" step="10" value="1200"><span class="mono" id="vw-out"></span></label>
+      </div>
+      <div class="block">
+        <h2>Every rung</h2>
+        <p class="hint">Control height in px for each tier, scale and size. Click one to look at it.</p>
+        <div class="mxw"><table class="mx" id="matrix"></table></div>
+      </div>
+      <div class="block">
+        <h2>Change set</h2>
+        <p class="hint">What the Copy buttons put on your clipboard. Every change carries the value it replaced, so an agent can refuse a change set made against a different base.</p>
+        <pre id="json" tabindex="0"></pre>
+      </div>
+    </div>
+
+    <aside class="jig" aria-label="Jig">
+      <div class="jig-head">
+        <div class="jig-title"><strong>Jig</strong><span class="count" id="count">No changes</span>
+          <button type="button" class="health" id="health" title="Checks"></button>
+          <button type="button" class="more" id="more" aria-haspopup="menu" aria-expanded="false" aria-controls="menu" aria-label="Jig actions">&#x22EF;</button></div>
+        <div class="menu" id="menu" role="menu" aria-label="Jig actions" hidden>
+          <button type="button" role="menuitem" id="copy-json">Copy JSON</button>
+          <button type="button" role="menuitem" id="copy-prompt">Copy as prompt</button>
+          <button type="button" role="menuitem" id="import-open">Import a change set</button>
+          <hr>
+          <button type="button" role="menuitem" id="undo">Undo</button>
+          <button type="button" role="menuitem" id="redo">Redo</button>
+          <button type="button" role="menuitem" id="reset-all">Reset all</button>
+        </div>
+        <div id="imp" hidden>
+          <label class="hint" for="imp-text">Paste a change set: the JSON, or a prompt that contains it.</label>
+          <textarea id="imp-text" spellcheck="false"></textarea>
+          <ul class="fails" id="imp-errs"></ul>
+          <div class="acts"><button type="button" class="btn pri" id="imp-apply">Apply</button><button type="button" class="btn" id="imp-cancel">Cancel</button></div>
+        </div>
+        <div class="said" id="said" aria-live="polite"></div>
+        <div id="ctxbox"></div>
+        <div class="tabs" role="tablist" aria-label="Jig sections" id="tabs"></div>
+      </div>
+      <div class="jig-body" id="panel"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+// Reference implementation. Edit CFG to change the system; resolve() and check() follow.
+// Jig extension, not in scale.mjs: CFG.roomy, the spacing units a roomy level adds over the level inside it. With every step at 1 this behaves exactly as scale.mjs.
+const CFG = {
+  roomy: { widget: 1, card: 1, page: 1 },
+  ladder: [4, 24],                                   // allowed n; h = 4n
+  tiers: { widget: [6, 1, 1, 0], product: [8, 2, 2, 1], content: [10, 2, 2, 1], brand: [14, 2, 2, 1] }, // n0 a k g
+  density: { compact: -1, default: 0, spacious: 1 }, // d; m = n + a·d, floored
+  linear: { body: [12, 1], control: [11, 1], fieldLabel: [9, 1], groupLabel: [9, 0.5] },              // px at n=5, px per step; never below floor
+  Q: [1.25, 1 / 32],                                 // heading ratio at n=5, per step
+  sectionRatio: 9 / 8, titleBump: { sm: 0, md: 1, lg: 2 }, floor: 9,
+  levels: { chip: ["tight"], control: ["base"], group: ["tight", "control"], widget: ["roomy", "control"], tray: ["tight", "widget", "reserved"], // wrap, child; in ladder order
+    card: ["roomy", "widget"], lane: ["tight", "card", "reserved"], page: ["roomy", "card"], shell: ["tight", "page", "reserved"] },
+};
+const STEPS = ["sm", "md", "lg"], IX = { sm: -1, md: 0, lg: 1 };
+const ROLES = ["display", "heading", "subhead", "sectionLabel", "title", "body", "control", "fieldLabel", "groupLabel"];
+const round = (x) => Math.floor(x + 0.5);
+const rung = (t, sc, sz) => { const [n0, a, k, g] = CFG.tiers[t], s = IX[sc], z = IX[sz]; return n0 + a * s + k * z + g * s * z; };
+const nOnly = (v) => Object.entries({ ...v, ...v.parts, ...Object.fromEntries(["chip", "control", "group"].flatMap((l) => Object.entries(v[l]).map(([k, x]) => [`${l} ${k}`, x]))) })
+  .filter(([k, x]) => typeof x === "number" && k !== "m"); // px that depend on n alone
+const unit = (t, n, d) => Math.max(n + CFG.tiers[t][1] * CFG.density[d], Math.floor((n + Math.ceil(n / 4)) / 2) + 1); // m, floored so a widget out-margins a group
+function at(n, size = "md", m = n) {
+  const c = Math.ceil(n / 4), half = Math.ceil(n / 2), lin = (r) => Math.max(CFG.floor, CFG.linear[r][0] + CFG.linear[r][1] * (n - 5));
+  const body = lin("body"), Q = CFG.Q[0] + CFG.Q[1] * (n - 5);
+  const lv = {}, span = { control: m };              // span: a level's size in container space, where the control counts as m
+  for (const [l, [wrap, child]] of Object.entries(CFG.levels)) {
+    const inner = child ? lv[child].margin : 0;      // a chip wraps a mark, margin 0
+    if (wrap === "base") lv[l] = { margin: n, gutter: 0, radius: n };
+    else if (wrap === "tight") lv[l] = { margin: inner + c, gutter: child ? c : 0, radius: child ? inner + c : half }; // no child level (the chip): children touch
+    else { span[l] = span[child] + CFG.roomy[l] * m; lv[l] = { margin: span[l], gutter: span[child], radius: span[l] }; }
+  }
+  const pick = (reserved) => Object.fromEntries(Object.entries(lv).filter(([l]) => (CFG.levels[l][2] === "reserved") === reserved));
+  return { n, m, h: 4 * n, minWidth: 4 * n, labelMargin: n, icon: 2 * n, c, glyph: 2 * n - 2 * c,
+    type: { display: round(body * Q ** 3), heading: round(body * Q ** 2), subhead: round(body * Q), sectionLabel: round(body * CFG.sectionRatio),
+      title: body + CFG.titleBump[size], body, control: lin("control"), fieldLabel: lin("fieldLabel"), groupLabel: lin("groupLabel") },
+    parts: { checkbox: 2 * n, checkboxRadius: half, check: 2 * n - 2 * c, radio: 2 * n, radioDot: 2 * n - 2 * c - 2, switchTrack: 2 * n, switchThumb: 2 * n - 2 * c, switchWidth: 4 * n - 2 * c,
+      badge: 2 * n + 2 * c, avatar: 4 * n, avatarInline: 2 * n, iconTile: 4 * n, progress: 2 * c, tableRow: 4 * n + 2 * c, fieldGutter: half },
+    ...pick(false), reserved: pick(true) };
+}
+function resolve(tier = "product", scale = "md", size = "md", density = "default") {
+  const n = rung(tier, scale, size);
+  if (!Number.isInteger(n) || n < CFG.ladder[0] || n > CFG.ladder[1]) throw new Error(`${tier}/${scale}/${size}: n=${n} is off the ladder`);
+  if (!(density in CFG.density)) throw new Error(`${density}: not a density`);
+  return { tier, scale, size, density, ...at(n, size, unit(tier, n, density)) };
+}
+// Contract: every check must pass after any change to CFG. Returns the failures.
+function check() {
+  const bad = [], all = Object.keys(CFG.tiers).flatMap((t) => STEPS.flatMap((s) => STEPS.map((z) => [t, s, z])));
+  const nest = (v) => ["control", "group", "widget", "card", "page"].map((l) => v[l].margin), rising = (xs) => xs.every((x, i) => !i || xs[i - 1] < x);
+  for (const [t, s, z] of all) { const n = rung(t, s, z); if (!Number.isInteger(n) || n < CFG.ladder[0] || n > CFG.ladder[1]) bad.push(`M1 ${t}/${s}/${z} n=${n} off the ladder`); }
+  if (bad.length) return bad;
+  for (const t in CFG.tiers) for (const x of STEPS) for (const i of [0, 1]) {
+    if (rung(t, x, STEPS[i]) >= rung(t, x, STEPS[i + 1])) bad.push(`M2 ${t}/${x}: size ${STEPS[i]}→${STEPS[i + 1]} doesn't grow`);
+    if (rung(t, STEPS[i], x) >= rung(t, STEPS[i + 1], x)) bad.push(`M2 ${t}: scale ${STEPS[i]}→${STEPS[i + 1]} doesn't grow at size ${x}`);
+  }
+  for (const [t, s, z] of all) { const u = resolve(t, s, z).type; if (!(u.body <= u.title && u.title <= u.sectionLabel)) bad.push(`M4 ${t}/${s}/${z}: body ≤ title ≤ section label fails`); }
+  const order = ROLES.filter((r) => r !== "title");
+  for (let n = CFG.ladder[0]; n <= CFG.ladder[1]; n++) {
+    const v = at(n), w = n > CFG.ladder[0] ? at(n - 1) : null, k = v.control;
+    order.slice(1).forEach((r, i) => { if (v.type[order[i]] < v.type[r]) bad.push(`M3 h${4 * n}: ${order[i]} < ${r}`); });
+    if (Math.min(...ROLES.map((r) => v.type[r])) < CFG.floor) bad.push(`M5 h${4 * n}: type below ${CFG.floor}px`);
+    if (!rising(nest(v))) bad.push(`M6 h${4 * n}: margins don't nest ${nest(v).join(" < ")}`);
+    for (const l of ["group", "widget", "card", "page"]) {
+      if (!(v[l].gutter < v[l].margin)) bad.push(`M6 h${4 * n}: ${l} gutter ≥ margin`);
+      if (v[l].margin - k.margin < v.c) bad.push(`M8 h${4 * n}: a control doesn't fit in ${l}`);
+      if (![v[l].margin, v[l].gutter].every(Number.isInteger)) bad.push(`M7 h${4 * n}: ${l} not whole px`);
+    }
+    if (ROLES.some((r) => !Number.isInteger(2 * v.type[r]))) bad.push(`M7 h${4 * n}: type off the 0.5px grid`);
+    if (!nOnly(v).every(([, x]) => Number.isInteger(x))) bad.push(`M7 h${4 * n}: a chip, control, group or component size is not whole px`);
+    if (!(v.glyph > 0)) bad.push(`M9 h${4 * n}: glyph ${v.glyph}`);
+    if (w) ROLES.forEach((r) => { if (v.type[r] < w.type[r]) bad.push(`M10 h${4 * (n - 1)}→h${4 * n}: ${r} shrinks`); });
+    if (k.gutter + v.labelMargin !== k.margin || v.labelMargin < v.c || ![k.gutter, v.labelMargin].every(Number.isInteger)) bad.push(`M11 h${4 * n}: gutter ${k.gutter} + label margin ${v.labelMargin} must be ${k.margin}, label margin ≥ ${v.c}, whole px`);
+    if (Math.max(v.minWidth, 2 * k.margin + 2 * v.labelMargin) < v.h) bad.push(`M12 h${4 * n}: a label-only control can be narrower than ${v.h}`);
+    if (w) { const was = Object.fromEntries(nOnly(w)); nOnly(v).forEach(([key, x]) => { if (x < was[key]) bad.push(`M14 h${4 * (n - 1)}→h${4 * n}: ${key} shrinks ${was[key]} → ${x}`); }); }
+    if (v.parts.badge < v.type.fieldLabel + v.c) bad.push(`M15 h${4 * n}: badge ${v.parts.badge} is not c taller than its type ${v.type.fieldLabel}`);
+  }
+  for (const [t, s, z] of all) for (const d in CFG.density) {
+    const v = resolve(t, s, z, d), lv = { ...v, ...v.reserved }, names = Object.keys(CFG.levels);
+    if (!Number.isInteger(v.m) || !rising(nest(v))) bad.push(`M13 ${t}/${s}/${z} ${d}: margins don't nest ${nest(v).join(" < ")}`);
+    for (const l of ["widget", "card", "page"]) if (v[l].margin - v.control.margin < v.c) bad.push(`M13 ${t}/${s}/${z} ${d}: a control doesn't fit in ${l}`);
+    const fits = names.every((l) => { const [wrap, child] = CFG.levels[l]; return wrap === "base" || lv[l].margin - (child ? lv[child].margin : 0) >= v.c; });
+    if (!rising(names.map((l) => lv[l].margin)) || !fits) bad.push(`M16 ${t}/${s}/${z} ${d}: level margins don't nest with an offset of c: ${names.map((l) => `${l} ${lv[l].margin}`).join(" < ")}`);
+  }
+  return bad;
+}
+
+</script>
+<script>
+(function () {
+  var SCALE_SHA = "55e5bb5ee068b9006a8d023a8e2def29d7585c3c626fe005a2ad136140a6f950";
+  var TIERS = ["widget", "product", "content", "brand"], STEP3 = ["sm", "md", "lg"], DENS = ["compact", "default", "spacious"];
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+  var BASE = clone(CFG);
+  function load(o) { var c = clone(o); for (var k in c) CFG[k] = c[k]; }
+  var flat = function (o, p, out) { out = out || {}; p = p || ""; for (var k in o) { var v = o[k]; if (v && typeof v === "object") flat(v, p + k + ".", out); else if (typeof v === "number") out[p + k] = v; } return out; };
+  var BASE_RES = {}, BASE_STR = {};
+  ["widget", "product", "content", "brand"].forEach(function (t) { ["sm", "md", "lg"].forEach(function (s) { ["sm", "md", "lg"].forEach(function (z) { ["compact", "default", "spacious"].forEach(function (d) {
+    var r = resolve(t, s, z, d), key = t + "/" + s + "/" + z + "/" + d; BASE_RES[key] = r; BASE_STR[key] = JSON.stringify(flat(r)); }); }); }); });
+  var ctx = { tier: "product", scale: "md", size: "md", density: "default" };
+  var FONT0 = { display: "Bricolage Grotesque", context: "IBM Plex Mono", content: "system-ui", code: "IBM Plex Mono" };
+  var VOICES = [["display", "Display font", "Headings: display, heading, subhead"], ["context", "Context font", "Kickers and groups: section label, group label"], ["content", "Content font", "Body, titles, controls, field labels"], ["code", "Code font", "Numbers, code, measurements"]];
+  var overrides = {}, fonts = clone(FONT0), note = "";
+  // Constants the skill states in prose or not at all. They travel in the change set with a `home` that says where they live today.
+  var EXT = { type: { display: [700, 1.1, -0.012], heading: [650, 1.2, -0.012], subhead: [600, 1.3, 0], sectionLabel: [500, 1.2, 0.08], title: [600, 1.4, 0], body: [400, 1.5, 0], control: [400, 1.2, 0], fieldLabel: [500, 1.3, 0], groupLabel: [400, 1.2, 0.08] },
+    shape: { radius: 1, border: 1, focusWidth: 2, focusOffset: 2 },
+    motion: { short: 100, medium: 200, long: 320, travel: 2 },
+    color: { hue: 275, chroma: 0.17, lightness: 0.5, neutral: 0.012 },
+    elevation: { offset: 1, blur: 1, strength: 0.16 },
+    layout: { measure: 66, pageMax: 1200, narrow: 640 } };
+  var theme = "auto", THEMED = ["stage", "types", "parts", "mos", "lay"];
+  var KIT_VOICE = { display: "display", heading: "headline", subhead: "sub-heading", sectionLabel: "sub-title", title: "title", body: "body", control: "ui-control", fieldLabel: "label", groupLabel: "kicker" };
+  var KIT_FONT = { display: "--font-display, --font-heading", content: "--font-body, --font-ui", context: "--font-mono", code: "--font-mono" };
+  var PARTS = [["Icon", "2n", function (v) { return v.icon; }], ["Glyph", "2n − 2c", function (v) { return v.glyph; }], ["Label margin", "n", function (v) { return v.labelMargin; }],
+    ["Checkbox", "2n", function (v) { return v.parts.checkbox; }], ["Check mark", "2n − 2c", function (v) { return v.parts.check; }], ["Radio dot", "2n − 2c − 2", function (v) { return v.parts.radioDot; }],
+    ["Switch track", "2n", function (v) { return v.parts.switchTrack; }], ["Switch thumb", "2n − 2c", function (v) { return v.parts.switchThumb; }], ["Switch width", "4n − 2c", function (v) { return v.parts.switchWidth; }],
+    ["Badge", "2n + 2c", function (v) { return v.parts.badge; }], ["Avatar", "4n", function (v) { return v.parts.avatar; }], ["Progress bar", "2c", function (v) { return v.parts.progress; }],
+    ["Table row", "4n + 2c", function (v) { return v.parts.tableRow; }], ["Field gutter", "⌈n/2⌉", function (v) { return v.parts.fieldGutter; }]];
+  var EXT0 = clone(EXT);
+  var SEL0 = { corner: "squircle", easeIn: "decelerate", easeOut: "accelerate" }, sels = clone(SEL0);
+  var SEL_PATH = { corner: "/shape/corner", easeIn: "/motion/enter", easeOut: "/motion/exit" }, SEL_HOME = { corner: "tokens.css --corner-shape", easeIn: "new constant", easeOut: "new constant" };
+  var EASE = { standard: "cubic-bezier(.2, 0, 0, 1)", decelerate: "cubic-bezier(0, 0, 0, 1)", accelerate: "cubic-bezier(.3, 0, 1, 1)", linear: "linear" };
+  var ROLE_SHORT = { display: "Display", heading: "Heading", subhead: "Subhead", sectionLabel: "Section label", title: "Title", body: "Body", control: "Control", fieldLabel: "Field label", groupLabel: "Group label" };
+  var ROLE_VOICE = { display: "display", heading: "display", subhead: "display", sectionLabel: "context", groupLabel: "context", title: "content", body: "content", control: "content", fieldLabel: "content" };
+  // What each loaded face can really render. system-ui depends on the platform, so it is not checked.
+  var FONT_W = { "Bricolage Grotesque": { range: [200, 800] }, "Inter": { range: [300, 800] }, "Fraunces": { range: [400, 800] }, "IBM Plex Sans": { steps: [400, 500, 600, 700] }, "IBM Plex Mono": { steps: [400, 500, 600, 700] } };
+  var FONTS = { "Bricolage Grotesque": '"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif', "system-ui": 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', "Inter": '"Inter", system-ui, sans-serif', "IBM Plex Sans": '"IBM Plex Sans", system-ui, sans-serif', "IBM Plex Mono": '"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace', "Fraunces": '"Fraunces", Georgia, serif' };
+
+  var el = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (x) { return typeof x === "number" ? String(Math.round(x * 100000) / 100000) : String(x); };
+
+  /* ---- knobs: every editable constant, by path ---- */
+  var knobs = [];
+  function knob(path, obj, key, step, label, hint, home) { knobs.push({ path: path, obj: obj, key: key, step: step, label: label, hint: hint || "", home: home || "CFG", base: obj()[key] }); return knobs[knobs.length - 1]; }
+  function getK(k) { return k.obj()[k.key]; }
+  function baseOf(k) { return k.base; }
+  var tierKnobs = {};
+  var TIER_LABELS = [["n0", "Base", "Base size: n at md scale and md size. Height is 4 times this."], ["a", "Scale step", "How much n changes for one scale step (sm, md, lg). Also the density step."], ["k", "Size step", "How much n changes for one size step (sm, md, lg)."], ["g", "Spread", "Extra distance between sizes at lg scale, and less at sm scale."]];
+  TIERS.forEach(function (t) { tierKnobs[t] = TIER_LABELS.map(function (L, i) { var k = knob("/tiers/" + t + "/" + L[0], function () { return CFG.tiers[t]; }, i, 1, L[1], L[0]); k.tip = L[2]; return k; }); });
+  var ladderKnobs = [knob("/ladder/min", function () { return CFG.ladder; }, 0, 1, "Smallest size unit", "n"), knob("/ladder/max", function () { return CFG.ladder; }, 1, 1, "Largest size unit", "n")];
+  var TYPE_LABELS = { body: "Body text", control: "Control text", fieldLabel: "Field label", groupLabel: "Group label" };
+  var typeKnobs = ["body", "control", "fieldLabel", "groupLabel"].map(function (r) {
+    return [knob("/linear/" + r + "/at5", function () { return CFG.linear[r]; }, 0, 0.5, TYPE_LABELS[r] + " size", "px at n 5"), knob("/linear/" + r + "/perStep", function () { return CFG.linear[r]; }, 1, 0.5, TYPE_LABELS[r] + " growth", "px per size unit")];
+  });
+  var headKnobs = [knob("/Q/at5", function () { return CFG.Q; }, 0, 1 / 64, "Heading ratio", "at n 5"), knob("/Q/perStep", function () { return CFG.Q; }, 1, 1 / 128, "Heading ratio growth", "per size unit"),
+    knob("/sectionRatio", function () { return CFG; }, "sectionRatio", 1 / 16, "Section label ratio", "× body"), knob("/floor", function () { return CFG; }, "floor", 1, "Smallest text", "px")];
+  var bumpKnobs = STEP3.map(function (z) { return knob("/titleBump/" + z, function () { return CFG.titleBump; }, z, 1, "Title bump " + z, "px over body"); });
+
+  var detailKnobs = {}; ROLES.forEach(function (r) { var o = function () { return EXT.type[r]; }, h = "SKILL.md section 4";
+    detailKnobs[r] = [knob("/type/" + r + "/weight", o, 0, 10, ROLE_SHORT[r] + " weight", "", h), knob("/type/" + r + "/lineHeight", o, 1, 0.05, ROLE_SHORT[r] + " line height", "", h), knob("/type/" + r + "/tracking", o, 2, 0.005, ROLE_SHORT[r] + " tracking", "em", h)]; });
+  var roomyO = function () { return CFG.roomy; }, densO = function () { return CFG.density; }, shapeO = function () { return EXT.shape; }, motionO = function () { return EXT.motion; };
+  var ruleKnobs = [knob("/roomy/widget", roomyO, "widget", 1, "Widget step", "m over a control", "new constant"), knob("/roomy/card", roomyO, "card", 1, "Card step", "m over a widget", "new constant"), knob("/roomy/page", roomyO, "page", 1, "Page step", "m over a card", "new constant"),
+    knob("/density/compact", densO, "compact", 1, "Compact", "× scale step"), knob("/density/spacious", densO, "spacious", 1, "Spacious", "× scale step")];
+  var shapeKnobs = [knob("/shape/radius", shapeO, "radius", 0.25, "Corner radius", "× margin", "new constant"), knob("/shape/border", shapeO, "border", 0.5, "Border", "px", "new constant"),
+    knob("/shape/focusWidth", shapeO, "focusWidth", 0.5, "Focus ring", "px", "new constant"), knob("/shape/focusOffset", shapeO, "focusOffset", 0.5, "Focus offset", "px", "new constant")];
+  var motionKnobs = [knob("/motion/short", motionO, "short", 10, "Short", "ms", "new constant"), knob("/motion/medium", motionO, "medium", 10, "Medium", "ms", "new constant"),
+    knob("/motion/long", motionO, "long", 10, "Long", "ms", "new constant"), knob("/motion/travel", motionO, "travel", 1, "Travel", "× tight step c", "new constant")];
+  var colorO = function () { return EXT.color; }, elevO = function () { return EXT.elevation; }, layO = function () { return EXT.layout; }, NC = "new constant";
+  var colorKnobs = [knob("/color/hue", colorO, "hue", 5, "Accent hue", "degrees", NC), knob("/color/chroma", colorO, "chroma", 0.01, "Accent chroma", "", NC), knob("/color/lightness", colorO, "lightness", 0.01, "Accent lightness", "light theme", NC), knob("/color/neutral", colorO, "neutral", 0.004, "Neutral tint", "chroma", NC)];
+  var elevKnobs = [knob("/elevation/offset", elevO, "offset", 0.5, "Offset", "× tight step c", NC), knob("/elevation/blur", elevO, "blur", 0.5, "Blur", "× spacing unit m", NC), knob("/elevation/strength", elevO, "strength", 0.02, "Strength", "opacity", NC)];
+  var layKnobs = [knob("/layout/measure", layO, "measure", 2, "Reading measure", "characters", NC), knob("/layout/pageMax", layO, "pageMax", 40, "Page width", "px at most", NC), knob("/layout/narrow", layO, "narrow", 20, "Narrow below", "px", NC)];
+  // Colour: OKLCH in, WCAG contrast out.
+  function lum(L, C, H) { var h = H * Math.PI / 180, a = C * Math.cos(h), b = C * Math.sin(h);
+    var l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3), m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3), q = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
+    var cl = function (x) { return Math.min(1, Math.max(0, x)); };
+    return 0.2126 * cl(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * q) + 0.7152 * cl(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * q) + 0.0722 * cl(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * q); }
+  function ratio(p, q, H) { var a = lum(p[0], p[1], H), b = lum(q[0], q[1], H); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }
+  function palette(c, dark) {
+    var n = c.neutral, aL = dark ? Math.min(0.86, c.lightness + 0.22) : c.lightness;
+    var t = dark ? { page: [0.19, n], card: [0.235, n], ctl: [0.31, n * 1.4], ink: [0.94, n], ink2: [0.74, n], line: [0.36, n], chip: [0.34, c.chroma * 0.45] }
+      : { page: [1, 0], card: [0.962, n], ctl: [0.905, n * 1.4], ink: [0.2, n * 1.5], ink2: [0.46, n * 1.5], line: [0.85, n], chip: [0.9, c.chroma * 0.35] };
+    t.accent = [aL, c.chroma]; var w = [1, 0], k = [0.15, 0]; t.onAccent = ratio(w, t.accent, c.hue) >= ratio(k, t.accent, c.hue) ? w : k;
+    var o = function (x) { return "oklch(" + fmt(x[0]) + " " + fmt(x[1]) + " " + fmt(c.hue) + ")"; };
+    return { t: t, css: { "--sp-page": o(t.page), "--sp-widget": o(t.page), "--sp-group": o(t.page), "--surface": o(t.page), "--sp-card": o(t.card), "--sp-ctl": o(t.ctl), "--sp-chip": o(t.chip), "--ink": o(t.ink), "--ink-2": o(t.ink2), "--line": o(t.line), "--accent": o(t.accent), "--on-accent": o(t.onAccent) } };
+  }
+  function isDark() { var r = document.documentElement.getAttribute("data-theme"); try { return r ? r === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) { return false; } }
+
+  function setK(k, v) { if (!isFinite(v)) return; k.obj()[k.key] = Math.round(v * 100000) / 100000; update(); }
+
+  /* ---- scrub: drag a label to change its field ---- */
+  function scrub(handle, get, set, step) {
+    var x0 = 0, v0 = 0, on = false;
+    handle.addEventListener("pointerdown", function (e) { if (e.target.tagName === "INPUT") return; on = true; handle._drag = false; x0 = e.clientX; v0 = get(); try { handle.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
+    handle.addEventListener("pointermove", function (e) { if (!on) return; var d = Math.round((e.clientX - x0) / 8); if (d) handle._drag = true; set(v0 + d * step); });
+    var end = function () { on = false; };
+    handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
+  }
+  function numInput(id, step, get, set) {
+    var i = el("input"); i.type = "number"; i.id = id; i.step = String(step); i.value = fmt(get());
+    i.addEventListener("input", function () { if (i.value !== "" && isFinite(Number(i.value))) set(Number(i.value)); });
+    return i;
+  }
+  function knobRow(k) {
+    var row = el("div", "row"), lab = el("span", "lab", k.label); if (k.hint) lab.appendChild(el("small", null, k.hint));
+    var box = el("div", "ctl-in"), id = "k" + k.path.replace(/[^a-zA-Z0-9]/g, "-");
+    var input = numInput(id, k.step, function () { return getK(k); }, function (v) { setK(k, v); });
+    input.setAttribute("aria-label", k.label + (k.hint ? " " + k.hint : ""));
+    var rst = el("button", "rst", "↺"); rst.type = "button"; rst.title = "Reset"; rst.setAttribute("aria-label", "Reset " + k.label);
+    rst.addEventListener("click", function () { setK(k, baseOf(k)); });
+    scrub(lab, function () { return getK(k); }, function (v) { setK(k, v); }, k.step);
+    box.appendChild(rst); box.appendChild(input); row.appendChild(lab); row.appendChild(box);
+    k.row = row; k.input = input; return row;
+  }
+  var HELP = {
+    "Context": { p: ["Where you are looking. Changing it changes nothing in the system and never appears in the change set as a change."], dl: [["Tier", "What the region is for: widget (tools, embedded UI), product (app screens), content (reading), brand (marketing)."], ["Scale", "A whole region bigger or smaller: controls, type and spacing together."], ["Size", "One element against its neighbours."], ["Density", "Room inside containers only. Controls do not move."]] },
+    "Geometry": { p: ["Each tier is four numbers. Size unit n = base + scale step × scale + size step × size + spread × scale × size, where scale and size are −1, 0 or +1. Height is 4n, so one size unit is 4 px of height."], dl: [["Base n0", "The tier's size unit at md scale and md size."], ["Scale step a", "Change for one scale step. Also how far density moves the spacing unit."], ["Size step k", "Change for one size step."], ["Spread g", "Extra distance between sizes at lg scale, less at sm."], ["Ladder", "The smallest and largest size unit any rung may land on."]], q: ["Checked by M1 (every rung on the ladder) and M2 (heights grow with size and scale)."] },
+    "Margins & gutters": { p: ["A margin is the space from a container's edge to its content. A gutter is the space between siblings, on either axis.", "Levels have no knobs: they come from one rule. A tight wrap adds the tight step c and keeps children touching. A roomy level is a multiple of the spacing unit m: widget 2m, card 3m, page 4m, with the level below as its gutter."], dl: [["c", "Tight step, ⌈n/4⌉."], ["m", "Spacing unit: n moved by density."], ["* reserved", "Tray, lane and shell: the rule produces them, no token exists yet."], ["Pinned value", "Typing in a field overrides the formula at this rung only. It is exported as a request for the agent, never as a new constant."], ["Widget, card, page step", "Spacing units a roomy level adds over the level inside it. All at 1 gives 2m, 3m, 4m. Not a constant in the skill yet."], ["Compact, Spacious", "How many scale steps density moves the spacing unit."]], q: ["Checked by M6, M8, M13 and M16: margins nest and every child fits with at least c to spare."] },
+    "Typography": { p: ["Four roles grow in a straight line: size at n 5, plus growth for every size unit above it. Display, heading and subhead multiply body by the heading ratio once, twice and three times, and the ratio itself grows with size, so big tiers open up faster."], dl: [["Section label ratio", "Section label = body × this."], ["Title bump", "Title = body + this, per size."], ["Smallest text", "No role may go below it."], ["Display font", "Headings: display, heading and subhead."], ["Context font", "Kickers and groups: section label and group label."], ["Content font", "Body, titles, controls and field labels."], ["Code font", "Numbers, code and measurements."], ["Weight, line, track", "Per role: font weight, line height as a multiple of the size, and letter-spacing in em. The skill states these in its type table, not in its constants."]], q: ["Checked by M3, M4, M5 and M10: roles keep their order, stay above the floor and never shrink as size grows.", "T1 fails when a font has no such weight: the browser would pick the nearest one."] },
+    "Shape & stroke": { p: ["Radius equals margin at every level, so nested corners stay concentric. Corner radius scales all of them at once."], dl: [["Corner shape", "Squircle or plain round, on every rounded corner."], ["Corner radius", "1 is the rule. 0 is square. Anything between breaks concentric corners."], ["Border", "Sits inside the box: padding is margin minus border."], ["Focus ring", "Width and offset of the keyboard focus outline. Turn on Focus ring above the canvas to see it."]], q: ["Checked by S1, S2 and S3."] },
+    "Parts": { p: ["The sizes inside components. They follow the size unit n and the tight step c, and have no constants of their own: change a tier or the context and they move."], q: ["Checked by M7, M9, M14 and M15."] },
+    "Colour": { p: ["A proposal: the skill has no colour system yet. One accent and a tinted neutral ramp, in OKLCH, drawn in a light and a dark theme."], dl: [["Accent hue", "0 to 360 degrees."], ["Accent chroma", "How vivid the accent is."], ["Accent lightness", "In the light theme. The dark theme lifts it."], ["Neutral tint", "How much of the accent hue the greys carry."], ["Preview theme", "Which theme the canvas draws. Not part of the change set."]], q: ["Checked by C1, C2 and C3 in both themes, at 4.5 to 1."] },
+    "Elevation": { p: ["A shadow per floating level, built from the tight step and the spacing unit so it grows with size. A widget floats at one step, a card at two."], q: ["Turn on Elevation above the canvas."] },
+    "Layout": { p: ["How the page frame behaves across widths. Below the narrow width the scale drops one step, as the skill's rule 8 says."], dl: [["Reading measure", "The widest a column of running text gets, in characters."], ["Page width", "The widest the page frame gets."], ["Narrow below", "Viewport width under which the scale drops one step."]], q: ["Drag Preview width under the canvas. Checked by L1 and L2."] },
+    "Presets": { p: ["Save the whole state under a name and load it later. Presets stay in this browser. Undo and Redo are in the menu at the top, and on Ctrl or Cmd Z."] },
+    "Motion": { p: ["Three durations, by how much moves: a state change, a widget entering, a card or page entering. Travel is measured in tight steps, so it grows with size. A card or page travels twice as far."], dl: [["Enter easing", "How an element arrives."], ["Exit easing", "How it leaves."], ["Reduced motion", "No travel, and nothing longer than Short."]], q: ["Press Play under the canvas. Checked by X1."] },
+    "Contract": { p: ["Sixteen checks that must all pass on every rung and density. A change set with a failing contract can still be copied, but it should not ship.", "Jig checks (T, S, X) are proposals from this tool for the parts the skill does not check yet."], dl: [["M1", "Every rung lands on the ladder."], ["M2", "Heights grow with size and scale."], ["M3", "Type roles keep their order."], ["M4", "Body ≤ title ≤ section label."], ["M5", "No text below the floor."], ["M6", "Margins nest; gutter under margin."], ["M7", "Whole pixels."], ["M8", "A control fits in every container."], ["M9", "The glyph has a size."], ["M10", "No type role shrinks as size grows."], ["M11", "Gutter + label margin = control margin."], ["M12", "A label-only control is at least as wide as tall."], ["M13", "M6 and M8 at every density."], ["M14", "Nothing shrinks as size grows."], ["M15", "A badge is taller than its text."], ["M16", "All nine level margins nest."]] },
+    "Why": { p: ["One or two sentences on what you were trying to fix. It travels in the change set as `note`, and it is the first thing an agent reads.", "Copy JSON gives the change set alone. Copy as prompt wraps it in instructions: refuse a stale base, apply the changes, run the contract, treat overrides as requests, and confirm the before and after values."] }
+  };
+  var tips = 0;
+  function toggletip(title, host) {
+    var h = HELP[title]; if (!h) return;
+    var id = "tip-" + (++tips), b = el("button", "help", "?"), tip = el("div", "tip"); b.type = "button"; b.setAttribute("aria-label", "About " + title); b.setAttribute("aria-expanded", "false"); tip.id = id; tip.setAttribute("role", "note");
+    tip.appendChild(el("h3", null, title)); (h.p || []).forEach(function (t) { tip.appendChild(el("p", null, t)); });
+    if (h.dl) { var dl = el("dl"); h.dl.forEach(function (r) { dl.appendChild(el("dt", null, r[0])); dl.appendChild(el("dd", null, r[1])); }); tip.appendChild(dl); }
+    (h.q || []).forEach(function (t) { tip.appendChild(el("p", "hint", t)); });
+    var place = function () { var r = b.getBoundingClientRect(), w = tip.offsetWidth, hh = tip.offsetHeight; tip.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + "px"; tip.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - hh - 8)) + "px"; };
+    document.body.appendChild(tip);
+    if ("popover" in HTMLElement.prototype) {
+      tip.setAttribute("popover", "auto"); b.popoverTargetElement = tip;
+      tip.addEventListener("toggle", function (e) { var open = e.newState === "open"; b.setAttribute("aria-expanded", String(open)); if (open) place(); });
+    } else {
+      tip.hidden = true;
+      b.addEventListener("click", function (e) { e.stopPropagation(); tip.hidden = !tip.hidden; b.setAttribute("aria-expanded", String(!tip.hidden)); if (!tip.hidden) place(); });
+      document.addEventListener("click", function (e) { if (!tip.hidden && !tip.contains(e.target)) { tip.hidden = true; b.setAttribute("aria-expanded", "false"); } });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !tip.hidden) { tip.hidden = true; b.setAttribute("aria-expanded", "false"); b.focus(); } });
+    }
+    host.appendChild(b);
+  }
+  var TABS = [["space", "Space"], ["type", "Type"], ["style", "Style"], ["system", "System"]], panes = {}, tabBtns = {}, into = null, curTab = "space";
+  TABS.forEach(function (t, i) {
+    var b = el("button", "tab", t[1]); b.type = "button"; b.id = "tab-" + t[0]; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "pane-" + t[0]);
+    var pn = el("div"); pn.id = "pane-" + t[0]; pn.setAttribute("role", "tabpanel"); pn.setAttribute("aria-labelledby", b.id);
+    b.addEventListener("click", function () { showTab(t[0]); });
+    b.addEventListener("keydown", function (e) { var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0, j = e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : d ? (i + d + TABS.length) % TABS.length : -1; if (j < 0) return; e.preventDefault(); showTab(TABS[j][0]); tabBtns[TABS[j][0]].focus(); });
+    $("tabs").appendChild(b); $("panel").appendChild(pn); tabBtns[t[0]] = b; panes[t[0]] = pn;
+  });
+  function showTab(id) { if (!panes[id]) return; curTab = id; TABS.forEach(function (t) { var on = t[0] === id; tabBtns[t[0]].setAttribute("aria-selected", String(on)); tabBtns[t[0]].tabIndex = on ? 0 : -1; panes[t[0]].hidden = !on; }); try { localStorage.setItem("maison-jig-tab", id); } catch (e) {} }
+  function section(title, open, host) { var d = el("details"); d.open = open; var s = el("summary", null, title); var sub = el("span", "sub"); s.appendChild(sub); d.appendChild(s); var b = el("div", "sec"); d.appendChild(b); toggletip(title, d); (host || panes[into] || $("panel")).appendChild(d); return { body: b, sub: sub }; }
+  function seg(name, values, labels) {
+    var box = el("div", "seg");
+    values.forEach(function (v, i) { var l = el("label"), r = el("input"); r.type = "radio"; r.name = name; r.id = name + "-" + v; r.value = v; r.checked = ctx[name] === v; r.addEventListener("change", function () { ctx[name] = v; update(); }); l.appendChild(r); l.appendChild(document.createTextNode(labels ? labels[i] : v)); box.appendChild(l); });
+    return box;
+  }
+
+  /* ---- build the inspector once ---- */
+  var partCells = [], themeSel, presetList, presetName;
+  var S = {}, tierHeights = {}, lvlRows = {}, fontSels = {}, fontRows = {}, tierEls = {}, typeRows = {}, selEls = {}, selRows = {}, noteBox, nestWarn;
+  function selRow(host, key, label, options, title) {
+    var fr = el("div", "row"), fl = el("label", "lab", label), sel = el("select"); fl.style.cursor = "default"; fl.title = title; sel.title = title; sel.id = "sel-" + key; fl.htmlFor = sel.id;
+    options.forEach(function (f) { var o = el("option", null, f); o.value = f; sel.appendChild(o); });
+    sel.addEventListener("change", function () { sels[key] = sel.value; update(); });
+    var rst = el("button", "rst", "\u21BA"); rst.type = "button"; rst.title = "Reset"; rst.setAttribute("aria-label", "Reset " + label); rst.addEventListener("click", function () { sels[key] = SEL0[key]; update(); });
+    var fb = el("div", "ctl-in"); fb.appendChild(rst); fb.appendChild(sel); fr.appendChild(fl); fr.appendChild(fb); host.appendChild(fr); selEls[key] = sel; selRows[key] = fr;
+  }
+  (function build() {
+    S.ctx = section("Context", true, $("ctxbox"));
+    var srow = function (label, box) { var r = el("div", "srow"); r.appendChild(el("span", null, label)); box.setAttribute("role", "radiogroup"); box.setAttribute("aria-label", label); r.appendChild(box); S.ctx.body.appendChild(r); return box; };
+    srow("Tier", seg("tier", TIERS, ["Widget", "Product", "Content", "Brand"])); srow("Scale", seg("scale", STEP3)); srow("Size", seg("size", STEP3));
+    S.densSeg = srow("Density", seg("density", DENS, ["Compact", "Default", "Spacious"]));
+
+    into = "space";
+    S.geo = section("Geometry", true);
+    TIERS.forEach(function (t) {
+      var g = el("div", "grp", t); tierHeights[t] = el("span", "mono"); g.appendChild(tierHeights[t]); S.geo.body.appendChild(g);
+      var q = el("div", "quad"); tierEls[t] = [g, q];
+      tierKnobs[t].forEach(function (k) {
+        var l = el("label", null, k.label + " "), id = "k" + k.path.replace(/[^a-zA-Z0-9]/g, "-"); l.appendChild(el("i", "sym", k.hint)); l.title = k.tip;
+        var input = numInput(id, 1, function () { return getK(k); }, function (v) { setK(k, Math.round(v)); }); input.setAttribute("aria-label", t + " " + k.label + " (" + k.hint + ")");
+        scrub(l, function () { return getK(k); }, function (v) { setK(k, Math.round(v)); }, 1);
+        l.htmlFor = id; l.appendChild(input); q.appendChild(l); k.row = l; k.input = input;
+      });
+      S.geo.body.appendChild(q);
+    });
+    ladderKnobs.forEach(function (k) { S.geo.body.appendChild(knobRow(k)); });
+
+    S.lv = section("Margins & gutters", true);
+    var h = el("div", "lvl head"); ["Level", "Formula", "Margin", "Gutter"].forEach(function (x) { h.appendChild(el("span", null, x)); }); S.lv.body.appendChild(h);
+    [["chip", "c · 0"], ["control", "n · 0"], ["group", "n + c · c"], ["widget", "2m · m"], ["tray", "2m + c · c"], ["card", "3m · 2m"], ["lane", "3m + c · c"], ["page", "4m · 3m"], ["shell", "4m + c · c"]].forEach(function (p) {
+      var name = p[0], res = CFG.levels[name][2] === "reserved", pin = !res && name !== "chip" && name !== "control";
+      var r = el("div", "lvl" + (res ? " res" : "")), fEl = el("span", "f", p[1]); r.appendChild(el("span", null, name + (res ? " *" : ""))); r.appendChild(fEl);
+      var cells = {};
+      ["margin", "gutter"].forEach(function (kind) {
+        if (pin) {
+          var i = el("input"); i.type = "number"; i.step = "1"; i.id = "ov-" + name + "-" + kind; i.setAttribute("aria-label", "Override " + name + " " + kind + " at this rung");
+          i.addEventListener("input", function () { var key = name + "." + kind + "@" + rungKey(); if (i.value === "" || !isFinite(Number(i.value))) delete overrides[key]; else overrides[key] = Number(i.value); update(); });
+          r.appendChild(i); cells[kind] = i;
+        } else { var v = el("span", "v"); r.appendChild(v); cells[kind] = v; }
+      });
+      lvlRows[name] = { row: r, cells: cells, pin: pin, formula: p[1], fEl: fEl }; S.lv.body.appendChild(r);
+      if (!res) { r.addEventListener("mouseenter", function () { $("spec").setAttribute("data-hl", name); }); r.addEventListener("mouseleave", function () { $("spec").removeAttribute("data-hl"); }); }
+    });
+    nestWarn = el("p", "warn"); nestWarn.hidden = true; S.lv.body.appendChild(nestWarn);
+    S.lv.body.appendChild(el("p", "hint", "Type a value to pin it at this rung."));
+    S.lv.body.appendChild(el("div", "grp", "Rule"));
+    ruleKnobs.forEach(function (k) { S.lv.body.appendChild(knobRow(k)); });
+
+    S.pt = section("Parts", true);
+    var ph = el("div", "prt head"); ["Part", "Formula", "px"].forEach(function (x) { ph.appendChild(el("span", null, x)); }); S.pt.body.appendChild(ph);
+    PARTS.forEach(function (pp, i) { var r = el("div", "prt"); r.appendChild(el("span", null, pp[0])); r.appendChild(el("span", "f", pp[1])); var c = el("span", "v"); r.appendChild(c); partCells[i] = c; S.pt.body.appendChild(r); });
+    S.pt.body.appendChild(el("p", "hint", "Parts follow n and c. They have no constants of their own."));
+
+    into = "type";
+    S.ty = section("Typography", true);
+    VOICES.forEach(function (v) {
+      var key = v[0], fr = el("div", "row"), fl = el("label", "lab", v[1]), sel = el("select"); fl.style.cursor = "default"; fl.title = v[2]; sel.id = "font-" + key; fl.htmlFor = sel.id; sel.title = v[2];
+      Object.keys(FONTS).forEach(function (f) { var o = el("option", null, f); o.value = f; sel.appendChild(o); });
+      sel.addEventListener("change", function () { fonts[key] = sel.value; update(); });
+      var rst = el("button", "rst", "\u21BA"); rst.type = "button"; rst.title = "Reset"; rst.setAttribute("aria-label", "Reset " + v[1]); rst.addEventListener("click", function () { fonts[key] = FONT0[key]; update(); });
+      var fb = el("div", "ctl-in"); fb.appendChild(rst); fb.appendChild(sel); fr.appendChild(fl); fr.appendChild(fb); S.ty.body.appendChild(fr); fontSels[key] = sel; fontRows[key] = fr;
+    });
+    typeKnobs.forEach(function (pair) { pair.forEach(function (k) { S.ty.body.appendChild(knobRow(k)); }); });
+    headKnobs.forEach(function (k) { S.ty.body.appendChild(knobRow(k)); });
+    bumpKnobs.forEach(function (k) { S.ty.body.appendChild(knobRow(k)); });
+    S.ty.body.appendChild(el("div", "grp", "Weight, line height, tracking"));
+    var th = el("div", "tyk head"); ["Role", "Weight", "Line", "Track", ""].forEach(function (x) { th.appendChild(el("span", null, x)); }); S.ty.body.appendChild(th);
+    ROLES.forEach(function (r) {
+      var row = el("div", "tyk"), lab = el("span", "nm", ROLE_SHORT[r]); row.appendChild(lab);
+      detailKnobs[r].forEach(function (k) { var cell = el("span", "cell"), id = "k" + k.path.replace(/[^a-zA-Z0-9]/g, "-");
+        var input = numInput(id, k.step, function () { return getK(k); }, function (v) { setK(k, v); }); input.setAttribute("aria-label", k.label + (k.hint ? " " + k.hint : ""));
+        cell.appendChild(input); row.appendChild(cell); k.row = cell; k.input = input; });
+      var rst = el("button", "rst", "\u21BA"); rst.type = "button"; rst.title = "Reset"; rst.setAttribute("aria-label", "Reset " + ROLE_SHORT[r]);
+      rst.addEventListener("click", function () { EXT.type[r] = EXT0.type[r].slice(); update(); });
+      row.appendChild(rst); S.ty.body.appendChild(row); typeRows[r] = { row: row, lab: lab };
+    });
+    S.tyWarn = el("ul", "fails"); S.ty.body.appendChild(S.tyWarn);
+
+    into = "style";
+    S.co = section("Colour", true);
+    var tr = el("div", "row"), tl = el("label", "lab", "Preview theme"), tb = el("div", "ctl-in"); themeSel = el("select"); tl.style.cursor = "default"; themeSel.id = "theme"; tl.htmlFor = "theme";
+    ["auto", "light", "dark"].forEach(function (x) { var o = el("option", null, x); o.value = x; themeSel.appendChild(o); });
+    themeSel.addEventListener("change", function () { theme = themeSel.value; update(); });
+    tb.appendChild(themeSel); tr.appendChild(tl); tr.appendChild(tb); S.co.body.appendChild(tr);
+    colorKnobs.forEach(function (k) { S.co.body.appendChild(knobRow(k)); });
+    S.co.body.appendChild(el("p", "hint", "A proposal: the skill has no colour system yet."));
+
+    S.sh = section("Shape & stroke", true);
+    selRow(S.sh.body, "corner", "Corner shape", ["squircle", "round"], "How every rounded corner is drawn");
+    shapeKnobs.forEach(function (k) { S.sh.body.appendChild(knobRow(k)); });
+
+    S.el = section("Elevation", true);
+    elevKnobs.forEach(function (k) { S.el.body.appendChild(knobRow(k)); });
+    S.el.body.appendChild(el("p", "hint", "Turn on Elevation above the canvas to see it."));
+
+    S.mo = section("Motion", true);
+    motionKnobs.forEach(function (k) { S.mo.body.appendChild(knobRow(k)); });
+    selRow(S.mo.body, "easeIn", "Enter easing", Object.keys(EASE), "How an element arrives");
+    selRow(S.mo.body, "easeOut", "Exit easing", Object.keys(EASE), "How an element leaves");
+
+    into = "system";
+    S.con = section("Contract", true);
+    S.conChips = el("div", "chips"); S.con.body.appendChild(S.conChips);
+    S.conList = el("ul", "fails"); S.con.body.appendChild(S.conList);
+    S.con.body.appendChild(el("div", "grp", "Jig checks (proposed)"));
+    S.jigChips = el("div", "chips"); S.con.body.appendChild(S.jigChips);
+    S.jigList = el("ul", "fails"); S.con.body.appendChild(S.jigList);
+
+    S.la = section("Layout", true);
+    layKnobs.forEach(function (k) { S.la.body.appendChild(knobRow(k)); });
+
+    S.pr = section("Presets", true);
+    var prRow = el("div", "row"), prSave = el("button", "btn", "Save"); presetName = el("input"); presetName.type = "text"; presetName.id = "preset-name"; presetName.placeholder = "Name this state"; presetName.setAttribute("aria-label", "Preset name"); prSave.type = "button";
+    prSave.addEventListener("click", function () { var nm = presetName.value.trim(); if (!nm) { say("Give the preset a name first."); presetName.focus(); return; } presets[nm] = snap(); savePresets(); presetName.value = ""; renderPresets(); say("Saved preset " + nm + "."); });
+    prRow.appendChild(presetName); prRow.appendChild(prSave); S.pr.body.appendChild(prRow);
+    presetList = el("div", "prl"); S.pr.body.appendChild(presetList);
+
+    S.note = section("Why", true);
+    noteBox = el("textarea"); noteBox.id = "note"; noteBox.placeholder = "What were you trying to fix? The agent reads this first."; noteBox.setAttribute("aria-label", "Why these changes");
+    noteBox.addEventListener("input", function () { note = noteBox.value; renderJson(); });
+    S.note.body.appendChild(noteBox);
+  })();
+
+  /* ---- state: one snapshot shape for undo, presets and the saved session ---- */
+  function validExt(se) { return !!se && !!se.type && ROLES.every(function (r) { return Array.isArray(se.type[r]) && se.type[r].length === 3; }) && Object.keys(EXT0).every(function (g) { return g === "type" || (se[g] && Object.keys(EXT0[g]).every(function (k) { return typeof se[g][k] === "number"; })); }); }
+  function snap() { return JSON.stringify({ cfg: CFG, ext: EXT, sels: sels, overrides: overrides, fonts: fonts }); }
+  function applyState(o) {
+    if (!o || !o.cfg || !o.cfg.tiers || !o.cfg.linear || !o.cfg.roomy || !o.cfg.density) return false;
+    load(BASE); load(o.cfg); CFG.levels = clone(BASE.levels); EXT = validExt(o.ext) ? clone(o.ext) : clone(EXT0); sels = clone(SEL0); fonts = clone(FONT0);
+    if (o.sels) Object.keys(SEL0).forEach(function (k) { if (Array.prototype.some.call(selEls[k].options, function (op) { return op.value === o.sels[k]; })) sels[k] = o.sels[k]; });
+    if (o.fonts) VOICES.forEach(function (x) { if (FONTS[o.fonts[x[0]]]) fonts[x[0]] = o.fonts[x[0]]; });
+    overrides = o.overrides && typeof o.overrides === "object" ? clone(o.overrides) : {};
+    return true;
+  }
+  var presets = {}; try { presets = JSON.parse(localStorage.getItem("maison-jig-presets") || "{}") || {}; } catch (e) { presets = {}; }
+  function savePresets() { try { localStorage.setItem("maison-jig-presets", JSON.stringify(presets)); } catch (e) {} }
+  function renderPresets() {
+    presetList.textContent = ""; var names = Object.keys(presets).sort();
+    if (!names.length) { presetList.appendChild(el("p", "hint", "No presets yet.")); return; }
+    names.forEach(function (nm) { var r = el("div", "row"), ld = el("button", "btn", "Load"), dl = el("button", "btn", "Delete"); ld.type = "button"; dl.type = "button"; ld.setAttribute("aria-label", "Load preset " + nm); dl.setAttribute("aria-label", "Delete preset " + nm);
+      ld.addEventListener("click", function () { var ok = false; try { ok = applyState(JSON.parse(presets[nm])); } catch (e) {} if (ok) { update(); say("Loaded preset " + nm + "."); } else say("That preset no longer fits this version."); });
+      dl.addEventListener("click", function () { delete presets[nm]; savePresets(); renderPresets(); say("Deleted preset " + nm + "."); });
+      r.appendChild(el("span", null, nm)); r.appendChild(ld); r.appendChild(dl); presetList.appendChild(r); });
+  }
+  var hist = [], hi = -1, lastPush = 0, restoring = false;
+  function travel(d) { var j = hi + d; if (j < 0 || j >= hist.length) return; hi = j; restoring = true; try { applyState(JSON.parse(hist[hi])); update(); } finally { restoring = false; } say(d < 0 ? "Undone." : "Redone."); }
+  function kitHint(path) { var m;
+    if ((m = /^\/type\/([a-zA-Z]+)\/(weight|lineHeight)$/.exec(path))) return "--m-typescale-" + KIT_VOICE[m[1]] + "-{sm,md,lg}-" + (m[2] === "weight" ? "weight" : "line");
+    if ((m = /^\/fonts\/(.+)$/.exec(path))) return KIT_FONT[m[1]];
+    if (path === "/motion/short") return "--m-motion-duration-short";
+    return null; }
+
+  /* ---- derive ---- */
+  function rungKey() { return ctx.tier + "/" + ctx.scale + "/" + ctx.size + "/" + ctx.density; }
+  function rungLabel() { return ctx.tier + " " + ctx.scale + "/" + ctx.size + (ctx.density === "default" ? "" : " " + ctx.density); }
+  function safe(fn) { try { return fn(); } catch (e) { return { error: String(e.message || e) }; } }
+  function resolveCtx() { return safe(function () { return resolve(ctx.tier, ctx.scale, ctx.size, ctx.density); }); }
+  function changesList() { return changesList0().map(function (c) { var h = kitHint(c.path); if (h) c.kitHint = h; return c; }); }
+  function changesList0() { return knobs.map(function (k) { var b = baseOf(k), v = getK(k); return b === v ? null : { path: k.path, from: b, to: v, home: k.home }; }).filter(Boolean)
+    .concat(VOICES.map(function (v) { return fonts[v[0]] === FONT0[v[0]] ? null : { path: "/fonts/" + v[0], from: FONT0[v[0]], to: fonts[v[0]], home: "tokens.css --font-" + v[0] }; }).filter(Boolean))
+    .concat(Object.keys(SEL0).map(function (k) { return sels[k] === SEL0[k] ? null : { path: SEL_PATH[k], from: SEL0[k], to: sels[k], home: SEL_HOME[k] }; }).filter(Boolean)); }
+  function overridesList() {
+    return Object.keys(overrides).map(function (key) {
+      var at = key.split("@"), lk = at[0].split("."), rk = at[1].split("/");
+      var v = safe(function () { return resolve(rk[0], rk[1], rk[2], rk[3]); }); var from = v.error ? null : v[lk[0]][lk[1]];
+      if (from === overrides[key]) return null;
+      return { token: "--" + lk[0] + "-" + lk[1], rung: rk[0] + " " + rk[1] + "/" + rk[2] + " " + rk[3], formula: lvlRows[lk[0]].formula.split(" · ")[lk[1] === "margin" ? 0 : 1], from: from, to: overrides[key] };
+    }).filter(Boolean);
+  }
+  function effects() {
+    var now = resolveCtx(), was = BASE_RES[rungKey()], changed = [];
+    if (!now.error) { var a = flat(was), b = flat(now); Object.keys(b).forEach(function (k) { if (a[k] !== b[k]) changed.push({ value: k, from: a[k], to: b[k] }); }); }
+    var affected = 0, total = 0;
+    TIERS.forEach(function (t) { STEP3.forEach(function (s) { STEP3.forEach(function (z) { DENS.forEach(function (d) {
+      total++; var x = safe(function () { return JSON.stringify(flat(resolve(t, s, z, d))); });
+      if (typeof x !== "string" || x !== BASE_STR[t + "/" + s + "/" + z + "/" + d]) affected++;
+    }); }); }); });
+    return { rung: rungLabel(), changed: changed, rungsAffected: affected, rungsTotal: total, offLadder: now.error || undefined };
+  }
+  function changeSet() {
+    var v = resolveCtx(), fails = safe(check); if (!Array.isArray(fails)) fails = ["check() threw: " + fails.error];
+    var jf = jigChecks(); var out = { $schema: "maison.jig.changeset/2",
+      base: { system: "mathematical-design-system", file: "scale.mjs", sha256: SCALE_SHA, revision: "2026-10-13" },
+      createdAt: new Date().toISOString(),
+      context: { tier: ctx.tier, scale: ctx.scale, size: ctx.size, density: ctx.density, n: v.error ? null : v.n, c: v.error ? null : v.c, m: v.error ? null : v.m },
+      changes: changesList(), overrides: overridesList(),
+      contract: { passed: fails.length === 0, failureCount: fails.length, failures: fails.slice(0, 20) },
+      jigChecks: { note: "Proposed by the Jig. Not part of the skill's contract.", passed: jf.length === 0, failures: jf, notes: jigNotes() },
+      effects: effects() };
+    if (out.changes.some(function (c) { return c.kitHint; })) out.kitNote = "kitHint names the Maison token that probably carries the value today. Confirm it in the kit before editing. Sizing and spacing tokens carry no hint because T-0517 is renaming them.";
+    if (note.trim()) out.note = note.trim();
+    return out;
+  }
+  function renderJson() { $("json").textContent = JSON.stringify(changeSet(), null, 2); }
+
+  /* ---- update everything ---- */
+  var viewBase = false;
+  var km = function (x) { return x === 1 ? "m" : fmt(x) + "m"; };
+  function levelsOf(v, withOv) {
+    var L = {}; ["chip", "control", "group", "widget", "card", "page"].forEach(function (l) { L[l] = { margin: v[l].margin, gutter: v[l].gutter, radius: v[l].radius }; });
+    if (withOv) Object.keys(L).forEach(function (name) { if (!lvlRows[name].pin) return; ["margin", "gutter"].forEach(function (kind) { var key = name + "." + kind + "@" + rungKey(); if (key in overrides) { L[name][kind] = overrides[key]; if (kind === "margin") L[name].radius = overrides[key]; } }); });
+    return L;
+  }
+  function nearest(xs, w) { return xs.reduce(function (p, q) { return Math.abs(q - w) < Math.abs(p - w) ? q : p; }); }
+  var JIG_CHECKS = [["T1", "Every weight exists in its font"], ["T2", "No line height under 1"], ["S1", "The border fits inside the smallest margin"], ["S2", "The focus ring is at least 2 px"], ["S3", "Nested corners stay concentric"], ["X1", "Durations rise: short, medium, long"],
+    ["C1", "Text on a card reaches 4.5 to 1, both themes"], ["C2", "The label on the accent reaches 4.5 to 1, both themes"], ["C3", "Secondary text reaches 4.5 to 1, both themes"], ["L1", "A 320 px page keeps 200 px of content"], ["L2", "Reading measure is 45 to 80 characters"], ["A1", "Controls under 24 px tall (a note, not a failure)"]];
+  function jigNotes() {
+    var small = 0, min = Infinity, total = 0;
+    TIERS.forEach(function (t) { STEP3.forEach(function (s) { STEP3.forEach(function (z) { var r = safe(function () { return resolve(t, s, z); }); if (r.error) return; total++; if (r.h < 24) small++; if (r.h < min) min = r.h; }); }); });
+    return small ? ["A1 " + small + " of " + total + " rungs have controls under 24 px tall (smallest " + min + " px): they need 24 px of spacing or a recorded exception"] : [];
+  }
+  function jigChecks() {
+    var out = [], t = EXT.type, sh = EXT.shape, mo = EXT.motion;
+    ROLES.forEach(function (r) { var f = fonts[ROLE_VOICE[r]], can = FONT_W[f], w = t[r][0]; if (!can) return;
+      if (can.steps && can.steps.indexOf(w) < 0) out.push("T1 " + ROLE_SHORT[r] + " " + w + ": " + f + " has fixed weights, it renders " + nearest(can.steps, w));
+      if (can.range && (w < can.range[0] || w > can.range[1])) out.push("T1 " + ROLE_SHORT[r] + " " + w + ": " + f + " covers " + can.range.join(" to ")); });
+    ROLES.forEach(function (r) { if (t[r][1] < 1) out.push("T2 " + ROLE_SHORT[r] + ": line height " + t[r][1] + " is under 1, lines overlap"); });
+    var cmin = Math.ceil(CFG.ladder[0] / 4); if (sh.border > cmin) out.push("S1 border " + sh.border + " px is wider than the chip margin " + cmin + " px at n " + CFG.ladder[0]);
+    if (sh.focusWidth < 2) out.push("S2 focus ring " + sh.focusWidth + " px is under 2 px");
+    if (sh.radius !== 0 && sh.radius !== 1) out.push("S3 corner radius × " + sh.radius + ": nested corners are concentric only at 1, or square at 0");
+    if (!(mo.short > 0 && mo.short < mo.medium && mo.medium < mo.long)) out.push("X1 durations must rise: short " + mo.short + ", medium " + mo.medium + ", long " + mo.long);
+    [false, true].forEach(function (dk) { var pl = palette(EXT.color, dk).t, H = EXT.color.hue, th = dk ? "dark" : "light", r1 = ratio(pl.ink, pl.card, H), r2 = ratio(pl.onAccent, pl.accent, H), r3 = ratio(pl.ink2, pl.card, H);
+      if (r1 < 4.5) out.push("C1 " + th + ": text on a card is " + r1.toFixed(2) + " to 1, under 4.5");
+      if (r2 < 4.5) out.push("C2 " + th + ": the label on the accent is " + r2.toFixed(2) + " to 1, under 4.5");
+      if (r3 < 4.5) out.push("C3 " + th + ": secondary text on a card is " + r3.toFixed(2) + " to 1, under 4.5"); });
+    TIERS.forEach(function (tr) { var r = safe(function () { return resolve(tr, "sm", "md", "default"); }); if (!r.error && 320 - 2 * r.page.margin < 200) out.push("L1 " + tr + ": at 320 px wide the page keeps " + (320 - 2 * r.page.margin) + " px of content, under 200"); });
+    if (EXT.layout.measure < 45 || EXT.layout.measure > 80) out.push("L2 reading measure " + EXT.layout.measure + " characters is outside 45 to 80");
+    return out;
+  }
+  function update() {
+    var v = resolveCtx(), spec = $("spec"), off = $("off");
+    knobs.forEach(function (k) { var b = baseOf(k), cur = getK(k); if (document.activeElement !== k.input) k.input.value = fmt(cur); k.row.classList.toggle("chg", b !== cur); });
+    TIERS.forEach(function (t) { tierHeights[t].textContent = STEP3.map(function (z) { var r = safe(function () { return resolve(t, "md", z); }); return r.error ? "off" : r.h; }).join(" / "); });
+    VOICES.forEach(function (x) { var key = x[0]; if (document.activeElement !== fontSels[key]) fontSels[key].value = fonts[key]; fontRows[key].classList.toggle("chg", fonts[key] !== FONT0[key]); });
+    Object.keys(selEls).forEach(function (key) { if (document.activeElement !== selEls[key]) selEls[key].value = sels[key]; selRows[key].classList.toggle("chg", sels[key] !== SEL0[key]); });
+    ROLES.forEach(function (r) { typeRows[r].row.classList.toggle("chg", EXT.type[r].some(function (x, i) { return x !== EXT0.type[r][i]; })); });
+    if (themeSel && document.activeElement !== themeSel) themeSel.value = theme;
+    var b0 = BASE_RES[rungKey()]; PARTS.forEach(function (pp, i) { var cell = partCells[i]; if (v.error) { cell.textContent = ""; cell.parentNode.classList.remove("chgt"); return; } var x = pp[2](v); cell.textContent = x; cell.parentNode.classList.toggle("chgt", x !== pp[2](b0)); });
+    var sw = 1 + CFG.roomy.widget, sc = sw + CFG.roomy.card, sp = sc + CFG.roomy.page;
+    var F = { widget: km(sw) + " · m", tray: km(sw) + " + c · c", card: km(sc) + " · " + km(sw), lane: km(sc) + " + c · c", page: km(sp) + " · " + km(sc), shell: km(sp) + " + c · c" };
+    Object.keys(F).forEach(function (name) { lvlRows[name].formula = F[name]; lvlRows[name].fEl.textContent = F[name]; });
+    if (v.error) nestWarn.hidden = true;
+    else {
+      Object.keys(lvlRows).forEach(function (name) {
+        var r = lvlRows[name], src = v[name] || v.reserved[name];
+        ["margin", "gutter"].forEach(function (kind) {
+          var cell = r.cells[kind];
+          if (r.pin) { var key = name + "." + kind + "@" + rungKey(), has = key in overrides && overrides[key] !== src[kind]; cell.placeholder = String(src[kind]); if (document.activeElement !== cell) cell.value = key in overrides ? String(overrides[key]) : ""; cell.classList.toggle("pin", has); }
+          else cell.textContent = src[kind];
+        });
+      });
+      var LL = levelsOf(v, true), seq = ["chip", "control", "group", "widget", "card", "page"].map(function (l) { return LL[l].margin; }), ok = seq.every(function (x, i) { return !i || seq[i - 1] < x; });
+      nestWarn.hidden = ok; nestWarn.textContent = ok ? "" : "With these overrides the margins no longer nest: " + seq.join(" < ");
+    }
+
+    // The canvas draws the live system, or the base system while Before is on.
+    var cv = viewBase ? BASE_RES[rungKey()] : v, cF = viewBase ? FONT0 : fonts, cX = viewBase ? EXT0 : EXT, cS = viewBase ? SEL0 : sels;
+    $("stage").classList.toggle("base", viewBase);
+    var pal = palette(cX.color, theme === "dark" || (theme === "auto" && isDark()));
+    THEMED.forEach(function (id) { var e = $(id); Object.keys(pal.css).forEach(function (k) { e.style.setProperty(k, pal.css[k]); }); e.style.color = pal.css["--ink"]; });
+    spec.style.setProperty("--f-content", FONTS[cF.content]); spec.style.setProperty("--f-code", FONTS[cF.code]);
+    off.hidden = !cv.error; spec.hidden = !!cv.error;
+    var read = $("read"); read.textContent = ""; read.appendChild(el("span", "rung", rungLabel())); if (viewBase) read.appendChild(el("span", "tagb", "Before"));
+    if (cv.error) { off.textContent = cv.error + ". Change a tier constant or the ladder range."; $("types").textContent = ""; }
+    else {
+      [["size unit n", cv.n, ""], ["height", cv.h, "px"], ["tight step c", cv.c, "px"], ["spacing unit m", cv.m, "px"]].forEach(function (p) { var s = el("span", null, p[0] + " "); s.appendChild(el("b", null, p[1] + p[2])); read.appendChild(s); });
+      var L = levelsOf(cv, !viewBase), rf = cX.shape.radius, rr = function (x) { return Math.round(x * rf); };
+      var set = function (k, px) { spec.style.setProperty(k, px + "px"); };
+      set("--n", cv.n); set("--c", cv.c); set("--kg", cv.control.gutter); set("--h", cv.h); set("--lm", cv.labelMargin); set("--ico", cv.icon); set("--gly", cv.glyph); set("--chip-h", cv.parts.badge); set("--rchip", rr(cv.chip.radius)); set("--rc", rr(cv.control.radius));
+      set("--gm", L.group.margin); set("--gr", rr(L.group.radius)); set("--wm", L.widget.margin); set("--wg", L.widget.gutter); set("--wr", rr(L.widget.radius));
+      set("--cm", L.card.margin); set("--cg", L.card.gutter); set("--cr", rr(L.card.radius)); set("--pm", L.page.margin); set("--pg", L.page.gutter); set("--pr", rr(L.page.radius));
+      set("--bw", cX.shape.border); set("--fw", cX.shape.focusWidth); set("--fo", cX.shape.focusOffset); spec.style.setProperty("--corner", cS.corner);
+      set("--body", cv.type.body); set("--title", cv.type.title); set("--ctl", cv.type.control); set("--lab", cv.type.fieldLabel);
+      spec.style.setProperty("--w-title", cX.type.title[0]); spec.style.setProperty("--lh-title", cX.type.title[1]); spec.style.setProperty("--w-ctl", cX.type.control[0]); spec.style.setProperty("--w-lab", cX.type.fieldLabel[0]);
+      var ev = cX.elevation, shd = function (k) { return "0 " + fmt(ev.offset * cv.c * k) + "px " + fmt(ev.blur * cv.m * k) + "px rgba(0, 0, 0, " + ev.strength + ")"; };
+      spec.style.setProperty("--el1", shd(1)); spec.style.setProperty("--el2", shd(2));
+      var pt = $("parts"), ps = function (k, px) { pt.style.setProperty(k, px + "px"); }, P = cv.parts;
+      ps("--c", cv.c); ps("--lab", cv.type.fieldLabel); ps("--ctl", cv.type.control); ps("--p-cb", P.checkbox); ps("--p-cbr", rr(P.checkboxRadius)); ps("--p-ck", P.check); ps("--p-rd", P.radioDot); ps("--p-st", P.switchTrack); ps("--p-th", P.switchThumb); ps("--p-sw", P.switchWidth); ps("--p-bd", P.badge); ps("--p-av", P.avatar); ps("--p-pg", P.progress);
+      pt.style.setProperty("--w-lab", cX.type.fieldLabel[0]); pt.style.fontFamily = FONTS[cF.content];
+      spec.querySelectorAll("[data-meta]").forEach(function (s) { var l = L[s.getAttribute("data-meta")]; s.textContent = "margin " + l.margin + " · gutter " + l.gutter; });
+      spec.querySelectorAll("[data-g]").forEach(function (g) { var px = L[g.getAttribute("data-g")].gutter; g.firstElementChild.textContent = px; g.classList.toggle("tiny", px < 14); });
+      var was = BASE_RES[rungKey()], types = $("types"); types.textContent = "";
+      [["display", "display"], ["heading", "display"], ["subhead", "display"], ["sectionLabel", "context", 1], ["title", "content"], ["body", "content"], ["control", "content"], ["fieldLabel", "content"], ["groupLabel", "context", 1], ["code", "code", 0, "control", "1,280 × 4n = 32px  calc(3 * var(--m))"]].forEach(function (r) {
+        var src = r[3] || r[0], px = cv.type[src], d = cX.type[r[0]] || [400, 1.2, 0], d0 = EXT0.type[r[0]] || d;
+        var moved = !viewBase && (was.type[src] !== px || fonts[r[1]] !== FONT0[r[1]] || d.some(function (x, i) { return x !== d0[i]; }));
+        var row = el("div", "ty" + (moved ? " chg" : "")), who = el("div", "who"); who.appendChild(el("span", null, r[0])); who.appendChild(el("b", null, px + "px · " + d[0])); who.title = r[1] + " font: " + cF[r[1]] + ", line height " + d[1] + (d[2] ? ", tracking " + d[2] + "em" : "");
+        var smp = el("div", "smp" + (r[2] ? " caps" : ""), r[4] || "Margins & gutters"); smp.style.fontSize = px + "px"; smp.style.fontWeight = d[0]; smp.style.lineHeight = d[1]; smp.style.letterSpacing = d[2] ? d[2] + "em" : "normal"; smp.style.fontFamily = FONTS[cF[r[1]]];
+        row.setAttribute("data-pick", ""); row.setAttribute("data-type-role", r[0]); row.tabIndex = 0;
+        row.addEventListener("click", function () { lockOn({ role: r[0] }); }); row.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); lockOn({ role: r[0] }); } });
+        row.addEventListener("mouseenter", function () { if (!locked) { shown = { role: r[0] }; paint(); } }); row.addEventListener("mouseleave", function () { if (!locked) { shown = null; paint(); } });
+        row.appendChild(who); row.appendChild(smp); types.appendChild(row);
+      });
+    }
+    document.querySelectorAll("[data-motion]").forEach(function (box) { var w = box.getAttribute("data-motion"), ms = cX.motion[w], dist = w === "short" || cv.error ? 0 : cX.motion.travel * cv.c * (w === "long" ? 2 : 1); box.querySelector("small").textContent = ms + " ms" + (dist ? " · " + dist + " px" : ""); });
+    $("parts").hidden = !!cv.error;
+
+    // layout: the page frame at a previewed width; below the narrow width the scale drops one step
+    var vw = Number($("vw").value), lay = cX.layout, lowered = vw < lay.narrow && ctx.scale !== "sm", es = lowered ? STEP3[STEP3.indexOf(ctx.scale) - 1] : ctx.scale; $("vw-out").textContent = vw + " px";
+    var lr = viewBase ? BASE_RES[ctx.tier + "/" + es + "/" + ctx.size + "/" + ctx.density] : safe(function () { return resolve(ctx.tier, es, ctx.size, ctx.density); });
+    if (lr.error) { $("lay-read").textContent = lr.error; $("lay-page").style.inlineSize = "0"; }
+    else { var pw = Math.min(lay.pageMax, vw), pmar = lr.page.margin, content = Math.max(0, pw - 2 * pmar), meas = Math.round(lay.measure * lr.type.body * 0.5), col = Math.min(meas, content);
+      $("lay-page").style.inlineSize = (pw / vw * 100) + "%"; $("lay-page").style.paddingInline = (pmar / vw * 100) + "%"; $("lay-col").style.inlineSize = (content ? col / content * 100 : 0) + "%";
+      $("lay-read").textContent = vw + " px wide: scale " + es + (lowered ? " (lowered from " + ctx.scale + ")" : "") + ", page margin " + pmar + ", content " + content + ", reading column about " + col + " px (" + lay.measure + " characters" + (meas > content ? ", capped by the page" : "") + ")"; }
+
+    // every rung: control height for each tier, scale and size at this density
+    var mx = $("matrix"); mx.textContent = ""; var hd = el("thead"), hr = el("tr"); hr.appendChild(el("th", null, "")); STEP3.forEach(function (z) { var th = el("th", null, "size " + z); th.scope = "col"; hr.appendChild(th); }); hd.appendChild(hr); mx.appendChild(hd);
+    var tbd = el("tbody"); TIERS.forEach(function (t) { STEP3.forEach(function (sx) { var trw = el("tr"), th = el("th", null, t + " " + sx); th.scope = "row"; trw.appendChild(th);
+      STEP3.forEach(function (z) { var key = t + "/" + sx + "/" + z + "/" + ctx.density, r = viewBase ? BASE_RES[key] : safe(function () { return resolve(t, sx, z, ctx.density); }), bb = BASE_RES[key], td = el("td"), bt = el("button", null, r.error ? "off" : String(r.h)); bt.type = "button";
+        bt.className = (r.error ? "off" : r.h !== bb.h ? "chg" : "") + (t === ctx.tier && sx === ctx.scale && z === ctx.size ? " cur" : ""); bt.setAttribute("aria-label", t + " " + sx + "/" + z + ": " + (r.error ? "off the ladder" : r.h + " px"));
+        bt.addEventListener("click", function () { ctx.tier = t; ctx.scale = sx; ctx.size = z; ["tier", "scale", "size"].forEach(function (k) { $(k + "-" + ctx[k]).checked = true; }); update(); });
+        td.appendChild(bt); trw.appendChild(td); });
+      tbd.appendChild(trw); }); }); mx.appendChild(tbd);
+
+    var fails = safe(check); if (!Array.isArray(fails)) fails = ["check() threw: " + fails.error];
+    var bad = {}; fails.forEach(function (f) { bad[f.split(" ")[0]] = (bad[f.split(" ")[0]] || 0) + 1; });
+    S.conChips.textContent = ""; for (var i = 1; i <= 16; i++) { var id = "M" + i; S.conChips.appendChild(el("span", "chipm" + (bad[id] ? " bad" : ""), id + (bad[id] ? " ×" + bad[id] : ""))); }
+    S.conList.textContent = ""; fails.slice(0, 6).forEach(function (f) { S.conList.appendChild(el("li", null, f)); });
+    if (fails.length > 6) S.conList.appendChild(el("li", null, "and " + (fails.length - 6) + " more"));
+    var jf = jigChecks(), jbad = {}; jf.forEach(function (f) { jbad[f.split(" ")[0]] = (jbad[f.split(" ")[0]] || 0) + 1; });
+    var notes = jigNotes(); S.jigChips.textContent = ""; JIG_CHECKS.forEach(function (c) { var chip = el("span", "chipm" + (jbad[c[0]] ? " bad" : c[0] === "A1" && notes.length ? " note" : ""), c[0] + (jbad[c[0]] > 1 ? " ×" + jbad[c[0]] : "")); chip.title = c[1]; S.jigChips.appendChild(chip); });
+    S.jigList.textContent = ""; jf.slice(0, 6).forEach(function (f) { S.jigList.appendChild(el("li", null, f)); }); if (jf.length > 6) S.jigList.appendChild(el("li", null, "and " + (jf.length - 6) + " more"));
+    notes.forEach(function (f) { S.jigList.appendChild(el("li", "nt", f)); });
+    var hb = $("health"), nFail = Object.keys(bad).length + Object.keys(jbad).length; hb.textContent = nFail ? "\u2715 " + nFail : "\u2713 checks"; hb.classList.toggle("bad", nFail > 0); hb.setAttribute("aria-label", nFail ? nFail + " checks fail. Open the System tab." : "All checks pass. Open the System tab.");
+    S.tyWarn.textContent = ""; jf.filter(function (f) { return f.charAt(0) === "T"; }).slice(0, 4).forEach(function (f) { S.tyWarn.appendChild(el("li", null, f)); });
+    var nBad = Object.keys(bad).length, nJ = Object.keys(jbad).length; S.con.sub.textContent = (nBad ? (16 - nBad) + " of 16 pass" : "16 of 16 pass") + (nJ ? " · " + nJ + " jig" : ""); S.con.sub.style.color = nBad || nJ ? "var(--bad)" : "var(--ok)";
+    var nc = changesList().length, no = overridesList().length, cnt = $("count");
+    cnt.textContent = nc + no ? nc + (nc === 1 ? " change" : " changes") + (no ? " · " + no + (no === 1 ? " override" : " overrides") : "") : "No changes"; cnt.classList.toggle("has", nc + no > 0);
+    S.geo.sub.textContent = v.error ? "off ladder" : "n " + v.n; S.lv.sub.textContent = v.error ? "" : "m " + v.m; S.ty.sub.textContent = v.error ? "" : "body " + v.type.body;
+    S.sh.sub.textContent = "radius × " + fmt(EXT.shape.radius); S.mo.sub.textContent = EXT.motion.medium + " ms";
+    $("reset-all").disabled = nc + no === 0;
+    paint();
+    renderJson();
+    var sn = snap();
+    if (!restoring && sn !== hist[hi]) { var now = Date.now(); if (now - lastPush < 400 && hi > 0 && hi === hist.length - 1) hist[hi] = sn; else { hist = hist.slice(0, hi + 1); hist.push(sn); if (hist.length > 100) hist.shift(); hi = hist.length - 1; } lastPush = now; }
+    $("undo").disabled = hi <= 0; $("redo").disabled = hi >= hist.length - 1;
+    try { localStorage.setItem("maison-jig-4", JSON.stringify({ cfg: CFG, ext: EXT, sels: sels, ctx: ctx, overrides: overrides, fonts: fonts, note: note, theme: theme })); } catch (e) {}
+  }
+
+  /* ---- actions ---- */
+  function say(t) { $("said").textContent = t; clearTimeout(say.t); say.t = setTimeout(function () { $("said").textContent = ""; }, 3500); }
+  function copy(text, what) {
+    var fallback = function () { var pre = $("json"); var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); pre.focus(); say("Copy was blocked here. The change set below is selected: press copy."); };
+    try { navigator.clipboard.writeText(text).then(function () { say(what + " copied."); }, fallback); } catch (e) { fallback(); }
+  }
+  $("copy-json").addEventListener("click", function () { copy(JSON.stringify(changeSet(), null, 2), "Change set"); });
+  $("copy-prompt").addEventListener("click", function () {
+    copy("Apply this Jig change set to the mathematical-design-system constants (CFG in scale.mjs).\n- Refuse it if base.sha256 or any `from` does not match the current file.\n- Apply `changes` by path, run check(), and report every failure. Do not ship a failing contract.\n- Each change names its `home`. `CFG` is a constant in scale.mjs. Any other home is not in CFG today: edit the named file, or propose where a new constant lives, and say which you did.\n- Treat `overrides` as requests: propose the constant change that achieves each one, or list it as a named exception. Never hard-code them.\n- Confirm your result reproduces `effects.changed` at the stated rung.\n\n```json\n" + JSON.stringify(changeSet(), null, 2) + "\n```\n", "Prompt");
+  });
+  $("reset-all").addEventListener("click", function () { load(BASE); EXT = clone(EXT0); sels = clone(SEL0); overrides = {}; fonts = clone(FONT0); update(); say("Back to the base system."); });
+  $("show-f").addEventListener("change", function (e) { $("spec").classList.toggle("show-f", e.target.checked); });
+  $("show-base").addEventListener("change", function (e) { viewBase = e.target.checked; update(); });
+  try { $("mo-reduced").checked = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+  $("mo-play").addEventListener("click", function () {
+    var v = resolveCtx(), c = v.error ? 2 : v.c, X = viewBase ? EXT0 : EXT, Sx = viewBase ? SEL0 : sels, reduced = $("mo-reduced").checked;
+    document.querySelectorAll("[data-motion]").forEach(function (box) {
+      var which = box.getAttribute("data-motion"), ms = X.motion[which], dist = which === "short" ? 0 : X.motion.travel * c * (which === "long" ? 2 : 1), dot = box.querySelector(".dot");
+      if (!dot.animate) return;
+      if (reduced) { ms = Math.min(ms, X.motion.short); dist = 0; }
+      var from = { opacity: which === "short" ? .3 : 0, transform: "translateY(" + dist + "px)" }, to = { opacity: 1, transform: "translateY(0px)" };
+      dot.getAnimations().forEach(function (x) { x.cancel(); });
+      dot.animate([from, to], { duration: ms, easing: EASE[Sx.easeIn], fill: "both" }).finished
+        .then(function () { return dot.animate([to, from], { duration: ms, delay: 500, easing: EASE[Sx.easeOut], fill: "forwards" }).finished; })
+        .then(function () { return new Promise(function (res) { setTimeout(res, 250); }); })
+        .then(function () { dot.getAnimations().forEach(function (x) { x.cancel(); }); }).catch(function () {});
+    });
+  });
+
+  /* ---- import: a change set pasted back in ---- */
+  function importSet(text) {
+    var m = /```(?:json)?\s*([\s\S]*?)```/.exec(text), o, errs = [], plan = [];
+    try { o = JSON.parse(m ? m[1] : text); } catch (e) { return ["Not JSON: " + e.message]; }
+    if (!o || typeof o.$schema !== "string" || o.$schema.indexOf("maison.jig.changeset/") !== 0) return ["Not a Jig change set: $schema is missing."];
+    if (!o.base || o.base.sha256 !== SCALE_SHA) errs.push("Made against a different base: sha256 differs.");
+    var selByPath = {}; Object.keys(SEL_PATH).forEach(function (k) { selByPath[SEL_PATH[k]] = k; });
+    (o.changes || []).forEach(function (c) {
+      var k = knobs.filter(function (x) { return x.path === c.path; })[0], f = /^\/fonts\/(.+)/.exec(c.path || ""), sk = selByPath[c.path];
+      if (k) { if (k.base !== c.from) errs.push(c.path + ": from " + c.from + ", but the base here is " + k.base); else if (typeof c.to !== "number" || !isFinite(c.to)) errs.push(c.path + ": to is not a number"); else plan.push(function () { k.obj()[k.key] = c.to; }); }
+      else if (f && f[1] in FONT0) { if (FONT0[f[1]] !== c.from) errs.push(c.path + ": from " + c.from + ", but the base here is " + FONT0[f[1]]); else if (!FONTS[c.to]) errs.push(c.path + ": unknown font " + c.to); else plan.push(function () { fonts[f[1]] = c.to; }); }
+      else if (sk) { if (SEL0[sk] !== c.from) errs.push(c.path + ": from " + c.from + ", but the base here is " + SEL0[sk]); else if (!Array.prototype.some.call(selEls[sk].options, function (op) { return op.value === c.to; })) errs.push(c.path + ": unknown value " + c.to); else plan.push(function () { sels[sk] = c.to; }); }
+      else errs.push(String(c.path) + ": no such constant here");
+    });
+    (o.overrides || []).forEach(function (r) {
+      var t = /^--([a-z]+)-(margin|gutter)$/.exec(r.token || ""), g = /^([a-z]+) ([a-z]+)\/([a-z]+) ([a-z]+)$/.exec(r.rung || "");
+      if (!t || !g || !lvlRows[t[1]] || !lvlRows[t[1]].pin || typeof r.to !== "number") errs.push("override " + r.token + " at " + r.rung + ": not recognised");
+      else plan.push(function () { overrides[t[1] + "." + t[2] + "@" + g.slice(1).join("/")] = r.to; });
+    });
+    if (errs.length) return errs;
+    load(BASE); EXT = clone(EXT0); sels = clone(SEL0); overrides = {}; fonts = clone(FONT0);
+    plan.forEach(function (fn) { fn(); });
+    if (o.context) ["tier", "scale", "size", "density"].forEach(function (k) { var r = document.getElementById(k + "-" + o.context[k]); if (r) { ctx[k] = o.context[k]; r.checked = true; } });
+    note = typeof o.note === "string" ? o.note : ""; noteBox.value = note;
+    update(); return [];
+  }
+  var impOpen = function (open) { $("imp").hidden = !open; if (open) setTimeout(function () { $("imp-text").focus(); }, 0); else { $("imp-errs").textContent = ""; } };
+  $("import-open").addEventListener("click", function () { impOpen(true); });
+  $("imp-cancel").addEventListener("click", function () { impOpen(false); $("more").focus(); });
+
+  /* ---- header: actions menu, health, undo, stress toggles ---- */
+  var menu = $("menu"), more = $("more");
+  var items = function () { return Array.prototype.filter.call(menu.querySelectorAll('[role="menuitem"]'), function (b) { return !b.disabled; }); };
+  function menuOpen(open) { menu.hidden = !open; more.setAttribute("aria-expanded", String(open)); if (open) { var f = items()[0]; if (f) f.focus(); } }
+  more.addEventListener("click", function (e) { e.stopPropagation(); menuOpen(menu.hidden); });
+  menu.addEventListener("click", function (e) { if (e.target.closest('[role="menuitem"]')) menuOpen(false); });
+  menu.addEventListener("keydown", function (e) { var it = items(), i = it.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); it[(i + 1) % it.length].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); it[(i - 1 + it.length) % it.length].focus(); }
+    else if (e.key === "Home") { e.preventDefault(); it[0].focus(); }
+    else if (e.key === "End") { e.preventDefault(); it[it.length - 1].focus(); }
+    else if (e.key === "Escape") { e.stopPropagation(); menuOpen(false); more.focus(); }
+    else if (e.key === "Tab") menuOpen(false); });
+  document.addEventListener("click", function (e) { if (!menu.hidden && !menu.contains(e.target) && e.target !== more) menuOpen(false); });
+  $("health").addEventListener("click", function () { showTab("system"); $("panel").scrollTop = 0; });
+  $("undo").addEventListener("click", function () { travel(-1); });
+  $("redo").addEventListener("click", function () { travel(1); });
+  document.addEventListener("keydown", function (e) { if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z" || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; e.preventDefault(); travel(e.shiftKey ? 1 : -1); });
+  $("show-e").addEventListener("change", function (e) { $("spec").classList.toggle("show-e", e.target.checked); });
+  $("show-rtl").addEventListener("change", function (e) { $("spec").dir = e.target.checked ? "rtl" : "ltr"; });
+  $("show-long").addEventListener("change", function (e) { $("spec").querySelectorAll(".clab, .t strong, .chip span").forEach(function (n) {
+    if (e.target.checked) { n.setAttribute("data-short", n.textContent); n.textContent = n.textContent + " with a far longer label than anyone planned for"; } else if (n.hasAttribute("data-short")) n.textContent = n.getAttribute("data-short"); }); });
+  $("vw").addEventListener("input", function () { update(); });
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { if (theme === "auto") update(); }); } catch (e) {}
+  $("imp-apply").addEventListener("click", function () {
+    var errs = importSet($("imp-text").value), list = $("imp-errs"); list.textContent = "";
+    if (errs.length) { errs.slice(0, 8).forEach(function (e) { list.appendChild(el("li", null, e)); }); say(""); return; }
+    $("imp-text").value = ""; impOpen(false); say("Change set applied.");
+  });
+  ["m", "g"].forEach(function (x) { $("show-" + x).addEventListener("change", function (e) { $("spec").classList.toggle("show-" + x, e.target.checked); }); });
+
+
+  /* ---- pick: an element on the canvas lights up what it consumes in the Jig ---- */
+  var locked = null, shown = null, spec0 = $("spec");
+  [[".lv.page", "lv", "page"], [".lv.card", "lv", "card"], [".lv.widget", "lv", "widget"], [".lv.group", "lv", "group"], [".ctl", "lv", "control"], [".chip", "lv", "chip"],
+    [".t strong", "role", "title"], [".t .meta", "role", "fieldLabel"], [".clab", "role", "control"], [".chip span", "role", "fieldLabel"],
+    [".gy.g-p", "gut", "page"], [".gy.g-c", "gut", "card"], [".gx.g-w", "gut", "widget"], [".gx.g-k", "gut", "control"]].forEach(function (a) {
+    spec0.querySelectorAll(a[0]).forEach(function (n) { n.setAttribute("data-" + a[1], a[2]); n.setAttribute("data-pick", ""); }); });
+  spec0.querySelectorAll(".t .meta").forEach(function (n) { n.setAttribute("data-voice", "code"); });
+  var ROLE_NAMES = { title: "Title text", body: "Body text", control: "Control text", fieldLabel: "Field label text", groupLabel: "Group label", sectionLabel: "Section label", display: "Display", heading: "Heading", subhead: "Subhead", code: "Code text" };
+  var cap = function (x) { return x.charAt(0).toUpperCase() + x.slice(1); };
+  function roleKeys(role, voice) { var ks = roleKeys0(role, voice); if (EXT.type[role]) ks.push("typ:" + role); return ks; }
+  function stepKeys(level, isGut) { var order = ["widget", "card", "page"], i = order.indexOf(level); if (i < 0) return [];
+    var ks = order.slice(0, isGut ? i : i + 1).map(function (l) { return "knob:/roomy/" + l; }); if (ctx.density !== "default") ks.push("knob:/density/" + ctx.density); return ks; }
+  function roleKeys0(role, voice) {
+    var lin = function (r) { return ["knob:/linear/" + r + "/at5", "knob:/linear/" + r + "/perStep"]; };
+    if (role === "title") return lin("body").concat(["knob:/titleBump/" + ctx.size, "font:" + (voice || "content")]);
+    if (role === "sectionLabel") return lin("body").concat(["knob:/sectionRatio", "font:context"]);
+    if (role === "display" || role === "heading" || role === "subhead") return lin("body").concat(["knob:/Q/at5", "knob:/Q/perStep", "font:display"]);
+    if (role === "groupLabel") return lin("groupLabel").concat(["font:context"]);
+    if (role === "code") return lin("control").concat(["font:code"]);
+    return lin(role).concat(["font:" + (voice || "content")]);
+  }
+  function describe(t) {
+    var own = [], up = [], down = [], path = [];
+    if (t.role) return { own: roleKeys(t.role), up: ["tier"], down: [], text: ROLE_NAMES[t.role] + ", in the type list" };
+    var n = t.el, lv = n.getAttribute("data-lv"), role = n.getAttribute("data-role"), gut = n.getAttribute("data-gut");
+    if (lv) { own.push("lvl:" + lv, "knob:/shape/radius"); if (n.classList.contains("lv")) own.push("knob:/shape/border"); own = own.concat(stepKeys(lv, false)); }
+    if (gut) { own.push("lvl:" + gut); own = own.concat(stepKeys(gut, true)); } if (role) own = own.concat(roleKeys(role, n.getAttribute("data-voice")));
+    for (var q = n.parentElement; q && spec0.contains(q); q = q.parentElement) { var l = q.getAttribute("data-lv"); if (l) { up.push("lvl:" + l); path.push(cap(l)); } }
+    n.querySelectorAll("[data-lv],[data-role],[data-gut]").forEach(function (d) {
+      var l = d.getAttribute("data-lv") || d.getAttribute("data-gut"); if (l) down.push("lvl:" + l);
+      var r = d.getAttribute("data-role"); if (r) down = down.concat(roleKeys(r, d.getAttribute("data-voice"))); });
+    up.push("tier"); if (own.concat(up, down).some(function (k) { return /^lvl:(widget|card|page)$/.test(k); })) up.push("ctx:density");
+    var name = lv ? cap(lv) : gut ? cap(gut) + " gutter" : ROLE_NAMES[role];
+    return { own: own, up: up, down: down, text: name + (path.length ? " in " + path.join(" › ") : "") };
+  }
+  function targets(key) {
+    var m;
+    if (key === "tier") return tierEls[ctx.tier]; if (key === "ctx:density") return [S.densSeg];
+    if ((m = /^lvl:(.+)/.exec(key))) return lvlRows[m[1]] ? [lvlRows[m[1]].row] : [];
+    if ((m = /^font:(.+)/.exec(key))) return fontRows[m[1]] ? [fontRows[m[1]]] : [];
+    if ((m = /^typ:(.+)/.exec(key))) return typeRows[m[1]] ? [typeRows[m[1]].row] : [];
+    if ((m = /^knob:(.+)/.exec(key))) { var k = knobs.filter(function (x) { return x.path === m[1]; })[0]; return k ? [k.row] : []; }
+    return [];
+  }
+  var reveal = false;
+  function paint() { paint0(); TABS.forEach(function (t) { tabBtns[t[0]].classList.toggle("has-hit", !!panes[t[0]].querySelector(".hit")); }); }
+  function paint0() {
+    document.querySelectorAll(".jig .hit, .jig .up, .jig .down").forEach(function (e) { e.classList.remove("hit", "up", "down"); });
+    document.querySelectorAll(".picked, .pick-up, .pick-down").forEach(function (e) { e.classList.remove("picked", "pick-up", "pick-down"); });
+    var t = locked || shown; if (!t) { pagetip.hidden = true; anchor = null; return; }
+    if (t.key) {
+      t.row.classList.add("hit"); var cs = consumers(t.key); cs.forEach(function (e) { e.classList.add("picked"); });
+      var other = /^knob:\/tiers\/([a-z]+)\//.exec(t.key); anchor = cs[0] || t.row;
+      pagetip.textContent = ""; pagetip.appendChild(el("b", null, t.label));
+      pagetip.appendChild(el("small", null, cs.length ? "Drives " + cs.length + (cs.length === 1 ? " element" : " elements") + " on the page at " + rungLabel() + "."
+        : other && other[1] !== ctx.tier ? "The page shows the " + ctx.tier + " tier. Switch Tier to " + other[1] + " to see what this drives."
+        : "Nothing on the page reads this directly."));
+      pagetip.appendChild(el("small", null, locked ? "Kept. Esc, the same label or a click elsewhere releases it." : "Click the label to keep."));
+      pagetip.hidden = false; placeTip();
+      if (reveal) { reveal = false; if (cs[0]) cs[0].scrollIntoView({ block: "nearest" }); placeTip(); }
+      return;
+    }
+    var d = describe(t), hits = [];
+    d.own.forEach(function (k) { targets(k).forEach(function (e) { e.classList.add("hit"); hits.push(e); }); });
+    d.up.forEach(function (k) { targets(k).forEach(function (e) { if (!e.classList.contains("hit")) e.classList.add("up"); }); });
+    d.down.forEach(function (k) { targets(k).forEach(function (e) { if (!e.classList.contains("hit") && !e.classList.contains("up")) e.classList.add("down"); }); });
+    if (t.el) { t.el.classList.add("picked");
+      for (var q = t.el.parentElement; q && spec0.contains(q); q = q.parentElement) if (q.hasAttribute("data-lv")) q.classList.add("pick-up");
+      t.el.querySelectorAll("[data-lv]").forEach(function (e) { e.classList.add("pick-down"); });
+      anchor = t.el;
+    } else { var tr = document.querySelector('.ty[data-type-role="' + t.role + '"]'); if (tr) tr.classList.add("picked"); anchor = tr; }
+    pagetip.textContent = ""; pagetip.appendChild(el("b", null, d.text));
+    pagetip.appendChild(el("small", null, locked ? "Kept. Esc or a click elsewhere releases it." : "Click to keep."));
+    pagetip.appendChild(el("small", null, "In the Jig: solid reads, dashed contains or drives, dotted is inside."));
+    pagetip.hidden = !anchor; placeTip();
+    if (reveal) { reveal = false; hits.forEach(function (e) { var det = e.closest("details"); if (det) det.open = true; });
+      var here = hits.filter(function (e) { return panes[curTab].contains(e); })[0] || hits[0];
+      if (here) { var pn = here.closest('[role="tabpanel"]'); if (pn) showTab(pn.id.slice(5)); here.scrollIntoView({ block: "nearest" }); } }
+  }
+  function lockOn(t) { locked = t; shown = null; reveal = true; paint(); }
+  var pickOf = function (e) { var n = e.target.closest ? e.target.closest("[data-role],[data-gut],[data-lv]") : null; return n && spec0.contains(n) ? n : null; };
+  spec0.addEventListener("mouseover", function (e) { if (locked) return; var n = pickOf(e); shown = n ? { el: n } : null; paint(); });
+  spec0.addEventListener("mouseleave", function () { if (!locked) { shown = null; paint(); } });
+  spec0.addEventListener("click", function (e) { var n = pickOf(e); if (n) { e.preventDefault(); lockOn({ el: n }); } });
+  /* ---- reverse pick: a field label in the Jig lights up what it drives on the page ---- */
+  function consumers(key) {
+    var all = Array.prototype.slice.call(spec0.querySelectorAll("[data-lv],[data-role],[data-gut]")), rows = Array.prototype.slice.call(document.querySelectorAll(".ty[data-type-role]"));
+    var m = /^knob:\/tiers\/([a-z]+)\//.exec(key); if (m) return m[1] === ctx.tier ? all.concat(rows) : [];
+    if (/^knob:\/color\/(hue|chroma|lightness)/.test(key)) return Array.prototype.slice.call(document.querySelectorAll("#spec .ctl.pri, #parts .p-check, #parts .p-radio, #parts .p-switch, #parts .p-prog"));
+    if (/^knob:\/color\/neutral/.test(key)) return Array.prototype.slice.call(spec0.querySelectorAll(".lv"));
+    if (/^knob:\/elevation\//.test(key)) return Array.prototype.slice.call(spec0.querySelectorAll(".lv.widget, .lv.card"));
+    if (/^knob:\/layout\//.test(key)) return [$("lay")];
+    if ((m = /^knob:\/motion\/(.+)/.exec(key))) return Array.prototype.slice.call(document.querySelectorAll("[data-motion]")).filter(function (e) { var w = e.getAttribute("data-motion"); return m[1] === "travel" ? w !== "short" : w === m[1]; });
+    return all.filter(function (e) { return describe({ el: e }).own.indexOf(key) >= 0; })
+      .concat(rows.filter(function (r) { return describe({ role: r.getAttribute("data-type-role") }).own.indexOf(key) >= 0; }));
+  }
+  function wire(handle, key, label, row) {
+    if (!handle) return; handle.setAttribute("data-jkey", key);
+    handle.addEventListener("click", function (e) {
+      if (handle._drag || /^(INPUT|SELECT|BUTTON)$/.test(e.target.tagName)) return;
+      if (locked && locked.key === key) { locked = null; shown = null; paint(); } else lockOn({ key: key, label: label, row: row });
+    });
+    handle.addEventListener("mouseenter", function () { if (!locked) { shown = { key: key, label: label, row: row }; paint(); } });
+    handle.addEventListener("mouseleave", function () { if (!locked) { shown = null; paint(); } });
+  }
+  knobs.forEach(function (k) { if (!k.row || k.row.classList.contains("cell")) return; var t = /^\/tiers\/([a-z]+)\//.exec(k.path), isRow = k.row.classList.contains("row");
+    wire(isRow ? k.row.querySelector(".lab") : k.row, "knob:" + k.path, (t ? cap(t[1]) + " " : "") + k.label, k.row); });
+  Object.keys(lvlRows).forEach(function (name) { var h = lvlRows[name].row.firstElementChild; h.style.cursor = "pointer"; wire(h, "lvl:" + name, cap(name) + " level", lvlRows[name].row); });
+  VOICES.forEach(function (v) { var fr = fontRows[v[0]]; if (fr) wire(fr.querySelector(".lab"), "font:" + v[0], v[1], fr); });
+  ROLES.forEach(function (r) { wire(typeRows[r].lab, "typ:" + r, ROLE_SHORT[r] + " weight, line height and tracking", typeRows[r].row); });
+  var pagetip = el("div", "pagetip"), anchor = null; pagetip.hidden = true; pagetip.setAttribute("role", "status"); document.body.appendChild(pagetip);
+  function placeTip() {
+    if (!anchor || pagetip.hidden) return;
+    var r = anchor.getBoundingClientRect(), w = pagetip.offsetWidth, h = pagetip.offsetHeight;
+    var top = r.top - h - 8; if (top < 8) top = Math.min(r.bottom + 8, innerHeight - h - 8);
+    pagetip.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px"; pagetip.style.top = Math.max(8, top) + "px";
+  }
+  addEventListener("scroll", placeTip, true); addEventListener("resize", placeTip);
+  // A click anywhere that is not a pickable element, the Jig, a help popover or another control releases the selection.
+  document.addEventListener("click", function (e) {
+    if (!locked || !e.target.closest) return;
+    if (pickOf(e) || e.target.closest(".jig, .tip, .ty, pre, input, button, select, textarea, label, summary, a")) return;
+    locked = null; shown = null; paint();
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && locked && !document.querySelector(".tip:popover-open")) { locked = null; paint(); } });
+
+  try { var saved = JSON.parse(localStorage.getItem("maison-jig-4") || "null");
+    if (saved && applyState(saved)) {
+      if (saved.ctx) ["tier", "scale", "size", "density"].forEach(function (k) { if (document.getElementById(k + "-" + saved.ctx[k])) { ctx[k] = saved.ctx[k]; document.getElementById(k + "-" + ctx[k]).checked = true; } });
+      if (typeof saved.note === "string") { note = saved.note; noteBox.value = note; }
+      if (saved.theme === "light" || saved.theme === "dark") theme = saved.theme; }
+  } catch (e) { load(BASE); EXT = clone(EXT0); }
+  var tab0 = "space"; try { tab0 = localStorage.getItem("maison-jig-tab") || "space"; } catch (e) {}
+  showTab(panes[tab0] ? tab0 : "space"); renderPresets();
+  update();
+})();
+</script>

@@ -1,0 +1,343 @@
+{
+  "records": [
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "light",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 390,
+        "width": 390
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "dark",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 390,
+        "width": 390
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "chromium",
+      "width": 1200,
+      "scheme": "light",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 1200,
+        "width": 1200
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "chromium",
+      "width": 1200,
+      "scheme": "dark",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 1200,
+        "width": 1200
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "light",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 390,
+        "width": 390
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "dark",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 390,
+        "width": 390
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "firefox",
+      "width": 1200,
+      "scheme": "light",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 1200,
+        "width": 1200
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "firefox",
+      "width": 1200,
+      "scheme": "dark",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 1200,
+        "width": 1200
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "light",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 390,
+        "width": 390
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "dark",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 390,
+        "width": 390
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "webkit",
+      "width": 1200,
+      "scheme": "light",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 1200,
+        "width": 1200
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    },
+    {
+      "engine": "webkit",
+      "width": 1200,
+      "scheme": "dark",
+      "boxes": {
+        "u": 8,
+        "gutter": 32,
+        "cardInset": 16,
+        "cardBlock": 16,
+        "titleOffset": 17,
+        "cardBorder": 1,
+        "inlineInset": 8,
+        "metadataUnderline": "none",
+        "scroll": 1200,
+        "width": 1200
+      },
+      "replacementHeadingFocus": true,
+      "insetFaultDetected": true,
+      "caret": {
+        "supported": true,
+        "open": true,
+        "transform": "matrix(-1, 0, 0, -1, 0, -8)",
+        "status": "open rotation observed",
+        "escapeClosed": false,
+        "closedObserved": true,
+        "closed": "matrix(1, 0, 0, 1, 0, -8)"
+      }
+    }
+  ],
+  "limits": [
+    "Focused authored recipes and geometry only; no fresh-generation efficacy, actual AT, installed Safari or physical touch coverage. Native popup open reflection can remain unverified."
+  ]
+}

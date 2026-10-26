@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {localAssets} from './lib/local-assets.mjs';
+import {beginReview,verifyDelivery} from './review-delivery.mjs';
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'module-binding-'));
+const write=(n,s)=>fs.writeFileSync(path.join(dir,n),s);
+write('app.html','<script type="module" src="main.js"></script>');
+write('main.js',"import './helper.js'; export {value} from './reexport.js'; // import './nonexistent.js'\n");
+write('helper.js',"import './main.js'; export const title='original';");
+write('reexport.js','export const value=1;');
+const app=path.join(dir,'app.html'),review=path.join(dir,'review.json');
+assert.deepEqual(localAssets(app).map(a=>a.file),['helper.js','main.js','reexport.js']);
+for(const attrs of ['type = \"module\" src = \"main.js\"','type=module src=main.js']){write('app.html',`<script ${attrs}></script>`);assert.equal(localAssets(app).length,3);}
+beginReview(app,review);assert(!verifyDelivery(review).errors.some(e=>e.includes('Local assets changed')));
+write('helper.js',"import './main.js'; export const title='changed';");
+assert(verifyDelivery(review).errors.some(e=>e.includes('Local assets changed')));
+write('app.html',`<script type="module">import './helper.js';</script>`);
+assert.equal(localAssets(app).length,3);
+write('main.js',"import 'bare-package';");assert.throws(()=>localAssets(app),/bare module/);
+write('main.js',"import './missing.js';");assert.throws(()=>localAssets(app),/ENOENT/);
+write('app.html','<script type=importmap>{}</script>');assert.throws(()=>localAssets(app),/import maps/);
+console.log(JSON.stringify({status:'pass',cases:['static imports','reexports','cycles','comments ignored','inline module','transitive mutation invalidates review','bare import refused','missing import refused'],scope:'Static module binding; no code executed and no visual acceptance claim'}));

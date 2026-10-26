@@ -1,0 +1,69 @@
+{
+  "status": "manual; not executed for this package",
+  "cases": [
+    {
+      "id": "default",
+      "setup": "u4 border0 default densities; compare controls/choices/chips/badges"
+    },
+    {
+      "id": "tight",
+      "setup": "u4 compact border2 composite1.5u; ensure slots24px and child28px"
+    },
+    {
+      "id": "zero",
+      "setup": "composite0 with border0 and2; gaps0 child radius0"
+    },
+    {
+      "id": "curvature",
+      "setup": "all five control and container values; checkbox remains1u"
+    },
+    {
+      "id": "schemes",
+      "setup": "light and dark; examine all states and captions"
+    },
+    {
+      "id": "labels",
+      "setup": "no slots, leading only, trailing only, both; chips use half margins"
+    },
+    {
+      "id": "inputs",
+      "setup": "prefix, suffix, both, selector; enter values and test clear/steppers"
+    },
+    {
+      "id": "responsive",
+      "setup": "narrow viewport, long names, zoom and larger text; no hidden content"
+    },
+    {
+      "id": "keyboard",
+      "setup": "Tab, arrows, Home/End, Escape, Space; meaningful focus only for keyboard"
+    },
+    {
+      "id": "table",
+      "setup": "shared columns, row selection, select-all indeterminate, overflow"
+    },
+    {
+      "id": "primitives",
+      "setup": "checkbox, radio, switch, forced colors; checked/unchecked"
+    },
+    {
+      "id": "chip-selector",
+      "setup": "USD/EUR/GBP popup: mouse selection, Arrow/Home/End/Enter/Escape/Tab, outside dismissal, chip slot4u and residual inset across borders."
+    },
+    {
+      "id": "nested-adornments",
+      "setup": "Compact/default/loose: chip20/24/32px, composed28/32/48px at u4. Soft and Softest nested curvature; narrow prefixes min-width own height."
+    },
+    {
+      "id": "multiline-collection",
+      "setup": "Collection density1/2/3u affects row inset/gap; Controls density and composite inset do not. Copy margin zero; wrap descriptions."
+    },
+    {
+      "id": "input-focus",
+      "setup": "Tab and Shift+Tab through plain/email/number, invalid, collection search and all composed fields. Wrapper outline only for focused field; selector/stepper/clear outline individually. Click removes ring; keyboard restores it. Check light/dark, border0/2, compact/default/loose and curvature extremes; dimensions must not change. Check forced colors separately."
+    },
+    {
+      "id": "uniform-focus",
+      "setup": "All focusable components: 3px ink outline, 0px offset. Check composite edge options and adjacent siblings for clipping; text fields use wrapper ring. Pointer focus remains unoutlined."
+    }
+  ]
+}

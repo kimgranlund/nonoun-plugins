@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.1",
+  "projectId": "local-prototype",
+  "revision": "r1",
+  "title": "Local prototype",
+  "css": "",
+  "units": [
+    {
+      "id": "task",
+      "kind": "component",
+      "title": "Task",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Direct task",
+          "rationale": "Keep the primary task together.",
+          "tradeoff": "One task surface.",
+          "html": "<section class=\"card__root flow__root product__root\" data-review-id=\"task\"><h2>Task</h2><p>Replace with the requested interface.</p></section>",
+          "composition": []
+        }
+      ]
+    }
+  ]
+}

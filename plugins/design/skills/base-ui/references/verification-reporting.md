@@ -1,0 +1,17 @@
+# Verification reporting
+
+For routine UI maintenance, default to targeted maintained checks and fresh screenshots of affected components/states. Inspect relevant narrow/wide layouts and keyboard/focus behavior; extend the matrix only where the change warrants it. Documentation-only changes need content/link validation. Reserve the reference-site artifact gallery for explicit broad reviews, cross-page changes or many-example comparisons. Small shared-component changes may use representative consumers. A rebuild does not require a gallery run. Stop after relevant checks pass unless new edits, failures or unresolved concerns warrant repetition. Report exact scope; targeted evidence is not an all-page approval. Existing release acceptance gates apply when delivering a kit release, not to every local edit.
+
+Record dependency resolution, browser launch and user activation separately. Resolver output is dependency evidence; its interactionChecks=not-run is intentional. A failed discovery candidate is not an unavailable final result. Preserve later launch failures alongside earlier successes, with timestamps and environments.
+
+Use separate authorChecks and evaluatorChecks arrays. Each entry names case, artifact, result and hashed evidence whose performedBy records the responsible actor. No author check means author activation unverified, even when independent evaluator behavior passes. Report actual untested conditions and delivery mode; draft gates do not imply task acceptance.
+
+For a mechanical consistency check use scripts/check-verification-claims.mjs PACKET.json EVIDENCE_ROOT. The packet declares schemaVersion=1, deliveryMode, dependency {evidence, sha256}, launches [{timestamp, environment, result, evidence, sha256}], authorChecks/evaluatorChecks [{case, artifact, result, evidence, sha256}], and summary {dependency, launch, authorActivation, taskAcceptance}. Check evidence JSON declares performedBy, case, result and artifactSHA256. TaskAcceptance=passed additionally requires acceptance {evidence, sha256, scope} with a matching scoped result. Empty check arrays are valid unverified observations. Keep untested conditions in the packet.
+
+This checker rejects inconsistent attribution and launch-only acceptance; it does not independently prove authorship, test execution, rubric completeness or reliability. Evidence producers and applicable source identities still require qualification by the evaluation workflow.
+
+A known installed Chromium executable can be passed to `scripts/resolve-browser.mjs --path PLAYWRIGHT --executable CHROME --check`. This validates the supplied path and performs an actual launch without downloading a browser. Use the returned executable in task checks; launch success is not interaction verification.
+
+For final visual composition acceptance, use the [rubric index and review checklist](review/index.md). Record alignment, grouping, density and wrapping observations on the delivered artifact; zero audit findings do not establish those judgments.
+
+Moving segmented indicators paint behind transparent buttons. The contrast audit composites their actual translated pseudo-element backgrounds when they fully cover the text, including opacity. Partial overlap, non-translation transforms or unsupported paint remain incomplete and require pixel verification. Inspect animation visually; settled-state contrast is not a claim about every transition frame.

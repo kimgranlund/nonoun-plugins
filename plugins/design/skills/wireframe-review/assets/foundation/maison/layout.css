@@ -1,0 +1,56 @@
+/* Maison snapshot with local margin vocabulary; see provenance.json. */
+@layer maison.tokens {
+:where(:root) {
+  --m-space-0: 0px;
+  --m-space-1: 4px;
+  --m-space-2: 8px;
+  --m-space-3: 12px;
+  --m-space-4: 16px;
+  --m-space-5: 24px;
+  --m-space-6: 32px;
+  --m-space-7: 48px;
+  --m-space-8: 64px;
+  --m-space-9: 96px;
+  --m-margin-control-group: 8px;
+  --m-margin-card: 16px;
+  --m-margin-panel: 24px;
+  --m-margin-dialog: 32px;
+  --m-margin-page: 48px;
+  --m-gap-cluster: 8px;
+  --m-gap-stack-tight: 12px;
+  --m-gap-stack: 16px;
+  --m-gap-stack-loose: 24px;
+  --m-gap-grid: 16px;
+  --m-gap-section: 48px;
+  --m-border-thin: 1px;
+  --m-border-thick: 2px;
+  --m-focus-ring-width: 3px;
+  --m-focus-ring-offset: 0px;
+}
+}
+
+/* Deprecated read aliases for pre-migration consumer CSS. */
+@layer maison.tokens { :where(:root) {
+  --m-inset-control-group: var(--m-margin-control-group);
+  --m-inset-card: var(--m-margin-card);
+  --m-inset-panel: var(--m-margin-panel);
+  --m-inset-dialog: var(--m-margin-dialog);
+  --m-inset-page: var(--m-margin-page);
+} }
+
+/* Mathematical spacing, recomputed per element for nested density contexts. */
+@layer maison.tokens {
+ :where(*, :host) {
+  --m-margin-control-group:calc(var(--g-margin) + var(--g-listbox-margin));
+  --m-margin-card:calc(3 * var(--g-margin));
+  --m-margin-panel:calc(3 * var(--g-margin));
+  --m-margin-dialog:calc(3 * var(--g-margin));
+  --m-margin-page:calc(4 * var(--g-margin));
+  --m-gap-cluster:var(--g-gutter);
+  --m-gap-stack-tight:var(--g-gutter);
+  --m-gap-stack:calc(2 * var(--g-gutter));
+  --m-gap-stack-loose:calc(3 * var(--g-gutter));
+  --m-gap-grid:calc(2 * var(--g-gutter));
+  --m-gap-section:calc(3 * var(--g-gutter));
+ }
+}

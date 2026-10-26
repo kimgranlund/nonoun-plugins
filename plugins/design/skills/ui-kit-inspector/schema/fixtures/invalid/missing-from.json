@@ -1,0 +1,65 @@
+{
+  "$schema": "jig.changeset/1",
+  "kind": "system",
+  "base": {
+    "system": "minimal-host",
+    "source": "host/tokens.css",
+    "sha256": "30da002eb484f0f1bb77107cc0bdbef366372f5c3ea8c461e5730c72999d947f"
+  },
+  "createdAt": "2026-10-13T17:27:59.804Z",
+  "context": {
+    "content": "short",
+    "width": 360
+  },
+  "changes": [
+    {
+      "path": "/unit",
+      "label": "Unit",
+      "to": 5,
+      "home": "host/tokens.css :root --unit"
+    }
+  ],
+  "overrides": [
+    {
+      "target": "--card-padding",
+      "at": "width 360",
+      "formula": "unit * 6",
+      "from": 30,
+      "to": 28,
+      "reason": "Card feels loose"
+    }
+  ],
+  "checks": {
+    "contract": {
+      "passed": true,
+      "failures": []
+    },
+    "proposed": {
+      "passed": false,
+      "failures": [
+        "P1 control height 40 is over 36"
+      ],
+      "notes": [
+        "N1 control height 40 is under a 44 px touch target"
+      ]
+    }
+  },
+  "effects": [
+    {
+      "target": "--control-height",
+      "from": 32,
+      "to": 40
+    },
+    {
+      "target": "--control-padding",
+      "from": 12,
+      "to": 15
+    },
+    {
+      "target": "--card-padding",
+      "from": 24,
+      "to": 30
+    }
+  ],
+  "note": "Controls felt cramped on touch screens."
+}

@@ -1,0 +1,102 @@
+{
+  "records": [
+    {
+      "name": "chromium",
+      "version": "151.0.7922.34",
+      "width": 390,
+      "scheme": "light",
+      "pass": true
+    },
+    {
+      "name": "chromium",
+      "version": "151.0.7922.34",
+      "width": 390,
+      "scheme": "dark",
+      "pass": true
+    },
+    {
+      "name": "chromium",
+      "version": "151.0.7922.34",
+      "width": 1280,
+      "scheme": "light",
+      "pass": true
+    },
+    {
+      "name": "chromium",
+      "version": "151.0.7922.34",
+      "width": 1280,
+      "scheme": "dark",
+      "pass": true
+    },
+    {
+      "name": "firefox",
+      "version": "153.0",
+      "width": 390,
+      "scheme": "light",
+      "pass": true
+    },
+    {
+      "name": "firefox",
+      "version": "153.0",
+      "width": 390,
+      "scheme": "dark",
+      "pass": true
+    },
+    {
+      "name": "firefox",
+      "version": "153.0",
+      "width": 1280,
+      "scheme": "light",
+      "pass": true
+    },
+    {
+      "name": "firefox",
+      "version": "153.0",
+      "width": 1280,
+      "scheme": "dark",
+      "pass": true
+    },
+    {
+      "name": "webkit",
+      "version": "26.5",
+      "width": 390,
+      "scheme": "light",
+      "pass": true
+    },
+    {
+      "name": "webkit",
+      "version": "26.5",
+      "width": 390,
+      "scheme": "dark",
+      "pass": true
+    },
+    {
+      "name": "webkit",
+      "version": "26.5",
+      "width": 1280,
+      "scheme": "light",
+      "pass": true
+    },
+    {
+      "name": "webkit",
+      "version": "26.5",
+      "width": 1280,
+      "scheme": "dark",
+      "pass": true
+    }
+  ],
+  "unavailable": [],
+  "sources": {
+    "assets/foundation/ultimate-tokens/colors.css": "3d5b3c5d55a3a9823bab09e64d54301375863964c1066e50295d9f7f4b3f5af6",
+    "assets/foundation/ultimate-tokens/typography.css": "e837ce1922a05b324c4655d98f39f87ded0d4107214b2281fbc379364c7777a2",
+    "assets/foundation/maison/geometry.css": "7bef1b330cc17ee1ae3c7dbd1077c790767222b4e52b7080b89300426835799f",
+    "assets/foundation/maison/layout.css": "c1c52634fb5a4e5bfa9165ea41345e636e7bb8ec23b4c39c04111188489e5584",
+    "assets/wireframe.css": "d928a8bfe716ae8b65ef2584c6cf19c5e8f1e632a2c62d2623a79e53943e3fb9",
+    "assets/recipes/components.html": "a85fba476f794e4761278c6cb3a13717518351e959e4e208a0af13e1b06b9b32",
+    "assets/recipes/components.js": "ec5182ae7bf2150f441bd7119a85c53c5f44a4a7f8b4657b28afdc553c14bd50"
+  },
+  "limits": [
+    "Authored keyboard/state and narrow/scheme observations only",
+    "Installed Safari, screen reader, physical touch and remote search not verified"
+  ]
+}

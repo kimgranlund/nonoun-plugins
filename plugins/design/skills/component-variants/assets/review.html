@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-tier="product" data-scale="md" data-size="md" data-radius="round">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Component review</title>
+<style>/* REVIEW_STYLE */</style></head>
+<body>
+<header><h1 id="title">Component review</h1><p id="brief"></p><details class="review-details"><summary>Baseline and implementation details</summary><p id="baseline" class="small"></p><p class="small">Each preview keeps its own styles. Open standalone for full-viewport dialog checks.</p></details><label>Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
+<main><div class="grid" id="variants"></div><section class="direction"><h2>Your direction</h2><label for="combine" class="small">Combine details, reject the options, or suggest another direction.</label><textarea id="combine"></textarea><div class="actions"><button type="button" id="clear">Clear preference</button><button type="button" id="copy">Copy feedback</button><button type="button" id="show">Show feedback text</button><span id="status" role="status"></span></div><p class="small">Paste feedback into the agent session. Nothing is sent automatically. Draft notes are saved locally when available.</p><p class="small">Reviewing a closed menu or dismissed dialog? Describe it in “Part or state”; automatic context records the state when you type.</p><textarea id="export" aria-label="Feedback to copy" readonly hidden></textarea></section></main>
+<noscript>This review requires JavaScript for previews and feedback.</noscript>
+<script type="module">
+import {initReview} from './review-support.mjs';
+import review from './review.mjs';
+try { await initReview(review); } catch(error) { document.querySelector('#status').textContent='Review could not start: '+error.message; console.error(error); }
+</script></body></html>

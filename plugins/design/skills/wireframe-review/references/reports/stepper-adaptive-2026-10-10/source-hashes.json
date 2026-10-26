@@ -1,0 +1,10 @@
+{
+  "assets/wireframe.css": "d928a8bfe716ae8b65ef2584c6cf19c5e8f1e632a2c62d2623a79e53943e3fb9",
+  "assets/recipes/components.html": "a85fba476f794e4761278c6cb3a13717518351e959e4e208a0af13e1b06b9b32",
+  "assets/recipes/components.js": "ec5182ae7bf2150f441bd7119a85c53c5f44a4a7f8b4657b28afdc553c14bd50",
+  "references/style/components/contract.json": "758befa9a2aa5b300eaaaf816494e5ac823fec6ab39df49b130c1b43aeda1724",
+  "references/style/components/workflow-patterns.md": "8633e68f1d30149ca7b6406fd06e4c735259253d37e0c8dc6bb0e4026224b0d0",
+  "references/style/components/demonstrations.json": "f34410c9ae681192c6f9dcbc0a2634159b68ed2a49b2c6b6e5256e9869be17eb",
+  "references/style/token-index.json": "7bfd5f8d568010adce2f655dda8f22727c699d503854321e98475932594efa7a",
+  "scripts/check-remediation-states.mjs": "fdeb470b62bb9f0027af532177af92153553051c3f0582b89dfdc43ff159a177"
+}

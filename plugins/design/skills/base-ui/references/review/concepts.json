@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "scope": "Small design concept index. Existing contracts and rubric definitions remain authoritative; no duplicated token or component ontology.",
+  "concepts": [
+    {
+      "id": "simple",
+      "definitionSource": "references/review/principles.md",
+      "reviewChecks": [
+        "content.labels",
+        "density.balance"
+      ],
+      "implementationRoutes": [
+        "assets/recipes/compact-options.js",
+        "references/review/measurements.md"
+      ],
+      "evidencePolicy": "Inspect rendered task states. A linked implementation or passing mechanical audit does not establish this principle."
+    },
+    {
+      "id": "clear",
+      "definitionSource": "references/review/principles.md",
+      "reviewChecks": [
+        "purpose.task",
+        "content.labels"
+      ],
+      "implementationRoutes": [
+        "references/style/select/contract.json"
+      ],
+      "evidencePolicy": "Inspect rendered task states. A linked implementation or passing mechanical audit does not establish this principle."
+    },
+    {
+      "id": "balanced",
+      "definitionSource": "references/review/principles.md",
+      "reviewChecks": [
+        "layout.rails",
+        "layout.wrapping"
+      ],
+      "implementationRoutes": [
+        "assets/recipes/field-action.html",
+        "references/review/measurements.md"
+      ],
+      "evidencePolicy": "Inspect rendered task states. A linked implementation or passing mechanical audit does not establish this principle."
+    },
+    {
+      "id": "spacious",
+      "definitionSource": "references/review/principles.md",
+      "reviewChecks": [
+        "density.proximity",
+        "layout.ownership"
+      ],
+      "implementationRoutes": [
+        "references/reading-regions.md",
+        "references/review/measurements.md"
+      ],
+      "evidencePolicy": "Inspect rendered task states. A linked implementation or passing mechanical audit does not establish this principle."
+    },
+    {
+      "id": "contrasting",
+      "definitionSource": "references/review/principles.md",
+      "reviewChecks": [
+        "purpose.emphasis",
+        "consistency.color"
+      ],
+      "implementationRoutes": [
+        "references/review/principles.md",
+        "references/review/measurements.md"
+      ],
+      "evidencePolicy": "Inspect rendered task states. A linked implementation or passing mechanical audit does not establish this principle."
+    },
+    {
+      "id": "consistent",
+      "definitionSource": "references/review/principles.md",
+      "reviewChecks": [
+        "consistency.anatomy"
+      ],
+      "implementationRoutes": [
+        "references/style/components/contract.json"
+      ],
+      "evidencePolicy": "Inspect rendered task states. A linked implementation or passing mechanical audit does not establish this principle."
+    }
+  ]
+}
