@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Fog-of-War"
+  short_description: "Explain context decisions and diagnose routing"
+  default_prompt: "Use $context-fog-of-war to diagnose the context-routing decisions and test outcomes in this session, save a durable run record, and recommend an evidence-backed experiment with a verification criterion. Compare against a relevant prior run when available; open the viewer only when useful."

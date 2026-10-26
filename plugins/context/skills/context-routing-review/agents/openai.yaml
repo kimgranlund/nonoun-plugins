@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author & Consumer Context Routing Review"
+  short_description: "Test author and consumer discovery routes"
+  default_prompt: "Use $context-routing-review to review author and consumer routes from AGENTS.md and validate them with fresh agents."

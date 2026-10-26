@@ -1,0 +1,8 @@
+{
+  "package": "mermaid",
+  "version": "11.12.0",
+  "source": "https://registry.npmjs.org/mermaid/-/mermaid-11.12.0.tgz",
+  "file": "mermaid-11.12.0.min.js",
+  "sha256": "07e37dfa97b337ccc85365d57eddf99b9706f09db3b59b260d0333b23b343c4b",
+  "license": "MIT; see mermaid-LICENSE"
+}

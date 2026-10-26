@@ -1,0 +1,914 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "session": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "trace": {
+          "type": "string"
+        },
+        "traceSha256": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude",
+            "bundle"
+          ]
+        },
+        "adapterVersion": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "trace",
+        "traceSha256",
+        "repo",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "inventory": {
+          "type": "string"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "inventory",
+        "warnings"
+      ],
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/link"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "guidanceEdges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/guidanceEdge"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "available",
+              "mentioned"
+            ]
+          },
+          "evidence": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "required": [
+          "sourceId",
+          "eventId",
+          "kind",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "contextRecords": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "included",
+              "removed"
+            ],
+            "type": "string"
+          },
+          "evidence": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "required": [
+          "sourceId",
+          "eventId",
+          "status",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "catalog": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "detector": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "observation": {
+                "type": "string"
+              },
+              "hypothesis": {
+                "type": "string"
+              },
+              "guidance": {
+                "type": "string"
+              },
+              "verification": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "candidate"
+                ]
+              },
+              "eventIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sourceIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "eventId": {
+                      "type": "string"
+                    },
+                    "traceLine": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "excerpt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "eventId",
+                    "traceLine",
+                    "excerpt"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "metrics": {
+                "type": "object"
+              },
+              "triage": {
+                "type": "object",
+                "required": [
+                  "version",
+                  "state",
+                  "reason",
+                  "evidence",
+                  "nextEvidence"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "enum": [
+                      "needs-review",
+                      "likely-benign"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "nextEvidence": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "detector",
+              "title",
+              "observation",
+              "hypothesis",
+              "guidance",
+              "verification",
+              "confidence",
+              "status",
+              "eventIds",
+              "sourceIds",
+              "alternatives",
+              "evidence",
+              "metrics"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "catalog",
+        "findings",
+        "coverage",
+        "limits"
+      ],
+      "additionalProperties": false
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "stages",
+          "nextStep",
+          "uncertainty"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "nextStep": {
+            "type": "string"
+          },
+          "uncertainty": {
+            "type": "string"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "state",
+                "summary",
+                "evidence"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "guidance",
+                    "action",
+                    "evidence",
+                    "outcome"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "complete",
+                    "incomplete",
+                    "failed",
+                    "unknown"
+                  ]
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "label",
+                      "excerpt"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "excerpt": {
+                        "type": "string"
+                      },
+                      "eventId": {
+                        "type": "string"
+                      },
+                      "artifact": {
+                        "type": "string"
+                      },
+                      "pointer": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "childSessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string"
+          },
+          "parentEventId": {
+            "type": "string"
+          },
+          "resultEventId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unavailable",
+              "hydrated"
+            ]
+          },
+          "report": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "agentId",
+          "parentEventId",
+          "resultEventId",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "messageRetention": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "messageEventId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "included",
+              "removed"
+            ]
+          }
+        },
+        "required": [
+          "eventId",
+          "messageEventId",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "bundle": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "session",
+    "coverage",
+    "sources",
+    "events",
+    "links"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://context-fog-of-war.local/session.schema.json",
+  "title": "Context Fog-of-War session v1/v2",
+  "$defs": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inventoried": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "inventoried"
+      ],
+      "additionalProperties": false
+    },
+    "exposure": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "discovered",
+            "partial",
+            "read",
+            "edited"
+          ]
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "sourceId",
+        "state",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "message",
+            "call",
+            "result",
+            "compaction",
+            "context",
+            "unknown"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "object",
+          "properties": {
+            "traceLine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "traceLine",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "exposures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/exposure"
+          }
+        },
+        "toolCalls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toolCall"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "seq",
+        "kind",
+        "label",
+        "actor",
+        "timestamp",
+        "evidence",
+        "exposures"
+      ],
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "recorded",
+            "inferred"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "kind",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "citation": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId",
+        "excerpt"
+      ],
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "edgeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "answer",
+        "edgeIds",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "guidanceEdge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "explicit",
+            "observed",
+            "inferred"
+          ]
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "kind",
+        "explanation",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "routing",
+            "lookup",
+            "dependency",
+            "coverage",
+            "guidance"
+          ]
+        },
+        "observation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hypothesis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "improvement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "proposed",
+            "applied-unverified",
+            "verified-in-session"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "decisionId",
+        "title",
+        "category",
+        "observation",
+        "hypothesis",
+        "improvement",
+        "target",
+        "verification",
+        "status",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "toolCall": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "settlement": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "fulfilled",
+            "rejected"
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "succeeded",
+            "failed",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "position",
+        "tool",
+        "arguments",
+        "output",
+        "settlement",
+        "outcome"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "decisions",
+          "guidanceEdges",
+          "findings"
+        ]
+      }
+    }
+  ]
+}

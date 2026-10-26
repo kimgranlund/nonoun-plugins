@@ -1,0 +1,24 @@
+{
+ "version": 1,
+ "notes": "Synthetic fixture: one seeded defect per mechanical detector.",
+ "surfaces": [
+  {"id": "catalog", "kind": "catalog", "paths": ["catalog/catalog.json"], "load": "full", "authority": true},
+  {"id": "selection", "kind": "catalog", "paths": ["catalog/selection.json"], "load": "full", "authority": true},
+  {"id": "skills", "kind": "skill", "paths": ["skills/*.md"], "load": "index-only", "index": {"frontmatter": "description"}},
+  {"id": "grammar", "kind": "prompt", "paths": ["prompts/grammar.md"], "load": "full"},
+  {"id": "persona", "kind": "persona", "paths": ["prompts/persona.md"], "load": "full", "modalityFree": true},
+  {"id": "repair", "kind": "check", "paths": ["checks/*.md"], "load": "full"},
+  {"id": "tools", "kind": "tool", "paths": ["tools/*.json"], "load": "full"},
+  {"id": "oracles", "kind": "oracle", "paths": ["evals/*.json"], "load": "none"}
+ ],
+ "entities": {"fromJson": [{"path": "catalog/catalog.json", "pointer": "/components", "take": "keys"}], "referencePattern": "\\b[A-Z][a-z]+(?:[A-Z][a-z]+)*Tile\\b"},
+ "topics": ["order", "price"],
+ "schemas": [
+  {"id": "OrderSummary", "schema": "catalog/catalog.json#/components/OrderSummary",
+   "instances": [
+    {"paths": ["examples/*.json"], "pointer": "/nodes/*", "where": {"/type": "OrderSummary"}},
+    {"paths": ["checks/*.md"], "snippets": "fenced", "where": {"/type": "OrderSummary"}}
+   ]}
+ ],
+ "generated": [{"output": "gen/prompts.gen.js", "sources": ["prompts/grammar.md"], "embedded": true, "mtime": false}]
+}

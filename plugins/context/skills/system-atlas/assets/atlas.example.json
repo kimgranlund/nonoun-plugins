@@ -1,0 +1,51 @@
+{
+  "system": "example-repo",
+  "scope": {
+    "subject": "Repo",
+    "playbook": "The Repo, Overview lens",
+    "reader": "a new contributor",
+    "size": 2,
+    "skipped": "the Harness subject, which this repo does not carry"
+  },
+  "source_paths": ["<code>src/</code>", "<code>.github/workflows/</code>"],
+  "branch": "main",
+  "commit": "0123abc",
+  "date": "2026-01-01",
+  "sections": [
+    {
+      "slug": "change",
+      "perspective": "Outside-in",
+      "nav": "change journey",
+      "title": "From a branch to main: one gate the author cannot skip",
+      "lede": "What a contributor touches between a local edit and a merge. Watch the review gate: it is the only step another person has to act on.",
+      "rules": [
+        "A branch reaches main only through a pull request (<code>.github/workflows/ci.yml</code>).",
+        "CI must be green before merge. Enforcer: required status check, rung 4.",
+        "🟡 \"Write a test with every fix\" is stated in the README and enforced by nobody, rung 2."
+      ],
+      "mermaid": "flowchart LR\n  A([\"Contributor: an edit\"]) --> B[\"cmd: git push branch\"]\n  B --> C{\"check: CI green?\"}\n  C -- \"no\" --> A\n  C -- \"yes\" --> D{\"Reviewer: approve?\"}\n  D -- \"changes\" --> A\n  D == \"approve\" ==> E([\"🟢 merged to main\"])"
+    },
+    {
+      "slug": "pipeline",
+      "perspective": "Inside-out",
+      "nav": "ci pipeline",
+      "title": "The pipeline owns three refusals and one artifact",
+      "lede": "What CI runs and what it writes. Watch the publish step: it is the only job with credentials.",
+      "rules": [
+        "Three jobs run on every push: lint, test, build (<code>ci.yml:12-48</code>).",
+        "Only the build job holds the registry token; lint and test hold none.",
+        "🟡 No job fails on a coverage drop; coverage is reported and discarded."
+      ],
+      "mermaid": "flowchart LR\n  P([\"push\"]) --> L{\"check: lint\"}\n  P --> T{\"check: test\"}\n  L -- \"fail\" --> X[\"🔴 refused\"]\n  T -- \"fail\" --> X\n  L -- \"pass\" --> B[\"job: build\"]\n  T -- \"pass\" --> B\n  B ==> R[(\"door: package registry\")]"
+    }
+  ],
+  "inventory": [
+    ["Commands", "2", "make test, make build", "<code>Makefile:4-11</code>"]
+  ],
+  "matrix": [
+    ["CI green before merge", "ci.yml:3", "4 mechanical", "required status check", "🟢"]
+  ],
+  "findings": [
+    ["🟡", "A stated rule nothing enforces", "\"Write a test with every fix\" (README) has no checker behind it."]
+  ]
+}

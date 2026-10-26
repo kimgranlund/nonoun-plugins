@@ -1,0 +1,6 @@
+{
+ "types": {
+  "InfoTile": {"intents": ["opening hours or a fact to read"], "notFor": [{"type": "PriceTile", "why": "an item with a price to order"}]},
+  "PriceTile": {"intents": ["an item with a price to order"]}
+ }
+}

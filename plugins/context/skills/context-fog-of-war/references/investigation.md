@@ -1,0 +1,18 @@
+# Full investigation workflow
+
+Use this workflow for a full explanation of failures or a requested investigation report. A narrow CLI diagnosis, benchmark, or static audit uses its own route and does not require every step below. For a codebase or corpus with no trace, run the [contract audit](contract-audit.md) instead: mapping, `audit.py scan`, the rubric review, then confirmed findings with file:line and one cause class each.
+
+1. Pick the route in `SKILL.md` and resolve inputs from the request and workspace (no path request by default). For a bundle, reuse a mapping manifest from a prior run's record (the project's fog records, or the mapping the previous report cites) before writing a new one.
+2. Check prerequisites per detector in [diagnostics](diagnostics.md). Report missing evidence only for the affected checks; continue eligible checks. Missing telemetry is a coverage gap, not a defect finding.
+3. Preserve the original input. Classify provider-error turns (usage limit, overload, auth) separately from context-routing failures. If they are irrelevant to the question and filtering is needed, blank only those lines in a derivative copy, retain stable line numbers, and record the exclusions and original hash/path. Then produce the v2 `session.json` (`fog.py hydrate` or `engineer.py ingest`) and read its per-detector coverage states.
+4. Cluster the failing turns or runs (one cluster per distinct failure); how: [triage](learnings/triage.md). When the mapping cannot carry pass and fail verdicts, cluster from the per-run reports outside the bundle and cite them as outside the bundle.
+5. Per cluster, trace the exposure chain: retrieved against framed context, tool results received against submitted.
+6. Hydrate `decisions`, `guidanceEdges` and `findings` with exact excerpts and event IDs ([decision analysis](decision-analysis.md)).
+7. When evidence supports it, give each cluster one primary cause class from [learnings](learnings/README.md): (a) exposure, (b) conflicting or ambiguous guidance, (c) model ignored clear guidance, (d) check, oracle or scenario defect. Otherwise record cause as unresolved, cite competing explanations, and request the smallest discriminating evidence.
+8. `fog.py validate`, then `library.py publish`; record the `id` it prints. Publishing is part of a full investigation report; a narrow CLI diagnosis retains only its durable engineering record; open the viewer only when asked.
+9. Name one bounded experiment per cluster with its verification criterion ([engineering](engineering.md)).
+10. Turn each useful failure into a keyless replay pinned to its failing checks ([test loop](learnings/test-loop.md), lesson 24). When the project has a replay mechanism, this is the project's step: name the replays to add.
+11. Deliver: the published report id and its HTML and JSON paths, plus a why-and-fix table (cite the contract file `audit.py link` names for each cluster when an audit report exists; a finding passed to `link` quotes the guidance it suspects, and a miss means quote more, not no contract) in the [applying-this-skill](learnings/applying-this-skill.md) columns, and material limitations, including any provider-error lines blanked in step 3.
+
+Zero findings is a valid signal result, not proof of correctness. Report per-detector coverage. Continue semantic investigation only where the task or failure evidence calls for it; do not invent a cluster, cause or experiment. If prerequisites block every requested check, report a blocked investigation, not a defect. Ask one focused question only when a mapping meaning would change the diagnosis.
+

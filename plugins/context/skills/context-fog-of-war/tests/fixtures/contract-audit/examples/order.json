@@ -1,0 +1,4 @@
+{"nodes": [
+ {"type": "OrderSummary", "title": "Order placed", "rows": [{"label": "Soup", "value": "6.00"}]},
+ {"type": "OrderSummary", "title": "Order placed"}
+]}

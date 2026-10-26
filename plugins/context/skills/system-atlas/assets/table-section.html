@@ -1,0 +1,41 @@
+<!-- The three table sections of an atlas page: outputs 1, 4 and 5 (inventory, enforcement
+     matrix, findings). scripts/atlas_build.py emits these three from atlas.json; edit them
+     here only when the contract itself changes, never by hand on a page.
+
+     Each is a normal <section>, so the eyebrow must still name a perspective. All three are
+     Inside-out: they describe what the system owns, not what an actor touches. The table
+     styles live in page-template.html (.tablewrap, table, th, td) and use page tokens only.
+     Header rows are fixed: changing one changes what a reader can compare across atlases. -->
+
+<section id="inventory">
+  <div class="head">
+    <div><p class="eyebrow">Inside-out &middot; Inventory</p><h2>{{Title: what the scan found, by kind}}</h2></div>
+    <div><p>{{One sentence: which paths were walked, and where the line-level evidence is kept.}}</p></div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Kind</th><th>Count</th><th>Items</th><th>Evidence</th></tr></thead>
+    <tbody><tr><td>{{Kind}}</td><td>{{Count}}</td><td>{{Items}}</td><td>{{Evidence path}}</td></tr></tbody>
+  </table></div>
+</section>
+
+<section id="matrix">
+  <div class="head">
+    <div><p class="eyebrow">Inside-out &middot; Enforcement matrix</p><h2>{{Title: N rules against their rung and enforcer}}</h2></div>
+    <div><p>{{One sentence: what the rungs mean, in the reader's vocabulary.}}</p></div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Rule</th><th>Stated in</th><th>Rung</th><th>Enforcer</th><th>State</th></tr></thead>
+    <tbody><tr><td>{{Rule}}</td><td>{{file:line}}</td><td>{{rung}}</td><td>{{enforcer, or none}}</td><td>{{🟢|🟡|🔴}}</td></tr></tbody>
+  </table></div>
+</section>
+
+<section id="findings">
+  <div class="head">
+    <div><p class="eyebrow">Inside-out &middot; Findings</p><h2>{{Title: where the two drawings disagree}}</h2></div>
+    <div><p>{{One sentence: each row is a finding, not a fix, and where the fixes are homed.}}</p></div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>State</th><th>Finding</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>{{🟢|🟡|🔴}}</td><td>{{Finding}}</td><td>{{Detail, with its evidence}}</td></tr></tbody>
+  </table></div>
+</section>

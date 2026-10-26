@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "skillId": "generative-systems",
+  "contractVersion": "1.0.0",
+  "status": "proposed",
+  "goals": {
+    "primary": {
+      "id": "faithful-working-results",
+      "statement": "Help authors turn authoritative materials into working, reviewable results that satisfy the requested outcome within the supplied system."
+    },
+    "secondary": [
+      {
+        "id": "preserve-authority-and-mechanics",
+        "statement": "Preserve authoritative semantics and trusted mechanics while making supported adaptation seams explicit."
+      },
+      {
+        "id": "safe-evidenced-revision",
+        "statement": "Make revisions traceable, preserve prior material and retain unaffected behavior."
+      },
+      {
+        "id": "bounded-claims",
+        "statement": "Ground delivery and maintenance claims in evidence at the layer and scope actually checked."
+      },
+      {
+        "id": "efficient-context",
+        "statement": "Reduce unnecessary retrieval while preserving prerequisites and result quality."
+      }
+    ]
+  },
+  "kpis": [
+    {
+      "id": "task-outcome-success",
+      "label": "Task outcome success",
+      "goalIds": [
+        "faithful-working-results"
+      ],
+      "dimension": "Task outcome success",
+      "boundary": "Measures delivered task outcomes, not schema validity, startup, source parity or aesthetic quality unless explicitly required by the task. Domain checks remain owned by domain skills. Observational association does not prove skill efficacy.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Eligible attempts satisfying every required outcome criterion at the declared delivery boundary",
+        "denominator": "Eligible attempts with a determinable overall outcome, including demonstrated failures and task-attributable timeouts"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Generation, revision or system-repair tasks with an identifiable requested outcome and assessable completion boundary. Report modes separately.",
+      "exclusions": [
+        "Pure navigation or advice tasks without an executed outcome",
+        "Unrelated infrastructure failures, disclosed separately"
+      ],
+      "evidenceRequirements": [
+        "User outcome and required criteria established independently of the observed result",
+        "Original delivery and checks exercising the outcome in its relevant environment",
+        "Attempt ledger retaining failures, unknowns, cancellations and repair boundaries",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "authority-fidelity",
+      "label": "Authority fidelity",
+      "goalIds": [
+        "faithful-working-results",
+        "preserve-authority-and-mechanics"
+      ],
+      "dimension": "Authority fidelity",
+      "boundary": "Checks correspondence to authoritative values, semantic decisions and supported capabilities; does not infer runtime behavior from correspondence.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Assessed material decisions consistent with the applicable owning source, including authorized deviations",
+        "denominator": "Applicable material decisions whose source and implementation correspondence can be determined"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Artifacts or system designs governed by supplied authoritative materials.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Task-scoped inventory of material decisions selected without inspecting their pass/fail result",
+        "Applicable source versions, source ownership and conflict resolution",
+        "Artifact-to-source comparison or recorded review with explicit criteria",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "integration-correctness",
+      "label": "Trusted mechanics integration",
+      "goalIds": [
+        "preserve-authority-and-mechanics"
+      ],
+      "dimension": "Trusted mechanics integration",
+      "boundary": "Measures the authored-to-reused boundary; a byte-identical helper, successful import or startup alone is insufficient. This diagnostic overlaps task success and must not be summed into an overall score.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Exercised required integration cases satisfying their expected boundary behavior",
+        "denominator": "Required integration cases with determinate observed results, including failures"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Tasks adapting templates, runtimes, callbacks, schemas or other reusable mechanics.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Declared editable seam, required host slots/interfaces and prerequisites",
+        "Activation/input traces and observed outputs at the seam",
+        "Relevant boundary or failure cases and unexercised required cases",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "revision-fidelity",
+      "label": "Revision fidelity",
+      "goalIds": [
+        "faithful-working-results",
+        "safe-evidenced-revision"
+      ],
+      "dimension": "Revision fidelity",
+      "boundary": "All-or-nothing per revision: functional improvement cannot excuse destroyed originals or regression outside the requested change. Reanalysis is not a new revision success.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Assessed revision attempts satisfying requested changes, preservation obligations and required unaffected-behavior checks",
+        "denominator": "Revision attempts with determinate combined results, retaining any known violation as a failure"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Revisions with identifiable baseline, requested delta and authorized preservation scope.",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Baseline and successor identities plus requested change",
+        "Preservation comparison, including retained failures where required",
+        "Changed-outcome and applicable regression checks, with missing checks explicit",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "claim-calibration",
+      "label": "Evidence-supported delivery claims",
+      "goalIds": [
+        "bounded-claims"
+      ],
+      "dimension": "Evidence-supported delivery claims",
+      "boundary": "Claim support only, not underlying artifact success. A correctly scoped failure or limitation can be supported; confident unsupported success cannot. Report claim type and unknown evidence access separately.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Audited material claims whose strength, layer and scope are supported by available evidence",
+        "denominator": "Material delivery or maintenance claims for which the supporting evidence can be audited"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Deliveries or maintained lessons containing checkable structural, runtime, activation, outcome, visual, diagnosis or reuse claims.",
+      "exclusions": [
+        "Pure proposals explicitly labelled as intended future behavior"
+      ],
+      "evidenceRequirements": [
+        "Complete claim inventory within a declared report/sample boundary",
+        "Independent comparison of claim to its supporting observation and exact checked material",
+        "Review rule: reject layer promotion, untested generalization, stale evidence presented as current, and causal diagnosis stated as certain without discriminating evidence",
+        "Existing logs, artifacts and review records may supply evidence; no new producer instrumentation is required. Link observations to the evaluated task and material. Report observed coverage and unknown cases separately; missing observations are neither passes nor demonstrated failures. Empty denominators remain unmeasured."
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "context-burden",
+      "label": "Context retrieval burden",
+      "goalIds": [
+        "faithful-working-results",
+        "efficient-context"
+      ],
+      "dimension": "Quality-qualified retrieval cost",
+      "boundary": "Returned task-context content only; not total command-output bytes, model tokens, elapsed time or skill-attributable causal cost. Report task success and failed/incomplete attempts alongside cost; a smaller median alone does not establish improvement.",
+      "measurement": {
+        "kind": "distribution",
+        "observation": "Total UTF-8 bytes of decoded context-bearing tool returns exposed during each eligible attempt, including repeated reads, from task start to the declared delivery boundary. Separate context from mixed tool output only where the return structure permits exact attribution.",
+        "statistic": "median"
+      },
+      "unit": "bytes per quality-qualified attempt",
+      "direction": "lower",
+      "applicability": "Comparable attempts with complete captured context retrieval and independently supported task quality criteria.",
+      "exclusions": [
+        "Incomplete captures from the cost distribution, disclosed with counts and reasons",
+        "Unattributable mixed returns; never estimate their context bytes as exact measurements",
+        "Attempts failing the declared quality criteria from the conditional median, retained in companion outcome counts"
+      ],
+      "evidenceRequirements": [
+        "Paired retrieval calls and returned content with capture boundaries and duplicate-event handling",
+        "Evidence identifying the context-bearing portions and exact byte-count convention",
+        "Task outcome checks, cohort membership and attempt boundaries, including failures and unknowns",
+        "Explicit qualification of uncaptured automatic or initial context; this metric does not claim total model context"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "contract-version",
+        "task-domain-and-complexity",
+        "task-mode",
+        "artifact-revision",
+        "dependency-versions",
+        "criteria-version",
+        "environment",
+        "model-and-effort-when-applicable",
+        "first-submission-or-final-revision",
+        "evidence-capture-coverage"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    }
+  ]
+}
