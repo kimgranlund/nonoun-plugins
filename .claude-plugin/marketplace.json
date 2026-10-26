@@ -10,8 +10,8 @@
       "description": "SDLC Lite agent team: leveled builders, planners, verifiers and more, dispatched as sub-agents on Claude and natively on Codex, at a fixed model and effort per level."
     },
     {
-      "name": "progressive-context",
-      "source": "./plugins/progressive-context",
+      "name": "context",
+      "source": "./plugins/context",
       "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse."
     }
   ],

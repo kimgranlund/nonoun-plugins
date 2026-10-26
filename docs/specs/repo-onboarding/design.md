@@ -12,7 +12,7 @@ SDLC Lite on Claude Code has no setup step. The runner and ticket scripts create
 - No instructions explaining how `docs/` and `.sdlc/` are managed.
 - No stated home per document type.
 
-[Progressive Context](../../../plugins/progressive-context/skills/progressive-context/SKILL.md) already defines the navigation model: small entry points that link to durable contracts and evidence. This proposal applies that model at the moment a repository adopts SDLC Lite.
+[Progressive Context](../../../plugins/context/skills/progressive-context/SKILL.md) already defines the navigation model: small entry points that link to durable contracts and evidence. This proposal applies that model at the moment a repository adopts SDLC Lite.
 
 ## Decisions
 
@@ -185,7 +185,7 @@ An empty section is valid.
 An `NN-` prefix is optional and expresses order only. It may be used for:
 
 - Documents in a topic that have a real reading order, as in `docs/specs/generative-constructs/`.
-- Stage folders in a reusable workflow definition, following the optional [workflow stage guidance](../../../plugins/progressive-context/skills/progressive-context/references/workflow-stages.md).
+- Stage folders in a reusable workflow definition, following the optional [workflow stage guidance](../../../plugins/context/skills/progressive-context/references/workflow-stages.md).
 
 A number never expresses maturity or status. Whether a capability is intended, implemented, or accepted is derived from its contract and evidence, and a folder name that stored that claim would go stale when the code or criteria change. A document does not move between numbered folders as its state changes. The one status-triggered move the docs schema allows is a planning document that has been superseded, which moves to `archive/` ([docs schema](../../planning/docs-schema/design.md), Planning versus specs).
 

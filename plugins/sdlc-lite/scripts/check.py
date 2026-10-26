@@ -174,7 +174,7 @@
    Codex-scoped `run.sh` line must not.
 41. Record transcript flag (T-0334, inverted by T-0667/T-0673): no skills/*/SKILL.md spells a `dispatch.py record <dispatch_file> --` call with `--transcript`; with `--agent-id`, `record` finds the transcript itself.
    Negative control: a record call without it is flagged; one with it is not.
-42. Self-contained skills (T-0325): in every skills/*/ folder of this plugin, and of the sibling progressive-context plugin when it sits next to this one, no
+42. Self-contained skills (T-0325): in every skills/*/ folder of this plugin, and of the sibling context plugin when it sits next to this one, no
    markdown link in any .md file (fenced blocks aside) starts with `docs/`, `plugins/`, `../`, or `/`, or resolves outside its skill folder (URLs, `#anchors`, and
    links led by `${CLAUDE_PLUGIN_ROOT}/` pass); no SKILL.md or references/ file names a prose path starting with `plugins/`; and every
    `${CLAUDE_PLUGIN_ROOT}/<path>` a skill names exists in its plugin (a path with `<`, `*`, or `$` is a pattern and is skipped). Fixtures and rubrics quote evidence from
@@ -1355,7 +1355,7 @@ def skill_ref_bad(text, md_dir, skill_dir, plugin_root, prose_rule=True):
     for m in re.findall(r'\$\{CLAUDE_PLUGIN_ROOT\}/([^\s`"\'<>()*$\[\]]+)', text):
         if not (plugin_root/m.rstrip('.,;:')).exists(): out.append(f'{PLUGIN_VAR}/{m} does not exist in the plugin')
     return out
-_sc_roots = [root/'skills'] + ([root.parent/'progressive-context/skills'] if (root.parent/'progressive-context/skills').is_dir() and root.name == 'sdlc-lite' else [])
+_sc_roots = [root/'skills'] + ([root.parent/'context/skills'] if (root.parent/'context/skills').is_dir() and root.name == 'sdlc-lite' else [])
 _sc_n = 0
 for _sr in _sc_roots:
     for _sk in sorted(d for d in _sr.iterdir() if d.is_dir()):

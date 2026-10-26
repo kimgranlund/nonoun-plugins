@@ -149,7 +149,7 @@ Added 2026-10-05 at the user's request: any harness or session must be able to a
 
 ### Need, and what grounds it
 
-Progressive Context says to "add no registry ... without an actual need" (`plugins/progressive-context/skills/progressive-context/SKILL.md`, line 24). The need here is placement: a session that must put a new document or record somewhere has no stated rule. This repository's `docs/` holds 7 folders and 5 loose files, and the review counted that only 8 of 69 `docs/reports/` names carry a date. That shows the rule is missing, not that a registry fixes it, so the placement proof decides whether the registry stays. The registry is owned by SDLC Lite and not by Progressive Context, which keeps its rule against a prescribed folder tree.
+Progressive Context says to "add no registry ... without an actual need" (`plugins/context/skills/progressive-context/SKILL.md`, line 24). The need here is placement: a session that must put a new document or record somewhere has no stated rule. This repository's `docs/` holds 7 folders and 5 loose files, and the review counted that only 8 of 69 `docs/reports/` names carry a date. That shows the rule is missing, not that a registry fixes it, so the placement proof decides whether the registry stays. The registry is owned by SDLC Lite and not by Progressive Context, which keeps its rule against a prescribed folder tree.
 
 | Claim | Label | Source |
 | --- | --- | --- |

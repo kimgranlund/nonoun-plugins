@@ -267,7 +267,7 @@ To validate general-purpose behavior, additionally exercise at least one non-UI 
 
 ## Implementation decisions still open
 
-- Public plugin name decided: **Progressive Context**, package `progressive-context`.
+- Public plugin name decided: **Progressive Context**, package `progressive-context`; renamed to package `context` on 2026-10-25 (T-0793).
 - Exact domain-profile schema, composition rules when more than one profile applies, and the first non-UI validation project.
 - Exact lifecycle field schema and its integration with the existing element ontology, including stage-aware validation and derived qualification views.
 - Exact runtime/catalog adapter and executable check interfaces.
@@ -287,6 +287,6 @@ The first release should contain one routed skill, a minimal capability contract
 
 ## Initial implementation boundary (2026-09-27)
 
-The peer plugin now exists at `plugins/progressive-context`, with one shared authoring skill and contract, evidence, and integration references. It implements the minimal file-based authoring workflow; larger runtime requirements above remain proposals. The name is Progressive Context. No superiority over ICM Architect has been experimentally established.
+The peer plugin now exists at `plugins/context` (named `progressive-context` until 2026-10-25, T-0793), with one shared authoring skill and contract, evidence, and integration references. It implements the minimal file-based authoring workflow; larger runtime requirements above remain proposals. The name is Progressive Context. No superiority over ICM Architect has been experimentally established.
 
 Initial simplification: keep one capability contract, a linked assessment only after evaluation, and an optional release pointer. Derive lifecycle descriptions from these facts. Reuse existing Git revisions and SDLC Lite artifacts. Do not require a registry, stage engine, custom revision service, or a complete domain ontology for an intent stub.

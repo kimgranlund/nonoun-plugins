@@ -7,6 +7,8 @@ import re
 import sys
 
 SKILL_LIMIT = 18000
+# A plugin whose entry skill is not named after it (the context plugin kept its skill name, T-0793).
+ENTRY_SKILL = {'context': 'progressive-context'}
 
 
 def check(root):
@@ -27,7 +29,7 @@ def check(root):
             source = entry['source']['path'] if host == 'codex' else entry['source']
             require(source == f'./plugins/{name}', f'{host}: wrong source for {name}')
             require((root / source).is_dir(), f'{host}: missing source for {name}')
-    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'progressive-context'},
+    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'context'},
             'catalogs must contain both peer plugins')
     for name in sorted(catalogs[0]):
         plugin = root / 'plugins' / name
@@ -42,7 +44,7 @@ def check(root):
             require(text.startswith('---\n'), f'{skill}: missing frontmatter')
             # The host re-injects a skill body after compaction, capped at 20,000 characters (T-0659).
             require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
-        require((plugin / 'skills' / name / 'SKILL.md').is_file(), f'{name}: missing entry point')
+        require((plugin / 'skills' / ENTRY_SKILL.get(name, name) / 'SKILL.md').is_file(), f'{name}: missing entry point')
     sdlc = root / 'plugins/sdlc-lite'
     require(not (sdlc / 'hooks/hooks.json').exists(), 'Claude hooks leak into Codex discovery')
     manifest = json.loads((sdlc / '.claude-plugin/plugin.json').read_text())
@@ -56,7 +58,7 @@ def check(root):
     for skill in (sdlc / 'skills').glob('*/SKILL.md'):
         if skill.parent.name != 'sdlc-lite':
             require('${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
-    for path in (root / 'plugins/progressive-context/skills').rglob('*.md'):
+    for path in (root / 'plugins/context/skills').rglob('*.md'):
         # Contract templates use illustrative paths inside fenced examples.
         text = re.sub(r'```.*?```', '', path.read_text(), flags=re.S)
         for target in re.findall(r'\]\(([^)]+)\)', text):

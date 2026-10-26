@@ -1,13 +1,13 @@
 {
-  "name": "progressive-context",
-  "version": "0.1.2",
+  "name": "context",
+  "version": "0.2.0",
   "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse across projects.",
   "author": {
     "name": "Kim Granlund"
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "Progressive Context",
+    "displayName": "Context",
     "shortDescription": "Progressive disclosure, capability contracts, evidence, and bounded reuse across projects.",
     "longDescription": "Progressive disclosure, capability contracts, evidence, and bounded reuse across projects.",
     "developerName": "Kim Granlund",

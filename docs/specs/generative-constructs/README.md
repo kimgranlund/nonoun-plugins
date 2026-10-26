@@ -24,7 +24,7 @@ The initial authoring plugin is now implemented; see [shipped scope and validati
 
 ## Vocabulary: proposal and shipped skill
 
-The numbered documents use the proposal's words. The shipped skill ([SKILL.md](../../../plugins/progressive-context/skills/progressive-context/SKILL.md), [contracts](../../../plugins/progressive-context/skills/progressive-context/references/contracts.md), [evidence](../../../plugins/progressive-context/skills/progressive-context/references/evidence.md)) uses fewer, plainer ones. The mapping below is this repository's reading of both texts; where the skill has no counterpart it says so.
+The numbered documents use the proposal's words. The shipped skill ([SKILL.md](../../../plugins/context/skills/progressive-context/SKILL.md), [contracts](../../../plugins/context/skills/progressive-context/references/contracts.md), [evidence](../../../plugins/context/skills/progressive-context/references/evidence.md)) uses fewer, plainer ones. The mapping below is this repository's reading of both texts; where the skill has no counterpart it says so.
 
 | Proposal term (document 2) | Shipped term | Note |
 | --- | --- | --- |
