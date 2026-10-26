@@ -26,7 +26,7 @@ All paths and shell commands in this file are relative to the repository root.
 
 | Task | Read next |
 |---|---|
-| Progressive Context (to be renamed `context`, T-0793) skill or references | [Plugin guidance](plugins/progressive-context/AGENTS.md) |
+| Context plugin (formerly progressive-context) skill or references | [Plugin guidance](plugins/context/AGENTS.md) |
 | SDLC Lite roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
 | design or dev-tools plugin (planned, T-0791, T-0792; no plugin guidance exists yet) | The ownership lines above; link each plugin's `AGENTS.md` here once it exists |
 | Codex execution or generated agents | [Codex execution guide](docs/references/codex-role-execution.md) |

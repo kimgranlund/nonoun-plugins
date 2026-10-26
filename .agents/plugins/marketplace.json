@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "progressive-context",
+      "name": "context",
       "source": {
         "source": "local",
-        "path": "./plugins/progressive-context"
+        "path": "./plugins/context"
       },
       "policy": {
         "installation": "AVAILABLE",
