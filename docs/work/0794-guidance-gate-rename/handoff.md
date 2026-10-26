@@ -33,3 +33,12 @@ T-0793, 2026-10-25: `rc=5`, "guidance missing in lane: plugins/progressive-conte
 
 ## Constraints
 The failing test lands before or with the fix.
+
+## Outcome
+`lane_guidance` in plugins/sdlc-lite/scripts/dispatch.py now skips a named guidance path that the lane's diff since its recorded base (`lane_record_base`: `.lane.json` or the host record) deleted or renamed (`git diff --no-renames --diff-filter=D <base>`). A lane with no recorded base, or one that merely lacks the file, still refuses with exit 5. The `guidance` gate text in the module docstring says so.
+
+Checks:
+- Red first: with the new selftest cases and no fix, `FAIL: lane guidance: a guidance path the lane renamed in a commit since its base does not refuse (T-0794)`; the negative control (`a lane with a base record that merely lacks a main guidance path still refuses`) was ok.
+- `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (dispatch selftest: PASS, 0 FAIL lines).
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0.
+- `git diff --check 1a3ac0c391f886cd048efae4f8320f811ebab0ac` exit 0.

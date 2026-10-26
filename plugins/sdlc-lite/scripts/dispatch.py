@@ -94,7 +94,7 @@ dir to its records dir; status reads the owner tree's twin of it when that holds
                handoff that ends in SKILL.md, AGENTS.md or CLAUDE.md or starts with .agents/ or .claude/skills/ must exist in
                that tree but held by the main checkout or the lane's .lane.json `into` branch, else exit 5 with one `guidance
                missing in lane: <path> (present on <branch> at <sha7>)` line each; a path held nowhere does not refuse
-               (T-0674); no record is written. An
+               (T-0674), nor one the lane's diff since its recorded base deleted or renamed (T-0794); no record is written. An
                AGENTS.md or CLAUDE.md that differs from the main checkout's prints `lane guidance differs: <file>` on stderr
                and adds a Guidance line to the brief. The main checkout is never checked.
   lock         replaces run_lifecycle.py's directory lock. Under a brief file lock, every running attempt
@@ -727,7 +727,8 @@ def lane_guidance(top, handoff):
     """T-0655: for a linked (lane) worktree top, (differing, missing): the GUIDANCE_FILES whose bytes differ from the main
     checkout's copy, and one refusal line per backticked repo-relative guidance path in the handoff (a SKILL.md, AGENTS.md
     or CLAUDE.md, or a path under .agents/ or .claude/skills/) absent from top but held by the main checkout or the lane's
-    `into` branch (.lane.json), naming that branch; a path held nowhere is skipped. ([], []) in the main checkout."""
+    `into` branch (.lane.json), naming that branch; a path held nowhere, or one the lane's diff since its recorded base
+    deleted or renamed (T-0794), is skipped. ([], []) in the main checkout."""
     gd = git('rev-parse', '--git-dir', cwd=top).stdout.strip()
     common = git('rev-parse', '--git-common-dir', cwd=top).stdout.strip()
     if not gd or not common:
@@ -755,9 +756,11 @@ def lane_guidance(top, handoff):
         into = json.loads((top / '.lane.json').read_text(encoding='utf-8')).get('into') or ''
     except (OSError, ValueError, AttributeError):
         into = ''
+    base = lane_record_base(top)  # T-0794: a path the lane's own diff since its base deleted or renamed is not drift
+    removed = set(git('diff', '--name-only', '--no-renames', '--diff-filter=D', base, '--', cwd=top).stdout.split('\n')) if base else set()
     missing = []
     for p in paths:
-        if (top / p).exists():
+        if (top / p).exists() or p in removed:
             continue
         where = ''
         if (main_top / p).exists():
@@ -3140,6 +3143,25 @@ def selftest():
         rc, got, err = prep(gm, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
         case('lane guidance: the main checkout is never checked', rc == 0 and 'Guidance: ' not in got['prompt'] and 'guidance' not in err)
         subprocess.run(['git', '-C', str(gm), 'worktree', 'remove', '--force', str(gl)], capture_output=True)
+        # T-0794: a guidance path the lane's own commits since its base renamed away is not lane drift
+        put(gm / '.agents' / 'skills' / 'r' / 'SKILL.md', 'r\n')
+        gc = ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        subprocess.run(['git', '-C', str(gm), 'add', '.agents/skills/r/SKILL.md'], check=True)
+        subprocess.run(['git', '-C', str(gm)] + gc + ['commit', '-qm', 'skill r'], check=True)
+        gl2 = tmp / 'gm-lane2'
+        subprocess.run(['git', '-C', str(gm), 'worktree', 'add', '-q', '-b', 'lane-g2', str(gl2), 'HEAD'], check=True, capture_output=True)
+        (gl2 / '.lane.json').write_text(json.dumps({'lane': 'lane-g2', 'base_sha': git('rev-parse', 'HEAD', cwd=gl2).stdout.strip()}))
+        subprocess.run(['git', '-C', str(gl2), 'mv', '.agents/skills/r', '.agents/skills/r2'], check=True)
+        subprocess.run(['git', '-C', str(gl2)] + gc + ['commit', '-qm', 'rename r'], check=True)
+        put(gl2 / '.sdlc' / 'g' / 'handoff.md', '## Goal\nx\n\n## Context\n- Read `.agents/skills/r/SKILL.md` first.\n')
+        rc, _, err = prep(gl2, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: a guidance path the lane renamed in a commit since its base does not refuse (T-0794)',
+             rc == 0 and 'guidance missing' not in err)
+        put(gl2 / '.sdlc' / 'g' / 'handoff.md', '## Goal\nx\n\n## Context\n- Read `.agents/skills/x/SKILL.md` first.\n')
+        rc, _, err = prep(gl2, 'scout', 'L1', '.sdlc/g/handoff.md', '--dry-run')
+        case('lane guidance: negative control, a lane with a base record that merely lacks a main guidance path still refuses (T-0794)',
+             rc == 5 and 'guidance missing in lane: .agents/skills/x/SKILL.md (present on' in err)
+        subprocess.run(['git', '-C', str(gm), 'worktree', 'remove', '--force', str(gl2)], capture_output=True)
 
         put(sdlc / 'sg' / 'handoff.md')  # spec gate
         put(R(sdlc / 'sg') / 'planner-L1.md', SGPLAN)
