@@ -1,0 +1,10 @@
+attempt:
+  n: 1
+  hypothesis: ""
+  action: ""
+  expected_signal: ""
+  observed_signal: ""
+  outcome_delta: "better | worse | unchanged | unknown"
+  information_delta: "higher | lower | unchanged uncertainty"
+  verification_level: "V0"
+  decision: "continue | resolve | revert | escalate | stop"

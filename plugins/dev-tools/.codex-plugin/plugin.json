@@ -1,0 +1,21 @@
+{
+  "name": "dev-tools",
+  "version": "0.1.0",
+  "description": "Machine, repo and harness care: bounded verification loops, flaky gates, stale dev servers, bare-repo setup, macOS builds, cross-harness plugins and skill report cards.",
+  "author": {
+    "name": "Kim Granlund"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Dev Tools",
+    "shortDescription": "Machine, repo and harness care skills.",
+    "longDescription": "Machine, repo and harness care: bounded verification loops, flaky gates, stale dev servers, bare-repo setup, macOS builds, cross-harness plugins and skill report cards.",
+    "developerName": "Kim Granlund",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Use $closed-loop-run to verify and repair this work."
+  }
+}

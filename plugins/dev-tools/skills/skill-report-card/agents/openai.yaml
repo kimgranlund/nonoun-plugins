@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Report Card"
+  short_description: "Discover local evidence and report skill KPIs"
+  default_prompt: "Use $skill-report-card to discover local evidence and report skill performance with explicit coverage limits."

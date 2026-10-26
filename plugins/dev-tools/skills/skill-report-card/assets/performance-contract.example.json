@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "skillId": "base-ui",
+  "contractVersion": "1.0.0",
+  "status": "proposed",
+  "goals": {
+    "primary": {
+      "id": "successful-ui-consumption",
+      "statement": "Enable authors to produce correct, consistent interfaces using the maintained UI system."
+    },
+    "secondary": [
+      {
+        "id": "system-fidelity",
+        "statement": "Preserve authoritative visual and component semantics."
+      },
+      {
+        "id": "reliable-behavior",
+        "statement": "Make documented behavior reliable in supported conditions."
+      },
+      {
+        "id": "independent-consumption",
+        "statement": "Support standalone consumption."
+      },
+      {
+        "id": "efficient-retrieval",
+        "statement": "Keep implementation context inexpensive to retrieve."
+      }
+    ]
+  },
+  "kpis": [
+    {
+      "id": "system-fidelity",
+      "label": "System fidelity",
+      "goalIds": [
+        "successful-ui-consumption",
+        "system-fidelity"
+      ],
+      "dimension": "System fidelity",
+      "boundary": "No interaction behavior; visual parity alone is not source fidelity.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Applicable styling and composition requirements satisfied",
+        "denominator": "Applicable styling and composition requirements inspected"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Generated UI using kit styling",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Rendered geometry/type/color observations plus source bindings"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "dependency-version",
+        "task",
+        "criteria-version",
+        "environment",
+        "model-effort-when-applicable"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "interaction-correctness",
+      "label": "Interaction correctness",
+      "goalIds": [
+        "successful-ui-consumption",
+        "reliable-behavior"
+      ],
+      "dimension": "Interaction correctness",
+      "boundary": "No layout checks or environment-count inflation.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Specified operations/state transitions completed correctly",
+        "denominator": "Specified operations/state transitions exercised"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Interactive components",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "User-activation traces and expected outcomes"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "dependency-version",
+        "task",
+        "criteria-version",
+        "environment",
+        "model-effort-when-applicable"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "environment-resilience",
+      "label": "Environment resilience",
+      "goalIds": [
+        "successful-ui-consumption",
+        "reliable-behavior"
+      ],
+      "dimension": "Environment resilience",
+      "boundary": "Report untested required cases separately; not component operation correctness.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Required environment cases satisfying usability criteria",
+        "denominator": "Required environment cases actually exercised"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Declared browser/viewport/input matrix",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Environment identity and clipping/reachability/legibility observations"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "dependency-version",
+        "task",
+        "criteria-version",
+        "environment",
+        "model-effort-when-applicable"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "standalone-consumption",
+      "label": "Standalone consumption success",
+      "goalIds": [
+        "successful-ui-consumption",
+        "independent-consumption"
+      ],
+      "dimension": "Standalone consumption success",
+      "boundary": "Build integration only; not application task success.",
+      "measurement": {
+        "kind": "ratio",
+        "numerator": "Isolated attempts resolving and building the kit without review dependencies",
+        "denominator": "All eligible isolated consumption attempts, including failures/timeouts"
+      },
+      "unit": "proportion",
+      "direction": "higher",
+      "applicability": "Standalone setup/build tasks",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Fresh workspace logs, dependency identities and build result"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "dependency-version",
+        "task",
+        "criteria-version",
+        "environment",
+        "model-effort-when-applicable"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    },
+    {
+      "id": "context-burden",
+      "label": "Context retrieval burden",
+      "goalIds": [
+        "successful-ui-consumption",
+        "efficient-retrieval"
+      ],
+      "dimension": "Context retrieval burden",
+      "boundary": "Not model tokens or total authoring time; include excluded failed attempts alongside.",
+      "measurement": {
+        "kind": "distribution",
+        "observation": "Returned context bytes per eligible successful-quality attempt",
+        "statistic": "median"
+      },
+      "unit": "bytes",
+      "direction": "lower",
+      "applicability": "Attempts with complete retrieval traces and stated quality gates",
+      "exclusions": [],
+      "evidenceRequirements": [
+        "Exact tool-return bytes, read identities, quality results, model/task settings"
+      ],
+      "cohortDimensions": [
+        "skill-version",
+        "dependency-version",
+        "task",
+        "criteria-version",
+        "environment",
+        "model-effort-when-applicable"
+      ],
+      "missingData": "unmeasured",
+      "defaultTarget": null
+    }
+  ]
+}

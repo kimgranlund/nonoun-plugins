@@ -1,0 +1,47 @@
+cycle_report:
+  cycle_id: "CLR-001"
+  intent: ""
+  baseline: ""
+  verification_summary:
+    passed: 0
+    failed: 0
+    skipped: 0
+  episodes:
+    resolved: []
+    improved: []
+    blocked: []
+    escalated: []
+    exhausted: []
+  regressions: []  # in a series, the same list as series.transitions.pass_to_fail
+  new_findings: []
+  root_cause_patterns: []
+  changes:
+    implementation: []
+    tests: []
+    contracts: []
+    knowledge: []
+    architecture_process: []
+  confidence: "high | medium | low"
+  residual_risk: []
+  next_cycle:
+    required: false
+    reasons: []
+    recommended_scope: []
+  series:
+    comparison_set: ""
+    kind: "full | targeted"
+    compared_to: ""
+    transitions:
+      fail_to_pass: []
+      pass_to_fail: []
+      fail_to_fail_same_cause: []
+      fail_to_fail_new_cause: []
+    mechanism_metrics: []
+    quarantined_provider_errors: []
+    spend:
+      estimate: null
+      actual: null
+      cap: null
+      stop: "done | cap | crash"
+    replays_frozen: []
+    tooling_gaps: []

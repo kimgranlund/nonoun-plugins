@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill performance contract v1",
+  "description": "Definitions only. Observations, scores and cohort-specific targets belong in reports/protocols.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "skillId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "contractVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "adopted",
+        "deprecated"
+      ]
+    },
+    "goals": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "id",
+            "statement"
+          ],
+          "additionalProperties": false
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "statement"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "additionalProperties": false
+    },
+    "kpis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "goalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "minItems": 1
+          },
+          "dimension": {
+            "type": "string",
+            "minLength": 1
+          },
+          "boundary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "measurement": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "ratio"
+                  },
+                  "numerator": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "denominator": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "numerator",
+                  "denominator"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "distribution"
+                  },
+                  "observation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "statistic": {
+                    "enum": [
+                      "median",
+                      "p90",
+                      "mean"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "observation",
+                  "statistic"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "rubric"
+                  },
+                  "rubric": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "scale": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 2
+                  }
+                },
+                "required": [
+                  "kind",
+                  "rubric",
+                  "scale"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "direction": {
+            "enum": [
+              "higher",
+              "lower",
+              "descriptive"
+            ]
+          },
+          "applicability": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "evidenceRequirements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "cohortDimensions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "missingData": {
+            "const": "unmeasured"
+          },
+          "defaultTarget": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "operator": {
+                    "enum": [
+                      ">=",
+                      "<=",
+                      "="
+                    ]
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "scope": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "value",
+                  "operator",
+                  "rationale",
+                  "scope"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "goalIds",
+          "dimension",
+          "boundary",
+          "measurement",
+          "unit",
+          "direction",
+          "applicability",
+          "exclusions",
+          "evidenceRequirements",
+          "cohortDimensions",
+          "missingData",
+          "defaultTarget"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 8
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "skillId",
+    "contractVersion",
+    "status",
+    "goals",
+    "kpis"
+  ],
+  "additionalProperties": false
+}

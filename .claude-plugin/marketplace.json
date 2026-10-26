@@ -13,6 +13,11 @@
       "name": "context",
       "source": "./plugins/context",
       "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse."
+    },
+    {
+      "name": "dev-tools",
+      "source": "./plugins/dev-tools",
+      "description": "Machine, repo and harness care: verification loops, flaky gates, port zombies, bare repos, macOS builds, cross-harness plugins, skill report cards."
     }
   ],
   "metadata": {

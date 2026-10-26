@@ -8,7 +8,7 @@ import sys
 
 SKILL_LIMIT = 18000
 # A plugin whose entry skill is not named after it (the context plugin kept its skill name, T-0793).
-ENTRY_SKILL = {'context': 'progressive-context'}
+ENTRY_SKILL = {'context': 'progressive-context', 'dev-tools': None}
 
 
 def check(root):
@@ -29,8 +29,8 @@ def check(root):
             source = entry['source']['path'] if host == 'codex' else entry['source']
             require(source == f'./plugins/{name}', f'{host}: wrong source for {name}')
             require((root / source).is_dir(), f'{host}: missing source for {name}')
-    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'context'},
-            'catalogs must contain both peer plugins')
+    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'context', 'dev-tools'},
+            'catalogs must contain every peer plugin')
     for name in sorted(catalogs[0]):
         plugin = root / 'plugins' / name
         codex = json.loads((plugin / '.codex-plugin/plugin.json').read_text())
@@ -44,7 +44,8 @@ def check(root):
             require(text.startswith('---\n'), f'{skill}: missing frontmatter')
             # The host re-injects a skill body after compaction, capped at 20,000 characters (T-0659).
             require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
-        require((plugin / 'skills' / ENTRY_SKILL.get(name, name) / 'SKILL.md').is_file(), f'{name}: missing entry point')
+        entry = ENTRY_SKILL.get(name, name)  # None: a skill collection with no skill named after the plugin
+        require(entry is None or (plugin / 'skills' / entry / 'SKILL.md').is_file(), f'{name}: missing entry point')
     sdlc = root / 'plugins/sdlc-lite'
     require(not (sdlc / 'hooks/hooks.json').exists(), 'Claude hooks leak into Codex discovery')
     manifest = json.loads((sdlc / '.claude-plugin/plugin.json').read_text())
@@ -58,9 +59,9 @@ def check(root):
     for skill in (sdlc / 'skills').glob('*/SKILL.md'):
         if skill.parent.name != 'sdlc-lite':
             require('${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
-    for path in (root / 'plugins/context/skills').rglob('*.md'):
-        # Contract templates use illustrative paths inside fenced examples.
-        text = re.sub(r'```.*?```', '', path.read_text(), flags=re.S)
+    for path in [p for n in ('context', 'dev-tools') for p in (root / 'plugins' / n / 'skills').rglob('*.md')]:
+        # Contract templates use illustrative paths inside fenced examples and inline code.
+        text = re.sub(r'`[^`\n]*`', '', re.sub(r'```.*?```', '', path.read_text(), flags=re.S))
         for target in re.findall(r'\]\(([^)]+)\)', text):
             if '://' not in target and not target.startswith('#'):
                 require((path.parent / target.split('#')[0]).exists(), f'{path}: broken link {target}')

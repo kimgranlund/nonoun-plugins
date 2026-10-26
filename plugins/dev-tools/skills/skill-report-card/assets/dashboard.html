@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Skill Report Card</title><link rel="stylesheet" href="kit.css">
+<style>
+body{color-scheme:light dark}main{max-inline-size:72rem;margin-inline:auto}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:calc(3 * var(--g-inset,.5rem));align-items:start}.value{font-size:1.25rem;font-weight:650}select{max-inline-size:100%}.reading{max-inline-size:65ch}.facts{display:grid;grid-template-columns:minmax(9rem,1fr) minmax(0,2fr);gap:.5rem 1rem;margin:0}.facts dt{font-weight:600}.facts dd{margin:0;overflow-wrap:break-word}.facts .path{overflow-wrap:anywhere}p,li{overflow-wrap:break-word}[hidden]{display:none!important}ul{padding-inline-start:1.25rem}.detail-list{display:grid;gap:.75rem}a{overflow-wrap:anywhere}@media(max-width:480px){.facts{grid-template-columns:1fr;gap:.25rem}.facts dd{margin-block-end:.75rem}}
+</style></head><body class="wf-product"><main class="wf-page wf-page-flow">
+<header class="wf-heading-group"><h1>Skill Report Card</h1><p class="reading">What the reviewed evidence supports, and what is still missing.</p></header>
+<section class="wf-card wf-flow"><h2>Results at a glance</h2><p id="coverage" class="reading"></p><details class="wf-disclosure"><summary>Search limits and report files</summary><div class="wf-disclosure-body wf-flow"><p id="style-state"></p><ul id="limits" class="reading"></ul><p><a href="evidence-index.json">Evidence index (contains local paths)</a> · <a href="report-card.json">Report data</a></p></div></details></section>
+<div class="wf-field"><label for="skill">Skill</label><select id="skill"><option value="all">All skills</option></select></div><p id="status" role="status"></p><div id="skills" class="wf-page-flow"></div>
+<noscript><p>Open report-card.json for the report without JavaScript.</p></noscript></main>
+<script type="application/json" id="data">__REPORT_DATA__</script><script>
+const report=JSON.parse(document.querySelector('#data').textContent),host=document.querySelector('#skills'),select=document.querySelector('#skill');
+function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
+function disclosure(label,...children){const e=el('details',undefined,'wf-disclosure'),body=el('div',undefined,'wf-disclosure-body wf-flow');e.append(el('summary',label));body.append(...children);e.append(body);return e;}
+function list(items){const e=el('ul',undefined,'reading detail-list');for(const item of items)e.append(el('li',item));return e;}
+function facts(rows){const d=el('dl',undefined,'facts');for(const [label,value] of rows){if(value===undefined||value===null)continue;d.append(el('dt',label),el('dd',String(value)));}return d;}
+function number(c,...keys){for(const k of keys)if(typeof c[k]==='number')return c[k];}
+function environmentLabel(v){return typeof v==='object'&&v!==null?[v.browser||v.engine,v.variant?'Variant '+v.variant:null,v.requestedComponentWidth?v.requestedComponentWidth+'px':null,v.theme].filter(Boolean).join(' · ')||'Environment details in audit':v;}
+function humanKey(k){return k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./,x=>x.toUpperCase());}
+function auditRows(obj){const group=el('div',undefined,'wf-flow');const plain=[];for(const [key,value] of Object.entries(obj||{})){if(value===null||value===undefined)continue;if(typeof value==='object'&&!Array.isArray(value))group.append(disclosure(humanKey(key),auditRows(value)));else if(Array.isArray(value)&&value.some(x=>typeof x==='object'))group.append(disclosure(humanKey(key),...value.map(auditRows)));else plain.push([humanKey(key),Array.isArray(value)?value.join('; '):typeof value==='boolean'?(value?'Yes':'No'):value]);}if(plain.length)group.prepend(facts(plain));return group;}
+const isTest=report.population==='controlled-test';
+const measured=report.coverage.measuredPerformanceKpis||report.skills.reduce((n,s)=>n+s.metrics.filter(m=>m.value!==null).length,0);
+document.querySelector('#coverage').textContent=isTest?`Controlled test cohort: ${measured} KPIs have supported measurements. Results are shown separately for each task, version and environment. They do not establish real-use performance.`:measured?`${measured} KPIs have supported measurements. Other results show the evidence still needed.`:'No performance KPI can be measured from this sample. The semantic review found work on the skills and controlled tests, but no qualifying task using them in practice.';
+document.querySelector('#style-state').textContent=report.styling.state==='base-ui'?'Styled with the installed base-ui kit.':'Plain HTML styling: base-ui was unavailable.';
+(report.coverage.limitations||[]).forEach(t=>document.querySelector('#limits').append(el('li',t)));
+const missing={
+'system-fidelity':'A rendered interface checked against the kit’s styles and layout rules.',
+'interaction-correctness':'Recorded actions with expected and observed results.',
+'environment-resilience':'Usability checks in the required browsers and screen sizes.',
+'standalone-consumption':'A recorded attempt to build using only the kit.',
+'context-burden':'Complete retrieval logs from tasks that passed their quality checks.',
+'distinctness':'Requested design choices and a review of how the alternatives address them.',
+'fairness':'An audit of comparison conditions, including content, size and assets.',
+'preview-operability':'Recorded checks of the components’ own interactions.',
+'feedback-fidelity':'An exported feedback example checked for identity, notes and context.',
+'decision-usefulness':'Explicit reviewer feedback explaining a choice or next experiment.',
+'shell-overhead':'Reliable effort records separating comparison tools from component work.',
+'task-completeness':'Recorded application actions that achieve the requested outcomes.',
+'hypothesis-coverage':'Working alternatives with tradeoffs tied to the requested decisions.',
+'review-correctness':'Recorded checks of choosing, annotating and mixing alternatives.',
+'feedback-portability':'Feedback checked before and after export and import.',
+'revision-fidelity':'A revision checked for both requested changes and preserved behavior.',
+'delivery-integrity':'A delivery audit checking scope, dependencies, origin and verification claims.'};
+for(const s of report.skills){
+ const option=el('option',s.id);option.value=s.id;select.append(option);
+ const section=el('section',undefined,'wf-section-flow');section.dataset.skill=s.id;
+ const head=el('header',undefined,'wf-heading-group');head.append(el('h2',s.id),el('p',s.primaryGoal,'reading'));section.append(head);
+ if(s.semanticReview){
+  const review=el('section',undefined,'wf-card wf-flow');review.append(el('h3','What the review found'));
+  const cover=s.semanticReview.coverage||[],c=cover[0]||{};
+  const count=number(c,'nativeStreamsInspected','initialReviewedUniqueStreams','initialSelectedStreams','knownPriorStreamsReviewed','streamsReviewed');
+  const eligible=number(c,'realConsumerStreamsQualified','eligibleConsumerAttemptsFound','eligibleCases');
+  if(isTest)review.append(el('p','Controlled test runs are evaluated here as a separate cohort. Reported and inferred outcomes carry their own confidence labels.','reading'));
+  if(!isTest)review.append(el('p',eligible===0?'The reviewed logs describe skill development and controlled tests. They do not provide a qualifying task for measuring real-use performance.':'See the supported cases and their evidence below.','reading'));
+  const rows=[['Logs reviewed',count],[isTest?'Qualified test cases':'Qualifying real-use tasks',eligible]];
+  if(!isTest&&s.id==='wireframe-review')rows.push(['Excluded',`${c.excludedSourceMaintenance} maintenance logs; ${c.excludedControlledStudy} study logs`],['Older search',`${c.olderMetadataCandidatesSearched} files checked; ${c.olderRelevantStreamsInspected} relevant logs reviewed`]);
+  if(!isTest&&s.id==='component-variants')rows.push(['Excluded',`${c.initialExcludedStudyOrMaintenanceStreams} test or maintenance logs`],['Additional search',`${c.additionalRecentMetadataFiles} recent files and ${c.additionalOlderMetadataFiles} older files selected`]);
+  if(!isTest&&s.id==='base-ui')rows.push(['Excluded',`${c.streamsExcludedMaintenanceStudyReporting} maintenance, study or reporting logs`],['Older search',c.olderDateStratifiedPass?`${c.olderDateStratifiedPass.scanned} files read; ${c.olderDateStratifiedPass.oversizedSkipped} too large to read`:undefined]);
+  if(s.semanticReview.classificationConfidence?.length)rows.push(['Classification confidence',s.semanticReview.classificationConfidence.join(' / ')+' (reviewer inference)']);
+  review.append(facts(rows));
+  if(c.boundBreach)review.append(el('p','Read-limit exception: one growing log exceeded the 32 MiB cap. Later searches enforced the limit.','reading'));
+  review.append(disclosure('Review details and limitations',list(s.semanticReview.findings||[]),...cover.map(auditRows)));
+  const link=el('a','Evidence references and reviewer cases');link.href='semantic-observations.json';review.append(link);section.append(review);
+ }
+ section.append(disclosure('Supporting goals',list(s.secondaryGoals)));
+ const cards=el('div',undefined,'cards');
+ for(const k of s.kpis){
+  const m=s.metrics.find(m=>m.id===k.id),card=el('article',undefined,'wf-card wf-flow');
+  card.append(el('h3',k.label));
+  if(m.supportedResults?.length||m.exploratoryResults?.length){const results=[...(m.supportedResults||[]),...(m.exploratoryResults||[])];const ordered=[...results].sort((a,b)=>(a.value===1)-(b.value===1));const remainder=[];if(results.length>4)card.append(el('p',`${results.length} separate cohort results; ${results.filter(r=>r.numerator<r.denominator).length} include failures.`));for(const [index,r] of ordered.entries()){const group=el('div',undefined,'wf-flow');if(r.retrospectiveRubric)group.append(el('p','Exploratory measurement · retrospective rubric'));group.append(el('p',`${r.numerator} / ${r.denominator} (${Math.round(r.value*100)}%)`,'value'));const label=[r.cohort.task,r.cohort.condition,r.cohort.run?'Run '+r.cohort.run:null,r.cohort.phase,environmentLabel(r.cohort.environment)].filter(x=>x&&x!=='unknown');group.append(el('p',label.join(' · '),'reading'));group.append(el('p',`${r.inferredCases?'Inferred outcomes: '+r.inferredCases+'. ':''}${r.reportedCases?'Historical reported outcomes: '+r.reportedCases+'. ':''}${r.origins?.includes('explicit-human')?'Explicit human feedback. ':''}${r.origins?.includes('observed')?'Recorded observation. ':''}Confidence: ${r.confidence.join(' / ')||'unknown'}.`));if(index<4)card.append(group);else remainder.push(group);}if(remainder.length)card.append(disclosure('All remaining cohort results',...remainder));}
+  else card.append(el('p',m.status==='not-applicable'?'Not applicable':m.value===null?'Not measured':String(m.value),'value'));
+  card.append(el('p',m.status==='not-applicable'?m.reason:m.exploratoryResults?.length&&!m.supportedResults?.length?'Exploratory result only: the original KPI rubric was not predeclared.':m.value===null?'The reviewed sample does not support a result.':`Evidence: ${m.evidenceState}.`));
+  if(m.value===null&&m.status!=='not-applicable'){card.append(el('h4','Evidence needed'),el('p',missing[k.id]||k.evidence,'reading'));}
+  const details=[facts([['Measure',k.numerator],['Counted cases',k.denominator],['Applies to',k.applicability],['Scope',k.boundary],['Target',k.target===null?'Not set':k.target]])];
+  if(m.reason)details.push(el('p',m.reason,'reading'));
+  for(const r of m.semanticCohorts||[]){
+   const confidence=r.denominator?r.confidence:r.assessmentConfidence;
+   details.push(facts([['Assessment',r.retrospectiveRubric?'Exploratory review using a retrospective rubric':'KPI evidence review'],['Result',r.denominator?`${r.numerator} of ${r.denominator} (${Math.round(r.value*100)}%)`:'No eligible measurement cases'],['Missing evidence',r.missingCases],['Conflicting cases',r.conflictingCases],['Not applicable',r.notApplicableCases],['Inferred outcomes',r.inferredCases],['Reported outcomes',r.reportedCases],['Confidence',confidence?.join(' / ')||'Unknown']]));
+   details.push(disclosure('Task and environment',auditRows(r.cohort)));
+  }
+  card.append(disclosure('Definition and audit details',...details));cards.append(card);
+ }
+ section.append(cards);
+ if(s.useAnalysis){const u=s.useAnalysis;section.append(disclosure('Earlier automated log counts',el('p','These preliminary counts came from syntax matching. The semantic review above determines whether they represent real use.','reading'),facts([['Candidate turns',u.candidateUseTurns],['Unclassified or excluded turns',u.excludedOrUnclassifiedTurns],['Skill read calls',u.singleSkillReadCalls],['Logged read bytes',u.loggedSingleSkillReadReturnBytes?.toLocaleString()]])));}
+ if(s.traceObservations?.length)section.append(disclosure('Recorded command observations',...s.traceObservations.map(t=>facts([['Commands',t.recordedCommands],['Exit zero',t.successfulExits],['Nonzero exit',t.nonzeroExits],['Logged output bytes',t.loggedOutputBytes]]))));
+ host.append(section);
+}
+function filter(){for(const s of host.children)s.hidden=select.value!=='all'&&s.dataset.skill!==select.value;document.querySelector('#status').textContent=select.value==='all'?'Showing all skills.':'Showing '+select.value+'.';}
+select.addEventListener('change',filter);filter();
+</script></body></html>

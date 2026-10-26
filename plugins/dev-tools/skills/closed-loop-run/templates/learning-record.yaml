@@ -1,0 +1,21 @@
+learning_record:
+  episode: ""
+  summary: ""
+  expected: ""
+  observed: ""
+  root_cause:
+    category: ""
+    cause: ""
+    confidence: "high | medium | low"
+  inside_out: ""
+  outside_in: ""
+  attempts:
+    count: 0
+    useful: []
+    discarded: []
+  resolution: ""
+  verification: []
+  prevention:
+    regression: ""
+    hardening: ""
+  residual_risk: ""
