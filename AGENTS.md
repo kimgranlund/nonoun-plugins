@@ -1,19 +1,21 @@
 # Repository guidance
 
-This repository maintains two peer plugins for Claude Code and Codex.
+This repository maintains four peer plugins for Claude Code and Codex: SDLC Lite, Progressive Context (to be renamed `context`, T-0793), design, and dev-tools.
 `CLAUDE.md` imports this file for Claude Code. Read the scoped guidance linked below before editing that plugin; do not assume the host loaded it automatically.
 All paths and shell commands in this file are relative to the repository root.
 
 ## Purpose and ownership
 
-- **Progressive Context** owns durable intent, capability contracts, context navigation, evidence, and qualification for reuse.
+- **Progressive Context** (to be renamed `context`, T-0793) owns durable intent, capability contracts, context navigation, context routing, system mapping, evidence, and qualification for reuse.
 - **SDLC Lite** owns work execution: tickets, plans, roles, runs, verification, escalation, and closure.
+- **design** (planned, T-0791) owns UI construction, geometry, palettes, and design review.
+- **dev-tools** (planned, T-0792) owns machine, repo, and harness care.
 - Integrate through links to authoritative records. Keep execution status and capability qualification distinct.
 - Repository maintenance instructions are not automatically shipped as consumer skill context.
 
 ## Map and how work is done here
 
-- `plugins/` holds the two plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
+- `plugins/` holds the plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
 - Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/reports/` evidence, and `docs/other/`.
 - Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/specs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
 - Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for ticket levels L1 and L2 (a ticket's `size:` is its level, L1 to L5), `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
@@ -24,8 +26,9 @@ All paths and shell commands in this file are relative to the repository root.
 
 | Task | Read next |
 |---|---|
-| Progressive Context skill or references | [Plugin guidance](plugins/progressive-context/AGENTS.md) |
+| Progressive Context (to be renamed `context`, T-0793) skill or references | [Plugin guidance](plugins/progressive-context/AGENTS.md) |
 | SDLC Lite roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
+| design or dev-tools plugin (planned, T-0791, T-0792; no plugin guidance exists yet) | The ownership lines above; link each plugin's `AGENTS.md` here once it exists |
 | Codex execution or generated agents | [Codex execution guide](docs/references/codex-role-execution.md) |
 | Claude hook behavior | [Hook maintenance](docs/references/claude-hooks.md) |
 | Marketplace or host packaging | [Compatibility report](docs/references/plugin-compatibility.md) and `scripts/check-packaging.py` |
