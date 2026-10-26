@@ -1,0 +1,24 @@
+<!-- One atlas section. Copy per concept, paste at the <!- - SECTIONS - -> marker in
+     page-template.html, and add its nav link. The eyebrow must name the perspective:
+     "Outside-in" or "Inside-out", then the concept number. atlas_check.py fails a
+     section whose eyebrow names neither. -->
+<section id="{{SLUG}}">
+  <div class="head">
+    <div><p class="eyebrow">{{Outside-in|Inside-out}} &middot; Concept {{N}}</p><h2>{{Title: the claim this diagram makes}}</h2></div>
+    <div>
+      <p>{{Sentence one: what the diagram answers and for whom.}} {{Sentence two: the boundary or failure the reader should watch.}}</p>
+      <ul class="rules">
+        <li>{{Rule 1, the sentence a file actually states or enforces.}}</li>
+        <li>{{Rule 2, with its enforcer named: hook, checker, verifier, or none.}}</li>
+        <li>{{Rule 3, or a gap between intended and observed, marked 🟡.}}</li>
+      </ul>
+    </div>
+  </div>
+  <div class="canvas"><pre class="mermaid">
+flowchart LR
+  A(["{{start}}"]) --> B["{{step}}"]
+  B --> C{"{{decision}}"}
+  C -- "{{no}}" --> D["🔴 {{refusal}}"]
+  C -- "{{yes}}" --> E(["{{outcome}}"])
+</pre></div>
+</section>

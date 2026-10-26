@@ -12,7 +12,7 @@
     {
       "name": "context",
       "source": "./plugins/context",
-      "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse."
+      "description": "Progressive disclosure, capability contracts, evidence, bounded reuse, context-routing diagnosis, system atlases and ICM workspaces."
     },
     {
       "name": "dev-tools",

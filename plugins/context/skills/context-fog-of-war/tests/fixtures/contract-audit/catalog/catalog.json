@@ -1,0 +1,13 @@
+{
+ "components": {
+  "Tile": {"description": "a bounded group of content"},
+  "PriceTile": {"description": "one item with a price and an order action"},
+  "InfoTile": {"description": "a fact to read, with no price"},
+  "OrderSummary": {
+   "type": "object",
+   "properties": {"type": {"const": "OrderSummary"}, "title": {"type": "string"}, "rows": {"type": "array", "items": {"type": "object", "properties": {"label": {"type": "string"}, "value": {"type": "string"}}, "required": ["label", "value"]}}},
+   "required": ["type", "title", "rows"],
+   "additionalProperties": false
+  }
+ }
+}

@@ -1,0 +1,1 @@
+{"tools": [{"name": "place_order", "description": "Place the guest's order after they confirm it.", "input_schema": {"type": "object", "properties": {"items": {"type": "array"}}, "required": ["items"]}}]}

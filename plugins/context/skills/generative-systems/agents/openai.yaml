@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generative Systems"
+  short_description: "Build reliable generation from authoritative materials"
+  default_prompt: "Use $generative-systems to design or improve a generation workflow grounded in supplied materials."

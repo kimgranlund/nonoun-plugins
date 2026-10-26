@@ -1,7 +1,7 @@
 {
   "name": "context",
-  "version": "0.2.0",
-  "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse across projects.",
+  "version": "0.3.0",
+  "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse across projects, with context-routing diagnosis, system atlases, and ICM workspaces.",
   "author": {
     "name": "Kim Granlund"
   }

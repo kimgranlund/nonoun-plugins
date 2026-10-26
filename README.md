@@ -4,7 +4,7 @@ Independently installable plugins, with Codex and Claude Code manifests and mark
 
 | Plugin | Purpose | Codex invocation |
 |---|---|---|
-| Context (formerly Progressive Context) | Durable capability contracts, selective context loading, evidence and reuse qualification | `$progressive-context` |
+| Context (formerly Progressive Context) | Durable capability contracts, selective context loading, evidence and reuse qualification, context-routing diagnosis, system atlases and ICM workspaces | `$progressive-context` and the other skills in [its guidance](plugins/context/AGENTS.md) |
 | SDLC Lite | Tickets, plans, execution, verification and work closure | `$sdlc-lite` |
 | Design | UI construction, Differential Forms geometry, HCT palettes, inspector jigs, wireframes and design critique | `$base-ui`, `$wireframe-review`, and the other skills in [its guidance](plugins/design/AGENTS.md) |
 | Dev Tools | Machine, repo and harness care: verification loops, flaky gates, port zombies, bare repos, cross-harness plugins, skill report cards | `$closed-loop-run` and the other skill names |
