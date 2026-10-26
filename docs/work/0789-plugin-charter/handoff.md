@@ -33,3 +33,8 @@ Checks:
 - `git diff --check` exit 0
 - `python3 scripts/check-packaging.py` exit 0
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0
+
+## Acceptance criteria
+- `! grep -n 'two peer plugins\|the two plugins' AGENTS.md` exits 0.
+- `grep -c 'design\*\* (planned\|dev-tools\*\* (planned' AGENTS.md` prints 2.
+- `git diff --check` exits 0.
