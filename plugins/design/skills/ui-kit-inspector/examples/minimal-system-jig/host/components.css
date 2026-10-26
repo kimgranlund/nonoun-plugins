@@ -1,0 +1,71 @@
+/* Minimal host components. Every size reads a token from tokens.css. */
+.card {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--control-padding);
+  padding: var(--card-padding);
+  border: var(--border-width) solid oklch(0.85 0 0);
+  border-radius: var(--radius);
+  background: white;
+  color: oklch(0.2 0 0);
+  font: var(--font-size) / 1.4 system-ui, sans-serif;
+}
+
+.card-title {
+  margin: 0;
+  font-size: calc(var(--font-size) * 1.5);
+  line-height: 1.2;
+}
+
+.card-text {
+  margin: 0;
+  color: oklch(0.45 0 0);
+}
+
+.field {
+  display: grid;
+  gap: var(--unit);
+}
+
+.field-label {
+  font-weight: 600;
+}
+
+.input,
+.button {
+  box-sizing: border-box;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding);
+  border: var(--border-width) solid oklch(0.7 0 0);
+  border-radius: var(--radius);
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+
+.input {
+  width: 100%;
+}
+
+.input:focus-visible,
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: calc(var(--unit) * 2);
+}
+
+.button {
+  cursor: pointer;
+}
+
+.button-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}

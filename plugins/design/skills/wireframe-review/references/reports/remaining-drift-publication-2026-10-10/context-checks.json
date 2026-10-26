@@ -1,0 +1,211 @@
+{
+  "calls": [
+    {
+      "id": "choices",
+      "bytes": 9683,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/choices.json",
+      "sha256": "828e2e768dd7fd581fdfe15b5ed5b8704b8174a9562c3b07bf68e6a68df7b737",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "switch",
+      "bytes": 9156,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/switch.json",
+      "sha256": "959ba34685e0ffe0ea285313a9b7f80401751d36de000d56459ae7b4372efee2",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "range",
+      "bytes": 9164,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/range.json",
+      "sha256": "ff4809a6625fcbb6d601253b02e06cf94c15363e633015d34ea33beb5f38705d",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "fields",
+      "bytes": 9674,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/fields.json",
+      "sha256": "bd5b91d9c54d2f8da6ee454e4480d015c76d7924aed426997e45afc1054f4594",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "actions",
+      "bytes": 10167,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/actions.json",
+      "sha256": "a9c41098a3ef54be57db93afe06e9efee326bd3203f0ec5671c4685257209366",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "navigation",
+      "bytes": 10770,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/navigation.json",
+      "sha256": "e815218bb53e37eece4e4b6e5f9e0ef8c75e2d4f28090556c636f60a3a01d9f0",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "collections",
+      "bytes": 11106,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/collections.json",
+      "sha256": "eb9839eb08f6ea0e952b0fe39f9d24d4dd34a9d99bf7250c9b8012dfaef84a03",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "disclosure",
+      "bytes": 9571,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/disclosure.json",
+      "sha256": "4559a5105eed0ef9c001cd689e109e6efcb5ddefbc1bc08205309cf48d270d5a",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "feedback",
+      "bytes": 8959,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/feedback.json",
+      "sha256": "0d25dc7b5b859157ee8b4bc19591eb3079ac72578deae0ebc5851cb2cd71729d",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "identity",
+      "bytes": 8706,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/identity.json",
+      "sha256": "9b42d2ddfd754c36bc9fb3136a5799b9c8e664f8948b1290553e3adb6ab3517c",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "overlay",
+      "bytes": 10277,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/overlay.json",
+      "sha256": "d62d75e250afe847609cb8429176ad6a69a76963e8e89f71d3e9a2f1a6fa65b6",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "combobox",
+      "bytes": 9060,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/combobox.json",
+      "sha256": "1861df3009c8a4b788437ecc4269bcbf87a57e1d92c0987b10c46e0b7d7059df",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "drawer",
+      "bytes": 8920,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/drawer.json",
+      "sha256": "5377c0e9c422d9d6ec8442945b754a1956e8c550d553fcab8d01bc1de9f326ad",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "stepper",
+      "bytes": 10813,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/stepper.json",
+      "sha256": "547b439ce19301518263853e0f03b30969637a20f1bb57077f589a6434336e14",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "multiselect",
+      "bytes": 8834,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/multiselect.json",
+      "sha256": "3ceb1a249cae3319caf499d19b8085561192ef3c12b47355b8d5f273fe575879",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "tooltip",
+      "bytes": 8912,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/tooltip.json",
+      "sha256": "8ac4e903a555b14d26b6e4f80fda492d897c073e67d3b6201ffedb24ac3edbc5",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "toast",
+      "bytes": 8949,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/toast.json",
+      "sha256": "dbf10d4d09260eaf75e82a8088e09161a50729f4524126917a8bf3b45c589b93",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "pagination",
+      "bytes": 8893,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/pagination.json",
+      "sha256": "4436d890b61b81067f611434ab9a4442b7227d7361a120584cf9336589eb7ab5",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "tree",
+      "bytes": 8927,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/tree.json",
+      "sha256": "8493fc314728c7d426fbc5a63450dc572ea9cb597f8f56b0cac303e77cab98c3",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "date-picker",
+      "bytes": 9152,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/date-picker.json",
+      "sha256": "7ac63587c57609049249ccfbefada4f9c86823fa3329514cc22bf2ac121dbebd",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "data-grid",
+      "bytes": 8785,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/data-grid.json",
+      "sha256": "52ea4d8cd0fe3830c3bbedef821c8f908c3b2ad487575350b3251220e3e9c240",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "rich-text",
+      "bytes": 9059,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/rich-text.json",
+      "sha256": "35971fa2af23b9088e2c8c74ac8f68c8f9d2cf84f9da23dd753181404aa3b016",
+      "contractComplete": true,
+      "sharedComplete": true
+    },
+    {
+      "id": "native-select",
+      "bytes": 3357,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/native-select.json",
+      "sha256": "e17dd12732a671fdcafde93726570cc737a4a296734ec1703524d21145e3bb25",
+      "contractComplete": true,
+      "sharedComplete": false
+    },
+    {
+      "id": "navigation-menu",
+      "bytes": 4555,
+      "file": "/private/tmp/wireframe-drift-publish-zfvr3m7v/context-checks/navigation-menu.json",
+      "sha256": "52d5583f7294040a977780484d8398af225f1b91b19c6c506de403a167eafff6",
+      "contractComplete": true,
+      "sharedComplete": false
+    }
+  ],
+  "fullCommonBytes": 68596,
+  "maximumReturnedBytes": 11106,
+  "minimumReturnedBytes": 3357,
+  "multiFamilyReturnedBytes": 19570,
+  "sharedReadOnceVerified": true,
+  "controls": [
+    "unknown-id",
+    "unknown-option",
+    "corpus-output",
+    "existing-output",
+    "unrelated-growth-stability",
+    "unsupported-version",
+    "selected-content-change"
+  ],
+  "scope": "Exact source object/shared-constraint fidelity, returned output bytes and fail-closed CLI. No model attention, downstream transport, token counts or fresh-generation efficacy claim."
+}

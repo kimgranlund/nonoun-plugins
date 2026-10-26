@@ -1,0 +1,15 @@
+/* Minimal host tokens. Five constants, and four values derived from them. */
+:root {
+  /* Constants */
+  --unit: 4px;
+  --radius: 6px;
+  --font-size: 14px;
+  --accent-hue: 250;
+  --border-width: 1px;
+
+  /* Derived */
+  --control-height: calc(var(--unit) * 8);
+  --control-padding: calc(var(--unit) * 3);
+  --card-padding: calc(var(--unit) * 6);
+  --accent: oklch(0.55 0.18 var(--accent-hue));
+}

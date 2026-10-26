@@ -1,0 +1,47 @@
+{
+  "records": [
+    {
+      "engine": "chromium",
+      "width": 390,
+      "minimal": true,
+      "longLabel": true,
+      "negativeControlRejected": true
+    },
+    {
+      "engine": "chromium",
+      "width": 1200,
+      "minimal": true,
+      "longLabel": true,
+      "negativeControlRejected": true
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "minimal": true,
+      "longLabel": true,
+      "negativeControlRejected": true
+    },
+    {
+      "engine": "firefox",
+      "width": 1200,
+      "minimal": true,
+      "longLabel": true,
+      "negativeControlRejected": true
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "minimal": true,
+      "longLabel": true,
+      "negativeControlRejected": true
+    },
+    {
+      "engine": "webkit",
+      "width": 1200,
+      "minimal": true,
+      "longLabel": true,
+      "negativeControlRejected": true
+    }
+  ],
+  "scope": "Stepper marker containment, item spacing, wrapping and document overflow; not full accessibility or generation evaluation"
+}

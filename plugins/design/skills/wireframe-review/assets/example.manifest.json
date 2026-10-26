@@ -1,0 +1,340 @@
+{
+  "schemaVersion": "1.1",
+  "projectId": "sample-service",
+  "revision": "r1",
+  "title": "Sample service \u00b7 Wireframe review demo",
+  "css": "",
+  "units": [
+    {
+      "id": "home",
+      "kind": "page",
+      "title": "Home",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Introduce the idea",
+          "rationale": "Lead with a concise promise and a preview.",
+          "tradeoff": "Detailed proof appears later.",
+          "html": "",
+          "composition": [
+            {
+              "unitId": "header",
+              "variantId": "A"
+            },
+            {
+              "unitId": "hero",
+              "variantId": "A"
+            },
+            {
+              "unitId": "proof",
+              "variantId": "A"
+            },
+            {
+              "unitId": "footer",
+              "variantId": "A"
+            }
+          ]
+        },
+        {
+          "id": "B",
+          "title": "Show the outcome",
+          "rationale": "Give the finished output the largest visual role.",
+          "tradeoff": "Visitors see less explanation above the fold.",
+          "html": "",
+          "composition": [
+            {
+              "unitId": "header",
+              "variantId": "B"
+            },
+            {
+              "unitId": "hero",
+              "variantId": "B"
+            },
+            {
+              "unitId": "proof",
+              "variantId": "B"
+            },
+            {
+              "unitId": "footer",
+              "variantId": "B"
+            }
+          ]
+        },
+        {
+          "id": "C",
+          "title": "Begin with the process",
+          "rationale": "Use a guided sequence before the invitation.",
+          "tradeoff": "The primary action is reached later.",
+          "html": "",
+          "composition": [
+            {
+              "unitId": "header",
+              "variantId": "C"
+            },
+            {
+              "unitId": "proof",
+              "variantId": "C"
+            },
+            {
+              "unitId": "hero",
+              "variantId": "C"
+            },
+            {
+              "unitId": "footer",
+              "variantId": "C"
+            }
+          ]
+        }
+      ],
+      "intent": {
+        "outcome": "Give visitors enough orientation to decide whether to explore further.",
+        "uncertainty": "Does explanation, visible output, or a guided starting point best support that decision?",
+        "evidence": "Can the reviewer identify the purpose and a relevant next action without guessing?"
+      }
+    },
+    {
+      "id": "pricing",
+      "kind": "page",
+      "title": "Pricing",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Compare plans",
+          "rationale": "Place plan differences near the top.",
+          "tradeoff": "The page assumes visitors understand the product.",
+          "html": "",
+          "composition": [
+            {
+              "unitId": "header",
+              "variantId": "A"
+            },
+            {
+              "unitId": "plans",
+              "variantId": "A"
+            },
+            {
+              "unitId": "proof",
+              "variantId": "A"
+            },
+            {
+              "unitId": "footer",
+              "variantId": "A"
+            }
+          ]
+        },
+        {
+          "id": "B",
+          "title": "Explain then choose",
+          "rationale": "Establish the use case before presenting plans.",
+          "tradeoff": "Comparison takes another scroll.",
+          "html": "",
+          "composition": [
+            {
+              "unitId": "header",
+              "variantId": "B"
+            },
+            {
+              "unitId": "proof",
+              "variantId": "B"
+            },
+            {
+              "unitId": "plans",
+              "variantId": "B"
+            },
+            {
+              "unitId": "footer",
+              "variantId": "B"
+            }
+          ]
+        },
+        {
+          "id": "C",
+          "title": "Guide the decision",
+          "rationale": "Present a starting question with plan recommendations.",
+          "tradeoff": "Experienced buyers may prefer a direct table.",
+          "html": "",
+          "composition": [
+            {
+              "unitId": "header",
+              "variantId": "C"
+            },
+            {
+              "unitId": "plans",
+              "variantId": "C"
+            },
+            {
+              "unitId": "proof",
+              "variantId": "C"
+            },
+            {
+              "unitId": "footer",
+              "variantId": "C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "header",
+      "kind": "component",
+      "title": "Navigation",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Compact links",
+          "rationale": "Keep navigation in one horizontal row.",
+          "tradeoff": "Space for secondary destinations is limited.",
+          "html": "<nav class=\"nav__root\" data-review-id=\"navigation\"><strong data-review-id=\"brand\">Sample service</strong><div><a href=\"#\" data-page-id=\"home\" data-review-id=\"home-link\">Home</a><a href=\"#\" data-page-id=\"pricing\" data-review-id=\"pricing-link\">Pricing</a></div></nav>",
+          "composition": []
+        },
+        {
+          "id": "B",
+          "title": "Prominent action",
+          "rationale": "Make the pricing journey visible as a button.",
+          "tradeoff": "The action competes with the page hero.",
+          "html": "<nav class=\"nav__root\" data-review-id=\"navigation\"><a href=\"#\" data-page-id=\"home\" data-review-id=\"brand\">Sample service</a><button data-page-id=\"pricing\" data-review-id=\"pricing-link\"><span data-slot=\"label\">Choose a plan</span></button></nav>",
+          "composition": []
+        },
+        {
+          "id": "C",
+          "title": "Two-row navigation",
+          "rationale": "Separate the identity from destinations.",
+          "tradeoff": "Uses more vertical space.",
+          "html": "<nav data-review-id=\"navigation\"><div class=\"nav__root\"><strong data-review-id=\"brand\">Sample service</strong><span>Wireframe example</span></div><div class=\"nav__root\"><a href=\"#\" data-page-id=\"home\" data-review-id=\"home-link\">Explore</a><a href=\"#\" data-page-id=\"pricing\" data-review-id=\"pricing-link\">Plans</a></div></nav>",
+          "composition": []
+        }
+      ]
+    },
+    {
+      "id": "hero",
+      "kind": "section",
+      "title": "Hero",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Split introduction",
+          "rationale": "Pair a brief explanation with a visible output.",
+          "tradeoff": "Both sides share the available width.",
+          "html": "<section class=\"section__root grid__root\" data-review-id=\"hero\"><div><p class=\"eyebrow__root\">Fictional content for review</p><h1 data-review-id=\"headline\">A clear place to begin.</h1><p data-review-id=\"description\">Replace this example with the real audience, task, and product promise.</p><button data-page-id=\"pricing\" data-review-id=\"primary-action\"><span data-slot=\"label\">Explore plans</span></button></div><div class=\"media__root\" data-review-id=\"preview\">Actual product output belongs here</div></section>",
+          "composition": []
+        },
+        {
+          "id": "B",
+          "title": "Output first",
+          "rationale": "Give the preview most of the first screen.",
+          "tradeoff": "The explanation becomes supporting content.",
+          "html": "<section class=\"section__root\" data-review-id=\"hero\"><div class=\"media__root media__large\" data-review-id=\"preview\">Finished output at useful scale</div><div class=\"grid__root section__gap\"><h1 data-review-id=\"headline\">See what you can make.</h1><div><p data-review-id=\"description\">Use a real example with a concise explanation of how it was created.</p><button data-page-id=\"pricing\" data-review-id=\"primary-action\"><span data-slot=\"label\">Explore plans</span></button></div></div></section>",
+          "composition": []
+        },
+        {
+          "id": "C",
+          "title": "Focused invitation",
+          "rationale": "Center one message and a direct next step.",
+          "tradeoff": "A large product preview sits below the initial action.",
+          "html": "<section class=\"section__root center__root\" data-review-id=\"hero\"><h1 data-review-id=\"headline\">Start with one decision.</h1><p data-review-id=\"description\">Describe the next useful thing the visitor can do.</p><div class=\"actions__root\"><button data-page-id=\"pricing\" data-review-id=\"primary-action\"><span data-slot=\"label\">Explore plans</span></button></div><div class=\"media__root section__gap\" data-review-id=\"preview\">Supporting product example</div></section>",
+          "composition": []
+        }
+      ]
+    },
+    {
+      "id": "proof",
+      "kind": "section",
+      "title": "Demonstration",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Three examples",
+          "rationale": "Let visitors scan concrete outcomes.",
+          "tradeoff": "Each example has limited explanatory space.",
+          "html": "<section class=\"section__root\" data-review-id=\"proof\"><h2 data-review-id=\"heading\">What the result looks like</h2><div class=\"grid__root grid__auto\"><article class=\"card__root\" data-review-id=\"example-one\"><h3>Example one</h3><p>Show a relevant result.</p></article><article class=\"card__root\" data-review-id=\"example-two\"><h3>Example two</h3><p>Show a different application.</p></article><article class=\"card__root\" data-review-id=\"example-three\"><h3>Example three</h3><p>Make the benefit observable.</p></article></div></section>",
+          "composition": []
+        },
+        {
+          "id": "B",
+          "title": "One detailed example",
+          "rationale": "Explain one result beside its evidence.",
+          "tradeoff": "Shows less breadth.",
+          "html": "<section class=\"section__root grid__root\" data-review-id=\"proof\"><div class=\"media__root\" data-review-id=\"evidence\">A real before-and-after comparison</div><div><h2 data-review-id=\"heading\">Follow one complete example</h2><p data-review-id=\"explanation\">Walk through the important decisions and show the final result.</p></div></section>",
+          "composition": []
+        },
+        {
+          "id": "C",
+          "title": "Step-by-step",
+          "rationale": "Make the sequence explicit.",
+          "tradeoff": "Visitors must read the process to understand the outcome.",
+          "html": "<section class=\"section__root\" data-review-id=\"proof\"><h2 data-review-id=\"heading\">From a starting point to a result</h2><ol><li class=\"card__root\" data-review-id=\"step-one\">Choose a starting point.</li><li class=\"card__root\" data-review-id=\"step-two\">Adjust the important decisions.</li><li class=\"card__root\" data-review-id=\"step-three\">Use the finished output.</li></ol></section>",
+          "composition": []
+        }
+      ]
+    },
+    {
+      "id": "plans",
+      "kind": "section",
+      "title": "Plan comparison",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Parallel cards",
+          "rationale": "Let visitors compare two offers at once.",
+          "tradeoff": "Long feature lists can become hard to compare.",
+          "html": "<section class=\"section__root\" data-review-id=\"plans\"><h1 data-review-id=\"heading\">Choose what fits</h1><p>Example plans only. Insert verified names and pricing.</p><div class=\"grid__root\"><article class=\"card__root\" data-review-id=\"entry-plan\"><h2>Entry plan</h2><p>Verified limits and inclusions.</p><button data-review-id=\"entry-action\"><span data-slot=\"label\">Start</span></button></article><article class=\"card__root\" data-review-id=\"paid-plan\"><h2>Paid plan</h2><p>Verified upgrade benefits.</p><button data-review-id=\"paid-action\"><span data-slot=\"label\">Choose</span></button></article></div></section>",
+          "composition": []
+        },
+        {
+          "id": "B",
+          "title": "Comparison table",
+          "rationale": "Align the important differences row by row.",
+          "tradeoff": "Tables need careful treatment on narrow screens.",
+          "html": "<section class=\"section__root\" data-review-id=\"plans\"><h1 data-review-id=\"heading\">Compare the essentials</h1><div class=\"table__viewport\" data-review-id=\"comparison\"><table><thead><tr><th>Capability</th><th>Entry</th><th>Paid</th></tr></thead><tbody><tr><td>Primary use</td><td>Getting started</td><td>Regular practice</td></tr><tr><td>Limits</td><td>Verified limit</td><td>Verified limit</td></tr></tbody></table></div><p>Illustrative data only.</p></section>",
+          "composition": []
+        },
+        {
+          "id": "C",
+          "title": "Guided choices",
+          "rationale": "Frame each plan around a recognizable need.",
+          "tradeoff": "Makes direct feature-by-feature comparison less immediate.",
+          "html": "<section class=\"section__root\" data-review-id=\"plans\"><h1 data-review-id=\"heading\">What are you here to do?</h1><article class=\"card__root\" data-review-id=\"entry-plan\"><h2>Try a first project</h2><p>Explain when the entry plan is sufficient.</p><button data-review-id=\"entry-action\"><span data-slot=\"label\">Start here</span></button></article><article class=\"card__root stack__loose\" data-review-id=\"paid-plan\"><h2>Use it regularly</h2><p>Describe the need that makes upgrading useful.</p><button data-review-id=\"paid-action\"><span data-slot=\"label\">Compare the paid plan</span></button></article></section>",
+          "composition": []
+        }
+      ]
+    },
+    {
+      "id": "footer",
+      "kind": "component",
+      "title": "Footer",
+      "variants": [
+        {
+          "id": "A",
+          "title": "Minimal",
+          "rationale": "End with only essential navigation.",
+          "tradeoff": "Secondary context is omitted.",
+          "html": "<footer class=\"nav__root\" data-review-id=\"footer\"><span data-review-id=\"identity\">Sample service</span><a href=\"#\" data-page-id=\"pricing\" data-review-id=\"plans-link\">Plans</a></footer>",
+          "composition": []
+        },
+        {
+          "id": "B",
+          "title": "Grouped navigation",
+          "rationale": "Offer a clear second route into the site.",
+          "tradeoff": "Uses more space at the end of each page.",
+          "html": "<footer class=\"section__root grid__root\" data-review-id=\"footer\"><div><h2 data-review-id=\"identity\">Sample service</h2><p>Example content, ready for replacement.</p></div><div><p>Explore</p><a href=\"#\" data-page-id=\"home\" data-review-id=\"home-link\">Home</a><br><a href=\"#\" data-page-id=\"pricing\" data-review-id=\"plans-link\">Plans</a></div></footer>",
+          "composition": []
+        },
+        {
+          "id": "C",
+          "title": "Final invitation",
+          "rationale": "End with a repeat of the next useful action.",
+          "tradeoff": "Repeats the call to action.",
+          "html": "<footer class=\"section__root center__root\" data-review-id=\"footer\"><h2 data-review-id=\"identity\">Ready for the next step?</h2><button data-page-id=\"pricing\" data-review-id=\"plans-link\"><span data-slot=\"label\">Explore plans</span></button><p class=\"stack__loose\">Sample service</p></footer>",
+          "composition": []
+        }
+      ]
+    }
+  ],
+  "intent": {
+    "outcome": "Help a first-time visitor decide whether this fictional service fits their task and identify a sensible next step.",
+    "means": "Examples of output, an explanation of the service, and comparable plan information.",
+    "constraints": "Sample content only. No real product claims, purchase flow, or account creation.",
+    "uncertainty": "We have not established which information visitors need before evaluating plans.",
+    "evidence": "Ask reviewers to explain who the service helps and what they would do next. Conversion impact needs later behavioral evidence."
+  }
+}

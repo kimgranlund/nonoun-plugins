@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "navigation-menu",
+  "when": "Compact destination-link navigation using native auto popover and CSS anchors",
+  "notFor": [
+    "selecting a form value",
+    "ARIA application menu",
+    "modal dialog"
+  ],
+  "recipe": "../../../assets/recipes/navigation-menu.html",
+  "styles": "../../../assets/wireframe.css",
+  "behavior": "Native popovertarget/auto popover; no page script on supported platforms",
+  "slots": [
+    "leading icon",
+    "label",
+    "trailing indicator"
+  ],
+  "invariants": [
+    "Common fixed icon/text/indicator columns",
+    "Half resolved margin between trigger and panel",
+    "Open state does not resize surrounding layout",
+    "Visible expanded indicator",
+    "Escape closes and returns focus; outside click closes",
+    "Panel radius uses the same resolved control-radius expression as its trigger, including corner factor and scale; never card radius"
+  ],
+  "limits": [
+    "Replace example fragment destinations with valid routes",
+    "Requires native auto popover, CSS anchor position-area/fallbacks and logical positioning; browser verification is recorded separately",
+    "No focus trap or arrow-key application-menu semantics",
+    "Navigation to a same-document fragment does not necessarily dismiss the panel; Escape/outside click remain native dismissal",
+    "Verified browser baseline: Chromium 151, Firefox 153, WebKit 26.5; older browsers are not promised a scripted fallback."
+  ],
+  "construction": {
+    "trigger": "button[type=button][popovertarget] with a unique anchor-name",
+    "panel": "nav.menu__content[popover=auto] with matching id and position-anchor",
+    "icons": "Authored local Phosphor SVGs in geometry slots",
+    "repetition": "Unique panel IDs and CSS anchor names for each instance; retain explicit trigger/panel pairing in expanded indicator CSS",
+    "application": "Valid navigation destinations; no arrow-key command-menu semantics"
+  },
+  "classes": [
+    "menu__content",
+    "menu__trigger"
+  ],
+  "extendedRecipe": "../../../assets/recipes/native-patterns.html",
+  "customization": {
+    "sharedOwns": [
+      "position",
+      "margin",
+      "position-area",
+      "position-try-fallbacks",
+      "position-try-order",
+      "max-block-size",
+      "overflow",
+      "trigger-panel gap"
+    ],
+    "consumerOwns": [
+      "content",
+      "unique anchor/id pairing",
+      "bounded inline-size"
+    ],
+    "constraint": "Inside the anchor-support rule, the percentage height cap resolves against available placement space. Do not replace it with a viewport-height cap. Large content panels keep an explicit Close action visible while the body scrolls. Retain the named full-inline above/below fallbacks: side-flip placement can fail because the panel is wider than either inline area. Content popovers reserve their scrolling row instead of imposing a fixed whole-panel minimum.",
+    "verification": "Open, expand, reopen and scroll at viewport edges; measure panel containment separately from document overflow."
+  },
+  "implementation": {
+    "anatomy": "Use the exact trigger/panel and unique pairing in construction.",
+    "native": "behavior owns opening/dismissal; limits distinguish destination navigation from ARIA command-menu behavior.",
+    "javascript": "None for opening, placement or dismissal on the verified native baseline. Application destinations remain consumer-owned.",
+    "fallback": "No legacy placement shim is supplied. Outside the stated native baseline, provide ordinary visible destination links or a separately owned and verified fallback; do not imply native support from markup alone.",
+    "css": "../../../assets/wireframe.css",
+    "verification": "../../../scripts/check-native-patterns.mjs",
+    "evidence": {
+      "environments": [
+        "Chromium 151.0.7922.34",
+        "Firefox 153.0",
+        "WebKit 26.5"
+      ],
+      "guide": "../../reports/component-support-2026-10-09.md#navigation-menu",
+      "scope": "Authored native recipe and keyboard/script-disabled paths on these engine versions; older engines, installed Safari and assistive technology are unverified."
+    },
+    "fallbackRecipe": "../../../assets/recipes/native-fallbacks.html"
+  },
+  "slotGeometry": {
+    "icon": "data-slot=icon; token icon dimensions",
+    "label": "data-slot=label; flexible text column, normal wrapping, no icon dimensions",
+    "indicator": "data-slot=indicator; token icon dimensions; bundled Phosphor caret",
+    "verification": "Long labels fit the trigger at narrow widths; indicator and subsequent content do not overlap."
+  }
+}

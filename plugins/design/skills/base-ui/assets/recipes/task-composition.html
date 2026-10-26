@@ -1,0 +1,18 @@
+<!-- For chooser/detail siblings, wrap two direct regions in task-columns__root; its text-relative bases wrap at narrow and enlarged-text widths. -->
+<section class="card__root flow__root reading-flow__root" aria-labelledby="task-title">
+  <h2 id="task-title">Review selected record</h2>
+  <div class="field-group__root">
+    <label for="record">Record</label>
+    <div class="select__root"><select id="record"><option>LN-0261</option><option>LN-0262</option></select></div>
+    <p>2 records · Full selected title belongs in the task heading.</p>
+  </div>
+  <details class="disclosure__root" data-nested-boundary="quiet" open>
+    <summary>Evidence</summary>
+    <div class="disclosure__body flow__root">
+      <details class="disclosure__root" open><summary>Source</summary><div class="disclosure__body"><p>Nested evidence shares one painted outer boundary.</p></div></details>
+    </div>
+  </details>
+  <div class="action-status__root"><button type="button" class="button__root" data-action="complete">Complete review</button><p role="status">Check evidence before completing.</p></div>
+  <div class="actions__root"><button type="button" class="button__root" data-appearance="ghost" data-align="content" data-action="reset">Reset review</button></div>
+</section>
+<!-- Consumer owns record state, completion, meaningful next action and focus. Mount onAction from the actions runtime contract. This static specimen makes no completion claim. -->

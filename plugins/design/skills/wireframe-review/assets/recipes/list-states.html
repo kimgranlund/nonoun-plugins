@@ -1,0 +1,14 @@
+<section class="card__root section-flow__root section__flow" data-list-example aria-labelledby="directory-title">
+<style>[data-list-example] .list__row>.choice__root{flex:1;min-inline-size:0;padding-block:0}</style>
+<noscript><style>[data-list-example] .directory-controls,[data-list-example] [role=status],[data-list-example] .empty__root{display:none!important}</style><p>Static directory. Individual native selections remain available; filtering, sorting and totals require the local controller.</p></noscript>
+<header class="heading-group__root"><h2 id="directory-title">Local directory</h2><p>Explore non-tabular collection states. Selections stay in this page.</p></header>
+<div class="directory-controls section-flow__root section__flow"><div class="field__root"><label for="directory-filter">Find a person</label><input id="directory-filter" type="search" aria-describedby="directory-filter-help"><p id="directory-filter-help" class="field__description field__help">Filter by name or team. Hidden selections are retained.</p></div><div class="actions__root"><button type="button" class="button__root secondary" id="directory-sort">Sort names A to Z</button><button type="button" class="button__root secondary" id="directory-clear">Clear filter</button></div></div>
+<ul class="list__root" aria-labelledby="directory-title">
+<li class="list__item list__row" data-name="Maya Kim" data-team="Studio"><label class="choice__root"><input class="checkbox__control" type="checkbox" value="maya"><span class="choice__body list__body"><strong>Maya Kim</strong><span class="choice__description">Studio</span></span></label></li>
+<li class="list__item list__row" data-name="Ada Marsh" data-team="Research"><label class="choice__root"><input class="checkbox__control" type="checkbox" value="ada"><span class="choice__body list__body"><strong>Ada Marsh</strong><span class="choice__description">Research</span></span></label></li>
+<li class="list__item list__row" data-name="Jordan Lee" data-team="Regional community operations"><label class="choice__root"><input class="checkbox__control" type="checkbox" value="jordan"><span class="choice__body list__body"><strong>Jordan Lee</strong><span class="choice__description">Regional community operations with a longer description that wraps naturally</span></span></label></li>
+<li class="list__item list__row" data-name="Lin Park" data-team="Archive"><label class="choice__root"><input class="checkbox__control" type="checkbox" value="lin" disabled><span class="choice__body list__body"><strong>Lin Park</strong><span class="choice__description">Archive · unavailable</span></span></label></li>
+</ul>
+<div class="empty__root" hidden><strong>No people match this filter.</strong><p>Clear the filter to restore the directory. Your prior selections are retained.</p></div>
+<p class="field__description field__help" role="status">0 selected · 4 visible. Names as supplied.</p>
+</section>

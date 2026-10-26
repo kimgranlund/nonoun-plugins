@@ -1,0 +1,2 @@
+// Supplied lexical runtime, not a Window API. Bind receives one object.
+registerPrototype({unitId:'task',initialState:{count:0},reduce(state,action){return action.type==='increment'?{...state,count:state.count+1}:state;},render(root,state){const output=root.querySelector('[data-count]');if(output)output.textContent=state.count;},bind({root,on,dispatch,signal}){on('click','[data-increment]',(event,target,dispatch)=>dispatch({type:'increment'}));/* on listeners abort on unmount. Return cleanup for other resources. */}});

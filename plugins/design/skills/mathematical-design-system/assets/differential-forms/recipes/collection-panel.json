@@ -1,0 +1,29 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "component": "card",
+    "children": [
+      {
+        "component": "input",
+        "purpose": "search"
+      },
+      {
+        "component": "button",
+        "label": "Add item"
+      },
+      {
+        "component": "collection",
+        "rows": [
+          "Foundations",
+          "Control geometry",
+          "Responsive layouts"
+        ]
+      }
+    ],
+    "geometry": {
+      "cardDensity": "default",
+      "collectionDensity": "default",
+      "controlDensity": "default"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "parts": {
+    "label": {
+      "width": "flexible; min-width:0",
+      "height": "owning slot",
+      "edge": "exposed edges only",
+      "wrap": "single-line controls do not wrap; multiline uses copy part"
+    },
+    "icon-slot": {
+      "width": "6u control / 4u chip",
+      "height": "same as width",
+      "border": "one internal budget",
+      "content": "centered icon; size capped at slot - 2B"
+    },
+    "avatar": {
+      "width": "fills slot interior",
+      "shape": "circle",
+      "border": "zero when the slot owns its border"
+    },
+    "count-badge": {
+      "family": "badge",
+      "width": "4u for short count",
+      "shape": "circle",
+      "overflow": "experimental for multi-digit counts"
+    },
+    "prefix": {
+      "family": "chip",
+      "width": "max(own height, intrinsic content + padding + gaps + exposed label margins)",
+      "interactive": false,
+      "labelWrapper": "4u height; control label edge / 2; density independent"
+    },
+    "suffix": {
+      "family": "chip",
+      "width": "max(own height, intrinsic content + padding + gaps + exposed label margins)",
+      "interactive": false,
+      "labelWrapper": "4u height; control label edge / 2; density independent"
+    },
+    "selector": {
+      "family": "chip",
+      "width": "intrinsic chip width including label wrapper and 4u caret slot; minimum own height",
+      "interactive": true,
+      "semantics": "button trigger with label and trailing chip slot; aria-haspopup=listbox; popup options use chip composite geometry",
+      "labelWrapper": "4u height; control label edge / 2; density independent"
+    },
+    "input": {
+      "width": "remaining inline space",
+      "height": "label slot",
+      "semantics": "native input; accessible name independent of placeholder"
+    },
+    "action": {
+      "family": "control",
+      "interactive": true,
+      "semantics": "button; accessible name for icon-only"
+    },
+    "copy": {
+      "width": "flexible",
+      "height": "content-driven",
+      "titleMinHeight": "6u",
+      "descriptionGap": "1u"
+    },
+    "choice-artwork": {
+      "family": "choice",
+      "semantics": "native checkbox/radio input, custom visual"
+    },
+    "stepper-pair": {
+      "width": "2 * control slot",
+      "height": "control slot",
+      "children": "two round transparent buttons, plus and minus, sm icons"
+    }
+  }
+}

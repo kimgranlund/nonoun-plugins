@@ -1,0 +1,25 @@
+# Consumer contrast and mobile task access
+
+These checks run on the generated artifact. Kit specimen checks cannot establish consumer contrast or density. Use the browser resolver once. Before each measurement call page.evaluate(settleReview), imported from scripts/lib/settle-review.mjs, and require status ready. This waits for fonts and finite paint transitions with a bounded timeout; a mid-transition color is not a settled-state verdict. Then preserve JSON and screenshots, and inspect relevant initial, selected, expanded, error and focus states in light/dark. Run at320/390/768/1440; use the existing rendered audit for doubled text and all-option fit.
+
+## Measured color
+
+Import auditContrast from scripts/lib/audit-contrast.mjs into your browser check and call page.evaluate(auditContrast). It reports actual text colors over supported solid composited backgrounds, ratios and thresholds, failures, explicit exclusions and unsupported painting. It handles normal/large text, selected native values and placeholders. Unmeasured gradients/effects are not a pass. Do not label a screenshot or token name as measured contrast. Inspect unsupported samples; simplify the paint or measure the actual foreground/background independently and preserve that evidence.
+
+Pass boundarySelectors for controls whose visible edge identifies the control, for example {boundarySelectors:['#species','#note']}. Text-only commands need not gain a decorative border just to satisfy a test. Verify focus indicators and graphical state marks separately in their actual state; text contrast does not certify those. Disabled exclusions are explicit, not proof of readability. Native popup surfaces and a complete accessibility audit remain outside this helper. Authored opaque solid outer borders on text/date/number inputs and textarea can be measured even with native appearance; native interior glyphs and fill are not certified by that outer-edge result.
+
+## Mobile density and task access
+
+Import auditTaskAccess from scripts/lib/audit-task-access.mjs. Call page.evaluate(auditTaskAccess,{taskSelector:'#note',maxScreens:1,rationale:'After choosing an entry, the next editing field should begin within one viewport.'}). Choose the actual next task, not a decorative heading or unrelated easy-to-reach button. Budget is distance from current viewport top in screen heights; justify it from the workflow. Missing target/budget is unreviewed. A generous number alone is not acceptance.
+
+Measure initial access and arrival after choosing an item. For a long catalogue or score preceding an editor, preserve content and use a bounded collection, responsive recomposition, or an explicit Edit/Jump control. The optional assets/recipes/task-navigation.js moves focus and scrolls to an exact scoped ID after an explicit user action; use a native focusable destination or meaningful heading with tabindex=-1. After activating that route, remeasure with requireFocus:true. Arrival/clipping uses a1 CSS-pixel tolerance for fractional scroll rounding; it does not waive visibly clipped controls. Do not auto-focus on initial load or every rerender. A route must be discoverable, operable and visibly arrive at the intended task; merely existing in markup is insufficient.
+
+Keep the visual density review: inspect the first viewport at actual size, duplicate prose/labels, grouping, whitespace and action emphasis. Preserve initial and arrival screenshots. Record any task-access failure separately from a judgment that the overall composition is balanced. No universal spacing reduction or universal first-screen requirement follows from this check.
+
+## Starter CLI and dynamic integration
+
+Run python3 scripts/run.py audit-review.mjs APP_HTML PLAYWRIGHT_MODULE NEW_OUTPUT_DIR --task '#note' --budget 1 --rationale 'Next editing field after entry selection' --executable CHROME_PATH. Add --boundary '#note' where a control boundary matters. It writes eight initial-state measurements and screenshots, and exits nonzero on failed/incomplete measurements. It does not inspect images or exercise the task. Preserve its limits and add task-owned interactions.
+
+For dynamic states, use the exported browser functions in the same Playwright check that performs your task. Preserve each returned result with a state ID; assert actual outcomes before recording a pass. Unsupported results need additional evidence or an honest blocked scope. Record these measurements under consistency.color and density.balance alongside visual observations in the checklist. Do not replace review judgment with automated totals.
+
+For dynamic JSON evidence, run python3 scripts/run.py review-measurements.mjs RESULTS.json [MORE.json ...]. The gate finds nested helper results and exits nonzero for any failed/incomplete/unreviewed measurement or no recognized results, even if a surrounding test object says passed. Keep before/failing results in separate files. Log contrast.summary for a compact outcome; preserve full measurements in JSON rather than dumping them into context. A gate failure is evidence to resolve or record, not a reason to suppress the failed state.

@@ -6,6 +6,7 @@ Two independently installable plugins, with Codex and Claude Code manifests and 
 |---|---|---|
 | Progressive Context | Durable capability contracts, selective context loading, evidence and reuse qualification | `$progressive-context` |
 | SDLC Lite | Tickets, plans, execution, verification and work closure | `$sdlc-lite` |
+| Design | UI construction, Differential Forms geometry, HCT palettes, inspector jigs, wireframes and design critique | `$base-ui`, `$wireframe-review`, and the other skills in [its guidance](plugins/design/AGENTS.md) |
 
 Progressive Context works directly in either host. SDLC Lite supports native Codex execution and Claude execution, selected with `SDLC_BACKEND=codex|claude`. Its project setup installs predefined Codex subagents. See [compatibility and validation](docs/references/plugin-compatibility.md).
 

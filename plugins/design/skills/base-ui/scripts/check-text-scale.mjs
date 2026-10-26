@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';import {createRequire} from 'node:module';import {applyTextScale} from './lib/text-scale.mjs';
+const [runtime,executablePath]=process.argv.slice(2);if(!runtime)throw Error('Usage: check-text-scale.mjs PLAYWRIGHT [CHROME]');
+const {chromium}=createRequire(import.meta.url)(runtime),browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{})});
+try{const page=await browser.newPage();await page.setContent('<style>body{font-size:16px;line-height:20px}strong{font-size:18px!important;line-height:24px!important}</style><p>Normal <span>inherited</span></p><strong>Important</strong><em style="font-size:22px!important;line-height:28px!important">Inline</em>');
+const read=()=>[...document.querySelectorAll('p,span,strong,em')].map(n=>[parseFloat(getComputedStyle(n).fontSize),parseFloat(getComputedStyle(n).lineHeight)]);const baseline=await page.evaluate(read);
+for(const scale of [2,2,1,2]){await page.evaluate(applyTextScale,scale);assert.deepEqual(await page.evaluate(read),baseline.map(row=>row.map(v=>v*scale)));}
+await page.evaluate(()=>{const n=document.createElement('span');n.textContent='New child';document.querySelector('p').append(n)});await page.evaluate(applyTextScale,2);assert.equal(await page.locator('p span').last().evaluate(n=>parseFloat(getComputedStyle(n).fontSize)),32);console.log(JSON.stringify({pass:true,checks:['author-important and inline-important font/line scaling','repeat calls do not compound','normal scale restores dimensions','new descendants measured after parent reset']}));
+}finally{await browser.close()}

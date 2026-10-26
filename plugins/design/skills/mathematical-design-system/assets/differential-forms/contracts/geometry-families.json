@@ -1,0 +1,110 @@
+{
+  "densityOrder": [
+    "compact",
+    "default",
+    "loose"
+  ],
+  "families": {
+    "control": {
+      "slotUnits": 6,
+      "insetUnits": [
+        0.5,
+        1,
+        2
+      ],
+      "gapUnits": [
+        0,
+        1,
+        2
+      ],
+      "height": "slot + 2*inset",
+      "radiusUnits": [
+        0,
+        1,
+        2,
+        3,
+        "height/2"
+      ]
+    },
+    "chip": {
+      "slotUnits": 4,
+      "inset": "control inset",
+      "gap": "control gap",
+      "height": "4u + 2*inset",
+      "labelEdge": "control labelEdge / 2",
+      "radius": "control requested curvature capped to chip height/2"
+    },
+    "badge": {
+      "heightUnits": 4,
+      "minWidthUnits": 4,
+      "inlineInsetUnits": 0.5,
+      "width": "max(height, contentWidth + 2*inlineInset)",
+      "density": "independent",
+      "radius": "control radius capped to badge height/2",
+      "countShape": "circle"
+    },
+    "composite": {
+      "members": [
+        "listbox",
+        "segmented",
+        "attached"
+      ],
+      "inset": "requested 0..1.5u",
+      "gap": "requested inset",
+      "child": "control or chip with residual inset; preserve its 6u or 4u slot"
+    },
+    "collection": {
+      "insetUnits": [
+        1,
+        2,
+        3
+      ],
+      "gapUnits": [
+        1,
+        2,
+        3
+      ],
+      "rowSeparationUnits": 0.5,
+      "radius": "container curvature",
+      "childDensity": "independent"
+    },
+    "card": {
+      "insetUnits": [
+        3,
+        4.5,
+        6
+      ],
+      "gapUnits": [
+        3,
+        4.5,
+        6
+      ],
+      "radiusUnits": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "childDensity": "independent"
+    },
+    "choice": {
+      "height": "control height",
+      "slotUnits": 6,
+      "artworkUnits": 4,
+      "checkboxRadiusUnits": 1,
+      "switchWidthUnits": 9,
+      "switchHeightUnits": 5,
+      "switchInsetUnits": 0.5
+    },
+    "composed-input": {
+      "base": "control",
+      "adornment": "chip",
+      "height": "max(control.height, chip.height + 2*control.inset)",
+      "minWidth": "own height",
+      "radius": "control curvature using composed height",
+      "adornmentRadiusInline": "max(0,parentRadius-control.inset)",
+      "adornmentRadiusBlock": "min(chip.height/2,max(0,parentRadius-(height-chip.height)/2))"
+    }
+  }
+}

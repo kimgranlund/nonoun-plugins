@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "topics": [
+    {
+      "id": "purpose",
+      "title": "Purpose and hierarchy",
+      "when": "Always; begin outside-in.",
+      "checks": [
+        {
+          "id": "purpose.task",
+          "question": "Can the user identify the next meaningful task and reach its data/actions without unrelated content intervening?",
+          "method": "Inspect the initial viewport and trace one primary task. Explain the hierarchy, not just whether buttons exist."
+        },
+        {
+          "id": "purpose.emphasis",
+          "question": "Does visual emphasis reflect consequence and selection rather than decorating every surface equally?",
+          "method": "Compare heading, surface and action prominence; identify competing primary actions. Identify the primary focal point and count distinct type/emphasis roles; justify extra tiers and borders rather than making every group equally prominent. Inspect the completed state: fail when a completed command still looks like the available primary action and competes with the next useful task. Follow references/review/composition-negative-cases.md#completed-action."
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "title": "Grid, alignment and flow",
+      "when": "Always; inspect composition before individual components.",
+      "checks": [
+        {
+          "id": "layout.rails",
+          "question": "Do related headings, labels, controls, content and actions share intentional alignment rails?",
+          "method": "Mark left/right edges and control baselines. A grid existing in CSS is not proof of coherent alignment. Check the first text baseline of an action and its helper, and declare whether quiet actions align by frame or label. An unexplained helper baseline mismatch or quiet-label inset relative to the intended rail fails. Follow references/review/composition-negative-cases.md#action-rails."
+        },
+        {
+          "id": "layout.ownership",
+          "question": "Does each parent own the correct gap, margin and layout relationship without accumulated child margins?",
+          "method": "Inspect computed grid/flex tracks, align-items, wrapping, intrinsic minimums, positioning and DOM order. Separate normal flow behaving as authored from a browser/DOM defect."
+        },
+        {
+          "id": "layout.wrapping",
+          "question": "When controls or text wrap, do associated items remain grouped and intentionally aligned?",
+          "method": "Exercise the width just before and after wrapping. Check labelled fields beside multirow actions; do not center whole boxes when control alignment is required."
+        }
+      ]
+    },
+    {
+      "id": "density",
+      "title": "Spacing, grouping and density",
+      "when": "Always; compare whole surface and local groups.",
+      "checks": [
+        {
+          "id": "density.proximity",
+          "question": "Is spacing tighter within a relationship than between independent tasks?",
+          "method": "Compare internal control spacing, related controls, task groups and outer margin. Do not globally compress or enlarge all gaps. Open nested disclosures together: adjacent duplicate separators and empty framed strips fail when they mark one logical boundary. Follow references/review/composition-negative-cases.md#nested-boundaries."
+        },
+        {
+          "id": "density.balance",
+          "question": "Does the visible information density suit the task without crowded controls or unproductive whitespace?",
+          "method": "Record what is visible before scrolling, distance from chooser to task, redundant surfaces and messages. Judge dense operations and exploratory reading differently; no universal pixel target. Compare both task access and visual cost before/after; improving one does not excuse clutter in the other.",
+          "measurementContract": "references/review/measurements.md",
+          "executable": "scripts/lib/audit-task-access.mjs"
+        }
+      ]
+    },
+    {
+      "id": "content",
+      "title": "Typography, labels and content",
+      "when": "Always; inspect inside-out.",
+      "checks": [
+        {
+          "id": "content.labels",
+          "question": "Are fields and values identifiable without placeholders, while repeated labels/help add useful information?",
+          "method": "Check visible labels, units, required state, label/value adjacency and errors. Remove redundancy, not necessary naming. Image-only review cannot prove programmatic associations. Perform the subtraction pass: identify repeated meanings across heading, label and help. Record a concrete removal candidate or explain why each is necessary. One visible label can name a single chooser; use label/for or an appropriate aria-labelledby heading rather than duplicate visible text. A redundant instruction is a failure even when accessible names pass."
+        },
+        {
+          "id": "content.reading",
+          "question": "Are hierarchy, line length, wrapping and text rails readable at actual viewing size?",
+          "method": "Inspect full-size crops as well as overview; wait for fonts. Check long names, nested prose, multilingual content and enlarged text where applicable. Inspect short field help too: an isolated example or final token caused by a narrow input wrapper fails when useful group width is available. Follow references/review/composition-negative-cases.md#helper-wrapping."
+        }
+      ]
+    },
+    {
+      "id": "consistency",
+      "title": "Components and visual language",
+      "when": "Always; compare repeated instances.",
+      "checks": [
+        {
+          "id": "consistency.anatomy",
+          "question": "Do repeated components use the same anatomy and geometry unless their role explains an exception?",
+          "method": "Compare control heights, radii, icons, label placement, padding and states; trace differences to shared contract versus local override."
+        },
+        {
+          "id": "consistency.color",
+          "question": "Do semantic colors, contrast and emphasis retain their meaning on the actual surface?",
+          "method": "Inspect relevant light/dark and selected/error/disabled states. Use Prime/Base mappings; screenshots alone do not establish measured contrast.",
+          "measurementContract": "references/review/measurements.md",
+          "executable": "scripts/lib/audit-contrast.mjs"
+        }
+      ]
+    },
+    {
+      "id": "responsive",
+      "title": "Responsive behavior and layering",
+      "when": "UI; image reviews assess only supplied frames.",
+      "checks": [
+        {
+          "id": "responsive.adaptation",
+          "question": "Does the layout recompose at narrow/intermediate/wide sizes without losing information or relationships?",
+          "method": "Test representative widths and wrapping thresholds, long content and enlarged text. Local scrolling must be discoverable and retain header associations. A collection showing only the border arc of a clipped next row without a meaningful overflow cue fails. Follow references/review/composition-negative-cases.md#collection-overflow."
+        },
+        {
+          "id": "responsive.layers",
+          "question": "Do overlays, sticky areas and positioned elements reserve or intentionally cover space without hiding controls?",
+          "method": "Check actual hit targets, focus visibility, clipping, stacking and scroll containers. Record absent layers as not applicable with reason."
+        }
+      ]
+    },
+    {
+      "id": "interaction",
+      "title": "Interaction, semantics and state",
+      "when": "Interactive UI; mark unavailable for static images.",
+      "checks": [
+        {
+          "id": "interaction.access",
+          "question": "Can users name, reach and activate controls, with coherent DOM/focus order and feedback?",
+          "method": "Exercise keyboard and pointer; inspect label associations, accessible names and focus. Do not claim screen-reader coverage from DOM inspection alone. After a command removes its own focused trigger, verify the actual focus destination; an activeElement of body is not successful restoration. The app chooses a meaningful status or heading."
+        },
+        {
+          "id": "interaction.transitions",
+          "question": "Do empty, selected, expanded, invalid, pending and updated states preserve context and expose the right next action?",
+          "method": "Select task-relevant states; test validation, retained edits, changed evidence and recovery. Capture the state before navigation replaces it. After success, verify that status is distinguishable from an available command and the next useful task is clear; do not pass on success copy alone. Follow references/review/composition-negative-cases.md#completed-action."
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "title": "Data and visualization truth",
+      "when": "Tables, charts, timelines, comparisons, quantities.",
+      "checks": [
+        {
+          "id": "data.encoding",
+          "question": "Do visual position, area, length and color encode the stated values and uncertainty truthfully?",
+          "method": "Measure against source values/domain, independent of readable control-label width; check scales, units, provenance and missing data."
+        },
+        {
+          "id": "data.comparison",
+          "question": "Can readers compare records and associate every value with its label/source in every layout?",
+          "method": "Check column alignment, stacked labels, sorting/filter totals and unknown versus zero. Avoid implying evidence agreement or approval from decoration."
+        }
+      ]
+    },
+    {
+      "id": "image",
+      "title": "Image composition and artifacts",
+      "when": "Generated images or image assets; no DOM claims.",
+      "checks": [
+        {
+          "id": "image.composition",
+          "question": "Do focal hierarchy, balance, crop and text placement serve the requested image purpose?",
+          "method": "Inspect at intended display size and close-up. Distinguish deliberate stylization from mistakes; compare to the brief."
+        },
+        {
+          "id": "image.integrity",
+          "question": "Are edges, repeated structures, text, lighting and material/perspective relationships internally coherent?",
+          "method": "Look for unintended distortions, seams, illegible text and inconsistent repetition. Evaluate anatomy only when depicted and relevant; do not infer implementation from pixels."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proportion — A Mathematical Design Study</title>
+<meta name="description" content="An interactive study of interface geometry using Differential Forms.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="./styles/differential.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to examples</a>
+<div class="page">
+<header class="masthead"><a href="#" class="wordmark">PROPORTION</a><span class="caption">A mathematical design study / 2026</span></header>
+<nav class="section-nav" aria-label="Study sections"><a href="#buttons">01 Buttons</a><a href="#button-densities">02 Button geometry</a><a href="#listbox-densities">03 Listbox geometry</a><a href="#menus">04 Menus & listboxes</a><a href="#data">05 Tables & data-lists</a><a href="#containers">06 Containers</a><a href="#spacing-rules">07 Spacing families</a><a href="#radius-study">08 Curvature</a></nav>
+<section class="hero" aria-labelledby="study-heading"><h1 id="study-heading">Order.<br><span>By design.</span></h1><div><p>A living study of the relationships behind an interface. Change a variable. Watch a system respond.</p><p class="caption">Differential Forms · content + spacing + border</p></div></section>
+<details class="type-roles"><summary>Typography · Display / Heading / Subhead / Body / Caption</summary><dl class="type-roles-grid"><div class="type-role"><dt>Display · editorial emphasis</dt><dd class="type-display">Order by design.</dd></div><div class="type-role"><dt>Heading · 32px</dt><dd class="type-heading">Clear relationships</dd></div><div class="type-role"><dt>Subhead · 24px</dt><dd class="type-subhead">Content comes first</dd></div><div class="type-role"><dt>Body · 16px / 1.5</dt><dd class="type-body">A consistent hierarchy gives every example a clear place in the study.</dd></div><div class="type-role"><dt>Caption · IBM Plex Mono 400 · 12px</dt><dd class="type-caption">Resolved values · CSS pixels</dd></div></dl></details>
+<div class="workbench">
+<aside class="inspector" aria-label="Geometry inspector">
+<div class="inspector-heading"><h2>Inspector</h2><button type="button" id="reset">Reset</button></div>
+<p id="status" role="status" aria-live="polite" class="status">Loading geometry…</p>
+<details open><summary>Foundation</summary><div class="inspector-body">
+<label class="setting" for="unit"><span>Base unit</span><input id="unit" type="range" min="3" max="6" step="0.25" value="4"><output for="unit" id="unit-value">4px</output></label>
+<label class="setting" for="border"><span>Border</span><input id="border" type="range" min="0" max="2" step="0.25" value="0"><output for="border" id="border-value">0px</output></label>
+<label class="setting select-setting" for="theme"><span>Appearance</span><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+</div></details>
+<details open><summary>Density</summary><div class="inspector-body">
+<label class="setting select-setting" for="controlDensity"><span>Controls</span><select id="controlDensity"><option value="compact">Compact</option><option value="default" selected>Default</option><option value="loose">Loose</option></select></label>
+<label class="setting select-setting" for="collectionDensity"><span>Collections</span><select id="collectionDensity"><option value="compact">Compact</option><option value="default" selected>Default</option><option value="loose">Loose</option></select></label>
+<label class="setting select-setting" for="cardDensity"><span>Cards</span><select id="cardDensity"><option value="compact">Compact</option><option value="default" selected>Default</option><option value="loose">Loose</option></select></label>
+<p class="hint">Each family has its own spacing. Nested controls keep their Control density.</p>
+</div></details>
+<details open><summary>Spacing & guides</summary><div class="inspector-body">
+<label class="setting" for="labelEdge"><span>Label edge</span><input id="labelEdge" type="range" min="0" max="3" step="0.25" value="1.5"><output for="labelEdge" id="labelEdge-value">1.5u</output></label>
+<label class="setting" for="inset"><span>Composite inset</span><input id="inset" type="range" min="0" max="1.5" step="0.25" value="0"><output for="inset" id="inset-value">0u</output></label>
+<p class="hint">Label edge stays constant across densities. Chips use half; inputs do not double the opposite edge.</p>
+<fieldset class="guide-controls"><legend>Guides</legend><label class="switch-setting"><span><i class="guide-key inset-key"></i>Insets</span><input id="guideMargins" type="checkbox" role="switch"></label><label class="switch-setting"><span><i class="guide-key gap-key"></i>Gaps</span><input id="guideGaps" type="checkbox" role="switch"></label><label class="switch-setting"><span><i class="guide-key slot-key"></i>Slot boundaries</span><input id="guideSlots" type="checkbox" role="switch"></label></fieldset>
+</div></details>
+<details><summary>Curvature</summary><div class="inspector-body">
+<label class="setting select-setting" for="controlCurve"><span>Controls</span><select id="controlCurve"><option value="sharpest">Sharpest</option><option value="sharp">Sharp</option><option value="default">Default</option><option value="soft" selected>Soft</option><option value="softest">Softest · pill</option></select></label>
+<label class="setting select-setting" for="containerCurve"><span>Containers</span><select id="containerCurve"><option value="sharpest">Sharpest</option><option value="sharp">Sharp</option><option value="default">Default</option><option value="soft" selected>Soft</option><option value="softest">Softest</option></select></label>
+<p class="hint">Zero inset makes attached composite children square. Ordinary cards and input adornments keep their own shape rules.</p>
+</div></details>
+<details><summary>Comparison</summary><div class="inspector-body"><label class="setting select-setting" for="rowState"><span>Listbox appearance</span><select id="rowState"><option value="none">None selected</option><option value="all">All selected</option><option value="actual" selected>Actual selection</option></select></label><p class="hint">Preview selection paint without changing your chosen specimen voice.</p></div></details>
+<details><summary>Configuration</summary><div class="inspector-body"><label for="configuration">Saved configuration</label><div class="field-wrap"><textarea id="configuration" rows="6" spellcheck="false" aria-describedby="configuration-hint"></textarea></div><p id="configuration-hint" class="hint">Copy the current settings or paste a saved configuration to restore it.</p><div class="inspector-actions"><button id="copyConfig" type="button">Copy</button><button id="applyConfig" type="button">Apply</button></div></div></details>
+<p class="hint">The inspector stays fixed in scale. Only specimens respond to geometry settings.</p>
+</aside>
+<main id="main">
+<section class="study" id="buttons"><div class="study-title"><h2><span class="number">01</span>Buttons</h2><p>Preserve the content. Resolve the surrounding space.</p></div><p class="note">Control slots stay 6u square. Chip slots stay 4u. Border occupies its owner’s interior once, including when transparent.</p><div id="buttons-content"></div></section>
+<section class="study" id="button-densities"><div class="study-title"><h2><span class="number">02</span>Button geometry</h2><p>Five arrangements · three densities · Sharpest and Pill</p></div><p class="note">Compare label, icon, glyph, avatar and logo arrangements. Label edges depend on exposed content, not density or curvature. Shape pairs retain the same dimensions.</p><p class="scroll-hint caption">Scroll horizontally or focus the comparison and use arrow keys.</p><div id="button-density-grid" class="comparison-grid" role="region" aria-label="Button arrangements across three densities" tabindex="0"></div></section>
+<section class="study" id="listbox-densities"><div class="study-title"><h2><span class="number">03</span>Listbox geometry</h2><p>Icon, avatar and logo rows</p></div><p class="note">Each listbox is an explicit composite. Requested inset sets its gap; child spacing resolves without shrinking text or slots.</p><div id="listbox-density-grid" class="comparison-grid" role="region" aria-label="Listbox rows across three densities" tabindex="0"></div></section>
+<section class="study" id="menus"><div class="study-title"><h2><span class="number">04</span>Menus & listboxes</h2><p>Actions, selections and composed inputs.</p></div><p class="note">Use the arrow keys to navigate listboxes and Enter to select. Input adornments use chips inside neutral wrappers; their shape is independent of attached-composite rules.</p><div id="menus-content"></div></section>
+<section class="study" id="data"><div class="study-title"><h2><span class="number">05</span>Tables & data-lists</h2><p>Alignment makes relationships legible.</p></div><p class="note">Collection density controls row spacing. Multiline copy grows the row while preserving slots and the density of nested actions.</p><div id="data-content"></div></section>
+<section class="study" id="containers"><div class="study-title"><h2><span class="number">06</span>Containers</h2><p>Ordinary cards preserve their children’s geometry.</p></div><p class="note">Card inset and gap use 3u / 4.5u / 6u. Card density never applies composite subtraction to a nested control.</p><div id="container-grid" class="comparison-grid" role="region" aria-label="Cards across three densities" tabindex="0"></div><article id="nested-composition" class="nested-study"><h3>One card · independent families</h3><p class="note">The card, collection and controls each resolve their own density. Change one family in the inspector to compare.</p><div id="nested-content"></div></article></section>
+<section class="study" id="spacing-rules"><div class="study-title"><h2><span class="number">07</span>Spacing families</h2><p>Compact / Default / Loose</p></div><p class="note">Controls use inset 0.5u / 1u / 2u; collections use 1u / 2u / 3u; cards use 3u / 4.5u / 6u. These are independent lookups, not a cascading multiplier.</p><div id="density-comparison" class="comparison-grid" role="region" aria-label="Spacing families across densities" tabindex="0"></div></section>
+<section class="study" id="radius-study"><div class="study-title"><h2><span class="number">08</span>Composable curvature</h2><p>Shape follows the owning component.</p></div><p class="note">Soft is 3u. Softest controls are capsules; Softest containers use 4u. Attached composites consume the effective parent inset once and preserve their child slots.</p><div id="radius-comparison" class="comparison-grid" role="region" aria-label="Curvature and attached composites" tabindex="0"></div></section>
+</main></div>
+<footer class="footer"><span>PROPORTION / DIFFERENTIAL FORMS</span><span>An adopted design convention, not a perceptual law.</span></footer>
+</div><script type="module" src="./runtime/app.js"></script>
+</body></html>

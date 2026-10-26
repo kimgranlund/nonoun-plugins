@@ -1,0 +1,18 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "component": "listbox",
+    "trigger": "Grid",
+    "options": [
+      "Grid",
+      "List",
+      "Columns"
+    ],
+    "selected": "Grid",
+    "geometry": {
+      "insetUnits": 0.5,
+      "gap": "inset",
+      "childRule": "composite.residual"
+    }
+  }
+}

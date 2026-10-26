@@ -1,0 +1,20 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "component": "composed-input",
+    "parts": [
+      {
+        "part": "prefix",
+        "text": "https://",
+        "geometryFamily": "chip",
+        "labelWrapper": true
+      },
+      {
+        "part": "input",
+        "type": "text",
+        "label": "Website domain",
+        "placeholder": "your-domain.com"
+      }
+    ]
+  }
+}

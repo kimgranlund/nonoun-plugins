@@ -27,8 +27,8 @@ def check(root):
             source = entry['source']['path'] if host == 'codex' else entry['source']
             require(source == f'./plugins/{name}', f'{host}: wrong source for {name}')
             require((root / source).is_dir(), f'{host}: missing source for {name}')
-    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'progressive-context'},
-            'catalogs must contain both peer plugins')
+    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'progressive-context', 'design'},
+            'catalogs must contain every peer plugin')
     for name in sorted(catalogs[0]):
         plugin = root / 'plugins' / name
         codex = json.loads((plugin / '.codex-plugin/plugin.json').read_text())
@@ -42,7 +42,7 @@ def check(root):
             require(text.startswith('---\n'), f'{skill}: missing frontmatter')
             # The host re-injects a skill body after compaction, capped at 20,000 characters (T-0659).
             require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
-        require((plugin / 'skills' / name / 'SKILL.md').is_file(), f'{name}: missing entry point')
+        require(name == 'design' or (plugin / 'skills' / name / 'SKILL.md').is_file(), f'{name}: missing entry point')
     sdlc = root / 'plugins/sdlc-lite'
     require(not (sdlc / 'hooks/hooks.json').exists(), 'Claude hooks leak into Codex discovery')
     manifest = json.loads((sdlc / '.claude-plugin/plugin.json').read_text())
@@ -62,7 +62,45 @@ def check(root):
         for target in re.findall(r'\]\(([^)]+)\)', text):
             if '://' not in target and not target.startswith('#'):
                 require((path.parent / target.split('#')[0]).exists(), f'{path}: broken link {target}')
+    errors += check_design(root / 'plugins/design')
     errors += check_workflows(root)
+    return errors
+
+
+def check_design(plugin):
+    """Design skills share files by relative path (T-0791): no entry point, so each skill is named for its folder,
+    and a link that leaves its skill lands on a file in this plugin; another plugin's skill is named, not linked.
+    A link whose next folder is not kebab-case (`Projects/ui-kit/...`) points at a user checkout and is not gated."""
+    errors = []
+    skills = plugin / 'skills'
+    kebab = re.compile(r'[a-z0-9][a-z0-9-]*')
+    names = {path.name for path in skills.iterdir() if path.is_dir()}
+    for skill in sorted(skills.glob('*/SKILL.md')):
+        name = re.search(r'^name:\s*(\S+)', skill.read_text(), flags=re.M)
+        if not name or name.group(1) != skill.parent.name:
+            errors.append(f'{skill}: frontmatter name must be {skill.parent.name}')
+    for path in sorted(skills.rglob('*.md')):
+        home = (skills / path.relative_to(skills).parts[0]).resolve()
+        text = re.sub(r'```.*?```', '', path.read_text(), flags=re.S)
+        for target in re.findall(r'\]\(([^)\s]+)\)', text):
+            if '://' in target or target.startswith(('#', 'mailto:')):
+                continue
+            resolved = (path.parent / target.split('#')[0]).resolve()
+            if resolved.is_relative_to(home):
+                # A link that names a sibling skill but climbs too little still lands in its own folder.
+                if not names.intersection(resolved.relative_to(home).parts) or resolved.exists():
+                    continue
+                errors.append(f'{path}: broken cross-skill link {target}')
+                continue
+            if not resolved.is_relative_to(plugin.parent.resolve()):
+                continue
+            parts = resolved.relative_to(plugin.parent.resolve()).parts
+            if not kebab.fullmatch(parts[0]) or (parts[0] == plugin.name and len(parts) > 2 and not kebab.fullmatch(parts[2])):
+                continue
+            if parts[0] != plugin.name:
+                errors.append(f'{path}: link {target} leaves the plugin; name the skill instead')
+            elif not resolved.exists():
+                errors.append(f'{path}: broken cross-skill link {target}')
     return errors
 
 
@@ -100,4 +138,4 @@ if __name__ == '__main__':
         print('FAIL:', error, file=sys.stderr)
     if errors:
         sys.exit(1)
-    print('PASS: catalog parity, identity, skill routes and sizes, hook isolation, context links and CI triggers')
+    print('PASS: catalog parity, identity, skill routes and sizes, hook isolation, context and design links and CI triggers')

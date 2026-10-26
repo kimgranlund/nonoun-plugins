@@ -1,0 +1,7 @@
+{
+  "assets/wireframe.css": "acefd9fc9354945b575569804673e71e104d38b6f2238cf586969e3bd8d00387",
+  "references/style/components/workflow-patterns.md": "a72dfadfafc587bdda90eeba9e7ad657b26fd3b1432df1396f35455af5c285a8",
+  "references/style/components/demonstrations.json": "6ce18a01b13f8df370aa6e7937157fa10c39852430821074194703a2f8a40d9a",
+  "references/style/token-index.json": "cd3d345241b981114894283cb3929e3e1b652b1121efbce6360e1364a6c2de17",
+  "scripts/check-stepper-layout.mjs": "0b337b39a6bfedaa7686356e16c7769f13ea14e00e8811d8716514d412dd6784"
+}

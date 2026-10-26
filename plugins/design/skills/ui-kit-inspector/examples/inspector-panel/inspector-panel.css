@@ -1,0 +1,66 @@
+/* Differential Forms geometry is supplied by panel-geometry.js, isolated from tuned config. */
+.ip {
+  --ip-lowest:#e9e9e6; --ip-low:#efefec; --ip-mid:#f5f5f2; --ip-high:#fafaf7; --ip-highest:#fff;
+  --ip-ink:#20201f; --ip-muted:#62625d; --ip-accent:#2563eb; --ip-bad:#a52a15;
+  color-scheme:light; color:var(--ip-ink); background:var(--ip-mid);
+  font:400 var(--ip-font)/var(--ip-line) system-ui,sans-serif;
+  border:var(--ip-border) solid transparent; border-radius:var(--ip-container-radius);
+  padding:var(--ip-card-padding); min-width:0;
+}
+@media(prefers-color-scheme:dark) { .ip {
+  --ip-lowest:#1a1a19; --ip-low:#222221; --ip-mid:#2b2b29; --ip-high:#333330; --ip-highest:#3d3d39;
+  --ip-ink:#eee; --ip-muted:#b8b8b1; --ip-accent:#91b5ff; --ip-bad:#ffb4a2; color-scheme:dark;
+} }
+.ip,.ip * { box-sizing:border-box; }
+.ip > * + * { margin-block-start:var(--ip-collection-gap); }
+.ip summary { cursor:pointer; list-style:none; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:var(--ip-gap); min-height:var(--ip-height); border-radius:var(--ip-radius); }
+.ip summary::-webkit-details-marker { display:none; }
+.ip-title { font-weight:600; }
+.ip-count,.ip-status,.ip-msg,.ip-unit { color:var(--ip-muted); }
+.ip-status.bad { color:var(--ip-bad); }
+.ip-banner,.ip-readout { border:var(--ip-border) solid transparent; padding:var(--ip-collection-padding); border-radius:var(--ip-container-radius); background:var(--ip-high); overflow-wrap:anywhere; }
+.ip-banner { color:var(--ip-bad); box-shadow:inset 0 0 0 1px var(--ip-bad); }
+.ip-banner ul { padding-inline-start:20px; margin-block:4px 0; }
+.ip-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.ip button,.ip select,.ip input[type=color] {
+  min-height:var(--ip-height); border:var(--ip-border) solid transparent; border-radius:var(--ip-radius);
+  padding:var(--ip-padding); background:var(--ip-highest); color:inherit; font:inherit;
+}
+.ip button { display:inline-flex; align-items:center; cursor:pointer; }
+.ip-label { display:flex; align-items:center; min-height:var(--ip-slot); padding-inline:var(--ip-edge-start) var(--ip-edge-end); white-space:nowrap; }
+.ip select { width:100%; min-width:0; padding-inline:calc(var(--ip-padding) + var(--ip-edge-start)); }
+.ip-group { display:grid; gap:var(--ip-collection-gap); padding-block:var(--ip-collection-padding); border:var(--ip-border) solid transparent; }
+.ip-group h2 { margin:0; font:600 12px/20px system-ui,sans-serif; color:var(--ip-muted); }
+.ip-hint { margin:0; font:400 11px/1.5 'IBM Plex Mono',monospace; color:var(--ip-muted); overflow-wrap:anywhere; }
+.ip-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); align-items:center; gap:var(--ip-collection-gap); min-height:var(--ip-height); }
+.ip-row:has(input[type=range]) { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 4ch; }
+.ip-row label { overflow-wrap:anywhere; }
+.ip-field { min-width:0; display:flex; align-items:center; min-height:var(--ip-height); border:var(--ip-border) solid transparent; border-radius:var(--ip-radius); padding:var(--ip-padding); background:var(--ip-highest); }
+.ip-field > input,.ip-field > textarea { width:100%; min-width:0; min-height:var(--ip-slot); border:0; padding:0; padding-inline:var(--ip-edge-start) var(--ip-edge-end); background:transparent; color:inherit; font:inherit; line-height:var(--ip-line); border-radius:0; }
+.ip-multiline { min-height:var(--ip-multiline-height); padding:var(--ip-collection-padding); border-radius:var(--ip-container-radius); }
+.ip-field > textarea { min-height:120px; padding:0; resize:vertical; }
+.ip-check { display:flex; align-items:center; gap:var(--ip-gap); min-height:var(--ip-height); cursor:pointer; }
+.ip-check > span { display:flex; align-items:center; min-height:var(--ip-slot); padding-inline-end:var(--ip-choice-edge); }
+.ip input[type=checkbox] { appearance:none; flex:none; width:var(--ip-choice-size); height:var(--ip-choice-size); margin:var(--ip-unit); border:var(--ip-border) solid transparent; border-radius:var(--ip-choice-radius); background:var(--ip-highest); box-shadow:inset 0 0 0 1px var(--ip-muted); display:grid; place-content:center; }
+.ip input[type=checkbox]:checked { background:var(--ip-ink); color:var(--ip-highest); }
+.ip input[type=checkbox]:checked::after { content:'✓'; font:12px/1 system-ui; }
+.ip input[type=range] { width:100%; min-width:0; margin:0; min-height:var(--ip-slot); accent-color:var(--ip-ink); }
+.ip input[type=color] { width:100%; min-width:0; }
+.ip output { font:inherit; text-align:end; }
+.ip-matrix { display:grid; align-items:center; gap:var(--ip-collection-gap); }
+.ip-ch { text-align:center; color:var(--ip-muted); }
+.ip .ip-changed:not(input[type=checkbox]):not(input[type=range]),.ip-field:has(.ip-changed) { box-shadow:inset 0 0 0 1px var(--ip-accent); }
+.ip-field > .ip-changed { box-shadow:none !important; }
+.ip-check:has(.ip-changed) span { color:var(--ip-accent); }
+.ip-field:has([aria-invalid=true]) { box-shadow:inset 0 0 0 1px var(--ip-bad); }
+.ip-adv > :not(summary) { margin-block-start:var(--ip-collection-gap); }
+.ip :focus { outline:none; }
+/* Paint only: wrapper ring for editable fields; siblings keep their own ring. */
+.ip[data-keyboard=true] :focus-visible,.ip[data-keyboard=true] .ip-field:has(> :focus-visible) { outline:3px solid var(--ip-ink); outline-offset:0; position:relative; z-index:2; }
+.ip[data-keyboard=true] .ip-field > :focus-visible { outline:none; }
+.ip-inspecting [data-spec] { cursor:help; }
+.ip-hovered:not(:focus-visible) { outline:1px dashed #2563eb; outline-offset:2px; }
+.ip-layout { display:grid; grid-template-columns:minmax(280px,340px) minmax(0,1fr); min-height:100vh; gap:12px; padding:4px; }
+.ip-layout > .ip-mount { position:sticky; top:0; max-height:100vh; overflow:auto; padding:4px; }
+@media(max-width:900px) { .ip-layout { grid-template-columns:minmax(0,1fr); } .ip-layout > .ip-mount { position:static; max-height:none; } }
+@media(forced-colors:active) { .ip input[type=checkbox] { appearance:auto; } .ip[data-keyboard=true] :focus-visible,.ip[data-keyboard=true] .ip-field:has(> :focus-visible) { outline-color:CanvasText; } }

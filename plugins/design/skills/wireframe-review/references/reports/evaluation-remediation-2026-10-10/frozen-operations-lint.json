@@ -1,0 +1,60 @@
+{
+  "documents": [
+    "root",
+    "root/iframe[0]"
+  ],
+  "findings": [
+    {
+      "rule": "unknown-style-owner",
+      "severity": "unverified",
+      "document": "root",
+      "selector": "",
+      "detail": "5 custom geometry selectors outside recognized component checks: main.static-review, nav, #static-unit-0, summary, div. Warning counts do not measure fidelity"
+    },
+    {
+      "rule": "choice-mark-anatomy",
+      "severity": "warning",
+      "document": "root/iframe[0]",
+      "selector": "#logs",
+      "detail": "Native checkbox in a product composition lacks wf-check; read the choices family and use its exact input anatomy"
+    },
+    {
+      "rule": "choice-mark-anatomy",
+      "severity": "warning",
+      "document": "root/iframe[0]",
+      "selector": "#notes",
+      "detail": "Native checkbox in a product composition lacks wf-check; read the choices family and use its exact input anatomy"
+    },
+    {
+      "rule": "unknown-style-owner",
+      "severity": "unverified",
+      "document": "root/iframe[0]",
+      "selector": "",
+      "detail": "3 custom geometry selectors outside recognized component checks: header.desk-header, div.desk-grid, div.filters. Warning counts do not measure fidelity"
+    }
+  ],
+  "browser": "151.0.7922.34",
+  "input": {
+    "path": "/private/tmp/wireframe-system-eval-jfazrkpw/runs/B/operations/2/001-operations/artifact.html",
+    "sha256": "32fba034825eec7c862033661025e429b0e1e75e97263d7691501856faea96b1"
+  },
+  "inspectedHtmlSHA256": "32fba034825eec7c862033661025e429b0e1e75e97263d7691501856faea96b1",
+  "policy": null,
+  "sources": {
+    "assets/foundation/ultimate-tokens/colors.css": "3d5b3c5d55a3a9823bab09e64d54301375863964c1066e50295d9f7f4b3f5af6",
+    "assets/foundation/ultimate-tokens/typography.css": "e837ce1922a05b324c4655d98f39f87ded0d4107214b2281fbc379364c7777a2",
+    "assets/foundation/maison/geometry.css": "7bef1b330cc17ee1ae3c7dbd1077c790767222b4e52b7080b89300426835799f",
+    "assets/foundation/maison/layout.css": "c1c52634fb5a4e5bfa9165ea41345e636e7bb8ec23b4c39c04111188489e5584",
+    "assets/wireframe.css": "493d27266bd8a8aef13f018cfb3d55b80cb8093ed14a5ccbf773f152afd8a1b6",
+    "assets/shell.css": "d0d51d379ec86b46a838b820f0334d93aa42f945994b9ab12e7e2c9b36c4a95a",
+    "scripts/lint-artifact.mjs": "4cee5008db4476c3b89b369edd923f5487c405f182cd949031264737f3d90887",
+    "scripts/lib/artifact-lint.mjs": "4ffaf42b2fe3869ed5bec81d84674acf1fa3158c880e41309eb4ce98326c59f7",
+    "references/style/components/contract.json": "44ea061dd016045a3f57b398d799adc37aea1c443a2b63231e7883ce8f081fbe"
+  },
+  "limitations": [
+    "Parsed initial documents only; scripts are not executed",
+    "Style warnings are advisory; no cascade, visual, keyboard or accessibility certification",
+    "External styles/documents, shadow roots and runtime states need separate verification"
+  ],
+  "temporaryBuild": null
+}

@@ -1,0 +1,140 @@
+{
+  "target": "/Users/kimgranlund/.codex/skill-previews/wireframe-review/sheets/system-review/components.html",
+  "records": [
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "light",
+      "orientation": "row",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "chromium",
+      "width": 390,
+      "scheme": "dark",
+      "orientation": "row",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "scheme": "light",
+      "orientation": "column",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "scheme": "dark",
+      "orientation": "column",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "light",
+      "orientation": "row",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "scheme": "dark",
+      "orientation": "row",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "scheme": "light",
+      "orientation": "column",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "scheme": "dark",
+      "orientation": "column",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "light",
+      "orientation": "row",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "scheme": "dark",
+      "orientation": "row",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "scheme": "light",
+      "orientation": "column",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "scheme": "dark",
+      "orientation": "column",
+      "deepLink": true,
+      "deferredFrameInitialized": true,
+      "filterSearchAndReveal": true,
+      "nextBackSave": true,
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "Final canonical wiring only; peer authored geometry/state/lifecycle evidence reused. No new accessibility/environment or generation certification."
+  ]
+}

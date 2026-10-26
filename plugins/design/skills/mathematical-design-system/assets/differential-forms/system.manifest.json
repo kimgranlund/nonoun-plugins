@@ -1,0 +1,106 @@
+{
+  "name": "Differential Forms",
+  "version": "0.2.2",
+  "entry": "AGENTS.md",
+  "authority": [
+    "explicit task instructions",
+    "confirmed contracts",
+    "resolvers and tests",
+    "recipes",
+    "specimen"
+  ],
+  "statusVocabulary": [
+    "confirmed",
+    "experimental",
+    "deprecated"
+  ],
+  "source": {
+    "commit": "c703054bb5a20ea963fbf4d4da3cde9fc14149be",
+    "captured": "2026-10-22",
+    "url": "https://differential-forms-jig.robust-haven-7010.chatgpt.site",
+    "fragmentSHA256": "4f7b83f6f3794ca72584a85eb63d7c8c6dde620d24358e3a34ffe2a7c853d822",
+    "preview": "Portable local wrapper; locally amended on 2026-10-22 with uniform 3px/0px keyboard focus outlines. Published commit records the original baseline."
+  },
+  "routes": {
+    "geometry": [
+      "contracts/foundations.json",
+      "contracts/geometry-families.json",
+      "docs/geometry.md",
+      "geometry/index.ts",
+      "geometry/resolve-composed-input.ts",
+      "geometry/resolve-multiline.ts"
+    ],
+    "composition": [
+      "contracts/parts.json",
+      "contracts/components.json",
+      "contracts/composition.json",
+      "docs/composition.md"
+    ],
+    "appearance": [
+      "docs/appearance.md"
+    ],
+    "interaction": [
+      "docs/interaction.md"
+    ],
+    "exceptions": [
+      "docs/exceptions.md"
+    ],
+    "verification": [
+      "verification/invariants.md",
+      "verification/visual-cases.json"
+    ],
+    "localProject": [
+      "docs/local-project.md",
+      "scripts/build.mjs",
+      "scripts/dev.mjs"
+    ]
+  },
+  "files": [
+    ".gitignore",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "README.md",
+    "contracts/components.json",
+    "contracts/composition.json",
+    "contracts/foundations.json",
+    "contracts/geometry-families.json",
+    "contracts/parts.json",
+    "contracts/rules.json",
+    "docs/appearance.md",
+    "docs/composition.md",
+    "docs/exceptions.md",
+    "docs/geometry.md",
+    "docs/implementation.md",
+    "docs/interaction.md",
+    "docs/local-project.md",
+    "docs/principles.md",
+    "geometry/index.ts",
+    "geometry/resolve-collection.ts",
+    "geometry/resolve-composed-input.ts",
+    "geometry/resolve-composite.ts",
+    "geometry/resolve-control.ts",
+    "geometry/resolve-curvature.ts",
+    "geometry/resolve-multiline.ts",
+    "geometry/resolve-small.ts",
+    "geometry/types.ts",
+    "package.json",
+    "recipes/collection-panel.json",
+    "recipes/control-examples.json",
+    "recipes/currency-input.json",
+    "recipes/data-table.json",
+    "recipes/domain-input.json",
+    "recipes/listbox.json",
+    "recipes/prefix-suffix-inputs.json",
+    "scripts/build.mjs",
+    "scripts/dev.mjs",
+    "specimens/index.html",
+    "specimens/source.html",
+    "system.manifest.json",
+    "verification/RESULTS.md",
+    "verification/composition.test.ts",
+    "verification/current.test.ts",
+    "verification/geometry.test.ts",
+    "verification/invariants.md",
+    "verification/visual-cases.json"
+  ]
+}

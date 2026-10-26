@@ -1,0 +1,953 @@
+{
+  "development": {
+    "rows": [
+      {
+        "run": "booking-2-baseline",
+        "reviewer": 1,
+        "brief": "booking",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-2-baseline",
+        "reviewer": 2,
+        "brief": "booking",
+        "condition": "baseline",
+        "weakest": 0,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-1-baseline",
+        "reviewer": 1,
+        "brief": "evidence",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-1-baseline",
+        "reviewer": 2,
+        "brief": "evidence",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-3-candidate",
+        "reviewer": 1,
+        "brief": "booking",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-3-candidate",
+        "reviewer": 2,
+        "brief": "booking",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-1-candidate",
+        "reviewer": 1,
+        "brief": "settings",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-1-candidate",
+        "reviewer": 2,
+        "brief": "settings",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 5,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-3-candidate",
+        "reviewer": 1,
+        "brief": "evidence",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-3-candidate",
+        "reviewer": 2,
+        "brief": "evidence",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 5,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-3-baseline",
+        "reviewer": 1,
+        "brief": "evidence",
+        "condition": "baseline",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-3-baseline",
+        "reviewer": 2,
+        "brief": "evidence",
+        "condition": "baseline",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-2-candidate",
+        "reviewer": 1,
+        "brief": "evidence",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-2-candidate",
+        "reviewer": 2,
+        "brief": "evidence",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 5,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-2-candidate",
+        "reviewer": 1,
+        "brief": "settings",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 3,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-2-candidate",
+        "reviewer": 2,
+        "brief": "settings",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 5,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-2-candidate",
+        "reviewer": 1,
+        "brief": "booking",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-2-candidate",
+        "reviewer": 2,
+        "brief": "booking",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-2-baseline",
+        "reviewer": 1,
+        "brief": "settings",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-2-baseline",
+        "reviewer": 2,
+        "brief": "settings",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-2-baseline",
+        "reviewer": 1,
+        "brief": "evidence",
+        "condition": "baseline",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-2-baseline",
+        "reviewer": 2,
+        "brief": "evidence",
+        "condition": "baseline",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-3-baseline",
+        "reviewer": 1,
+        "brief": "settings",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 3,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-3-baseline",
+        "reviewer": 2,
+        "brief": "settings",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-1-baseline",
+        "reviewer": 1,
+        "brief": "settings",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 3,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-1-baseline",
+        "reviewer": 2,
+        "brief": "settings",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-3-candidate",
+        "reviewer": 1,
+        "brief": "settings",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 3,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "settings-3-candidate",
+        "reviewer": 2,
+        "brief": "settings",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 5,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-1-candidate",
+        "reviewer": 1,
+        "brief": "booking",
+        "condition": "candidate",
+        "weakest": 4,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-1-candidate",
+        "reviewer": 2,
+        "brief": "booking",
+        "condition": "candidate",
+        "weakest": 4,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-3-baseline",
+        "reviewer": 1,
+        "brief": "booking",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-3-baseline",
+        "reviewer": 2,
+        "brief": "booking",
+        "condition": "baseline",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-1-baseline",
+        "reviewer": 1,
+        "brief": "booking",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "booking-1-baseline",
+        "reviewer": 2,
+        "brief": "booking",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-1-candidate",
+        "reviewer": 1,
+        "brief": "evidence",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "evidence-1-candidate",
+        "reviewer": 2,
+        "brief": "evidence",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 5,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      }
+    ],
+    "missing": [],
+    "controls": [
+      {
+        "reviewer": 1,
+        "pass": true
+      },
+      {
+        "reviewer": 2,
+        "pass": true
+      }
+    ],
+    "briefs": {
+      "settings": {
+        "baseline": {
+          "weakest": 1.0,
+          "quality": 4.0,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "candidate": {
+          "weakest": 3.0,
+          "quality": 4.5,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "passes": true,
+        "candidateCoverageComplete": true
+      },
+      "evidence": {
+        "baseline": {
+          "weakest": 2.0,
+          "quality": 4.0,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "candidate": {
+          "weakest": 3.0,
+          "quality": 4.5,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "passes": true,
+        "candidateCoverageComplete": true
+      },
+      "booking": {
+        "baseline": {
+          "weakest": 1.0,
+          "quality": 4.0,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "candidate": {
+          "weakest": 3.0,
+          "quality": 4.0,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "passes": true,
+        "candidateCoverageComplete": true
+      }
+    },
+    "promotionEligible": true,
+    "method": "Two reviewer scores pooled for per-brief median; failure and coverage counts use conservative max per run. Missing evidence prevents promotion."
+  },
+  "holdout": {
+    "rows": [
+      {
+        "run": "queue-2-candidate",
+        "reviewer": 1,
+        "brief": "queue",
+        "condition": "candidate",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-2-candidate",
+        "reviewer": 2,
+        "brief": "queue",
+        "condition": "candidate",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-1-baseline",
+        "reviewer": 1,
+        "brief": "queue",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 2,
+        "family": 5,
+        "failed": 2,
+        "untested": 1,
+        "critical": 1
+      },
+      {
+        "run": "queue-1-baseline",
+        "reviewer": 2,
+        "brief": "queue",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 2,
+        "family": 5,
+        "failed": 2,
+        "untested": 1,
+        "critical": 2
+      },
+      {
+        "run": "queue-3-baseline",
+        "reviewer": 1,
+        "brief": "queue",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-3-baseline",
+        "reviewer": 2,
+        "brief": "queue",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 3,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-2-baseline",
+        "reviewer": 1,
+        "brief": "queue",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-2-baseline",
+        "reviewer": 2,
+        "brief": "queue",
+        "condition": "baseline",
+        "weakest": 1,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-3-candidate",
+        "reviewer": 1,
+        "brief": "queue",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-3-candidate",
+        "reviewer": 2,
+        "brief": "queue",
+        "condition": "candidate",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-1-candidate",
+        "reviewer": 1,
+        "brief": "queue",
+        "condition": "candidate",
+        "weakest": 3,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      },
+      {
+        "run": "queue-1-candidate",
+        "reviewer": 2,
+        "brief": "queue",
+        "condition": "candidate",
+        "weakest": 2,
+        "quality": 4,
+        "family": 5,
+        "failed": 0,
+        "untested": 0,
+        "critical": 0
+      }
+    ],
+    "missing": [],
+    "controls": [
+      {
+        "reviewer": 1,
+        "pass": true
+      },
+      {
+        "reviewer": 2,
+        "pass": true
+      }
+    ],
+    "briefs": {
+      "queue": {
+        "baseline": {
+          "weakest": 1.0,
+          "quality": 3.5,
+          "family": 5.0,
+          "failed": 2,
+          "critical": 2,
+          "untested": 1
+        },
+        "candidate": {
+          "weakest": 2.0,
+          "quality": 4.0,
+          "family": 5.0,
+          "failed": 0,
+          "critical": 0,
+          "untested": 0
+        },
+        "passes": true,
+        "candidateCoverageComplete": true
+      }
+    },
+    "promotionEligible": true,
+    "method": "Two reviewer scores pooled for per-brief median; failure and coverage counts use conservative max per run. Missing evidence prevents promotion."
+  },
+  "developmentDisagreements": [
+    {
+      "specimen": "specimen-01",
+      "run": "booking-2-baseline",
+      "pairs": {
+        "A/B": [
+          1,
+          0
+        ],
+        "A/C": [
+          3,
+          2
+        ],
+        "B/C": [
+          3,
+          2
+        ]
+      },
+      "quality": [
+        4,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-04",
+      "run": "settings-1-candidate",
+      "pairs": {},
+      "quality": [
+        4,
+        5
+      ]
+    },
+    {
+      "specimen": "specimen-05",
+      "run": "evidence-3-candidate",
+      "pairs": {
+        "B/C": [
+          3,
+          4
+        ]
+      },
+      "quality": [
+        4,
+        5
+      ]
+    },
+    {
+      "specimen": "specimen-06",
+      "run": "evidence-3-baseline",
+      "pairs": {
+        "B/C": [
+          2,
+          3
+        ]
+      },
+      "quality": [
+        4,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-07",
+      "run": "evidence-2-candidate",
+      "pairs": {
+        "B/C": [
+          3,
+          4
+        ]
+      },
+      "quality": [
+        4,
+        5
+      ]
+    },
+    {
+      "specimen": "specimen-08",
+      "run": "settings-2-candidate",
+      "pairs": {},
+      "quality": [
+        3,
+        5
+      ]
+    },
+    {
+      "specimen": "specimen-12",
+      "run": "settings-3-baseline",
+      "pairs": {
+        "A/C": [
+          1,
+          2
+        ],
+        "B/C": [
+          1,
+          2
+        ]
+      },
+      "quality": [
+        3,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-13",
+      "run": "settings-1-baseline",
+      "pairs": {
+        "A/C": [
+          2,
+          3
+        ],
+        "B/C": [
+          2,
+          3
+        ]
+      },
+      "quality": [
+        3,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-14",
+      "run": "settings-3-candidate",
+      "pairs": {},
+      "quality": [
+        3,
+        5
+      ]
+    },
+    {
+      "specimen": "specimen-16",
+      "run": "booking-3-baseline",
+      "pairs": {
+        "A/B": [
+          1,
+          2
+        ],
+        "A/C": [
+          3,
+          2
+        ],
+        "B/C": [
+          3,
+          2
+        ]
+      },
+      "quality": [
+        4,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-17",
+      "run": "booking-1-baseline",
+      "pairs": {
+        "A/C": [
+          3,
+          2
+        ]
+      },
+      "quality": [
+        4,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-18",
+      "run": "evidence-1-candidate",
+      "pairs": {
+        "B/C": [
+          3,
+          4
+        ]
+      },
+      "quality": [
+        4,
+        5
+      ]
+    }
+  ],
+  "holdoutInitialDisagreements": [
+    {
+      "specimen": "specimen-01",
+      "run": "queue-2-candidate",
+      "pairs": {
+        "A/B": [
+          3,
+          2
+        ],
+        "B/C": [
+          2,
+          3
+        ]
+      },
+      "capabilities": [],
+      "quality": [
+        4,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-03",
+      "run": "queue-3-baseline",
+      "pairs": {},
+      "capabilities": [],
+      "quality": [
+        4,
+        3
+      ]
+    },
+    {
+      "specimen": "specimen-05",
+      "run": "queue-3-candidate",
+      "pairs": {
+        "A/B": [
+          3,
+          2
+        ],
+        "B/C": [
+          4,
+          3
+        ]
+      },
+      "capabilities": [],
+      "quality": [
+        4,
+        4
+      ]
+    },
+    {
+      "specimen": "specimen-06",
+      "run": "queue-1-candidate",
+      "pairs": {
+        "A/B": [
+          3,
+          2
+        ],
+        "B/C": [
+          4,
+          3
+        ]
+      },
+      "capabilities": [],
+      "quality": [
+        4,
+        4
+      ]
+    }
+  ],
+  "rawEvidenceDirectory": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/wireframe-variant-eval-t583ottv",
+  "limitations": [
+    "Small samples; ordinal model-review scores, not a population reliability estimate.",
+    "Development reviewer1 incidental rationale exposure in one specimen; reviewer2 broader rationale exposure. Conditions remained hidden.",
+    "Holdout reviewers recorded screenshot-only judgments before source/behavior inspection.",
+    "No complete keyboard, assistive technology, measured text contrast, Safari or mobile task-completion audit.",
+    "Inherited model/settings held fixed by dispatch; actual model/version, sampling and token telemetry unavailable.",
+    "One baseline holdout hidden-selection requirement remains untested because its filter never hides rows."
+  ]
+}

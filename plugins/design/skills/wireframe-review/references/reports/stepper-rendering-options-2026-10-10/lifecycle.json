@@ -1,0 +1,8 @@
+{
+  "browser": "151.0.7922.34",
+  "persistence": true,
+  "proposalIsolation": true,
+  "cleanupFallback": true,
+  "errors": [],
+  "limits": "One Chromium authored runtime integration; no independent generation or AT claim"
+}

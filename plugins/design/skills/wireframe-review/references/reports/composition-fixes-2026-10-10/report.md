@@ -1,0 +1,13 @@
+# Choice and segmented composition fixes
+
+Field-group geometry now uses the resolved card radius, including corner presentation modifiers, and 4u container inset. Plain semantic groups inside existing cards remain borderless with zero inset. Contracts require an inner options/flow wrapper; raw browser fieldset borders are not the maintained design. Choice cards now resolve the same corner modifiers.
+
+Segmented controls divide one inherited inset: outer padding u/2, item inline/block padding u/2. Item minimum frame is inherited height minus two outer insets, while content may grow. Inner radius remains max(0, resolved outer radius minus padding minus border width). No independent literal geometry or framework runtime was introduced.
+
+The choices recipe adds a workspace container with its primary radio label followed by sibling dependent checkbox labels. Options align to the content column (icon plus inset) and stay within the workspace container. Controls are not nested inside another control label. Primary radio alone owns selected container border; toggling the dependent checkbox cannot change workspace selection or select container paint. Preference state survives changing the radio and applies specifically to Design studio.
+
+Upserted choices/navigation contracts, maintained CSS and catalog recipe, specimen/demonstration registries and the bounded component authoring route. No generic instruction expansion in SKILL.md was needed: its existing common-component route reads the changed authoring document and family records.
+
+Affected source checks pass 18 contexts: Chromium/Firefox/WebKit, sm/md/lg control sizes and light/dark at 390px. Computed container/item insets, minimum frame, nested radii, plain-group boundaries, radio/checkbox label and Space activation, retained preference and primary-only selected paint are asserted. Injected full segment padding and square group radius are rejected. Forty-six guide records pass source parity/negative controls. Twenty-four bounded component lookups retain their existing budget. Token references and document graph pass. Rendered sheet specimens are checked separately at 390/1280. Native semantics own these interactions; no JavaScript change was required.
+
+Publication preserves previous canonical output and ZIP in canonical evidence, retains prior evidence with its stale source/output identity, and leaves the original work register, generation history, peer-owned live components.html, peer stepper and accepted limitations unchanged. Only affected checks ran. This does not repair old generated evaluation artifacts or establish fresh-generation efficacy, native Safari, screen-reader, physical touch, native zoom or forced-color coverage.

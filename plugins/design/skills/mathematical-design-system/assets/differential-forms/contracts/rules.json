@@ -1,0 +1,124 @@
+{
+  "rules": [
+    {
+      "id": "border.owner",
+      "status": "confirmed",
+      "scope": "all",
+      "requirement": "Each owner deducts border from its own inset once; child artwork may have a separate explicitly owned border."
+    },
+    {
+      "id": "label.exposed",
+      "status": "confirmed",
+      "scope": "button/chip",
+      "requirement": "Neither slot: L each edge; leading only: trailing 2L; trailing only: leading 2L; both: 0."
+    },
+    {
+      "id": "label.density",
+      "status": "confirmed",
+      "scope": "all",
+      "requirement": "Label compensation is independent of density."
+    },
+    {
+      "id": "chip.label",
+      "status": "confirmed",
+      "scope": "chip",
+      "requirement": "L = control labelEdge / 2."
+    },
+    {
+      "id": "badge.edge",
+      "status": "confirmed",
+      "scope": "badge",
+      "requirement": "Inline edge budget = .5u, reduced from 1u; independent of label slider."
+    },
+    {
+      "id": "composite.residual",
+      "status": "confirmed",
+      "scope": "composite",
+      "requirement": "D=max(B,Iparent); Ichild=max(B,Icontrol-D); preserve slot."
+    },
+    {
+      "id": "composite.zero",
+      "status": "confirmed",
+      "scope": "composite",
+      "requirement": "Requested inset zero yields gap zero and child radius zero, even with nonzero border."
+    },
+    {
+      "id": "composite.gap",
+      "status": "confirmed",
+      "scope": "composite",
+      "requirement": "Gap equals requested inset, not border-clamped effective inset."
+    },
+    {
+      "id": "curvature.nested",
+      "status": "confirmed",
+      "scope": "composite",
+      "requirement": "Child radius = max(0,parentRadius-D), capped at child half-height; zero-inset override wins."
+    },
+    {
+      "id": "checkbox.radius",
+      "status": "confirmed",
+      "scope": "checkbox",
+      "requirement": "Radius = 1u, independent of curvature selector."
+    },
+    {
+      "id": "collection.gutters",
+      "status": "confirmed",
+      "scope": "table",
+      "requirement": "Interior cells own half a gutter per side; first/last outside edges own a full inset."
+    },
+    {
+      "id": "density.isolation",
+      "status": "confirmed",
+      "scope": "card/collection",
+      "requirement": "Do not override nested component density."
+    },
+    {
+      "id": "multiline.inset",
+      "status": "confirmed",
+      "scope": "multiline-row",
+      "requirement": "Use collection inset/gap 1u/2u/3u, row separation .5u and container curvature. Never apply composite subtraction or exposed copy margins."
+    },
+    {
+      "id": "focus.keyboard",
+      "status": "confirmed",
+      "scope": "interactive",
+      "requirement": "Keyboard-only focus indication; implementation must retain meaningful focus for text inputs."
+    },
+    {
+      "id": "surface.divider",
+      "status": "confirmed",
+      "scope": "all",
+      "requirement": "Do not add divider lines where backgrounds already indicate boundaries."
+    },
+    {
+      "id": "defaults.current",
+      "status": "confirmed",
+      "scope": "all",
+      "requirement": "Border 0px; composite inset 0u; control and container curvature Soft."
+    },
+    {
+      "id": "input.adornment",
+      "status": "confirmed",
+      "scope": "composed-input",
+      "requirement": "Prefix/suffix/selector use chip geometry and real chip label wrappers, not badge geometry."
+    },
+    {
+      "id": "input.minimum",
+      "status": "confirmed",
+      "scope": "composed-input",
+      "requirement": "Parent and each adornment minimum inline size equal their own height."
+    },
+    {
+      "id": "input.curvature",
+      "status": "confirmed",
+      "scope": "composed-input",
+      "requirement": "Deduct physical inline/block edge distances separately from parent radius. This is not composite zero-inset behavior."
+    },
+    {
+      "id": "selector.popup",
+      "status": "confirmed",
+      "scope": "chip-select",
+      "requirement": "Chip trigger opens sibling listbox; chip options deduct popup effective inset once and preserve 4u slots."
+    }
+  ]
+}

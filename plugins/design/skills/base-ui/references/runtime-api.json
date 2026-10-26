@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "source": "assets/ui-runtime.js",
+  "scope": "Trusted standalone or host-mounted UI. No review IDs or registration required.",
+  "capabilities": [
+    {
+      "name": "createUIRuntime",
+      "signature": "createUIRuntime()",
+      "result": "{mount,unmountAll}",
+      "limits": "In-memory store. Caller owns stateKey identity; no reload persistence."
+    },
+    {
+      "name": "mount",
+      "signature": "runtime.mount({root,definition,stateKey,readOnly=false})",
+      "definition": "{initialState,reduce(state,action),render(root,state),bind({root,on,onAction,dispatch,signal})}",
+      "result": "{dispatch,unmount}",
+      "constraints": [
+        "Unique live root; unmount before remount.",
+        "Same stateKey repaints all matching views; use different keys for isolation.",
+        "readOnly skips bind and ignores dispatch.",
+        "Unmount aborts delegated listeners and invokes cleanup; later dispatch is ignored.",
+        "Trusted callers only; not a security boundary.",
+        "bind runs once before the initial render. Use delegated on listeners for descendants created or replaced by render; return an optional cleanup function."
+      ]
+    },
+    {
+      "name": "on",
+      "signature": "on(type, selector, handler)",
+      "availableIn": "definition.bind({root,on,dispatch,signal})",
+      "parameters": {
+        "type": "Nonempty event-type string, e.g. click. Do not pass root: the helper is already scoped to the mounted root.",
+        "selector": "Nonempty valid CSS selector matched with event.target.closest(selector), bounded to root.",
+        "handler": "Function called as handler(event, matchedElement, dispatch)."
+      },
+      "result": "undefined; listener lifetime is owned by mount and aborted by unmount.",
+      "example": "bind({on}) { on('input', 'input[name=title]', (event, input, dispatch) => dispatch({type:'edit', title:input.value})); }",
+      "limits": "Delegates bubbling events. Use native root.addEventListener(type,handler,{signal}) for root-level or nondelegated listeners. Invalid argument types and selectors throw at binding time. Generic selector routing does not distinguish state/cache attributes from action hooks. Prefer onAction for native button commands; retain on for input/change and other explicit event semantics."
+    },
+    {
+      "name": "onAction",
+      "signature": "onAction(actionName, handler)",
+      "availableIn": "definition.bind({root,on,onAction,dispatch,signal})",
+      "markup": "<button type=\"button\" data-action=\"select-ticket\" data-ticket=\"SUP-1042\">Select ticket</button>",
+      "parameters": {
+        "actionName": "Nonempty string matched exactly against data-action on the nearest native button. Not a CSS selector.",
+        "handler": "handler(event, button, dispatch); read payload attributes from this button, not an ancestor."
+      },
+      "behavior": "Delegates click (including native Enter/Space activation) within mount root. Only the nearest button can activate; non-button ancestors and unmarked buttons never act. Disabled or aria-disabled=true buttons do not dispatch. Listeners survive descendant replacement and are removed at unmount.",
+      "example": "bind({onAction}) { onAction('select-ticket', (event, button, dispatch) => dispatch({type:'select', id:button.dataset.ticket})); }",
+      "limits": "Button commands only, not links, submit handling, summaries or custom role=button widgets. Use type=button unless intentionally submitting. data-action is reserved for command identity, never view state/cache. Existing on callers are not automatically migrated.",
+      "recipe": "assets/recipes/action-routing.html and action-routing.js"
+    },
+    {
+      "name": "dispatch",
+      "signature": "dispatch(action)",
+      "availableIn": "bind context, delegated handler third argument, and mount result",
+      "behavior": "Synchronously reduces the current state and renders all views sharing stateKey. Dispatch is ignored after unmount or in readOnly mode.",
+      "limits": "A render may replace descendant DOM. Re-query any destination after dispatch before focusing it."
+    },
+    {
+      "name": "focusWorkflowStep",
+      "signature": "focusWorkflowStep(form,index,{panelSelector}={})",
+      "prerequisites": "Connected visible destination heading in ordered [data-step]/[data-stage] panels, or explicit selector.",
+      "timing": "After committed Next/Back render only; never initial mount, typing or every render.",
+      "result": "Sets tabindex=-1, focuses destination heading, returns actual focus success; false for absent/disconnected/hidden target.",
+      "limits": "Not automatic; caller supplies actual destination index and verifies activation. Asynchronous renders must complete first."
+    },
+    {
+      "name": "findUIElementById",
+      "signature": "findUIElementById(root,id)",
+      "behavior": "Exact string ID lookup among root descendants; returns Element or null. Does not interpret selector syntax and cannot select outside root. Works on detached roots. Invalid arguments throw.",
+      "limits": "IDs must be unique within the component; root itself is excluded. Linear lookup. This does not escape HTML interpolation or generate unique IDs. Caller owns focus timing and replacement semantics.",
+      "recipe": "assets/recipes/render-restoration.js",
+      "verification": "scripts/check-render-restoration.mjs covers punctuation, root isolation, removed targets and replacement."
+    }
+  ]
+}

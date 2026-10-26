@@ -1,0 +1,11 @@
+{
+  "skill": "make-figma-agent-connector",
+  "trigger_evals": "skipped: disable-model-invocation: true (user-only command); the model never selects this skill from its description",
+  "behavioral_assertions": [
+    "start-bridge.sh exits 0 and prints an 'MCP server URL' line ending in /mcp",
+    "the printed header value begins with the literal 'Bearer ' followed by a 48-hex-char token",
+    "an unauthenticated POST to <url>/mcp returns 401 (proved by the script before it prints)",
+    "the current session ends with a connected Monitor subscription on wss://127.0.0.1:<port>/events",
+    "a second run with server and tunnel already live reuses both (prints 'reusing it' twice) and starts no new process"
+  ]
+}

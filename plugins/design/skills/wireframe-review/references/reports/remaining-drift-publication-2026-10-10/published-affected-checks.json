@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "recordRecipeAndController": "pass",
+      "tableHint": "pass",
+      "adaptiveStepperPresent": "pass"
+    },
+    {
+      "width": 1280,
+      "recordRecipeAndController": "pass",
+      "tableHint": "pass",
+      "adaptiveStepperPresent": "pass"
+    }
+  ],
+  "limits": [
+    "Changed specimen presence and record activation only; peer stepper behavior verification reused."
+  ]
+}

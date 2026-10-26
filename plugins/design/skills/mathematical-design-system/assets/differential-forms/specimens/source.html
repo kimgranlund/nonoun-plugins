@@ -1,0 +1,430 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<div id="df-jig">
+ <div class="df-stage">
+  <header class="df-heading"><span>Differential forms</span><span class="df-muted">Geometry study / 01</span></header>
+  <div class="df-layout">
+   <div class="df-preview">
+    <div class="df-caption">CONTROL <output id="df-dim"></output></div>
+    <div class="df-examples">
+     <button type="button" class="df-control cursor-interaction"><span class="df-slot"><i class="ph ph-plus df-icon-md" aria-hidden="true"></i></span><span class="df-label">Add item</span><span class="df-slot"><i class="ph ph-caret-down df-icon-sm" aria-hidden="true"></i></span></button>
+     <button type="button" class="df-control cursor-interaction"><span class="df-slot"><span class="df-avatar" aria-hidden="true">KG</span></span><span class="df-label">Kim Granlund</span><span class="df-slot"><span class="df-badge">3</span></span></button>
+     <button type="button" class="df-control cursor-interaction"><span class="df-label">Start action</span></button>
+    </div>
+    <div class="df-input-examples">
+     <div class="df-field"><div class="df-control df-input-control"><span class="df-label"><input id="df-text" type="text" aria-label="Text input" placeholder="Text input" autocomplete="off"></span></div></div>
+     <div class="df-field"><div class="df-control df-input-control"><span class="df-slot"><i class="ph ph-envelope df-icon-md" aria-hidden="true"></i></span><span class="df-label"><input id="df-email" aria-label="Email input" type="email" placeholder="you@example.com" autocomplete="off"></span></div></div>
+     <div class="df-field"><div class="df-control df-input-control"><span class="df-slot"><i class="ph ph-currency-dollar df-icon-md" aria-hidden="true"></i></span><span class="df-label"><input id="df-donation" aria-label="Donation amount" type="number" min="0" step="1" value="25" inputmode="decimal"></span><span class="df-slot df-steppers"><button type="button" id="df-increase" aria-label="Increase donation amount"><i class="ph ph-plus" aria-hidden="true"></i></button><button type="button" id="df-decrease" aria-label="Decrease donation amount"><i class="ph ph-minus" aria-hidden="true"></i></button></span></div></div>
+    </div>
+    <div class="df-composite-row"><section>
+    <div class="df-caption">LISTBOX <output id="df-nest"></output></div>
+    <div class="df-select-preview">
+    <button type="button" id="df-trigger" class="df-control" aria-haspopup="listbox" aria-expanded="true" aria-controls="df-view-list"><span class="df-slot"><i id="df-trigger-icon" class="ph ph-squares-four df-icon-md" aria-hidden="true"></i></span><span id="df-trigger-label" class="df-label">Grid</span><span class="df-slot"><i class="ph ph-caret-down df-icon-sm" aria-hidden="true"></i></span></button>
+    <div id="df-view-list" class="df-list" role="listbox" aria-label="View selection">
+     <button class="df-control df-item cursor-interaction" role="option" aria-selected="true" tabindex="0"><span class="df-slot"><i class="ph ph-squares-four" aria-hidden="true"></i></span><span class="df-label">Grid</span></button>
+     <button class="df-control df-item cursor-interaction" role="option" aria-selected="false" tabindex="-1"><span class="df-slot"><i class="ph ph-list" aria-hidden="true"></i></span><span class="df-label">List</span></button>
+     <button class="df-control df-item cursor-interaction" role="option" aria-selected="false" tabindex="-1"><span class="df-slot"><i class="ph ph-columns" aria-hidden="true"></i></span><span class="df-label">Columns</span></button>
+    </div>
+    </div>
+    </section><section>
+     <div class="df-caption">SEGMENTED CONTROL</div>
+     <div class="df-segmented" role="group" aria-label="Time range">
+      <button type="button" class="df-control df-segment" aria-pressed="false"><span class="df-label">Day</span></button>
+      <button type="button" class="df-control df-segment" aria-pressed="true"><span class="df-label">Week</span></button>
+      <button type="button" class="df-control df-segment" aria-pressed="false"><span class="df-label">Month</span></button>
+     </div>
+    </section></div>
+    <div class="df-caption">CARD <output id="df-card-dim"></output></div>
+    <article class="df-card"><span class="df-muted">Collection / 001</span><h3>Structure & space</h3><p>One unit. Different relationships.</p><button class="df-control cursor-interaction"><span class="df-slot"><i class="ph ph-arrow-up-right" aria-hidden="true"></i></span><span class="df-label">Open collection</span></button></article>
+
+    <section class="df-study">
+     <div class="df-caption">SELECTION <span>Primitive → control</span></div>
+     <div class="df-examples">
+      <label class="df-choice"><span class="df-choice-slot"><input type="checkbox" checked></span><span class="df-label">Include archived</span></label>
+      <label class="df-choice"><span class="df-choice-slot"><input type="radio" name="df-access" checked></span><span class="df-label">Personal</span></label>
+      <label class="df-choice"><span class="df-choice-slot"><input type="radio" name="df-access"></span><span class="df-label">Shared</span></label>
+      <label class="df-choice"><span class="df-choice-slot df-switch-slot"><input type="checkbox" role="switch" class="df-switch" checked></span><span class="df-label">Notifications</span></label>
+     </div>
+    </section>
+    <section class="df-study">
+     <div class="df-caption">CHIPS & BADGES <span>Small size budgets</span></div>
+     <div class="df-examples" id="df-chip-examples">
+      <span class="df-chip"><span class="df-chip-label">Design</span></span>
+      <button type="button" class="df-chip df-filter-chip" aria-pressed="true"><span class="df-chip-slot"><i class="ph ph-check" aria-hidden="true"></i></span><span class="df-chip-label">Selected</span></button>
+      <span class="df-chip"><span class="df-chip-slot"><span class="df-mini-avatar">KG</span></span><span class="df-chip-label">Kim Granlund</span></span>
+      <span class="df-chip" id="df-removable"><span class="df-chip-label">Research</span><button class="df-chip-slot" type="button" id="df-remove-chip" aria-label="Remove Research"><i class="ph ph-x" aria-hidden="true"></i></button></span>
+      <button type="button" class="df-chip" id="df-restore-chip" hidden><span class="df-chip-label">Restore chip</span></button>
+      <span class="df-badge" aria-label="3 items">3</span>
+     </div>
+    </section>
+    <section class="df-study">
+     <div class="df-caption">ATTACHED GROUPS <span>Shared inset · nested controls</span></div>
+     <div class="df-examples">
+      <div class="df-attached" role="group" aria-label="Text alignment">
+       <button type="button" class="df-control df-icon-button" aria-label="Align left" aria-pressed="true"><span class="df-slot"><i class="ph ph-text-align-left" aria-hidden="true"></i></span></button>
+       <button type="button" class="df-control df-icon-button" aria-label="Align center" aria-pressed="false"><span class="df-slot"><i class="ph ph-text-align-center" aria-hidden="true"></i></span></button>
+       <button type="button" class="df-control df-icon-button" aria-label="Align right" aria-pressed="false"><span class="df-slot"><i class="ph ph-text-align-right" aria-hidden="true"></i></span></button>
+      </div>
+      <div class="df-attached" role="group" aria-label="History actions">
+       <button type="button" class="df-control" id="df-undo"><span class="df-slot"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i></span><span class="df-label">Undo</span></button>
+       <button type="button" class="df-control" id="df-redo" disabled><span class="df-slot"><i class="ph ph-arrow-clockwise" aria-hidden="true"></i></span><span class="df-label">Redo</span></button>
+      </div>
+     </div>
+    </section>
+    <section class="df-study">
+     <div class="df-caption">COLLECTION PANEL <span>Controls → composition</span></div>
+     <article class="df-card df-collection">
+      <header class="df-collection-heading"><div><span class="df-muted">Workspace / 001</span><h3>Design collection</h3></div><span class="df-chip" id="df-total"><span class="df-chip-label">3 items</span></span></header>
+      <div class="df-collection-toolbar">
+       <div class="df-control df-input-control"><span class="df-slot"><i class="ph ph-magnifying-glass df-icon-md" aria-hidden="true"></i></span><span class="df-label"><input type="search" id="df-search" placeholder="Search collection" aria-label="Search collection"></span></div>
+       <button type="button" class="df-control" id="df-add-record"><span class="df-slot"><i class="ph ph-plus df-icon-md" aria-hidden="true"></i></span><span class="df-label">Add item</span></button>
+      </div>
+      <div class="df-records" id="df-records">
+       <label class="df-record"><span class="df-choice-slot"><input type="checkbox" aria-label="Select Foundations"></span><span class="df-record-copy"><strong>Foundations</strong><span>Units, surfaces, and typography</span></span><span class="df-chip"><span class="df-chip-label">Ready</span></span></label>
+       <label class="df-record"><span class="df-choice-slot"><input type="checkbox" aria-label="Select Control geometry"></span><span class="df-record-copy"><strong>Control geometry</strong><span>Slots, labels, and nested insets</span></span><span class="df-chip"><span class="df-chip-label">In progress</span></span></label>
+       <label class="df-record"><span class="df-choice-slot"><input type="checkbox" aria-label="Select Responsive layouts"></span><span class="df-record-copy"><strong>Responsive layouts with intentionally longer titles</strong><span>A wrapping stress case across narrow and wide containers</span></span><span class="df-chip"><span class="df-chip-label">Draft</span></span></label>
+      </div>
+      <p id="df-empty" hidden>No matching items.</p>
+      <footer class="df-collection-footer"><span id="df-selection-count" aria-live="polite">0 selected</span><button type="button" class="df-control" id="df-clear-selection" disabled><span class="df-label">Clear selection</span></button></footer>
+     </article>
+    </section>
+    <section class="df-study">
+     <div class="df-caption">STATES <span>Constant outer geometry</span></div>
+     <div class="df-examples df-state-strip">
+      <button type="button" class="df-control"><span class="df-label">Default</span></button>
+      <button type="button" class="df-control df-state-hover"><span class="df-label">Hover</span></button>
+      <button type="button" class="df-control df-state-selected" aria-pressed="true"><span class="df-label">Selected</span></button>
+      <button type="button" class="df-control" disabled><span class="df-label">Disabled</span></button>
+      <div class="df-control df-input-control df-state-invalid"><span class="df-label"><input type="text" aria-label="Invalid example" aria-invalid="true" placeholder="Invalid value"></span><span class="df-slot"><i class="ph ph-warning-circle df-icon-md" aria-hidden="true"></i></span></div>
+     </div>
+    </section>
+
+    <section class="df-study">
+     <div class="df-caption">MULTILINE ROWS <span>Collection density · flexible content</span></div>
+     <div class="df-multiline-list" role="group" aria-label="Notification preferences">
+      <button type="button" class="df-control df-multiline" aria-pressed="false"><span class="df-label df-copy"><strong>Activity summary</strong><span>A text-only row with a supporting description.</span></span></button>
+      <button type="button" class="df-control df-multiline" aria-pressed="true"><span class="df-slot"><i class="ph ph-bell" aria-hidden="true"></i></span><span class="df-label df-copy"><strong>Project updates</strong><span>Changes to the projects you follow, collected in one place.</span></span></button>
+      <button type="button" class="df-control df-multiline" aria-pressed="false"><span class="df-label df-copy"><strong>Weekly digest</strong><span>A trailing-only row with delivery timing.</span></span><span class="df-row-meta">Fri</span></button>
+      <button type="button" class="df-control df-multiline" aria-pressed="false"><span class="df-slot"><i class="ph ph-users" aria-hidden="true"></i></span><span class="df-label df-copy"><strong>Team conversations with deliberately longer titles</strong><span>Supporting text wraps naturally while the leading icon and trailing indicator stay aligned to the first line.</span></span><span class="df-slot"><i class="ph ph-caret-right df-icon-sm" aria-hidden="true"></i></span></button>
+     </div>
+    </section>
+    <section class="df-study">
+     <div class="df-caption">COMPOSED INPUTS <span>Prefixes · suffixes · selectors</span></div>
+     <div class="df-composed-inputs">
+      <div class="df-control df-input-control df-composed"><button type="button" id="df-currency" class="df-adornment df-chip" aria-label="Currency: USD" aria-haspopup="listbox" aria-expanded="false" aria-controls="df-currency-list"><span class="df-chip-label" id="df-currency-label">USD</span><span class="df-chip-slot"><i class="ph ph-caret-down" aria-hidden="true"></i></span></button><span class="df-label"><input type="number" min="0" step="0.01" placeholder="0.00" aria-label="Amount"></span><div id="df-currency-list" class="df-currency-list" role="listbox" aria-label="Currency" hidden><button type="button" class="df-chip df-currency-option" role="option" aria-selected="true" tabindex="0" data-value="USD"><span class="df-chip-label">USD</span></button><button type="button" class="df-chip df-currency-option" role="option" aria-selected="false" tabindex="-1" data-value="EUR"><span class="df-chip-label">EUR</span></button><button type="button" class="df-chip df-currency-option" role="option" aria-selected="false" tabindex="-1" data-value="GBP"><span class="df-chip-label">GBP</span></button></div></div>
+      <div class="df-control df-input-control df-composed"><span class="df-adornment df-chip"><span class="df-chip-label">https://</span></span><span class="df-label"><input type="text" placeholder="your-domain.com" aria-label="Website domain" spellcheck="false"></span></div>
+      <div class="df-control df-input-control df-composed"><span class="df-adornment df-chip" aria-hidden="true"><span class="df-chip-label">@</span></span><span class="df-label"><input type="text" placeholder="username" aria-label="Username" spellcheck="false"></span></div>
+      <div class="df-control df-input-control df-composed"><span class="df-label"><input type="number" min="0" step="0.1" placeholder="Weight" aria-label="Weight in kilograms"></span><span class="df-adornment df-chip" aria-hidden="true"><span class="df-chip-label">kg</span></span></div>
+      <div class="df-control df-input-control df-composed"><span class="df-label"><input type="text" placeholder="your-name" aria-label="Subdomain on example.com" spellcheck="false"></span><span class="df-adornment df-chip" aria-hidden="true"><span class="df-chip-label">.example.com</span></span></div>
+      <div class="df-control df-input-control df-composed"><span class="df-adornment df-chip" aria-hidden="true"><span class="df-chip-label">$</span></span><span class="df-label"><input type="number" min="0" step="0.01" placeholder="Monthly budget" aria-label="Monthly budget in dollars"></span><span class="df-adornment df-chip" aria-hidden="true"><span class="df-chip-label">/ mo</span></span></div>
+      <div class="df-control df-input-control df-composed"><span class="df-slot"><i class="ph ph-magnifying-glass df-icon-md" aria-hidden="true"></i></span><span class="df-label"><input id="df-composed-search" type="search" placeholder="Search anything" aria-label="Search anything"></span><button class="df-slot df-nested-action" id="df-composed-clear" type="button" aria-label="Clear search" disabled><i class="ph ph-x df-icon-sm" aria-hidden="true"></i></button></div>
+     </div>
+    </section>
+    <section class="df-study">
+     <div class="df-caption">DATA TABLE <span>Shared columns · mixed content</span></div>
+     <article class="df-card df-table-card">
+      <header class="df-collection-heading"><div><span class="df-muted">Workspace / 002</span><h3>Project estimates</h3></div><span id="df-table-count" class="df-muted" aria-live="polite">0 selected</span></header>
+      <div class="df-table-scroll" tabindex="0" role="region" aria-label="Project estimates table">
+       <table class="df-table"><thead><tr><th class="df-check-cell"><span class="df-choice-slot"><input id="df-table-all" type="checkbox" aria-label="Select all projects"></span></th><th scope="col">Project</th><th scope="col">Status</th><th scope="col" class="df-numeric">Estimate</th><th scope="col"><span class="df-visually-hidden">Actions</span></th></tr></thead><tbody>
+        <tr><td class="df-check-cell"><span class="df-choice-slot"><input type="checkbox" aria-label="Select Foundations project"></span></td><th scope="row"><strong>Foundations</strong><span>Tokens & typography</span></th><td><span class="df-chip"><span class="df-chip-label">Ready</span></span></td><td class="df-numeric">$1,200.00</td><td><button type="button" class="df-control df-table-action" aria-label="View Foundations details"><span class="df-slot"><i class="ph ph-arrow-up-right df-icon-sm" aria-hidden="true"></i></span></button></td></tr>
+        <tr><td class="df-check-cell"><span class="df-choice-slot"><input type="checkbox" aria-label="Select Component library project"></span></td><th scope="row"><strong>Component library</strong><span>Controls & composition</span></th><td><span class="df-chip"><span class="df-chip-label">In progress</span></span></td><td class="df-numeric">$8,450.00</td><td><button type="button" class="df-control df-table-action" aria-label="View Component library details"><span class="df-slot"><i class="ph ph-arrow-up-right df-icon-sm" aria-hidden="true"></i></span></button></td></tr>
+        <tr><td class="df-check-cell"><span class="df-choice-slot"><input type="checkbox" aria-label="Select Responsive documentation project"></span></td><th scope="row"><strong>Responsive documentation and implementation guidelines</strong><span>A longer title to test wrapping within a shared column</span></th><td><span class="df-chip"><span class="df-chip-label">Draft</span></span></td><td class="df-numeric">$960.00</td><td><button type="button" class="df-control df-table-action" aria-label="View Responsive documentation details"><span class="df-slot"><i class="ph ph-arrow-up-right df-icon-sm" aria-hidden="true"></i></span></button></td></tr>
+       </tbody><tfoot><tr><td></td><th scope="row" colspan="2">Total estimate</th><td class="df-numeric">$10,610.00</td><td></td></tr></tfoot></table>
+      </div>
+      <div id="df-table-detail" class="df-detail" aria-live="polite" hidden></div>
+     </article>
+    </section>
+   </div>
+   <aside class="df-panel" aria-label="Geometry controls">
+    <div class="df-panel-title"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Geometry jig</div>
+    <label>Base unit <output id="df-u-val">4px</output><input id="df-u" type="range" min="3" max="6" step="0.5" value="4"></label>
+    <label>Border <output id="df-b-val">0px</output><input id="df-b" type="range" min="0" max="1.5" step="0.5" value="0"></label>
+    <label>Surface scheme<select id="df-scheme"><option value="light dark">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+    <div class="df-tabs" role="tablist" aria-label="Geometry family"><button type="button" role="tab" id="df-tab-controls" aria-controls="df-pane-controls" aria-selected="true" tabindex="0">Controls</button><button type="button" role="tab" id="df-tab-groups" aria-controls="df-pane-groups" aria-selected="false" tabindex="-1">Groups</button><button type="button" role="tab" id="df-tab-containers" aria-controls="df-pane-containers" aria-selected="false" tabindex="-1">Containers</button><button type="button" role="tab" id="df-tab-layout" aria-controls="df-pane-layout" aria-selected="false" tabindex="-1">Layout</button></div>
+    <label class="df-tab-menu">Geometry family<select id="df-family"><option value="controls">Controls</option><option value="groups">Groups</option><option value="containers">Containers</option><option value="layout">Layout</option></select></label>
+    <section class="df-section" id="df-pane-controls" role="tabpanel" aria-labelledby="df-tab-controls">
+    <label>Density<select id="df-density"><option value="-1">Compact</option><option value="0" selected>Default</option><option value="1">Loose</option></select></label>
+    <label>List / card icons<select id="df-icon"><option value="4">Small · 4u</option><option value="5" selected>Medium · 5u</option><option value="6">Large · 6u</option></select></label>
+    <label>Curvature<select id="df-radius"><option value="0">Sharpest · 0u</option><option value="1">Sharp · 1u</option><option value="2">Default · 2u</option><option value="3" selected>Soft · 3u</option><option value="pill">Softest · pill</option></select></label>
+    <label>Label edge margin <output id="df-lm-val">1.5u</output><input id="df-lm" type="range" min="0" max="3" step="0.25" value="1.5"></label>
+    <label>Composite inset <output id="df-l-val">0u</output><input id="df-l" type="range" min="0" max="1.5" step="0.5" value="0"></label>
+    <div class="df-gap-readout">Composite gap <output id="df-lg-val">0u</output><span>Matches container inset</span></div>
+    <div class="df-result" id="df-result" aria-live="polite"></div>
+    </section>
+    <section class="df-section" id="df-pane-containers" role="tabpanel" aria-labelledby="df-tab-containers" hidden>
+    <label>Curvature<select id="df-container-radius"><option value="0">Sharpest · 0u</option><option value="1">Sharp · 1u</option><option value="2">Default · 2u</option><option value="3" selected>Soft · 3u</option><option value="4">Softest · 4u</option></select></label>
+    <label>Card density <output id="df-c-val">4.5u</output><select id="df-c"><option value="3">Compact · 3u</option><option value="4.5" selected>Default · 4.5u</option><option value="6">Loose · 6u</option></select></label>
+    <label>Collection / table density<select id="df-table-density"><option value="1">Compact · 1u</option><option value="2" selected>Default · 2u</option><option value="3">Loose · 3u</option></select></label><div class="df-result">Collection and table rows use a fixed 0.5u separation. Nested controls keep their own density.</div>
+    </section>
+    <section class="df-section" id="df-pane-groups" role="tabpanel" aria-labelledby="df-tab-groups" hidden>
+     <label>Button group gap <output id="df-gg-val">3u</output><input id="df-gg" type="range" min="0" max="6" step="0.5" value="3"></label>
+     <label>Input group gap <output id="df-ig-val">4u</output><input id="df-ig" type="range" min="0" max="8" step="0.5" value="4"></label>
+    </section>
+    <section class="df-section" id="df-pane-layout" role="tabpanel" aria-labelledby="df-tab-layout" hidden>
+     <label>Page edge <output id="df-pe-val">6u</output><input id="df-pe" type="range" min="2" max="10" step="0.5" value="6"></label>
+     <label>Section spacing <output id="df-ss-val">7u</output><input id="df-ss" type="range" min="2" max="12" step="0.5" value="7"></label>
+    </section>
+    <footer class="df-jig-footer">    <label class="df-check"><input id="df-slots" type="checkbox">Show slot geometry</label></footer>
+   </aside>
+  </div>
+ </div>
+</div>
+<style>
+#df-jig{font:14px/1.4 system-ui,sans-serif;color:light-dark(#20201f,#eee);--surface-lowest:light-dark(#e9e9e6,#1a1a19);--surface-low:light-dark(#efefec,#222221);--surface-mid:light-dark(#f5f5f2,#2b2b29);--surface-high:light-dark(#fafaf7,#333330);--surface-highest:light-dark(#fff,#3d3d39);--ink:light-dark(#20201f,#eee);--muted-ink:light-dark(#62625d,#b8b8b1);--hair:light-dark(#d5d5cf,#484842)}
+#df-jig *{box-sizing:border-box}#df-jig button,#df-jig select,#df-jig input{font:inherit;color:inherit}#df-jig button{border:var(--b,1px) solid transparent}#df-jig button:focus-visible,#df-jig select:focus-visible,#df-jig input:focus-visible{outline:3px solid var(--ink);outline-offset:0px}
+#df-jig .df-stage{background:var(--surface-lowest);padding:24px;border:1px solid transparent;border-radius:12px}#df-jig .df-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:28px;font-weight:500}#df-jig .df-muted{color:var(--muted-ink);font-size:12px;font-weight:400}#df-jig .df-layout{display:grid;grid-template-columns:minmax(0,1fr) 236px;gap:28px;align-items:start}#df-jig .df-preview{min-width:0}#df-jig .df-caption{display:flex;justify-content:space-between;gap:8px;color:var(--muted-ink);font-size:11px;letter-spacing:.06em;margin:0 0 10px}#df-jig .df-caption:not(:first-child){margin-top:28px}#df-jig output{font-variant-numeric:tabular-nums;letter-spacing:0}
+#df-jig .df-control{display:flex;align-items:center;gap:var(--g);padding:var(--p);min-height:var(--h);border-radius:var(--r);background:var(--surface-highest);max-width:100%;text-align:left;line-height:var(--s)}#df-jig .df-control:hover{background:var(--surface-high)}#df-jig .df-slot{display:grid;place-items:center;width:var(--s);height:var(--s);flex:0 0 var(--s);border-radius:2px}#df-jig .df-slot i{font-size:var(--icon);line-height:1}#df-jig .df-show .df-slot{background:light-dark(#dce4e5,#35494b);box-shadow:inset 0 0 0 1px light-dark(#adbfc1,#69898b)}
+#df-jig .df-list{background:var(--surface-low);padding:var(--lp);border:var(--b) solid transparent;border-radius:var(--lr);display:grid;gap:var(--lg);width:100%}#df-jig .df-item{width:100%;padding:var(--op);min-height:var(--oh);border-radius:var(--ir);background:transparent}#df-jig .df-item[aria-selected=true]{background:var(--surface-highest)}#df-jig .df-card{background:var(--surface-mid);border:var(--b) solid transparent;border-radius:var(--cr);padding:var(--cp);display:flex;flex-direction:column;align-items:flex-start;gap:var(--cg)}#df-jig .df-card h3{font-size:24px;font-weight:500;letter-spacing:-.04em;line-height:1.1;margin:0}#df-jig .df-card p{margin:0;color:var(--muted-ink)}
+#df-jig .df-panel{background:var(--surface-highest);padding:16px;border:1px solid transparent;border-radius:12px;box-shadow:0 12px 32px light-dark(#00000012,#00000040);display:grid;gap:14px}#df-jig .df-panel-title{display:flex;align-items:center;gap:8px;font-weight:500;margin-bottom:2px}#df-jig .df-panel label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}#df-jig .df-panel output{color:var(--muted-ink)}#df-jig select{grid-column:1/-1;width:100%;padding:6px 8px;background:var(--surface-mid);border:1px solid transparent;border-radius:5px}#df-jig input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--ink);margin:2px 0}#df-jig .df-panel .df-check{display:flex;gap:8px}#df-jig input[type=checkbox]{accent-color:var(--ink)}#df-jig .df-result{border-top:1px solid var(--hair);padding-top:12px;color:var(--muted-ink);font-size:12px;font-variant-numeric:tabular-nums}
+@media(max-width:580px){#df-jig .df-stage{padding:16px}#df-jig .df-layout{grid-template-columns:1fr;gap:24px}#df-jig .df-panel{grid-row:1;grid-template-columns:1fr 1fr;gap:12px}#df-jig .df-panel-title,#df-jig .df-result{grid-column:1/-1}#df-jig .df-panel .df-check{grid-column:1/-1}#df-jig select{font-size:16px}}
+@media(pointer:coarse){#df-jig .df-panel select{min-height:44px}#df-jig .df-panel input[type=range]{min-height:28px}#df-jig .df-check{min-height:44px}}
+#df-jig .df-examples{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+#df-jig .df-slot .df-icon-md{font-size:calc(var(--u)*5)}
+#df-jig .df-slot .df-icon-sm{font-size:calc(var(--u)*4)}
+#df-jig .df-avatar,#df-jig .df-badge{display:grid;place-items:center;border:var(--b) solid transparent;border-radius:50%;line-height:1;font-weight:500;flex-shrink:0}
+#df-jig .df-avatar{width:calc(var(--u)*6);height:calc(var(--u)*6);font-size:calc(var(--u)*2.5);background:var(--surface-lowest);color:var(--ink)}
+#df-jig .df-badge{width:calc(var(--u)*4);height:calc(var(--u)*4);font-size:calc(var(--u)*2.5);background:var(--ink);color:var(--surface-highest);font-variant-numeric:tabular-nums}
+#df-jig .df-section{display:grid;gap:14px;grid-column:1/-1;border-top:1px solid var(--hair);padding-top:14px;min-width:0}
+#df-jig .df-section h2{font:500 13px/1.4 system-ui,sans-serif;margin:0;color:var(--ink)}
+#df-jig .df-section .df-result{border:0;padding-top:0}
+@media(max-width:580px){#df-jig .df-section{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}#df-jig .df-section h2{grid-column:1/-1}}
+#df-jig .df-label{display:block;min-width:0;margin-inline:0}
+#df-jig .df-control > .df-label:first-child{margin-inline-start:var(--lm)}
+#df-jig .df-control > .df-label:last-child{margin-inline-end:var(--lm)}
+#df-jig .df-input-examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px;margin-top:20px;max-width:780px}
+#df-jig .df-field{display:grid;gap:6px;min-width:0}#df-jig .df-field > label{font-size:12px;color:var(--muted-ink)}
+#df-jig .df-input-control{border:var(--b) solid transparent;width:100%}#df-jig .df-input-control .df-label{flex:1}
+#df-jig .df-input-control input{display:block;box-sizing:border-box;width:100%;min-width:0;height:var(--s);border:1px solid transparent;border-radius:0;background:transparent;padding:0;line-height:normal;color:var(--ink)}
+#df-jig .df-input-control input::placeholder{color:var(--muted-ink);opacity:1}
+#df-jig input[type=number]{appearance:textfield}#df-jig input[type=number]::-webkit-inner-spin-button,#df-jig input[type=number]::-webkit-outer-spin-button{appearance:none;margin:0}
+#df-jig .df-steppers{display:flex;flex-direction:row;gap:0;width:calc(var(--s)*2);flex-basis:calc(var(--s)*2)}#df-jig .df-steppers button{display:grid;place-items:center;width:var(--s);height:var(--s);padding:0;line-height:1;background:transparent;border:1px solid transparent;border-radius:50%;color:var(--ink)}
+#df-jig .df-steppers button:hover{background:transparent}#df-jig .df-steppers button i{font-size:calc(var(--u)*4);line-height:1}
+@media(max-width:580px){#df-jig .df-input-examples{grid-template-columns:1fr}#df-jig .df-input-control input{font-size:16px}}
+#df-jig .df-input-control input:focus,#df-jig .df-input-control input:focus-visible{outline:none;box-shadow:none}
+#df-jig .df-input-control:hover,#df-jig .df-input-control:focus-within{background:var(--surface-highest)}
+#df-jig{--control-font-size:calc(2 * var(--u) + 6px);--control-line-height:calc(5 * var(--u))}
+#df-jig .df-label,#df-jig .df-input-control input{font-size:var(--control-font-size);line-height:var(--control-line-height)}
+#df-jig .df-input-control input:autofill{box-shadow:0 0 0 1000px var(--surface-highest) inset!important;-webkit-text-fill-color:var(--ink);caret-color:var(--ink)}
+#df-jig .df-input-control input:-webkit-autofill{box-shadow:0 0 0 1000px var(--surface-highest) inset!important;-webkit-text-fill-color:var(--ink);caret-color:var(--ink)}
+#df-jig button.df-control > .df-slot:first-child + .df-label:last-child{margin-inline-end:calc(2 * var(--lm))}
+#df-jig button.df-control:has(> .df-label:first-child + .df-slot:last-child) > .df-label{margin-inline-start:calc(2 * var(--lm))}
+#df-jig .df-select-preview{display:grid;gap:var(--u);width:280px;max-width:100%}
+#df-jig #df-trigger{width:100%}#df-jig #df-trigger-label{flex:1}
+#df-jig .df-list[hidden]{display:none}
+#df-jig .df-layout{grid-template-columns:minmax(0,1fr) 320px}
+#df-jig .df-stage{padding:var(--pe)}
+#df-jig .df-caption:not(:first-child){margin-top:var(--ss)}
+#df-jig .df-examples{gap:var(--gg)}#df-jig .df-input-examples{gap:var(--ig)}
+#df-jig .df-tabs{display:flex;grid-column:1/-1;padding:3px;background:var(--surface-low);border:1px solid transparent;border-radius:7px}
+#df-jig .df-tabs button{flex:1;min-width:0;padding:7px 3px;background:transparent;color:var(--muted-ink);font:500 12px/1.4 system-ui,sans-serif;border:1px solid transparent;border-radius:4px}
+#df-jig .df-tabs button[aria-selected=true]{background:var(--surface-highest);color:var(--ink);box-shadow:0 1px 3px light-dark(#00000012,#00000030)}
+#df-jig .df-section[hidden]{display:none}#df-jig .df-section{border:0;padding-top:0}
+#df-jig .df-panel .df-tab-menu{display:none}#df-jig .df-jig-footer{grid-column:1/-1;border-top:1px solid var(--hair);padding-top:12px}
+@media(max-width:700px){#df-jig .df-layout{grid-template-columns:1fr}#df-jig .df-panel{grid-row:1}#df-jig .df-tabs{display:none}#df-jig .df-panel .df-tab-menu{display:grid;grid-column:1/-1}}
+#df-jig .df-composite-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:var(--gg);margin-top:var(--ss);align-items:start}
+#df-jig .df-composite-row section{min-width:0}
+#df-jig .df-segmented{display:flex;flex-wrap:wrap;gap:var(--lg);padding:var(--lp);border:var(--b) solid transparent;border-radius:var(--r);background:var(--surface-low);width:fit-content;max-width:100%}
+#df-jig .df-segment{justify-content:center;background:transparent;border-radius:var(--ir);padding:var(--op);min-height:var(--oh)}
+#df-jig .df-segment[aria-pressed=true]{background:var(--surface-highest)}
+
+/* Outer budgets remain constant; each border consumes its owner's interior. */
+#df-jig .df-control{--slot-size:var(--sslot);height:var(--h);min-height:0}
+#df-jig .df-item,#df-jig .df-segment{--slot-size:var(--oslot);height:var(--oh);min-height:0}
+#df-jig .df-item{gap:var(--og)}
+#df-jig .df-slot{width:var(--slot-size);height:var(--slot-size);flex-basis:var(--slot-size);border:var(--b) solid transparent}
+#df-jig .df-slot i{font-size:min(var(--icon),calc(var(--slot-size) - 2 * var(--b)))}
+#df-jig .df-slot .df-icon-md{font-size:min(calc(5 * var(--u)),calc(var(--slot-size) - 2 * var(--b)))}
+#df-jig .df-slot .df-icon-sm{font-size:min(calc(4 * var(--u)),calc(var(--slot-size) - 2 * var(--b)))}
+#df-jig .df-avatar{width:100%;height:100%;min-width:0;min-height:0}
+#df-jig .df-badge{max-width:100%;max-height:100%}
+#df-jig .df-label{display:flex;align-items:center;height:var(--slot-size)}
+#df-jig .df-control > .df-label:first-child{margin-inline-start:var(--lm)}
+#df-jig .df-control > .df-label:last-child{margin-inline-end:var(--lm)}
+#df-jig button.df-control > .df-slot:first-child + .df-label:last-child{margin-inline-end:calc(2 * var(--lm))}
+#df-jig button.df-control:has(> .df-label:first-child + .df-slot:last-child) > .df-label{margin-inline-start:calc(2 * var(--lm))}
+#df-jig .df-input-control input{height:100%;border-width:var(--b)}
+#df-jig .df-steppers{width:calc(var(--slot-size)*2);flex-basis:calc(var(--slot-size)*2);border:0}
+#df-jig .df-steppers button{width:var(--slot-size);height:var(--slot-size);border-width:var(--b);flex-shrink:0}
+#df-jig .df-steppers button i{font-size:min(calc(4 * var(--u)),calc(var(--slot-size) - 2 * var(--b)))}
+
+#df-jig .df-study{margin-top:var(--ss)}
+#df-jig .df-choice{display:flex;align-items:center;gap:var(--u);font-size:var(--control-font-size);cursor:pointer}
+#df-jig .df-choice-slot{display:grid;place-items:center;flex:0 0 var(--s);width:var(--s);height:var(--s);border:var(--b) solid transparent}
+#df-jig .df-choice-slot input{margin:0;width:calc(4 * var(--u));height:calc(4 * var(--u));max-width:100%;max-height:100%;accent-color:var(--ink);cursor:pointer}
+#df-jig .df-switch-slot{width:calc(9 * var(--u));flex-basis:calc(9 * var(--u))}
+#df-jig .df-choice-slot .df-switch{appearance:none;width:100%;height:calc(5 * var(--u));border:var(--b) solid transparent;border-radius:999px;background:var(--hair);padding:calc(.5 * var(--u));display:flex;align-items:center}
+#df-jig .df-switch:before{content:"";display:block;height:100%;aspect-ratio:1;border-radius:50%;background:var(--surface-highest)}
+#df-jig .df-switch:checked{background:var(--ink);justify-content:flex-end}
+#df-jig .df-chip{--chip-slot:calc(4 * var(--u));--chip-label-margin:calc(var(--lm) / 2);display:inline-flex;align-items:center;justify-content:center;gap:var(--g);height:calc(var(--chip-slot) + var(--h) - var(--s));padding:var(--p);border:var(--b) solid transparent;border-radius:999px;background:var(--surface-low);font-size:calc(2 * var(--u) + 4px);line-height:1;white-space:nowrap}
+#df-jig .df-chip-label{display:flex;align-items:center;height:var(--chip-slot);min-width:0;margin-inline:0}
+#df-jig .df-chip > .df-chip-label:first-child{margin-inline-start:var(--chip-label-margin)}
+#df-jig .df-chip > .df-chip-label:last-child{margin-inline-end:var(--chip-label-margin)}
+#df-jig .df-chip > .df-chip-slot:first-child + .df-chip-label:last-child{margin-inline-end:calc(2 * var(--chip-label-margin))}
+#df-jig .df-chip:has(> .df-chip-label:first-child + .df-chip-slot:last-child) > .df-chip-label{margin-inline-start:calc(2 * var(--chip-label-margin))}
+#df-jig .df-chip-slot{display:grid;place-items:center;width:var(--chip-slot);height:var(--chip-slot);flex:0 0 var(--chip-slot);padding:0;border:var(--b) solid transparent;border-radius:50%;background:transparent}
+#df-jig .df-chip-slot i{font-size:calc(var(--chip-slot) - 2 * var(--b));line-height:1}
+#df-jig .df-chip button{cursor:pointer}
+#df-jig .df-mini-avatar{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--surface-highest);font-size:calc(2 * var(--u))}
+#df-jig .df-show .df-chip-slot{background:light-dark(#dce4e5,#35494b);box-shadow:inset 0 0 0 1px light-dark(#adbfc1,#69898b)}
+#df-jig .df-filter-chip[aria-pressed=true]{background:var(--ink);color:var(--surface-highest)}
+#df-jig [hidden]{display:none!important}
+#df-jig .df-attached{display:flex;flex-wrap:wrap;max-width:100%;width:fit-content;gap:var(--lg);padding:var(--lp);border:var(--b) solid transparent;border-radius:var(--r);background:var(--surface-low)}
+#df-jig .df-attached .df-control{--slot-size:var(--oslot);height:var(--oh);min-height:0;padding:var(--op);gap:var(--og);border-radius:var(--ir);background:transparent;flex-shrink:0}
+#df-jig .df-attached [aria-pressed=true],#df-jig .df-state-selected{background:var(--ink);color:var(--surface-highest)}
+#df-jig button{cursor:pointer}#df-jig button:disabled{opacity:.4;cursor:default}
+#df-jig .df-collection{width:100%;align-items:stretch}
+#df-jig .df-collection-heading,#df-jig .df-collection-footer{display:flex;align-items:center;justify-content:space-between;gap:var(--cg);flex-wrap:wrap}
+#df-jig .df-collection-heading h3{margin-top:var(--u)}
+#df-jig .df-collection-toolbar{display:flex;gap:var(--gg);align-items:center;flex-wrap:wrap}
+#df-jig .df-collection-toolbar .df-input-control{flex:1;min-width:min(100%,180px)}
+#df-jig .df-records{display:grid;gap:var(--lg)}
+#df-jig .df-record{display:flex;align-items:center;gap:var(--g);padding:max(0px,calc(2 * var(--u) - var(--b)));border:var(--b) solid transparent;border-radius:var(--r);background:var(--surface-high);cursor:pointer}
+#df-jig .df-record:has(input:checked){background:var(--surface-highest)}
+#df-jig .df-record-copy{display:grid;gap:var(--u);flex:1;min-width:0;font-size:var(--control-font-size)}
+#df-jig .df-record-copy strong{font-weight:500}#df-jig .df-record-copy > span{color:var(--muted-ink);font-size:calc(2 * var(--u) + 4px)}
+#df-jig .df-collection-footer{font-size:12px;color:var(--muted-ink)}
+#df-jig .df-state-hover{background:var(--surface-high)}
+#df-jig .df-state-invalid{box-shadow:inset 0 0 0 1px light-dark(#a83b32,#df8b80);max-width:230px}
+@media(max-width:460px){#df-jig .df-record{flex-wrap:wrap}#df-jig .df-record > .df-chip{margin-inline-start:calc(var(--s) + var(--g))}}
+
+@media(min-width:701px){#df-jig .df-panel{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
+
+/* Focus is visible only during keyboard interaction; pointer focus remains semantic. */
+#df-jig:not(.df-keyboard) :focus{outline:none!important}
+#df-jig.df-keyboard :focus-visible{outline:3px solid var(--ink);outline-offset:0px}
+/* Text fields paint focus on their neutral wrapper; sibling actions retain their own ring. */
+#df-jig.df-keyboard .df-input-control:has(> .df-label > input:focus-visible){outline:3px solid var(--ink);outline-offset:0px}
+#df-jig .df-result,#df-jig .df-section,#df-jig .df-jig-footer{border-top:0}
+
+#df-jig .df-multiline-list{display:grid;gap:calc(.5 * var(--u));padding:0;border:0;border-radius:0;background:transparent}
+#df-jig .df-multiline{--slot-size:var(--s);height:auto;min-height:calc(var(--s) + 2 * var(--ti));padding:max(0px,calc(var(--ti) - var(--b)));gap:var(--ti);align-items:flex-start;border-radius:var(--cr);background:var(--surface-high);width:100%}
+#df-jig .df-multiline[aria-pressed=true]{background:var(--surface-highest)}
+#df-jig .df-multiline .df-copy{height:auto;min-height:var(--slot-size);flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:var(--u);line-height:var(--control-line-height);padding-block:0}
+#df-jig .df-copy strong{display:flex;align-items:center;min-height:var(--slot-size);font-weight:500;line-height:1.4}#df-jig .df-copy > span{font-size:calc(2 * var(--u) + 4px);color:var(--muted-ink);line-height:1.45}
+#df-jig .df-row-meta{display:flex;align-items:center;justify-content:center;min-width:var(--slot-size);height:var(--slot-size);font-size:calc(2 * var(--u) + 4px);color:var(--muted-ink)}
+#df-jig .df-multiline:has(> .df-label:first-child + .df-row-meta:last-child) > .df-label{margin-inline-start:calc(2 * var(--lm))}
+#df-jig .df-composed-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:var(--ig)}
+#df-jig .df-adornment{display:flex;align-items:center;height:var(--slot-size);font-size:var(--control-font-size);line-height:1;white-space:nowrap;padding-inline:var(--u);background:var(--surface-low);border:var(--b) solid transparent;border-radius:max(0px,calc(var(--r) - var(--u)))}
+#df-jig .df-adornment select{width:auto;min-height:0;padding:0;margin:0;border:0;border-radius:0;background:transparent;font-size:inherit;cursor:pointer}
+#df-jig .df-nested-action{padding:0;background:transparent;border-radius:50%}
+#df-jig .df-table-card{align-items:stretch}
+#df-jig .df-table-scroll{max-width:100%;overflow-x:auto}
+#df-jig .df-table{width:100%;min-width:580px;border-collapse:separate;border-spacing:0 var(--lg);font-size:var(--control-font-size);text-align:left}
+#df-jig .df-table th,#df-jig .df-table td{border:var(--b) solid transparent;padding:var(--p);vertical-align:middle}
+#df-jig .df-table thead th{font-size:12px;font-weight:400;color:var(--muted-ink)}
+#df-jig .df-table tbody td,#df-jig .df-table tbody th{background:var(--surface-high)}
+#df-jig .df-table tbody tr:has(input:checked) > *{background:var(--surface-highest)}
+#df-jig .df-table tbody tr > :first-child{border-radius:var(--cr) 0 0 var(--cr)}
+#df-jig .df-table tbody tr > :last-child{border-radius:0 var(--cr) var(--cr) 0}
+#df-jig .df-table tbody th{width:100%;min-width:180px;font-weight:400}
+#df-jig .df-table tbody th strong{display:block;font-weight:500;line-height:1.4}
+#df-jig .df-table tbody th > span{display:block;font-size:calc(2 * var(--u) + 4px);color:var(--muted-ink);line-height:1.4;margin-top:calc(.5 * var(--u))}
+#df-jig .df-table .df-numeric{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+#df-jig .df-table-action{background:transparent}
+#df-jig .df-table tfoot th{font-weight:500}
+#df-jig .df-detail{padding:var(--cp);background:var(--surface-highest);border:var(--b) solid transparent;border-radius:var(--cr);font-size:var(--control-font-size)}
+#df-jig .df-visually-hidden{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+#df-jig .df-caption{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:400}
+
+/* Collection geometry: one gutter budget, shared across adjacent cells. */
+#df-jig .df-table{border-spacing:0 calc(.5 * var(--u))}
+#df-jig .df-table th,#df-jig .df-table td{padding-block:max(0px,calc(var(--ti) - var(--b)));padding-inline:max(0px,calc(var(--ti) / 2 - var(--b)))}
+#df-jig .df-table tr > :first-child{padding-inline-start:max(0px,calc(var(--ti) - var(--b)))}
+#df-jig .df-table tr > :last-child{padding-inline-end:max(0px,calc(var(--ti) - var(--b)))}
+#df-jig .df-table .df-check-cell{width:calc(var(--s) + 1.5 * var(--ti));min-width:calc(var(--s) + 1.5 * var(--ti))}
+#df-jig .df-table tr > :last-child{width:calc(var(--h) + 1.5 * var(--ti));min-width:calc(var(--h) + 1.5 * var(--ti))}
+
+#df-jig .df-list,#df-jig .df-segmented,#df-jig .df-attached{overflow:clip}
+/* Let zero-offset focus paint extend beyond composite edges without changing layout. */
+#df-jig.df-keyboard :is(.df-list,.df-segmented,.df-attached,.df-currency-list):focus-within{overflow:visible}
+#df-jig.df-keyboard :is(.df-list,.df-segmented,.df-attached,.df-multiline-list,.df-currency-list) > button:focus-visible{position:relative;z-index:1}
+
+#df-jig .df-gap-readout{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:12px}#df-jig .df-gap-readout span{grid-column:1/-1;color:var(--muted-ink)}
+
+#df-jig .df-records{gap:calc(.5 * var(--u))}
+#df-jig .df-record{padding:max(0px,calc(var(--ti) - var(--b)));gap:var(--ti)}
+@media(max-width:460px){#df-jig .df-record > .df-chip{margin-inline-start:calc(var(--s) + var(--ti))}}
+
+#df-jig .df-chip{border-radius:var(--chipr)}
+
+/* Shared geometry: fixed slots, border-inclusive insets, stable exposed label edges. */
+#df-jig .df-segment{gap:var(--og)}
+#df-jig .df-choice{height:var(--h);padding:var(--p);gap:var(--g);border:var(--b) solid transparent;border-radius:var(--r)}
+#df-jig .df-choice > .df-label:last-child{margin-inline-end:calc(2 * var(--lm))}
+#df-jig .df-choice .df-label{line-height:var(--control-line-height)}
+#df-jig .df-slot .df-avatar{border-width:0}
+#df-jig .df-record{border-radius:var(--cr)}
+/* Primitive artwork owns one border; its slot owns alignment only. */
+#df-jig .df-choice-slot{border:0}
+#df-jig .df-choice-slot input:not(.df-switch){appearance:none;display:grid;place-items:center;border:var(--b) solid transparent;background:var(--hair);border-radius:min(var(--r),calc(2 * var(--u)));flex-shrink:0}
+#df-jig .df-choice-slot input[type=radio]{border-radius:50%}
+#df-jig .df-choice-slot input:not(.df-switch):checked,#df-jig .df-choice-slot input:indeterminate{background:var(--ink)}
+#df-jig .df-choice-slot input:not(.df-switch)::before{content:"";display:block;width:55%;height:55%;background:var(--surface-highest);visibility:hidden}
+#df-jig .df-choice-slot input[type=checkbox]:not(.df-switch)::before{clip-path:polygon(0 45%,20% 30%,40% 55%,82% 0,100% 16%,42% 100%)}
+#df-jig .df-choice-slot input[type=radio]::before{border-radius:50%}
+#df-jig .df-choice-slot input:not(.df-switch):checked::before,#df-jig .df-choice-slot input:indeterminate::before{visibility:visible}
+#df-jig .df-choice-slot input:indeterminate::before{clip-path:inset(38% 0)}
+#df-jig .df-choice-slot .df-switch{padding:max(0px,calc(.5 * var(--u) - var(--b)))}
+@media(forced-colors:active){#df-jig .df-choice-slot input:not(.df-switch){appearance:auto}}
+
+
+/* Text badges share the 4u badge height; their width follows their content. */
+#df-jig{--badge-size:calc(4 * var(--u));--badge-font-size:calc(2 * var(--u) + 2px)}
+#df-jig .df-badge{width:var(--badge-size);height:var(--badge-size);font-size:var(--badge-font-size)}
+#df-jig .df-adornment{height:var(--badge-size);min-width:var(--badge-size);flex:0 0 auto;justify-content:center;padding-block:0;padding-inline:max(0px,calc(.5 * var(--u) - var(--b)));font-size:var(--badge-font-size);line-height:1;border-radius:min(var(--r),calc(var(--badge-size) / 2))}
+#df-jig .df-adornment select{height:100%;font:inherit;line-height:1;max-width:100%}
+#df-jig .df-composed .df-label{min-width:0}
+#df-jig .df-choice-slot input[type=checkbox]:not(.df-switch){border-radius:var(--u)}
+
+/* Input adornments use text-only chip geometry, including density and label edges. */
+#df-jig .df-adornment{height:calc(4 * var(--u) + var(--h) - var(--s));min-width:calc(4 * var(--u));padding-block:var(--p);padding-inline:var(--p);font-size:calc(2 * var(--u) + 4px);line-height:1;border-radius:var(--chipr)}
+#df-jig .df-composed:has(> .df-adornment){height:var(--composedh);border-radius:var(--composedr)}
+
+/* Concentric nested corners: deduct actual outer-edge distances, once per axis. */
+#df-jig .df-composed > .df-adornment{min-width:calc(4 * var(--u) + var(--h) - var(--s));border-radius:var(--adornmentrx) / var(--adornmentry)}
+#df-jig .df-composed{min-width:var(--h)}
+#df-jig .df-composed:has(> .df-adornment){min-width:var(--composedh)}
+
+/* Collection rows own their inset; button optical edge compensation does not apply. */
+#df-jig .df-multiline > .df-copy{margin-inline:0!important}
+
+#df-jig .df-composed:has(#df-currency){position:relative}
+#df-jig .df-currency-list{position:absolute;inset-block-start:calc(100% + var(--u));inset-inline-start:0;z-index:20;display:grid;min-width:100px;padding:var(--lp);gap:var(--lg);border:var(--b) solid transparent;border-radius:var(--chipr);background:var(--surface-low);box-shadow:0 6px 20px #0002;overflow:clip}
+#df-jig .df-currency-list[hidden]{display:none}
+#df-jig .df-currency-option{height:calc(4 * var(--u) + var(--oh) - var(--s));padding:var(--op);width:100%;justify-content:flex-start;border-radius:var(--currencyir);background:transparent}
+#df-jig .df-currency-option[aria-selected=true],#df-jig .df-currency-option:hover{background:var(--surface-highest)}
+#df-jig .df-composed:has(#df-currency) > .df-label{margin-inline-end:var(--lm)}
+</style>
+<script>
+(()=>{const root=document.getElementById('df-jig');document.addEventListener('keydown',event=>{if(!event.metaKey&&!event.ctrlKey&&!event.altKey)root.classList.add('df-keyboard');},true);document.addEventListener('pointerdown',()=>root.classList.remove('df-keyboard'),true);const q=id=>root.querySelector('#df-'+id);const num=id=>Number(q(id).value);const fmt=n=>Number(n.toFixed(2));function update(){const u=num('u');q('b').max=u/2;q('b').value=Math.min(num('b'),u/2);const b=num('b'),d=num('density'),s=6*u,inset=Math.max(u/2,u*(1+d)),p=Math.max(0,inset-b),h=s+2*inset,g=Math.max(0,u*(1+d)),li=Math.max(0,Math.min(1.5,num('l')))*u,outerInset=Math.max(b,li),nestedInset=Math.max(b,inset-outerInset),ci=Math.max(b,num('c')*u),pill=q('radius').value==='pill',r=pill?h/2:Math.min(num('radius')*u,h/2),cr=num('container-radius')*u,lr=r;const rowInset=(2+0.5*d)*u,rowInner=Math.max(b,rowInset-outerInset);const chipHeight=4*u+2*inset,composedHeight=Math.max(h,chipHeight+2*inset),composedRadius=pill?composedHeight/2:Math.min(num('radius')*u,composedHeight/2);const vars={currencyir:li===0?0:Math.max(0,(pill?chipHeight/2:Math.min(r,chipHeight/2))-outerInset),composedh:composedHeight,composedr:composedRadius,adornmentrx:Math.max(0,composedRadius-inset),adornmentry:Math.min(chipHeight/2,Math.max(0,composedRadius-(composedHeight-chipHeight)/2)),u,b,s,p,h,g,r,chipr:pill?(4*u+2*inset)/2:Math.min(r,(4*u+2*inset)/2),ti:num('table-density')*u,rowp:Math.max(0,rowInner-b),rowslot:s,rowg:g,gg:num('gg')*u,ig:num('ig')*u,pe:num('pe')*u,ss:num('ss')*u,lg:li,lm:num('lm')*u,icon:num('icon')*u,lp:Math.max(0,li-b),op:Math.max(0,nestedInset-b),oh:s+2*nestedInset,sslot:s,oslot:s,og:g,lr,ir:li===0?0:Math.min((s+2*nestedInset)/2,Math.max(0,lr-outerInset)),cp:ci-b,cg:num('c')*u,cr};for(const [k,v]of Object.entries(vars))root.style.setProperty('--'+k,v+'px');root.classList.toggle('df-show',q('slots').checked);root.style.colorScheme=q('scheme').value;['gg','ig','pe','ss'].forEach(id=>q(id+'-val').textContent=num(id)+'u');q('lm-val').textContent=num('lm')+'u';q('u-val').textContent=u+'px';q('b-val').textContent=b+'px';q('l-val').textContent=num('l')+'u';q('lg-val').textContent=num('l')+'u';q('c-val').textContent=num('c')+'u';q('dim').textContent=fmt(h)+'px high';q('nest').textContent=fmt(li)+'px inset';q('card-dim').textContent=fmt(ci)+'px inset';q('result').textContent='Slot '+fmt(s)+' · Inset '+fmt(inset)+' · Padding '+fmt(p)+' · Gap '+fmt(g)+' px';}root.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',update));const items=[...root.querySelectorAll('.df-item')],list=q('view-list'),trigger=q('trigger');
+function openList(open,focus=false){list.hidden=!open;trigger.setAttribute('aria-expanded',String(open));if(open&&focus)items.find(el=>el.getAttribute('aria-selected')==='true').focus();}
+trigger.addEventListener('click',()=>openList(list.hidden));
+trigger.addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();openList(true,true);}if(event.key==='Escape')openList(false);});
+items.forEach((el,index)=>{el.addEventListener('click',()=>{items.forEach(item=>{item.setAttribute('aria-selected',String(item===el));item.tabIndex=item===el?0:-1;});q('trigger-label').textContent=el.querySelector('.df-label').textContent;q('trigger-icon').className=el.querySelector('i').className+' df-icon-md';openList(false);trigger.focus();});el.addEventListener('keydown',event=>{let next;if(event.key==='ArrowDown')next=(index+1)%items.length;if(event.key==='ArrowUp')next=(index+items.length-1)%items.length;if(event.key==='Home')next=0;if(event.key==='End')next=items.length-1;if(next!==undefined){event.preventDefault();items[next].focus();}if(event.key==='Escape'){event.preventDefault();openList(false);trigger.focus();}if(event.key==='Tab')openList(false);});});
+root.addEventListener('pointerdown',event=>{if(!event.target.closest('.df-select-preview, .df-panel'))openList(false);});q('increase').addEventListener('click',()=>{if(!q('donation').value)q('donation').value='0';q('donation').stepUp();});q('decrease').addEventListener('click',()=>{if(!q('donation').value)q('donation').value='0';q('donation').stepDown();});const tabs=[...root.querySelectorAll('[role=tab]')];function showFamily(key,focus=false){tabs.forEach(tab=>{const selected=tab.id==='df-tab-'+key;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;if(selected&&focus)tab.focus();});root.querySelectorAll('[role=tabpanel]').forEach(panel=>panel.hidden=panel.id!=='df-pane-'+key);q('family').value=key;}tabs.forEach((tab,index)=>{tab.addEventListener('click',()=>showFamily(tab.id.replace('df-tab-','')));tab.addEventListener('keydown',event=>{let next;if(event.key==='ArrowRight')next=(index+1)%tabs.length;if(event.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;if(next!==undefined){event.preventDefault();showFamily(tabs[next].id.replace('df-tab-',''),true);}});});q('family').addEventListener('change',()=>showFamily(q('family').value));root.querySelectorAll('.df-segment').forEach(button=>button.addEventListener('click',()=>{root.querySelectorAll('.df-segment').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));}));
+const filterChip=root.querySelector('.df-filter-chip');filterChip.addEventListener('click',()=>filterChip.setAttribute('aria-pressed',String(filterChip.getAttribute('aria-pressed')!=='true')));
+q('remove-chip').addEventListener('click',()=>{q('removable').hidden=true;q('restore-chip').hidden=false;q('restore-chip').focus();});
+q('restore-chip').addEventListener('click',()=>{q('removable').hidden=false;q('restore-chip').hidden=true;q('remove-chip').focus();});
+root.querySelectorAll('.df-attached [aria-pressed]').forEach(button=>button.addEventListener('click',()=>button.parentElement.querySelectorAll('[aria-pressed]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)))));
+q('undo').addEventListener('click',()=>{q('undo').disabled=true;q('redo').disabled=false;q('redo').focus();});q('redo').addEventListener('click',()=>{q('redo').disabled=true;q('undo').disabled=false;q('undo').focus();});
+function updateCollection(){const rows=[...q('records').children],term=q('search').value.trim().toLowerCase();rows.forEach(row=>row.hidden=!row.textContent.toLowerCase().includes(term));const count=rows.filter(row=>row.querySelector('input').checked).length;q('selection-count').textContent=count+' selected';q('clear-selection').disabled=!count;q('total').querySelector('.df-chip-label').textContent=rows.length+' items';q('empty').hidden=rows.some(row=>!row.hidden);}
+q('search').addEventListener('input',updateCollection);q('records').addEventListener('change',updateCollection);q('clear-selection').addEventListener('click',()=>{q('records').querySelectorAll('input').forEach(input=>input.checked=false);updateCollection();});
+let addedCount=0;q('add-record').addEventListener('click',()=>{const row=q('records').firstElementChild.cloneNode(true);const title='New collection item '+(++addedCount);row.querySelector('strong').textContent=title;row.querySelector('.df-record-copy > span').textContent='Ready to organize';row.querySelector('.df-chip-label').textContent='Draft';row.querySelector('input').checked=false;row.querySelector('input').setAttribute('aria-label','Select '+title);q('records').append(row);q('search').value='';updateCollection();});
+
+root.querySelectorAll('.df-multiline').forEach(button=>button.addEventListener('click',()=>button.setAttribute('aria-pressed',String(button.getAttribute('aria-pressed')!=='true'))));
+q('composed-search').addEventListener('input',()=>q('composed-clear').disabled=!q('composed-search').value);
+q('composed-clear').addEventListener('click',()=>{q('composed-search').value='';q('composed-clear').disabled=true;q('composed-search').focus();});
+const tableChecks=[...root.querySelectorAll('.df-table tbody input[type=checkbox]')];
+function updateTableSelection(){const count=tableChecks.filter(input=>input.checked).length;q('table-count').textContent=count+' selected';q('table-all').checked=count===tableChecks.length;q('table-all').indeterminate=count>0&&count<tableChecks.length;}
+q('table-all').addEventListener('change',()=>{tableChecks.forEach(input=>input.checked=q('table-all').checked);updateTableSelection();});tableChecks.forEach(input=>input.addEventListener('change',updateTableSelection));
+root.querySelectorAll('.df-table-action').forEach(button=>button.addEventListener('click',()=>{const row=button.closest('tr');q('table-detail').textContent=row.querySelector('strong').textContent+' · '+row.querySelector('.df-chip-label').textContent+' · Estimate '+row.querySelector('.df-numeric').textContent;q('table-detail').hidden=false;}));
+const currencyTrigger=q('currency'),currencyList=q('currency-list'),currencyOptions=[...currencyList.querySelectorAll('[role=option]')];
+function currencyOpen(open,focus=false){currencyList.hidden=!open;currencyTrigger.setAttribute('aria-expanded',String(open));if(open&&focus)currencyOptions.find(el=>el.getAttribute('aria-selected')==='true').focus();}
+currencyTrigger.addEventListener('click',()=>currencyOpen(currencyList.hidden,true));
+currencyTrigger.addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();currencyOpen(true,true);}if(event.key==='Escape')currencyOpen(false);});
+currencyOptions.forEach((option,index)=>{option.addEventListener('click',()=>{const value=option.dataset.value;q('currency-label').textContent=value;currencyTrigger.setAttribute('aria-label','Currency: '+value);currencyOptions.forEach(el=>{const active=el===option;el.setAttribute('aria-selected',String(active));el.tabIndex=active?0:-1;});currencyOpen(false);currencyTrigger.focus();});option.addEventListener('keydown',event=>{let next;if(event.key==='ArrowDown')next=(index+1)%currencyOptions.length;if(event.key==='ArrowUp')next=(index+currencyOptions.length-1)%currencyOptions.length;if(event.key==='Home')next=0;if(event.key==='End')next=currencyOptions.length-1;if(next!==undefined){event.preventDefault();currencyOptions[next].focus();}if(event.key==='Escape'){event.preventDefault();currencyOpen(false);currencyTrigger.focus();}if(event.key==='Tab')currencyOpen(false);});});
+document.addEventListener('pointerdown',event=>{if(!currencyTrigger.contains(event.target)&&!currencyList.contains(event.target))currencyOpen(false);});
+currencyList.addEventListener('focusout',event=>{if(!currencyList.contains(event.relatedTarget))currencyOpen(false);});
+update();})();
+</script>

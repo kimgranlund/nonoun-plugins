@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "nestedChoiceIndependent": true,
+      "segmentDensityActivation": true
+    },
+    {
+      "width": 1280,
+      "nestedChoiceIndependent": true,
+      "segmentDensityActivation": true
+    }
+  ],
+  "limits": [
+    "Only changed choice and segmented specimens; unchanged verification reused."
+  ]
+}

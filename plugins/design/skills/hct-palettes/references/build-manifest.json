@@ -1,0 +1,108 @@
+{
+  "generator": "hct-palettes@4",
+  "node": "22+",
+  "bundleSha256": "cb14a993bd8bc092f2f2dc6699564dcca5ef26289cd7e6c56bd9d8f56423cf30",
+  "buildTool": "esbuild@0.25.11",
+  "inputs": [
+    {
+      "path": "resources/corpus/computation/source-policy-validation.ts",
+      "sha256": "78219f5ef5c7495298fcc3fbb21c70538b17805f1322746321aafbe23292fdf8"
+    },
+    {
+      "path": "resources/corpus/computation/validation.ts",
+      "sha256": "c3506ccdf09643bf88ccc25d9f87c64188de4643e0f1c08e0c67717148845a08"
+    },
+    {
+      "path": "resources/corpus/computation/vendor/deterministic-trig/index.js",
+      "sha256": "d0ba48b82dad47a6eea7b5d255f2ee424f6d9a80884c5663b225e11b240d7977"
+    },
+    {
+      "path": "resources/corpus/computation/conversions/constants.ts",
+      "sha256": "4c8015089e2084e92cc5bbbbc9d6a6d7f5016398cc34dbeb9e4e560e485fb7cb"
+    },
+    {
+      "path": "resources/corpus/computation/conversions/convert.ts",
+      "sha256": "f281e1edabc04fe647b57e7febb76503a86a92d02bfde2199adc83b6a288a935"
+    },
+    {
+      "path": "resources/corpus/computation/index.ts",
+      "sha256": "3b7fece12be81a4b2f2f6e4b992804b3ef4a9dfb91964aa60fc4de28a8a80f4d"
+    },
+    {
+      "path": "resources/corpus/computation/vendor/colorjs-0.5.2.js",
+      "sha256": "836aeb702002ec5cda5d8d50562fb881024d2897410247db42e07ae27233c324"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/anchored-tonal.ts",
+      "sha256": "d80df2b18fb95ab70c6616a9dce7ebc273b56b94ae5299f7889877291d8c4aee"
+    },
+    {
+      "path": "resources/corpus/computation/vendor/okhsl.js",
+      "sha256": "c21fece4526cd0a6cfdf35ea501314b5bb94f4fbcf489c254ea3966f1ff400ac"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/model-ramps.ts",
+      "sha256": "f8ab40a1d25fb6547ea5534f5e989b54283ae5e7d79cfd60c04399ec37d9dcbf"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/tone-solver.ts",
+      "sha256": "2233f9f9a3bef91fcbb15106778c19621d24f81329ecd0b16efa821e1f15ba1d"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/hct-hue-balance.ts",
+      "sha256": "cbb0e09e8aa84fdfc54df1720c116ea1b55d2c69aa3002f769524ff452212207"
+    },
+    {
+      "path": "resources/corpus/computation/source-policies.ts",
+      "sha256": "252a6039af5e0637b35d2b7b2ef1cf6545a35ae08da3b2e05b5306180c68ff30"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/hue-rotation.ts",
+      "sha256": "62b6bb8452649fc5a09aa47c5e7045632adaf63b3e7bdf49c9cfd5bb038aef64"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/prime-spacing.ts",
+      "sha256": "bd45429085f967c12f774b94e890a60a211e3e9c390e0f861e62e7a10b1f6d43"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/model-prime.ts",
+      "sha256": "bcbec96cf6d3fc94a922d51c96e108251b2393bb4dc16f4699b20792dc37c785"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/prime-schedule.ts",
+      "sha256": "de82a4559a97fbe3ec00f2af93a13fb9c71c976b5851a46f2ea5a4a30c20adcf"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/perceptual-prime.ts",
+      "sha256": "9fcbe404aff44f5a2524ca3027194b84b13671fd46b31678724914c20189170c"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/policies.ts",
+      "sha256": "27f983b08d124fa11de131b217e89c1e61a32ad250b4c677e20622e3992303d4"
+    },
+    {
+      "path": "resources/corpus/computation/recipes/registry.ts",
+      "sha256": "74633d9cffa47b016e8d0b211110f9661b7b1ffe12c17ed1f917e49593311946"
+    },
+    {
+      "path": "resources/corpus/computation/source-palettes.ts",
+      "sha256": "31bb0510266d50b1f067c1a8f33a9a8ae12d823e3e13c860ba242503732e5d82"
+    },
+    {
+      "path": "resources/palette-defaults.v1.json",
+      "sha256": "530fb2f98a602034ab1a37f8296662126abeef1573268e58128d09cf9aaa47ea"
+    },
+    {
+      "path": "resources/examples/foundation-twelve.theme.v2.json",
+      "sha256": "2f6a35a2bb755aa4e80e92922ee3d854897f634f5257dece20b666beca9c6c03"
+    },
+    {
+      "path": "resources/corpus/computation/hct-skill/generate.ts",
+      "sha256": "601a6b9c3963081d082bf94ca8187c76cf028731bef0cb5c79b542145a7d0351"
+    },
+    {
+      "path": "resources/corpus/computation/hct-skill/cli.ts",
+      "sha256": "d24499b3b850020454a13fd1ab22c4de75411edc4099b116607aff119f05cfd2"
+    }
+  ]
+}

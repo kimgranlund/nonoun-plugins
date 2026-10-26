@@ -1,0 +1,7 @@
+{
+  "producer": "typeTokensCSS(typeScale())",
+  "configuration": "Exported scale with user-requested font stack override (2026-10-14): Bricolage Grotesque display/heading, system-ui body/UI, IBM Plex Mono mono. Pinned offline binaries and licenses in assets/fonts/manifest.json; embedded through getAssetBundle.",
+  "source": "src/engine/type.mjs",
+  "sourceHash": "76c401d471146a0375188128737ce9a41dcb0e4d331a4ca49e783c9642df6528",
+  "outputHash": "579e5709737cf82b572f244d0b14e60401353b89cb8228081610683c2c0d1d39"
+}

@@ -1,0 +1,35 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "component": "composed-input",
+    "parts": [
+      {
+        "part": "selector",
+        "label": "Currency",
+        "options": [
+          "USD",
+          "EUR",
+          "GBP"
+        ],
+        "geometryFamily": "chip",
+        "labelWrapper": true,
+        "component": "chip-select",
+        "popup": {
+          "component": "listbox",
+          "childFamily": "chip",
+          "insetUnits": 0
+        },
+        "trailingSlot": {
+          "sizeUnits": 4,
+          "icon": "caret-down"
+        }
+      },
+      {
+        "part": "input",
+        "type": "number",
+        "label": "Amount",
+        "placeholder": "0.00"
+      }
+    ]
+  }
+}

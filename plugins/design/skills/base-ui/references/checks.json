@@ -1,0 +1,529 @@
+{
+  "schemaVersion": 1,
+  "scope": "Owned standalone UI checks. Migration is not fresh verification of every browser state. Preserve historical evidence scope.",
+  "checks": [
+    {
+      "script": "check-action-contrast.mjs",
+      "beforeSHA256": "1aa2acf1ee75e87bd679ab65c0642c6d4ffe3a0b352e95f0f95418941094736f",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-action-label-sizing.mjs",
+      "beforeSHA256": "850ea20d7efdd1f174bcc3eb17101536ecd3c7cc0e709ac82be207436f4f2ff0",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-action-overlay-hosts.mjs",
+      "beforeSHA256": "34759036b0282662533a0be3fd8dd79bc85d1be4c7b3c25552cc649c433bf9a8",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-additional-specimens.mjs",
+      "beforeSHA256": "7c4c2b8cb566e491dca1cf5bef6674d4e40bc9d36d39c25c3a8b4a7756f04973",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-bounded-collection-task.mjs",
+      "beforeSHA256": "aa988816e8011321ce48767cff2bed7c42009d7469947ec4d32086c20f2309fe",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-breadcrumbs.mjs",
+      "beforeSHA256": "0c9670cebbb09d7424b6ee7c34354cb33d6677e401992dcff1abe2442edb33e3",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-catalog-text-contrast.mjs",
+      "beforeSHA256": "dcef1a9e3935f9dda26831fb930a62b249a846aaecbf4edf35d6608a0f9cb763",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-choice-defaults.mjs",
+      "beforeSHA256": "3623b49e48f1fbd7e972f1e89a83d3131015547c77886d1688186d308c31b5cd",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-collection-workflow.mjs",
+      "beforeSHA256": "4623ec0c873d437099f0fc19046c4e0b5089d097daa0b0200a2cce20d3ca7ec4",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-color-classification.mjs",
+      "beforeSHA256": "c2309a104df3f99085b2c8176ff9287085c9af1e9e51535e6ddb5875c47289c9",
+      "kind": "source",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-component-fallback.mjs",
+      "beforeSHA256": "1dce1f1a103e4998bff082c66532c9e0946b919442f0d371663b2bdc3974ca82",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-components.mjs",
+      "beforeSHA256": "7a474bd55d7fd14895d175a40fafc6daa233aa88a2ca27eb7a209f0fe024b3db",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-composed-states.mjs",
+      "beforeSHA256": "5bcda82d8bce6a81ebecd2bc2d1c48c4049c666c3386aa7a66d2a068bc8dcefd",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-contained-content.mjs",
+      "beforeSHA256": "7613104efe1ab2e67520baa08ec1683f788dfbfdbfed3c11f23ce3d2d766c908",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-control-boundary-contrast.mjs",
+      "beforeSHA256": "6fc8ee09184de30e10d0dfb420f03f998950f0266c9a71b29f8aeba253e0ea58",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-control-paint.mjs",
+      "beforeSHA256": "9c8d93c87393b06eaecf46733bbeacc1bb707746900bc93c7524b1ae32037cdd",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-dedicated-extraction.mjs",
+      "beforeSHA256": "d4c87d69d6285426dab2e63cdb6649ed6f5da62aa6bf19d725964505405c80c9",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-extended-patterns.mjs",
+      "beforeSHA256": "2277ec3157f54c4fa11f12c7a3ec429d857ed463ae4d3eb3877864b6e872991c",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-feedback-navigation.mjs",
+      "beforeSHA256": "2cccdeaab5da3d48005cab5eb39caf13ca630d43e787febb2409210b14eb9c6e",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-field-descriptions.mjs",
+      "beforeSHA256": "ae2d8f58b3814d135ab8d3cb42edc0fc1dc6a0d0168fca44d00945aa76633152",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-focus-grouping.mjs",
+      "beforeSHA256": "de7980494bc5883a01810f12077a20a627ad6a21848b37eb3c4f8ce441a7b995",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-forced-colors.mjs",
+      "beforeSHA256": "35f3267146fae96e42eb864db9e95a5568d8a01846d4f3f7cf89e08be0f534e9",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-heading-context.mjs",
+      "beforeSHA256": "cc02cdf0584134015df70ac0eef1845e076097861149fc10dcc9760ccd53e63f",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-list-states.mjs",
+      "beforeSHA256": "0886b01da6a319418f1c38563ce8180d68e0f5ea2a1e4fde007f95f947496c24",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-native-fallbacks.mjs",
+      "beforeSHA256": "47531c02526c324122f431bdb9f61ef8e337c3f804eef94f08ffa577686d106d",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-native-patterns.mjs",
+      "beforeSHA256": "982563278b817abf69d0f9ea99840999a369c79be54a84efc47b20d6a2759f47",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-nesting.mjs",
+      "beforeSHA256": "07be9e15db828e546a646b24f942bd76d01feb2031a1c68caff8346a69d3ce6d",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-popover-sizing.mjs",
+      "beforeSHA256": "f5356e289ffe53145146e807ef5f6f213b311616d4bb72408d216ce667e8db55",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-popup-instances.mjs",
+      "beforeSHA256": "09fea8cf13ff4212b4193939d290b41e17d5ae639dc767ca73fb58d078d197c8",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-popup-swatch-composition.mjs",
+      "beforeSHA256": "514cbd87b8e82b43229e5c8abdfccb78245681dfefaa777a19aff0636aed52ae",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-remediation-states.mjs",
+      "beforeSHA256": "fdeb470b62bb9f0027af532177af92153553051c3f0582b89dfdc43ff159a177",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-save-status.mjs",
+      "beforeSHA256": "6763efa2d187e8a0ba0c2b793f7784f6da9c948aa73ca996c3feac2d86c547a2",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-scrolling-flow.mjs",
+      "beforeSHA256": "c761077fe4568b5fddae0b8e3e7732e5c0831c871de0b5cdfa39024936fdfebf",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-segment-geometry.mjs",
+      "beforeSHA256": "b775f030ad4caa7f1d3b9af5568f12f91d7c965c14d443e48b275c6b5407193e",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-spacing.mjs",
+      "beforeSHA256": "bbaf581e4c67307127ccc1313ecf598a637ede66add3213e92e4cc6c1fc1a154",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-specimen-extraction.mjs",
+      "beforeSHA256": "bcd07ec497befc03e63f2e979fa07db340f407700760f942273bc3edafdcd982",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-standalone-token-refs.mjs",
+      "beforeSHA256": "0d9f0dcc99a6542707372c66efcae48906a8552848ad483732741f060498abb8",
+      "kind": "source",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-state-applicability.mjs",
+      "beforeSHA256": "9030b5e3d5427eb52f63eaa51493c6c8f5fc658266d03ca7e9442c6024fba27a",
+      "kind": "source",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-state-motion.mjs",
+      "beforeSHA256": "30d1d906441a2d2f2270da18605a8065ad9f7acba0e7a50a03f504fa3941e52b",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-stepper-layout.mjs",
+      "beforeSHA256": "0b337b39a6bfedaa7686356e16c7769f13ea14e00e8811d8716514d412dd6784",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-stepper-options.mjs",
+      "beforeSHA256": "4d415c21ab18f46a71a47cbeaa1c9ae56c2085b4b10e42eb4a9faa78bf90ab07",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-style-contract.mjs",
+      "beforeSHA256": "431a85a85180ae32b03174bad607b22c757b34e5a7a206844a708bdb230f3766",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-text-enlargement.mjs",
+      "beforeSHA256": "53ce9585968251ea2c7ce86c5c6c3b236ad232913ab65b2e67df076455964299",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-token-index-cli.mjs",
+      "beforeSHA256": "1d0dbbf90b8b200b557676c5dac084c214b931bb7f73cf5e61abf96f2ab0c89e",
+      "kind": "source",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-workflow-patterns.mjs",
+      "beforeSHA256": "7fbd1f5d35315d32dca6bc644514b021366d35473e4d3c051c5a597c7e5df1d1",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-modal-autofocus.mjs",
+      "beforeSHA256": "039bd855bc5412ecb712e2c5b570925454465a564ca2451d221ce867ca72f2b8",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-select-contract.mjs",
+      "beforeSHA256": "c45c95fc5c0d2db9094178973c2908d26ab2f840337f115420edd2e6a77a023b",
+      "kind": "browser",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "observe-select.mjs",
+      "beforeSHA256": "29700cbca9007113b5a4c97317e31383e7c93e5cbe2eaddfcc32069d1969ebf7",
+      "kind": "source-observation",
+      "ownership": "standalone UI sources/recipes; historical report paths unchanged"
+    },
+    {
+      "script": "check-reservation.mjs",
+      "kind": "browser",
+      "ownership": "Authored reservation cap/conditional-error/anatomy recipe; two discriminating faults; scoped Chromium coverage"
+    },
+    {
+      "script": "check-field-composition.mjs",
+      "kind": "browser",
+      "ownership": "Field label marker and plain-group margin; narrow/wide and enlarged label text; layout fault control"
+    },
+    {
+      "script": "check-verification-claims.mjs",
+      "kind": "static-provenance",
+      "ownership": "Dependency/launch/actor attribution consistency; no independent test execution proof"
+    },
+    {
+      "script": "check-rendered-audit.mjs",
+      "kind": "browser",
+      "ownership": "Consumer audit regression: valid expanded/closed disclosures, sidebar exception, undeclared retrieval, missing wrapper, collapsed margin and evidence gaps at narrow/wide light/dark."
+    },
+    {
+      "script": "check-component-anatomy.mjs",
+      "kind": "source",
+      "ownership": "Contract-driven compile rejection for malformed disclosures; nested/sidebar controls and maintained recipes."
+    },
+    {
+      "script": "check-runtime-binding.mjs",
+      "kind": "browser",
+      "ownership": "Runtime binding argument validation, failed mount cleanup, delegated clicks across rerenders and unmount."
+    },
+    {
+      "script": "check-action-routing.mjs",
+      "kind": "browser",
+      "ownership": "Maintained action-routing recipe: ancestor attribute collisions, native activation, rerender, disabled states, unmount and invalid bindings."
+    },
+    {
+      "script": "check-render-restoration.mjs",
+      "kind": "browser",
+      "ownership": "Exact scoped ID lookup and optional DOM restoration recipe"
+    },
+    {
+      "script": "check-semantic-palettes.mjs",
+      "kind": "browser",
+      "ownership": "Palette pair contrast, states, nested isolation, static/dynamic unsupported combinations and forced colors"
+    },
+    {
+      "script": "generate-semantic-palettes.mjs --check",
+      "kind": "source",
+      "ownership": "Exact source export and deterministic role mapping parity"
+    },
+    {
+      "script": "check-reading-regions.mjs",
+      "kind": "browser",
+      "ownership": "Nested reading region at 320/390/768/1440 light/dark; unadapted nesting and constrained prose negative controls; optional generated artifact."
+    },
+    {
+      "script": "check-bundled-fonts.mjs",
+      "kind": "browser",
+      "ownership": "Offline loading all15 faces; actual custom glyph rendering via CDP; no HTTP requests; missing-face negative control."
+    },
+    {
+      "script": "compress-fonts.py --check",
+      "kind": "source",
+      "ownership": "Maintainer WOFF2 recompression and semantic font fidelity; dependencies pinned in font manifest."
+    },
+    {
+      "script": "check-review-patterns.mjs",
+      "kind": "browser",
+      "ownership": "Generic evidence comparison, proportional interval domains in LTR/RTL, exact whole-unit allocation validation, escaped content and geometry fault control."
+    },
+    {
+      "script": "check-review-checklist.mjs",
+      "kind": "node",
+      "ownership": "review record integrity and acceptance distinction; not visual judgment"
+    },
+    {
+      "script": "check-field-action.mjs",
+      "kind": "browser",
+      "ownership": "field/action composition, dynamic select anatomy and allocation validity"
+    },
+    {
+      "script": "check-control-rail.mjs",
+      "kind": "browser",
+      "ownership": "Actual command/disclosure text rails in boxed and narrow reading-flow modes"
+    },
+    {
+      "script": "check-scheme.mjs",
+      "kind": "browser",
+      "ownership": "data-theme drives computed light-dark token values"
+    },
+    {
+      "script": "check-content-contracts.mjs",
+      "kind": "browser",
+      "ownership": "design concept links; compact option identities and select text fit"
+    },
+    {
+      "script": "check-review-transitions.mjs",
+      "kind": "browser",
+      "ownership": "Rubric delivery, noncompounding text enlargement, native option fault detection and bounded index keyboard reachability"
+    },
+    {
+      "script": "check-runtime-discovery.py",
+      "kind": "runtime",
+      "ownership": "Bounded Node resolution, explicit override failure and launch without PATH"
+    },
+    {
+      "script": "check-consumer-contrast.mjs",
+      "kind": "browser",
+      "ownership": "Consumer text and explicit boundary contrast, alpha compositing, fail and unsupported controls"
+    },
+    {
+      "script": "check-task-access.mjs",
+      "kind": "browser",
+      "ownership": "Declared mobile task access budget, clipping, occlusion, focus arrival and exact-ID navigation"
+    },
+    {
+      "script": "check-review-measurements.mjs",
+      "kind": "node",
+      "ownership": "Nested measurement gate rejects concealed failures, unsupported and empty scopes"
+    },
+    {
+      "script": "check-action-appearance.mjs",
+      "kind": "browser",
+      "ownership": "Unsupported neutral ghost class fault and actual ghost attribute paint"
+    },
+    {
+      "script": "check-review-delivery.mjs",
+      "kind": "node",
+      "ownership": "Draft-to-release gate: missing, blocked, stale, missing evidence and nested measurement failures; completed findings separate from accepted release"
+    },
+    {
+      "script": "check-review-session.mjs",
+      "kind": "browser",
+      "ownership": "Review matrix capture, checkpointing, explicit judgments and evidence integrity; browser and executable paths required"
+    },
+    {
+      "script": "check-review-visual-plan.mjs",
+      "kind": "node",
+      "ownership": "Risk-based visual sample separate from full machine matrix; missing samples and tampered plans incomplete, unsampled machine failures prevent acceptance"
+    },
+    {
+      "script": "check-review-details.mjs",
+      "kind": "browser",
+      "ownership": "Lazy bounded original-pixel detail samples, target anchors, coverage, deduplication and capture hash integrity; browser and executable paths required"
+    },
+    {
+      "script": "check-canvas-overlays.mjs",
+      "kind": "browser",
+      "ownership": "Compact canvas composition: local mathematical widget geometry, border-inclusive margin, radius, gutter and shared text rails with five injected faults including range-axis leakage; expanded/resized/long-label states, measured panel coordination, actual action reachability and camera/gesture invariants; Chromium fixture, not fresh-generation acceptance."
+    },
+    {
+      "script": "check-geometry-spacing.mjs",
+      "kind": "browser",
+      "ownership": "Four-tier geometry, independent expected frames, nested inheritance, margin/gutter ownership, legacy reads and native positioning; Chromium executable supplied explicitly."
+    },
+    {
+      "script": "check-text-scale.mjs",
+      "kind": "browser",
+      "ownership": "Synthetic text-scale calibration: stylesheet and inline !important, idempotence and newly inserted descendants"
+    },
+    {
+      "script": "check-button-parity.mjs",
+      "kind": "browser",
+      "ownership": "Paired reference/kit geometry, 36 contexts, RTL/LTR, six button anatomies, enlarged text and deliberate radius divergence."
+    },
+    {
+      "script": "check-corner-parity.mjs",
+      "kind": "browser",
+      "ownership": "Shared adjusted radius roles, round fallback, parent offsets and circular exceptions"
+    },
+    {
+      "script": "check-class-names.mjs",
+      "kind": "source",
+      "ownership": "Canonical/legacy mapping uniqueness, specificity-preserving CSS aliases, idempotent compilation, canonical native anatomy and attribute isolation."
+    },
+    {
+      "script": "check-local-assets.mjs",
+      "kind": "static",
+      "ownership": "Recursive local CSS/script binding and review invalidation"
+    },
+    {
+      "script": "check-local-assets.mjs",
+      "kind": "node",
+      "ownership": "review asset binding; static ES module graph and mutation rejection"
+    },
+    {
+      "script": "check-build-page.mjs",
+      "kind": "browser",
+      "ownership": "offline modular scaffold, editable styles, no overwrite and review binding"
+    },
+    {
+      "script": "check-review-settling.mjs",
+      "kind": "browser",
+      "ownership": "live finite-animation settling, detached promises and bounded timeout"
+    },
+    {
+      "script": "check-task-composition.mjs",
+      "kind": "browser",
+      "ownership": "Declared task composition: baseline, quiet boundaries, logical text rails and negative controls"
+    },
+    {
+      "script": "check-current-geometry.mjs",
+      "kind": "node",
+      "ownership": "Current 720 context/arrangement checks, fixed square budgets and non-mutating conflicts; not browser validation."
+    },
+    {
+      "script": "check-artwork-ownership.mjs",
+      "kind": "browser",
+      "ownership": "Wrapper shape/clipping and preservation of authored icon, glyph and media radius/overflow; accepts installed Playwright module path."
+    },
+    {
+      "script": "check-wrapper-shape.mjs",
+      "kind": "browser",
+      "ownership": "Current Control wrapper shape: five densities, Sharp/fractional amounts, own-parent retention, clipping, artwork preservation and explicit opt-out cleanup; PLAYWRIGHT CHROME arguments required"
+    },
+    {
+      "script": "check-menu-row-geometry.mjs",
+      "kind": "browser",
+      "ownership": "Current full Control menu rows across five densities; independent of compact selection-list rows"
+    },
+    {
+      "script": "check-data-rows.mjs",
+      "kind": "browser",
+      "ownership": "Five density Control data rows: centered slots, additive cell/column spacing, single divider and multiline growth"
+    },
+    {
+      "script": "check-pill-safe-buttons.mjs",
+      "kind": "browser",
+      "ownership": "Five button arrangements across five densities and three shapes: label edge padding (half per side for label-only, full for one exposed side), radius-independent width, unchanged outer clearance/gaps; accepts installed Playwright module path."
+    },
+    {
+      "script": "check-label-edge-padding.mjs",
+      "kind": "browser",
+      "ownership": "Forty rendered cases across five densities and Sharp/Pill: half label-only edges, full single edge, occupied edges zero; equal widths."
+    }
+  ]
+}

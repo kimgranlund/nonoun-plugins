@@ -1,0 +1,9 @@
+{
+  "source": "assets/foundation/semantic-palettes/source.json",
+  "sha256": "b5134a7ac507ee997fbfd683373060229bd4d1aa857c088a4d814f7b2327e261",
+  "cssSource": "assets/foundation/semantic-palettes/source.css",
+  "cssSHA256": "4efaf13ecbdd08a1e6a691880863c5c27269b1264d2ed837feabd569a082bb64",
+  "tokens": 748,
+  "semanticOwner": "references/semantic-palettes.json",
+  "note": "No source semantics provided; role tones and primary=color-1 alias are base-ui mappings."
+}

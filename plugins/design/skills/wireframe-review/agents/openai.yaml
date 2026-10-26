@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wireframe Review"
+  short_description: "Compare three wireframes and collect anchored feedback"
+  default_prompt: "Use $wireframe-review to create three meaningful wireframe variants with on-page comments and portable JSON feedback."

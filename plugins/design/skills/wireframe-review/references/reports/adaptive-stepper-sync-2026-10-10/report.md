@@ -1,0 +1,9 @@
+# Adaptive stepper canonical reconciliation
+
+Canonical Components already contained the maintained stepper in Actions and workflows, but displayed it as Staged form. The misleading visible name was the confirmed discovery defect; no missing registry or category accordion was found. Presentation now names it Stepper · staged form while retaining stable stepper identity and source-owned specimen bytes. Existing family/search/hash logic requires no rewrite.
+
+Reconciled the adaptive peer handoff with subsequent authorized composition and record/navigation fixes. Whole shared-file hashes differ, so no wholesale overwrite was performed. Stepper contract, CSS selectors, workflow guidance, form markup and controller block remain equivalent to the reconciled adaptive implementation. Existing authored adaptive, workflow, fallback and lifecycle reports remain historical scoped evidence, not newly stamped observations.
+
+New verification runs against the final published canonical Components page: 12 contexts, Chromium/Firefox/WebKit at 390/1280 and light/dark. Each verifies visible Stepper title, direct #stepper opening without a category accordion, deferred iframe initialization, responsive vertical/horizontal orientation, Next/Back retained values and keyboard Save. Actions family/search find the entry; a hash reveal clears a conflicting Inputs filter and search. These checks establish publication wiring, not full assistive technology, physical touch, installed Safari or fresh-generation efficacy.
+
+Canonical sheets regenerated with unchanged register and generation history. Previous canonical and ZIP retained in canonical evidence; earlier choice evidence stays stale. Peer-owned live sheets/components.html, accepted limitations and prior evaluation snapshots are preserved. Package parity and a fresh pending evaluation snapshot are recorded in the main-session reply.

@@ -13,6 +13,11 @@
       "name": "progressive-context",
       "source": "./plugins/progressive-context",
       "description": "Progressive disclosure, capability contracts, evidence, and bounded reuse."
+    },
+    {
+      "name": "design",
+      "source": "./plugins/design",
+      "description": "UI construction, Differential Forms geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique."
     }
   ],
   "metadata": {

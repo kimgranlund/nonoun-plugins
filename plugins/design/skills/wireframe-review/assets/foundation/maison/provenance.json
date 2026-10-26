@@ -1,0 +1,30 @@
+{
+  "sourceProject": "ui-kit-maison",
+  "snapshotDate": "2026-10-08",
+  "files": {
+    "geometry.css": {
+      "source": "src/foundation/geometry/geometry.css",
+      "sha256": "7bef1b330cc17ee1ae3c7dbd1077c790767222b4e52b7080b89300426835799f"
+    },
+    "layout.css": {
+      "source": "src/foundation/geometry/layout.css",
+      "sha256": "c1c52634fb5a4e5bfa9165ea41345e636e7bb8ec23b4c39c04111188489e5584"
+    }
+  },
+  "localAdaptation": {
+    "date": "2026-10-15",
+    "owner": "local.base-ui",
+    "authority": "mathematical-design-system/scripts/lib/scale.mjs and button.css",
+    "generator": "../../../scripts/generate-geometry.mjs",
+    "changes": [
+      "All tier dimensions generated from the mathematical resolver.",
+      "Border-inclusive margins; superellipse(1.5) at 1.5 times base radius with round fallback; nested radii subtract offsets after adjustment.",
+      "Button implementation projected from the shared reference CSS."
+    ],
+    "files": {
+      "geometry.json": "9f3684311cd101244063409092725414020667c0239c48cd92bc304f108174a3",
+      "geometry.css": "761bfb5fa1376fd80758ec03db5df661a7c925cba3f755e888ae716a08dceea6",
+      "layout.css": "fb266ed786fd8aa29cb3fad970f91ee2496284b75ffd3df2f80b9c10beff628d"
+    }
+  }
+}

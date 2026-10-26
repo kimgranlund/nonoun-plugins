@@ -1,0 +1,21 @@
+{
+  "name": "design",
+  "version": "0.1.0",
+  "description": "UI construction, Differential Forms geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique.",
+  "author": {
+    "name": "Kim Granlund"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Design",
+    "shortDescription": "UI construction, geometry, palettes, inspector jigs, wireframes and design critique.",
+    "longDescription": "UI construction, Differential Forms geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique.",
+    "developerName": "Kim Granlund",
+    "category": "Design",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Use $base-ui to build this interface."
+  }
+}

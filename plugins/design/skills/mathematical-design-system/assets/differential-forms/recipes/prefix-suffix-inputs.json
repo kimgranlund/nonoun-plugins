@@ -1,0 +1,58 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "examples": [
+      {
+        "component": "composed-input",
+        "parts": [
+          {
+            "part": "prefix",
+            "text": "@",
+            "geometryFamily": "chip",
+            "labelWrapper": true
+          },
+          {
+            "part": "input",
+            "label": "Username"
+          }
+        ]
+      },
+      {
+        "component": "composed-input",
+        "parts": [
+          {
+            "part": "input",
+            "label": "Weight in kilograms"
+          },
+          {
+            "part": "suffix",
+            "text": "kg",
+            "geometryFamily": "chip",
+            "labelWrapper": true
+          }
+        ]
+      },
+      {
+        "component": "composed-input",
+        "parts": [
+          {
+            "part": "prefix",
+            "text": "$",
+            "geometryFamily": "chip",
+            "labelWrapper": true
+          },
+          {
+            "part": "input",
+            "label": "Monthly budget in dollars"
+          },
+          {
+            "part": "suffix",
+            "text": "/ mo",
+            "geometryFamily": "chip",
+            "labelWrapper": true
+          }
+        ]
+      }
+    ]
+  }
+}

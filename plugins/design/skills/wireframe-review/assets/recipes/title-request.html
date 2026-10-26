@@ -1,0 +1,12 @@
+<main class="page__root page-flow__root page__flow product__root" data-review-id="title-request">
+<section class="card__root section-flow__root section__flow">
+<form class="stepper__root section-flow__root section__flow" novalidate>
+<ol class="stepper__indicator" data-step-layout="adaptive" role="list" aria-label="Request stages">
+<li data-progress="0" data-step-state="current" aria-current="step"><span data-step-indicator aria-hidden="true"><span data-step-number>1</span><span data-step-check><i data-ph="check" aria-hidden="true"></i></span></span><span data-step-label><span data-step-title>Title</span><span data-step-state-label>Current</span></span></li>
+<li data-progress="1" data-step-state="upcoming"><span data-step-indicator aria-hidden="true"><span data-step-number>2</span><span data-step-check><i data-ph="check" aria-hidden="true"></i></span></span><span data-step-label><span data-step-title>Review</span><span data-step-state-label>Upcoming</span></span></li>
+</ol>
+<section data-step class="flow__root"><h2 data-step-heading tabindex="-1">Name your request</h2><div class="field__root"><label for="request-title"><span>Title <span aria-hidden="true">*</span></span></label><input id="request-title" name="title" required aria-describedby="title-error"><p id="title-error" role="alert" hidden>Enter a title to continue.</p></div><button class="button__root" type="button" data-next>Next</button></section>
+<section data-step class="flow__root" hidden><h2 data-step-heading tabindex="-1">Review your request</h2><div class="heading-group__root"><p>Title</p><p data-title-summary></p></div><div class="cluster__root"><button class="button__root secondary" type="button" data-back>Back</button><button class="button__root" type="button" data-confirm>Confirm locally</button></div><p role="status" data-confirmation hidden>Confirmed locally. Nothing was sent.</p></section>
+</form>
+</section>
+</main>

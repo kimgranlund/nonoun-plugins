@@ -1,0 +1,269 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "css": {
+      "type": "string"
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/unit"
+      },
+      "minItems": 1
+    },
+    "intent": {
+      "$ref": "#/$defs/intent"
+    },
+    "defaultViewport": {
+      "enum": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$"
+    },
+    "interactions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/interaction"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "revision",
+    "title",
+    "css",
+    "units"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "part": {
+      "type": "object",
+      "properties": {
+        "unitId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "variantId": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        }
+      },
+      "required": [
+        "unitId",
+        "variantId"
+      ],
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tradeoff": {
+          "type": "string",
+          "minLength": 1
+        },
+        "html": {
+          "type": "string"
+        },
+        "composition": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/part"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "rationale",
+        "tradeoff",
+        "html",
+        "composition"
+      ],
+      "additionalProperties": false
+    },
+    "unit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "kind": {
+          "enum": [
+            "page",
+            "section",
+            "component"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variant"
+          },
+          "minItems": 1,
+          "maxItems": 3
+        },
+        "intent": {
+          "$ref": "#/$defs/intent"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "variants"
+      ],
+      "additionalProperties": false
+    },
+    "intent": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "means": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constraints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uncertainty": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "unitId",
+        "variantId",
+        "elementId",
+        "status",
+        "action",
+        "expectedResult",
+        "persistence",
+        "limitations"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "unitId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variantId": {
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "implemented",
+            "static",
+            "unavailable"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedResult": {
+          "type": "string",
+          "minLength": 1
+        },
+        "persistence": {
+          "enum": [
+            "none",
+            "current-view",
+            "session",
+            "reload"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

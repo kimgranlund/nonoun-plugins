@@ -1,0 +1,3 @@
+/* Authored source colors and semantic mappings. Preserve kit geometry formulas. */
+/* The adopted sharp curvature profile has b=0 and a=0. */
+.shell :is(button,select,.select__root,.listbox__root,.listbox__option){--r-control:0px;--r-listbox:0px;--r-listbox-option:0px;border-radius:0}

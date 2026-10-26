@@ -1,0 +1,39 @@
+<style>
+.canvas-demo__root{position:fixed;inset:0;overflow:clip;background:var(--ui-surface);color:var(--ui-ink)}
+.canvas-demo__root [data-canvas-scene]{position:absolute;inset:0;transform-origin:0 0}
+.canvas-demo__root [data-canvas-node]{position:absolute;inline-size:calc(24*var(--g-margin));white-space:normal}
+.canvas-demo__root [data-canvas-panel]{position:absolute;box-sizing:border-box;border:var(--m-border-thin) solid var(--ui-border);border-radius:var(--r-widget);padding:calc(2*var(--g-margin) - var(--m-border-thin));background:var(--ui-surface);color:var(--ui-ink);max-inline-size:calc(100% - 2*var(--g-margin));max-block-size:calc(100% - 2*var(--g-margin));overflow:auto}
+.canvas-demo__root [data-canvas-panel] :is(h2,p){margin:0;overflow-wrap:anywhere}
+.canvas-demo__root [data-canvas-panel] h2{font-size:var(--g-text)}
+.canvas-demo__root .canvas-tools{left:var(--g-margin);top:var(--g-margin);width:calc(64*var(--g-margin));display:flex;flex-direction:column;gap:var(--g-gutter)}
+.canvas-demo__root .canvas-tools > *{flex-shrink:0}
+.canvas-demo__root [hidden]{display:none!important}
+.canvas-demo__root .canvas-tools input[type=search]{flex:1 1 calc(16*var(--g-margin));min-width:0}
+.canvas-demo__root .canvas-tools #canvas-options{display:flex;flex-direction:column;align-items:flex-start;gap:var(--g-gutter)}
+.canvas-demo__root .canvas-player{left:var(--g-margin);bottom:var(--g-margin);width:calc(48*var(--g-margin))}
+.canvas-demo__root input[type=range]{min-width:0;margin:0}
+.canvas-demo__root .canvas-player input[type=range]{flex:1 1 calc(10*var(--g-margin));width:calc(12*var(--g-margin))}
+.canvas-demo__root .canvas-inspector{right:var(--g-margin);top:calc(12*var(--g-margin));width:calc(40*var(--g-margin));height:calc(48*var(--g-margin));display:flex;flex-direction:column;gap:var(--g-gutter)}
+.canvas-demo__root .canvas-inspector[hidden]{display:none}
+.canvas-demo__root .canvas-inspector header{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:var(--g-gutter)}
+.canvas-demo__root .canvas-inspector header h2{flex:1;min-width:0}
+.canvas-demo__root .canvas-inspector .canvas-body{overflow:auto;min-height:0;display:grid;gap:var(--g-gutter);padding:0}
+.canvas-demo__root .canvas-status{position:absolute;left:var(--g-margin);bottom:calc(12*var(--g-margin));max-width:calc(100% - 2*var(--g-margin));background:var(--ui-surface)}
+</style>
+<main class="canvas-demo__root" id="canvas" aria-label="Evidence canvas">
+ <div data-canvas-scene>
+  <button type="button" class="button__root secondary" data-canvas-node="source" data-action="select" style="left:64px;top:240px" aria-pressed="true">Source read · signal</button>
+  <button type="button" class="button__root" data-intent="warning" data-canvas-node="problem" data-action="select" style="left:320px;top:240px">Truncated retrieval · problem</button>
+  <button type="button" class="button__root" data-intent="success" data-canvas-node="outcome" data-action="select" style="left:576px;top:240px">Verified fixture · outcome</button>
+ </div>
+ <section class="canvas-tools" data-canvas-panel data-tier="widget" tabindex="0" aria-label="Canvas controls; Alt and arrow keys move panel">
+  <div class="cluster__root"><input type="search" id="canvas-search" aria-label="Search evidence" placeholder="Search evidence"><button type="button" data-action="out" aria-label="Zoom out">−</button><button type="button" data-action="in" aria-label="Zoom in">+</button><button type="button" data-action="inspect">Evidence</button></div>
+  <button type="button" data-action="options" aria-expanded="false" aria-controls="canvas-options">View options</button><div id="canvas-options" class="flow__root" hidden><button type="button" data-action="fit">Fit selected</button><button type="button" data-action="reflow">Reflow cards</button></div>
+ </section>
+ <section class="canvas-player" data-canvas-panel data-tier="widget" tabindex="0" aria-label="Player; Alt and arrow keys move panel"><div class="cluster__root"><button type="button" data-action="play">Play</button><input class="range__root" type="range" min="0" max="2" value="0" aria-label="Evidence step"><output id="canvas-step">1 / 3</output></div></section>
+ <section class="canvas-inspector" data-canvas-panel data-tier="widget" tabindex="0" aria-label="Evidence inspector; Alt and arrow keys move panel">
+  <header><h2>Evidence detail</h2><button type="button" data-action="close">Close</button></header>
+  <div class="canvas-body"><p id="canvas-detail">Signal: a source return is recorded. It does not establish understanding.</p><p>Retention: unknown.</p><p data-inspector-prose>The source was returned before the operation. Whether it influenced the decision is not established.</p><label>Panel width<input id="panel-width" class="range__root" type="range" min="160" max="640" value="320"></label><label>Panel height<input id="panel-height" class="range__root" type="range" min="160" max="640" value="384"></label></div>
+ </section>
+ <p class="canvas-status" role="status" id="canvas-status"></p>
+</main>

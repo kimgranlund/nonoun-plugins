@@ -1,0 +1,27 @@
+<div class="card__root flow__root product__root" data-tier="product" data-scale="md" data-size="md">
+  <header class="heading-group__root"><h3>Semantic UI roles</h3><p>Inspect the roles on a field and an action in each color scheme.</p></header>
+  <span data-semantic-role="surface-text">Surface text uses the foreground paired with this surface.</span>
+  <div class="field__root">
+    <label for="semantic-role-field">Field label</label>
+    <input id="semantic-role-field" type="text" value="Surface text" aria-describedby="semantic-role-help">
+    <span class="field__description field__help" id="semantic-role-help">Supporting text stays paired with the same surface.</span>
+  </div>
+  <section class="flow__root" data-action-variant="primary">
+    <header class="heading-group__root"><h4>Primary appearance</h4><p>Documentation state probes only; no business action. Hover, hold the pointer down, or use the keyboard to inspect native focus. Disabled hover must retain its paint.</p></header>
+    <div class="actions__root"><button id="semantic-primary-enabled" type="button" class="button__root" data-action-probe="enabled" data-variant="primary">Enabled primary</button><button id="semantic-primary-disabled" type="button" class="button__root" data-action-probe="disabled" data-variant="primary" disabled>Disabled primary</button></div>
+  </section>
+  <section class="flow__root" data-action-variant="secondary">
+    <header class="heading-group__root"><h4>Secondary appearance</h4><p>Documentation state probes only; no business action. Hover, hold the pointer down, or use the keyboard to inspect native focus. Disabled hover must retain its paint.</p></header>
+    <div class="actions__root"><button id="semantic-secondary-enabled" type="button" class="button__root secondary" data-action-probe="enabled" data-variant="secondary">Enabled secondary</button><button id="semantic-secondary-disabled" type="button" class="button__root secondary" data-action-probe="disabled" data-variant="secondary" disabled>Disabled secondary</button></div>
+  </section>
+  <section class="flow__root" data-action-variant="ghost">
+    <header class="heading-group__root"><h4>Ghost appearance</h4><p>Documentation state probes only; no business action. Hover, hold the pointer down, or use the keyboard to inspect native focus. Disabled hover must retain its paint.</p></header>
+    <div class="actions__root"><button id="semantic-ghost-enabled" type="button" class="button__root" data-appearance="ghost" data-action-probe="enabled" data-variant="ghost">Enabled ghost</button><button id="semantic-ghost-disabled" type="button" class="button__root" data-appearance="ghost" data-action-probe="disabled" data-variant="ghost" disabled>Disabled ghost</button></div>
+  </section>
+  <section class="flow__root" id="semantic-busy-fixture" data-job-count="0">
+    <header class="heading-group__root"><h4>Local busy lifecycle</h4><p>This page-only simulation counts the words in the field after a short timer. No external operation occurs.</p></header>
+    <div class="actions__root"><button id="semantic-busy-button" type="button" class="button__root" aria-describedby="semantic-busy-status" disabled>Count words locally</button></div>
+    <span id="semantic-busy-status" role="status" aria-live="polite" data-state="unavailable">Local work requires JavaScript.</span>
+    <noscript><p>The local busy simulation is unavailable without JavaScript; its button stays disabled. The documentation state probes retain native interaction.</p></noscript>
+  </section>
+</div>

@@ -1,0 +1,18 @@
+/* Consumer-owned recipe slot, variant and state rules. */
+/* Sharp-profile specimens. All dimensions consume the shared resolver. */
+.specimen .listbox__root{display:grid;gap:var(--surface-gap);padding:var(--surface-margin);border:0;border-radius:0}
+.specimen .listbox__option{display:flex;align-items:center;min-height:var(--surface-inner);height:var(--surface-inner);padding:0;gap:var(--surface-gap);border:0;border-radius:0;font:var(--g-text)/1.2 var(--ui-font);color:var(--ui-ink);background:transparent;cursor:pointer;white-space:normal}
+.specimen .listbox__option [data-slot=label]{padding-inline:var(--slot-padding);min-height:var(--surface-inner);display:flex;align-items:center;white-space:normal}
+.specimen .badge-sample{display:inline-flex;align-items:center;min-height:var(--g-icon);font:calc(var(--g-unit) + 4px)/1.2 var(--ui-font);background:#252525;color:#fffaf2}
+.specimen .table__root{font:var(--g-caption-text)/1.3 var(--ui-font);border-collapse:collapse;white-space:nowrap}
+.specimen .table__root th,.specimen .table__root td{height:var(--g-table-row-height);padding:calc(var(--g-d)/4) calc(1.25 * var(--g-d));border-bottom:1px solid var(--ui-divider)}
+.specimen .table__root td{text-align:right;font-variant-numeric:tabular-nums}
+.specimen .table__root th{text-align:left}
+.specimen .table__viewport{overflow:auto;max-width:100%}
+.specimen{font-family:var(--ui-font)}
+
+/* Phosphor Regular is loaded directly from the pinned CDN stylesheet. */
+.shell .ph{font-size:calc(var(--g-icon) * .75);line-height:1;flex:none}
+.shell [data-slot=icon],.shell .check{display:inline-flex;align-items:center;justify-content:center;width:var(--g-icon);height:var(--g-icon);flex:none}
+.shell .check[hidden]{display:none}
+.shell .select__root [data-slot=indicator] .ph{font-size:calc(var(--g-icon) * .75)}

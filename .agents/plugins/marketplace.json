@@ -5,6 +5,18 @@
   },
   "plugins": [
     {
+      "name": "design",
+      "source": {
+        "source": "local",
+        "path": "./plugins/design"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Design"
+    },
+    {
       "name": "progressive-context",
       "source": {
         "source": "local",

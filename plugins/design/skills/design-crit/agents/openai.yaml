@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Crit"
+  short_description: "Outside-in critique and inside-out UX validation"
+  default_prompt: "Use $design-crit to decompose this experience outside in, validate it inside out with the specialist lenses, and synthesize concrete revisions with reasons."

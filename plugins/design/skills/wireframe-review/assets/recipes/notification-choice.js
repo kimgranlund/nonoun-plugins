@@ -1,0 +1,4 @@
+// Generated review recipe adapter: scripts/sync-ui-kit.mjs.
+const notificationChoiceDefinition={initialState:{channel:'Email',saved:''},reduce(state,action){return action.type==='choose'?{...state,channel:action.channel}:action.type==='save'?{...state,saved:state.channel}:state;},render(root,state){root.querySelectorAll('[name=channel]').forEach(input=>input.checked=input.value===state.channel);root.querySelector('[data-saved]').textContent=state.saved?'Saved: '+state.saved:'';},bind({on}){on('change','[name=channel]',(event,input,dispatch)=>dispatch({type:'choose',channel:input.value}));on('click','[data-save]',(event,target,dispatch)=>dispatch({type:'save'}));}};
+
+registerPrototype({...notificationChoiceDefinition,unitId:'notification-choice'});

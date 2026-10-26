@@ -1,0 +1,266 @@
+{
+  "notation": "? optional; + one or more; | alternatives. These part sequences are descriptive, not a JSON Schema.",
+  "components": {
+    "button": {
+      "geometryFamily": "control",
+      "element": "button",
+      "parts": [
+        "icon-slot?",
+        "label?",
+        "icon-slot?"
+      ],
+      "allowedParents": [
+        "card",
+        "collection",
+        "attached",
+        "page"
+      ],
+      "behavior": "At least one label or named icon. No interactive descendants. Single-slot label compensation doubled."
+    },
+    "input": {
+      "geometryFamily": "control",
+      "element": "div",
+      "parts": [
+        "prefix|selector|icon-slot?",
+        "input",
+        "suffix|action|stepper-pair?"
+      ],
+      "allowedParents": [
+        "card",
+        "collection",
+        "page"
+      ],
+      "behavior": "Neutral wrapper; each native input/selector/action has accessible name. No compensation doubling on input label."
+    },
+    "chip": {
+      "geometryFamily": "chip",
+      "element": "span or button",
+      "parts": [
+        "icon-slot?",
+        "label",
+        "icon-slot?"
+      ],
+      "allowedParents": [
+        "card",
+        "collection",
+        "page",
+        "input",
+        "listbox"
+      ],
+      "behavior": "Filter chip may be button; removable chip uses span with child remove button. Half control label edge."
+    },
+    "badge": {
+      "geometryFamily": "badge",
+      "element": "span",
+      "parts": [
+        "label"
+      ],
+      "allowedParents": [
+        "control",
+        "chip",
+        "collection",
+        "card",
+        "page"
+      ],
+      "behavior": "Noninteractive status/count; composed-input adornments use chips."
+    },
+    "checkbox": {
+      "geometryFamily": "choice",
+      "element": "label + input[type=checkbox]",
+      "parts": [
+        "choice-artwork",
+        "label?"
+      ],
+      "allowedParents": [
+        "collection",
+        "card",
+        "page"
+      ],
+      "behavior": "Native checked/indeterminate semantics; radius 1u."
+    },
+    "radio": {
+      "geometryFamily": "choice",
+      "element": "label + input[type=radio]",
+      "parts": [
+        "choice-artwork",
+        "label?"
+      ],
+      "allowedParents": [
+        "card",
+        "page"
+      ],
+      "behavior": "Native named group; circular artwork."
+    },
+    "switch": {
+      "geometryFamily": "choice",
+      "element": "label + input[type=checkbox][role=switch]",
+      "parts": [
+        "choice-artwork",
+        "label"
+      ],
+      "allowedParents": [
+        "card",
+        "page"
+      ],
+      "behavior": "Checked state, capsule track, circular thumb."
+    },
+    "listbox": {
+      "geometryFamily": "composite",
+      "element": "trigger button + listbox",
+      "parts": [
+        "action",
+        "option+"
+      ],
+      "allowedParents": [
+        "card",
+        "page",
+        "input"
+      ],
+      "behavior": "Trigger controls popup; options have selection state; directional keyboard navigation."
+    },
+    "option": {
+      "geometryFamily": "control",
+      "element": "element[role=option]",
+      "parts": [
+        "icon-slot?",
+        "label",
+        "icon-slot?"
+      ],
+      "allowedParents": [
+        "listbox"
+      ],
+      "behavior": "Uses control-family or chip-family composite child geometry selected explicitly by parent. No nested interactive controls."
+    },
+    "segmented": {
+      "geometryFamily": "composite",
+      "element": "group",
+      "parts": [
+        "segment+"
+      ],
+      "allowedParents": [
+        "card",
+        "page"
+      ],
+      "behavior": "Exclusive pressed buttons; do not claim tab semantics unless controlling panels."
+    },
+    "segment": {
+      "geometryFamily": "control",
+      "element": "button",
+      "parts": [
+        "label"
+      ],
+      "allowedParents": [
+        "segmented"
+      ],
+      "behavior": "Composite child geometry; aria-pressed."
+    },
+    "attached": {
+      "geometryFamily": "composite",
+      "element": "group",
+      "parts": [
+        "button+"
+      ],
+      "allowedParents": [
+        "card",
+        "page"
+      ],
+      "behavior": "Shared containment, inset, gaps and child curvature; named group."
+    },
+    "collection": {
+      "geometryFamily": "collection",
+      "element": "section",
+      "parts": [
+        "record+"
+      ],
+      "allowedParents": [
+        "card",
+        "page"
+      ],
+      "behavior": "Rows use collection density; nested controls retain their own density."
+    },
+    "record": {
+      "geometryFamily": "collection",
+      "element": "neutral row or label for a single checkbox",
+      "parts": [
+        "choice-artwork?",
+        "copy",
+        "chip?",
+        "action?"
+      ],
+      "allowedParents": [
+        "collection"
+      ],
+      "behavior": "Use neutral row if it contains multiple interactive controls; do not wrap actions in a label."
+    },
+    "table": {
+      "geometryFamily": "collection",
+      "element": "table",
+      "parts": [
+        "header",
+        "row+",
+        "footer?"
+      ],
+      "allowedParents": [
+        "card",
+        "page"
+      ],
+      "behavior": "Native table with shared columns, header associations, numeric alignment and horizontal overflow region."
+    },
+    "card": {
+      "geometryFamily": "card",
+      "element": "article or section",
+      "parts": [
+        "content+"
+      ],
+      "allowedParents": [
+        "page"
+      ],
+      "behavior": "Content determines dimensions; container curvature, no pill; semantic heading."
+    },
+    "multiline-row": {
+      "geometryFamily": "collection",
+      "element": "button or neutral row",
+      "parts": [
+        "icon-slot?",
+        "copy",
+        "icon-slot?"
+      ],
+      "allowedParents": [
+        "collection",
+        "card",
+        "page"
+      ],
+      "behavior": "Collection inset/gap 1u/2u/3u, container curvature, content-driven height, no copy edge margin or composite subtraction."
+    },
+    "composed-input": {
+      "geometryFamily": "composed-input",
+      "element": "div",
+      "parts": [
+        "prefix|selector|icon-slot?",
+        "input",
+        "suffix|action|stepper-pair?"
+      ],
+      "allowedParents": [
+        "card",
+        "collection",
+        "page"
+      ],
+      "behavior": "Neutral wrapper; each native input/selector/action has accessible name. No compensation doubling on input label."
+    },
+    "chip-select": {
+      "geometryFamily": "chip",
+      "element": "button + sibling popup listbox",
+      "parts": [
+        "label",
+        "icon-slot",
+        "option+"
+      ],
+      "allowedParents": [
+        "input",
+        "card",
+        "page"
+      ],
+      "behavior": "Button contains only label and caret slot. Listbox is a sibling overlay. Options use chip-family residual geometry."
+    }
+  }
+}

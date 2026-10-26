@@ -1,0 +1,280 @@
+{
+  "results": [
+    {
+      "name": "valid",
+      "exit": 0,
+      "findings": []
+    },
+    {
+      "name": "duplicates",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "duplicate-id",
+          "severity": "error",
+          "document": "root",
+          "selector": "#x",
+          "detail": "ID occurs more than once in this document"
+        }
+      ]
+    },
+    {
+      "name": "missing-label",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "missing-reference",
+          "severity": "error",
+          "document": "root",
+          "selector": "label",
+          "detail": "for -> x is missing"
+        }
+      ]
+    },
+    {
+      "name": "missing-description",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "missing-reference",
+          "severity": "error",
+          "document": "root",
+          "selector": "input",
+          "detail": "aria-describedby -> two is missing"
+        }
+      ]
+    },
+    {
+      "name": "wrong-popover",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "popover-target-type",
+          "severity": "error",
+          "document": "root",
+          "selector": "button",
+          "detail": "x has no popover attribute"
+        }
+      ]
+    },
+    {
+      "name": "wrong-label",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "label-target-type",
+          "severity": "error",
+          "document": "root",
+          "selector": "label",
+          "detail": "x is not a known native labelable target; custom elements require runtime verification"
+        }
+      ]
+    },
+    {
+      "name": "frame-isolation",
+      "exit": 0,
+      "findings": []
+    },
+    {
+      "name": "frame-fault",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "missing-reference",
+          "severity": "error",
+          "document": "root/iframe[0]",
+          "selector": "label",
+          "detail": "for -> missing is missing"
+        }
+      ]
+    },
+    {
+      "name": "template-inert",
+      "exit": 0,
+      "findings": []
+    },
+    {
+      "name": "deferred",
+      "exit": 0,
+      "findings": [
+        {
+          "rule": "deferred-reference",
+          "severity": "unverified",
+          "document": "root",
+          "selector": "#trigger",
+          "detail": "aria-controls -> later: Created when opened; verify state: open"
+        }
+      ]
+    },
+    {
+      "name": "stale-deferral",
+      "exit": 1,
+      "findings": [
+        {
+          "rule": "unused-deferral",
+          "severity": "error",
+          "document": "root",
+          "selector": "#trigger",
+          "detail": "Deferral does not match a missing reference; remove stale exception"
+        }
+      ]
+    },
+    {
+      "name": "style-warning",
+      "exit": 0,
+      "findings": [
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: padding-top: 8px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: padding-right: 8px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: padding-bottom: 8px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: padding-left: 8px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: border-top-left-radius: 5px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: border-top-right-radius: 5px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: border-bottom-right-radius: 5px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card.wf-flow",
+          "detail": "style[0] .wf-card: border-bottom-left-radius: 5px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "gap-plus-child-margin",
+          "severity": "warning",
+          "document": "root",
+          "selector": "p",
+          "detail": "Inline child margin competes with a governed parent gap; review spacing ownership"
+        }
+      ]
+    },
+    {
+      "name": "style-allowed",
+      "exit": 0,
+      "findings": [
+        {
+          "rule": "unknown-style-owner",
+          "severity": "unverified",
+          "document": "root",
+          "selector": "",
+          "detail": "1 custom geometry selectors outside recognized component checks: div.chart. Warning counts do not measure fidelity"
+        }
+      ]
+    },
+    {
+      "name": "missing-mark",
+      "exit": 0,
+      "findings": [
+        {
+          "rule": "choice-mark-anatomy",
+          "severity": "warning",
+          "document": "root",
+          "selector": "input",
+          "detail": "Native checkbox in a product composition lacks wf-check; read the choices family and use its exact input anatomy"
+        }
+      ]
+    },
+    {
+      "name": "valid-mark",
+      "exit": 0,
+      "findings": []
+    },
+    {
+      "name": "custom-owner",
+      "exit": 0,
+      "findings": [
+        {
+          "rule": "unknown-style-owner",
+          "severity": "unverified",
+          "document": "root",
+          "selector": "",
+          "detail": "1 custom geometry selectors outside recognized component checks: div.custom. Warning counts do not measure fidelity"
+        }
+      ]
+    },
+    {
+      "name": "authored-zero",
+      "exit": 0,
+      "findings": [
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card",
+          "detail": "style[0] .wf-card: padding-top: 0px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card",
+          "detail": "style[0] .wf-card: padding-right: 0px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card",
+          "detail": "style[0] .wf-card: padding-bottom: 0px; check the component geometry owner before overriding"
+        },
+        {
+          "rule": "owned-geometry-literal",
+          "severity": "warning",
+          "document": "root",
+          "selector": "div.wf-card",
+          "detail": "style[0] .wf-card: padding-left: 0px; check the component geometry owner before overriding"
+        }
+      ]
+    },
+    {
+      "name": "canonical-reset",
+      "exit": 0,
+      "findings": []
+    }
+  ],
+  "generatedFaultRejected": true,
+  "selectorAndReuseControls": true,
+  "limitations": [
+    "Parser checks only; no runtime or accessibility certification"
+  ]
+}

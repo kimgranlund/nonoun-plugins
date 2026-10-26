@@ -1,0 +1,16 @@
+{
+  "system": "Differential Forms",
+  "version": "0.2.2",
+  "sourceCommit": "c703054bb5a20ea963fbf4d4da3cde9fc14149be",
+  "geometrySHA256": {
+    "index.ts": "8274746abdcf0c35a98bd96ef488180c6d0e165c421f5712cdecd1db8566ee48",
+    "resolve-collection.ts": "162b39bac7ba4f33b98bd102b6565c33273957b47aa7db911e4dcc3cd7de69c2",
+    "resolve-composed-input.ts": "ae61ee938ed2f62f84a38be1f272afe849b911829e873e068b2d5f09f4ea2411",
+    "resolve-composite.ts": "79c074eeb686f1119e4f8282855d33d739e0671a27c0e2e2070148032831aa6f",
+    "resolve-control.ts": "a9e6c36414130a0261dd91b917d38ab937ddb8a6056b638e11587da582a0c4f9",
+    "resolve-curvature.ts": "5947358eb9e469b3ce874359460a0797e820842c6b9915102f4586dcfed61436",
+    "resolve-multiline.ts": "82b5924274db298a087f04d3e7544dc8559d40e9ef788f971af1666c4ad68176",
+    "resolve-small.ts": "f72d497c4197ed7af1a98b48f586e69bfbedb96e7b74bb4f6ab8391db97b0327",
+    "types.ts": "7acfbebd3662ef6152b00e689515f71109e346b19c0d96b327d3e5edbc36edd7"
+  }
+}

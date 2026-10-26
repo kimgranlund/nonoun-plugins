@@ -1,0 +1,21 @@
+{
+  "name": "Proportion study",
+  "version": "1.0.0",
+  "source": {
+    "fragmentSHA256": "528c923f5db9faf609adbd56580e778846c72ca3d9b5e6eb8402de6d78b60805",
+    "implementationSHA256": "a03bd288f77a1e0da8e6c3925eb7e4b66fe3db41804c39b4a08d5f61aa0367c1",
+    "authored": "specimens/source.html"
+  },
+  "upstream": {
+    "path": "../differential-forms",
+    "version": "0.2.2",
+    "source": {
+      "commit": "c703054bb5a20ea963fbf4d4da3cde9fc14149be",
+      "captured": "2026-10-22",
+      "url": "https://differential-forms-jig.robust-haven-7010.chatgpt.site",
+      "fragmentSHA256": "4f7b83f6f3794ca72584a85eb63d7c8c6dde620d24358e3a34ffe2a7c853d822",
+      "preview": "Portable local wrapper; locally amended on 2026-10-22 with uniform 3px/0px keyboard focus outlines. Published commit records the original baseline."
+    }
+  },
+  "provenance": "Consumer migration to shared Differential Forms typed resolvers, 2026-10-22. No upstream formula changes."
+}

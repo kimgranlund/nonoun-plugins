@@ -1,0 +1,18 @@
+# Task composition
+
+Use these opt-in patterns when controls, explanatory text and nested evidence share a task. They preserve the adopted n/d geometry; density is not a substitute for choosing the right hierarchy. See [executable specimen](../assets/recipes/task-composition.html).
+
+- `action-status__root` aligns a command and adjacent help/status by first baseline, removes incidental paragraph margins and wraps with gutter d. After successful completion, replace the primary command with a status and the next meaningful action. Move focus to an appropriate status/heading when removing its trigger; do not leave focus on body.
+- A standard text-only ghost button may opt into `data-align="content"`. Its frame starts 1.5d before the content rail, retaining internal padding, minimum height and hit area. The parent must have that clearance; do not use inside a clipping parent, on icon-only/Chip buttons, or when frame alignment is intended. Test RTL and focus bounds. Ghost appearance alone never changes alignment.
+- Within `reading-flow__root`, nested disclosures share outer paint ownership automatically. An enclosing disclosure may explicitly request `data-nested-boundary="framed"` when separate nested frames communicate necessary groups; review that exception visually. Outside reading regions, an outer `disclosure__root[data-nested-boundary="quiet"]` owns the painted boundary. Descendant disclosure frames retain transparent border space and native focus/summary behavior, but omit repeated border/divider paint. Existing reading-flow handles narrow inline padding. Inspect all descendants open: no empty framed bands or competing separator owners.
+- For sibling disclosures, use `disclosure-stack__root flow__root`. Each direct disclosure omits its frame and open-summary divider; only following siblings paint a top separator. Combine with nested-boundary=quiet for deeper evidence. This prevents the preceding bottom rule and following top rule becoming an empty band.
+- Short inputs and explanatory help have independent width budgets. Constrain the input wrapper, not the field group containing help. A short helper orphaned into one-word lines is a composition failure even if the input fits.
+- Bounded variable-height collections require an explicit overflow cue and reachable records. A clipped border arc is not a cue. Prefer compact unique options with full selected detail adjacent; preserve selection across filters and show match count/hidden-selection status. Do not stuff long descriptions into native select options.
+
+For complete visible rows, budget viewport height as top/bottom insets + sum of measured row heights + (row count−1) gaps. Fixed Hc applies only to compact listbox rows, not arbitrary multiline cards. For task access, measure each preceding block and unique gap; simplify low-information content before shrinking type or control clearances.
+
+Verify at narrow and wide widths, enlarged text, initial/expanded/completed states, and the width where wrapping changes. Review actual label rails, clipped content, help wrapping and next-action prominence; mechanical geometry checks alone cannot accept these judgments.
+
+## Chooser/detail text budget
+
+Use `task-columns__root` with exactly two direct children, chooser then detail. Flex bases18em and32em allocate a local text budget; gutter3d is paid once. Wrapping follows available width and the container font, including enlarged text, rather than only a viewport breakpoint. The consumer still chooses whether to collapse the chooser after stacking and must verify intermediate widths. Do not force a fixed sidebar across the doubled-text matrix.

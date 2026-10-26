@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspector panel demo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="../inspector-panel.css">
+<style>
+  body { margin: 0; font: 14px/1.5 system-ui, sans-serif; color-scheme: light dark; background: Canvas; color: CanvasText; }
+  main { padding: 24px; min-width: 0; }
+  .grid { display: grid; }
+  .card { background: color-mix(in srgb, CanvasText 4%, Canvas); }
+  .card .swatch { width: 100%; }
+</style>
+</head>
+<body>
+<div class="ip-layout">
+  <aside class="ip-mount" id="panel"></aside>
+  <main id="out"></main>
+</div>
+<script type="module">
+import { createInspectorPanel } from "../inspector-panel.js";
+
+const defaults = {
+  grid: { sm: [1, 12], md: [2, 16], lg: [3, 24] },          // [columns, gutter px] per breakpoint
+  spacing: { base: 4, steps: 4 },
+  shadow: { blur: 12, y: 4, alpha: 0.2 },
+  look: { accent: "#3366ff", rounded: true, ratio: 4 / 3, label: "Card" },
+};
+const schema = [
+  { group: "Grid", hint: "columns and gutter per breakpoint", params: [
+    { type: "matrix", label: "Grid", rows: [["sm", ["grid", "sm"]], ["md", ["grid", "md"]], ["lg", ["grid", "lg"]]], cols: [["cols", 0], ["gutter", 1]], step: 1, min: 1 },
+  ] },
+  { group: "Spacing", hint: "padding = base × steps", params: [
+    { type: "number", path: ["spacing", "base"], label: "Base", unit: "px", min: 1, max: 16, step: 1 },
+    { type: "range", path: ["spacing", "steps"], label: "Steps", min: 1, max: 8 },
+  ] },
+  { group: "Shadow", params: [
+    { type: "range", path: ["shadow", "blur"], label: "Blur", min: 0, max: 40 },
+    { type: "number", path: ["shadow", "y"], label: "Offset y", unit: "px", step: 1 },
+    { type: "range", path: ["shadow", "alpha"], label: "Alpha", min: 0, max: 1, step: 0.05 },
+  ] },
+  { group: "Look", params: [
+    { type: "color", path: ["look", "accent"], label: "Accent" },
+    { type: "toggle", path: ["look", "rounded"], label: "Rounded corners" },
+    { type: "select", path: ["look", "ratio"], label: "Swatch ratio", options: [["1:1", 1], ["4:3", 4 / 3], ["16:9", 16 / 9]] },
+    { type: "text", path: ["look", "label"], label: "Label" },
+  ] },
+];
+const validate = (c) => [
+  ...["sm", "md", "lg"].map((bp) => ({ id: `C-${bp}`, level: "contract", pass: Number.isInteger(c.grid[bp][0]) && c.grid[bp][0] >= 1 && c.grid[bp][0] <= 12 && c.grid[bp][1] <= 8 * c.spacing.base,
+    title: `${bp}: 1–12 whole columns, gutter ≤ 8 × base`, detail: `${c.grid[bp][0]} cols, gutter ${c.grid[bp][1]}` })),
+  { id: "P1", level: "property", pass: c.shadow.alpha <= 0.3, title: "Shadow stays subtle (alpha ≤ 0.3)", detail: String(c.shadow.alpha) },
+];
+window.renders = 0;
+function render(c, { root }) {
+  if (c.look.label === "THROW") throw new Error("label THROW is reserved for the test");
+  window.renders++;
+  const [cols, gutter] = c.grid.md, pad = c.spacing.base * c.spacing.steps, r = c.look.rounded ? 2 * c.spacing.base : 0;
+  const shadow = `0 ${c.shadow.y}px ${c.shadow.blur}px rgb(0 0 0 / ${c.shadow.alpha})`;
+  root.innerHTML = `<div class="grid" style="grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${gutter}px">${[1, 2, 3, 4, 5, 6].map((i) =>
+    `<div class="card" style="padding:${pad}px;border-radius:${r}px;box-shadow:${shadow}" data-spec="Card ${i} · padding ${pad} · radius ${r} · gutter ${gutter} · shadow ${shadow}">
+      <div class="swatch" style="aspect-ratio:${c.look.ratio};background:${c.look.accent};border-radius:${r / 2}px" data-spec="Swatch · ratio ${c.look.ratio.toFixed(3)} · ${c.look.accent}"></div>
+      <p>${c.look.label} ${i}</p></div>`).join("")}</div>`;
+}
+window.panel = createInspectorPanel({ mount: document.getElementById("panel"), title: "Jig", schema, defaults, render, validate, version: 1, storageKey: "ip-demo",
+  outputRoot: document.getElementById("out"), inspectRoot: document.getElementById("out") });
+</script>
+</body>
+</html>

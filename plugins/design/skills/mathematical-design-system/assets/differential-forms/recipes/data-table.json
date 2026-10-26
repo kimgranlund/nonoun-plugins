@@ -1,0 +1,23 @@
+{
+  "status": "confirmed",
+  "recipe": {
+    "component": "table",
+    "columns": [
+      "selection",
+      "project",
+      "status",
+      "estimate",
+      "action"
+    ],
+    "geometry": {
+      "density": "default",
+      "rowSeparationUnits": 0.5,
+      "interiorCellInlineBudget": "gutter/2"
+    },
+    "semantics": {
+      "project": "row header",
+      "estimate": "right aligned; tabular numerals",
+      "selection": "named checkboxes; select-all indeterminate state"
+    }
+  }
+}

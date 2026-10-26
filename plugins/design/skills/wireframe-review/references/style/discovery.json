@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "families": [
+    {
+      "id": "control",
+      "purpose": "Choose or enter values and invoke actions",
+      "leaves": [
+        {
+          "id": "native-select",
+          "when": "Choose one value from a bounded set with native option behavior",
+          "contract": "select/contract.json"
+        }
+      ]
+    },
+    {
+      "id": "navigation",
+      "purpose": "Navigate destinations",
+      "leaves": [
+        {
+          "id": "navigation-menu",
+          "when": "Compact destination-link popover with native dismissal",
+          "contract": "navigation-menu/contract.json"
+        }
+      ]
+    },
+    {
+      "id": "product-foundation",
+      "purpose": "Fields, choices, navigation rows, sidebar anatomy and local simulation",
+      "contract": "product-foundation.md",
+      "recipe": "../../assets/recipes/product-primitives.html",
+      "runtime": "prototype-runtime.md"
+    },
+    {
+      "id": "component-families",
+      "purpose": "Geometry-bound choices, switches, ranges, fields, actions, navigation, collections, feedback, identity and dialog styling",
+      "contract": "components/contract.json",
+      "guidance": "components/README.md",
+      "recipe": "../../assets/recipes/components.html"
+    },
+    {
+      "id": "semantic-palettes",
+      "purpose": "Explicit material, primary, info, success, warning and danger component intents with paired light/dark roles",
+      "contract": "../semantic-palettes.json",
+      "recipe": "../../assets/recipes/semantic-palettes.html"
+    }
+  ],
+  "coverage": "Select/menu contracts plus common component-family recipes; explicit behavior and browser limits remain in each contract.",
+  "componentContext": {
+    "cli": "../../scripts/component-context.mjs",
+    "list": "--list",
+    "query": "ID",
+    "output": "--output NEW_FILE outside the corpus; preserve the lookup command and source hashes",
+    "authority": "Returns exact selected declarations and shared constraints; source contracts remain authoritative. Does not expand referenced contents.",
+    "multipleFamilies": "--shared once, then each ID --record-only; record-only requires the shared context"
+  },
+  "experimentalPatterns": {
+    "guidance": "native-first.md#experimental-pattern-boundary",
+    "status": "Custom tooltip/interest invoker, customizable select and CSS carousel primitives are not maintained implementations. Use documented baseline alternatives; promotion requires owned behavior and environment evidence."
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "native-select",
+  "family": "control",
+  "intent": "Choose one value from a bounded set using the platform's native selector.",
+  "requires": [
+    "accessible-name",
+    "native-select",
+    "native-options",
+    "bootstrap"
+  ],
+  "notFor": [
+    "multi-select chips",
+    "searchable combobox",
+    "rich option cards",
+    "command menu"
+  ],
+  "anatomy": {
+    "required": [
+      "select",
+      "indicator"
+    ],
+    "optional": [
+      "leading-icon",
+      "optgroup"
+    ],
+    "decorative": [
+      "indicator",
+      "leading-icon"
+    ]
+  },
+  "context": {
+    "inherits": [
+      "tier",
+      "scale",
+      "size",
+      "scheme"
+    ],
+    "override": "Only explicitly selected axes change; unrelated axes remain inherited."
+  },
+  "invariants": [
+    "Native name, value, disabled state and keyboard semantics survive decoration",
+    "Exactly one wrapper per select",
+    "Icon slots remain square, centered and pointer-transparent",
+    "Selected text has reserved space for both decorative slots"
+  ],
+  "dependencies": [
+    "../bootstrap.md"
+  ],
+  "observation": "observation.json",
+  "limits": [
+    "Native popup appearance and placement belong to the browser/OS",
+    "No custom listbox behavior is implied",
+    "Shadow roots require their own styles and authored anatomy."
+  ],
+  "labelColor": {
+    "role": "--ui-label",
+    "default": "--md-color-neutral-on-surface-variant",
+    "override": "Local exported family semantic text role; selected value keeps its own foreground"
+  },
+  "construction": {
+    "preferred": "Authored .select__root wrapper, native select and aria-hidden indicator slot with local Phosphor SVG; no JavaScript required for presentation or selection.",
+    "recipe": "../../../assets/recipes/native-select.html",
+    "application": "Navigation, persistence and responses to selection remain consuming-page behavior.",
+    "buildTime": "Artifact builder compiles bare selects and bundled icon shorthands before delivery; existing canonical wrappers are preserved. Dynamic application markup must supply complete anatomy or call createSelectControl from assets/control-markup.mjs explicitly. Build-time leading-icon shorthand is data-select-icon.",
+    "openIndicator": "CSS select:open rotates the indicator 180deg while the native picker is open. Focus alone does not imply open. Engines without reflected :open retain a downward caret; no guessed JS open state."
+  },
+  "implementation": {
+    "anatomy": "Canonical select__root anatomy is defined by construction.preferred and the linked recipe.",
+    "native": "The actual select owns name/value/options, selection keyboard behavior and disabled state; native popup paint/placement remains platform-owned.",
+    "javascript": "No presentation or selection initializer. See construction.application for consuming-page behavior and construction.buildTime for explicit dynamic construction.",
+    "fallback": "The ordinary native select remains the semantic fallback. Missing custom decoration must not remove it; rich combobox behavior is outside this contract.",
+    "css": "../../../assets/wireframe.css",
+    "verification": "../../../scripts/check-select-contract.mjs",
+    "evidence": {
+      "environments": [
+        "Chromium 151.0.7922.34",
+        "Firefox 153.0",
+        "WebKit 26.5"
+      ],
+      "guide": "../../reports/component-support-2026-10-09.md#select",
+      "scope": "Authored native recipe and keyboard/script-disabled paths on these engine versions; older engines, installed Safari and assistive technology are unverified."
+    }
+  },
+  "indicatorOwnership": "compileControls owns the trailing caret. data-select-icon supplies a leading semantic icon, not the indicator; omit it when no semantic icon is needed. A leading caret-down duplicates the owned indicator.",
+  "contentFit": {
+    "rule": "Use explicit, distinct concise optionLabel values; retain stable record IDs as values and show full selected title in adjacent wrapping detail. Never mechanically slice titles or rely on tooltips. If meaningful labels cannot fit, choose a wrapping record chooser instead.",
+    "recipe": "../../../assets/recipes/compact-options.js",
+    "check": "SELECT_TEXT_FIT measures every option against the closed native control content width; enlarged text and every dynamic set matter. Popup rendering remains OS-owned.",
+    "composition": "Optional record-picker__root on the owning field__root bounds a concise record selector to36ch, capped by available width. Full titles remain in wrapping detail."
+  },
+  "indicatorContainment": "The decorative indicator stays inside the visible native select frame at all widths and text sizes. Size select__root/select__root; retain the maintained child select width:100%. A width:auto child inside a wider positioned wrapper can strand the caret beyond its border. Verify SELECT_INDICATOR_BOUNDS, SELECT_ANATOMY and SELECT_TEXT_FIT on the compiled artifact, including narrow widths, enlarged text and dynamic options.",
+  "prefix": {
+    "authoring": "<select data-prefix=\"Tier \u00b7\" aria-label=\"Tier\">\u2026</select>",
+    "ownership": "Compiler adds decorative select__prefix inside the single maintained wrapper. Accessible name remains explicit. Wrapper owns border and focus; no toolbar-specific select implementation.",
+    "geometry": "Standard control geometry and text; prefix padding uses shared text edge, value gap d/2. Caller sizes wrapper; select retains flexible width.",
+    "semantics": "Native platform options are intentional for native-select; custom listboxes remain a separate pattern."
+  },
+  "appearance": {
+    "attribute": "data-select-appearance",
+    "values": [
+      "default",
+      "ghost"
+    ],
+    "default": "default",
+    "ghost": "Transparent resting border/background; same geometry, prefix and focus owner; shared paired hover colors."
+  }
+}

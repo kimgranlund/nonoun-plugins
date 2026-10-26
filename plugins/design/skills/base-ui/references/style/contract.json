@@ -1,0 +1,323 @@
+{
+  "version": 2,
+  "scope": "Wireframe-review consumption profile; not a new Ultimate Tokens export format",
+  "styles": [
+    "../../assets/foundation/ultimate-tokens/colors.css",
+    "../../assets/foundation/ultimate-tokens/typography.css",
+    "../../assets/foundation/maison/geometry.css",
+    "../../assets/foundation/maison/layout.css",
+    "../../assets/wireframe.css"
+  ],
+  "guidance": "composition.md",
+  "defaults": {
+    "tier": "product",
+    "scale": "md",
+    "size": "md",
+    "icons": "phosphor"
+  },
+  "families": {
+    "control": {
+      "slots": [
+        "leading",
+        "label",
+        "value",
+        "trailing"
+      ],
+      "roles": [
+        "--g-height",
+        "--g-margin",
+        "--g-icon",
+        "--g-text",
+        "--r-control"
+      ]
+    },
+    "surface": {
+      "slots": [
+        "header",
+        "body",
+        "footer"
+      ],
+      "roles": [
+        "--g-margin",
+        "--r-card",
+        "--ui-surface",
+        "--ui-ink"
+      ],
+      "foregroundDependencies": {
+        "foreground": "--ui-ink",
+        "supportingText": "--ui-muted",
+        "label": "--ui-label",
+        "rule": "Rebind all used descendant roles to readable foregrounds when changing the surface context; container color alone is insufficient."
+      }
+    },
+    "collection": {
+      "slots": [
+        "item",
+        "separator",
+        "empty"
+      ],
+      "roles": [
+        "--m-gap-stack",
+        "--ui-divider"
+      ]
+    },
+    "navigation": {
+      "slots": [
+        "identity",
+        "destinations",
+        "utilities"
+      ],
+      "roles": [
+        "--ui-content-width",
+        "--ui-section-margin"
+      ]
+    },
+    "overlay": {
+      "extends": "surface",
+      "slots": [
+        "trigger",
+        "panel"
+      ],
+      "anchorGap": "calc(var(--g-gutter) / 2)",
+      "layout": "out-of-flow",
+      "geometry": "Widget margin/radius2n (padding subtracts border); anchor gutter n/2; bounded viewport and scrolling content."
+    },
+    "popover": {
+      "classes": [
+        "popover__root"
+      ],
+      "semantics": "Labelled native auto popover for supplementary content; destination links use navigation-menu contract",
+      "roles": [
+        "--g-margin",
+        "--r-control",
+        "--ui-surface",
+        "--ui-ink",
+        "--ui-border"
+      ],
+      "geometry": "Card padding=3margin; control radius includes presentation factor/scale; anchor gap=gutter/2; viewport bounded, overflowing content scrolls",
+      "construction": "Unique popover id, popovertarget button and explicit anchor-name/position-anchor pair. Put flow__root inside the panel, never override the closed popover display.",
+      "behavior": "Native opening, light dismissal and Escape; provide Close for longer content. Native semantics, no menu role or initializer."
+    }
+  },
+  "axes": {
+    "state": [
+      "rest",
+      "hover",
+      "focus",
+      "selected",
+      "disabled",
+      "pending",
+      "invalid"
+    ],
+    "context": [
+      "tier",
+      "scale",
+      "size",
+      "scheme"
+    ],
+    "emphasis": [
+      "primary",
+      "secondary",
+      "quiet"
+    ],
+    "appearance": [
+      "solid",
+      "soft",
+      "outline",
+      "ghost",
+      "link"
+    ],
+    "intent": [
+      "neutral",
+      "accent",
+      "material",
+      "primary",
+      "info",
+      "success",
+      "warning",
+      "danger"
+    ]
+  },
+  "relationships": [
+    "contains",
+    "aligns-with",
+    "anchors-to",
+    "groups-with"
+  ],
+  "recipes": [
+    "../../assets/example.manifest.json",
+    "../../assets/demos/marketing-navigation.mjs",
+    "../../assets/demos/agentic-render.mjs",
+    "../../assets/recipes/product-primitives.html",
+    "../../assets/recipes/navigation-menu.html",
+    "../../assets/recipes/components.html",
+    "../../assets/recipes/page-rhythm.html",
+    "../../assets/recipes/native-patterns.html"
+  ],
+  "spacing": {
+    "source": "product-foundation.md",
+    "recipe": "../../assets/recipes/spacing.html",
+    "unit": "--g-margin",
+    "relationships": {
+      "tight": "var(--g-gutter)",
+      "content": "calc(var(--g-gutter)*2)",
+      "section": "calc(var(--g-gutter)*3)",
+      "margin": "calc(var(--g-margin)*4)",
+      "page": "calc(var(--g-gutter)*6)"
+    },
+    "ownership": "Immediate parent owns content gap; direct child margins reset; nested semantic groups need no surface. Card margin is 3u; fixed control slots retain compact geometry. Major groups use 3u (same as card padding), fields 2u, related content 1u.",
+    "layoutClasses": {
+      "page__flow": "top-level section boundaries: 3u",
+      "section__flow": "section header/body boundaries: 3u",
+      "heading-group__root": "heading/description relationship: 1u",
+      "page__root": "Outer page only: 4u margin, separate from page-flow gaps; nested cards/groups do not repeat it."
+    },
+    "marginUnit": "--g-margin",
+    "gutterUnit": "--g-gutter"
+  },
+  "components": "components/contract.json",
+  "headingContexts": {
+    "product": {
+      "selectors": [
+        ".product__root",
+        ".card__root",
+        ".dialog__root",
+        ".notice__root",
+        ".popover__root",
+        "[data-type-context=product]"
+      ],
+      "h1ToH6": [
+        "--type-title-sm-size",
+        "--type-body-lg-size",
+        "--type-body-md-size",
+        "--type-body-sm-size",
+        "--type-ui-control-md-size",
+        "--type-ui-widget-md-size"
+      ],
+      "font": "--font-voice-ui-control",
+      "weight": "--type-ui-control-weight-semi-bold",
+      "densityIndependent": true
+    },
+    "content": "data-type-context=content explicitly restores editorial headings; nested product containers reset their context",
+    "semantics": "Keep h1-h6 document hierarchy independent of visual scale"
+  },
+  "colorNotation": {
+    "literals": "oklch",
+    "minimumDecimalPlaces": 2,
+    "serializationDecimals": {
+      "lightness": 6,
+      "chroma": 6,
+      "hue": 4,
+      "alpha": 4
+    },
+    "preserve": [
+      "alpha",
+      "light/dark resolution",
+      "verbatim source excerpts"
+    ],
+    "styling": "Prefer semantic var() references over literals"
+  },
+  "tokenUsage": {
+    "color": {
+      "purpose": "Raw ramps supply palette values; semantic roles bind UI meaning and paired foregrounds to scheme.",
+      "when": "Use exported semantic surface/text/action/status pairs for interfaces. Use raw ramps for palette inspection or an explicitly designed role mapping.",
+      "notFor": "Do not choose a raw step merely because it looks close, assume light and dark differ, or derive foreground contrast from token names alone.",
+      "source": "../../assets/foundation/ultimate-tokens/colors.css",
+      "guidance": "composition.md"
+    },
+    "typography": {
+      "purpose": "Voice/font and role-scale declarations separate product controls/headings from editorial reading.",
+      "when": "Use UI roles inside cards and product containers; use an explicit content context for editorial sections. Keep family, weight, size and line-height together.",
+      "notFor": "Do not apply the editorial heading scale to every h1-h6 or scale the whole interface with transforms.",
+      "source": "../../assets/foundation/ultimate-tokens/typography.css",
+      "guidance": "product-foundation.md"
+    },
+    "geometry": {
+      "purpose": "Context resolves control height, margin, icon, text and radius together across tier/scale/size.",
+      "when": "Inherit context and change only intended axes. Card margin is 3u, major content groups 3u, fields 2u, related content 1u.",
+      "notFor": "Do not assign independent pixel dimensions to each control part or add padded cards solely because markup is nested.",
+      "source": "../../assets/foundation/maison/geometry.css",
+      "guidance": "product-foundation.md"
+    },
+    "layout": {
+      "purpose": "Layout declarations supply composition spacing and alignment primitives.",
+      "when": "The immediate layout parent owns spacing; use page, section, field and inline relationships at their proper scope.",
+      "notFor": "Do not stack child margins on a parent gap or treat inline gaps and section spacing as interchangeable.",
+      "source": "../../assets/foundation/maison/layout.css",
+      "guidance": "composition.md"
+    },
+    "profile": {
+      "purpose": "Wireframe aliases and component-scoped variables consume the supplied foundations.",
+      "when": "Use profile surface/ink/label roles and component geometry in the declared component context. Consult selector scope before interpreting a default.",
+      "notFor": "Do not present an unresolved component variable as a missing global default or rebind only body text when changing an inverse surface.",
+      "source": "../../assets/wireframe.css",
+      "guidance": "product-foundation.md"
+    }
+  },
+  "scopedTokens": {
+    "--ph-source": {
+      "tag": "span",
+      "attributes": {
+        "data-ph": "caret-right"
+      },
+      "purpose": "Representative glyph source; each icon supplies its own mask."
+    },
+    "--ui-flow-gap": {
+      "tag": "div",
+      "attributes": {
+        "class": "flow__root"
+      },
+      "purpose": "Default flow gap; spacing attribute changes the relationship."
+    },
+    "--ui-target-min": {
+      "tag": "input",
+      "attributes": {
+        "class": "checkbox__control",
+        "type": "checkbox"
+      },
+      "purpose": "Choice-context minimum target declaration; inspect the component frame and label for actual pointer area."
+    },
+    "--ui-switch-clearance": {
+      "tag": "label",
+      "attributes": {
+        "class": "switch__root"
+      },
+      "purpose": "Switch-local clearance; derives from inherited geometry."
+    },
+    "--ui-switch-height": {
+      "tag": "label",
+      "attributes": {
+        "class": "switch__root"
+      },
+      "purpose": "Switch-local height; derives from inherited geometry."
+    },
+    "--ui-switch-width": {
+      "tag": "label",
+      "attributes": {
+        "class": "switch__root"
+      },
+      "purpose": "Switch-local width; derives from inherited geometry."
+    },
+    "--ui-composed-radius": {
+      "tag": "div",
+      "attributes": {
+        "class": "segments__root"
+      }
+    },
+    "--ui-composed-margin": {
+      "tag": "div",
+      "attributes": {
+        "class": "segments__root"
+      }
+    }
+  },
+  "semanticPaletteContract": "references/semantic-palettes.json",
+  "tiers": [
+    "widget",
+    "product",
+    "content",
+    "brand"
+  ],
+  "geometryProfile": "../../assets/foundation/maison/geometry.json",
+  "geometrySource": "mathematical-design-system/scripts/lib/scale.mjs"
+}

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {normalizeClassNames} from './class-names.mjs';
+import {compileControls} from './compile-controls.mjs';
+assert.equal(normalizeClassNames('button__root button__root'),'button__root');
+assert.equal(normalizeClassNames('button__root'),'button__root');
+assert.match(compileControls('<div class=field__root></div>'),/class="field__root"/);
+assert.equal(compileControls('<div data-class="field__root"></div>'),'<div data-class="field__root"></div>');
+assert.match(compileControls('<span class="select__root"><select><option>A</option></select></span>'),/^<span class="select__root"><select>/);
+assert.match(compileControls('<details class="disclosure__root"><summary>A</summary><div class="disclosure__body">B</div></details>'),/disclosure__body/);
+console.log('PASS canonical class normalization, no alias expansion, native select/disclosure and attribute isolation.');

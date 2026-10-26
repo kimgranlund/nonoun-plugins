@@ -1,0 +1,11 @@
+# Consumer integration — Differential Forms
+
+For new implementation work, start at the current consuming project’s `registry.json`, `system.manifest.json` and `docs/principles.md`. Resolve implemented component APIs and supported parts through their manifests; check `avoidWhen` and `useInstead`. Preserve local instructions and existing behavior. The bundled `assets/differential-forms` v0.2.2 snapshot is a frozen historical geometry/specimen baseline, not the current custom-element distribution. Its export helper does not upgrade it. Obtain a verified current project/export before adopting new components.
+
+Public component attributes configure geometry and state. Companion `components/{component}/{component}.css` owns styles and token mappings and resolves CSS lengths; TypeScript implements behavior and reflects public inputs/state only. No runtime style generation, inline declarations or injected stylesheets. Templates may create custom-part anatomy and text nodes; native component interiors require explicit user authorization. Pure geometry resolvers remain numerical references.
+
+Keep border-box, fixed slots, family-specific density, exposed label edges and owner border budgets. Cards do not invoke composite subtraction. At zero requested attached-composite inset, child curvature is zero. Contain group child paint while preserving visible keyboard focus. Preserve 3px solid ink, zero-offset keyboard focus; neutral input wrappers and sibling actions own their respective rings. Pointer use should not display keyboard focus. Passive content has no action behavior or tab stop.
+
+Read the chosen project’s build and verification instructions. Numerical checks do not establish browser appearance, keyboard behavior or accessibility. Verify actual state transitions, disabled/invalid precedence, light/dark themes and affected geometry. Keep comparisons until replacement verification, then remove superseded main-page examples if requested. Report broader platform audits separately.
+
+Consumer status is intentionally local: the Codex Proportion tree has its own explicit migration and verification records; the Claude Proportion tree remains historical. Do not overwrite one with the other, deploy either, or synchronize UI-KIT merely because these shared instructions changed. Legacy assets are retained for deliberate maintenance only.
