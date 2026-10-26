@@ -24,3 +24,12 @@ User decision 2026-10-25: three plugin homes for the user-level skills (progress
 
 ## Constraints
 Keep one authoritative location per fact: link to each plugin's own `AGENTS.md` once it exists instead of copying its details.
+
+## Outcome
+`AGENTS.md` now names four peer plugins. Intro line, Purpose and ownership list (Progressive Context extended with context routing and system mapping and marked "to be renamed `context`, T-0793"; new one-line ownership for design (T-0791) and dev-tools (T-0792)), the map line ("holds the plugins"), and the Read for the task table (renamed row plus one row for the planned plugins, no links to files that do not exist).
+
+Checks:
+- `grep -n 'two peer plugins\|the two plugins' AGENTS.md` prints nothing (exit 1)
+- `git diff --check` exit 0
+- `python3 scripts/check-packaging.py` exit 0
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0
