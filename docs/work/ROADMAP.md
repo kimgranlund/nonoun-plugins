@@ -11,6 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0792 | [0792-dev-tools-plugin](0792-dev-tools-plugin/handoff.md) | new dev-tools plugin from the user-level machine and harness skills | feature | L2 | P2 | T-0789 | 🟡 claimed |
 | T-0793 | [0793-rename-progressive-context-plugin](0793-rename-progressive-context-plugin/handoff.md) | rename the progressive-context plugin to context | chore | L2 | P2 | T-0789 | 🟡 claimed |
 | T-0790 | [0790-context-skills-into-progressive-context](0790-context-skills-into-progressive-context/handoff.md) | move the context skills into the context plugin | feature | L3 | P2 | T-0789, T-0793 | ⏳ proposed |
+| T-0794 | [0794-guidance-gate-rename](0794-guidance-gate-rename/handoff.md) | dispatch.py prepare refuses a lane that renames a guidance file its handoff names | bug | L2 | P2 | none | ⏳ proposed |
 
 Closed: 750 done, 30 dropped (git log or .NNNN-* folders)
 
