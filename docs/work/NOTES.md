@@ -675,3 +675,7 @@
 ## T-0789: repository charter for four plugins (2026-10-25)
 
 - note: AGENTS.md:31 the new Read for the task row for design and dev-tools links nothing yet by design; T-0791 and T-0792 should replace it with links to each plugin's AGENTS.md.
+
+## T-0793: rename the progressive-context plugin to context (2026-10-25)
+
+- note: `.github/workflows/release-check.yml` names no plugin path, so CI triggers need no change.
