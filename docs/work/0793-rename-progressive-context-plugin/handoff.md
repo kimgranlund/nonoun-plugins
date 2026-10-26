@@ -24,3 +24,23 @@ User decision 2026-10-25: "rename `progressive-context` plugin to `context`". A 
 
 ## Constraints
 The plugin's skill behavior does not change. Marketplace parity between the Claude and Codex catalogs holds.
+
+## Outcome
+`plugins/progressive-context/` is now `plugins/context/` (`git mv`), both manifests say `name: context`, version 0.2.0, and the Codex display name is `Context`. Both marketplaces, `scripts/check-packaging.py` (catalog set, link-check path, and an `ENTRY_SKILL` map because the entry skill keeps its name), `plugins/sdlc-lite/scripts/check.py` (sibling skills root), `AGENTS.md`, `README.md`, `HARNESS-NOTES.md`, and the spec and planning links now point at `context`. Upgrade notes are in the new `plugins/context/CHANGELOG.md`; the root `CHANGELOG.md` links to it. Eight links in the dated `docs/reports/workflow-stage-pilot/` records still point at the old path and are listed in `docs/reports/broken-links-allowlist.md` instead of edited.
+
+Remaining `progressive-context` grep hits, each kept on purpose:
+- Skill name and its uses: `plugins/context/skills/progressive-context/` (SKILL.md `name:`, `performance-contract.json` `skillId`), `$progressive-context` in `.codex-plugin/plugin.json`, `README.md`, `HARNESS-NOTES.md`, `/context:progressive-context`, `plugins/context/AGENTS.md` skill path, the `ENTRY_SKILL` map in `scripts/check-packaging.py`. Non-goal: the skill is not renamed.
+- Method-name spec files `docs/specs/generative-constructs/progressive-context-*.md` and every link or mention of them (`docs/README.md`, `docs/specs/generative-constructs/AGENTS.md` and `README.md`, the gap analysis, `docs/planning/docs-schema/design.md:162`, `docs/planning/repo-onboarding/reorganization.md`). Non-goal.
+- Dated report `reports/progressive-context-gap-analysis-review.md` and its mentions (`docs/README.md:44`, `docs/layout.md:100`).
+- History: gap analysis line 9 (the plugin as analyzed at 0.1.2), spec decision line 270 and status line 290 (now say renamed), the proposed package tree at spec line 188 (future layout of the skill).
+- Ticket ids and folder names in `.sdlc/AGENTS.md` and `docs/work/ROADMAP.md`; `docs/other/claude-response.md` (out of scope, names the skill folder); the upgrade note in `plugins/context/CHANGELOG.md` (names the old install id).
+
+Checks: `python3 scripts/check-packaging.py` exit 0, `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check` exit 0.
+
+## Acceptance criteria
+- `python3 scripts/check-packaging.py` exits 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `git diff --check` exits 0.
+- `test ! -e plugins/progressive-context && test -f plugins/context/skills/progressive-context/SKILL.md` exits 0.
+- `grep -q '"name": "context"' plugins/context/.claude-plugin/plugin.json && grep -q '"version": "0.2.0"' plugins/context/.codex-plugin/plugin.json` exits 0.
+- `! git grep -n -e 'progressive-context@' -e '/progressive-context:' -e 'plugins/progressive-context' -- ':!docs/work' ':!docs/reports' ':!plugins/context/CHANGELOG.md'` exits 0.
