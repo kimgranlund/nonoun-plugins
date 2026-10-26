@@ -25,3 +25,24 @@ Sources are the user-level skill folders, merged 2026-10-25 so every copy of a s
 
 ## Constraints
 Model, effort and permission defaults in the skills stay as they are.
+
+## Outcome
+`plugins/design/` ships eight skills for Claude Code and Codex (version 0.1.0): `base-ui`, `mathematical-design-system`, `hct-palettes`, `ui-kit-inspector`, `component-variants`, `wireframe-review`, `design-crit` and `make-figma-agent-connector`, with both host manifests, `AGENTS.md` (skill table, rules, checks) and `CLAUDE.md`. Sources: `~/.codex/skills/` for the first six (identical to the share and the Claude copies), `/Volumes/kimba/.codex/skills/` for `design-crit` and `inspector-panels`, `~/.claude/skills/` for `make-figma-agent-connector`. Both marketplace catalogs list `design`; `AGENTS.md`, `README.md` and `docs/README.md` each gained one route.
+
+- inspector-panels merged into ui-kit-inspector, as `ui-kit-inspector/examples/inspector-panel/`. Reason: both trigger on the same asks (jig, tweak panel, inspector panel); ui-kit-inspector is the newer, framework-neutral skill with the jig contract, change-set schema and checker, while inspector-panels is one plain-DOM implementation of a panel; its SKILL.md was 38,926 characters, over the 18,000 skill limit, because it embedded copies of its own JS and CSS. Its SKILL.md became `README.md` without the embedded copies; `scripts/build.mjs` no longer syncs them and its test no longer checks them; both now reach `mathematical-design-system` four levels up. `npm test` there passes 3 of 3. ui-kit-inspector's SKILL.md and `examples/README.md` route to it.
+- Cross-plugin route: base-ui's link to `../closed-loop-run/references/ui-feedback.md` is now plain text naming the `dev-tools:closed-loop-run` skill and its `references/ui-feedback.md` page, so it does not depend on a path into another plugin.
+- Cross-skill links: `scripts/check-packaging.py` adds `check_design`: each skill's frontmatter name equals its folder, a link that leaves its skill (or names a sibling skill but climbs too little) must resolve inside the plugin, and a link into another plugin fails. Negative controls observed: the old closed-loop-run link, an under-climbing link, a link into `progressive-context`, a missing sibling skill and a renamed frontmatter each fail it. Two historical base-ui files (`references/pre-differential/geometry-spacing.md`, `skill-entry-history.md`) had cross-skill links one level too shallow; they now resolve. base-ui was resealed (`kit.json`: three hashes changed).
+- `make-figma-agent-connector` runs its script from `${CLAUDE_PLUGIN_ROOT}/skills/make-figma-agent-connector/scripts/start-bridge.sh`, not `~/.claude/skills/`. It stays Claude Code only (`Monitor`, `allowed-tools`).
+- Left out: `base-ui/resources/reports/` (5.4 MB) and `wireframe-review/resources/reports/` (4.1 MB) dated evidence, both outside the base-ui seal; `mathematical-design-system/assets/proportion-lab/.git` (a nested repository, 3.4 MB) and `.openai/hosting.json` (a hosting project id); every `.DS_Store`. No `node_modules`, `__pycache__` or symlinks were in the sources. `wireframe-review/references/reports/` ships because base-ui links into it.
+- 56 broken relative links came over from the sources: links to a UI-KIT checkout on this Mac, historical files written from the skill root, five targets already missing in the source skills, and one to the dropped `resources/reports/`. They are listed in `docs/reports/broken-links-allowlist.md` with reasons so `check.py` item 32 stays green.
+- Pre-existing, not changed: `component-variants/ui-kit.lock.json` (version 1.0.0) and `wireframe-review/ui-kit.lock.json` do not match base-ui's identity, so `component-variants/scripts/check-build.mjs` fails in the source and in the plugin alike; the locks say to update them only after a kit review.
+
+Checks: `python3 scripts/check-packaging.py` exit 0; `node scripts/check-kit.mjs` (base-ui) exit 0; `node scripts/check-geometry.mjs` and `node scripts/check-curvature.mjs` (mathematical-design-system) exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` exit 0.
+
+## Acceptance criteria
+- `python3 scripts/check-packaging.py` exits 0 (catalogs, manifests, skill names and sizes, design cross-skill links).
+- `cd plugins/design/skills/base-ui && node scripts/check-kit.mjs` exits 0.
+- `cd plugins/design/skills/mathematical-design-system && node scripts/check-geometry.mjs` exits 0.
+- `cd plugins/design/skills/mathematical-design-system && node scripts/check-curvature.mjs` exits 0.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `test -z "$(find plugins/design -name .DS_Store -o -name node_modules -o -name __pycache__ -o -name .git -o -name resources -o -type l)"` exits 0.
