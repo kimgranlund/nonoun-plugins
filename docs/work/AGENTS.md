@@ -1,7 +1,7 @@
-<!-- sdlc-lite:managed:start v1 sha256:d4644918945a -->
+<!-- sdlc-lite:managed:start v1 sha256:0e12501cf696 -->
 # Work records
 
 This folder is the SDLC Lite work root: ticket and task folders, the generated `ROADMAP.md`, and `NOTES.md`. How to create, claim, and close a ticket, and the ticket list, are in [`.sdlc/AGENTS.md`](../../.sdlc/AGENTS.md). `tickets.py roadmap` generates this block: do not edit inside it.
 
-Stages: proposed 1, ready 0, claimed 2, paused 0, blocked 1, done 753, dropped 30.
+Stages: proposed 1, ready 0, claimed 1, paused 0, blocked 1, done 754, dropped 30.
 <!-- sdlc-lite:managed:end -->

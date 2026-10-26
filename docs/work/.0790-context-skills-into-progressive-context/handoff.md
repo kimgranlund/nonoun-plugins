@@ -2,7 +2,7 @@
 id: T-0790
 title: "move the context skills into the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0789, T-0793]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,23 @@ verifier: L3
 - `cd plugins/context/skills/context-fog-of-war && python3 -B -m unittest discover -s tests` exits 0.
 - `cd plugins/context/skills/system-atlas && python3 -B scripts/test_atlas_renderer.py` exits 0.
 - `grep -q '"version": "0.3.0"' plugins/context/.claude-plugin/plugin.json && grep -q '"version": "0.3.0"' plugins/context/.codex-plugin/plugin.json` exits 0.
+
+## Outcome
+
+2026-10-25 · lane: solo L3 · verdict: pass · verifier: verifier-L3 (fable) · base: 1a3ac0c391f8
+- Changed: see commits
+- Commits: bd77441 T-0790: record the solo L3 lane in skips.md; b9232ee T-0790: note that system-atlas publishes through Claude's Artifact tool; be73ec6 T-0790: move five context skills into the context plugin
+- Check: 1 `python3 scripts/check-packaging.py` exits 0 (catalog parity, identity, skill sizes, every relati...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (item 42: no context skill link leaves its f...: pass
+- Check: 3 `test -z "$(find plugins/context \( -name .DS_Store -o -name __pycache__ -o -name node_modules -o...: pass
+- Check: 4 `test -f plugins/context/skills/context-fog-of-war/SKILL.md -a -f .../context-routing-review/SKIL...: pass
+- Check: 5 `cd plugins/context/skills/context-fog-of-war && python3 -B -m unittest discover -s tests` exits 0: pass
+- Check: 6 `cd plugins/context/skills/system-atlas && python3 -B scripts/test_atlas_renderer.py` exits 0: pass
+- Check: 7 `grep -q '"version": "0.3.0"' plugins/context/.claude-plugin/plugin.json && grep -q '"version": "...: pass
+- Follow-up: note: git diff --check against base flags only copied files... -> notes.md
+- Follow-up: note: source parity holds: system-atlas, icm-architect vs... -> notes.md
+- Follow-up: decide: plugins/context/skills/context-fog-of-war/AGENTS.md:31 requires an... -> notes.md
+- Follow-up: note: plugins/context/skills/progressive-context/references/contracts.md:... -> notes.md
+- Follow-up: note: plugins/context/skills/icm-architect/SKILL.md:3 description carries... -> notes.md
+- Follow-up: note: the routing judge picked icm-architect outright for "map this repo"... -> notes.md
+- Follow-up: note: no builder-.md exists in the artifacts dir; the solo's claims were... -> notes.md
