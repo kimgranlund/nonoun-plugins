@@ -7,9 +7,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0788 | [0788-solo-review-rerun](0788-solo-review-rerun/handoff.md) | advance on a solo reruns the pre-verify review after a verifier fail | bug | L1 | P2 | none | ⏳ proposed |
-| T-0791 | [0791-design-plugin](0791-design-plugin/handoff.md) | new design plugin from the user-level design skills | feature | L3 | P2 | T-0789 | ⏳ proposed |
-| T-0792 | [0792-dev-tools-plugin](0792-dev-tools-plugin/handoff.md) | new dev-tools plugin from the user-level machine and harness skills | feature | L2 | P2 | T-0789 | ⏳ proposed |
-| T-0793 | [0793-rename-progressive-context-plugin](0793-rename-progressive-context-plugin/handoff.md) | rename the progressive-context plugin to context | chore | L2 | P2 | T-0789 | ⏳ proposed |
+| T-0791 | [0791-design-plugin](0791-design-plugin/handoff.md) | new design plugin from the user-level design skills | feature | L3 | P2 | T-0789 | 🟡 claimed |
+| T-0792 | [0792-dev-tools-plugin](0792-dev-tools-plugin/handoff.md) | new dev-tools plugin from the user-level machine and harness skills | feature | L2 | P2 | T-0789 | 🟡 claimed |
+| T-0793 | [0793-rename-progressive-context-plugin](0793-rename-progressive-context-plugin/handoff.md) | rename the progressive-context plugin to context | chore | L2 | P2 | T-0789 | 🟡 claimed |
 | T-0790 | [0790-context-skills-into-progressive-context](0790-context-skills-into-progressive-context/handoff.md) | move the context skills into the context plugin | feature | L3 | P2 | T-0789, T-0793 | ⏳ proposed |
 
 Closed: 750 done, 30 dropped (git log or .NNNN-* folders)
