@@ -4,7 +4,7 @@ T-0801. Five L1 bug tickets and one planted control in a throwaway Python projec
 
 ## Verdict
 
-Reject the diff-scoped verifier on cost, keep it on catch rate, and measure again on real tickets. On tickets this small the diff verifier cost the same as the full verifier ($1.41 against $1.41 for five), because the full verifier also read only the changed lines. It was the only verifier that failed the planted control. The full verifier found the same stub and noted it as `fix-now`, but returned `pass`.
+Reject the diff-scoped verifier on cost, keep it on catch rate, and measure again on real tickets. On tickets this small the diff verifier cost the same as the full verifier ($1.4041 against $1.4098 for five, 0.4 percent apart), because the full verifier also read only the changed lines. It was the only verifier that failed the planted control. The full verifier found the same stub and noted it as `fix-now`, but returned `pass`.
 
 ## Arms
 
@@ -19,7 +19,7 @@ All ten builds started together at 21:42 UTC, load 7.14 (`uptime`); the diff ver
 
 ## Results
 
-Seconds are first to last transcript timestamp; dollars are `cost_estimate.estimate(transcript_model, transcript_usage)` per transcript (the conductor's measuring script, not in the fixtures because it names local paths).
+Sources. Seconds are the first to last timestamp of each sub-agent transcript, and dollars are `cost_estimate.estimate(cost_estimate.transcript_model(t), cost_estimate.transcript_usage(t))` for that transcript `t`. Transcripts are the conductor session's `subagents/agent-a<run name>-<16 hex>.jsonl`, matched by the exact run name (a first pass matched `0005-verifier-L1-*` by glob, picked the try-2 transcript and misreported row d5; the T-0801 verifier caught it). Run names: `exp-a<k>`, `exp-b<k>`, `000<k>-verifier-L1` (d), `000<k>-verifier-L1-2` (f), and for the control `0006-verifier-L1-2` (d) and `0006-verifier-L1-3` (f). Verdicts are each experiment repo's `b<k>/.sdlc/runtime/tasks/<slug>/verifier-L1*.md`; the repos lived in the conductor's scratchpad and are not kept.
 
 | Ticket | a sec | a $ | b sec | b $ | d sec | d $ | f sec | f $ | hidden test a / b | d / f verdict |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -27,8 +27,8 @@ Seconds are first to last transcript timestamp; dollars are `cost_estimate.estim
 | word-count-spaces | 19 | 0.1937 | 22 | 0.2000 | 21 | 0.2811 | 23 | 0.2786 | pass / pass | pass / pass |
 | truncate-short | 11 | 0.1758 | 26 | 0.1946 | 22 | 0.2810 | 24 | 0.2861 | pass / pass | pass / pass |
 | parse-kv-empty | 9 | 0.1576 | 31 | 0.2464 | 24 | 0.2879 | 22 | 0.2851 | pass / pass | pass / pass |
-| median-even | 16 | 0.1415 | 26 | 0.2346 | 20 | 0.2783 | 20 | 0.2783 | pass / pass | pass / pass |
-| Total | 63 | 0.8155 | 131 | 1.1037 | 108 | 1.4051 | 112 | 1.4098 | 5/5, 5/5 | |
+| median-even | 16 | 0.1415 | 26 | 0.2346 | 22 | 0.2774 | 20 | 0.2783 | pass / pass | pass / pass |
+| Total | 63 | 0.8155 | 131 | 1.1037 | 110 | 1.4041 | 112 | 1.4098 | 5/5, 5/5 | |
 | title-case (control) | - | - | - | - | 19 | 0.3421 | 16 | 0.2428 | - | fail / pass |
 
 Hidden tests: `test_hidden.py` in the fixtures, one behavior test per function beyond the visible check, run in each build (`python3 -m unittest test_hidden.H.test_<name>`): 10 of 10 pass.
@@ -36,7 +36,7 @@ Hidden tests: `test_hidden.py` in the fixtures, one behavior test per function b
 ## What this shows
 
 - A plain session matched the solo lane on quality (10 of 10 hidden passes) for $0.82 against $1.10 build cost, and $2.51 once the verifier is added: about 3 times the cost for the same result on L1 tickets. That is the price of the independent check.
-- On L1 tickets the diff-scoped brief saves nothing measurable: d and f both took about 20 s and $0.28 per ticket.
+- On L1 tickets the diff-scoped brief saves nothing measurable: d and f both took about 22 s and $0.28 per ticket.
 - The diff brief changed the verdict on the control. Both verifiers saw that `title_case` returns its input. The diff verifier failed the build, calling the `grep` criterion vacuous. The full verifier passed it and filed the defect as a `fix-now` note. One control is one sample.
 - Two solo builds made commit-history slips (b1 amended a commit made before its edit landed; b4 first committed an Outcome claiming a fix that was not in the tree). Both verifiers passed the final tree; neither was asked to judge history.
 
