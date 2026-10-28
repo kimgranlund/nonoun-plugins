@@ -2,6 +2,21 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
+## [0.39.0] - 2026-10-28
+
+Report: [docs/reports/2026-10-28-release-0-39-0.md](docs/reports/2026-10-28-release-0-39-0.md). 5 tickets: fixes from the [2026-10-28 fleet retro](docs/reports/2026-10-28-fleet-retro.md) and GitHub #83 and #84 (T-0796 to T-0798), the last 0.37.0 follow-up (T-0788), and an inner-link check fix (T-0795).
+
+### Changed
+
+- `fleet_detect.py` rule `stall_attempts` also fires when interrupted attempts lost more than 120 minutes (`stall_lost_min`), and `dispatch.py status` and `recover` read a running attempt whose ticket is done or dropped as orphaned (T-0796).
+- `dispatch.py advance` on a solo reruns the pre-verify review after a verifier fail only when `pre_verify_paths` content changed since the last passing review (T-0788).
+- The `steps.py lint` refusal `cited path does not exist` names the `[creates: <path>]` marker and the `Outputs:` line as the fix (T-0798, #84).
+
+### Fixed
+
+- `tickets.py close` keeps a committed `skips.md` in the closed ticket folder instead of deleting it; an untracked one still moves to the records dir (T-0797, #83).
+- `check.py` item 42 accepts a `../` link that resolves inside its skill folder and still rejects one that leaves it (T-0795).
+
 ## [0.38.0] - 2026-10-26
 
 Report: [docs/reports/2026-10-26-release-0-38-0.md](docs/reports/2026-10-26-release-0-38-0.md). 6 tickets: the repository now ships four peer plugins (T-0789 to T-0793) and one dispatch gate fix (T-0794). SDLC Lite behavior changes only in the gate fix.

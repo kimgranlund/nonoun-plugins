@@ -23,10 +23,10 @@ An interrupted or stale-running attempt is flagged without a person looking: the
 Step 2 prints a stall finding on `runs.interrupted.lost_min_total`; step 3 reports the attempt orphaned.
 
 ## Actual
-Fleet retro 2026-10-28 (`docs/reports/fleet-retro-2026-10-28.md` rows 2 and 3, verified 10 of 10 against the rubric): ultimate-tokens-color-science lost 1345.1 min to 2 interrupted attempts (0062 verifier-L3-2 lost 1335.0 min) with no detect finding, because 2 is under the stall threshold of 3; ui-kit-neue lost 674.7 min to 4. MacBook report row E2: `verifier-L2 running verifier-L2 parent_pid=1836 over-budget 3d (budget 25m)` on 0118 while T-0118 is done.
+Fleet retro 2026-10-28 (`docs/reports/2026-10-28-fleet-retro.md` rows 2 and 3, verified 10 of 10 against the rubric): ultimate-tokens-color-science lost 1345.1 min to 2 interrupted attempts (0062 verifier-L3-2 lost 1335.0 min) with no detect finding, because 2 is under the stall threshold of 3; ui-kit-neue lost 674.7 min to 4. MacBook report row E2: `verifier-L2 running verifier-L2 parent_pid=1836 over-budget 3d (budget 25m)` on 0118 while T-0118 is done.
 
 ## Context
-`plugins/sdlc-lite/scripts/fleet_detect.py` (rule `stall_attempts`), `dispatch.py` status and recover. Evidence: `docs/reports/2026-10-28-sdlc-retro-Kims-MacBook-Pro.md` rows 1, E1, E2; verify result `.sdlc/runtime/tasks/fleet-retro-2026-10-28/verify/verifier-L1-2.md`.
+`plugins/sdlc-lite/scripts/fleet_detect.py` (rule `stall_attempts`), `dispatch.py` status and recover. Evidence: `docs/reports/2026-10-28-sdlc-retro-kims-macbook-pro.md` rows 1, E1, E2; verify result `.sdlc/runtime/tasks/fleet-retro-2026-10-28/verify/verifier-L1-2.md`.
 outcome metric: `runs.interrupted.lost_min_total` per repo, before: 1345.1 (ultimate-tokens-color-science), 674.7 (ui-kit-neue).
 
 ## Acceptance criteria

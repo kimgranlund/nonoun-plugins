@@ -22,7 +22,7 @@ A builder or conductor who hits `cited path does not exist` for a path the step 
 The path counts as created by the step; or, when it is not declared, the refusal names the `[creates: <path>]` marker and the `Outputs:` line as the fix.
 
 ## Actual
-GitHub #84 (0.36.0): `steps.py lint refused the links ... cited path does not exist: .../parity/idshift.json` and `plan defect: replan this step`; the reporter created placeholder files. The MacBook retro (`docs/reports/2026-10-28-sdlc-retro-Kims-MacBook-Pro.md` row U6) reports the refusal stopped once `[creates: <path>]` tags were added, so the marker works but the message does not point to it.
+GitHub #84 (0.36.0): `steps.py lint refused the links ... cited path does not exist: .../parity/idshift.json` and `plan defect: replan this step`; the reporter created placeholder files. The MacBook retro (`docs/reports/2026-10-28-sdlc-retro-kims-macbook-pro.md` row U6) reports the refusal stopped once `[creates: <path>]` tags were added, so the marker works but the message does not point to it.
 
 ## Context
 `plugins/sdlc-lite/scripts/steps.py` line 2249 (the refusal) and `declared_future_paths` / `CREATES_MARK_RE` (line 2124, T-0457). Contract: `plugins/sdlc-lite/skills/handoff-format/references/step-handoff-rules.md` line 31.
