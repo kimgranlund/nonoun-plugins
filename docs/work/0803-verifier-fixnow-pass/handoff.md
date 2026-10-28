@@ -33,3 +33,7 @@ Verifier contract `plugins/sdlc-lite/agents/verifier.md` (notes vs verdict; `fix
 
 ## Constraints
 Wording change only; model and effort tables unchanged.
+
+## Outcome
+`plugins/sdlc-lite/agents/verifier.md` now says a criterion that passes on a build contradicting the Goal is vacuous: the verdict is `fail` with a `plan defect:` line, never `pass` with a `fix-now:` note. Regenerated the Claude verifier-L1/L2/L3 agents and the six Codex verifier TOMLs.
+Checks: `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `git diff --check` clean. Not run: a live verifier on the T-0801 control (one-sample repro; wording change only).
