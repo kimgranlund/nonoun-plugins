@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:26aa54bbdfa9 -->
+<!-- sdlc-lite:managed:start v1 sha256:f0df6567f0f3 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,13 +10,13 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 3
-  - T-0796 interrupted and stale-running attempts go unnoticed until a person looks (docs/work/0796-interrupted-attempt-recovery)
-  - T-0797 tickets.py close deletes skips.md and other ticket-folder files (#83) (docs/work/0797-close-keeps-ticket-files)
-  - T-0798 steps.py lint cited-path refusal does not name the [creates:] marker (#84) (docs/work/0798-creates-hint)
+- proposed: 0
 - ready: 0
-- claimed: 1
+- claimed: 4
   - T-0788 advance on a solo reruns the pre-verify review after a verifier fail (docs/work/0788-solo-review-rerun), claimed by sdlc-lite-author 2026-10-28
+  - T-0796 interrupted and stale-running attempts go unnoticed until a person looks (docs/work/0796-interrupted-attempt-recovery), claimed by sdlc-lite-author 2026-10-28
+  - T-0797 tickets.py close deletes skips.md and other ticket-folder files (#83) (docs/work/0797-close-keeps-ticket-files), claimed by sdlc-lite-author 2026-10-28
+  - T-0798 steps.py lint cited-path refusal does not name the [creates:] marker (#84) (docs/work/0798-creates-hint), claimed by sdlc-lite-author 2026-10-28
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)

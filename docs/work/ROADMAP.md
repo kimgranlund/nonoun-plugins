@@ -7,9 +7,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0788 | [0788-solo-review-rerun](0788-solo-review-rerun/handoff.md) | advance on a solo reruns the pre-verify review after a verifier fail | bug | L1 | P2 | none | 🟡 claimed |
-| T-0796 | [0796-interrupted-attempt-recovery](0796-interrupted-attempt-recovery/handoff.md) | interrupted and stale-running attempts go unnoticed until a person looks | bug | L2 | P2 | none | ⏳ proposed |
-| T-0797 | [0797-close-keeps-ticket-files](0797-close-keeps-ticket-files/handoff.md) | tickets.py close deletes skips.md and other ticket-folder files (#83) | bug | L1 | P2 | none | ⏳ proposed |
-| T-0798 | [0798-creates-hint](0798-creates-hint/handoff.md) | steps.py lint cited-path refusal does not name the [creates:] marker (#84) | bug | L1 | P2 | none | ⏳ proposed |
+| T-0796 | [0796-interrupted-attempt-recovery](0796-interrupted-attempt-recovery/handoff.md) | interrupted and stale-running attempts go unnoticed until a person looks | bug | L2 | P2 | none | 🟡 claimed |
+| T-0797 | [0797-close-keeps-ticket-files](0797-close-keeps-ticket-files/handoff.md) | tickets.py close deletes skips.md and other ticket-folder files (#83) | bug | L1 | P2 | none | 🟡 claimed |
+| T-0798 | [0798-creates-hint](0798-creates-hint/handoff.md) | steps.py lint cited-path refusal does not name the [creates:] marker (#84) | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 756 done, 30 dropped (git log or .NNNN-* folders)
 
