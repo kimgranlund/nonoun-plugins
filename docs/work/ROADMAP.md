@@ -6,6 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0799 | [0799-diff-scoped-verifier](0799-diff-scoped-verifier/handoff.md) | verifier scope diff: a small solo ticket is verified from its diff and recorded checks, not a full reread | feature | L2 | P2 | none | ⏳ proposed |
+| T-0800 | [0800-one-command-lane](0800-one-command-lane/handoff.md) | one command opens and one finishes a solo lane: claim, record from the transcript, prune, land, close, background backup | feature | L2 | P2 | none | ⏳ proposed |
+| T-0801 | [0801-speed-experiment](0801-speed-experiment/handoff.md) | measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets | spike | L2 | P2 | T-0799, T-0800 | ⏳ proposed |
 
 Closed: 760 done, 30 dropped (git log or .NNNN-* folders)
 
