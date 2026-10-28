@@ -53,7 +53,8 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   claimed_by: first` or `no ticket <id>`. Any other id prints `claim <id> in its tracker (assignee) before work; not
   checked here`. With --claim [--by AGENT] (T-0800) the CLI open first runs tickets.py claim on each unclaimed local
   id in the main checkout and commits what it changed as `claim <ids>` (printed `claim: committed <sha> claim <ids>`;
-  an id already claimed prints `claim: <id> already claimed`; a main tracking an upstream gets no commit, as T-0609); a
+  an id already claimed prints `claim: <id> already claimed`; a main tracking an upstream gets no commit, as T-0609,
+  unless a `lane_landing: local` config line says the repo lands locally, T-0804); a
   failed claim stops before any lane is made. After a close by row 9, row 10 or pr merged, close prints `ticket still open: <id>` for each local
   ticket of the record whose status is neither done nor dropped, read in the tree owning ticket-close (wtroot.owner_tree:
   the integration tree holding the lane's into branch, else main; main for a ticket that tree lacks, T-0769).
@@ -69,8 +70,8 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   (<tree parent>/merge.lock beside a fanout integration tree, else the default lanes dir's, T-0725); a ticket missing from that tree's root falls back to main, printed as
   `recorded in the main checkout: <ids> not in <tree>/<root>`. An explicit --root records in the main checkout.
   A path already dirty before the open (staged or not) is never committed, compared by path: a ticket handoff left out this way prints `not committed: <path> (dirty before
-  open); commit it yourself`. When main tracks an upstream (T-0609: the repo lands through it, as by PR), open writes
-  and commits neither line, printing `not recorded: <main> tracks <upstream>, ...`, so main never gains a commit its
+  open); commit it yourself`. When main tracks an upstream (T-0609: the repo lands through it, as by PR) and no
+  `lane_landing: local` line says it lands locally (T-0804), open writes and commits neither line, printing `not recorded: <main> tracks <upstream>, ...`, so main never gains a commit its
   landing path does not push; the claim is the refs/sdlc/claims ref (T-0588). Every close removes a record
   ticket's `branch:` line whose value is the lane branch, and its `worktree:` line with it, in main and in the integration
   tree holding the lane's into branch, where it commits `<ids>: clear lane record <leaf>` (T-0695, printed as `committed in
@@ -251,6 +252,8 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
   plugin_min: <X.Y.Z>       open refuses (exit 2) when the running plugin ($SDLC_BACKEND's manifest) is older (T-0593)
   land_gate: <cmd>          the gate finish passes to fanout.py land and settle; default none
   conductor: <name>         the mailbox receiver ready sends to; default conductor (T-0590)
+  lane_landing: local       finish lands into main locally although main tracks an upstream, so open commits the claim
+                            and the record in main; default: a PR repo when main tracks an upstream (T-0609, T-0804)
 """
 import argparse, contextlib, datetime, fcntl, io, json, os, pathlib, re, shutil, socket, subprocess, sys, tempfile, time
 
@@ -275,7 +278,7 @@ PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'  # dispatch.py PRUNE_REL
 PRUNE_TTL = 6 * 3600
 NAMESPACES = ('lane/', 'wave/', 'release/')
 CONFIG_KEYS = ('lanes_root', 'lane_into', 'lane_setup', 'lane_ports', 'lane_stale_days', 'lane_min_age_hours',
-               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate', 'conductor')
+               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate', 'conductor', 'lane_landing')
 READY_REFS = 'refs/sdlc/ready/'  # T-0590: dispatch.py READY_REFS
 SNAPSHOT_SUBJECT = 'sdlc ready snapshot:'
 SNAPSHOT_SKIP = (':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock', ':(exclude,glob)**/*.running')
@@ -394,7 +397,8 @@ def config(toplevel):
     return dict(lanes_root=Path(os.path.normpath(os.path.join(str(top), root))), lane_into=vals.get('lane_into') or None,
                 lane_setup=setups, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
-                lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None, conductor=vals.get('conductor') or None)
+                lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None, conductor=vals.get('conductor') or None,
+                lane_landing=vals.get('lane_landing') or None)
 
 
 def worktrees(cwd):
@@ -1524,10 +1528,18 @@ def claim(rootp, tid):
     return 'external', f'claim {tid} in its tracker (assignee) before work; not checked here'
 
 
+def pr_upstream(ctx):
+    """The upstream main tracks when the repo lands through it (T-0609, a PR repo), else None: no upstream, or a
+    `lane_landing: local` config line (T-0804: finish lands into main locally, so open commits there)."""
+    if ctx.cfg['lane_landing'] == 'local':
+        return None
+    return out(ctx.top, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', f'{ctx.main}@{{upstream}}')
+
+
 def claim_tickets(ids, root='.sdlc', by=None, cwd='.'):
     """T-0800: open --claim: tickets.py claim each local ticket id in the main checkout and commit what the claims
     changed there as `claim <ids>`; a ticket already claimed keeps its holder. Not committed when main tracks an upstream
-    (T-0609). Returns result(rc, message)."""
+    (T-0609) and no `lane_landing: local` line says the repo lands locally (T-0804). Returns result(rc, message)."""
     ctx = Ctx(cwd)
     top, rootp, lines, done = ctx.top, Path(ctx.top, root), [], []
     pre = porcelain(top)
@@ -1544,7 +1556,7 @@ def claim_tickets(ids, root='.sdlc', by=None, cwd='.'):
         lines.append(f'claim: {t} claimed')
     if done:
         msg = 'claim ' + ' '.join(done)
-        upstream = out(top, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', f'{ctx.main}@{{upstream}}')
+        upstream = pr_upstream(ctx)
         sha = None if upstream else commit_new(top, pre, msg)
         lines.append(f'claim: committed {sha} {msg}' if sha else
                      f'claim: not committed: {ctx.main} tracks {upstream}' if upstream else f'claim: not committed: commit it as `{msg}`')
@@ -1755,8 +1767,9 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     lines.append(f'opened {leaf} at {tree} (branch {branch}, into {into_})')
     if lock and kind != 'integration':
         lines.append(lock_line)
-    # T-0609: a main tracking an upstream lands through it (a PR repo), so a record commit there would diverge from origin
-    upstream = out(top, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', f'{ctx.main}@{{upstream}}')
+    # T-0609: a main tracking an upstream lands through it (a PR repo), so a record commit there would diverge from origin;
+    # a `lane_landing: local` line says finish lands into main locally, so the record commits there (T-0804)
+    upstream = pr_upstream(ctx)
     if upstream and record_branch and rootp.is_dir() and any(LOCAL_ID.fullmatch(t) for t in ids):
         lines.append(f'not recorded: {ctx.main} tracks {upstream}, so open writes no branch: or worktree: line in main')
         record_branch = False
@@ -4079,6 +4092,40 @@ def case_open_claim(script, base):
     return fails
 
 
+def case_open_claim_upstream(script, base):
+    """T-0804: with main tracking an upstream, open --claim commits the claim (and the record) only when .sdlc/config
+    says `lane_landing: local`; a PR repo (no line) commits nothing on main, as T-0609."""
+    fails = []
+    for local in (True, False):
+        t = Fixture(base, script, 'openclaimup')
+        h = '.sdlc/0001-one/handoff.md'
+        files = {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                 h: ticket_file('T-0001').replace('status: ready', 'status: proposed')}
+        if local:
+            files['.sdlc/config'] = 'lane_landing: local\n'
+        t.commit('track .sdlc', files)
+        t.g('push', '-q', '-u', 'origin', 'main')
+        rc, o = t.lanes('open', 'one', '--ticket', 'T-0001', '--kind', 'solo', '--claim', '--by', 'tester')
+        m = re.search(r'opened (\S+) at (.+?) \(branch ', o)
+        if rc or not m:
+            fails.append(f'open claim upstream (local={local}): want exit 0 and an open lane, got {rc}: {o}')
+            continue
+        claimed = 'claim T-0001' in t.g('log', '--format=%s', 'main').splitlines()
+        if local:
+            if not claimed:
+                fails.append(f'open claim upstream: lane_landing local: no `claim T-0001` commit in main: {o}')
+            if 'status: claimed' not in Path(m.group(2), h).read_text():
+                fails.append('open claim upstream: lane_landing local: the lane copy is not claimed')
+            if t.g('status', '--porcelain'):
+                fails.append(f'open claim upstream: lane_landing local: main is dirty: {t.g("status", "--porcelain")!r}')
+        else:
+            if claimed or t.g('rev-list', 'origin/main..main'):
+                fails.append(f'open claim upstream: PR repo: main gained commits origin lacks: {o}')
+            if 'claim: not committed: main tracks origin/main' not in o:
+                fails.append(f'open claim upstream: PR repo: no not committed line: {o}')
+    return fails
+
+
 def agent_transcript(base, agent_id, text, tools=2, secs=90):
     """A fixture sub-agent transcript under <base>/projects/-p/s/subagents (the SDLC_CLAUDE_PROJECTS layout): tools
     tool_use blocks, usage on each message, secs seconds from the first line to the last, text as the final message."""
@@ -4382,6 +4429,8 @@ def run_selftest(script, src, base):
         need('finish moved', case_finish_moved(script, base),
              'main moved between land and settle: a rerun merges main into finish/<lane> and settles')
         need('open claim', case_open_claim(script, base), 'open --claim claims a proposed ticket, commits the claim and opens the lane (T-0800)')
+        need('open claim upstream', case_open_claim_upstream(script, base),
+             'with main tracking an upstream, lane_landing: local commits the claim; a PR repo commits nothing (T-0804)')
         need('finish agent id', case_finish_agent_id(script, base),
              'finish --verifier-agent-id records tokens, tool uses and duration from the transcript, prunes, then lands (T-0800)')
         need('finish backup bg', case_finish_backup_bg(script, base),

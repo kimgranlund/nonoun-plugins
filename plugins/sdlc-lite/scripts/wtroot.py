@@ -322,7 +322,7 @@ OWNERS = {
                '#58: lanes.py reads the primary config only; wtroot._config_root reads the current tree'),
     'branch': (('integration', 'primary'), 'lanes.py open (T-0680; primary with --root or a ticket missing there)',
                'lanes.py list and close (cleared in both trees, T-0695, T-0713)',
-               'a main tracking an upstream writes no line at all (T-0609)'),
+               'a main tracking an upstream writes no line at all (T-0609), unless lane_landing: local (T-0804)'),
     'worktree': (('integration', 'primary'), 'lanes.py open, beside the branch: line',
                  'lanes.py close (cleared with the branch: line)', 'as branch'),
     'roadmap': (('integration', 'primary'), 'tickets.record_branch and tickets.py close (regenerated where they write)',
