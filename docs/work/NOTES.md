@@ -763,3 +763,7 @@
 
 - decide: plugins/sdlc-lite/scripts/lanes.py:1338 the Goal's parenthetical "and `lanes.py finish` itself when the push already ended" is not implemented: the log is read only before this run's own push, so a finish never reports its own push failure; the Outcome section records this choice and no criterion requires it.
 - note: plugins/sdlc-lite/scripts/lanes.py:1338 a failed log keeps every later finish (including ones without --backup) at exit 1 until a new push rewrites the log; the Outcome states this as intended, with no explicit clear or acknowledge path.
+
+## T-0804: lanes.py open --claim leaves the claim uncommitted in a repo that lands locally while main tracks an upstream (2026-10-28)
+
+- decide: plugins/sdlc-lite/scripts/lanes.py:4069 note: the local half of `case_open_claim_upstream` does not assert the `record lane` commit or the `branch:` line in main, so the record-commit half of the change is only covered indirectly (clean main plus lane copy claimed). A one-line assertion would pin it; decide whether to add.

@@ -2,7 +2,7 @@
 id: T-0804
 title: "lanes.py open --claim leaves the claim uncommitted in a repo that lands locally while main tracks an upstream"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,13 @@ The failing test lands before or with the fix.
 - Red first: new selftest case `open claim upstream` (`case_open_claim_upstream`) before the fix printed `FAIL: open claim upstream: open claim upstream: lane_landing local: no `claim T-0001` commit in main: claim: T-0001 claimed ...` (also: the lane copy is not claimed; main is dirty). After the fix it passes; its PR-repo half asserts no claim commit, main level with origin, and `claim: not committed: main tracks origin/main`.
 - Docs: lanes.py docstring (claim rule, record paragraph, config table), `docs/references/sdlc-internals.md` (open record, config keys, owner-tree table row), `wtroot.py` owner table row, `skills/fanout/references/lane-lifecycle.md`, `agents/conductor.md` and its regenerated Codex `sdlc-conductor-l1.toml`.
 - Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `wtroot.py selftest` ok; `codex_roles.py generate --check` exit 0; `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-28 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 2baaede67940
+- Changed: see commits
+- Commits: 801e57c T-0804: open --claim commits in a repo that lands locally while main tracks an upstream
+- Check: 1 Selftest case: local-landing repo with main tracking an upstream, `open --claim` commits `claim <...: pass
+- Check: 2 T-0609 PR-repo case still writes no commit, and docs say which repos commit: pass
+- Check: 3 lanes selftest through gate_lock exits 0, `check.py` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:4069 note: the local half of... -> notes.md
