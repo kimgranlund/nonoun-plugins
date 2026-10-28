@@ -26,3 +26,10 @@ Prior evidence: `docs/reports/solo-vs-lean-benchmark-2026-10-04.md` and the benc
 
 ## Constraints
 Runs only in a throwaway project; no change to plugin code in this ticket.
+
+## Outcome
+- Report: `docs/reports/2026-10-28-speed-experiment.md`, fixtures in `docs/reports/2026-10-28-speed-experiment/`. Run by the conductor (a role cannot spawn roles): 5 plain sessions, 5 solo L1 builds, 6 diff-scoped and 6 full verifier L1 runs.
+- Diff vs full verifier on the same 5 builds: $1.4041 vs $1.4098, 110 s vs 112 s of transcript time (row d5 corrected after the verifier found a transcript glob error); no saving at this ticket size.
+- Planted control (vacuous `grep` criterion, stub `title_case`, false Outcome): diff verifier `fail`, full verifier `pass` with a `fix-now` note naming the stub.
+- Decision by criterion 2: reject the diff verifier on cost evidence (not cheaper); it is kept in the plugin because it caught the control; re-measure on real tickets from `runs.jsonl`.
+- Plain session vs solo lane: 10 of 10 hidden behavior tests pass in both; $0.82 vs $2.51 with the verifier.
