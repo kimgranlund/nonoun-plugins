@@ -34,3 +34,9 @@ GitHub #84 (0.36.0): `steps.py lint refused the links ... cited path does not ex
 
 ## Constraints
 The failing tests land before or with the fix, never after.
+
+## Outcome
+Changed `plugins/sdlc-lite/scripts/steps.py` (the `cited path does not exist` finding now ends with `; if this step creates it, declare it with [creates: <path>] or an Outputs: line`, skipped when a superseded-report fix is shown), two `(L) T-0798` selftest cases, and one sentence in `step-handoff-rules.md` (Cited paths).
+- Criterion 2 red before the fix: `steps selftest: FAIL ... - (L) T-0798: an undeclared missing path refusal names the [creates: <path>] marker and the Outputs: line`; green after.
+- Criterion 1: the case `(L) T-0798: a Do line "write output to <path>" declares the path created` already passed before the fix (CREATE_VERB_RE matches `write`), so no verb change was needed; it stays as a regression guard. The #84 refusal most likely came from a Do phrasing without a create verb.
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `check.py` through gate_lock exit 0; `git diff --check` clean.

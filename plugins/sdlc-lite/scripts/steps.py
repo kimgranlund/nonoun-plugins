@@ -2246,7 +2246,8 @@ def link_findings(handoff):
         fix = (f'; the previous attempt is {anchor}/{superseded_rel(rel, holders[0])}' if anchor
                else f'; the previous attempt is {superseded_rel(rel, holders[0])}') if holders else ''
         if not p.exists():
-            findings.append(f'steps: {handoff}: cited path does not exist: {shown}{fix}')
+            declare = '' if holders else f'; if this step creates it, declare it with [creates: {rel}] or an Outputs: line'
+            findings.append(f'steps: {handoff}: cited path does not exist: {shown}{fix}{declare}')
         elif holders and p.resolve().parent == own and not (prev and prev[0] <= start < prev[1]):
             findings.append(f'steps: {handoff}: {rel} names a report of a prior attempt of this step '
                             f'(a later report of that name would satisfy it){fix}')
@@ -8366,6 +8367,11 @@ def selftest():
         check('(L) T-0457 control: a missing cited repo file is still refused', rc == 1 and miss in err)
         rc, _, err = f_lint(f'### Do\nCreate {miss} with the sample.\n')
         check('(L) T-0457: a path a ### Do line creates passes lint', rc == 0 and err == '')
+        rc, _, err = f_lint(f'### Do\nRun the parity pass and write output to `{miss}`.\n### Acceptance criteria\n- `python3 {miss}` runs\n')
+        check('(L) T-0798: a Do line "write output to <path>" declares the path created', rc == 0 and err == '')
+        rc, _, err = f_lint(f'### Do\nBuild it.\n### Acceptance criteria\n- `python3 {miss}` runs\n')
+        check('(L) T-0798: an undeclared missing path refusal names the [creates: <path>] marker and the Outputs: line',
+              rc == 1 and f'[creates: {miss}]' in err and 'Outputs:' in err)
         rc, _, err = f_lint(f'### Do\nBuild it.\nOutputs: `{miss}`\n')
         check('(L) T-0457: a path on an Outputs line passes lint', rc == 0 and err == '')
         rc, _, err = f_lint(f'### Do\nBuild it. [creates: {miss}]\n### Acceptance criteria\n- `python3 {miss}` runs\n')
