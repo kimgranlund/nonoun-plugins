@@ -186,6 +186,8 @@ steps are skipped` (exit 1). Each step skips itself when its effect is already t
   8. backup   only with --backup REMOTE/REF: git push REMOTE refs/heads/<into>:REF (refs/heads/ added to a bare REF)
               in a detached background process (T-0800), printed `backup: pushing <into> to <remote> <ref> in the
               background; log <git common dir>/sdlc-backup.log`; finish does not wait, and the log ends `exit <code>`.
+              A later finish whose log ends `exit <code>` nonzero prints `backup: previous push failed (exit N), see
+              <log>` after its steps and exits 1 at least (T-0802).
               Without it nothing is pushed.
   A lane already gone with a landed archive ref prints `finish: <lane> is already finished (archive <ref>)` and exits 0,
   after the backup step when --backup is given.
@@ -1266,6 +1268,22 @@ def finished(top, target):
     return None
 
 
+def backup_log(top):
+    return Path(top, out(top, 'rev-parse', '--git-common-dir') or '.git', 'sdlc-backup.log').resolve()
+
+
+def failed_backup(top):
+    """(exit code, log path) when the last background push ended nonzero (T-0802), else None: no log, a push still
+    running (no `exit` line yet) and `exit 0` are all fine."""
+    log = backup_log(top)
+    try:
+        last = log.read_text().rstrip().rsplit('\n', 1)[-1]
+    except OSError:
+        return None
+    m = re.fullmatch(r'exit (\d+)', last)
+    return (int(m.group(1)), log) if m and int(m.group(1)) else None
+
+
 def push_backup(top, branch, backup, say):
     """The backup step: push refs/heads/<branch> to <remote>/<ref> only when backup names one, in a detached
     background process logging to <git common dir>/sdlc-backup.log (its last line `exit <code>` once the push ends), so
@@ -1280,7 +1298,7 @@ def push_backup(top, branch, backup, say):
         say(f'backup: stopped: --backup {backup}: give <remote>/<ref>, as origin/backup-main; fix it, then rerun lanes.py '
             'finish: done steps are skipped')
         return 1
-    log = Path(top, out(top, 'rev-parse', '--git-common-dir') or '.git', 'sdlc-backup.log').resolve()
+    log = backup_log(top)
     try:
         with open(log, 'w') as f:
             f.write(f'git push -q {remote} refs/heads/{branch}:{dst}\n')
@@ -1315,7 +1333,16 @@ def agent_flags(agent_id, transcript):
 
 def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='.', say=print, solo_agent_id=None,
            verifier_agent_id=None):
-    """Finish one lane end to end (see the docstring, finish); say prints each step's line. Returns the exit code."""
+    """Finish one lane end to end (see the docstring, finish); say prints each step's line. Returns the exit code, 1
+    at least when the previous background backup push failed (T-0802): read before this run's own push rewrites the log."""
+    prev = failed_backup(Ctx(cwd).top)
+    rc = finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id)
+    if prev:
+        say(f'backup: previous push failed (exit {prev[0]}), see {prev[1]}')
+    return rc or (1 if prev else 0)
+
+
+def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id):
     ctx = Ctx(cwd)
     top = ctx.top
     d, refusal = find(ctx, discover(ctx), str(target))
@@ -4146,6 +4173,30 @@ def case_finish_backup_bg(script, base):
     return fails
 
 
+def case_finish_backup_failed(script, base):
+    """T-0802: a background push that exits 1 leaves `exit 1` in the log; the next finish prints `backup: previous push
+    failed` and exits nonzero after its work."""
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-bgfail')
+    hook = t.top / '.git' / 'hooks' / 'pre-push'
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text('#!/bin/sh\nexit 1\n')
+    hook.chmod(0o755)
+    rc, o = t.lanes('finish', leaf, '--backup', 'origin/backup-main', env=FIN_ENV)
+    fails = [] if rc == 0 and 'previous push failed' not in o else [f'finish bgfail: want exit 0 and no failure line on the first finish, got {rc}: {o}']
+    m = re.search(r'^backup: pushing main to origin refs/heads/backup-main in the background; log (\S+)$', o, re.M)
+    if not m:
+        return fails + [f'finish bgfail: no background backup line with a log path: {o}']
+    end = time.time() + 60
+    while time.time() < end and not Path(m.group(1)).read_text().rstrip().endswith('exit 1'):
+        time.sleep(0.2)
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    if rc == 0 or f'backup: previous push failed (exit 1), see {m.group(1)}' not in o:
+        fails.append(f'finish bgfail: want a nonzero exit and `backup: previous push failed (exit 1), see {m.group(1)}`, got {rc}: {o}')
+    if f'finish: {leaf} is already finished' not in o:
+        fails.append(f'finish bgfail: the second finish did not report the lane finished: {o}')
+    return fails
+
+
 def selftest():
     script = Path(__file__).resolve()
     src = script.read_text()
@@ -4335,6 +4386,8 @@ def run_selftest(script, src, base):
              'finish --verifier-agent-id records tokens, tool uses and duration from the transcript, prunes, then lands (T-0800)')
         need('finish backup bg', case_finish_backup_bg(script, base),
              'finish --backup returns while the push still runs and prints the background log path (T-0800)')
+        need('finish backup failed', case_finish_backup_failed(script, base),
+             'a failed background push is reported by the next finish: a previous-push-failed line and a nonzero exit (T-0802)')
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')
