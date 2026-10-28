@@ -2,7 +2,7 @@
 id: T-0799
 title: "verifier scope diff: a small solo ticket is verified from its diff and recorded checks, not a full reread"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,16 @@ The failing test lands before or with the change. Model and effort tables stay u
 - `agents/verifier.md` Brief documents the Scope: diff rules and `escalate: full`; Claude and Codex verifier agents regenerated.
 - Red first: before the change, `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` printed `FAIL: T-0799 prepare verifier on an L1 solo handoff whose criteria are all commands prints a brief with Scope: diff and escalate: full` (exit 1); the negative control (prose-only L1, L3) passed.
 - Checks: dispatch selftest through gate_lock exit 0 (3 T-0799 cases ok); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `prompt_lint.py` exit 0; `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-28 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: bbf837431456
+- Changed: see commits
+- Commits: b98e268 T-0799: diff-scoped verifier brief for small solo tickets
+- Check: 1 dispatch selftest case: all-command L1 handoff prints Scope: diff; prose-only L1 and L3 do not; r...: pass
+- Check: 2 verifier.md describes Scope: diff and escalate: full; check.py exits 0: pass
+- Check: 3 dispatch selftest through gate_lock exits 0, check-packaging exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:739: independence holds -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:739: the gate can over-apply... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:732: escalate: full is... -> notes.md
+- Follow-up: decide: A real dry-run prepare on this ticket's own handoff criterion 1 is... -> notes.md
