@@ -2,7 +2,7 @@
 id: T-0798
 title: "steps.py lint cited-path refusal does not name the [creates:] marker (#84)"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,13 @@ Changed `plugins/sdlc-lite/scripts/steps.py` (the `cited path does not exist` fi
 - Criterion 2 red before the fix: `steps selftest: FAIL ... - (L) T-0798: an undeclared missing path refusal names the [creates: <path>] marker and the Outputs: line`; green after.
 - Criterion 1: the case `(L) T-0798: a Do line "write output to <path>" declares the path created` already passed before the fix (CREATE_VERB_RE matches `write`), so no verb change was needed; it stays as a regression guard. The #84 refusal most likely came from a Do phrasing without a create verb.
 - `python3 plugins/sdlc-lite/scripts/gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/steps.py selftest` exit 0; `check.py` through gate_lock exit 0; `git diff --check` clean.
+
+## Outcome
+
+2026-10-28 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: f11d3f72cf7c
+- Changed: see commits
+- Commits: 18cb1de T-0798: lint refusal names the creates marker (#84)
+- Check: 1 A steps selftest case: a Do line "write output to `<.sdlc path>`" exempts that path; reverted, li...: pass
+- Check: 2 A steps selftest case: an undeclared missing path's refusal names `[creates: <path>]`: pass
+- Check: 3 steps selftest through gate_lock exits 0, `check.py` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/steps.py:2249 the hint is left off when a... -> notes.md

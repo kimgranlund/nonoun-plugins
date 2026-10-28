@@ -712,3 +712,7 @@
 ## T-0795: check.py item 42 rejects ../ links that stay inside the skill folder (2026-10-28)
 
 - note: plugins/sdlc-lite/scripts/check.py:180 docstring still lists "a planted `../`" among negative controls; still accurate because that control (`../sdlc-lite/SKILL.md` from the skill root) leaves the folder.
+
+## T-0798: steps.py lint cited-path refusal does not name the [creates:] marker (#84) (2026-10-28)
+
+- note: plugins/sdlc-lite/scripts/steps.py:2249 the hint is left off when a superseded-report fix is shown (`'' if holders`), which the Outcome states; that branch has no T-0798 case of its own, though the existing superseded-report cases still pass.
