@@ -34,3 +34,10 @@ outcome metric: `git log --grep '#83'` restore commits in ultimate-tokens-color-
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Outcome
+Fix: `tickets.py` `move_skips` left a tracked `skips.md` alone no more than it had to: it unlinked it at close, so a committed `skips.md` showed as deleted in the close commit. It now moves only an untracked `skips.md` to the records dir (T-0560 intent kept) and keeps a tracked one; the git-tracked check is shared with `move_records` as `tracked_names`. A committed deliverable such as `triage.md` already survived the rename (observed in the new case). The close gate is unchanged: `skips_path` reads the folder copy first, so `skip_missing` still finds it. The `close` docstring paragraph was updated.
+Test first: the T-0560 selftest case became `(T-0797 plain|reason)`, now committing a `skips.md` and a `triage.md` and expecting the closed folder to keep both. Before the fix it failed with:
+`FAIL (T-0797 plain) the closed folder keeps its committed files and moves an uncommitted skips.md: rc=0 '' ['.sdlc/.0001-tk/handoff.md', '.sdlc/.0001-tk/triage.md']` (and the same for `reason`).
+Checks: `gate_lock.py run ... python3 plugins/sdlc-lite/scripts/tickets.py selftest` exit 0 (PASS), `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `fanout.py selftest` PASS, `git diff --check` clean.
+Open: an untracked, uncommitted `skips.md` still moves to the records dir by design (T-0560).
