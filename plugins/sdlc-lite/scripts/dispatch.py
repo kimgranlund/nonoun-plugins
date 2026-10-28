@@ -406,7 +406,7 @@ def handoff_locator(path):
 def ports_line(tree):
     """The brief's `Ports:` line, with a trailing newline, when tree is a lane that holds a port (lanes.port_of, T-0693); else ''."""
     try:
-        import lanes  # local like host_lanes: lanes imports nothing from here
+        import lanes  # local like host_lanes: lanes imports this module only inside a function
         port = lanes.port_of(tree)[0]
     except Exception:  # not a lane, or lanes unreadable: the brief stays as it was
         return ''
@@ -662,7 +662,7 @@ def ready_review(directory, tree, base, named=False):
     m = LANE_BASE_RE.search(git('log', '-1', '--format=%B', sha, cwd=tree).stdout)
     if m and not named and git('merge-base', '--is-ancestor', m.group(1), sha, cwd=tree).returncode == 0:
         base = m.group(1)
-    import lanes  # local like host_lanes: lanes imports nothing from here
+    import lanes  # local like host_lanes: lanes imports this module only inside a function
     try:
         stale = lanes.snapshot(tree) != lanes.ready_state(tree, sha)
     except lanes.LaneError:

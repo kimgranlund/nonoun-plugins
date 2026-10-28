@@ -2,9 +2,10 @@
 """lanes.py: the one home of the lane lifecycle. Open, close, finish, ready, sweep, list, check, port and archive a lane.
 
   lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--tickets ID,ID] [--kind fanout|integration|solo] [--title TEXT]
-                [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim] [--dry-run]
+                [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim | --claim [--by AGENT]] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
+                  [--solo-agent-id ID] [--verifier-agent-id ID]
   lanes.py ready [<name|path>] [--ticket ID] [--notify-cmd CMD]   pin the review sha, unlock, and tell the conductor (default: the current lane)
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
@@ -50,7 +51,10 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
 
   Claim rule (8.1): a T-<digits> id is local when --root exists: open refuses `ticket <id> not claimed: set
   claimed_by: first` or `no ticket <id>`. Any other id prints `claim <id> in its tracker (assignee) before work; not
-  checked here`. After a close by row 9, row 10 or pr merged, close prints `ticket still open: <id>` for each local
+  checked here`. With --claim [--by AGENT] (T-0800) the CLI open first runs tickets.py claim on each unclaimed local
+  id in the main checkout and commits what it changed as `claim <ids>` (printed `claim: committed <sha> claim <ids>`;
+  an id already claimed prints `claim: <id> already claimed`; a main tracking an upstream gets no commit, as T-0609); a
+  failed claim stops before any lane is made. After a close by row 9, row 10 or pr merged, close prints `ticket still open: <id>` for each local
   ticket of the record whose status is neither done nor dropped, read in the tree owning ticket-close (wtroot.owner_tree:
   the integration tree holding the lane's into branch, else main; main for a ticket that tree lacks, T-0769).
 
@@ -157,7 +161,12 @@ per step and stops at the first failure with `<step>: stopped: <why>; fix it, th
 steps are skipped` (exit 1). Each step skips itself when its effect is already there, so a rerun goes on from the stop.
   1. record   dispatch.py record each *.dispatch.json in the ticket's records dir in the lane tree: a verifier whose
               attempt is still running (--verifier-transcript prices it), and the solo (--transcript prices its row
-              once; it is idempotent); `nothing pending` when neither is due.
+              once; it is idempotent); `nothing pending` when neither is due. --verifier-agent-id ID (--solo-agent-id
+              for the solo, T-0800) finds subagents/agent-<ID>.jsonl under the Claude projects folder as dispatch.py
+              record --agent-id does (a --transcript or --verifier-transcript names it instead), passes --agent-id,
+              --tool-uses and --duration-ms read from it (cost_estimate.transcript_activity; tokens and the result come
+              from the transcript inside record); for the verifier then dispatch.py prune --done <dispatch name>, printed
+              `; pruned <name>` (the solo is queued later, by the land); no transcript found stops.
   2. verdict  the newest verifier result there must say pass; anything else (fail, none) stops before any commit or
               merge: finish never closes without a pass verdict.
   3. commit   a dirty lane tree is committed as `<id>: <title>` (logs and lock files left out); else `commit: clean`.
@@ -174,7 +183,9 @@ steps are skipped` (exit 1). Each step skips itself when its effect is already t
               gate), and commit what it changed as `close <id>`.
   7. lane     close_lane (landed by ancestry), then commit what that close wrote in main as `<id>: lane <lane> closed`,
               a tracked path in an ignored directory included; a failed commit stops (T-0595).
-  8. backup   only with --backup REMOTE/REF: git push REMOTE refs/heads/<into>:REF (refs/heads/ added to a bare REF).
+  8. backup   only with --backup REMOTE/REF: git push REMOTE refs/heads/<into>:REF (refs/heads/ added to a bare REF)
+              in a detached background process (T-0800), printed `backup: pushing <into> to <remote> <ref> in the
+              background; log <git common dir>/sdlc-backup.log`; finish does not wait, and the log ends `exit <code>`.
               Without it nothing is pushed.
   A lane already gone with a landed archive ref prints `finish: <lane> is already finished (archive <ref>)` and exits 0,
   after the backup step when --backup is given.
@@ -1256,23 +1267,54 @@ def finished(top, target):
 
 
 def push_backup(top, branch, backup, say):
-    """The backup step: push refs/heads/<branch> to <remote>/<ref> only when backup names one. Returns 1 when it
-    stopped, else 0."""
+    """The backup step: push refs/heads/<branch> to <remote>/<ref> only when backup names one, in a detached
+    background process logging to <git common dir>/sdlc-backup.log (its last line `exit <code>` once the push ends), so
+    finish never waits on the push (T-0800).
+    Returns 1 when it stopped, else 0."""
     if not backup:
         say('backup: none (no --backup)')
         return 0
     remote, _, ref = backup.partition('/')
     dst = ref if ref.startswith('refs/') else f'refs/heads/{ref}'
-    r = git(top, 'push', '-q', remote, f'refs/heads/{branch}:{dst}') if remote and ref else None
-    if r is None or r.returncode:
-        why = err(r) if r is not None else f'--backup {backup}: give <remote>/<ref>, as origin/backup-main'
-        say(f'backup: stopped: {why}; fix it, then rerun lanes.py finish: done steps are skipped')
+    if not (remote and ref):
+        say(f'backup: stopped: --backup {backup}: give <remote>/<ref>, as origin/backup-main; fix it, then rerun lanes.py '
+            'finish: done steps are skipped')
         return 1
-    say(f'backup: pushed {branch} to {remote} {dst}')
+    log = Path(top, out(top, 'rev-parse', '--git-common-dir') or '.git', 'sdlc-backup.log').resolve()
+    try:
+        with open(log, 'w') as f:
+            f.write(f'git push -q {remote} refs/heads/{branch}:{dst}\n')
+            f.flush()
+            # the last log line is `exit <code>` once the push ends
+            subprocess.Popen(['sh', '-c', 'git push -q "$0" "$1"; echo "exit $?"', remote, f'refs/heads/{branch}:{dst}'],
+                             cwd=str(top), stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT, start_new_session=True)
+    except OSError as e:
+        say(f'backup: stopped: {e}; fix it, then rerun lanes.py finish: done steps are skipped')
+        return 1
+    say(f'backup: pushing {branch} to {remote} {dst} in the background; log {log}')
     return 0
 
 
-def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='.', say=print):
+def agent_flags(agent_id, transcript):
+    """(dispatch.py record flags, why) for one sub-agent (T-0800): with agent_id, its transcript found under the Claude
+    projects folder (dispatch.find_subagent_transcript) unless transcript names it, plus --agent-id, --tool-uses and
+    --duration-ms read from it; why is set when no transcript is found."""
+    if not agent_id:
+        return (['--transcript', transcript] if transcript else []), None
+    import dispatch  # same scripts/ dir; local because dispatch imports lanes (and is heavy)
+    import cost_estimate
+    path = transcript or dispatch.find_subagent_transcript(agent_id)
+    if not path:
+        return [], f'no transcript agent-{agent_id}.jsonl under the Claude projects folder; pass its path'
+    flags = ['--agent-id', agent_id, '--transcript', path]
+    tools, ms = cost_estimate.transcript_activity(path) or (None, None)
+    flags += ['--tool-uses', str(tools)] if tools is not None else []
+    flags += ['--duration-ms', str(ms)] if ms is not None else []
+    return flags, None
+
+
+def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='.', say=print, solo_agent_id=None,
+           verifier_agent_id=None):
     """Finish one lane end to end (see the docstring, finish); say prints each step's line. Returns the exit code."""
     ctx = Ctx(cwd)
     top = ctx.top
@@ -1324,15 +1366,22 @@ def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='
             att = read_json(rec.get('attempt_file') or '') or {}
             if att.get('status') not in ('running', 'limit-stopped'):
                 continue
-            extra = ['--transcript', verifier_transcript] if verifier_transcript else []
+            aid, extra, why = verifier_agent_id, *agent_flags(verifier_agent_id, verifier_transcript)
         elif rec.get('role') == 'solo':
-            extra = ['--transcript', transcript] if transcript else []
+            aid, extra, why = solo_agent_id, *agent_flags(solo_agent_id, transcript)
         else:
             continue
+        if why:
+            return stop('record', f'{df.name}: {why}')
         r = script_run([str(HERE / 'dispatch.py'), 'record', *extra, str(df)], tree)
         if r.returncode:
             return stop('record', f'{df.name}: {script_why(r)}')
         done.append(f'{df.name} ({script_why(r)})')
+        if aid and rec.get('role') == 'verifier' and rec.get('name'):  # T-0800: it leaves the prune queue (the stop is the conductor's TaskStop); land queues the solo
+            p = script_run([str(HERE / 'dispatch.py'), 'prune', '--root', top, '--done', rec['name']], top)
+            if p.returncode:
+                return stop('record', f'prune --done {rec["name"]}: {script_why(p)}')
+            done[-1] += f'; pruned {rec["name"]}'
     say('record: ' + ('; '.join(done) or 'nothing pending'))
 
     # 2. verdict: the newest verifier result of the lane's records dir must pass, before anything is committed or merged
@@ -1446,6 +1495,33 @@ def claim(rootp, tid):
                 return 'local', str(meta.get('title') or '')
         return 'refuse', f'no ticket {tid}'
     return 'external', f'claim {tid} in its tracker (assignee) before work; not checked here'
+
+
+def claim_tickets(ids, root='.sdlc', by=None, cwd='.'):
+    """T-0800: open --claim: tickets.py claim each local ticket id in the main checkout and commit what the claims
+    changed there as `claim <ids>`; a ticket already claimed keeps its holder. Not committed when main tracks an upstream
+    (T-0609). Returns result(rc, message)."""
+    ctx = Ctx(cwd)
+    top, rootp, lines, done = ctx.top, Path(ctx.top, root), [], []
+    pre = porcelain(top)
+    for t in ids:
+        if not LOCAL_ID.fullmatch(t):
+            continue
+        if claim(rootp, t)[0] == 'local':
+            lines.append(f'claim: {t} already claimed')
+            continue
+        r = script_run([str(HERE / 'tickets.py'), '--root', root, 'claim', t] + (['--by', by] if by else []), top)
+        if r.returncode:
+            return result(1, '\n'.join(lines + [f'claim: stopped: {t}: {script_why(r)}; no lane opened']))
+        done.append(t)
+        lines.append(f'claim: {t} claimed')
+    if done:
+        msg = 'claim ' + ' '.join(done)
+        upstream = out(top, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', f'{ctx.main}@{{upstream}}')
+        sha = None if upstream else commit_new(top, pre, msg)
+        lines.append(f'claim: committed {sha} {msg}' if sha else
+                     f'claim: not committed: {ctx.main} tracks {upstream}' if upstream else f'claim: not committed: commit it as `{msg}`')
+    return result(0, '\n'.join(lines))
 
 
 def name_refusal(ctx, branch, tree):
@@ -2166,6 +2242,8 @@ def main(argv=None):
     p.add_argument('--path')
     p.add_argument('--branch')
     p.add_argument('--no-claim', action='store_true')
+    p.add_argument('--claim', action='store_true', help='claim each local ticket (tickets.py claim) and commit the claim in main first (T-0800)')
+    p.add_argument('--by', metavar='AGENT', help='with --claim: the claimant (default: tickets.py claim\'s, $SDLC_HOST or the host)')
     p.add_argument('--dry-run', action='store_true')
     p = sub.add_parser('close')
     p.add_argument('target')
@@ -2177,6 +2255,8 @@ def main(argv=None):
     p.add_argument('--backup', metavar='REMOTE/REF')
     p.add_argument('--transcript', metavar='JSONL')
     p.add_argument('--verifier-transcript', metavar='JSONL')
+    p.add_argument('--verifier-agent-id', metavar='ID', help='record the verifier from its sub-agent transcript and prune it (T-0800)')
+    p.add_argument('--solo-agent-id', metavar='ID', help='record the solo from its sub-agent transcript and prune it (T-0800)')
     p = sub.add_parser('ready')
     p.add_argument('target', nargs='?')
     p.add_argument('--ticket')
@@ -2203,6 +2283,10 @@ def main(argv=None):
     sub.add_parser('orphans')
     sub.add_parser('selftest')
     a = ap.parse_args(argv)
+    if a.cmd == 'open' and a.claim and (a.dry_run or a.no_claim):
+        ap.error('--claim takes no --dry-run or --no-claim')
+    if a.cmd == 'open' and a.by and not a.claim:
+        ap.error('--by needs --claim')
     if a.cmd == 'list' and a.fail and not a.stale:
         ap.error('--fail needs --stale')
     if a.cmd == 'list' and a.ready and (a.all or a.stale):
@@ -2211,7 +2295,13 @@ def main(argv=None):
         return selftest()
     try:
         if a.cmd == 'open':
-            r = open_lane(a.name, base=a.base, into=a.into, tickets=merge_tickets(a.ticket, a.tickets), kind=a.kind, title=a.title, root=a.root,
+            ids = merge_tickets(a.ticket, a.tickets)
+            if a.claim:
+                r = claim_tickets(ids, a.root or '.sdlc', a.by)
+                print(r['message'])
+                if r['rc']:
+                    return r['rc']
+            r = open_lane(a.name, base=a.base, into=a.into, tickets=ids, kind=a.kind, title=a.title, root=a.root,
                           dry_run=a.dry_run, path=a.path, branch=a.branch, check_claim=not a.no_claim,
                           record_branch=True, lock=True)
             print(r['message'])
@@ -2221,7 +2311,8 @@ def main(argv=None):
             print(r['message'])
             return r['rc']
         if a.cmd == 'finish':
-            return finish(a.target, backup=a.backup, transcript=a.transcript, verifier_transcript=a.verifier_transcript)
+            return finish(a.target, backup=a.backup, transcript=a.transcript, verifier_transcript=a.verifier_transcript,
+                          solo_agent_id=a.solo_agent_id, verifier_agent_id=a.verifier_agent_id)
         if a.cmd == 'ready':
             r = ready(a.target, ticket=a.ticket, notify_cmd=a.notify_cmd)
             print(r['message'])
@@ -3810,7 +3901,7 @@ def finish_fixture(script, base, label, verdict='pass', gate=None):
     files = {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
              '.sdlc/0001-fin/handoff.md': '---\nid: T-0001\ntitle: "Finish me"\ntype: feature\nstatus: claimed\nsize: L2\n'
                                           'priority: P2\ndepends: []\ncreated: 2026-10-15\nclaimed_by: claude 2026-10-15\n---\n\n'
-                                          '## Goal\nfinish\n'}
+                                          '## Goal\nfinish\n\n## Acceptance criteria\n1. fin.txt exists\n'}
     if gate:
         files['.sdlc/config'] = f'land_gate: {gate}\n'
     t.commit('track .sdlc', files)
@@ -3819,8 +3910,9 @@ def finish_fixture(script, base, label, verdict='pass', gate=None):
     t.commit('claim T-0001')  # open wrote branch: and worktree: into the ticket in main
     t.work(tree, {'fin.txt': 'work\n'})
     t.write({'fin2.txt': 'more\n'}, cwd=tree)
-    rd = order.records_dir(tree / '.sdlc' / '0001-fin', create=True)
-    (rd / 'verifier-L2.md').write_text(FIN_VERDICT.format(verdict))
+    if verdict:  # None: no result yet (a case prepares its own verifier dispatch)
+        rd = order.records_dir(tree / '.sdlc' / '0001-fin', create=True)
+        (rd / 'verifier-L2.md').write_text(FIN_VERDICT.format(verdict))
     return t, leaf, tree, b
 
 
@@ -3841,7 +3933,7 @@ def case_finish_pass(script, base):
     rc, o = t.lanes('finish', leaf, '--backup', 'origin/backup-main', env=FIN_ENV)
     fails = [] if rc == 0 else [f'finish pass: want exit 0, got {rc}: {o}']
     for want in ('record: nothing pending', 'verdict: pass (verifier-L2.md)', 'commit: ', 'land: merged ', '(gate: test -e fin2.txt)',
-                 'settle: main at ', 'close: skipped (T-0001 is done in main)', 'backup: pushed main to origin refs/heads/backup-main',
+                 'settle: main at ', 'close: skipped (T-0001 is done in main)', 'backup: pushing main to origin refs/heads/backup-main in the background',
                  f'lane: closed {leaf} (ancestor)', f'finish: {leaf} done'):
         if want not in o:
             fails.append(f'finish pass: no {want!r} line: {o}')
@@ -3849,7 +3941,7 @@ def case_finish_pass(script, base):
         fails.append(f'finish pass: want (done, no tree, no branch, no finish branch), got {finish_state(t, b, leaf)}')
     if not (t.ok('cat-file', '-e', 'main:fin.txt') and t.ok('cat-file', '-e', 'main:fin2.txt')):
         fails.append('finish pass: main lacks the lane work (fin.txt and the committed fin2.txt)')
-    if origin_has(t, 'refs/heads/backup-main') != t.g('rev-parse', 'main'):
+    if wait_origin(t, 'refs/heads/backup-main') != t.g('rev-parse', 'main'):
         fails.append('finish pass: --backup did not push main to origin backup-main')
     if t.g('status', '--porcelain'):
         fails.append(f'finish pass: main is left dirty: {t.g("status", "--porcelain")}')
@@ -3933,6 +4025,124 @@ def case_finish_moved(script, base):
         fails.append('finish moved: main lacks the lane work or the ticket filed after the land')
     if t.g('status', '--porcelain'):
         fails.append(f'finish moved: main is left dirty: {t.g("status", "--porcelain")}')
+    return fails
+
+
+def case_open_claim(script, base):
+    """T-0800: open --claim on a proposed ticket claims it, commits the claim in main and opens the lane in one call."""
+    t = Fixture(base, script, 'openclaim')
+    h = '.sdlc/0001-one/handoff.md'
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             h: ticket_file('T-0001').replace('status: ready', 'status: proposed')})
+    rc, o = t.lanes('open', 'one', '--ticket', 'T-0001', '--kind', 'solo', '--claim', '--by', 'tester')
+    if rc:
+        return [f'open claim: want exit 0, got {rc}: {o}']
+    fails = []
+    meta = next((m for _, m in tickets.load(t.top / '.sdlc') if m.get('id') == 'T-0001'), {})
+    if meta.get('status') != 'claimed' or not str(meta.get('claimed_by') or '').startswith('tester'):
+        fails.append(f'open claim: want status claimed by tester, got {meta.get("status")} {meta.get("claimed_by")}')
+    if 'claim T-0001' not in t.g('log', '--format=%s', 'main').splitlines():
+        fails.append('open claim: no `claim T-0001` commit in main')
+    if 'status: claimed' not in t.g('show', f'main:{h}'):
+        fails.append('open claim: main does not hold the claim in a commit')
+    if not re.search(r'opened (\S+) at (.+?) \(branch ', o) or not t.tree('T-0001-one').is_dir():
+        fails.append(f'open claim: the lane is not open: {o}')
+    if t.g('status', '--porcelain'):
+        fails.append(f'open claim: main is dirty: {t.g("status", "--porcelain")!r}')
+    return fails
+
+
+def agent_transcript(base, agent_id, text, tools=2, secs=90):
+    """A fixture sub-agent transcript under <base>/projects/-p/s/subagents (the SDLC_CLAUDE_PROJECTS layout): tools
+    tool_use blocks, usage on each message, secs seconds from the first line to the last, text as the final message."""
+    d = base / 'projects' / '-p' / 's' / 'subagents'
+    d.mkdir(parents=True, exist_ok=True)
+    t0 = datetime.datetime(2026, 10, 28, 12, 0, 0)
+    ts = lambda s: (t0 + datetime.timedelta(seconds=s)).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+    use = {'input_tokens': 10, 'output_tokens': 20, 'cache_read_input_tokens': 100, 'cache_creation_input_tokens': 5}
+    lines = [dict(type='user', timestamp=ts(0), message=dict(role='user', content='go'))]
+    for i in range(tools):
+        lines.append(dict(type='assistant', timestamp=ts(1 + i), message=dict(
+            id=f'm{i}', role='assistant', model='claude-sonnet-5-5', usage=use,
+            content=[dict(type='tool_use', id=f'tu{i}', name='Bash', input={'command': 'true'})])))
+    lines.append(dict(type='assistant', timestamp=ts(secs), message=dict(
+        id='mz', role='assistant', model='claude-sonnet-5-5', usage=use, stop_reason='end_turn',
+        content=[dict(type='text', text=text)])))
+    p = d / f'agent-{agent_id}.jsonl'
+    p.write_text(''.join(json.dumps(l) + '\n' for l in lines))
+    return p
+
+
+def case_finish_agent_id(script, base):
+    """T-0800: finish --verifier-agent-id finds the verifier transcript, records the result with tokens, tool uses and
+    duration from it, drops the verifier from the prune queue, then lands."""
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-agent', verdict=None)
+    env = dict(FIN_ENV, SDLC_CLAUDE_PROJECTS=str(base / 'projects'), SDLC_DISPATCH_PARENT_PID=str(os.getpid()))
+    r = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', 'verifier', 'L2', '.sdlc/0001-fin/handoff.md',
+                        '--solo-model', 'sonnet'], cwd=str(tree), capture_output=True, text=True, env=dict(os.environ, **env))
+    try:
+        got = json.loads(r.stdout)
+    except ValueError:
+        return [f'finish agent: fixture prepare failed: {r.returncode} {r.stdout} {r.stderr}']
+    agent_transcript(base, 'ag-ver', '## Verdict\npass\n\n## Evidence\nran\n')
+    sh = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prune', '--root', str(t.top), '--add', got['name']],
+                        cwd=str(t.top), capture_output=True, text=True, env=dict(os.environ, **env))
+    if sh.returncode:
+        return [f'finish agent: fixture prune --add failed: {sh.stdout} {sh.stderr}']
+    rc, o = t.lanes('finish', leaf, '--verifier-agent-id', 'ag-ver', env=env)
+    fails = [] if rc == 0 and f'finish: {leaf} done' in o else [f'finish agent: want exit 0 and done, got {rc}: {o}']
+    for want in ('record: ', f'pruned {got["name"]}', 'verdict: pass', 'land: merged '):
+        if want not in o:
+            fails.append(f'finish agent: no {want!r} in: {o}')
+    rows = []
+    for f in (t.top / '.sdlc').rglob('runs.jsonl'):
+        rows += [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
+    v = next((x for x in rows if x.get('role') == 'verifier'), None)
+    if not v:
+        fails.append(f'finish agent: no verifier row in main runs.jsonl: {rows}')
+    else:
+        u = v.get('usage') or {}
+        if (v.get('agent_id'), u.get('tool_uses'), v.get('duration_ms'), u.get('input_tokens')) != ('ag-ver', 2, 90000, 30):
+            fails.append(f'finish agent: want agent ag-ver, 2 tool uses, 90000 ms and 30 input tokens, got {v}')
+    queue = t.top / '.sdlc' / 'runtime' / 'prune.json'
+    if queue.is_file() and got['name'] in queue.read_text():
+        fails.append(f'finish agent: {got["name"]} is still in the prune queue')
+    if finish_state(t, b, leaf) != ('done', False, False, False):
+        fails.append(f'finish agent: want (done, no tree, no branch, no finish branch), got {finish_state(t, b, leaf)}')
+    return fails
+
+
+def wait_origin(t, ref, timeout=60):
+    end = time.time() + timeout
+    while time.time() < end:
+        sha = origin_has(t, ref)
+        if sha:
+            return sha
+        time.sleep(0.2)
+    return ''
+
+
+def case_finish_backup_bg(script, base):
+    """T-0800: finish --backup starts the push in a detached process and returns while it still runs, printing the log
+    path; a pre-push hook holds the push until the case releases it."""
+    t, leaf, tree, b = finish_fixture(script, base, 'finish-bg')
+    gate = t.dir / 'release-push'
+    hook = t.top / '.git' / 'hooks' / 'pre-push'
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text(f'#!/bin/sh\ni=0\nwhile [ ! -e "{gate}" ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done\nexit 0\n')
+    hook.chmod(0o755)
+    rc, o = t.lanes('finish', leaf, '--backup', 'origin/backup-main', env=FIN_ENV)
+    fails = [] if rc == 0 and f'finish: {leaf} done' in o else [f'finish bg: want exit 0 and done, got {rc}: {o}']
+    if origin_has(t, 'refs/heads/backup-main'):
+        fails.append('finish bg: the push completed before finish returned')
+    m = re.search(r'^backup: pushing main to origin refs/heads/backup-main in the background; log (\S+)$', o, re.M)
+    if not m:
+        fails.append(f'finish bg: no background backup line with a log path: {o}')
+    gate.write_text('')
+    if wait_origin(t, 'refs/heads/backup-main') != t.g('rev-parse', 'main'):
+        fails.append('finish bg: the background push never landed main on origin backup-main')
+    elif m and not Path(m.group(1)).is_file():
+        fails.append(f'finish bg: the log {m.group(1)} does not exist')
     return fails
 
 
@@ -4120,6 +4330,11 @@ def run_selftest(script, src, base):
              'a skipped close still commits the lane close, an ignored tracked path included, and main is clean')
         need('finish moved', case_finish_moved(script, base),
              'main moved between land and settle: a rerun merges main into finish/<lane> and settles')
+        need('open claim', case_open_claim(script, base), 'open --claim claims a proposed ticket, commits the claim and opens the lane (T-0800)')
+        need('finish agent id', case_finish_agent_id(script, base),
+             'finish --verifier-agent-id records tokens, tool uses and duration from the transcript, prunes, then lands (T-0800)')
+        need('finish backup bg', case_finish_backup_bg(script, base),
+             'finish --backup returns while the push still runs and prints the background log path (T-0800)')
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')
