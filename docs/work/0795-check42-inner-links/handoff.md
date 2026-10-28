@@ -33,3 +33,12 @@ Item 42 in `plugins/sdlc-lite/scripts/check.py` (guess: it tests the `../` prefi
 
 ## Constraints
 The failing test lands before or with the fix, never after. Restoring the 17 T-0790 code spans to links is out of scope.
+
+## Outcome
+Fixed. `skill_ref_bad` in `plugins/sdlc-lite/scripts/check.py` no longer rejects a link by its `../` prefix; the existing `resolve().is_relative_to(skill_dir)` test decides, so `../SKILL.md` from `references/` passes and `../../other/x.md` still fails. Item 42's docstring says so.
+Test first: added two cases (inner `../SKILL.md` from a `references/` dir passes; `../../other/x.md` from it is flagged) before the fix. With the fix absent, `python3 plugins/sdlc-lite/scripts/check.py` printed `FAIL check.py: self-contained skills flagged an inner ../ link that stays in the skill folder`.
+After the fix:
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0
+- `python3 scripts/check-packaging.py` exit 0
+- `git diff --check` exit 0
+Restoring the 17 T-0790 code spans is out of scope and untouched.

@@ -175,7 +175,7 @@
 41. Record transcript flag (T-0334, inverted by T-0667/T-0673): no skills/*/SKILL.md spells a `dispatch.py record <dispatch_file> --` call with `--transcript`; with `--agent-id`, `record` finds the transcript itself.
    Negative control: a record call without it is flagged; one with it is not.
 42. Self-contained skills (T-0325): in every skills/*/ folder of this plugin, and of the sibling context plugin when it sits next to this one, no
-   markdown link in any .md file (fenced blocks aside) starts with `docs/`, `plugins/`, `../`, or `/`, or resolves outside its skill folder (URLs, `#anchors`, and
+   markdown link in any .md file (fenced blocks aside) starts with `docs/`, `plugins/`, or `/`, or resolves outside its skill folder (a `../` link that resolves inside it passes, T-0795; URLs, `#anchors`, and
    links led by `${CLAUDE_PLUGIN_ROOT}/` pass); no SKILL.md or references/ file names a prose path starting with `plugins/`; and every
    `${CLAUDE_PLUGIN_ROOT}/<path>` a skill names exists in its plugin (a path with `<`, `*`, or `$` is a pattern and is skipped). Fixtures and rubrics quote evidence from
    other repos, so only their links are checked. Negative controls: a planted `../`, `../../`, `docs/`, `plugins/`, or absolute link, a `plugins/` prose path, and a
@@ -1348,7 +1348,7 @@ def skill_ref_bad(text, md_dir, skill_dir, plugin_root, prose_rule=True):
     for tg in re.findall(r'\]\(([^)\s]+)', re.sub(r'```.*?```', '', text, flags=re.S)):
         if '://' in tg or tg.startswith(('#', 'mailto:', PLUGIN_VAR + '/')): continue
         rel = tg.split('#')[0]
-        if rel.startswith(('docs/', 'plugins/', '../', '/', '~')) or not (md_dir/rel).resolve().is_relative_to(skill_dir.resolve()):
+        if rel.startswith(('docs/', 'plugins/', '/', '~')) or not (md_dir/rel).resolve().is_relative_to(skill_dir.resolve()):
             out.append(f'link leaves the skill folder: {tg}')
     if prose_rule:
         out.extend(f'prose path starts with plugins/: {m}' for m in re.findall(r'(?<![\w/.${}-])plugins/[\w./-]+', text))
@@ -1373,6 +1373,9 @@ for _why, _bad in (('a ../ link', '[a](../sdlc-lite/SKILL.md)'), ('a ../../ link
 for _ok in ('[a](references/x.md)', '[a](resources/y.json#k)', '[a](https://example.com/docs/x)', '[a](#top)', '[a](${CLAUDE_PLUGIN_ROOT}/agents/planner.md)',
             '```\n[a](../x.md)\n```', 'Read `${CLAUDE_PLUGIN_ROOT}/scripts/steps.py` and `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.py`.'):
     if skill_ref_bad(_ok, _sc_dir, _sc_dir, root): errors.append(f'check.py: self-contained skills flagged a clean reference: {_ok[:40]}')
+_sc_ref = _sc_dir/'references'
+if skill_ref_bad('[a](../SKILL.md)', _sc_ref, _sc_dir, _sc_pl): errors.append('check.py: self-contained skills flagged an inner ../ link that stays in the skill folder')
+if not skill_ref_bad('[a](../../other/x.md)', _sc_ref, _sc_dir, _sc_pl): errors.append('check.py: self-contained skills negative control not flagged for a ../../ link that leaves the skill folder')
 if not _sc_n: errors.append('skills: no skill .md files found for the self-contained check')
 # One level system (docstring item 43, T-0342): ticket and solo levels are L1 to L5; the retired S/M/L vocabulary stays out of
 # the shipped texts. An `ALIAS_OK` line passes only in an ALIAS_FILES file (the deprecated aliases kept for one release).
