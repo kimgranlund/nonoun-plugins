@@ -18,7 +18,8 @@
                                           prints review and advance prepares that role on a generated pre-verify.md before the verifier
   dispatch.py started --agent-id ID <dispatch.json>   store the spawned sub-agent's id in its running attempt, so status can show its last activity (T-0476)
   dispatch.py prune [--root DIR] [--done NAME | --add NAME | --forget-stale]   the queue of finished sub-agents to stop (T-0368); --done also closes the agent's host lane (T-0453)
-  dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted; a running one with a stored agent id and a
+  dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned (also a running one whose ticket is done or dropped,
+                                          T-0796), or interrupted; a running one with a stored agent id and a
                                           transcript also shows `last activity <age>`, and `silent` after 30 minutes without a write (T-0476);
                                           a running one past its role's time budget ends `over-budget <age> (budget <n>m)` (T-0555)
   dispatch.py wait [--timeout S] <dispatch.json>   block until the result file is non-empty or the attempt leaves running, then print
@@ -825,13 +826,23 @@ def attempt_state(data):
     return 'running'
 
 
+def attempt_state_at(path, data):
+    """attempt_state, and orphaned for a running attempt whose ticket (the task folder of its dir) is done or dropped (T-0796)."""
+    state = attempt_state(data)
+    if state == 'running':
+        task = order.task_dir(Path(path).parent)
+        if task is not None and ticket_closed(task):
+            return 'orphaned'
+    return state
+
+
 def recover_orphans(directory, dry_run=False, own=None):
     """Mark orphaned attempts interrupted with run_lifecycle.py's recovery text; return (recovered, live) names.
     A running attempt whose recorded pid is own (the calling session) is neither recovered nor live (T-0371)."""
     live, recovered = [], []
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
-        state = attempt_state(data)
+        state = attempt_state_at(path, data)
         if state == 'orphaned' and results.attempt_reported(path, data.get('role')):
             continue  # T-0445: its result file holds a verdict; never mark it interrupted (status shows report-unrecorded)
         if state == 'orphaned':
@@ -972,7 +983,7 @@ def over_budget_lines(directory):
     lines = []
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
-        hit = over_budget(data) if attempt_state(data) == 'running' else None
+        hit = over_budget(data) if attempt_state_at(path, data) == 'running' else None
         if hit:
             lines.append('over-budget: %s running %s, budget %dm: check the role for a stdin wait or a stall, then ask the person (%s)'
                          % (path.name[:-len('.attempt.json')], age_text(hit[0]), hit[1], path))
@@ -1038,7 +1049,7 @@ def status(directory, orphans_only=False):
     found = sorted(base.glob('*.attempt.json')) + sorted(base.glob('step-*/*.attempt.json'))  # T-0690: a task's step attempts too
     for path in found:
         data = read_attempt(path)
-        state = attempt_state(data)
+        state = attempt_state_at(path, data)
         if orphans_only and state != 'orphaned':
             continue
         sub = path.parent.name + '/' if path.parent != base else ''
@@ -3278,6 +3289,15 @@ def selftest():
         rec = at(16 * 60, recover_root, str(tr))
         case('time budget: recover --root names it too', any(l.startswith('over-budget: ') and 'builder-L2' in l for l in rec))
         case('negative control: recover --root flags nothing inside the budget', not any('over-budget' in l for l in recover_root(str(tr))))
+        # T-0796: a running attempt whose ticket is closed is orphaned, whatever its parent pid says; recover would mark it.
+        put(tr / '.sdlc' / 'ob' / 'handoff.md', '---\nid: T-0901\ntitle: "x"\ntype: chore\nstatus: done\nsize: L1\npriority: P2\n'
+            'depends: []\ncreated: 2026-10-05\n---\n\n## Goal\nx\n')
+        shut = at(16 * 60, status, R(tr / '.sdlc' / 'ob'))
+        case('closed ticket: status reads a running attempt orphaned once its ticket is done, with no over-budget token',
+             len(shut) == 1 and ' orphaned builder-L2 ' in shut[0] and 'over-budget' not in shut[0])
+        case('closed ticket: recover would mark it interrupted', recover_orphans(R(tr / '.sdlc' / 'ob'), dry_run=True)[0] == [Path(ob['attempt_file']).name])
+        put(tr / '.sdlc' / 'ob' / 'handoff.md')
+        case('negative control: the same attempt reads running while its ticket is open', ' running builder-L2 ' in status(R(tr / '.sdlc' / 'ob'))[0])
 
         # T-0733 (GitHub #63): wait blocks on the running attempt and returns once its result lands or it leaves running.
         waitcmd = [sys.executable, str(HERE / 'dispatch.py'), 'wait', '--timeout']
