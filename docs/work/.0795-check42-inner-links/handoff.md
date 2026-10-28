@@ -2,7 +2,7 @@
 id: T-0795
 title: "check.py item 42 rejects ../ links that stay inside the skill folder"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,12 @@ After the fix:
 - `python3 scripts/check-packaging.py` exit 0
 - `git diff --check` exit 0
 Restoring the 17 T-0790 code spans is out of scope and untouched.
+
+## Outcome
+
+2026-10-28 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 4332d750e73d
+- Changed: see commits
+- Commits: 3bd5271 T-0795: check.py item 42 accepts ../ links that stay inside the skill folder
+- Check: 1 A check.py case: an inner `../` link passes and a link leaving the skill still fails; with the fi...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and `python3 scripts/check-packaging.py` exi...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/check.py:180 docstring still lists "a... -> notes.md

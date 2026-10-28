@@ -708,3 +708,7 @@
 - note: `plugins/context/skills/icm-architect/SKILL.md:3` description carries em dashes (upstream RinDig text, MIT per `SOURCE`; non-goal forbids rewriting).
 - note: the routing judge picked `icm-architect` outright for "map this repo" (its literal trigger), where the Outcome reports a tie with `system-atlas`; no bearing on the Done-when, which only forbids overlap with `progressive-context`.
 - note: no `builder-*.md` exists in the artifacts dir; the solo's claims were taken from the handoff Outcome and checked as above.
+
+## T-0795: check.py item 42 rejects ../ links that stay inside the skill folder (2026-10-28)
+
+- note: plugins/sdlc-lite/scripts/check.py:180 docstring still lists "a planted `../`" among negative controls; still accurate because that control (`../sdlc-lite/SKILL.md` from the skill root) leaves the folder.
