@@ -2,7 +2,7 @@
 id: T-0803
 title: "a full verifier passes a build whose fix-now note says the Goal is not met"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,12 @@ Wording change only; model and effort tables unchanged.
 ## Outcome
 `plugins/sdlc-lite/agents/verifier.md` now says a criterion that passes on a build contradicting the Goal is vacuous: the verdict is `fail` with a `plan defect:` line, never `pass` with a `fix-now:` note. Regenerated the Claude verifier-L1/L2/L3 agents and the six Codex verifier TOMLs.
 Checks: `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `git diff --check` clean. Not run: a live verifier on the T-0801 control (one-sample repro; wording change only).
+
+## Outcome
+
+2026-10-28 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 46b4c64df269
+- Changed: see commits
+- Commits: 7f80344 T-0803: a criterion that passes on a Goal-contradicting build is a plan defect fail
+- Check: 1 `plugins/sdlc-lite/agents/verifier.md` says a criterion that passes on a build contradicting the ...: pass
+- Check: 2 `python3 scripts/check-packaging.py` exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/agents/verifier.md:33 still says "the Verdict is... -> notes.md

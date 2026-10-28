@@ -754,3 +754,7 @@
 - decide: docs/reports/2026-10-28-speed-experiment.md Verdict: the Question requires both verifiers to fail the control or "the control does not discriminate"; the full verifier passed, so by the ticket's own wording the control did not discriminate for the full arm. The report says "one control is one sample" and could name the full-verifier pass as a second, independent reason for reject.
 - decide: docs/reports/2026-10-28-speed-experiment.md "What it does not show": the "10 to 21 minutes (T-0796, T-0798)" verifier durations are not checkable from this tree (no run records for those tickets here); treat as unverified.
 - decide: b6 `verifier-L1.attempt.json`: an aborted first diff-control dispatch (status `running`, no result) exists; the report's "6 diff-scoped runs" counts only the completed `-2` run.
+
+## T-0803: a full verifier passes a build whose fix-now note says the Goal is not met (2026-10-28)
+
+- note: plugins/sdlc-lite/agents/verifier.md:33 still says "the Verdict is `fail` only for a red criterion or a defect rule 2 names"; the new line 41 rule reads as a red (vacuous) criterion, so they agree, but a reader may see tension. No live verifier run on the T-0801 control was made (builder says so too); the change is wording only.
