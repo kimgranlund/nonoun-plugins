@@ -31,3 +31,11 @@ Today the maintainer conductor runs session scripts `open.sh` (tickets.py claim,
 
 ## Constraints
 The failing tests land before or with the change.
+
+## Outcome
+- `lanes.py open --claim [--by AGENT]` (`claim_tickets`): tickets.py claim on each unclaimed local id in main, one `claim <ids>` commit (none when main tracks an upstream), then the usual open; a failed claim opens nothing.
+- `lanes.py finish --verifier-agent-id ID` / `--solo-agent-id ID` (`agent_flags`): finds `agent-<ID>.jsonl` with `dispatch.find_subagent_transcript`, passes `--agent-id`, `--transcript`, `--tool-uses`, `--duration-ms` (new `cost_estimate.transcript_activity`) to `dispatch.py record`, then `dispatch.py prune --done <name>`; no transcript stops at record.
+- `--backup` now runs the push in a detached `sh -c` process logging to `<git common dir>/sdlc-backup.log` (last line `exit <code>`) and prints `backup: pushing ... in the background; log <path>`.
+- Guidance: conductor.md Merge ops bullet, fanout `references/lane-lifecycle.md`, lanes.py docstring; codex conductor TOML regenerated.
+- Red before the change (cases added first): `FAIL: open claim: want exit 0, got 2: ... unrecognized arguments: --claim --by tester`; `FAIL: finish agent: want exit 0 and done, got 2: ... unrecognized arguments: --verifier-agent-id ag-ver`; `FAIL: finish bg: the push completed before finish returned | finish bg: no background backup line with a log path` (the old foreground step printed `backup: pushed main to origin refs/heads/backup-main`).
+- Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0 (ok lines for open claim, finish agent id, finish backup bg); the same for `dispatch.py selftest` exit 0 (PASS); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `cost_estimate.py selftest` 24 ok; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `prompt_lint.py` exit 0; `scripts/check-packaging.py` exit 0; `git diff --check` clean.

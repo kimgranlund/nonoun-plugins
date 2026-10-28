@@ -127,6 +127,33 @@ def transcript_final(path):
     return got
 
 
+def transcript_activity(path):
+    """(tool_uses, duration_ms) of a sub-agent transcript, or None if unreadable (T-0800): tool_uses counts distinct
+    tool_use block ids in assistant messages, duration_ms spans the first to the last line timestamp (None with fewer than two)."""
+    from datetime import datetime
+    try:
+        lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    tools, stamps = set(), []
+    for line in lines:
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(d, dict):
+            continue
+        try:
+            stamps.append(datetime.fromisoformat(str(d['timestamp']).replace('Z', '+00:00')))
+        except (KeyError, ValueError):
+            pass
+        msg = d.get('message')
+        if isinstance(msg, dict) and msg.get('role') == 'assistant' and isinstance(msg.get('content'), list):
+            tools.update(b.get('id') for b in msg['content'] if isinstance(b, dict) and b.get('type') == 'tool_use')
+    ms = int((max(stamps) - min(stamps)).total_seconds() * 1000) if len(stamps) > 1 else None
+    return len(tools), ms
+
+
 def family(model, table):
     m = (model or '').lower()
     return next((k for k in table if k in m), None)
