@@ -34,3 +34,9 @@ In a repository that lands lanes into main locally (`lanes.py finish` settles an
 
 ## Constraints
 The failing test lands before or with the fix.
+
+## Outcome
+2026-10-28 · solo L2. `finish`/`settle` carry no local-or-PR signal (they always land locally), so a new `.sdlc/config` key decides: `lane_landing: local` marks a repo that lands into main locally while main tracks an upstream. `lanes.pr_upstream` returns the upstream only when the repo lands through it, and both open sites use it: the `--claim` commit and the `branch:`/`worktree:` record commit (one predicate, so a local-landing repo does not commit one and skip the other). No line keeps the T-0609 PR-repo behavior. This repo's `.sdlc/config` now carries `lane_landing: local`.
+- Red first: new selftest case `open claim upstream` (`case_open_claim_upstream`) before the fix printed `FAIL: open claim upstream: open claim upstream: lane_landing local: no `claim T-0001` commit in main: claim: T-0001 claimed ...` (also: the lane copy is not claimed; main is dirty). After the fix it passes; its PR-repo half asserts no claim commit, main level with origin, and `claim: not committed: main tracks origin/main`.
+- Docs: lanes.py docstring (claim rule, record paragraph, config table), `docs/references/sdlc-internals.md` (open record, config keys, owner-tree table row), `wtroot.py` owner table row, `skills/fanout/references/lane-lifecycle.md`, `agents/conductor.md` and its regenerated Codex `sdlc-conductor-l1.toml`.
+- Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0; `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `wtroot.py selftest` ok; `codex_roles.py generate --check` exit 0; `git diff --check` exit 0.
