@@ -134,7 +134,9 @@ $SDLC_BASE_SHA after `export SDLC_BASE_SHA=<base> &&` (T-0735). A verifier for a
 from the `Lane-Base:` line of that snapshot commit when it is an ancestor and the handoff names no base (T-0717); prepare says so on stderr when the tree has
 moved since the pin (stale). A verifier whose records dir holds end-sha (written by record for a completed builder: the
 tree's HEAD when clean, else a tree hash built with a temporary index, T-0661) also gets `Diff range: <base>..<end>`
-(`git diff <base> <tree>` for a tree hash; base..Review sha when it has one), stored as diff_range. Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
+(`git diff <base> <tree>` for a tree hash; base..Review sha when it has one), stored as diff_range. A verifier at L1 or L2 for a solo
+ticket of size L1 or L2 whose every acceptance criterion holds a command span gets the SCOPE_DIFF line (`Scope: diff`, T-0799;
+diff_scoped), unless its newest verifier result starts For the next attempt with `escalate: full`. Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
 the result path the role writes with the Write tool before it ends; record fails the run with a message naming that path when it is missing,
 also when stdin is only the pointer. The line also says the file carries no header (record adds it, T-0538) and names
 `results.py validate <file> --role <role> --headerless`. The pointer line asks for a final message of one line, `<role> <status> <path>`.
@@ -719,6 +721,39 @@ def lane_gate(role, directory, plugin):
         return None
     size = (tickets.parse(handoff.read_text(encoding='utf-8', errors='replace')) or {}).get('size')
     return lane_dir, size if size in ('L1', 'L2', 'L3') else 'L2'
+
+
+SCOPE_DIFF = ('Scope: diff (T-0799: a solo ticket at L1 or L2 whose criteria are all commands): (1) run each acceptance criterion '
+              'command as written; (2) read only the diff from Base sha to Review sha (the Diff range when one is given) and the files '
+              'it touches, nothing wider; (3) confirm each failing-first claim in the Outcome by reverting the fix in a throwaway '
+              'worktree, for at most one case; (4) when the diff touches a file outside the handoff\'s named scope or a criterion '
+              'cannot run, do not judge: the Verdict is fail and `## For the next attempt` starts with `escalate: full: <why>`, '
+              'so the next verifier gets the full brief.')
+ESCALATE_RE = re.compile(r'^## For the next attempt\s*\n\s*escalate: full', re.M)
+
+
+def diff_scoped(directory, handoff, level):
+    """T-0799: True when a verifier at level L1 or L2 checks a solo ticket handoff (ticket front matter, size L1 or L2, no
+    builder result) whose every `## Acceptance criteria` list item holds a command span, unless the newest verifier result
+    escalated with `escalate: full`."""
+    if level not in ('L1', 'L2') or order.newest(str(directory), 'builder') or step_build(directory):
+        return False
+    last = order.newest(str(directory), 'verifier')
+    if last and ESCALATE_RE.search(Path(last).read_text(encoding='utf-8', errors='replace')):
+        return False  # the diff-scoped verifier escalated: this one gets the full brief
+    text = handoff.read_text(encoding='utf-8', errors='replace')
+    if (tickets.parse(text) or {}).get('size') not in ('L1', 'L2') or not re.search(r'^id: *T-[0-9]+', text, re.M):
+        return False
+    import steps  # same scripts/ dir
+    items, inside, fenced = [], False, False
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside, fenced = line.rstrip() == '## Acceptance criteria', False
+        elif line.lstrip().startswith('```'):
+            fenced = not fenced
+        elif inside and not fenced and re.match(r'\s*([-*]|\d+[.)]) ', line):
+            items.append(line)
+    return bool(items) and all(steps.line_spans(line) for line in items)
 
 
 GUIDANCE_FILES = ('AGENTS.md', 'CLAUDE.md')
@@ -1441,6 +1476,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                                 'The build may be uncommitted: diff against Base sha, not HEAD.') + ' Run every command in the foreground with an explicit '
                        'Bash timeout under 600000 ms; never run_in_background or Monitor. Never run the full check.sh; run the checks the '
                        'criteria name. Never use git stash; the stash stack is shared across sessions.')
+            if diff_scoped(directory, handoff, level):
+                prompt += '\n' + SCOPE_DIFF
         if base:
             # T-0735: a sub-agent's shell has no SDLC_BASE_SHA (run.sh exported it), and a criterion naming it expands to ''
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it). %s' % (base, base_export(base))
@@ -3520,6 +3557,24 @@ def selftest():
              rcr == 0 and all(s in dr['prompt'] for s in (
                  'The build may be uncommitted', 'Run every command in the foreground with an explicit Bash timeout under 600000 ms',
                  'never run_in_background or Monitor', 'Never run the full check.sh', 'Never use git stash')))
+        # T-0799: a solo ticket at L1 or L2 whose criteria are all commands gets a diff-scoped verifier brief; a prose-only
+        # criterion or an L3 ticket keeps today's brief.
+        for slug, size, crit in (('sd1', 'L1', ['- `python3 a.py selftest` exits 0', '1. `git diff --check` exits 0']),
+                                 ('sd2', 'L1', ['- `python3 a.py selftest` exits 0', '- the docs read well']),
+                                 ('sd3', 'L3', ['- `python3 a.py selftest` exits 0'])):
+            put(rr / '.sdlc' / slug / 'handoff.md', '\n'.join(['---', 'id: T-0951', 'title: "x"', 'type: chore', 'status: claimed',
+                                                               'size: ' + size, '---', '', '## Goal', 'x', '', '## Acceptance criteria'] + crit + ['']))
+        scoped = [prep(rr, 'verifier', 'L2', '.sdlc/%s/handoff.md' % s, '--dry-run') for s in ('sd1', 'sd2', 'sd3')]
+        case('T-0799 prepare verifier on an L1 solo handoff whose criteria are all commands prints a brief with Scope: diff and escalate: full',
+             scoped[0][0] == 0 and 'Scope: diff' in scoped[0][1]['prompt'] and 'escalate: full' in scoped[0][1]['prompt'])
+        case('T-0799 negative control: an L1 handoff with one prose-only criterion, and an L3 handoff, get no Scope: diff',
+             all(rc == 0 and 'Scope: diff' not in d['prompt'] for rc, d, _ in scoped[1:]))
+        put(R(rr / '.sdlc' / 'sd1') / 'verifier-L2.md', '<!-- role=verifier level=L2 model=opus effort=high -->\n## Verdict\nfail\n\n'
+            '## For the next attempt\nescalate: full: the diff touches x.py outside the named scope\n')
+        rce, de, _ = prep(rr, 'verifier', 'L2', '.sdlc/sd1/handoff.md', '--dry-run')
+        case('T-0799 after a diff-scoped verifier wrote escalate: full, the next verifier brief has no Scope: diff',
+             rce == 0 and 'Scope: diff' not in de['prompt'])
+        shutil.rmtree(R(rr / '.sdlc' / 'sd1'))
         (rr / 'rd.txt').unlink()
         lw = rr.parent / (rr.name + '-lane')
         subprocess.run(['git', '-C', str(rr), 'worktree', 'add', '-q', '--detach', str(lw), 'HEAD'], capture_output=True)

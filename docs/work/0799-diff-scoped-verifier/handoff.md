@@ -30,3 +30,9 @@ The brief is built in `plugins/sdlc-lite/scripts/dispatch.py` (prepare; see `--s
 
 ## Constraints
 The failing test lands before or with the change. Model and effort tables stay unchanged.
+
+## Outcome
+- `dispatch.py prepare verifier` at L1 or L2 adds the `SCOPE_DIFF` line (`Scope: diff`) when the handoff is a ticket of size L1 or L2 with no builder result and every `## Acceptance criteria` list item (bullet or numbered) holds a command span (`diff_scoped`). A newest verifier result whose `## For the next attempt` starts `escalate: full` turns it off, so the next verifier gets the full brief. Model and effort tables unchanged; Codex `run.sh` briefs unchanged.
+- `agents/verifier.md` Brief documents the Scope: diff rules and `escalate: full`; Claude and Codex verifier agents regenerated.
+- Red first: before the change, `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` printed `FAIL: T-0799 prepare verifier on an L1 solo handoff whose criteria are all commands prints a brief with Scope: diff and escalate: full` (exit 1); the negative control (prose-only L1, L3) passed.
+- Checks: dispatch selftest through gate_lock exit 0 (3 T-0799 cases ok); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `prompt_lint.py` exit 0; `git diff --check` exit 0.
