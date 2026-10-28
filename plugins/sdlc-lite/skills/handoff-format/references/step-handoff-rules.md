@@ -28,7 +28,7 @@ Evidence. Screenshots, captures and other binary evidence (png, jpg, jpeg, gif, 
 
 ## Cited paths
 
-`steps.py lint` refuses any cited `.sdlc/...` path that does not exist, except a path the step creates or one from another repository. A created path is declared by a ``[creates: <path>]`` marker, an `Outputs: <path>` line, a create or write verb on a `### Do` line, or a code span of a `(red)` criterion; a path an earlier step declares that way is also exempt in later steps, in a cited path and in `### Read first`. A foreign path is declared by an `Other repo: <name>` line with the path written as `<name>/.sdlc/...`; an absolute path outside the repository needs no line.
+`steps.py lint` refuses any cited `.sdlc/...` path that does not exist, except a path the step creates or one from another repository. A created path is declared by a ``[creates: <path>]`` marker, an `Outputs: <path>` line, a create or write verb on a `### Do` line, or a code span of a `(red)` criterion; a path an earlier step declares that way is also exempt in later steps, in a cited path and in `### Read first`. The refusal for a missing path names the ``[creates: <path>]`` marker and the `Outputs:` line as the fix. A foreign path is declared by an `Other repo: <name>` line with the path written as `<name>/.sdlc/...`; an absolute path outside the repository needs no line.
 
 ## Merge step conflict-marker guard
 
