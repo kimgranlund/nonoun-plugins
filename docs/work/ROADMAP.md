@@ -6,10 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0802 | [0802-backup-failure-visible](0802-backup-failure-visible/handoff.md) | a failed background backup push is silent after T-0800 | bug | L1 | P2 | none | 🟡 claimed |
 | T-0804 | [0804-open-claim-local-main](0804-open-claim-local-main/handoff.md) | lanes.py open --claim leaves the claim uncommitted in a repo that lands locally while main tracks an upstream | bug | L2 | P2 | none | 🟡 claimed |
 
-Closed: 764 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 765 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -119,3 +118,4 @@ Closed: 764 done, 30 dropped (git log or .NNNN-* folders)
 - decide: docs/reports/2026-10-28-speed-experiment.md Verdict: the Question requires both verifiers to fail the control or "the control does not discriminate"; the full verifier passed, so by the ticket's own wording the control did not discriminate for the full arm. The report says "one control is one sample" and could name the full-verifier pass as a second, independent reason for reject. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))
 - decide: docs/reports/2026-10-28-speed-experiment.md "What it does not show": the "10 to 21 minutes (T-0796, T-0798)" verifier durations are not checkable from this tree (no run records for those tickets here); treat as unverified. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))
 - decide: b6 `verifier-L1.attempt.json`: an aborted first diff-control dispatch (status `running`, no result) exists; the report's "6 diff-scoped runs" counts only the completed `-2` run. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))
+- decide: plugins/sdlc-lite/scripts/lanes.py:1338 the Goal's parenthetical "and `lanes.py finish` itself when the push already ended" is not implemented: the log is read only before this run's own push, so a finish never reports its own push failure; the Outcome section records this choice and no criterion requires it. (from T-0802: a failed background backup push is silent after T-0800 (2026-10-28))

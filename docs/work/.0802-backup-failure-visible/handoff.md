@@ -2,7 +2,7 @@
 id: T-0802
 title: "a failed background backup push is silent after T-0800"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,13 @@ Checks:
 - Red first, fix absent: `FAIL: finish backup failed: finish bgfail: want a nonzero exit and `backup: previous push failed (exit 1), see .../.git/sdlc-backup.log`, got 0: backup: none (no --backup)`.
 - Fix in: `python3 plugins/sdlc-lite/scripts/lanes.py selftest` through gate_lock exit 0 (90 ok, includes `ok: finish backup failed`).
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` exit 0.
+
+## Outcome
+
+2026-10-28 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: cf9b0cac8dda
+- Changed: see commits
+- Commits: 4bd23d9 T-0802: a failed background backup push is reported by the next finish
+- Check: 1 A lanes selftest case: after a background push that exits 1, the next finish prints `backup: prev...: pass
+- Check: 2 lanes selftest through gate_lock exits 0, `check.py` exits 0: pass
+- Follow-up: decide: plugins/sdlc-lite/scripts/lanes.py:1338 the Goal's parenthetical... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/lanes.py:1338 a failed log keeps every... -> notes.md

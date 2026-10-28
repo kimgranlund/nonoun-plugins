@@ -758,3 +758,8 @@
 ## T-0803: a full verifier passes a build whose fix-now note says the Goal is not met (2026-10-28)
 
 - note: plugins/sdlc-lite/agents/verifier.md:33 still says "the Verdict is `fail` only for a red criterion or a defect rule 2 names"; the new line 41 rule reads as a red (vacuous) criterion, so they agree, but a reader may see tension. No live verifier run on the T-0801 control was made (builder says so too); the change is wording only.
+
+## T-0802: a failed background backup push is silent after T-0800 (2026-10-28)
+
+- decide: plugins/sdlc-lite/scripts/lanes.py:1338 the Goal's parenthetical "and `lanes.py finish` itself when the push already ended" is not implemented: the log is read only before this run's own push, so a finish never reports its own push failure; the Outcome section records this choice and no criterion requires it.
+- note: plugins/sdlc-lite/scripts/lanes.py:1338 a failed log keeps every later finish (including ones without --backup) at exit 1 until a new push rewrites the log; the Outcome states this as intended, with no explicit clear or acknowledge path.
