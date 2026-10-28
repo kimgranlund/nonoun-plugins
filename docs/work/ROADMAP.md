@@ -6,8 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0801 | [0801-speed-experiment](0801-speed-experiment/handoff.md) | measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets | spike | L2 | P2 | T-0799, T-0800 | ⏳ proposed |
-| T-0802 | [0802-backup-failure-visible](0802-backup-failure-visible/handoff.md) | a failed background backup push is silent after T-0800 | bug | L1 | P2 | none | ⏳ proposed |
+| T-0801 | [0801-speed-experiment](0801-speed-experiment/handoff.md) | measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets | spike | L2 | P2 | T-0799, T-0800 | 🟡 claimed |
+| T-0802 | [0802-backup-failure-visible](0802-backup-failure-visible/handoff.md) | a failed background backup push is silent after T-0800 | bug | L1 | P2 | none | 🟡 claimed |
 
 Closed: 762 done, 30 dropped (git log or .NNNN-* folders)
 
