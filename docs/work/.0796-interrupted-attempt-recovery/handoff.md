@@ -2,7 +2,7 @@
 id: T-0796
 title: "interrupted and stale-running attempts go unnoticed until a person looks"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,14 @@ The failing tests land before or with the fix, never after. If both parts need m
   - `FAIL: closed ticket: recover would mark it interrupted`
 - Negative controls green before and after: `negative: stall_attempts: 120 minutes lost yields no finding`, `negative control: raising stall_lost_min in the table silences stall_attempts`, `negative control: the same attempt reads running while its ticket is open`.
 - Checks after the fix: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fleet_detect.py selftest` exit 0; the same for `dispatch.py selftest` exit 0 (PASS); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` clean.
+
+## Outcome
+
+2026-10-28 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f11d3f72cf7c
+- Changed: see commits
+- Commits: d7c4598 T-0796: flag interrupted and stale-running attempts
+- Check: 1 fleet_detect selftest: 2 interrupted attempts with lost_min_total over 120 fires stall_attempts, ...: pass
+- Check: 2 dispatch selftest: a running attempt whose ticket is done reads orphaned in status, and running w...: pass
+- Check: 3 both selftests through gate_lock exit 0, check.py exits 0: pass
+- Follow-up: decide: Conductor check: attempt_state_at dispatch.py:829-836 only adds... -> notes.md
+- Follow-up: decide: plugins/sdlc-lite/scripts/dispatch.py:1099 and :1167: wait and the... -> notes.md

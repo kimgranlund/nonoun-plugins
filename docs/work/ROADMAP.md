@@ -6,10 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0796 | [0796-interrupted-attempt-recovery](0796-interrupted-attempt-recovery/handoff.md) | interrupted and stale-running attempts go unnoticed until a person looks | bug | L2 | P2 | none | 🟡 claimed |
 | T-0797 | [0797-close-keeps-ticket-files](0797-close-keeps-ticket-files/handoff.md) | tickets.py close deletes skips.md and other ticket-folder files (#83) | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 758 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 759 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -108,3 +107,5 @@ Closed: 758 done, 30 dropped (git log or .NNNN-* folders)
 - decide: dispatch.py `advance_solo` reruns the review after a verifier fail (no order.py rank for solo reports); the Outcome's Limitation line records it as a follow-up. (from T-0732: Project hook for a required review role between build and verify (2026-10-25))
 - decide: plugins/design/skills/base-ui/references/pre-differential/skill-entry-history.md:43 whether the 21 `Projects/ui-kit` links across base-ui and wireframe-review should become plain text in the sources, so the allowlist shrinks and the plugin stays identical to them. (from T-0791: new design plugin from the user-level design skills (2026-10-25))
 - decide: `plugins/context/skills/context-fog-of-war/AGENTS.md:31` requires an `updates-log/YYYYMMDD-<slug>/changelog.md` entry per change set; this move edited `references/investigation.md` and `references/learnings/contract-audit.md` and `updates-log/` is byte-identical to the source (newest entry `20261025-source-project-sync` covers the source-side sync, not these two edits). Either record the change set or state in `plugins/context/AGENTS.md` that packaging-only link edits are exempt. (from T-0790: move the context skills into the context plugin (2026-10-25))
+- decide: Conductor check: `attempt_state_at` (dispatch.py:829-836) only adds `orphaned` when `attempt_state` is `running` and `ticket_closed(task)` (status done or dropped, handoff.md with front matter). An open ticket, a missing handoff, or a handoff without status gets the unchanged `attempt_state` result, so recover cannot mark an open-ticket attempt interrupted. The selftest negative control (`the same attempt reads running while its ticket is open`) and the existing `recover --root --open recovers an open ticket's orphan and leaves a closed ticket's attempt running` stay ok. (from T-0796: interrupted and stale-running attempts go unnoticed until a person looks (2026-10-28))
+- decide: plugins/sdlc-lite/scripts/dispatch.py:1099 and :1167: `wait` and the agent-name state lookup still use `attempt_state`, so a closed-ticket running attempt reads running there. note: outside the ticket's stated scope (`status`, `recover`, over-budget lines). (from T-0796: interrupted and stale-running attempts go unnoticed until a person looks (2026-10-28))
