@@ -132,8 +132,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             flag; an empty TEXT refuses, writing nothing; route each lesson to a named repo skill or NOTES.md).
             verdict is `closed by reason (<why>)`, pass, `skipped (<reason>)` (a skip entry or the
             waiver covers a step), or `skipped (filer route)`. After the Outcome (before any rename) a
-            task-folder skips.md moves into the records dir (T-0560), so the closed folder tracks only
-            handoff.md; a legacy ticket whose records stay in place keeps it. Untracked run records
+            untracked task-folder skips.md moves into the records dir (T-0560); a tracked one stays, as
+            does a legacy ticket's whose records stay in place (T-0797). Untracked run records
             (*.dispatch.json, *.attempt.json) move there too, and after the dot-rename every untracked file in an
             undotted <NNNN>-<slug> folder left behind moves there and the empty folder goes, one `moved <folder>/<name>
             to <records dir>` line each (T-0669)
@@ -2286,12 +2286,24 @@ def skips_path(d):
     return r if r.is_file() else f
 
 
+def tracked_names(d, names):
+    """The first path components of names (in dir d) that git tracks; empty when git is missing or d is no repo."""
+    if not names:
+        return set()
+    try:
+        t = subprocess.run(['git', '-C', str(d), 'ls-files', '-z', '--', *names], capture_output=True, text=True,
+                           env={k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP})
+    except OSError:
+        return set()
+    return {f.split('/', 1)[0] for f in t.stdout.split('\0') if f} if t.returncode == 0 else set()
+
+
 def move_skips(d):
-    """Lean records (T-0560): move ticket dir d's skips.md into its runtime records dir at close, appending it to one
-    already there unless it holds the same text, so the closed folder tracks only handoff.md, as fanout land leaves
-    it. A legacy ticket whose records stay in place keeps it."""
+    """Lean records (T-0560): move ticket dir d's untracked skips.md into its runtime records dir at close, appending
+    it to one already there unless it holds the same text. A tracked skips.md stays (T-0797, GitHub #83: close never
+    deletes a committed file), as does a legacy ticket's whose records stay in place."""
     src = d / 'skips.md'
-    if not src.is_file():
+    if not src.is_file() or 'skips.md' in tracked_names(d, ['skips.md']):
         return
     dst = run_order.records_dir(d, create=True)
     if dst.resolve() == d.resolve():
@@ -2317,12 +2329,7 @@ def move_records(d, every=False):
     if dst.resolve() == d.resolve():
         return []
     names = sorted(p.name for p in d.iterdir() if every or any(fnmatch.fnmatch(p.name, g) for g in RECORD_GLOBS))
-    try:
-        t = subprocess.run(['git', '-C', str(d), 'ls-files', '-z', '--', *names], capture_output=True, text=True,
-                           env={k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}) if names else None
-        tracked = {f.split('/', 1)[0] for f in t.stdout.split('\0') if f} if t and t.returncode == 0 else set()
-    except OSError:
-        tracked = set()
+    tracked = tracked_names(d, names)
     out = []
     for n in names:
         if n in tracked or n == 'handoff.md':
@@ -8400,10 +8407,14 @@ def selftest():
         expect(f'(T-0543 runtime) a legacy in-place fixture still closes: rc={rc} {err!r}',
                rc == 0 and (d / 'step-1' / 'verifier-L2.md').is_file() and 'verdict: pass' in handoff(d))
         expect('(T-0560) a legacy in-place fixture keeps its skips.md in the folder', (d / 'skips.md').is_file())
-        # (T-0560) a plain close moves a committed task-folder skips.md to the records dir: the closed folder tracks
-        # only handoff.md, and the Outcome still reads the lane from it
+        # (T-0797, GitHub #83) a committed skips.md and deliverable stay in the closed folder; an uncommitted skips.md
+        # moves to the records dir (T-0560), and the Outcome still reads the lane from it either way
         for label, kw in (('plain', {}), ('reason', {'reason': 'x'})):
             r, d = oc_root(f'skmv-{label}', numbered=True, git=have_git)
+            if have_git:
+                (d / 'triage.md').write_text('deliverable\n', encoding='utf-8')
+                g(r.parent, 'add', '-A')
+                g(r.parent, 'commit', '-qm', 'deliverable')
             rc, out, err = run(r, 'close', (d.name,), filer=False, **kw)
             cd = r / ('.' + d.name)
             sk = r / 'runtime' / 'tasks' / d.name / 'skips.md'
@@ -8412,10 +8423,12 @@ def selftest():
                 tracked = g(r.parent, 'ls-files', '--', cd.relative_to(r.parent).as_posix()).stdout.split()
             else:
                 tracked = [f'.sdlc/{cd.name}/{p.name}' for p in sorted(cd.iterdir())]
-            expect(f'(T-0560 {label}) the closed folder tracks only handoff.md and skips.md moved to the records dir: '
+            want = [f'.sdlc/{cd.name}/{n}' for n in (('handoff.md', 'skips.md', 'triage.md') if have_git else ('handoff.md',))]
+            expect(f'(T-0797 {label}) the closed folder keeps its committed files and moves an uncommitted skips.md: '
                    f'rc={rc} {err!r} {tracked}',
-                   rc == 0 and tracked == [f'.sdlc/{cd.name}/handoff.md'] and sk.is_file()
-                   and '- lane: full;' in sk.read_text(encoding='utf-8') and '· lane: full ' in handoff(d))
+                   rc == 0 and tracked == want and sk.is_file() == (not have_git)
+                   and '- lane: full;' in (sk if not have_git else cd / 'skips.md').read_text(encoding='utf-8')
+                   and '· lane: full ' in handoff(d))
 
         # (T-0669) close moves an untracked solo dispatch record into the records dir and leaves no undotted folder; an
         # undotted leftover with no handoff.md empties into the records dir (a tracked file stays); check warns on one
