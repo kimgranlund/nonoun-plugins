@@ -6,10 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0801 | [0801-speed-experiment](0801-speed-experiment/handoff.md) | measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets | spike | L2 | P2 | T-0799, T-0800 | 🟡 claimed |
 | T-0802 | [0802-backup-failure-visible](0802-backup-failure-visible/handoff.md) | a failed background backup push is silent after T-0800 | bug | L1 | P2 | none | 🟡 claimed |
 
-Closed: 762 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 763 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -116,3 +115,6 @@ Closed: 762 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc-lite/scripts/dispatch.py:732: `escalate: full` is recognised only by prepare (it turns Scope off for the next verifier). No solo or conductor doc says to re-dispatch a verifier without a build. Check the solo agent text so a `fail` carrying `escalate: full` is not treated as a build defect that triggers a rebuild. note: left for the conductor's judgment. (from T-0799: verifier scope diff: a small solo ticket is verified from its diff and recorded checks, not a full reread (2026-10-28))
 - decide: A real dry-run prepare on this ticket's own handoff (criterion 1 is prose-heavy) printed no Scope: diff line, which is consistent with the gating. (from T-0799: verifier scope diff: a small solo ticket is verified from its diff and recorded checks, not a full reread (2026-10-28))
 - decide: T-0800-t0800:plugins/sdlc-lite/scripts/lanes.py:1283 a failed background backup is silent. Before, a failed push stopped finish with exit 1 and `backup: stopped`. Now the only trace is `exit <code>` at the end of `<git common dir>/sdlc-backup.log`, and nothing reads that log (grep finds no reader; the selftest checks only the success path). Since the backup is the only off-machine copy of main between releases, I judge a silent failure not acceptable as the long-term state; it is acceptable for this ticket only because the stated Do asks for non-blocking. A follow-up should make the next `finish`, `lanes.py list` or the board print the previous log's `exit` line when it is non-zero. (from T-0800: one command opens and one finishes a solo lane: claim, record from the transcript, prune, land, close, background backup (2026-10-28))
+- decide: docs/reports/2026-10-28-speed-experiment.md Verdict: the Question requires both verifiers to fail the control or "the control does not discriminate"; the full verifier passed, so by the ticket's own wording the control did not discriminate for the full arm. The report says "one control is one sample" and could name the full-verifier pass as a second, independent reason for reject. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))
+- decide: docs/reports/2026-10-28-speed-experiment.md "What it does not show": the "10 to 21 minutes (T-0796, T-0798)" verifier durations are not checkable from this tree (no run records for those tickets here); treat as unverified. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))
+- decide: b6 `verifier-L1.attempt.json`: an aborted first diff-control dispatch (status `running`, no result) exists; the report's "6 diff-scoped runs" counts only the completed `-2` run. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))

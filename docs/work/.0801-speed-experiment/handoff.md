@@ -2,7 +2,7 @@
 id: T-0801
 title: "measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets"
 type: spike           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0799, T-0800]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,14 @@ Runs only in a throwaway project; no change to plugin code in this ticket.
 - Planted control (vacuous `grep` criterion, stub `title_case`, false Outcome): diff verifier `fail`, full verifier `pass` with a `fix-now` note naming the stub.
 - Decision by criterion 2: reject the diff verifier on cost evidence (not cheaper); it is kept in the plugin because it caught the control; re-measure on real tickets from `runs.jsonl`.
 - Plain session vs solo lane: 10 of 10 hidden behavior tests pass in both; $0.82 vs $2.51 with the verifier.
+
+## Outcome
+
+2026-10-28 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: cf9b0cac8dda
+- Changed: see commits
+- Commits: 56eb8dd T-0801: correct row d5 and name the sources; b14db12 T-0801: one Skipped section; 4f2294a T-0801: speed experiment report
+- Check: 1 A dated report with a table per arm: wall minutes, dollars, verifier verdicts, and the planted-de...: pass
+- Check: 2 The report states adopt or reject for the diff-scoped verifier, by the rule: pass
+- Follow-up: decide: docs/reports/2026-10-28-speed-experiment.md Verdict: the Question... -> notes.md
+- Follow-up: decide: docs/reports/2026-10-28-speed-experiment.md "What it does not... -> notes.md
+- Follow-up: decide: b6 verifier-L1.attempt.json: an aborted first diff-control dispatch... -> notes.md

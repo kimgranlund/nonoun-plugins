@@ -748,3 +748,9 @@
 - note: T-0800-t0800:plugins/sdlc-lite/scripts/lanes.py:1371 `--solo-agent-id` has no selftest case. It shares `agent_flags` with the verifier path, which is covered, and dispatch.py record accepts the same flags for both roles, so the risk is low. The solo is not pruned by finish; the land queues it.
 - note: T-0800-t0800:plugins/sdlc-lite/scripts/lanes.py:1363 a rerun after the verifier was recorded but `prune --done` failed skips that verifier (its attempt is no longer running), so it never leaves the prune queue. Edge case; it needs a manual `dispatch.py prune --done`.
 - note: the lanes selftest takes roughly 2 to 3 minutes per run, and the backup case waits up to 60 s for the push to land, so a loaded host may flake that case.
+
+## T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28)
+
+- decide: docs/reports/2026-10-28-speed-experiment.md Verdict: the Question requires both verifiers to fail the control or "the control does not discriminate"; the full verifier passed, so by the ticket's own wording the control did not discriminate for the full arm. The report says "one control is one sample" and could name the full-verifier pass as a second, independent reason for reject.
+- decide: docs/reports/2026-10-28-speed-experiment.md "What it does not show": the "10 to 21 minutes (T-0796, T-0798)" verifier durations are not checkable from this tree (no run records for those tickets here); treat as unverified.
+- decide: b6 `verifier-L1.attempt.json`: an aborted first diff-control dispatch (status `running`, no result) exists; the report's "6 diff-scoped runs" counts only the completed `-2` run.
