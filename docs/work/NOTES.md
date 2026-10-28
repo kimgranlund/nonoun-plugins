@@ -716,3 +716,8 @@
 ## T-0798: steps.py lint cited-path refusal does not name the [creates:] marker (#84) (2026-10-28)
 
 - note: plugins/sdlc-lite/scripts/steps.py:2249 the hint is left off when a superseded-report fix is shown (`'' if holders`), which the Outcome states; that branch has no T-0798 case of its own, though the existing superseded-report cases still pass.
+
+## T-0788: advance on a solo reruns the pre-verify review after a verifier fail (2026-10-28)
+
+- note: plugins/sdlc-lite/scripts/dispatch.py:2334 conductor question on the stated limitation: acceptable for the ticket goal. `reviewed_fingerprint` scans only `Path(dispatch_file).parent`, the ticket's own records dir, so "another solo run" means a rerun for the same ticket; the fingerprint binds the sorted hit path names plus each file's content hash, so a match means the reviewer approved byte-identical content of the same path set, which is what the Expected section asks ("the earlier passing review still covers the reviewed paths"). Only pass and pass-with-notes reviews count, matching the ui-designer verdict vocabulary (agents/ui-designer.md:51).
+- note: plugins/sdlc-lite/scripts/dispatch.py:4970 the inside-paths case passes with the fix reverted too (it always reviews then); it guards against an over-broad skip rather than the fix itself, which is consistent with the criterion naming only the first case as the red one.

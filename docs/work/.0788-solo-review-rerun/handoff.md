@@ -2,7 +2,7 @@
 id: T-0788
 title: "advance on a solo reruns the pre-verify review after a verifier fail"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,13 @@ Checks run:
 - `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 29ba356f` exit 0.
 
 Limitation: the fingerprint binds to paths and content in the tree at advance time; a review dispatch from a different solo run over identical content also counts as covering it.
+
+## Outcome
+
+2026-10-28 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (opus) · base: 29ba356fd876
+- Changed: see commits
+- Commits: 1b026f4 T-0788: advance on a solo reruns the pre-verify review only when pre_verify_paths content changed
+- Check: 1 A `dispatch.py` selftest case: review pass, verifier fail, a fix outside `pre_verify_paths`, then...: pass
+- Check: 2 The dispatch selftest through gate_lock exits 0, `check.py` exits 0, `check-packaging.py` passes,...: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:2334 conductor question on... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/scripts/dispatch.py:4970 the inside-paths case... -> notes.md
