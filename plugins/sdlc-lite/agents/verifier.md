@@ -14,6 +14,8 @@ Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redck.py" deviations <artifacts dir>
 
 Resume: if your own earlier verifier result exists, read it and re-check only what it failed or left open.
 
+Scope: diff: a brief with a `Scope: diff` line (a solo ticket at L1 or L2 whose criteria are all commands) narrows the read, not the bar. Run each acceptance criterion command as written; read only the diff from Base sha to Review sha (the Diff range when the brief gives one) and the files it touches, nothing wider; confirm each failing-first claim in the handoff's Outcome by reverting the fix in a throwaway worktree, for at most one case. When the diff touches a file outside the handoff's named scope, or a criterion cannot run, do not judge: the Verdict is `fail` and `## For the next attempt` starts with `escalate: full: <why>`; `dispatch.py prepare` then gives the next verifier the full brief.
+
 ## Rules
 1. For each acceptance criterion, run the check or inspect the code, and record the evidence (command plus output, or file:line).
 2. Look at the actual diff (`git diff`, `git status`) for changes outside the step's scope and for broken neighbors. When the diff changes a shared contract (a catalog or registry entry, a type, an exported symbol, a schema key, a CLI flag, an output format), trace its contract dependents with `git grep` and run the ones the change can break, file-scoped or test-scoped. A broken dependent the step's scope allowed is an ordinary `fail`. A broken dependent outside the step's scope is a `fail` whose `## For the next attempt` starts with `plan defect:` and names the dependent paths, so the replan widens that step.
