@@ -2,7 +2,7 @@
 id: T-0800
 title: "one command opens and one finishes a solo lane: claim, record from the transcript, prune, land, close, background backup"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,17 @@ The failing tests land before or with the change.
 - Guidance: conductor.md Merge ops bullet, fanout `references/lane-lifecycle.md`, lanes.py docstring; codex conductor TOML regenerated.
 - Red before the change (cases added first): `FAIL: open claim: want exit 0, got 2: ... unrecognized arguments: --claim --by tester`; `FAIL: finish agent: want exit 0 and done, got 2: ... unrecognized arguments: --verifier-agent-id ag-ver`; `FAIL: finish bg: the push completed before finish returned | finish bg: no background backup line with a log path` (the old foreground step printed `backup: pushed main to origin refs/heads/backup-main`).
 - Checks: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/lanes.py selftest` exit 0 (ok lines for open claim, finish agent id, finish backup bg); the same for `dispatch.py selftest` exit 0 (PASS); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `cost_estimate.py selftest` 24 ok; `claude_roles.py generate --check` and `codex_roles.py generate --check` exit 0; `prompt_lint.py` exit 0; `scripts/check-packaging.py` exit 0; `git diff --check` clean.
+
+## Outcome
+
+2026-10-28 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: bbf837431456
+- Changed: see commits
+- Commits: 0acdd43 T-0800: one command opens and one finishes a solo lane: claim, record from the transcript, prune, land, close, background backup
+- Check: 1 lanes selftest case: `open --claim` claims, commits, opens the lane; reverted it fails: pass
+- Check: 2 lanes selftest case: `finish --verifier-agent-id` records tokens, tool uses, duration from the fi...: pass
+- Check: 3 selftest case: `finish --backup` returns before the push completes and prints the log path: pass
+- Check: 4 lanes and dispatch selftests via gate_lock exit 0, `check.py` exit 0: pass
+- Follow-up: decide: T-0800-t0800:plugins/sdlc-lite/scripts/lanes.py:1283 a failed... -> notes.md
+- Follow-up: note: T-0800-t0800:plugins/sdlc-lite/scripts/lanes.py:1371... -> notes.md
+- Follow-up: note: T-0800-t0800:plugins/sdlc-lite/scripts/lanes.py:1363 a rerun after... -> notes.md
+- Follow-up: note: the lanes selftest takes roughly 2 to 3 minutes per run, and the... -> notes.md
