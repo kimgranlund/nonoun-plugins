@@ -8,6 +8,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0802 | [0802-backup-failure-visible](0802-backup-failure-visible/handoff.md) | a failed background backup push is silent after T-0800 | bug | L1 | P2 | none | 🟡 claimed |
 | T-0803 | [0803-verifier-fixnow-pass](0803-verifier-fixnow-pass/handoff.md) | a full verifier passes a build whose fix-now note says the Goal is not met | bug | L1 | P2 | none | 🟡 claimed |
+| T-0804 | [0804-open-claim-local-main](0804-open-claim-local-main/handoff.md) | lanes.py open --claim leaves the claim uncommitted in a repo that lands locally while main tracks an upstream | bug | L2 | P2 | none | 🟡 claimed |
 
 Closed: 763 done, 30 dropped (git log or .NNNN-* folders)
 
