@@ -33,3 +33,13 @@ T-0732 (`advance_solo` in plugins/sdlc-lite/scripts/dispatch.py); verifier note 
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Outcome
+`advance_solo` in `plugins/sdlc-lite/scripts/dispatch.py` now stores a content fingerprint of the `pre_verify_paths` hits (`hits_fingerprint`) as `pre_verify_hash` in the review's dispatch file, and skips the review when a passing review in the records dir carries the same fingerprint (`reviewed_fingerprint`). A fix outside the paths leaves the fingerprint unchanged, so the verifier is prepared directly; a fix inside changes it, so the review runs again.
+
+Checks run:
+- Red first (the selftest cases added, the fix not yet applied): `FAIL: T-0788 advance on the solo after a verifier fail and a fix outside pre_verify_paths prepares the verifier, not the review`.
+- After the fix: `gate_lock.py run --need compute_units=2 --nice -- python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exit 0 (both T-0788 cases ok).
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `python3 scripts/check-packaging.py` exit 0; `git diff --check 29ba356f` exit 0.
+
+Limitation: the fingerprint binds to paths and content in the tree at advance time; a review dispatch from a different solo run over identical content also counts as covering it.
