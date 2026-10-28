@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f0aaaba71bfe -->
+<!-- sdlc-lite:managed:start v1 sha256:0215ac4e850f -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,8 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 
 ## Stages
 
-- proposed: 0
+- proposed: 1
+  - T-0803 a full verifier passes a build whose fix-now note says the Goal is not met (docs/work/0803-verifier-fixnow-pass)
 - ready: 0
 - claimed: 1
   - T-0802 a failed background backup push is silent after T-0800 (docs/work/0802-backup-failure-visible), claimed by sdlc-lite-author 2026-10-28
