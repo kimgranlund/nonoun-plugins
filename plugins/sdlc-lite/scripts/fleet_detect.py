@@ -34,7 +34,8 @@ Rules (a rule fires when the value is OVER its threshold; thresholds live in THR
                               limit, which is over 50 percent only if it burned more than half its life.
   chromium_load               Chromium processes (processes.chromium.count), and Chromium resident memory
                               (processes.chromium.rss_mb), each its own finding
-  stall_attempts              interrupted attempts plus `.limit` markers (runs.interrupted.count + runs.limit_markers.count)
+  stall_attempts              interrupted attempts plus `.limit` markers (runs.interrupted.count + runs.limit_markers.count),
+                              and minutes lost to interrupted attempts (runs.interrupted.lost_min_total), each its own finding
   plugin_version_stale        the plugin version in use (env.plugin.version) is older than the newest installed
                               one (env.plugin.installed[].version); numeric dotted parts only
   ci_push_duplicates          one finding per CI workflow whose push runs in the last 7 days that duplicate a
@@ -55,6 +56,7 @@ THRESHOLDS = collections.OrderedDict([
     ('chromium_processes', 30),           # Chromium process count
     ('chromium_rss_mb', 6144),            # Chromium resident memory in MB (6 GB, counted as 6144 MB)
     ('stall_attempts', 3),                # interrupted attempts plus .limit markers
+    ('stall_lost_min', 120),              # minutes lost to interrupted attempts (runs.interrupted.lost_min_total)
     ('ci_push_dup_runs_7d', 25),          # push runs in 7 days that duplicate a pull_request run of the same sha
 ])
 
@@ -186,12 +188,13 @@ def rule_chromium_load(fp):
 def rule_stall_attempts(fp):
     limit = THRESHOLDS['stall_attempts']
     inter, marks = num(dig(fp, 'runs', 'interrupted', 'count')), num(dig(fp, 'runs', 'limit_markers', 'count'))
-    if inter is None and marks is None:
-        return
     total = (inter or 0) + (marks or 0)
-    if total > limit:
+    if (inter is not None or marks is not None) and total > limit:
         yield ('runs.interrupted.count + runs.limit_markers.count', int(total), limit,
                {'interrupted': int(inter or 0), 'limit_markers': int(marks or 0)})
+    lost = num(dig(fp, 'runs', 'interrupted', 'lost_min_total'))   # T-0796: two long stalls are under the count line
+    if lost is not None and lost > THRESHOLDS['stall_lost_min']:
+        yield ('runs.interrupted.lost_min_total', lost, THRESHOLDS['stall_lost_min'], {'interrupted': int(inter or 0)})
 
 
 def rule_plugin_version_stale(fp):
@@ -308,7 +311,7 @@ def healthy():
                  'by_role': {'planner': {'count': 5, 'cost_usd': 25.0}, 'plan-reviewer': {'count': 2, 'cost_usd': 15.0},
                              'builder': {'count': 5, 'cost_usd': 60.0}},
                  'by_ticket': {'t1': {'planner': 5, 'builder': 5}, 't2': {'planner': 2}},
-                 'interrupted': {'count': 2, 'attempts': []}, 'limit_markers': {'count': 1, 'files': []}},
+                 'interrupted': {'count': 2, 'attempts': [], 'lost_min_total': 120.0}, 'limit_markers': {'count': 1, 'files': []}},
         'plan_review_share': 0.4,
         'tickets': {'count': 3, 'items': [
             {'ticket': 't1', 'id': 'T-1', 'size': 'M', 'criteria': 20},
@@ -374,6 +377,8 @@ def selftest():
         ('stall_attempts', 'stall_attempts',
          with_((('runs', 'interrupted', 'count'), 3)),
          'runs.interrupted.count + runs.limit_markers.count', 4, 3),
+        ('stall_attempts', 'stall_lost_min',
+         with_((('runs', 'interrupted', 'lost_min_total'), 1345.1)), 'runs.interrupted.lost_min_total', 1345.1, 120),
         ('plugin_version_stale', None,
          with_((('env', 'plugin', 'version'), '0.20.11')), 'env.plugin.version', '0.20.11', '0.21.0'),
         ('ci_push_duplicates', 'ci_push_dup_runs_7d',
@@ -406,6 +411,7 @@ def selftest():
         ('chromium_load: 30 processes', with_((('processes', 'chromium', 'count'), 30))),
         ('chromium_load: 6144 MB', with_((('processes', 'chromium', 'rss_mb'), 6144.0))),
         ('stall_attempts: 3 in total', with_((('runs', 'interrupted', 'count'), 2), (('runs', 'limit_markers', 'count'), 1))),
+        ('stall_attempts: 120 minutes lost', with_((('runs', 'interrupted', 'lost_min_total'), 120))),
         ('plugin_version_stale: in use is the newest', with_((('env', 'plugin', 'version'), '0.21.0'))),
         ('plugin_version_stale: 0.21 equals 0.21.0', with_((('env', 'plugin', 'version'), '0.21'))),
         ('plugin_version_stale: newer than installed', with_((('env', 'plugin', 'version'), '0.22.1'))),

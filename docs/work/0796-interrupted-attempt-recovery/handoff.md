@@ -36,3 +36,13 @@ outcome metric: `runs.interrupted.lost_min_total` per repo, before: 1345.1 (ulti
 
 ## Constraints
 The failing tests land before or with the fix, never after. If both parts need more than 3 steps, split into two tickets.
+
+## Outcome
+- `fleet_detect.py`: new threshold `stall_lost_min` (120); `stall_attempts` also fires on `runs.interrupted.lost_min_total` over it, as its own finding. The healthy fixture sits at 120.0.
+- `dispatch.py`: `attempt_state_at` reads a running attempt orphaned when its task folder's ticket is done or dropped; `status`, `recover` and the over-budget lines use it, so recover marks such an attempt interrupted and it no longer reads `over-budget`.
+- Red before the fix (cases added first):
+  - `FAIL: positive: stall_attempts (runs.interrupted.lost_min_total) fires once and nothing else does` (plus its evidence and resolve lines)
+  - `FAIL: closed ticket: status reads a running attempt orphaned once its ticket is done, with no over-budget token`
+  - `FAIL: closed ticket: recover would mark it interrupted`
+- Negative controls green before and after: `negative: stall_attempts: 120 minutes lost yields no finding`, `negative control: raising stall_lost_min in the table silences stall_attempts`, `negative control: the same attempt reads running while its ticket is open`.
+- Checks after the fix: `gate_lock.py run --need compute_units=1 --nice -- python3 plugins/sdlc-lite/scripts/fleet_detect.py selftest` exit 0; the same for `dispatch.py selftest` exit 0 (PASS); `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` clean.
