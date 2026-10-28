@@ -33,3 +33,13 @@ T-0800 verifier, 2026-10-28 (`decide:` at `plugins/sdlc-lite/scripts/lanes.py:12
 
 ## Constraints
 The failing test lands before or with the fix. The push stays in the background.
+
+## Outcome
+`lanes.py finish` now reads the last line of `<git common dir>/sdlc-backup.log` before its own steps (and before its own push rewrites the log). When it is `exit N` with N nonzero, finish prints `backup: previous push failed (exit N), see <log>` after its steps and returns 1 at least. Still-running pushes (no `exit` line) and `exit 0` print nothing. The push stays in the background. A failed log stays reported until a later push rewrites it.
+
+Files: `plugins/sdlc-lite/scripts/lanes.py` (`backup_log`, `failed_backup`, `finish` wrapper over `finish_steps`, docstring step 8, selftest case `finish backup failed`).
+
+Checks:
+- Red first, fix absent: `FAIL: finish backup failed: finish bgfail: want a nonzero exit and `backup: previous push failed (exit 1), see .../.git/sdlc-backup.log`, got 0: backup: none (no --backup)`.
+- Fix in: `python3 plugins/sdlc-lite/scripts/lanes.py selftest` through gate_lock exit 0 (90 ok, includes `ok: finish backup failed`).
+- `python3 plugins/sdlc-lite/scripts/check.py` exit 0; `git diff --check` exit 0.
