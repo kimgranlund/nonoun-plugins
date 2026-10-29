@@ -23,8 +23,10 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   `handoff.md` `## Plan review` section that match `- <YYYY-MM-DD> plan defect at split: ` with
                   that date (as <date>T00:00:00Z) in the window, deduplicated by (handoff path, line), plus the
                   lines of legacy `refusals.jsonl` files with a `ts` in the window, deduplicated by (plan, text)
-  attempts        {by_role: {role: {count, median_min, max_min}}}: completed `*.attempt.json` records in the window,
-                  minutes from started_at to finished_at
+  attempts        {by_role: {role: {count, median_min, max_min}}, over_budget: {count, attempts[] {attempt_id, role,
+                  level, wall_min, budget_min, path}}}: completed `*.attempt.json` records in the window, minutes
+                  from started_at to finished_at; over_budget lists those whose wall time reached their budget
+                  (dispatch.over_budget: the record's time_budget_min, else the role's ROLE_MINUTES) (T-0811)
   plan_review_share   (plan-reviewer + planner cost_usd) / total cost_usd, null with no cost
   tickets         {count, items[]}: each `.sdlc/<folder>/handoff.md` (main checkout first, then worktrees; the first
                   copy of a folder wins) is counted. A ticket folder is keyed by its path under `.sdlc`: its name,
@@ -73,6 +75,7 @@ import collections, datetime, json, math, os, re, shutil, signal, statistics, su
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import dispatch  # noqa: E402
 import order  # noqa: E402
 import results  # noqa: E402
 import roots as sdlc_roots  # noqa: E402  (`roots` names the checkout list below)
@@ -598,6 +601,7 @@ def collect_runs(repo, window, dedupe=True, extra=None):
     interrupted, attempts_seen, lost_all = [], set(), []
     orphaned, orphans_seen = [], set()
     done_min, done_seen = {}, set()
+    overran = []                          # T-0811: completed attempts whose wall time passed their role's budget
     for p, rec, rel in attempt_recs:
         status = rec.get('status')
         aid = rec.get('attempt_id')
@@ -627,6 +631,10 @@ def collect_runs(repo, window, dedupe=True, extra=None):
                 done_seen.add(key)
                 role = rec.get('role') if isinstance(rec.get('role'), str) and rec.get('role') else 'unknown'
                 done_min.setdefault(role, []).append(mins)
+                hit = dispatch.over_budget(rec)
+                if hit:
+                    overran.append({'attempt_id': aid if isinstance(aid, str) else None, 'role': role, 'level': rec.get('level'),
+                                    'wall_min': round(mins, 1), 'budget_min': hit[1], 'path': p})
     limits, limits_seen = [], set()
     for sdlc, p in limit_files:
         raw = read_text(p).strip()
@@ -682,7 +690,8 @@ def collect_runs(repo, window, dedupe=True, extra=None):
         extra['plan_defects'] = {'late': late, 'early': early}
         extra['attempts'] = {'by_role': {
             role: {'count': len(v), 'median_min': median_or_none(v), 'max_min': max(v)}
-            for role, v in sorted(done_min.items())}}
+            for role, v in sorted(done_min.items())},
+            'over_budget': {'count': len(overran), 'attempts': overran[:LIST_CAP]}}
     return {
         'total': total['count'], 'cost_usd': round(total['cost_usd'], 4),
         'duration_s': round(total['duration_s'], 1), 'unmetered': unmetered,
@@ -997,7 +1006,7 @@ def collect(repo, since=None, until=None, gh=False, days=14, du_timeout=None, de
         ('plan_review_share', plan_review_share(runs)),
         ('results', extra.get('results', {'builder': {'total': 0, 'blocked': 0}})),
         ('plan_defects', extra.get('plan_defects', {'late': 0, 'early': 0})),
-        ('attempts', extra.get('attempts', {'by_role': {}})),
+        ('attempts', extra.get('attempts', {'by_role': {}, 'over_budget': {'count': 0, 'attempts': []}})),
         ('tickets', tickets_info(repo)),
         ('processes', process_info()),
         ('worktrees', worktree_info(repo, du_timeout)),
@@ -1320,6 +1329,10 @@ def selftest():
         ok('attempts: completed verifier minutes run from started_at to finished_at',
            kx['attempts']['by_role'] == {'builder': {'count': 1, 'median_min': 5.0, 'max_min': 5.0},
                                          'verifier': {'count': 2, 'median_min': 21.0, 'max_min': 30.0}})
+        ob = kx['attempts']['over_budget']
+        ok('attempts: a completed verifier that ran 30m against 25m is named once with role, wall and budget (T-0811)',
+           ob['count'] == 1 and [(a['role'], a['wall_min'], a['budget_min']) for a in ob['attempts']] == [('verifier', 30.0, 25)])
+        ok('negative control: a completed builder inside its budget is not named', all(a['role'] != 'builder' for a in ob['attempts']))
         kd = {}
         collect_runs(kp, Window(since='2026-10-01'), dedupe=False, extra=kd)
         ok('negative control: dedupe off double-counts the builder row and the repeated refusal',
@@ -1329,7 +1342,7 @@ def selftest():
            and kc['plan_defects']['late'] == 1 and 'verifier' in kc['attempts']['by_role'])
         ke = collect(os.path.join(kpi_tmp, 'nowhere'), du_timeout=1)
         ok('collect: a repo with no .sdlc reads zero results, defects and attempts', ke['runs'] == 'none'
-           and ke['results'] == {'builder': {'total': 0, 'blocked': 0}} and ke['attempts'] == {'by_role': {}}
+           and ke['results'] == {'builder': {'total': 0, 'blocked': 0}} and ke['attempts'] == {'by_role': {}, 'over_budget': {'count': 0, 'attempts': []}}
            and ke['plan_defects'] == {'late': 0, 'early': 0})
         shutil.rmtree(kpi_tmp, ignore_errors=True)
 

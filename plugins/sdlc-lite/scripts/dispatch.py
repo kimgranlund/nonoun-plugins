@@ -149,7 +149,7 @@ A role whose Tree is a lane worktree whose AGENTS.md or CLAUDE.md differs from t
 the main checkout copy.
 The last line is the role's wall-clock budget (T-0555), `Time budget: <n>m wall clock for <role> <level>`, from ROLE_MINUTES
 (3x the median recorded duration of that role and level, floor 10 minutes; 60 for a row with no record); prepare stores it
-as time_budget_min in the dispatch and the attempt, and status and recover flag a running attempt past it. Nothing is killed.
+as time_budget_min in the dispatch and the attempt, and status and recover flag a running or completed attempt past it. Nothing is killed.
 
 Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, replan cap, time budget, spec gate, or a running attempt, 4 budget, 5 lane.
 
@@ -1002,26 +1002,39 @@ def iso_epoch(text):
 
 
 def over_budget(data):
-    """(elapsed seconds, budget minutes) of a running attempt past its role's wall-clock budget (the attempt's
-    time_budget_min, else role_minutes), else None."""
+    """(elapsed seconds, budget minutes) of an attempt past its role's wall-clock budget (the attempt's time_budget_min,
+    else role_minutes), else None. A running attempt is timed to now, a completed one to its finished_at (T-0811)."""
     began = iso_epoch(data.get('started_at'))
     if began is None:
         return None
     budget = data.get('time_budget_min')
     budget = budget if isinstance(budget, int) and budget > 0 else role_minutes(data.get('role'), data.get('level'))
-    elapsed = time.time() - began
+    if data.get('status') == 'completed':
+        ended = iso_epoch(data.get('finished_at'))
+        if ended is None:
+            return None
+    else:
+        ended = time.time()
+    elapsed = ended - began
     return (elapsed, budget) if elapsed >= budget * 60 else None
 
 
 def over_budget_lines(directory):
-    """One `over-budget:` line per running attempt in directory past its role's budget, with the check to make."""
+    """One `over-budget:` line per running attempt in directory past its role's budget, with the check to make, and one
+    per completed attempt that overran, naming role, wall and budget (T-0811)."""
     lines = []
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
-        hit = over_budget(data) if attempt_state_at(path, data) == 'running' else None
-        if hit:
+        state = attempt_state_at(path, data)
+        hit = over_budget(data) if state in ('running', 'completed') else None
+        if not hit:
+            continue
+        stem = path.name[:-len('.attempt.json')]
+        if state == 'completed':
+            lines.append('over-budget: %s completed in %s, budget %dm (%s)' % (stem, age_text(hit[0]), hit[1], path))
+        else:
             lines.append('over-budget: %s running %s, budget %dm: check the role for a stdin wait or a stall, then ask the person (%s)'
-                         % (path.name[:-len('.attempt.json')], age_text(hit[0]), hit[1], path))
+                         % (stem, age_text(hit[0]), hit[1], path))
     return lines
 
 
@@ -1090,6 +1103,10 @@ def status(directory, orphans_only=False):
         sub = path.parent.name + '/' if path.parent != base else ''
         stem = sub + path.name[:-len('.attempt.json')]
         line = '%s %s %s-%s parent_pid=%s' % (stem, state, data.get('role'), data.get('level'), data.get('parent_pid') or data.get('owner_pid'))
+        if state == 'completed':
+            hit = over_budget(data)  # T-0811: an attempt that finished past its budget is named once more here
+            if hit:
+                line += ' over-budget %s (budget %dm)' % (age_text(hit[0]), hit[1])
         if state == 'running':
             transcript = find_subagent_transcript(data.get('agent_id'))
             try:
@@ -3356,6 +3373,29 @@ def selftest():
         rec = at(16 * 60, recover_root, str(tr))
         case('time budget: recover --root names it too', any(l.startswith('over-budget: ') and 'builder-L2' in l for l in rec))
         case('negative control: recover --root flags nothing inside the budget', not any('over-budget' in l for l in recover_root(str(tr))))
+        # T-0811: a completed attempt whose wall time exceeded its budget is named by status and recover, once per attempt.
+        cb = tr / '.sdlc' / 'cb'
+        cb.mkdir(parents=True)
+        for stem, role, level, began, ended, extra in (
+                ('verifier-L2', 'verifier', 'L2', '2026-10-29T10:00:00+00:00', '2026-10-29T10:42:18+00:00', {}),
+                ('builder-L2', 'builder', 'L2', '2026-10-29T10:00:00+00:00', '2026-10-29T10:50:06+00:00', {'time_budget_min': 45}),
+                ('scout-L1', 'scout', 'L1', '2026-10-29T10:00:00+00:00', '2026-10-29T10:05:00+00:00', {})):
+            (cb / (stem + '.attempt.json')).write_text(json.dumps(dict(
+                {'attempt_id': stem, 'role': role, 'level': level, 'status': 'completed', 'started_at': began, 'finished_at': ended}, **extra)))
+        done = {l.split()[0]: l for l in status(R(cb))}
+        case('completed over budget: status names a verifier that ran 42m against 25m',
+             done['verifier-L2'].endswith(' over-budget 42m (budget 25m)') and ' completed ' in done['verifier-L2'])
+        case('completed over budget: status names a builder that ran 50m against its stored 45m',
+             done['builder-L2'].endswith(' over-budget 50m (budget 45m)'))
+        case('negative control: status leaves a completed attempt inside its budget unflagged', 'over-budget' not in done['scout-L1'])
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            main(['recover', str(cb)])
+        named = [l for l in out.getvalue().splitlines() if l.startswith('over-budget: ')]
+        case('completed over budget: recover names each overrun once with role, wall and budget',
+             len(named) == 2 and any('verifier-L2 completed in 42m, budget 25m' in l for l in named)
+             and any('builder-L2 completed in 50m, budget 45m' in l for l in named))
+        case('negative control: recover does not name the completed attempt inside its budget', not any('scout-L1' in l for l in named))
+        shutil.rmtree(cb)
         # T-0796: a running attempt whose ticket is closed is orphaned, whatever its parent pid says; recover would mark it.
         put(tr / '.sdlc' / 'ob' / 'handoff.md', '---\nid: T-0901\ntitle: "x"\ntype: chore\nstatus: done\nsize: L1\npriority: P2\n'
             'depends: []\ncreated: 2026-10-05\n---\n\n## Goal\nx\n')
