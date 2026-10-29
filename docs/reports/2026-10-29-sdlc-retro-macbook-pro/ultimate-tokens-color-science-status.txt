@@ -1,0 +1,241 @@
+##### base /Users/kimba/Projects/ultimate-tokens-color-science
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0231-native-export-tab
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0232-canvas-edits-persist
+plan-reviewer-L1 completed plan-reviewer-L1 parent_pid=1836
+planner-L2 completed planner-L2 parent_pid=1836
+step-1/builder-L4-2 completed builder-L4 parent_pid=1836
+step-1/builder-L4 completed builder-L4 parent_pid=1836
+step-1/verifier-L3 completed verifier-L3 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0235-export-dialog-feedback
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0236-keyboard-skip-swatches
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0237-jig-help-names
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0237-jig-help-names
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0239-tooling-patch-sweep
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0240-split-native-source-dialog
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0241-split-gallery
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0242-split-legacy-canvas-dom
+verifier-L2-2 completed verifier-L2 parent_pid=1836
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0244-hosted-mcp-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0245-palette-service-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0246-sync-feed-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0247-export-select-truncation
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0248-phone-canvas-space
+verifier-L2-2 completed verifier-L2 parent_pid=1836
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0249-editor-intent-review-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0250-native-export-browser-io-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0251-computation-core-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0252-gate-memory-peak
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0253-coverage-tool
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0253-coverage-tool
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0254-catalog-entry-shards
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0255-split-projections
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0256-conflict-review-fixture
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0257-wrangler-security-overrides
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0258-palette-service-dead-guard
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0258-palette-service-dead-guard
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0259-playwright-bump
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0260-archive-tests
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0260-archive-tests
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0261-native-readers-v2-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0262-modular-token-files-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0263-apple-transfer-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0264-keyboard-focus-after-actions
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0265-checkbox-unchecked-contrast
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0265-checkbox-unchecked-contrast
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0266-tonal-band-scroll-region
+verifier-L2 orphaned verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0267-jig-out-of-range-feedback
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0268-native-export-empty-state
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0269-unknown-theme-route
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0269-unknown-theme-route
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0270-tonal-band-fit
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0271-receipts-invariant-test
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0271-receipts-invariant-test
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0272-phone-palette-summary
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0273-open-file-confirm
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0274-undo-toast-pause
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0274-undo-toast-pause
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0275-collection-names-kept
+plan-reviewer-L1-2 completed plan-reviewer-L1 parent_pid=1836
+plan-reviewer-L1 completed plan-reviewer-L1 parent_pid=1836
+planner-L3-2 completed planner-L3 parent_pid=1836
+planner-L3 completed planner-L3 parent_pid=1836
+step-1/builder-L4 completed builder-L4 parent_pid=1836
+step-1/verifier-L3 completed verifier-L3 parent_pid=1836
+step-1.superseded-1/builder-L4 completed builder-L4 parent_pid=1836
+step-2/builder-L3 completed builder-L3 parent_pid=1836
+step-2/verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0276-history-end-focus
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0276-history-end-focus
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0277-jig-toggle-expanded
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0277-jig-toggle-expanded
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0278-route-titles
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0278-route-titles
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0279-file-picker-phone
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0279-file-picker-phone
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0280-contentinfo-landmarks
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0280-contentinfo-landmarks
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0281-hosted-server-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0282-library-store-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0283-color-authoring-tests
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0283-color-authoring-tests
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0284-creative-prep-reuse-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0285-typescript-6
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science/.sdlc/runtime/tasks/0287-focus-test-suite-order
+verifier-L2-2 completed verifier-L2 parent_pid=1836
+verifier-L2 completed verifier-L2 parent_pid=1836
+##### base /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/colorjs7
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/colorjs7/.sdlc/runtime/tasks/0286-colorjs-07
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/colorjs7/.sdlc/runtime/tasks/0286-colorjs-07
+##### base /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0231-native-export-tab
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0232-canvas-edits-persist
+plan-reviewer-L1 completed plan-reviewer-L1 parent_pid=1836
+planner-L2 completed planner-L2 parent_pid=1836
+step-1/builder-L4-2 completed builder-L4 parent_pid=1836
+step-1/builder-L4 completed builder-L4 parent_pid=1836
+step-1/verifier-L3 completed verifier-L3 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0235-export-dialog-feedback
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0236-keyboard-skip-swatches
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0237-jig-help-names
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0237-jig-help-names
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0239-tooling-patch-sweep
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0240-split-native-source-dialog
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0241-split-gallery
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0242-split-legacy-canvas-dom
+verifier-L2-2 completed verifier-L2 parent_pid=1836
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0244-hosted-mcp-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0245-palette-service-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0246-sync-feed-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0247-export-select-truncation
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0248-phone-canvas-space
+verifier-L2-2 completed verifier-L2 parent_pid=1836
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0249-editor-intent-review-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0250-native-export-browser-io-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0251-computation-core-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0252-gate-memory-peak
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0253-coverage-tool
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0253-coverage-tool
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0254-catalog-entry-shards
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0255-split-projections
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0256-conflict-review-fixture
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0257-wrangler-security-overrides
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0258-palette-service-dead-guard
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0258-palette-service-dead-guard
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0259-playwright-bump
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0260-archive-tests
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0260-archive-tests
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0261-native-readers-v2-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0262-modular-token-files-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0263-apple-transfer-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0264-keyboard-focus-after-actions
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0265-checkbox-unchecked-contrast
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0265-checkbox-unchecked-contrast
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0267-jig-out-of-range-feedback
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0268-native-export-empty-state
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0269-unknown-theme-route
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0269-unknown-theme-route
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0270-tonal-band-fit
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0271-receipts-invariant-test
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0271-receipts-invariant-test
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0272-phone-palette-summary
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0273-open-file-confirm
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0274-undo-toast-pause
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0274-undo-toast-pause
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0275-collection-names-kept
+plan-reviewer-L1-2 completed plan-reviewer-L1 parent_pid=1836
+plan-reviewer-L1 completed plan-reviewer-L1 parent_pid=1836
+planner-L3-2 completed planner-L3 parent_pid=1836
+planner-L3 completed planner-L3 parent_pid=1836
+step-1/builder-L4 completed builder-L4 parent_pid=1836
+step-1/verifier-L3 completed verifier-L3 parent_pid=1836
+step-1.superseded-1/builder-L4 completed builder-L4 parent_pid=1836
+step-2/builder-L3 completed builder-L3 parent_pid=1836
+step-2/verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0276-history-end-focus
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0276-history-end-focus
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0277-jig-toggle-expanded
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0277-jig-toggle-expanded
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0278-route-titles
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0278-route-titles
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0279-file-picker-phone
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0279-file-picker-phone
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0280-contentinfo-landmarks
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0280-contentinfo-landmarks
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0281-hosted-server-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0282-library-store-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0283-color-authoring-tests
+no attempts in /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0283-color-authoring-tests
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0284-creative-prep-reuse-tests
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0285-typescript-6
+verifier-L2 completed verifier-L2 parent_pid=1836
+== /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration/.sdlc/runtime/tasks/0287-focus-test-suite-order
+verifier-L2-2 completed verifier-L2 parent_pid=1836
+verifier-L2 completed verifier-L2 parent_pid=1836

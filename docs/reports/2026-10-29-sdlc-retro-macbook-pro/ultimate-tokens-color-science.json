@@ -1,0 +1,1295 @@
+{
+  "repo": "/Users/kimba/Projects/ultimate-tokens-color-science",
+  "summary": "runs: 97 deduped, $150.35, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-28T18:00:00-07:00",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.40.0",
+      "path": "/Users/kimba/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.40.0",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.40.0",
+          "path": "/Users/kimba/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.40.0",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.312 (Claude Code)",
+    "time": "2026-10-29T17:18:47Z",
+    "uptime_load": {
+      "uptime_s": 578842,
+      "load1": 7.8,
+      "load5": 10.36,
+      "load15": 10.49,
+      "cpus": 18
+    }
+  },
+  "runs": {
+    "total": 97,
+    "cost_usd": 150.3456,
+    "duration_s": 0.0,
+    "unmetered": 1,
+    "by_role": {
+      "builder": {
+        "count": 5,
+        "cost_usd": 18.1605,
+        "duration_s": 0.0
+      },
+      "verifier": {
+        "count": 40,
+        "cost_usd": 27.7776,
+        "duration_s": 0.0
+      },
+      "solo": {
+        "count": 48,
+        "cost_usd": 85.4652,
+        "duration_s": 0.0
+      },
+      "planner": {
+        "count": 2,
+        "cost_usd": 6.3184,
+        "duration_s": 0.0
+      },
+      "plan-reviewer": {
+        "count": 2,
+        "cost_usd": 12.6239,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 85,
+        "cost_usd": 103.233,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 12,
+        "cost_usd": 47.1126,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      ".0232-canvas-edits-persist": {
+        "builder": 2,
+        "verifier": 1
+      },
+      ".0235-export-dialog-feedback": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0236-keyboard-skip-swatches": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0239-tooling-patch-sweep": {
+        "verifier": 1
+      },
+      ".0240-split-native-source-dialog": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0241-split-gallery": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0242-split-legacy-canvas-dom": {
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0244-hosted-mcp-tests": {
+        "verifier": 1
+      },
+      ".0245-palette-service-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0246-sync-feed-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0247-export-select-truncation": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0248-phone-canvas-space": {
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0249-editor-intent-review-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0250-native-export-browser-io-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0251-computation-core-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0252-gate-memory-peak": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0253-coverage-tool": {
+        "solo": 1
+      },
+      ".0254-catalog-entry-shards": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0255-split-projections": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0256-conflict-review-fixture": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0257-wrangler-security-overrides": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0258-palette-service-dead-guard": {
+        "solo": 1
+      },
+      ".0259-playwright-bump": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0260-archive-tests": {
+        "solo": 1
+      },
+      ".0261-native-readers-v2-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0262-modular-token-files-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0263-apple-transfer-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0264-keyboard-focus-after-actions": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0265-checkbox-unchecked-contrast": {
+        "solo": 1
+      },
+      ".0266-tonal-band-scroll-region": {
+        "solo": 1
+      },
+      ".0267-jig-out-of-range-feedback": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0268-native-export-empty-state": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0269-unknown-theme-route": {
+        "solo": 1
+      },
+      ".0270-tonal-band-fit": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0271-receipts-invariant-test": {
+        "solo": 1
+      },
+      ".0272-phone-palette-summary": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0273-open-file-confirm": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0274-undo-toast-pause": {
+        "solo": 1
+      },
+      ".0275-collection-names-kept": {
+        "builder": 3,
+        "plan-reviewer": 2,
+        "planner": 2,
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0276-history-end-focus": {
+        "solo": 1
+      },
+      ".0277-jig-toggle-expanded": {
+        "solo": 1
+      },
+      ".0278-route-titles": {
+        "solo": 1
+      },
+      ".0279-file-picker-phone": {
+        "solo": 1
+      },
+      ".0280-contentinfo-landmarks": {
+        "solo": 1
+      },
+      ".0281-hosted-server-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0282-library-store-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0283-color-authoring-tests": {
+        "solo": 1
+      },
+      ".0284-creative-prep-reuse-tests": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0285-typescript-6": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0287-focus-test-suite-order": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "0286-colorjs-07": {
+        "solo": 1
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": [],
+      "lost_min_median": null,
+      "lost_min_total": 0
+    },
+    "orphaned": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 95,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 9,
+      "runs_files": 729
+    }
+  },
+  "plan_review_share": 0.126,
+  "results": {
+    "builder": {
+      "total": 5,
+      "blocked": 2
+    }
+  },
+  "plan_defects": {
+    "late": 2,
+    "early": 0
+  },
+  "attempts": {
+    "by_role": {
+      "builder": {
+        "count": 4,
+        "median_min": 14.9,
+        "max_min": 50.1
+      },
+      "plan-reviewer": {
+        "count": 2,
+        "median_min": 20.3,
+        "max_min": 22.0
+      },
+      "planner": {
+        "count": 2,
+        "median_min": 13.0,
+        "max_min": 17.6
+      },
+      "verifier": {
+        "count": 40,
+        "median_min": 9.2,
+        "max_min": 42.3
+      }
+    }
+  },
+  "tickets": {
+    "count": 301,
+    "items": [
+      {
+        "ticket": ".0015-ui-reactive-core",
+        "id": "T-0015",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0017-ui-style-layers-tokens",
+        "id": "T-0017",
+        "size": "L3",
+        "criteria": 10
+      },
+      {
+        "ticket": ".0018-ui-browser-harness",
+        "id": "T-0018",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0021-theme-repository-local",
+        "id": "T-0021",
+        "size": "L3",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0023-theme-sync-protocol",
+        "id": "T-0023",
+        "size": "L3",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0024-reactive-regions-ui-state",
+        "id": "T-0024",
+        "size": "L3",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0025-lazy-stage-selectors",
+        "id": "T-0025",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0026-app-router",
+        "id": "T-0026",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0027-ui-app-shell",
+        "id": "T-0027",
+        "size": "L2",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0028-workbench-in-app-shell",
+        "id": "T-0028",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0029-ui-dashboard",
+        "id": "T-0029",
+        "size": "L3",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0030-ui-editor-shell",
+        "id": "T-0030",
+        "size": "L3",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0031-ui-tabs-toolbar-menus",
+        "id": "T-0031",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0032-ui-pane-controls-jig",
+        "id": "T-0032",
+        "size": "L3",
+        "criteria": 10
+      },
+      {
+        "ticket": ".0033-ui-overlays",
+        "id": "T-0033",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0034-ui-canvas",
+        "id": "T-0034",
+        "size": "L3",
+        "criteria": 13
+      },
+      {
+        "ticket": ".0035-ui-component-descriptors",
+        "id": "T-0035",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0036-colors-tab-components",
+        "id": "T-0036",
+        "size": "L3",
+        "criteria": 13
+      },
+      {
+        "ticket": ".0038-ts-typography-geometry",
+        "id": "T-0038",
+        "size": "L3",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0039-ts-semantic-systems",
+        "id": "T-0039",
+        "size": "L3",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0040-ts-interchange",
+        "id": "T-0040",
+        "size": "L3",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0048-ui-preview-page",
+        "id": "T-0048",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0049-example-sessions-fail-to-load",
+        "id": "T-0049",
+        "size": "L1",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0050-nestable-density",
+        "id": "T-0050",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0051-ui-polish-escape-n8-slots",
+        "id": "T-0051",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0052-gallery-from-descriptors",
+        "id": "T-0052",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0053-repin-geometry-afe13833",
+        "id": "T-0053",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0057-repin-app-css-afe13833",
+        "id": "T-0057",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0060-gallery-domain-tabs",
+        "id": "T-0060",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0061-vitest-browser-port-collision",
+        "id": "T-0061",
+        "size": "L1",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0062-ui-context-typography-density",
+        "id": "T-0062",
+        "size": "L3",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0063-ui-component-geometry-bindings",
+        "id": "T-0063",
+        "size": "L3",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0064-ui-overlay-density-roles",
+        "id": "T-0064",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0066-ui-visual-base-layer",
+        "id": "T-0066",
+        "size": "L3",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0067-ui-button",
+        "id": "T-0067",
+        "size": "L3",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0069-gallery-layout-fixes",
+        "id": "T-0069",
+        "size": "L3",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0070-progress-track-and-dark-scrim-contrast",
+        "id": "T-0070",
+        "size": "L1",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0071-on-primary-unresolved-token",
+        "id": "T-0071",
+        "size": "L1",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0072-showcase-source-scene-throws",
+        "id": "T-0072",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0076-ui-phosphor-icons",
+        "id": "T-0076",
+        "size": "L3",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0077-ui-gallery-container-quantities",
+        "id": "T-0077",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0079-editor-shell-probe-loop",
+        "id": "T-0079",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0085-lighter-test-suite",
+        "id": "T-0085",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0088-field-grid-label-truncation",
+        "id": "T-0088",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0089-colors-card-controls",
+        "id": "T-0089",
+        "size": "L3",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0090-tiered-gates",
+        "id": "T-0090",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0094-delete-ungated-tests",
+        "id": "T-0094",
+        "size": "L2",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0095-differential-forms",
+        "id": "T-0095",
+        "size": "L4",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0096-legacy-canvas-harness",
+        "id": "T-0096",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0098-tabs-manual-reentry",
+        "id": "T-0098",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0099-ut-host-selectors-a11y-tests",
+        "id": "T-0099",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0104-gallery-fonts-offline",
+        "id": "T-0104",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0107-native-button-selector-audit",
+        "id": "T-0107",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0115-hct-skill-verify-parity",
+        "id": "T-0115",
+        "size": "L1",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0119-ts-closeout",
+        "id": "T-0119",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0120-notes-triage",
+        "id": "T-0120",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0122-docs-real-paths",
+        "id": "T-0122",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0124-on-primary-contrast",
+        "id": "T-0124",
+        "size": "L1",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0127-browser-asserts-bite",
+        "id": "T-0127",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0128-panel-harness-coverage",
+        "id": "T-0128",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0130-standards-checkers",
+        "id": "T-0130",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0131-contract-stale-builders",
+        "id": "T-0131",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0133-palette-sample-types",
+        "id": "T-0133",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0134-dead-modules",
+        "id": "T-0134",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0136-draft-binding-adoption",
+        "id": "T-0136",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0137-colors-panels-ut",
+        "id": "T-0137",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0138-specimens-ut-a11y",
+        "id": "T-0138",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0139-fonts-and-scale-context",
+        "id": "T-0139",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0140-computed-unsubscribe",
+        "id": "T-0140",
+        "size": "L1",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0141-replay-from-clean-clone",
+        "id": "T-0141",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0144-draft-dialog-render-tests",
+        "id": "T-0144",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0145-harness-symlinked-modules",
+        "id": "T-0145",
+        "size": "L1",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0147-resume-follows-head",
+        "id": "T-0147",
+        "size": "L1",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0149-rename-modal-form",
+        "id": "T-0149",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0150-narrow-export-digest",
+        "id": "T-0150",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0151-showcase-native-buttons",
+        "id": "T-0151",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0153-untracked-computed-unsubscribe",
+        "id": "T-0153",
+        "size": "L1",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0154-small-gaps-2",
+        "id": "T-0154",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0156-dashboard-rename-race",
+        "id": "T-0156",
+        "size": "L1",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0159-export-hash-deps",
+        "id": "T-0159",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0160-corpus-error-subclasses",
+        "id": "T-0160",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0161-differential-ui-wishlist",
+        "id": "T-0161",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0164-differential-ui-reference",
+        "id": "T-0164",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0166-button-aria-passthrough",
+        "id": "T-0166",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0168-inventory-tdz-cycle",
+        "id": "T-0168",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0169-gallery-string-props",
+        "id": "T-0169",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0175-sync-status-gaps",
+        "id": "T-0175",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0179-sync-ui-prep",
+        "id": "T-0179",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0181-sync-tag-order",
+        "id": "T-0181",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0182-app-sync-boot-test",
+        "id": "T-0182",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0184-sync-push-stop-known",
+        "id": "T-0184",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0186-merge-reloads-session",
+        "id": "T-0186",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0190-gesture-trait-tests",
+        "id": "T-0190",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0191-generator-drift-checks",
+        "id": "T-0191",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0192-showcase-adapter-migration",
+        "id": "T-0192",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0193-showcase-adapter-regression",
+        "id": "T-0193",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0194-apple-showcase-adapters",
+        "id": "T-0194",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0195-shadcn-showcase-pilot",
+        "id": "T-0195",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0198-atlassian-33-showcase",
+        "id": "T-0198",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0199-ipados-showcase",
+        "id": "T-0199",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0203-foundation-4-8-showcase",
+        "id": "T-0203",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0204-showcase-drift-check",
+        "id": "T-0204",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0209-sync-worker-unit-tests",
+        "id": "T-0209",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0210-dom-geometry-tests",
+        "id": "T-0210",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0211-catalog-inspector-tests",
+        "id": "T-0211",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0213-canvas-toolbar-menus",
+        "id": "T-0213",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0214-scheme-undo",
+        "id": "T-0214",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0215-mobile-nav-export-tabs",
+        "id": "T-0215",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0216-chrome-contrast-targets",
+        "id": "T-0216",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0219-app-e2e-project",
+        "id": "T-0219",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0220-undo-shortcuts",
+        "id": "T-0220",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0227-tonal-stop-target-size",
+        "id": "T-0227",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0228-scrim-summary-nested-control",
+        "id": "T-0228",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0230-truncated-labels",
+        "id": "T-0230",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0231-native-export-tab",
+        "id": "T-0231",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0233-theme-card-actions-a11y",
+        "id": "T-0233",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0235-export-dialog-feedback",
+        "id": "T-0235",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": ".0236-keyboard-skip-swatches",
+        "id": "T-0236",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0239-tooling-patch-sweep",
+        "id": "T-0239",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0240-split-native-source-dialog",
+        "id": "T-0240",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0241-split-gallery",
+        "id": "T-0241",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0242-split-legacy-canvas-dom",
+        "id": "T-0242",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0244-hosted-mcp-tests",
+        "id": "T-0244",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0245-palette-service-tests",
+        "id": "T-0245",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0246-sync-feed-tests",
+        "id": "T-0246",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0247-export-select-truncation",
+        "id": "T-0247",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": ".0248-phone-canvas-space",
+        "id": "T-0248",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0249-editor-intent-review-tests",
+        "id": "T-0249",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0250-native-export-browser-io-tests",
+        "id": "T-0250",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0251-computation-core-tests",
+        "id": "T-0251",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0252-gate-memory-peak",
+        "id": "T-0252",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0254-catalog-entry-shards",
+        "id": "T-0254",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0255-split-projections",
+        "id": "T-0255",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0256-conflict-review-fixture",
+        "id": "T-0256",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0257-wrangler-security-overrides",
+        "id": "T-0257",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0259-playwright-bump",
+        "id": "T-0259",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0261-native-readers-v2-tests",
+        "id": "T-0261",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0262-modular-token-files-tests",
+        "id": "T-0262",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0263-apple-transfer-tests",
+        "id": "T-0263",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0264-keyboard-focus-after-actions",
+        "id": "T-0264",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0267-jig-out-of-range-feedback",
+        "id": "T-0267",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0268-native-export-empty-state",
+        "id": "T-0268",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0270-tonal-band-fit",
+        "id": "T-0270",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0272-phone-palette-summary",
+        "id": "T-0272",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0273-open-file-confirm",
+        "id": "T-0273",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0281-hosted-server-tests",
+        "id": "T-0281",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0282-library-store-tests",
+        "id": "T-0282",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0284-creative-prep-reuse-tests",
+        "id": "T-0284",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0285-typescript-6",
+        "id": "T-0285",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0287-focus-test-suite-order",
+        "id": "T-0287",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "0076-ui-phosphor-icons",
+        "id": "T-0076",
+        "size": "L3",
+        "criteria": 3
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 59,
+      "cpu_pct": 6.1,
+      "rss_mb": 12238.5
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 4,
+      "cpu_pct": 3.6,
+      "rss_mb": 1994.5
+    }
+  },
+  "worktrees": {
+    "count": 8,
+    "size": "16320.6 MB",
+    "size_kb_known": 16712256,
+    "items": [
+      {
+        "path": "/Users/kimba/.codex/worktrees/differential-forms/ultimate-tokens-color-science",
+        "size": "1537.8 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/colorjs7",
+        "size": "1952.8 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration",
+        "size": "2553.9 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/repin",
+        "size": "1522.8 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/tmp/preview",
+        "size": "1354.9 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout",
+        "size": "6043.5 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/host",
+        "size": "0.0 MB"
+      },
+      {
+        "path": "/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/tmp",
+        "size": "1354.9 MB"
+      }
+    ]
+  },
+  "ci": {
+    "error": "unable to expand placeholder in path: no git remotes found"
+  }
+}

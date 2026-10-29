@@ -1,0 +1,51 @@
+{"task": "0232-canvas-edits-persist", "start": "2026-10-29T01:03", "wall_min": 23.9, "verdicts": ["pass"], "att_wall": 23.8}
+{"task": "0235-export-dialog-feedback", "start": "2026-10-29T01:08", "wall_min": 32.6, "verdicts": ["pass"], "att_wall": 10.5}
+{"task": "0236-keyboard-skip-swatches", "start": "2026-10-29T01:08", "wall_min": 45.6, "verdicts": ["pass"], "att_wall": 14.5}
+{"task": "0239-tooling-patch-sweep", "start": "2026-10-29T01:10", "wall_min": 3.4, "verdicts": ["pass"], "att_wall": 3.4}
+{"task": "0240-split-native-source-dialog", "start": "2026-10-29T01:35", "wall_min": 26.2, "verdicts": ["pass"], "att_wall": 8.3}
+{"task": "0241-split-gallery", "start": "2026-10-29T01:52", "wall_min": 16.5, "verdicts": ["pass"], "att_wall": 7.6}
+{"task": "0242-split-legacy-canvas-dom", "start": "2026-10-29T01:52", "wall_min": 31.9, "verdicts": ["pass", "pass"], "att_wall": 10.3}
+{"task": "0244-hosted-mcp-tests", "start": "2026-10-29T01:11", "wall_min": 2.5, "verdicts": ["pass"], "att_wall": 2.5}
+{"task": "0245-palette-service-tests", "start": "2026-10-29T01:26", "wall_min": 35.9, "verdicts": ["pass"], "att_wall": 9.4}
+{"task": "0246-sync-feed-tests", "start": "2026-10-29T01:26", "wall_min": 12.0, "verdicts": ["pass"], "att_wall": 2.3}
+{"task": "0247-export-select-truncation", "start": "2026-10-29T02:37", "wall_min": 45.7, "verdicts": ["pass"], "att_wall": 23.6}
+{"task": "0248-phone-canvas-space", "start": "2026-10-29T02:37", "wall_min": 79.1, "verdicts": ["pass", "pass"], "att_wall": 20.6}
+{"task": "0249-editor-intent-review-tests", "start": "2026-10-29T02:37", "wall_min": 11.6, "verdicts": ["pass"], "att_wall": 6.2}
+{"task": "0250-native-export-browser-io-tests", "start": "2026-10-29T02:37", "wall_min": 21.1, "verdicts": ["pass"], "att_wall": 13.8}
+{"task": "0251-computation-core-tests", "start": "2026-10-29T02:37", "wall_min": 33.4, "verdicts": ["pass"], "att_wall": 12.4}
+{"task": "0252-gate-memory-peak", "start": "2026-10-29T02:56", "wall_min": 73.4, "verdicts": ["pass"], "att_wall": 13.8}
+{"task": "0253-coverage-tool", "start": "2026-10-29T04:24", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0254-catalog-entry-shards", "start": "2026-10-29T03:10", "wall_min": 44.8, "verdicts": ["pass"], "att_wall": 6.8}
+{"task": "0255-split-projections", "start": "2026-10-29T03:23", "wall_min": 62.2, "verdicts": ["pass"], "att_wall": 8.9}
+{"task": "0256-conflict-review-fixture", "start": "2026-10-29T03:47", "wall_min": 53.3, "verdicts": ["pass"], "att_wall": 15.5}
+{"task": "0257-wrangler-security-overrides", "start": "2026-10-29T05:13", "wall_min": 15.6, "verdicts": ["pass"], "att_wall": 3.9}
+{"task": "0258-palette-service-dead-guard", "start": "2026-10-29T04:25", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0259-playwright-bump", "start": "2026-10-29T06:01", "wall_min": 22.6, "verdicts": ["pass"], "att_wall": 9.5}
+{"task": "0260-archive-tests", "start": "2026-10-29T05:23", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0261-native-readers-v2-tests", "start": "2026-10-29T05:23", "wall_min": 40.9, "verdicts": ["pass"], "att_wall": 2.1}
+{"task": "0262-modular-token-files-tests", "start": "2026-10-29T05:23", "wall_min": 24.8, "verdicts": ["pass"], "att_wall": 9.1}
+{"task": "0263-apple-transfer-tests", "start": "2026-10-29T05:23", "wall_min": 51.8, "verdicts": ["pass"], "att_wall": 13.2}
+{"task": "0264-keyboard-focus-after-actions", "start": "2026-10-29T06:38", "wall_min": 26.8, "verdicts": ["pass"], "att_wall": 3.3}
+{"task": "0265-checkbox-unchecked-contrast", "start": "2026-10-29T06:38", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0266-tonal-band-scroll-region", "start": "2026-10-29T07:23", "wall_min": null, "verdicts": [null], "att_wall": 0}
+{"task": "0267-jig-out-of-range-feedback", "start": "2026-10-29T06:38", "wall_min": 25.0, "verdicts": ["pass"], "att_wall": 2.1}
+{"task": "0268-native-export-empty-state", "start": "2026-10-29T06:38", "wall_min": 33.2, "verdicts": ["pass"], "att_wall": 9.5}
+{"task": "0269-unknown-theme-route", "start": "2026-10-29T06:38", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0270-tonal-band-fit", "start": "2026-10-29T12:06", "wall_min": 76.0, "verdicts": ["pass"], "att_wall": 42.3}
+{"task": "0271-receipts-invariant-test", "start": "2026-10-29T12:06", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0272-phone-palette-summary", "start": "2026-10-29T12:06", "wall_min": 84.4, "verdicts": ["pass"], "att_wall": 12.6}
+{"task": "0273-open-file-confirm", "start": "2026-10-29T13:20", "wall_min": 81.8, "verdicts": ["pass"], "att_wall": 19.6}
+{"task": "0274-undo-toast-pause", "start": "2026-10-29T13:21", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0275-collection-names-kept", "start": "2026-10-29T13:40", "wall_min": 171.4, "verdicts": ["pass", "pass"], "att_wall": 166.6}
+{"task": "0276-history-end-focus", "start": "2026-10-29T13:52", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0277-jig-toggle-expanded", "start": "2026-10-29T14:01", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0278-route-titles", "start": "2026-10-29T14:31", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0279-file-picker-phone", "start": "2026-10-29T14:49", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0280-contentinfo-landmarks", "start": "2026-10-29T15:38", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0281-hosted-server-tests", "start": "2026-10-29T13:21", "wall_min": 33.3, "verdicts": ["pass"], "att_wall": 8.3}
+{"task": "0282-library-store-tests", "start": "2026-10-29T15:38", "wall_min": 36.0, "verdicts": ["pass"], "att_wall": 9.6}
+{"task": "0283-color-authoring-tests", "start": "2026-10-29T13:21", "wall_min": null, "verdicts": [], "att_wall": 0}
+{"task": "0284-creative-prep-reuse-tests", "start": "2026-10-29T15:38", "wall_min": 26.8, "verdicts": ["pass"], "att_wall": 9.3}
+{"task": "0285-typescript-6", "start": "2026-10-29T16:12", "wall_min": 20.7, "verdicts": ["pass"], "att_wall": 2.3}
+{"task": "0286-colorjs-07", "start": "2026-10-29T16:47", "wall_min": 32.6, "verdicts": ["fail", null], "att_wall": 0.8}
+{"task": "0287-focus-test-suite-order", "start": "2026-10-29T14:32", "wall_min": 58.6, "verdicts": ["fail", "pass"], "att_wall": 15.3}

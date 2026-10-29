@@ -1,0 +1,336 @@
+b99662d9 10-29 09:55 cover 92bc5e3: rc=0
+92bc5e30 10-29 09:47 T-0286: record lane colorjs7
+7aceb614 10-29 09:47 T-0285: clear lane record ts6
+93e108aa 10-29 09:47 close T-0285
+ad91ffa3 10-29 09:40 Merge fanout/2026-10-21-ts6: T-0285
+4e2fde23 10-29 09:40 sync: fanout/2026-10-21 0e92f34 into fanout/2026-10-21-ts6
+616dd321 10-29 09:40 T-0285: lane build
+0e92f34c 10-29 09:39 T-0275: clear lane record collnames
+e94fbbe7 10-29 09:39 close T-0275
+556a9641 10-29 09:32 Merge fanout/2026-10-21-collnames: T-0275
+886ee780 10-29 09:32 sync: fanout/2026-10-21 0e22254 into fanout/2026-10-21-collnames
+26295259 10-29 09:32 T-0275: lane build
+0e222540 10-29 09:29 T-0282: clear lane record libstore
+5df51695 10-29 09:29 close T-0282
+f99f1467 10-29 09:21 Merge fanout/2026-10-21-libstore: T-0282
+a1c7f90b 10-29 09:21 sync: fanout/2026-10-21 0ed0991 into fanout/2026-10-21-libstore
+e2b4551b 10-29 09:21 T-0282: lane build
+0ed09910 10-29 09:21 T-0280: clear lane record contentinfo
+cdfa4b7b 10-29 09:21 close T-0280
+035b21db 10-29 09:13 Merge fanout/2026-10-21-contentinfo: T-0280
+a1244099 10-29 09:13 sync: fanout/2026-10-21 22c40db into fanout/2026-10-21-contentinfo
+fa2e6b60 10-29 09:13 T-0280: lane build
+22c40dbe 10-29 09:12 T-0284: clear lane record prepreuse
+3310a6b3 10-29 09:12 T-0285: record lane ts6
+9a27558d 10-29 09:12 close T-0284
+eb09b29f 10-29 09:05 Merge fanout/2026-10-21-prepreuse: T-0284
+0f73379e 10-29 09:05 sync: fanout/2026-10-21 5d4746c into fanout/2026-10-21-prepreuse
+e5681310 10-29 09:05 T-0284: lane build
+382979d2 10-29 09:03 T-0270..T-0287: restore skips.md after close (sdlc-lite #83)
+5d4746cc 10-29 09:03 cover 2dc91ed: rc=0
+2dc91ed8 10-29 08:54 T-0279: clear lane record pickerphone
+97900e37 10-29 08:54 close T-0279
+710f3fea 10-29 08:47 Merge fanout/2026-10-21-pickerphone: T-0279
+9074edbe 10-29 08:47 sync: fanout/2026-10-21 a67a875 into fanout/2026-10-21-pickerphone
+a67a8757 10-29 08:46 T-0273: clear lane record openconfirm
+ef7bdc73 10-29 08:46 close T-0273
+4817069d 10-29 08:39 Merge fanout/2026-10-21-openconfirm: T-0273
+10e94994 10-29 08:38 sync: fanout/2026-10-21 7c5a187 into fanout/2026-10-21-pickerphone
+88f0f2a9 10-29 08:38 T-0279: lane build
+fba709db 10-29 08:38 sync: fanout/2026-10-21 7c5a187 into fanout/2026-10-21-openconfirm
+7c5a1873 10-29 08:38 T-0284: record lane prepreuse
+2d6aa36e 10-29 08:38 T-0282: record lane libstore
+b573a905 10-29 08:38 T-0287: clear lane record focusorder
+c3a60e98 10-29 08:38 T-0280: record lane contentinfo
+5c325dde 10-29 08:38 close T-0287
+910baa1e 10-29 08:31 Merge fanout/2026-10-21-focusorder: T-0287
+30da3c84 10-29 08:31 sync: fanout/2026-10-21 2e47ebb into fanout/2026-10-21-focusorder
+6e39927f 10-29 08:31 T-0287: lane build
+2e47ebb8 10-29 08:19 T-0278: clear lane record routetitle
+48bedbba 10-29 08:19 close T-0278
+01078912 10-29 08:10 Merge fanout/2026-10-21-routetitle: T-0278
+408d2da1 10-29 08:10 sync: fanout/2026-10-21 d4643f8 into fanout/2026-10-21-routetitle
+5988da85 10-29 08:10 T-0278: lane build
+c5ddb287 10-29 07:50 sync: fanout/2026-10-21 d4643f8 into fanout/2026-10-21-openconfirm
+0255cf08 10-29 07:49 T-0273: lane build
+d4643f8b 10-29 07:49 T-0277: clear lane record jigexp
+ecd66d8c 10-29 07:49 T-0279: record lane pickerphone
+143a2c88 10-29 07:49 close T-0277
+073f8b86 10-29 07:40 Merge fanout/2026-10-21-jigexp: T-0277
+9c5f6c04 10-29 07:40 sync: fanout/2026-10-21 66a7a46 into fanout/2026-10-21-jigexp
+48919913 10-29 07:40 T-0277: lane build
+66a7a46e 10-29 07:39 T-0276: clear lane record histfocus
+d9423875 10-29 07:39 close T-0276
+c5bd1dff 10-29 07:32 T-0287: record lane focusorder
+19c51e7c 10-29 07:32 file T-0287
+14d38537 10-29 07:31 Merge fanout/2026-10-21-histfocus: T-0276
+e409b7b3 10-29 07:31 T-0278: record lane routetitle
+01388aac 10-29 07:31 sync: fanout/2026-10-21 6c0fe6b into fanout/2026-10-21-histfocus
+287d44bf 10-29 07:31 cover 6c0fe6b: rc=1
+6c30ed70 10-29 07:24 T-0276: lane build
+6c0fe6b7 10-29 07:20 cover 7c85034: rc=1
+7c85034f 10-29 07:11 settle --forward: main f639f75 into fanout/2026-10-21
+c1b1d609 10-29 07:10 T-0281: clear lane record hostedsrv
+c5988163 10-29 07:10 close T-0281
+202740b2 10-29 07:02 Merge fanout/2026-10-21-hostedsrv: T-0281
+b55f4aea 10-29 07:02 sync: fanout/2026-10-21 f34d2b4 into fanout/2026-10-21-hostedsrv
+8eea5b8d 10-29 07:02 T-0281: lane build
+f34d2b46 10-29 07:01 T-0274: clear lane record toastpause
+56f724ed 10-29 07:01 T-0277: record lane jigexp
+808bdf95 10-29 07:01 close T-0274
+0201d253 10-29 06:53 Merge fanout/2026-10-21-toastpause: T-0274
+5f497735 10-29 06:53 sync: fanout/2026-10-21 dc2546b into fanout/2026-10-21-toastpause
+c8988092 10-29 06:53 T-0274: lane build
+f639f754 10-29 06:52 T-0283: clear lane record authtests
+dc2546b4 10-29 06:52 T-0276: record lane histfocus
+ba893b0b 10-29 06:52 close T-0283
+d4f1e06d 10-29 06:44 Merge fanout/2026-10-21-authtests: T-0283
+dac8782b 10-29 06:43 sync: fanout/2026-10-21 63d5084 into fanout/2026-10-21-authtests
+ceec6ab1 10-29 06:43 T-0283: lane build
+bdc04d03 10-29 06:40 T-0275: record lane collnames
+63d50845 10-29 06:40 T-0272: clear lane record phonesum
+8f03bf54 10-29 06:40 close T-0272
+1dff831f 10-29 06:31 Merge fanout/2026-10-21-phonesum: T-0272
+202642c4 10-29 06:31 sync: fanout/2026-10-21 f34f85e into fanout/2026-10-21-phonesum
+fbabf4cf 10-29 06:31 T-0272: lane build
+f34f85e9 10-29 06:30 T-0270: clear lane record bandfit
+40b1c726 10-29 06:30 close T-0270
+3f702a7d 10-29 06:22 Merge fanout/2026-10-21-bandfit: T-0270
+1c408ba8 10-29 06:22 sync: fanout/2026-10-21 0da7400 into fanout/2026-10-21-bandfit
+9808a5d4 10-29 06:22 T-0270: lane build
+f5373b3b 10-29 06:21 T-0283: record lane authtests
+c8703114 10-29 06:21 T-0281: record lane hostedsrv
+4d3bf0b2 10-29 06:21 T-0274: record lane toastpause
+e6d4be4d 10-29 06:20 T-0273: record lane openconfirm
+f8ae7d91 10-29 06:20 file T-0273..T-0286
+0da74006 10-29 05:47 T-0271: clear lane record rcptest
+40d573b9 10-29 05:47 close T-0271
+08e1c79b 10-29 05:40 Merge fanout/2026-10-21-rcptest: T-0271
+3c87273b 10-29 05:40 sync: fanout/2026-10-21 209e9a9 into fanout/2026-10-21-rcptest
+1ecd31fe 10-29 05:40 T-0271: lane build
+209e9a9b 10-29 05:07 T-0227: clear lane record tapsize
+21f95dc3 10-29 05:06 T-0272: record lane phonesum
+d117cbaa 10-29 05:06 T-0271: record lane rcptest
+f8bf6231 10-29 05:06 T-0270: record lane bandfit
+fcef876e 10-29 05:06 T-0227: record lane tapsize
+75adbf5a 10-29 05:06 catch-up: main d261a5f into fanout/2026-10-21
+d261a5fe 10-29 05:06 file T-0270..T-0272
+93f3b8b1 10-29 00:31 catch-up: main bcc23d7 into fanout/2026-10-21
+bcc23d7e 10-29 00:31 close T-0266: not reproducible with pinned axe-core 4.14.0
+e1eff7a7 10-29 00:31 T-0266: clear lane record tonalscroll
+25a6f1b2 10-29 00:31 T-0264..T-0269: restore skips.md after close (sdlc-lite #83)
+aa3af06d 10-29 00:31 cover 50fc3be: rc=0
+50fc3be5 10-29 00:23 T-0268: clear lane record nexpempty
+99233ca3 10-29 00:23 T-0266: record lane tonalscroll
+da7d6bfb 10-29 00:23 close T-0268
+a312f611 10-29 00:17 Merge fanout/2026-10-21-nexpempty: T-0268
+2771cf15 10-29 00:17 sync: fanout/2026-10-21 d174c8f into fanout/2026-10-21-nexpempty
+e1edf7de 10-29 00:17 T-0268: lane build
+d174c8f9 10-29 00:17 T-0264: clear lane record focusfix
+265c4d38 10-29 00:17 close T-0264
+8bbd048e 10-29 00:11 Merge fanout/2026-10-21-focusfix: T-0264
+a4fa4b5f 10-29 00:11 sync: fanout/2026-10-21 47d5a7e into fanout/2026-10-21-focusfix
+61f3c126 10-29 00:10 T-0264: lane build
+47d5a7ec 10-29 00:10 T-0267: clear lane record jigrange
+355bcb2d 10-29 00:10 close T-0267
+b77521c5 10-29 00:03 Merge fanout/2026-10-21-jigrange: T-0267
+de3d3ac7 10-29 00:03 sync: fanout/2026-10-21 acdd202 into fanout/2026-10-21-jigrange
+c7a8896b 10-29 00:03 T-0267: lane build
+acdd2026 10-28 23:57 T-0269: clear lane record unkroute
+6fee39f7 10-28 23:57 close T-0269
+bb6a55b0 10-28 23:50 Merge fanout/2026-10-21-unkroute: T-0269
+d83bcaa5 10-28 23:50 sync: fanout/2026-10-21 36f99ff into fanout/2026-10-21-unkroute
+bc971e1e 10-28 23:50 T-0269: lane build
+36f99ffe 10-28 23:50 T-0265: clear lane record cbcontrast
+224c158b 10-28 23:50 close T-0265
+21ea3738 10-28 23:42 Merge fanout/2026-10-21-cbcontrast: T-0265
+4fb1a41c 10-28 23:42 sync: fanout/2026-10-21 cb31236 into fanout/2026-10-21-cbcontrast
+ff759445 10-28 23:42 T-0265: lane build
+cb312368 10-28 23:38 T-0269: record lane unkroute
+6a1435b5 10-28 23:38 T-0268: record lane nexpempty
+8e631d05 10-28 23:38 T-0267: record lane jigrange
+9b13a223 10-28 23:38 T-0265: record lane cbcontrast
+dfd94ba3 10-28 23:38 T-0264: record lane focusfix
+9a8f62c4 10-28 23:37 T-0259..T-0263: restore skips.md (sdlc-lite #83); file T-0264..T-0269 (UI sweep round 3)
+08b33242 10-28 23:37 cover 38efa7e: rc=0
+38efa7e7 10-28 23:30 T-0259: clear lane record pwbump
+2bf9ed08 10-28 23:30 close T-0259
+f62cfe10 10-28 23:24 Merge fanout/2026-10-21-pwbump: T-0259
+9cebc1f4 10-28 23:24 sync: fanout/2026-10-21 ce52dbd into fanout/2026-10-21-pwbump
+6ad899a4 10-28 23:24 T-0259: lane build
+ce52dbd8 10-28 23:23 T-0263: clear lane record appletests
+6ddcb53a 10-28 23:23 close T-0263
+ff87756a 10-28 23:15 Merge fanout/2026-10-21-appletests: T-0263
+6e47ce2f 10-28 23:15 sync: fanout/2026-10-21 41a4a93 into fanout/2026-10-21-appletests
+4a9d522c 10-28 23:15 T-0263: lane build
+41a4a937 10-28 23:12 T-0261: clear lane record readerstests
+9cea0539 10-28 23:12 close T-0261
+d23c7910 10-28 23:04 Merge fanout/2026-10-21-readerstests: T-0261
+a922f87b 10-28 23:04 sync: fanout/2026-10-21 500b43f into fanout/2026-10-21-readerstests
+61934c55 10-28 23:04 T-0261: lane build
+500b43fc 10-28 23:01 T-0262: clear lane record modtests
+7c94fcab 10-28 23:01 T-0259: record lane pwbump
+fc7d7339 10-28 23:01 close T-0262
+ff6414d2 10-28 22:54 T-0247..T-0260: restore skips.md after close (sdlc-lite #83)
+94809c4f 10-28 22:54 Merge fanout/2026-10-21-modtests: T-0262
+65856002 10-28 22:54 sync: fanout/2026-10-21 d0a75cb into fanout/2026-10-21-modtests
+7952d6e2 10-28 22:53 T-0262: lane build
+d0a75cb9 10-28 22:53 cover f0c11f1: rc=0
+f0c11f1d 10-28 22:46 settle --forward: main 83125ee into fanout/2026-10-21
+3fdeb0e5 10-28 22:46 T-0257: clear lane record wrangler
+ba397179 10-28 22:46 close T-0257
+d0693d3a 10-28 22:37 Merge fanout/2026-10-21-wrangler: T-0257
+72d9a52c 10-28 22:37 sync: fanout/2026-10-21 5ed4d35 into fanout/2026-10-21-wrangler
+18842d19 10-28 22:37 T-0257: lane build
+83125ee9 10-28 22:37 T-0260: clear lane record archtests
+5ed4d352 10-28 22:37 close T-0260
+43e642f4 10-28 22:27 Merge fanout/2026-10-21-archtests: T-0260
+a9b1b4ff 10-28 22:27 sync: fanout/2026-10-21 3ea312b into fanout/2026-10-21-archtests
+f9ad18ae 10-28 22:27 T-0260: lane build
+4c5394de 10-28 22:23 T-0263: record lane appletests
+b7e54d4b 10-28 22:23 T-0262: record lane modtests
+5af34ed1 10-28 22:23 T-0261: record lane readerstests
+8ca60ee1 10-28 22:23 T-0260: record lane archtests
+7850ff08 10-28 22:23 file T-0260..T-0263 (tests from the measured coverage sweep)
+2a3a2c62 10-28 22:13 T-0258: clear lane record deadguard2
+3ea312b7 10-28 22:13 T-0257: record lane wrangler
+f3fa2750 10-28 22:13 close T-0258
+023faaaa 10-28 22:06 Merge fanout/2026-10-21-deadguard2: T-0258
+74be25b5 10-28 22:06 sync: fanout/2026-10-21 18b3637 into fanout/2026-10-21-deadguard2
+ba35ccf8 10-28 22:06 T-0258: lane build
+18b36376 10-28 22:06 T-0253: clear lane record covtool
+79859ba1 10-28 22:06 close T-0253
+56ccb8cc 10-28 21:57 Merge fanout/2026-10-21-covtool: T-0253
+66dea0ec 10-28 21:57 sync: fanout/2026-10-21 951b34b into fanout/2026-10-21-covtool
+d36d8c89 10-28 21:57 T-0253: lane build
+951b34b6 10-28 21:56 T-0256: clear lane record conflictfx
+27ecd962 10-28 21:56 close T-0256
+d9731e00 10-28 21:41 Merge fanout/2026-10-21-conflictfx: T-0256
+d6bf8d03 10-28 21:41 sync: fanout/2026-10-21 764f097 into fanout/2026-10-21-conflictfx
+7f1fb3ff 10-28 21:40 T-0256: lane build
+764f0971 10-28 21:39 T-0255: clear lane record splitproj
+74f9a987 10-28 21:39 close T-0255
+1589513f 10-28 21:25 T-0258: record lane deadguard2
+5f316e84 10-28 21:25 Merge fanout/2026-10-21-splitproj: T-0255
+82a0198a 10-28 21:25 sync: fanout/2026-10-21 647c652 into fanout/2026-10-21-splitproj
+b43dabb8 10-28 21:25 T-0255: lane build
+875e5ea3 10-28 21:25 T-0258: clear lane record deadguard
+2a80a568 10-28 21:24 T-0258: record lane deadguard
+647c6520 10-28 21:24 T-0253: record lane covtool
+eed73fc8 10-28 21:24 decline migration row 11 (keep system-intents@3); file T-0258 (dead guard) and T-0259 (Playwright 1.64)
+369fc9df 10-28 21:22 T-0252: clear lane record gatemem
+e1aa1dbe 10-28 21:22 close T-0252
+c12fc019 10-28 21:15 Merge fanout/2026-10-21-gatemem: T-0252
+74ca70da 10-28 21:15 sync: fanout/2026-10-21 3804be2 into fanout/2026-10-21-gatemem
+3995cfc7 10-28 21:15 T-0252: lane build
+3804be24 10-28 21:14 T-0248: clear lane record phonecanvas
+eb6cbed2 10-28 21:14 close T-0248
+7c03141f 10-28 21:02 Merge fanout/2026-10-21-phonecanvas: T-0248
+8d2ff0b6 10-28 21:02 sync: fanout/2026-10-21 18fcf6a into fanout/2026-10-21-phonecanvas
+18fcf6a5 10-28 21:02 T-0254: clear lane record catshards
+89f2181d 10-28 21:02 close T-0254
+34047c55 10-28 20:55 Merge fanout/2026-10-21-catshards: T-0254
+c157b9e7 10-28 20:55 sync: fanout/2026-10-21 5939b4f into fanout/2026-10-21-catshards
+8d8d2433 10-28 20:55 T-0254: lane build
+a17e9e15 10-28 20:48 T-0248: dashboard-route search on an empty library expects the empty state with Starters
+5939b4fc 10-28 20:47 T-0256: record lane conflictfx
+29bdc86f 10-28 20:47 catch-up: main 3b77deb into fanout/2026-10-21
+1855b439 10-28 20:47 T-0247: clear lane record exportsel
+8dc97f15 10-28 20:47 close T-0247
+5c663a27 10-28 20:35 Merge fanout/2026-10-21-exportsel: T-0247
+97d53a14 10-28 20:35 sync: fanout/2026-10-21 1fd21e5 into fanout/2026-10-21-exportsel
+07e87741 10-28 20:35 T-0247: lane build
+3b77debb 10-28 20:31 file T-0256 (conflict review fixture) and T-0257 (wrangler security overrides)
+b3be4ee5 10-28 20:23 sync: fanout/2026-10-21 1fd21e5 into fanout/2026-10-21-phonecanvas
+977fd4cf 10-28 20:23 T-0248: lane build
+1fd21e51 10-28 20:23 T-0251: clear lane record coretests
+45b4a805 10-28 20:23 T-0255: record lane splitproj
+275bd3a0 10-28 20:23 close T-0251
+8ca32bce 10-28 20:11 Merge fanout/2026-10-21-coretests: T-0251
+2eefbde9 10-28 20:11 sync: fanout/2026-10-21 3379c6a into fanout/2026-10-21-coretests
+a8ba37f6 10-28 20:11 T-0251: lane build
+3379c6a4 10-28 20:10 T-0254: record lane catshards
+34f8d8ac 10-28 20:10 T-0250: clear lane record nexptests
+5905f193 10-28 20:10 close T-0250
+43fc4c91 10-28 19:58 Merge fanout/2026-10-21-nexptests: T-0250
+58b28e97 10-28 19:58 sync: fanout/2026-10-21 11ea2ca into fanout/2026-10-21-nexptests
+a8cdb1e8 10-28 19:58 T-0250: lane build
+11ea2ca1 10-28 19:56 T-0252: record lane gatemem
+999d072b 10-28 19:55 T-0249: clear lane record intenttests
+40e5eb2c 10-28 19:55 close T-0249
+5e632f59 10-28 19:49 Merge fanout/2026-10-21-intenttests: T-0249
+f904bfc3 10-28 19:49 sync: fanout/2026-10-21 0928777 into fanout/2026-10-21-intenttests
+faee23f6 10-28 19:49 T-0249: lane build
+09287775 10-28 19:37 T-0251: record lane coretests
+5223ea88 10-28 19:37 T-0250: record lane nexptests
+80225ca5 10-28 19:37 T-0249: record lane intenttests
+af1fc06e 10-28 19:37 T-0248: record lane phonecanvas
+77daab90 10-28 19:37 T-0247: record lane exportsel
+aa4b8f06 10-28 19:37 file T-0247..T-0255 (UI leftovers, coverage tests, gate memory, coverage tool, generator shards, projections split)
+87c55260 10-28 19:37 T-0231..T-0246: restore skips.md after close (sdlc-lite #83); note gate RSS cap raise
+babac26d 10-28 19:36 cover 359ed56: rc=0
+359ed568 10-28 19:30 T-0242: clear lane record splitlcd
+c3182c04 10-28 19:30 close T-0242
+98053b4c 10-28 19:24 Merge fanout/2026-10-21-splitlcd: T-0242
+caafdafd 10-28 19:24 sync: fanout/2026-10-21 7b5f4b3 into fanout/2026-10-21-splitlcd
+8b846070 10-28 19:21 Merge fanout/2026-10-21 into T-0242 lane: carry T-0236 skip-links region into legacy-canvas-capture.ts
+7b5f4b3b 10-28 19:20 T-0241: clear lane record splitgal
+e04282d6 10-28 19:20 close T-0241
+8e059fd5 10-28 19:15 Merge fanout/2026-10-21-splitgal: T-0241
+95392eca 10-28 19:14 sync: fanout/2026-10-21 c678561 into fanout/2026-10-21-splitgal
+37a7fe5e 10-28 19:14 T-0241: lane build
+2b6d2eb9 10-28 19:14 T-0242: lane build
+c6785616 10-28 19:14 T-0245: clear lane record palsvc
+8a9ad6c1 10-28 19:14 close T-0245
+ebd8e0d6 10-28 19:07 Merge fanout/2026-10-21-palsvc: T-0245
+ae304f1d 10-28 19:07 sync: fanout/2026-10-21 798a3a4 into fanout/2026-10-21-palsvc
+962ca7e9 10-28 19:07 T-0245: lane build
+798a3a4e 10-28 19:07 T-0240: clear lane record splitnsd
+62bab7b7 10-28 19:07 close T-0240
+4542923d 10-28 19:01 Merge fanout/2026-10-21-splitnsd: T-0240
+f50a538f 10-28 19:01 sync: fanout/2026-10-21 57486be into fanout/2026-10-21-splitnsd
+46484969 10-28 19:01 T-0240: lane build
+57486bec 10-28 18:59 T-0236: clear lane record kbdskip
+01abdf01 10-28 18:59 close T-0236
+71e3ded3 10-28 18:53 Merge fanout/2026-10-21-kbdskip: T-0236
+1c08d836 10-28 18:53 sync: fanout/2026-10-21 563e265 into fanout/2026-10-21-kbdskip
+b6c6732f 10-28 18:53 T-0236: lane build
+563e265f 10-28 18:52 T-0242: record lane splitlcd
+1b32906b 10-28 18:52 T-0235: clear lane record exportfb
+f66c60e4 10-28 18:52 T-0241: record lane splitgal
+96d37152 10-28 18:52 close T-0235
+2c02f4da 10-28 18:45 Merge fanout/2026-10-21-exportfb: T-0235
+f7e59f29 10-28 18:45 sync: fanout/2026-10-21 bcfd50e into fanout/2026-10-21-exportfb
+7643e276 10-28 18:45 T-0235: lane build
+bcfd50e8 10-28 18:45 T-0246: clear lane record syncfeed
+3c24e554 10-28 18:45 close T-0246
+5822b884 10-28 18:38 Merge fanout/2026-10-21-syncfeed: T-0246
+68b4bc05 10-28 18:38 sync: fanout/2026-10-21 f6c67a1 into fanout/2026-10-21-syncfeed
+2de5acff 10-28 18:38 T-0246: lane build
+f6c67a1d 10-28 18:35 T-0240: record lane splitnsd
+6b0109cc 10-28 18:34 T-0232: clear lane record persist
+be92170d 10-28 18:34 close T-0232
+330b0822 10-28 18:28 Merge fanout/2026-10-21-persist: T-0232
+6291c1a4 10-28 18:27 sync: fanout/2026-10-21 937e7a2 into fanout/2026-10-21-persist
+268b870e 10-28 18:27 T-0232: lane build
+937e7a27 10-28 18:26 T-0246: record lane syncfeed
+46c8120d 10-28 18:26 T-0244: clear lane record hostedmcp
+d0890dcc 10-28 18:26 T-0245: record lane palsvc
+5a85e481 10-28 18:26 close T-0244
+3c8dcbff 10-28 18:20 Merge fanout/2026-10-21-hostedmcp: T-0244
+6f5aa98c 10-28 18:20 sync: fanout/2026-10-21 fe7a8f2 into fanout/2026-10-21-hostedmcp
+2eb48c83 10-28 18:20 T-0244: lane build
+fe7a8f2e 10-28 18:20 T-0239: clear lane record toolpatch
+9c9f59cf 10-28 18:20 close T-0239
+65bfdcb3 10-28 18:13 Merge fanout/2026-10-21-toolpatch: T-0239
+9618116e 10-28 18:13 sync: fanout/2026-10-21 7e48a65 into fanout/2026-10-21-toolpatch
+1661e8a9 10-28 18:13 T-0239: lane build
+7e48a652 10-28 18:08 T-0236: record lane kbdskip
+bf5d8f27 10-28 18:08 T-0235: record lane exportfb
+9c7ee588 10-28 18:07 T-0231: clear lane record nativexp
+e727a46c 10-28 18:07 close T-0231
+f12229a6 10-28 18:01 Merge fanout/2026-10-21-nativexp: T-0231
+ee253c24 10-28 18:01 sync: fanout/2026-10-21 2315a39 into fanout/2026-10-21-nativexp
+adb48769 10-28 18:01 T-0231: lane build
+2315a392 10-28 18:01 T-0237: clear lane record jighelp
+89f6fc7f 10-28 18:01 close T-0237

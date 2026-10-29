@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:aedacf98127c -->
+<!-- sdlc-lite:managed:start v1 sha256:8744ae4886cf -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -11,10 +11,15 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 ## Stages
 
 - proposed: 0
-- ready: 3
+- ready: 8
   - T-0805 tickets.py claim refuses over an unrelated ticket's depends: id held only in a lane worktree (docs/work/0805-claim-scoped-check)
   - T-0806 Lane rebases conflict on generated .sdlc files (notes, roadmap, router) (docs/work/0806-lane-rebase-generated-sdlc)
   - T-0807 gate_lock lets one repo's full-capacity jobs starve other repos' gates (docs/work/0807-gate-lock-starvation)
+  - T-0808 A conductor's pinned old plugin scripts keep running after an upgrade (docs/work/0808-stale-plugin-scripts-stop)
+  - T-0809 fleet_collect counts orphaned attempts differently from dispatch.py status (docs/work/0809-collector-orphans-agree)
+  - T-0810 dispatch.py advance prepares a verifier for an already-fixed solo (docs/work/0810-advance-already-fixed)
+  - T-0811 Completed attempts that overran their time budget are never reported (docs/work/0811-completed-over-budget)
+  - T-0812 Decide diff-scope verifier: drop the revert step or turn it off by default (docs/work/0812-diff-scope-review)
 - claimed: 0
 - paused: 0
 - blocked: 1

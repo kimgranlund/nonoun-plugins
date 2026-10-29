@@ -1,0 +1,6 @@
+/Users/kimba/Projects/ultimate-tokens-color-science                               f467cb13 [main]
+/Users/kimba/.codex/worktrees/differential-forms/ultimate-tokens-color-science    1ebdc4ff [codex/differential-forms]
+/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/colorjs7     7aceb614 [fanout/2026-10-21-colorjs7] locked
+/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/integration  b99662d9 [fanout/2026-10-21]
+/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/repin        3a30f115 [fanout/2026-10-21-repin] locked
+/Users/kimba/Projects/ultimate-tokens-color-science.worktrees/tmp/preview         f444dbc6 (detached HEAD)

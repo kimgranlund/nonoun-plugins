@@ -1,0 +1,2 @@
+{"rule": "chromium_load", "repo": "/Users/kimba/Projects/ultimate-tokens-color-science", "scope": "machine", "evidence": "processes.chromium.count", "value": 59, "threshold": 30, "source": "/Users/kimba/sdlc-retro-macbook-pro-2026-10-29/ultimate-tokens-color-science.json"}
+{"rule": "chromium_load", "repo": "/Users/kimba/Projects/ultimate-tokens-color-science", "scope": "machine", "evidence": "processes.chromium.rss_mb", "value": 12238.5, "threshold": 6144, "source": "/Users/kimba/sdlc-retro-macbook-pro-2026-10-29/ultimate-tokens-color-science.json"}

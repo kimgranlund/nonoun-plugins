@@ -1,0 +1,98 @@
+673 1 06-16:53:46 842MB /Applications/Google Chrome Canary.app/Contents/MacOS/Google
+915 1 06-16:53:38 8MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+917 1 06-16:53:38 6MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+929 1 06-16:53:37 14MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.ap
+949 673 06-16:53:33 217MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+950 673 06-16:53:33 742MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+969 673 06-16:53:29 49MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+986 673 06-16:53:29 131MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+993 972 17:47:22 52MB node /Users/kimba/Public/generation-baselines/20261028T231915Z-claude-opus/apps/13-folio/node_modules/.bin/vite preview
+1150 673 06-16:53:25 128MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1152 673 06-16:53:25 102MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1173 673 06-16:53:24 46MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1361 673 06-16:53:10 53MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1362 673 06-16:53:10 87MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1368 673 06-16:53:09 269MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1564 673 06-16:52:54 181MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1572 673 06-16:52:51 126MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1574 673 06-16:52:51 104MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+1576 673 06-16:52:51 176MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+2004 673 06-16:52:22 267MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+3739 673 12:23:06 177MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+5320 673 03:29:10 222MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+6076 673 12:21:00 141MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+6627 673 13:37:00 146MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+9592 673 02:33:26 144MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+11048 673 12:17:08 83MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+13426 673 04-13:10:43 429MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+15384 673 01-21:00:19 294MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+22701 673 12:06:00 128MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+22861 673 41:02 91MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+30764 1 03-17:50:01 33MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.Web
+32213 673 06-03:02:19 99MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+33912 1836 04:03:51 1MB /bin/zsh -c source
+33914 33912 04:03:51 48MB npm exec vite
+33937 33914 04:03:51 73MB node /Users/kimba/Projects/ultimate-tokens-color-science/node_modules/.bin/vite --port
+33968 673 34:21 1162MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+34368 673 01-14:34:03 490MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+36055 1 32:23 39MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.ap
+36060 1 32:23 13MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.ap
+36061 1 32:23 19MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.Web
+37937 1 31:53 48MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.ap
+38112 1 31:47 36MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.ap
+41545 1 02-00:40:49 92MB /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.ap
+42423 42391 17:29:49 47MB node /Users/kimba/Public/generation-baselines/20261028-162759-codex-astra/apps/14-common-ground/node_modules/.bin/vite -
+42424 42390 17:29:49 56MB node /Users/kimba/Public/generation-baselines/20261028-162759-codex-astra/apps/13-folio/node_modules/.bin/vite --host
+42440 42392 17:29:49 49MB node /Users/kimba/Public/generation-baselines/20261028-162759-codex-astra/apps/15-relay/node_modules/.bin/vite --host
+45149 1 17:28:27 46MB node ./node_modules/.bin/vite preview
+50492 673 01-19:34:29 249MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+54230 673 01-19:24:37 141MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+60734 673 02-13:46:47 231MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+60757 673 02-13:46:45 115MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+63266 63205 03-23:50:44 26MB node /Users/kimba/Projects/differential-ui/evidence/0213-claude-consumer-batch/consumers/03-solid-marketing/node_modules
+63279 63203 03-23:50:44 19MB node /Users/kimba/Projects/differential-ui/evidence/0213-claude-consumer-batch/consumers/02-svelte-dashboard/node_module
+63291 63201 03-23:50:44 19MB node /Users/kimba/Projects/differential-ui/evidence/0213-claude-consumer-batch/consumers/01-react-design/node_modules/.b
+70421 673 10:38:36 118MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+72232 673 10:36:10 106MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+75832 673 17:20:54 147MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+81183 673 01-14:17:29 707MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+81609 673 01:04:02 161MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+82049 82033 17:53:20 46MB node /Users/kimba/Public/generation-baselines/20261028T231915Z-claude-opus/apps/15-relay/node_modules/.bin/vite preview
+85287 673 01:02:26 451MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+85288 673 01:02:26 263MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+85412 673 01:02:18 261MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+85569 673 01:02:16 120MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+85743 673 01:02:11 235MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+86717 1836 02:24 1MB /bin/zsh -c source
+86718 86717 02:24 19MB /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacO
+86722 86718 02:24 79MB npm exec vitest
+86742 86722 02:23 280MB node /Users/kimba/Projects/ultimate-tokens-color-science.worktrees/fanout/colorjs7/node_modules/.bin/vitest run
+86745 86742 02:23 62MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+86751 86745 02:23 45MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+86752 86745 02:23 36MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+87838 673 02-01:44:21 448MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+87961 673 01:55 65MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+89202 673 01:01:02 230MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+89827 673 22:10:52 138MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+89978 673 12:33:41 104MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+90633 673 01:02 105MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+90634 673 01:02 66MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+91646 673 01-17:56:12 127MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+91752 673 01-17:56:12 126MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+92427 92339 00:34 100MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+92446 92427 00:33 84MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+92447 92427 00:33 63MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+92450 92427 00:33 1178MB /Users/kimba/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-s
+93090 673 05-11:38:12 365MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+93123 93109 17:51:51 46MB node /Users/kimba/Public/generation-baselines/20261028T231915Z-claude-opus/apps/14-common-ground/node_modules/.bin/vite 
+93611 673 14:46:42 172MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+93628 673 01-21:19:04 376MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+93992 673 21:21:17 299MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+94266 86742 00:08 495MB /usr/local/bin/node --experimental-import-meta-resolve --require
+94598 86742 00:06 933MB /usr/local/bin/node --experimental-import-meta-resolve --require
+94881 86742 00:04 742MB /usr/local/bin/node --experimental-import-meta-resolve --require
+95012 86742 00:01 224MB /usr/local/bin/node --experimental-import-meta-resolve --require
+96973 673 13:40:37 587MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+96978 673 13:40:36 141MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+96986 673 13:40:34 100MB /Applications/Google Chrome Canary.app/Contents/Frameworks/Google
+74145 74119 06-00:54:26 16MB node /Users/kimba/Projects/ultimate-tokens/node_modules/.bin/../vite/bin/vite.js
