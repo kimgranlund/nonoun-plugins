@@ -9,7 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0808 | [0808-stale-plugin-scripts-stop](0808-stale-plugin-scripts-stop/handoff.md) | A conductor's pinned old plugin scripts keep running after an upgrade | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0808-t-0808-t0808) |
 | T-0810 | [0810-advance-already-fixed](0810-advance-already-fixed/handoff.md) | dispatch.py advance prepares a verifier for an already-fixed solo | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0810-t0810) |
 | T-0811 | [0811-completed-over-budget](0811-completed-over-budget/handoff.md) | Completed attempts that overran their time budget are never reported | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0811-t0811) |
-| T-0812 | [0812-diff-scope-review](0812-diff-scope-review/handoff.md) | Decide diff-scope verifier: drop the revert step or turn it off by default | chore | L2 | P2 | none | 🔵 ready |
+| T-0812 | [0812-diff-scope-review](0812-diff-scope-review/handoff.md) | Decide diff-scope verifier: drop the revert step or turn it off by default | chore | L2 | P2 | none | 🟡 claimed |
 
 Closed: 770 done, 30 dropped (git log or .NNNN-* folders)
 
