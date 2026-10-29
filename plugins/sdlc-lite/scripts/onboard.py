@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Onboard a repository to SDLC Lite: entry files, docs layout, and check mode.
 
-Usage: onboard.py setup [--dry-run] [--force] [--init]   refresh the managed blocks (--init: create them)
+Usage: onboard.py setup [--dry-run] [--force] [--init [--local]]   refresh the managed blocks (--init: create them)
        onboard.py check                                  report the state of every managed file
        onboard.py selftest                               run the gates on temp fixtures
 
@@ -14,11 +14,15 @@ the lane root from the sibling wtroot.py (`<bare parent>/lanes/` in a bare clone
 
 setup refreshes the managed blocks a file already holds and changes nothing else; it lists on
 stderr each file --init would create or append a block to. setup --init also creates missing
-entry files and docs/layout.md and appends a block to an unmanaged entry file.
+entry files and docs/layout.md and appends a block to an unmanaged entry file, and declares
+`"agent": "sdlc-lite:conductor"` in .claude/settings.json (--local: .claude/settings.local.json) unless
+either settings file already names an agent; other keys and malformed JSON are left untouched, and under
+SDLC_BACKEND=codex it writes no settings and says so on stderr.
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
 check writes nothing, prints `<label> <path>` per file, and exits 1 unless every entry file is
-current and docs/layout.md is present. Reports (malformed, newer, edited, skipped symbolic
+current and docs/layout.md is present; its session-agent line (current, other, malformed, missing) never
+changes the exit status. Reports (malformed, newer, edited, skipped symbolic
 links, size targets) go to stderr. Outside a Git work tree, or on a docs/layout.md parse error,
 both commands print the reason to stderr, exit 1, and write nothing.
 
@@ -32,6 +36,7 @@ import difflib
 import functools
 import hashlib
 import io
+import json
 import itertools
 import os
 import re
@@ -65,6 +70,10 @@ CAP_FORM = re.compile(r'^\s*[-*+]\s+`([A-Z]+-\d+[a-z]?)`\s+(\d+)\s*$')
 OTHERWISE_FORM = re.compile(r'^\s*otherwise\s*->\s*`([^`]+)`\s*$')
 TABLE_SPLIT = re.compile(r'(?<!\\)\|')
 SEPARATOR_CELL = re.compile(r'^:?-{3,}:?$')
+SETTINGS_PATH = '.claude/settings.json'
+LOCAL_SETTINGS_PATH = '.claude/settings.local.json'
+CONDUCTOR = 'sdlc-lite:conductor'
+CODEX_AGENT_NOTE = 'agent: Codex has no session-agent setting; nothing written'
 FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 
 Layout = collections.namedtuple('Layout', 'homes frozen kinds decide legacy levels grandfathered caps',
@@ -950,11 +959,48 @@ def is_refresh(c):
 
 
 # The parts of the implementation that the selftest swaps for defective variants.
-Impl = collections.namedtuple('Impl', 'render wrap rows find_block labels preflight refresh')
-REAL = Impl(render_templates, wrap_block, ROWS, find_block, LABELS, True, is_refresh)
-
 Change = collections.namedtuple('Change', 'path row action label old new notes')
 Change.__doc__ = 'One file. row is None outside the upsert table. old/new are None when not read or not written.'
+
+
+def _declare_agent(text):
+    """The settings text with the conductor as its first key; every other byte stays."""
+    if text is None or not text.strip() or json.loads(text) == {}:
+        return '{\n  "agent": "%s"\n}\n' % CONDUCTOR
+    i = text.index('{') + 1
+    return text[:i] + '\n  "agent": "%s",' % CONDUCTOR + text[i:]
+
+
+def settings_change(root, local=False, declare=_declare_agent):
+    """The session-agent declaration as a Change (row None). label: current or other (the effective file,
+    settings.local.json before settings.json, names the conductor or another agent), malformed, or missing.
+    A missing declaration is planned for settings.json, or settings.local.json with local."""
+    found = []
+    for path in (LOCAL_SETTINGS_PATH, SETTINGS_PATH):
+        full = os.path.join(root, *path.split('/'))
+        text = _read(full) if os.path.isfile(full) else None
+        data = None
+        if text is not None:
+            try:
+                data = json.loads(text)
+            except ValueError as e:
+                data = e
+            if not isinstance(data, (dict, ValueError)):
+                data = ValueError('not a JSON object')
+        found.append((path, text, data))
+    for path, text, data in found:
+        if isinstance(data, dict) and 'agent' in data:
+            return Change(path, None, 'none', 'current' if data['agent'] == CONDUCTOR else 'other', text, None,
+                          ['agent: kept %s in %s' % (data['agent'], path)])
+    path, text, data = found[0] if local else found[1]
+    if isinstance(data, ValueError):
+        return Change(path, None, 'skip', 'malformed', text, None,
+                      ['malformed %s: %s; left unchanged' % (path, data)])
+    return Change(path, None, 'create' if text is None else 'replace', 'missing', text, declare(text), [])
+
+
+Impl = collections.namedtuple('Impl', 'render wrap rows find_block labels preflight refresh settings')
+REAL = Impl(render_templates, wrap_block, ROWS, find_block, LABELS, True, is_refresh, settings_change)
 
 
 def _read(full):
@@ -1098,11 +1144,13 @@ def _plan_or_report(root, impl, force, err):
     return None
 
 
-def run_setup(root, impl=None, dry_run=False, force=False, init=False, out=None, err=None):
+def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=False, out=None, err=None):
     """setup: print the diff (dry run) or write it. Returns the exit status.
 
     Without init only existing managed blocks are refreshed; every file init would create or
-    append to is listed on stderr as `--init would <create|append a block to> <path>`.
+    append to is listed on stderr as `--init would <create|append a block to> <path>`, and a missing
+    session-agent declaration as `--init would set agent in <path>`. With init the conductor is declared
+    in .claude/settings.json (local: .claude/settings.local.json) unless a settings file names an agent.
     """
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
     changes = _plan_or_report(root, impl, force, err)
@@ -1118,6 +1166,17 @@ def run_setup(root, impl=None, dry_run=False, force=False, init=False, out=None,
             if not impl.refresh(c):
                 err.write('--init would %s %s\n' % ('create' if c.old is None else 'append a block to', c.path))
         todo = [c for c in todo if impl.refresh(c)]
+    if os.environ.get('SDLC_BACKEND', 'claude') == 'codex':
+        err.write(CODEX_AGENT_NOTE + '\n')
+    else:
+        agent = impl.settings(root, local)
+        if init:
+            for note in agent.notes:
+                err.write(note + '\n')
+            if _changed(agent):
+                todo.append(agent)
+        elif _changed(agent):
+            err.write('--init would set agent in %s\n' % agent.path)
     if dry_run:
         for c in todo:
             out.write(_diff(c.path, c.old, c.new))
@@ -1158,8 +1217,9 @@ def route_warnings(root):
 
 
 def run_check(root, impl=None, out=None, err=None, resolver=None, warner=None):
-    """check: one `<label> <path>` line per file; 1 unless all are current or present. Route warnings
-    (route_warnings) go to stderr and never change the exit status."""
+    """check: one `<label> <path>` line per file; 1 unless all are current or present. The session-agent
+    line (current, other, malformed, or missing) and route warnings (route_warnings, on stderr) never
+    change the exit status."""
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
     for w in (warner or route_warnings)(root):
         err.write(w + '\n')
@@ -1171,6 +1231,8 @@ def run_check(root, impl=None, out=None, err=None, resolver=None, warner=None):
         for note in c.notes + ([size] if size else []):
             err.write(note + '\n')
         out.write('%s %s\n' % (c.label, c.path))
+    agent = impl.settings(root)
+    out.write('%s %s\n' % (agent.label, agent.path))
     problems = (resolver or resolve_entries)(root)
     for p in problems:
         out.write(p + '\n')
@@ -1460,7 +1522,7 @@ def gate_create(impl):
     with _fixture() as root:
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'empty fixture: setup exited %d: %s' % (rc, err.strip()))
-        expect(_files(root) == sorted(BASE_FILES), 'empty fixture: files are %r' % _files(root))
+        expect(_files(root) == sorted(BASE_FILES + [SETTINGS_PATH]), 'empty fixture: files are %r' % _files(root))
         before, block, after = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(before == ROOT_STARTER, 'AGENTS.md: starter text is %r' % before)
         expect(after == '', 'AGENTS.md: text after the block: %r' % after)
@@ -1499,7 +1561,7 @@ def gate_create(impl):
     with _fixture(untracked, track=sorted(RICH_DOCS)) as root:
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'topic fixture: setup exited %d: %s' % (rc, err.strip()))
-        want = sorted(BASE_FILES + list(untracked) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md'])
+        want = sorted(BASE_FILES + list(untracked) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md', SETTINGS_PATH])
         expect(_files(root) == want, 'topic fixture: files are %r' % _files(root))
         expect('docs/reference/' not in _snapshot(root), 'topic fixture: created an empty folder docs/reference/')
         before, block, after = _parts(_text(root, 'docs/alpha/AGENTS.md'), 'docs/alpha/AGENTS.md')
@@ -1624,11 +1686,11 @@ def gate_refresh_only(impl):
             expect(_snapshot(root) == snap, 'no --init (dry run %s): the fixture changed' % dry)
             for line in ('--init would append a block to AGENTS.md', '--init would create CLAUDE.md',
                          '--init would create docs/AGENTS.md', '--init would create docs/alpha/AGENTS.md',
-                         '--init would create docs/layout.md'):
+                         '--init would create docs/layout.md', '--init would set agent in %s' % SETTINGS_PATH):
                 expect(line in err.splitlines(), 'no --init (dry run %s): stderr lacks %r: %r' % (dry, line, err))
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, '--init: setup exited %d: %s' % (rc, err.strip()))
-        want = sorted(BASE_FILES + list(RICH_DOCS) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md'])
+        want = sorted(BASE_FILES + list(RICH_DOCS) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md', SETTINGS_PATH])
         expect(_files(root) == want, '--init: files are %r' % _files(root))
         before, _, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(before == '# Mine\n\nkeep me\n', '--init: AGENTS.md bytes before the block are %r' % before)
@@ -1740,7 +1802,8 @@ def gate_check_mode(impl):
         _call(run_setup, root, impl, init=True)
         snap = _snapshot(root)
         rc, out, err = _call(run_check, root, impl)
-        want = ['current %s' % p for p in BASE_FILES if p != LAYOUT_PATH] + ['present ' + LAYOUT_PATH]
+        want = (['current %s' % p for p in BASE_FILES if p != LAYOUT_PATH] + ['present ' + LAYOUT_PATH]
+                + ['current ' + SETTINGS_PATH])
         expect(rc == 0, 'current fixture: check exited %d:\n%s%s' % (rc, out, err))
         expect(sorted(out.splitlines()) == sorted(want), 'current fixture: check printed %r' % out)
         expect(_snapshot(root) == snap, 'current fixture: check wrote to the tree')
@@ -1774,6 +1837,103 @@ def gate_check_mode(impl):
             expect(rc != 0, '%s fixture: check exited 0:\n%s' % (label, out))
             expect('%s %s' % (label, path) in out.splitlines(), '%s fixture: check printed %r' % (label, out))
             expect(_snapshot(root) == snap, '%s fixture: check wrote to the tree' % label)
+
+
+def _declare_only(text):
+    """Defect variant: writes the declaration alone, dropping every other key."""
+    return _declare_agent(None)
+
+
+def _settings_overwriting(root, local=False):
+    """Defect variant: declares the conductor over an agent the repository set."""
+    c = settings_change(root, local)
+    if c.label != 'other':
+        return c
+    return c._replace(action='replace', notes=[], new=c.old.replace(json.loads(c.old)['agent'], CONDUCTOR))
+
+
+def _settings_relabel(label, as_label):
+    def variant(root, local=False):
+        c = settings_change(root, local)
+        return c._replace(label=as_label) if c.label == label else c
+    return variant
+
+
+@contextlib.contextmanager
+def _backend(name):
+    saved = os.environ.get('SDLC_BACKEND')
+    os.environ['SDLC_BACKEND'] = name
+    try:
+        yield
+    finally:
+        if saved is None:
+            os.environ.pop('SDLC_BACKEND', None)
+        else:
+            os.environ['SDLC_BACKEND'] = saved
+
+
+def gate_agent_setting(impl):
+    _gate_agent_setting(impl)
+    with _backend('codex'), _fixture() as root:
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        expect(rc == 0, 'codex: setup exited %d: %s' % (rc, err.strip()))
+        expect(not [f for f in _files(root) if f.startswith('.claude/')], 'codex: wrote %r' % _files(root))
+        expect([ln for ln in err.splitlines() if ln.startswith('agent:')] == [CODEX_AGENT_NOTE],
+               'codex: stderr is %r' % err)
+
+
+def _gate_agent_setting(impl):
+    """setup --init declares the conductor in .claude/settings.json (--local: settings.local.json), keeps every
+    other key and an existing agent value, leaves malformed JSON alone; check labels the declaration."""
+    with _fixture() as root:
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        expect(rc == 0, 'empty fixture: setup exited %d: %s' % (rc, err.strip()))
+        expect(SETTINGS_PATH in _files(root) and json.loads(_text(root, SETTINGS_PATH)) == {'agent': CONDUCTOR},
+               'empty fixture: %s not written: %r' % (SETTINGS_PATH, _files(root)))
+        expect('created %s' % SETTINGS_PATH in out.splitlines(), 'empty fixture: setup printed %r' % out)
+        rc, out, err = _call(run_check, root, impl)
+        expect('current %s' % SETTINGS_PATH in out.splitlines(), 'current fixture: check printed %r' % out)
+        os.remove(os.path.join(root, *SETTINGS_PATH.split('/')))
+        rc, out, err = _call(run_check, root, impl)
+        expect(rc == 0 and 'missing %s' % SETTINGS_PATH in out.splitlines(),
+               'missing declaration: check exited %d and printed %r' % (rc, out))
+    with _fixture() as root:
+        rc, out, err = _call(run_setup, root, impl, init=True, local=True)
+        expect(rc == 0, '--local: setup exited %d: %s' % (rc, err.strip()))
+        expect(LOCAL_SETTINGS_PATH in _files(root) and json.loads(_text(root, LOCAL_SETTINGS_PATH)) == {'agent': CONDUCTOR},
+               '--local: %s not written: %r' % (LOCAL_SETTINGS_PATH, _files(root)))
+        expect(SETTINGS_PATH not in _files(root), '--local: wrote %s' % SETTINGS_PATH)
+        rc, out, err = _call(run_check, root, impl)
+        expect('current %s' % LOCAL_SETTINGS_PATH in out.splitlines(), '--local: check printed %r' % out)
+    shared = '{\n  "permissions": {"allow": ["Bash(ls:*)"]},\n  "env": {"A": "1"}\n}\n'
+    with _fixture({SETTINGS_PATH: shared}) as root:
+        rc, out, err = _call(run_setup, root, impl, dry_run=True)
+        expect('--init would set agent in %s' % SETTINGS_PATH in err.splitlines(),
+               'no --init: stderr lacks the agent line: %r' % err)
+        rc, out, err = _call(run_check, root, impl)
+        expect('missing %s' % SETTINGS_PATH in out.splitlines(), 'missing fixture: check printed %r' % out)
+        rc, out, err = _call(run_setup, root, impl, dry_run=True, init=True)
+        expect('+  "agent": "%s",' % CONDUCTOR in out.splitlines(), '--dry-run --init: diff lacks the agent: %r' % out)
+        expect(_text(root, SETTINGS_PATH) == shared, '--dry-run --init: wrote %s' % SETTINGS_PATH)
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        want = dict(json.loads(shared), agent=CONDUCTOR)
+        expect(json.loads(_text(root, SETTINGS_PATH)) == want, 'other keys: %s is %r' % (SETTINGS_PATH, _text(root, SETTINGS_PATH)))
+    for path in (SETTINGS_PATH, LOCAL_SETTINGS_PATH):
+        mine = '{"agent": "mine", "model": "x"}\n'
+        with _fixture({path: mine}) as root:
+            rc, out, err = _call(run_setup, root, impl, init=True)
+            expect(rc == 0, 'kept agent: setup exited %d: %s' % (rc, err.strip()))
+            expect(_text(root, path) == mine, 'kept agent: %s changed to %r' % (path, _text(root, path)))
+            expect('agent: kept mine in %s' % path in err.splitlines(), 'kept agent: stderr is %r' % err)
+            expect(not [f for f in _files(root) if f.startswith('.claude/') and f != path],
+                   'kept agent: wrote another settings file: %r' % _files(root))
+            rc, out, err = _call(run_check, root, impl)
+            expect('other %s' % path in out.splitlines(), 'other fixture: check printed %r' % out)
+    with _fixture({SETTINGS_PATH: '{"agent": '}) as root:
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        expect(_text(root, SETTINGS_PATH) == '{"agent": ', 'malformed: %s changed' % SETTINGS_PATH)
+        expect(any(ln.startswith('malformed %s' % SETTINGS_PATH) for ln in err.splitlines()),
+               'malformed: stderr is %r' % err)
 
 
 def gate_route_warning(warner):
@@ -2022,6 +2182,12 @@ GATES = [
     ('route-warning', gate_route_warning, route_warnings, [
         ('prints no route warning', lambda root: []),
     ]),
+    ('agent-setting', gate_agent_setting, REAL, [
+        ('replaces the settings file', REAL._replace(settings=functools.partial(settings_change, declare=_declare_only))),
+        ('overwrites an existing agent', REAL._replace(settings=_settings_overwriting)),
+        ('ignores --local', REAL._replace(settings=lambda root, local=False: settings_change(root))),
+        ('labels another agent current', REAL._replace(settings=_settings_relabel('other', 'current'))),
+    ]),
     ('check-mode', gate_check_mode, REAL, [
         ('labels an edited block current', REAL._replace(labels=_relabel(4, 'current'))),
         ('labels a stale block current', REAL._replace(labels=_relabel(6, 'current'))),
@@ -2034,7 +2200,7 @@ GIT_LOCATION_ENV = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DI
 
 
 def selftest():
-    saved = dict((k, os.environ.pop(k)) for k in GIT_LOCATION_ENV if k in os.environ)
+    saved = dict((k, os.environ.pop(k)) for k in GIT_LOCATION_ENV + ('SDLC_BACKEND',) if k in os.environ)
     try:
         return _selftest()
     finally:
@@ -2080,6 +2246,9 @@ def main(argv=None):
     sp.add_argument('--init', action='store_true',
                     help='also create missing entry files and docs/layout.md and append a block to an unmanaged file '
                          '(without it, setup refreshes existing managed blocks only)')
+    sp.add_argument('--local', action='store_true',
+                    help='with --init, declare the conductor agent in .claude/settings.local.json (personal) '
+                         'instead of .claude/settings.json (shared)')
     sp.add_argument('--yes', action='store_true', help='write without asking (an interactive run asks once after the diff)')
     sub.add_parser('check', help='report the state of every managed file and write nothing')
     sub.add_parser('selftest', help='run the gates on temp fixtures')
@@ -2095,13 +2264,13 @@ def main(argv=None):
         return 1
     if args.cmd == 'setup':
         if not args.dry_run and not args.yes and sys.stdin.isatty():
-            rc = run_setup(root, dry_run=True, force=args.force, init=args.init)
+            rc = run_setup(root, dry_run=True, force=args.force, init=args.init, local=args.local)
             if rc:
                 return rc
             if input('Write these changes? [y/N] ').strip().lower() not in ('y', 'yes'):
                 print('nothing written')
                 return 0
-        return run_setup(root, dry_run=args.dry_run, force=args.force, init=args.init)
+        return run_setup(root, dry_run=args.dry_run, force=args.force, init=args.init, local=args.local)
     return run_check(root)
 
 
