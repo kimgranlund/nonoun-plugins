@@ -2,7 +2,7 @@
 id: T-0809
 title: "fleet_collect counts orphaned attempts differently from dispatch.py status"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,11 @@ Status shows T-0266 verifier-L2 orphaned; the fingerprint has `runs.orphaned.cou
 ## Constraints
 - Red check: a `fleet_collect.py selftest` case with a live-pid running attempt on a closed ticket; it counts 0 before and 1 after.
 - outcome metric: collector orphan count vs status orphan count, before: 0 vs 1.
+
+## Outcome
+
+2026-10-29 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: c229bc6b59ff
+- Changed: see commits
+- Commits: 1861ee5 T-0809: fleet_collect counts orphaned attempts as dispatch.py status does; 11be945 T-0809: record lane T-0809-t0809
+- Check: 1 Red check: a `fleet_collect.py selftest` case with a live-pid running attempt on a closed ticket ...: pass
+- Check: 2 Goal: fleet_collect counts orphaned exactly when dispatch.py status does: pass
