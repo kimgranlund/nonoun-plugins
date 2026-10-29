@@ -60,9 +60,10 @@ lane is `full` unless the role is solo. interrupted counts `*.attempt.json` file
 deduplicated by attempt_id; one whose result file (<stem>.md beside <stem>.attempt.json) already holds a verdict
 is not counted (T-0445). lost_min of an interrupted attempt is the minutes from its started_at to the started_at
 of the next attempt record of the same role in the same directory, else to its own finished_at (null with neither);
-the median and total skip a null. orphaned counts attempt records still `running` on the claude backend (the default)
-that started in the window and whose parent_pid (else owner_pid) is dead now (the kill(pid, 0) test of
-dispatch.pid_alive), deduplicated by attempt_id. limit_markers counts `*.limit` files (run.sh's 429 resume markers).
+the median and total skip a null. orphaned counts attempt records still `running` that started in the window and that
+dispatch.attempt_state_at calls orphaned now (the same call `dispatch.py status` makes: a claude-backend attempt
+whose parent_pid, else owner_pid, is dead or reused, or any running attempt whose ticket is done or dropped, T-0809),
+deduplicated by attempt_id. limit_markers counts `*.limit` files (run.sh's 429 resume markers).
 --since keeps records at or after DATE; --until keeps records up to DATE (a bare YYYY-MM-DD includes that whole
 day, a full ISO instant is an inclusive bound). A record with no readable timestamp is dropped when a bound is
 given. DATE is YYYY-MM-DD or ISO 8601; no zone means UTC.
@@ -451,19 +452,6 @@ def round_bucket(b):
     return {'count': b['count'], 'cost_usd': round(b['cost_usd'], 4), 'duration_s': round(b['duration_s'], 1)}
 
 
-def pid_alive(pid):
-    """The kill(pid, 0) test of dispatch.pid_alive: a process we may not signal still exists."""
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return False
-    return True
-
-
 def minutes_between(start, end):
     """Minutes from ISO string start to end, rounded to 0.1, or None when either is unreadable or end < start."""
     a, b = parse_ts(start), parse_ts(end)
@@ -618,10 +606,9 @@ def collect_runs(repo, window, dedupe=True, extra=None):
                     interrupted.append({'attempt_id': aid if isinstance(aid, str) else None, 'role': rec.get('role'),
                                         'level': rec.get('level'), 'started_at': rec.get('started_at'),
                                         'lost_min': lost, 'path': p})
-        elif status == 'running' and rec.get('backend', 'claude') == 'claude':
-            pid = rec.get('parent_pid') or rec.get('owner_pid')
-            if (isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 and window.has(rec.get('started_at'))
-                    and aid not in settled and not pid_alive(pid) and not (dedupe and key in orphans_seen)):
+        elif status == 'running':
+            if (window.has(rec.get('started_at')) and aid not in settled
+                    and dispatch.attempt_state_at(p, rec) == 'orphaned' and not (dedupe and key in orphans_seen)):
                 orphans_seen.add(key)
                 orphaned.append({'attempt_id': aid if isinstance(aid, str) else None, 'role': rec.get('role'),
                                  'level': rec.get('level'), 'started_at': rec.get('started_at'), 'path': p})
@@ -1249,13 +1236,14 @@ def selftest():
         kp = os.path.join(kpi_tmp, 'repo')
         dead = subprocess.Popen([sys.executable, '-c', 'pass'])
         dead.wait()                                  # a pid that has exited and been reaped: dead now
+        live_start = datetime.datetime.now(UTC).isoformat()   # after this process began, so its pid is not "reused"
         def att(aid, role, status, started, **kw):
             return json.dumps(dict({'attempt_id': aid, 'role': role, 'level': 'L2', 'status': status,
                                     'started_at': started}, **kw))
         k1 = os.path.join(kp, '.sdlc', 'k1')
         write(os.path.join(k1, 'a-dead.attempt.json'), att('RD', 'builder', 'running', '2026-10-05T08:00:00+00:00',
                                                           parent_pid=dead.pid))
-        write(os.path.join(k1, 'b-alive.attempt.json'), att('RA', 'builder', 'running', '2026-10-05T08:00:00+00:00',
+        write(os.path.join(k1, 'b-alive.attempt.json'), att('RA', 'builder', 'running', live_start,
                                                            parent_pid=os.getpid()))
         write(os.path.join(k1, 'c-codex.attempt.json'), att('RC', 'builder', 'running', '2026-10-05T08:00:00+00:00',
                                                            parent_pid=dead.pid, backend='codex'))
@@ -1301,6 +1289,20 @@ def selftest():
            all(a['attempt_id'] != 'RS' for a in kr['orphaned']['attempts']))
         ok('orphaned: a codex attempt and one started before the window are not counted',
            all(a['attempt_id'] not in ('RC', 'RO') for a in kr['orphaned']['attempts']))
+        # T-0809: a running attempt with a live parent pid on a done or dropped ticket is orphaned, as dispatch.py status says
+        k2 = os.path.join(kp, '.sdlc', 'k2')
+        write(os.path.join(k2, 'handoff.md'), '---\nid: T-0999\nstatus: done\n---\n## Goal\nx\n')
+        write(os.path.join(k2, 'verifier-L2.attempt.json'), att('RT', 'verifier', 'running', live_start,
+                                                               parent_pid=os.getpid()))
+        k3 = os.path.join(kp, '.sdlc', 'k3')
+        write(os.path.join(k3, 'handoff.md'), '---\nid: T-0998\nstatus: claimed\n---\n## Goal\nx\n')
+        write(os.path.join(k3, 'verifier-L2.attempt.json'), att('RU', 'verifier', 'running', live_start,
+                                                               parent_pid=os.getpid()))
+        kc = collect_runs(kp, Window(since='2026-10-01'))
+        ok('orphaned: a live-pid running attempt on a done ticket is counted, as dispatch.py status counts it',
+           'RT' in [a['attempt_id'] for a in kc['orphaned']['attempts']])
+        ok('negative control: a live-pid running attempt on an open ticket is not counted orphaned',
+           'RU' not in [a['attempt_id'] for a in kc['orphaned']['attempts']])
         # T-0445: an interrupted record whose result file holds a verdict is not a lost run; one with no result still is
         write(os.path.join(k1, 'step-3', 'verifier-L2.attempt.json'), att(
             'IR', 'verifier', 'interrupted', '2026-10-06T09:00:00+00:00', finished_at='2026-10-06T09:40:00+00:00'))
