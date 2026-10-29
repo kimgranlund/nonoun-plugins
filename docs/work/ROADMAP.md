@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0806 | [0806-lane-rebase-generated-sdlc](0806-lane-rebase-generated-sdlc/handoff.md) | Lane rebases conflict on generated .sdlc files (notes, roadmap, router) | bug | L2 | P2 | none | 🔵 ready |
+| T-0806 | [0806-lane-rebase-generated-sdlc](0806-lane-rebase-generated-sdlc/handoff.md) | Lane rebases conflict on generated .sdlc files (notes, roadmap, router) | bug | L2 | P2 | none | 🟡 claimed |
 | T-0807 | [0807-gate-lock-starvation](0807-gate-lock-starvation/handoff.md) | gate_lock lets one repo's full-capacity jobs starve other repos' gates | bug | L2 | P2 | none | 🔵 ready |
 | T-0808 | [0808-stale-plugin-scripts-stop](0808-stale-plugin-scripts-stop/handoff.md) | A conductor's pinned old plugin scripts keep running after an upgrade | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0808-t-0808-t0808) |
 | T-0809 | [0809-collector-orphans-agree](0809-collector-orphans-agree/handoff.md) | fleet_collect counts orphaned attempts differently from dispatch.py status | bug | L1 | P2 | none | 🔵 ready |
