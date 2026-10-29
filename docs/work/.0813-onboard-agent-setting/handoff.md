@@ -2,7 +2,7 @@
 id: T-0813
 title: "onboard declares the conductor agent in .claude/settings.json"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,12 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Claude Code only; Codex has no session-agent setting, so the Codex path writes nothing and says so in one line.
 - Never overwrite a value the repository set.
+
+## Outcome
+
+2026-10-29 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 39c2147d8c7f
+- Changed: see commits
+- Commits: aab0a2f T-0813: onboard declares the conductor agent in .claude/settings.json; 61085ae T-0813: record lane T-0813-t0813
+- Check: 1 selftest exits 0 with new cases (empty init writes declaration; other keys kept; existing agent k...: pass
+- Check: 2 `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass
+- Follow-up: note: docs/specs/repo-onboarding/design.md does not mention the settings... -> notes.md
