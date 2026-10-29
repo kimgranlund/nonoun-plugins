@@ -2,14 +2,12 @@
 id: T-0807
 title: "gate_lock lets one repo's full-capacity jobs starve other repos' gates"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-29
 claimed_by: sdlc-lite-author 2026-10-29
-branch: lane/T-0807-t0807
-worktree: ../sdlc-lite.worktrees/T-0807-t0807
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -34,3 +32,9 @@ The agent-ui conductor reports merge gates and verifiers waiting 30 min to 2 h w
 ## Constraints
 - Red check: a `gate_lock.py` selftest where back-to-back full-capacity jobs from one repo keep a default-need job queued past the bound; it fails before the fix and passes after.
 - outcome metric: longest queued wait for a default-need gate under contention, before: unmeasured (reported 30 to 120 min).
+
+## Outcome
+
+2026-10-29 · lane: solo L2 · verdict: closed by reason (already fixed: gate_lock round robin across repos (T-0409) admits another repo's default-need gate after at most one more busy-repo grant; selftest case_rr and scratch sims confirm. Remaining waits come from the load cap (max_load 16 on 20 CPUs), a policy setting, not admission order) · verifier: none · base: ff69a090c740
+- Changed: see commits
+- Commits: 9db6d05 T-0807: record lane T-0807-t0807
