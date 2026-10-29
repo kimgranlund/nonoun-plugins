@@ -42,4 +42,4 @@ Plugin: 0.40.0 at `/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/
 - Rows 1, 5, 6, 9 and 11 are conductor briefing, project, or host causes (G4); rows 12 and 13 propose no failing check (G5).
 
 ## Filed
-none
+By the user's choice after the rubric round, despite G3: row 4 as T-0805, row 3 as T-0806, row 2 as T-0807.

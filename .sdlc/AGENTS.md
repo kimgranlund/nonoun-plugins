@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e9cb044e9c15 -->
+<!-- sdlc-lite:managed:start v1 sha256:aedacf98127c -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -11,7 +11,10 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 ## Stages
 
 - proposed: 0
-- ready: 0
+- ready: 3
+  - T-0805 tickets.py claim refuses over an unrelated ticket's depends: id held only in a lane worktree (docs/work/0805-claim-scoped-check)
+  - T-0806 Lane rebases conflict on generated .sdlc files (notes, roadmap, router) (docs/work/0806-lane-rebase-generated-sdlc)
+  - T-0807 gate_lock lets one repo's full-capacity jobs starve other repos' gates (docs/work/0807-gate-lock-starvation)
 - claimed: 0
 - paused: 0
 - blocked: 1
