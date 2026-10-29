@@ -19,6 +19,11 @@ run in the session: $CLAUDE_PLUGIN_ROOT's manifest when set, else the newest ver
 scripts sees the checkout's version while the hooks come from that install, so either one below plugin_min refuses,
 and the line names which (the running plugin or the hook plugin). No install found means only the running plugin is
 checked.
+
+T-0808: a script run from an install folder in the plugin cache while a newer version folder sits beside it refuses
+with exit 2 (`check_stale`): a conductor's helper that pins an old scripts path would otherwise run old behavior after
+the warning. SDLC_ALLOW_STALE_PLUGIN=1 lets it run with the warning only. A script outside the cache (a source checkout)
+only warns.
 """
 import argparse
 import json
@@ -128,14 +133,28 @@ def stale_line(plugin=PLUGIN):
     return 'sdlc-lite %s in use; %s installed: re-resolve the scripts path (%s/scripts)' % (have, newest, path)
 
 
-def warn_stale(plugin=PLUGIN):
-    """Print stale_line on stderr when there is one; never raises and never changes an exit code."""
+def in_cache(plugin=PLUGIN):
+    """True when plugin is a version folder of the plugin cache ($SDLC_PLUGIN_CACHE, default CACHE), not a source checkout."""
+    cache = Path(os.environ.get('SDLC_PLUGIN_CACHE') or CACHE)
+    return Path(os.path.realpath(plugin)).parent == Path(os.path.realpath(cache))
+
+
+def check_stale(plugin=PLUGIN):
+    """0, or 2 when plugin is an older install folder in the cache beside a newer one (T-0808); prints stale_line on
+    stderr when there is one, plus the refusal line when it refuses. SDLC_ALLOW_STALE_PLUGIN=1 keeps the warning only.
+    Never raises: a failed check returns 0."""
     try:
         line = stale_line(plugin)
-    except Exception:  # noqa: BLE001 a warning must not break a script call
-        return
+        stop = bool(line) and in_cache(plugin) and os.environ.get('SDLC_ALLOW_STALE_PLUGIN') != '1'
+    except Exception:  # noqa: BLE001 a check failure must not break a script call
+        return 0
     if line:
         print(line, file=sys.stderr)
+    if not stop:
+        return 0
+    print('sdlc-lite: refusing to run old scripts from %s; call the installed version\'s scripts, or set '
+          'SDLC_ALLOW_STALE_PLUGIN=1 to run them anyway' % plugin, file=sys.stderr)
+    return 2
 
 
 def host_of(host=None):

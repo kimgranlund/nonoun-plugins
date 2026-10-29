@@ -68,7 +68,7 @@ SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
 sys.path.insert(0, str(SCRIPTS))
 import order  # noqa: E402  same scripts/ dir: the records dir rule (records_dir)
-import plugin_min  # noqa: E402  same scripts/ dir: the repo's minimum plugin version (T-0596) and the stale-install warning (T-0679)
+import plugin_min  # noqa: E402  same scripts/ dir: the repo's minimum plugin version (T-0596) and the stale-install warning (T-0679) and refusal (T-0808)
 
 
 def records(task_dir):
@@ -1481,7 +1481,8 @@ def main():
     a = p.parse_args()
     if a.cmd == 'selftest':
         return selftest()
-    plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
+    if plugin_min.check_stale():  # T-0679 warning; T-0808: exit 2 from an older install folder beside a newer one
+        return 2
     if a.tier in TIER_ALIASES:
         print(f'solo_run.py: --tier {a.tier} is deprecated; use --tier {tier_of(a.tier)}', file=sys.stderr)
         a.tier = tier_of(a.tier)

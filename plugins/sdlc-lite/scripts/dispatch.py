@@ -2692,7 +2692,8 @@ def main(argv):
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
         return selftest()
-    plugin_min.warn_stale()  # T-0679: one stderr line when a newer plugin version is installed
+    if plugin_min.check_stale():  # T-0679 warning; T-0808: exit 2 from an older install folder beside a newer one
+        return 2
     if args.cmd == 'settle-held':
         try:
             add = settle_held(args.result, args.by, args.evidence, args.ref)
@@ -5649,6 +5650,24 @@ def selftest():
         stale_case('stale: a newer version folder holding .orphaned_at prints nothing', (have, nxt), False, orphaned=(nxt,))
         rc, _, err = prep(pm, 'scout', 'L1', '.sdlc/t/handoff.md', '--dry-run', **dict(nohooks, SDLC_PLUGIN_CACHE=str(tmp / 'no-cache')))
         case('stale: no cache prints nothing', rc == 0 and 'in use;' not in err)
+        # T-0808: a script run from an older install folder in the cache, beside a newer one, refuses with exit 2 naming the
+        # newer version; SDLC_ALLOW_STALE_PLUGIN=1 runs it with the warning. A source checkout only warns (the cases above).
+        sc = tmp / 'stale-install'
+        shutil.copytree(PLUGIN, sc / have, ignore=shutil.ignore_patterns('bench', '__pycache__'))
+        (sc / nxt / '.claude-plugin').mkdir(parents=True)
+        (sc / nxt / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': nxt}), encoding='utf-8')
+        stale_env = dict({k: v for k, v in os.environ.items() if not k.startswith('SDLC_')}, CLAUDE_PLUGIN_ROOT='', SDLC_PLUGIN_CACHE=str(sc))
+        line = 'sdlc-lite %s in use; %s installed: re-resolve the scripts path (%s/scripts)' % (have, nxt, sc / nxt)
+        old_prep = [sys.executable, str(sc / have / 'scripts' / 'dispatch.py'), 'prepare', '--dry-run', 'scout', 'L1', '.sdlc/t/handoff.md']
+        p = subprocess.run(old_prep, cwd=str(pm), env=stale_env, capture_output=True, text=True)
+        case('stale: dispatch.py in an older cache folder refuses with exit 2 naming the newer version and the override',
+             p.returncode == 2 and line in p.stderr and 'SDLC_ALLOW_STALE_PLUGIN=1' in p.stderr and not p.stdout.strip())
+        p = subprocess.run([sys.executable, str(sc / have / 'scripts' / 'fanout.py'), 'queue', '--lanes-dir', str(sc)],
+                           cwd=str(pm), env=stale_env, capture_output=True, text=True)
+        case('stale: fanout.py in an older cache folder refuses with exit 2', p.returncode == 2 and line in p.stderr)
+        p = subprocess.run(old_prep, cwd=str(pm), env=dict(stale_env, SDLC_ALLOW_STALE_PLUGIN='1'), capture_output=True, text=True)
+        case('stale: SDLC_ALLOW_STALE_PLUGIN=1 runs the older cache folder with the warning only',
+             p.returncode == 0 and p.stderr.count(line) == 1 and 'refusing' not in p.stderr)
         case('plugin_min compares numerically per part', plugin_min.below('0.9.0', '0.10.0') and not plugin_min.below('0.10.0', '0.9.0')
              and plugin_min.below('0.23.1', '0.24') and not plugin_min.below('1.0', '1.0.0'))
 

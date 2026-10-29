@@ -31,3 +31,11 @@ The script exits nonzero naming the installed version (unless an explicit flag a
 ## Constraints
 - Red check: a selftest that runs a script from an older version folder beside a newer one; it continues today and stops (or resolves to the newer one) after the fix.
 - outcome metric: logs printing the version-mismatch warning per overnight run, before: 58 (ultimate-tokens-color-science, 2026-10-29).
+
+## Acceptance criteria
+- (red) A fanout.py run from an older plugin cache folder beside a newer one exits 2 naming the newer version: `python3 -c "import json,os,shutil,subprocess,sys,tempfile; t=tempfile.mkdtemp(); shutil.copytree('plugins/sdlc-lite', t+'/0.40.0', ignore=shutil.ignore_patterns('bench')); os.makedirs(t+'/99.0.0/.claude-plugin'); open(t+'/99.0.0/.claude-plugin/plugin.json','w').write(json.dumps({'version':'99.0.0'})); e={k:v for k,v in os.environ.items() if not k.startswith('SDLC_')}; e.update(SDLC_PLUGIN_CACHE=t, CLAUDE_PLUGIN_ROOT=''); r=subprocess.run([sys.executable, t+'/0.40.0/scripts/fanout.py', 'queue', '--lanes-dir', t], env=e, capture_output=True, text=True); sys.exit(0 if r.returncode == 2 and '99.0.0' in r.stderr else 1)"` exits 0.
+- (red) The dispatch selftest has the refusal case (the guard below runs it): `grep -qF 'stale: dispatch.py in an older cache folder refuses' plugins/sdlc-lite/scripts/dispatch.py` exits 0.
+- (guard) `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0.
+- (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
+- (guard) `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
+- (guard) `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
