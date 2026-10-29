@@ -6,6 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0814 | [0814-ticket-root-default](0814-ticket-root-default/handoff.md) | New repos keep tickets in .sdlc/tickets/ | feature | L2 | P2 | none | 🔵 ready |
 
 Closed: 775 done, 30 dropped (git log or .NNNN-* folders)
 
