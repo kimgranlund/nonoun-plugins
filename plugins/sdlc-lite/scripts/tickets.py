@@ -2041,6 +2041,8 @@ def claim_preflight(root, numbered, ref):
 
 CLAIM_REFS = 'refs/sdlc/claims/'
 ID_REFS = 'refs/sdlc/ids/'
+NEW_REPO_LINE = 'ticket_root: tickets'  # T-0814: the config line a new repo's first write records
+NEW_REPO_NOTE = f'config: {NEW_REPO_LINE} (new repo)'
 
 
 def ref_git(root):
@@ -3260,8 +3262,32 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
     return text, meta
 
 
-def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=False):
-    td = layout_paths(root).tickets
+def new_repo(root):
+    """T-0814: True when <root> is the state root of a repo that has never kept a ticket: its config (a missing
+    file is no line) has no work_root:, ticket_root: or layout: line, <root>/tickets does not exist, no ticket
+    folder sits in <root> (a closed .NNNN-<slug> one counts), and inside git no refs/sdlc/ids/ ref exists."""
+    cfg = roots.parse(roots.read_config(root))
+    if cfg.work_root or cfg.ticket_root or cfg.layout or (root / 'tickets').exists() or load(root):
+        return False
+    git = ref_git(root)
+    return git is None or not git('for-each-ref', '--count=1', '--format=%(refname)', ID_REFS).stdout.strip()
+
+
+def new_repo_config(root):
+    """T-0814: the text <root>/config gets in a new repo (new_repo): its old text, a missing trailing newline
+    added, then NEW_REPO_LINE. None when <root> is not new, so an existing repo is never changed."""
+    if not new_repo(root):
+        return None
+    path = root / 'config'
+    old = path.read_text(encoding='utf-8') if path.is_file() else ''
+    if old and not old.endswith('\n'):
+        old += '\n'
+    return old + NEW_REPO_LINE + '\n'
+
+
+def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=False, auto_root=True, notes=None):
+    """Stamp a ticket. auto_root (T-0814): in a new repo (new_repo) first append NEW_REPO_LINE to <root>/config,
+    so the ticket lands in <root>/tickets, and add NEW_REPO_NOTE to the notes list."""
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
@@ -3270,6 +3296,14 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
         raise Fail(f'slug {slug!r} already starts with NNNN-: numbered mode adds the prefix itself, so this '
                    f'would double it; pass the bare slug {slug[5:]!r}; nothing written')
     template(root, kind)
+    if auto_root:
+        text = new_repo_config(root)
+        if text is not None:
+            root.mkdir(parents=True, exist_ok=True)
+            (root / 'config').write_text(text, encoding='utf-8')
+            if notes is not None:
+                notes.append(NEW_REPO_NOTE)
+    td = layout_paths(root).tickets
     if not numbered and (td / slug).exists():
         raise Fail(f'{slug}: {td / slug} already exists; nothing written')
     ts = load(td)
@@ -4629,7 +4663,9 @@ def run(root, cmd, args=(), **kw):
     kw goes to new, close, roadmap, check and archive (numbered=). Every command but new goes through root_guard."""
     try:
         if cmd == 'new':
-            return 0, cmd_new(root, *args, **kw), ''
+            notes = []
+            path = cmd_new(root, *args, notes=notes, **kw)
+            return 0, path, '\n'.join(notes)
         root_guard(root)
         if cmd == 'close':
             return 0, cmd_close(root, *args, **kw), ''
@@ -4702,6 +4738,8 @@ def selftest():
         if cmd == 'close' and kw.get('reason') is None:
             kw.setdefault('filer', True)
         keep = kw.pop('keep_template', False)
+        if cmd == 'new':
+            kw.setdefault('auto_root', False)  # these cases predate T-0814; its own cases call cli_run
         rc, out, err = cli_run(root, cmd, args, **kw)
         if cmd == 'new' and rc == 0 and not keep:  # a lane fills the handoff in before close (T-0529 gate)
             h = pathlib.Path(out)
@@ -9089,6 +9127,70 @@ def selftest():
                and lanes.patch_landed(str(repo), 'refs/heads/main', 'refs/heads/T-0001-old') == {
                    g('rev-parse', 'T-0001-old').stdout.strip()})
         print('tickets selftest: inventory cases run')
+
+    # ---- T-0814: a new repo's first new records ticket_root: tickets; an existing repo is never changed ----
+    def cfg_text(root):
+        return (root / 'config').read_text(encoding='utf-8') if (root / 'config').is_file() else None
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = pathlib.Path(tmp)
+        fresh = tmp / 'fresh' / '.sdlc'
+        rc, out, err = cli_run(fresh, 'new', ('feature', 'alpha'))
+        expect(f'new repo: first new writes ticket_root: tickets and files under tickets/: rc={rc} {out!r} {err!r}',
+               rc == 0 and cfg_text(fresh) == 'ticket_root: tickets\n'
+               and (fresh / 'tickets' / 'alpha' / 'handoff.md').is_file() and not (fresh / 'alpha').exists()
+               and err == 'config: ticket_root: tickets (new repo)' and out.endswith('tickets/alpha/handoff.md'))
+        rc, out, err = cli_run(fresh, 'new', ('feature', 'beta'))
+        expect(f'new repo: the second new prints no config line: rc={rc} {err!r}',
+               rc == 0 and err == '' and (fresh / 'tickets' / 'beta' / 'handoff.md').is_file()
+               and cfg_text(fresh) == 'ticket_root: tickets\n')
+        other = tmp / 'other' / '.sdlc'
+        other.mkdir(parents=True)
+        (other / 'config').write_text('claim_days: 9', encoding='utf-8')
+        rc, out, err = cli_run(other, 'new', ('feature', 'alpha'))
+        expect(f'new repo: an unrelated config line is kept and the line appended: rc={rc} {err!r}',
+               rc == 0 and cfg_text(other) == 'claim_days: 9\nticket_root: tickets\n'
+               and (other / 'tickets' / 'alpha').is_dir())
+        flat = tmp / 'flat' / '.sdlc'
+        flat.mkdir(parents=True)
+        (flat / 'config').write_text('layout: flat\n', encoding='utf-8')
+        cli_run(flat, 'new', ('feature', 'alpha'))
+        for cfg in ('', '# notes\n'):
+            (flat / 'config').write_text(cfg, encoding='utf-8')
+            rc, out, err = cli_run(flat, 'new', ('feature', f'beta{len(cfg)}'))
+            expect(f'flat repo {cfg!r}: new stays flat and config is unchanged: rc={rc} {out!r} {err!r}',
+                   rc == 0 and err == '' and (flat / f'beta{len(cfg)}' / 'handoff.md').is_file()
+                   and not (flat / 'tickets').exists() and cfg_text(flat) == cfg)
+        closed = tmp / 'closed' / '.sdlc'
+        closed.mkdir(parents=True)
+        (closed / 'config').write_text('layout: flat\n', encoding='utf-8')
+        cli_run(closed, 'new', ('feature', 'alpha'))
+        h = closed / 'alpha' / 'handoff.md'
+        h.write_text(re.sub(r'^status:.*$', 'status: done', h.read_text(encoding='utf-8'), count=1, flags=re.M),
+                     encoding='utf-8')
+        (closed / 'alpha').rename(closed / '.0001-alpha')
+        (closed / 'config').unlink()
+        rc, out, err = cli_run(closed, 'new', ('feature', 'beta'))
+        expect(f'flat repo with only a closed ticket: new stays flat, no config written: rc={rc} {err!r}',
+               rc == 0 and (closed / 'beta').is_dir() and not (closed / 'config').exists())
+        work = tmp / 'work' / '.sdlc'
+        work.mkdir(parents=True)
+        (work / 'config').write_text('work_root: docs/work\n', encoding='utf-8')
+        rc, out, err = cli_run(work, 'new', ('feature', 'alpha'))
+        expect(f'work_root repo: new is unchanged: rc={rc} {out!r} {err!r}',
+               rc == 0 and err == '' and (tmp / 'work' / 'docs' / 'work' / 'alpha' / 'handoff.md').is_file()
+               and cfg_text(work) == 'work_root: docs/work\n')
+        if shutil.which('git') is not None:
+            genv = {k: v for k, v in os.environ.items() if k not in ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')}
+            refs = tmp / 'refs'
+            subprocess.run(['git', 'init', '-q', str(refs)], env=genv, check=True)
+            subprocess.run(['git', '-C', str(refs), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q',
+                            '--allow-empty', '--no-verify', '-m', 'x'], env=genv, check=True)
+            subprocess.run(['git', '-C', str(refs), 'update-ref', ID_REFS + 'T-0001', 'HEAD'], env=genv, check=True)
+            rc, out, err = cli_run(refs / '.sdlc', 'new', ('feature', 'alpha'))
+            expect(f'repo with id refs: new stays flat, no config written: rc={rc} {out!r} {err!r}',
+                   rc == 0 and err == '' and (refs / '.sdlc' / 'alpha').is_dir()
+                   and not (refs / '.sdlc' / 'config').exists())
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
