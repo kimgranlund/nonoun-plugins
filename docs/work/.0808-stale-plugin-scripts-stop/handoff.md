@@ -2,7 +2,7 @@
 id: T-0808
 title: "A conductor's pinned old plugin scripts keep running after an upgrade"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,16 @@ The script exits nonzero naming the installed version (unless an explicit flag a
 - (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
 - (guard) `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-29 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: c3046bc9cd9b
+- Changed: see commits
+- Commits: 9dd0d56 T-0808: record lane T-0808-t-0808-t0808
+- Check: 1 (red) fanout.py from an older cache folder beside a newer one exits 2 naming the newer version: pass
+- Check: 2 (red) the dispatch selftest has the refusal case: pass
+- Check: 3 (guard) `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`: pass
+- Check: 4 (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`: pass
+- Check: 5 (guard) `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`: pass
+- Check: 6 (guard) `python3 plugins/sdlc-lite/scripts/check.py`: pass
+- Follow-up: note: plugins/sdlc-lite/scripts/plugin_min.py:136 in_cache limits the... -> notes.md

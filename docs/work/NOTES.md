@@ -772,3 +772,7 @@
 
 - note: redck.py deviations printed no `process deviation:` lines; no `(red)` criterion exists in the handoff.
 - note: the scratch repro covers the claim path only. The release and branch warning appends, and the `write_claim` filter that `lanes.py open` uses, are reached through the lanes selftest and the existing tickets selftest cases, which pass.
+
+## T-0808: A conductor's pinned old plugin scripts keep running after an upgrade (2026-10-29)
+
+- note: plugins/sdlc-lite/scripts/plugin_min.py:136 `in_cache` limits the refusal to scripts under the plugin cache, so a source checkout and the repo's own `plugins/sdlc-lite` path only warn; the handoff's Expected clause "unless an explicit flag allows it" is met by SDLC_ALLOW_STALE_PLUGIN=1, which the dispatch selftest covers.
