@@ -24,6 +24,7 @@ The rebase completes, or a single `tickets.py` command resolves the generated fi
 `/tmp/claude-501/qm-rebase-2371.log`: "CONFLICT (content): Merge conflict in .sdlc/AGENTS.md", ".sdlc/notes/notes.md", ".sdlc/tickets/roadmap.md". The agent-ui conductor resolved it by hand, about 20 min [U]; ui-kit reports the same class on its own generated files.
 
 ## Context
+- Correction (agent-ui conductor, 2026-10-29): its queue script already resolves `.sdlc` notes and records; the 2371 drop was a real conflict in `.claude/docs/rubrics/a2ui-payload.md`. The agent-ui log is therefore not evidence of a plugin-caused drop. Remaining evidence: this repo resolves `.sdlc/AGENTS.md` and the roadmap by hand with `tickets.py roadmap` at lane merges, and a repo with no resolver hits the same conflicts. First reproduce with a two-lane selftest; close as not reproduced if lanes.py land already resolves these files.
 - Fleet retro row 3: `docs/reports/2026-10-29-fleet-retro.md`; interview `.sdlc/runtime/tasks/fleet-retro-2026-10-29/agent-ui-interview.md`.
 - This repo resolves the same conflicts by hand with `tickets.py roadmap` at every merge.
 - Filed by the user's choice although the row failed rubric gate G3 (unsourced cost).
