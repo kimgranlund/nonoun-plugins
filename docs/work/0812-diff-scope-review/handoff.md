@@ -26,3 +26,20 @@ Decide, from measurement, whether the T-0799 `Scope: diff` verifier stays the de
 - Measure first on this repo's own `runs.jsonl` (diff vs full verifier cost and wall on comparable L2 tickets) and state the numbers in the Outcome.
 - Smallest change that the numbers support; keep the `escalate: full` route.
 - outcome metric: mean verifier cost and median wall, diff vs full, before: $0.498 / 9.5 min vs $0.479 / 8.2 min.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0, including the T-0812 cases (no `verifier_scope: diff` line: no Scope: diff; a commented line does not opt in) and the T-0799 cases under the opt-in line.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exits 0.
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0.
+- `git diff --check` exits 0.
+
+## Outcome
+Decision: turn diff scope off by default; a repo opts in with an uncommented `verifier_scope: diff` line in `.sdlc/config` (`dispatch.verifier_scope_diff`). The `escalate: full` route (`ESCALATE_RE`, the escalate branch of `diff_scoped`) is unchanged and still applies under the opt-in.
+Measured (verifier cost_usd and duration_ms from runs.jsonl):
+- This repo, L2-level verifiers on L1/L2 tickets 0795 to 0809: diff n=2 (T-0805, T-0808, both sonnet) mean $0.847, median 21.1 min; full n=9 mean $0.716, median 11.4 min; sonnet-only full (0796, 0799, 0800, 0804) mean $0.802, median 19.9 min. n=2 cannot discriminate.
+- MacBook overnight (ultimate-tokens attempts.jsonl, L2): diff n=16 mean $0.498, median 9.7 min (9.5 with the escalated 0286 row, which has no cost); full n=22 mean $0.479, median 8.2 min.
+- Speed experiment (T-0801): diff $1.4041 vs full $1.4098 for five L1 tickets.
+Step 3 (the revert) is real work, not dead text: both diff verifiers here reverted in a throwaway worktree (0805 by hand at base, 0808 at c3046bc9). Dropping it alone leaves a brief that measured no saving on any sample, so it was not the lever.
+Catch rate is one sample each way: the diff verifier failed the T-0801 planted control (T-0803 has since made the full verifier fail a Goal-contradicting fix-now), and a diff verifier passed T-0248, which broke an untouched test the land gate caught. No measurable saving and no settled quality edge: the feature does not earn default status.
+Red first: with the selftest change and no code change, `dispatch.py selftest` failed on exactly the two T-0812 cases.

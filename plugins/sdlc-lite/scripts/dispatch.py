@@ -136,7 +136,7 @@ moved since the pin (stale). A verifier whose records dir holds end-sha (written
 tree's HEAD when clean, else a tree hash built with a temporary index, T-0661) also gets `Diff range: <base>..<end>`
 (`git diff <base> <tree>` for a tree hash; base..Review sha when it has one), stored as diff_range. A verifier at L1 or L2 for a solo
 ticket of size L1 or L2 whose every acceptance criterion holds a command span gets the SCOPE_DIFF line (`Scope: diff`, T-0799;
-diff_scoped), unless its newest verifier result starts For the next attempt with `escalate: full`. Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
+diff_scoped) only under an uncommented `verifier_scope: diff` line in .sdlc/config (off by default, T-0812), unless its newest verifier result starts For the next attempt with `escalate: full`. Every brief carries a Report file line (a verifier's since T-0330, every role's since T-0646):
 the result path the role writes with the Write tool before it ends; record fails the run with a message naming that path when it is missing,
 also when stdin is only the pointer. The line also says the file carries no header (record adds it, T-0538) and names
 `results.py validate <file> --role <role> --headerless`. The pointer line asks for a final message of one line, `<role> <status> <path>`.
@@ -732,11 +732,24 @@ SCOPE_DIFF = ('Scope: diff (T-0799: a solo ticket at L1 or L2 whose criteria are
 ESCALATE_RE = re.compile(r'^## For the next attempt\s*\n\s*escalate: full', re.M)
 
 
+def verifier_scope_diff(path):
+    """T-0812: True when the nearest .sdlc/config above path has an uncommented `verifier_scope: diff` line. The diff brief
+    saved no verifier cost or wall against the full brief (T-0801, T-0812), so a repo without the line gets the full brief."""
+    for parent in Path(os.path.abspath(path)).parents:
+        cfg = parent / '.sdlc' / 'config'
+        if cfg.is_file():
+            try:
+                return any(re.fullmatch(r'verifier_scope:\s*diff\s*(#.*)?', ln.strip()) for ln in cfg.read_text(encoding='utf-8').splitlines())
+            except (OSError, ValueError):
+                return False
+    return False
+
+
 def diff_scoped(directory, handoff, level):
     """T-0799: True when a verifier at level L1 or L2 checks a solo ticket handoff (ticket front matter, size L1 or L2, no
     builder result) whose every `## Acceptance criteria` list item holds a command span, unless the newest verifier result
-    escalated with `escalate: full`."""
-    if level not in ('L1', 'L2') or order.newest(str(directory), 'builder') or step_build(directory):
+    escalated with `escalate: full`. Off unless .sdlc/config opts in (verifier_scope_diff, T-0812)."""
+    if level not in ('L1', 'L2') or not verifier_scope_diff(handoff) or order.newest(str(directory), 'builder') or step_build(directory):
         return False
     last = order.newest(str(directory), 'verifier')
     if last and ESCALATE_RE.search(Path(last).read_text(encoding='utf-8', errors='replace')):
@@ -3605,8 +3618,19 @@ def selftest():
                                  ('sd3', 'L3', ['- `python3 a.py selftest` exits 0'])):
             put(rr / '.sdlc' / slug / 'handoff.md', '\n'.join(['---', 'id: T-0951', 'title: "x"', 'type: chore', 'status: claimed',
                                                                'size: ' + size, '---', '', '## Goal', 'x', '', '## Acceptance criteria'] + crit + ['']))
+        # T-0812: diff scope saved no cost or wall on any sample, so it is off unless .sdlc/config opts in with `verifier_scope: diff`
+        rc0, d0, _ = prep(rr, 'verifier', 'L2', '.sdlc/sd1/handoff.md', '--dry-run')
+        case('T-0812 with no verifier_scope line in .sdlc/config, an all-command L1 solo handoff gets no Scope: diff',
+             rc0 == 0 and 'Scope: diff' not in d0['prompt'])
+        cfg_sd = rr / '.sdlc' / 'config'
+        cfg_sd_old = cfg_sd.read_text(encoding='utf-8') if cfg_sd.is_file() else None
+        put(cfg_sd, (cfg_sd_old or '') + '# verifier_scope: diff\n')
+        rcc, dc, _ = prep(rr, 'verifier', 'L2', '.sdlc/sd1/handoff.md', '--dry-run')
+        case('T-0812 negative control: a commented verifier_scope line does not opt in',
+             rcc == 0 and 'Scope: diff' not in dc['prompt'])
+        put(cfg_sd, (cfg_sd_old or '') + 'verifier_scope: diff\n')
         scoped = [prep(rr, 'verifier', 'L2', '.sdlc/%s/handoff.md' % s, '--dry-run') for s in ('sd1', 'sd2', 'sd3')]
-        case('T-0799 prepare verifier on an L1 solo handoff whose criteria are all commands prints a brief with Scope: diff and escalate: full',
+        case('T-0799 prepare verifier on an L1 solo handoff whose criteria are all commands, under verifier_scope: diff, prints a brief with Scope: diff and escalate: full',
              scoped[0][0] == 0 and 'Scope: diff' in scoped[0][1]['prompt'] and 'escalate: full' in scoped[0][1]['prompt'])
         case('T-0799 negative control: an L1 handoff with one prose-only criterion, and an L3 handoff, get no Scope: diff',
              all(rc == 0 and 'Scope: diff' not in d['prompt'] for rc, d, _ in scoped[1:]))
@@ -3615,6 +3639,10 @@ def selftest():
         rce, de, _ = prep(rr, 'verifier', 'L2', '.sdlc/sd1/handoff.md', '--dry-run')
         case('T-0799 after a diff-scoped verifier wrote escalate: full, the next verifier brief has no Scope: diff',
              rce == 0 and 'Scope: diff' not in de['prompt'])
+        if cfg_sd_old is None:
+            cfg_sd.unlink()
+        else:
+            put(cfg_sd, cfg_sd_old)
         shutil.rmtree(R(rr / '.sdlc' / 'sd1'))
         (rr / 'rd.txt').unlink()
         lw = rr.parent / (rr.name + '-lane')
