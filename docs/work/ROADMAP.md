@@ -9,7 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0805 | [0805-claim-scoped-check](0805-claim-scoped-check/handoff.md) | tickets.py claim refuses over an unrelated ticket's depends: id held only in a lane worktree | bug | L2 | P2 | none | 🔵 ready |
 | T-0806 | [0806-lane-rebase-generated-sdlc](0806-lane-rebase-generated-sdlc/handoff.md) | Lane rebases conflict on generated .sdlc files (notes, roadmap, router) | bug | L2 | P2 | none | 🔵 ready |
 | T-0807 | [0807-gate-lock-starvation](0807-gate-lock-starvation/handoff.md) | gate_lock lets one repo's full-capacity jobs starve other repos' gates | bug | L2 | P2 | none | 🔵 ready |
-| T-0808 | [0808-stale-plugin-scripts-stop](0808-stale-plugin-scripts-stop/handoff.md) | A conductor's pinned old plugin scripts keep running after an upgrade | bug | L2 | P2 | none | 🟡 claimed |
+| T-0808 | [0808-stale-plugin-scripts-stop](0808-stale-plugin-scripts-stop/handoff.md) | A conductor's pinned old plugin scripts keep running after an upgrade | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0808-t-0808-t0808) |
 | T-0809 | [0809-collector-orphans-agree](0809-collector-orphans-agree/handoff.md) | fleet_collect counts orphaned attempts differently from dispatch.py status | bug | L1 | P2 | none | 🔵 ready |
 | T-0810 | [0810-advance-already-fixed](0810-advance-already-fixed/handoff.md) | dispatch.py advance prepares a verifier for an already-fixed solo | bug | L1 | P2 | none | 🔵 ready |
 | T-0811 | [0811-completed-over-budget](0811-completed-over-budget/handoff.md) | Completed attempts that overran their time budget are never reported | bug | L1 | P2 | none | 🔵 ready |
