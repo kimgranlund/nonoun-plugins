@@ -74,6 +74,14 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 - Name: `tickets/` keeps the vocabulary every skill, check, and script already uses and avoids confusion with GitHub issues.
 - Stage folders become optional. With two roots, option A (router plus generated stage lists) still gives progressive disclosure inside `tickets/`.
 
+## New repos default to `.sdlc/tickets/` (T-0814)
+
+The user chose on 2026-10-29 that new repos keep their ticket folders in `.sdlc/tickets/`, and that existing repos are left exactly as they are, with no migrate command.
+
+- A repo is new when its `.sdlc/config` (a missing file is no line) has no `ticket_root:`, `layout:` or `work_root:` line, `.sdlc/tickets/` does not exist, no ticket folder (open or closed `.NNNN-slug`) sits in `.sdlc/`, and no `refs/sdlc/ids/` ref exists.
+- In a new repo the first write that sets it up appends `ticket_root: tickets` to `.sdlc/config`, creating the file if needed: `tickets.py new` (it prints `config: ticket_root: tickets (new repo)` on stderr and files the ticket under `.sdlc/tickets/`) and `onboard.py setup --init` (`--dry-run` shows it in the diff). `tickets.new_repo` is the one predicate both use.
+- Any other repo is never changed: its config lines and ticket folders stay where they are.
+
 ## Work root: `docs/work/` (T-0618, T-0621)
 
 The user chose on 2026-10-19 to move the tracked work records out of `.sdlc/` into the docs tree. A repo opts in with one `work_root: <path>` line in `.sdlc/config`; `docs/work` is the recommended value. No line keeps every path above.

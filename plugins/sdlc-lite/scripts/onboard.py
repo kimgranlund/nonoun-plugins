@@ -17,7 +17,8 @@ stderr each file --init would create or append a block to. setup --init also cre
 entry files and docs/layout.md and appends a block to an unmanaged entry file, and declares
 `"agent": "sdlc-lite:conductor"` in .claude/settings.json (--local: .claude/settings.local.json) unless
 either settings file already names an agent; other keys and malformed JSON are left untouched, and under
-SDLC_BACKEND=codex it writes no settings and says so on stderr.
+SDLC_BACKEND=codex it writes no settings and says so on stderr. In a new repo (tickets.new_repo) setup --init
+also records `ticket_root: tickets` in .sdlc/config, and the blocks name .sdlc/tickets/ (T-0814).
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
 check writes nothing, prints `<label> <path>` per file, and exits 1 unless every entry file is

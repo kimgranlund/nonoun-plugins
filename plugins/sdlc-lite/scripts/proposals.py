@@ -983,9 +983,9 @@ def selftest(plugin):
         case('promote before accept is refused', c17)
 
         def c18(need):
-            h = p1 / '.sdlc' / folder(pats[0]) / 'handoff.md'
+            h = p1 / '.sdlc' / 'tickets' / folder(pats[0]) / 'handoff.md'  # a new repo files under tickets/ (T-0814)
             rc, out, err = ev(p1, ['promote', 'P-0001'])
-            need(rc == 0 and out == 'promoted P-0001 as T-0001 (.sdlc/%s/handoff.md)\n' % folder(pats[0]),
+            need(rc == 0 and out == 'promoted P-0001 as T-0001 (.sdlc/tickets/%s/handoff.md)\n' % folder(pats[0]),
                  'promote: rc=%d %r %r' % (rc, out, err))
             text = read(h) or ''
             lines = text.split('\n')

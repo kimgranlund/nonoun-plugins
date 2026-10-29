@@ -8134,7 +8134,7 @@ def selftest():
                 k: v for k, v in os.environ.items() if k != 'SDLC_SELFTEST_NO_SKIPPED'}
             made = subprocess.run([*tk, 'new', 'feature', 'solo-a', 'Solo A'], cwd=str(r), env=env_,
                                   capture_output=True, text=True)
-            d = r / '.sdlc' / 'solo-a'
+            d = r / '.sdlc' / 'tickets' / 'solo-a'  # a new repo's first new files under tickets/ (T-0814)
             hp = d / 'handoff.md'
             hp.write_text(re.sub(r'(?m)^size:.*$', 'size: L2', hp.read_text(encoding='utf-8')), encoding='utf-8')
             lane_run_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(d)],

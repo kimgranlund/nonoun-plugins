@@ -283,7 +283,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             (guard) on one; a handoff line `profile: default` opts a ticket out. tickets.py itself never acts on them.
             A `ticket_root: tickets` line (same comment rules) puts the ticket dirs in <root>/tickets for new, close,
             roadmap, check, archive and number; `tickets` is the only supported value, and any other value refuses
-            every command, writing nothing. Without the line the ticket dirs are <root>/<slug> as before. With it,
+            every command, writing nothing. Without the line the ticket dirs are <root>/<slug> as before. In a new
+            repo (new_repo: no ticket folder, no ticket_root, layout or work_root line, no refs/sdlc/ids/ ref) new
+            first appends the line and prints `config: ticket_root: tickets (new repo)` on stderr (T-0814). With it,
             a ticket folder (handoff.md with front matter, under load's folder rule) left directly under <root> is
             a stray, `outside the ticket root`: check fails it and new, close, roadmap, archive and number refuse,
             writing nothing, until it moves to tickets/<slug>. A plain task (no front matter) is never a stray. The

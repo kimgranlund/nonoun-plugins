@@ -14,7 +14,7 @@ Arguments: `$ARGUMENTS`
 | Argument | Meaning | Default | Example |
 |---|---|---|---|
 | `setup` | Refresh only: show the diff of every managed block the repository already holds, then write it on approval | the default | `setup` |
-| `--init` | With `setup`: also create missing entry files and `docs/layout.md`, append a block to an unmanaged entry file, and declare `"agent": "sdlc-lite:conductor"` in `.claude/settings.json`. Only when the user asks to onboard the repository | off | `setup --init` |
+| `--init` | With `setup`: also create missing entry files and `docs/layout.md`, append a block to an unmanaged entry file, record `ticket_root: tickets` in `.sdlc/config` of a new repo (no ticket folder, config line or id ref yet), and declare `"agent": "sdlc-lite:conductor"` in `.claude/settings.json`. Only when the user asks to onboard the repository | off | `setup --init` |
 | `--local` | With `setup --init`: declare the conductor agent in `.claude/settings.local.json` (personal, not committed) instead of `.claude/settings.json` (shared, committed) | off | `setup --init --local` |
 | `--force` | With `setup`: also replace a managed block edited by hand | off | `setup --force` |
 | `check` | Report the state of each managed file and write nothing. When an AGENTS.md names a `.agents/skills/<name>/SKILL.md` path yet no skill route resolves, it also prints `warning: AGENTS.md names <skill path> but no skill route resolves; see steps.py routes` on stderr; the exit code does not change | - | `check` |
