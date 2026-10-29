@@ -780,3 +780,8 @@
 ## T-0811: Completed attempts that overran their time budget are never reported (2026-10-29)
 
 - note: redck.py deviations printed no process deviation lines.
+
+## T-0812: Decide diff-scope verifier: drop the revert step or turn it off by default (2026-10-29)
+
+- note: `redck.py deviations` printed no `process deviation:` line, and the handoff has no `(red)` criterion.
+- note: `plugins/sdlc-lite/scripts/dispatch.py` `verifier_scope_diff` resolves `.sdlc/config` from the handoff path upward via `os.path.abspath`, so a relative handoff path depends on the caller's cwd; the selftest and a repo-root `prepare` call are fine.
