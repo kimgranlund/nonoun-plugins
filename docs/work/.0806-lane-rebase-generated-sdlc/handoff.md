@@ -2,14 +2,12 @@
 id: T-0806
 title: "Lane rebases conflict on generated .sdlc files (notes, roadmap, router)"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-29
 claimed_by: sdlc-lite-author 2026-10-29
-branch: lane/T-0806-t0806
-worktree: ../sdlc-lite.worktrees/T-0806-t0806
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +33,9 @@ The rebase completes, or a single `tickets.py` command resolves the generated fi
 ## Constraints
 - Red check: a selftest that makes two lanes close tickets and rebases one onto the other; it ends in conflict before the fix and clean after.
 - outcome metric: hand-resolved `.sdlc` conflicts per lane landing, before: 1 dropped queue PR in agent-ui (2026-10-29).
+
+## Outcome
+
+2026-10-29 · lane: solo L2 · verdict: closed by reason (already fixed: the plugin's land path merges through fanout.merge_generated (T-0565, T-0626), which unions notes and regenerates roadmap and router; the conflict reproduces only through a raw git rebase (solo evidence in records)) · verifier: none · base: 6b799177cae9
+- Changed: see commits
+- Commits: 01483af T-0806: record lane T-0806-t0806
