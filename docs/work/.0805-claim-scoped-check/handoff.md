@@ -2,7 +2,7 @@
 id: T-0805
 title: "tickets.py claim refuses over an unrelated ticket's depends: id held only in a lane worktree"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ The claim succeeds; at most a warning names the unrelated ticket's unresolved de
 - `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, including the `(T-0805)` case (claim over an unrelated ticket whose `depends:` id lives only in a lane worktree succeeds with a `warning:` line naming that ticket) and its control (the same miss in the claimed ticket still refuses, nothing written).
 - `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 (lane open writes `branch:` through the same claim write).
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-29 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 6207f48aa9c1
+- Changed: see commits
+- Commits: 5225fb2 T-0805: tickets.py claim refuses only on the claimed ticket's problems; d131217 T-0805: record lane T-0805-t-0805-t0805
+- Check: 1 `tickets.py selftest` exits 0 including the `(T-0805)` case and its control: pass
+- Check: 2 `lanes.py selftest` exits 0: pass
+- Check: 3 `check.py` exits 0: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines; no red... -> notes.md
+- Follow-up: note: the scratch repro covers the claim path only -> notes.md

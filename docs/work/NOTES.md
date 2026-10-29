@@ -767,3 +767,8 @@
 ## T-0804: lanes.py open --claim leaves the claim uncommitted in a repo that lands locally while main tracks an upstream (2026-10-28)
 
 - decide: plugins/sdlc-lite/scripts/lanes.py:4069 note: the local half of `case_open_claim_upstream` does not assert the `record lane` commit or the `branch:` line in main, so the record-commit half of the change is only covered indirectly (clean main plus lane copy claimed). A one-line assertion would pin it; decide whether to add.
+
+## T-0805: tickets.py claim refuses over an unrelated ticket's depends: id held only in a lane worktree (2026-10-29)
+
+- note: redck.py deviations printed no `process deviation:` lines; no `(red)` criterion exists in the handoff.
+- note: the scratch repro covers the claim path only. The release and branch warning appends, and the `write_claim` filter that `lanes.py open` uses, are reached through the lanes selftest and the existing tickets selftest cases, which pass.
