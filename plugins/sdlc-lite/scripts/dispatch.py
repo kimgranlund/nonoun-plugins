@@ -11,7 +11,8 @@
                                           then steps.py next on its step dir: prepare the next builder or verifier and print its
                                           dispatch JSON, or print `stop: <action> <reason>` (T-0645); a ticket-level completion (T-0688):
                                           an L2 or L3 solo prepares the ticket verifier and prints its JSON, a solo whose report says blocked
-                                          prints `stop: blocked <report>: <line>` and prepares nothing (T-0760), an L1 solo or a verifier pass
+                                          prints `stop: blocked <report>: <line>` and prepares nothing (T-0760), one that says `already fixed: ...` prints the close line with
+                                          `--reason` and prepares nothing (T-0810), an L1 solo or a verifier pass
                                           prints `next: close <task dir> (...)`, a verifier fail `stop: fail <result>; ...`, a ui-designer
                                           review `next: <verdict> <result>` or `stop: changes-required <result>; ... record --update ...`; any other role `next: <hint>`
                                           (T-0732) a pre_verify_role in .sdlc/config whose pre_verify_paths the build touches: steps.py next
@@ -2539,12 +2540,24 @@ def solo_blocked(d):
     return first if re.match(r'(?:solo\s+)?blocked\b', first, re.I) else ''
 
 
+def solo_already_fixed(d):
+    """T-0810: the first line of a recorded solo's report when it reports `already fixed: <evidence>` (optionally behind the
+    `solo` of its pointer line), else ''. The solo changed nothing, so there is nothing for a verifier to check."""
+    try:
+        text = Path(d['result']).read_text(encoding='utf-8', errors='replace') if d.get('result') else ''
+    except OSError:
+        return ''
+    first = next((ln.strip() for ln in text.splitlines() if ln.strip()), '')
+    return first if re.match(r'(?:solo\s+)?already[ -]fixed\b', first, re.I) else ''
+
+
 def advance_solo(d, agent_id=None, dispatch_file=None, reviewed=False):
     """A recorded solo (T-0688): an L2 or L3 solo carries a `verifier` command, so prepare the ticket verifier at the
     steps.ticket_verifier level against the solo's tree and print its dispatch JSON; an L1 solo prints the close line, unless its report holds a `not run (host sandbox)` criterion: then it prepares an L1
     verifier to run it (T-0779). A prep solo's tree is its host worktree (solo_lane_tree): the brief's Tree and Handoff name it, while the level
     comes from the main checkout's handoff, which the solo under verification cannot edit (T-0747). A solo whose report
-    says blocked prepares no verifier and prints `stop: blocked <report>` (T-0760). With a pre_verify_role in .sdlc/config
+    says blocked prepares no verifier and prints `stop: blocked <report>` (T-0760); one whose report says `already fixed: <evidence>`
+    prepares none and prints the close line with that evidence as the --reason (T-0810). With a pre_verify_role in .sdlc/config
     and a solo diff (from its base_sha) touching pre_verify_paths, it prepares that review first (pre_verify_review) and the
     verifier only once the review passes (advance_ticket calls back with reviewed=True; T-0732). After a verifier fail the
     review runs again only when the pre_verify_paths content differs from what the last passing review saw (T-0788)."""
@@ -2553,6 +2566,10 @@ def advance_solo(d, agent_id=None, dispatch_file=None, reviewed=False):
         print('stop: blocked %s: %s; answer or fix what it names, then rerun the solo' % (d['result'], blocked))
         return 0
     handoff = Path(d['handoff'])
+    fixed = solo_already_fixed(d)
+    if fixed:  # T-0810: nothing was changed, so no verifier; the conductor closes the ticket with the solo's evidence as the reason
+        print('%s --reason %s)' % (close_line(handoff.parent)[:-1], json.dumps(re.sub(r'^(?:solo\s+)?', '', fixed, flags=re.I))))
+        return 0
     unrun = not d.get('verifier') and results.host_unrun(d.get('result'))  # T-0779: a criterion the host sandbox blocked
     if not d.get('verifier') and not unrun:
         print(close_line(handoff.parent))
@@ -5026,6 +5043,17 @@ def selftest():
             rc, out, nxt, before, after = adv_ticket('solo-blocked-' + lvl, str(order.records_dir(bdir) / ('%s.dispatch.json' % bdisp['name'])), bdir.parent.parent)
             case('T-0760 advance on a %s solo dispatch whose report says blocked prints stop: blocked and prepares no verifier' % lvl,
                  rc == 0 and '\nstop: blocked ' in '\n' + out and 'plan defect' in out and nxt is None and after == before and 'next: close' not in out)
+        # T-0810: a solo whose report says already fixed has nothing to verify: advance prints the close line with a reason.
+        for lvl in ('L2', 'L1'):
+            adir = mk(tmp / ('adv-solo-fixed-' + lvl)) / '.sdlc' / 'n'
+            adir.mkdir(parents=True)
+            (adir / 'handoff.md').write_text('x\n', encoding='utf-8')
+            with clean_env(), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                adisp = solo_run.dispatch_json(str(adir), lvl, 'brief')[1]
+            Path(adisp['result']).write_text('already fixed: gate_lock round robin landed in T-0409\n', encoding='utf-8')
+            rc, out, nxt, before, after = adv_ticket('solo-fixed-' + lvl, str(order.records_dir(adir) / ('%s.dispatch.json' % adisp['name'])), adir.parent.parent)
+            case('T-0810 advance on a %s solo dispatch whose report says already fixed prints the close line with a reason and prepares no verifier' % lvl,
+                 rc == 0 and nxt is None and after == before and 'next: close' in out and '--reason' in out and 'already fixed: gate_lock' in out)
         # T-0779: an L1 solo whose report holds a `not run (host sandbox)` criterion gets an L1 verifier to run it; without the
         # marker it still prints the close line
         for tag, body, want in (('unrun', '- `python3 a.py check` not run (host sandbox)\nverify: needed\n', True),
