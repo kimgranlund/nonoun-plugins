@@ -7,10 +7,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0810 | [0810-advance-already-fixed](0810-advance-already-fixed/handoff.md) | dispatch.py advance prepares a verifier for an already-fixed solo | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0810-t0810) |
-| T-0811 | [0811-completed-over-budget](0811-completed-over-budget/handoff.md) | Completed attempts that overran their time budget are never reported | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0811-t0811) |
 | T-0812 | [0812-diff-scope-review](0812-diff-scope-review/handoff.md) | Decide diff-scope verifier: drop the revert step or turn it off by default | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0812-t0812) |
 
-Closed: 771 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 772 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

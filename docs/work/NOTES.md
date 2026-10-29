@@ -776,3 +776,7 @@
 ## T-0808: A conductor's pinned old plugin scripts keep running after an upgrade (2026-10-29)
 
 - note: plugins/sdlc-lite/scripts/plugin_min.py:136 `in_cache` limits the refusal to scripts under the plugin cache, so a source checkout and the repo's own `plugins/sdlc-lite` path only warn; the handoff's Expected clause "unless an explicit flag allows it" is met by SDLC_ALLOW_STALE_PLUGIN=1, which the dispatch selftest covers.
+
+## T-0811: Completed attempts that overran their time budget are never reported (2026-10-29)
+
+- note: redck.py deviations printed no process deviation lines.

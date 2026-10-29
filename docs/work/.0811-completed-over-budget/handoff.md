@@ -2,7 +2,7 @@
 id: T-0811
 title: "Completed attempts that overran their time budget are never reported"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,12 @@ T-0270 verifier ran 42.3 min against 25 and T-0275 step-2 builder ran 50.1 again
 ## Constraints
 - Red check: selftest cases with a completed over-budget attempt; nothing is reported before and one line after.
 - outcome metric: completed over-budget attempts reported, before: 0 of 2.
+
+## Outcome
+
+2026-10-29 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: d729ba59af07
+- Changed: see commits
+- Commits: d1cc81b T-0811: report completed attempts that overran their time budget; cb41ebe T-0811: record lane T-0811-t0811
+- Check: 1 Goal/Expected: `dispatch.py status` and `fleet_collect.py` name a completed attempt that overran ...: pass
+- Check: 2 Red check: selftest cases with a completed over-budget attempt, nothing before and one line after: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines. -> notes.md
