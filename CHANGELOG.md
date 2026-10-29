@@ -2,6 +2,22 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
+## [0.41.0] - 2026-10-29
+
+Report: [docs/reports/2026-10-29-release-0-41-0.md](docs/reports/2026-10-29-release-0-41-0.md). 8 tickets filed from the [2026-10-29 fleet retro](docs/reports/2026-10-29-fleet-retro.md) and the [MacBook retro](docs/reports/2026-10-29-sdlc-retro-macbook-pro.md): 6 changes (T-0805, T-0808 to T-0812) and 2 closed as already fixed (T-0806, T-0807).
+
+### Changed
+
+- A script run from an older install folder in the plugin cache, while a newer version is installed, exits 2 after the version warning; `SDLC_ALLOW_STALE_PLUGIN=1` keeps the warning only, and a source checkout only warns. Covers `dispatch.py`, `fanout.py` and `solo_run.py` (T-0808).
+- `tickets.py claim` (and `lanes.py open --claim`) refuses only on the claimed ticket's own problems; other tickets' problems print as warnings (T-0805).
+- The diff-scoped verifier brief is off by default; `verifier_scope: diff` in `.sdlc/config` turns it on. Measured diff scope cost no less and took longer than full scope (T-0812).
+- `dispatch.py advance` on an `already fixed` solo prints the close line with a reason and prepares no verifier (T-0810).
+
+### Fixed
+
+- `fleet_collect.py` counts an orphaned attempt exactly as `dispatch.py status` does, including a running attempt on a done or dropped ticket (T-0809).
+- `dispatch.py status`, `recover` and `fleet_collect.py` report completed attempts that ran past their role's time budget, not only running ones (T-0811).
+
 ## [0.40.0] - 2026-10-28
 
 Report: [docs/reports/2026-10-28-release-0-40-0.md](docs/reports/2026-10-28-release-0-40-0.md). 6 tickets from the speed work: a diff-scoped verifier brief (T-0799), one-command lanes (T-0800, T-0802, T-0804), a stricter verifier verdict (T-0803), and the [speed experiment](docs/reports/2026-10-28-speed-experiment.md) (T-0801).
