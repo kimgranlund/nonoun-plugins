@@ -2003,26 +2003,40 @@ def record_branch(root, tid, branch, only=None, worktree=None):
     return slug
 
 
+def own_problems(errs, slug, tid):
+    """(own, others): the problem lines that name the ticket slug or its id tid as a whole token (its own defects,
+    a duplicate id it shares, a cycle through it), and the rest. T-0805: a claim refuses only on its own."""
+    keys = [k for k in (slug, tid) if isinstance(k, str) and k]
+    hit = re.compile('|'.join(rf'(?<![\w.-]){re.escape(k)}(?![\w-])' for k in keys)) if keys else None
+    own = [e for e in errs if hit and hit.search(e)]
+    return own, [e for e in errs if e not in own]
+
+
 def write_claim(root, td, ts, slug, text, numbered):
-    """Write text as slug's handoff.md and regenerate the roadmap, after checking the result is a valid ticket."""
+    """Write text as slug's handoff.md and regenerate the roadmap, after checking the result is a valid ticket.
+    Only problems naming slug refuse (T-0805); another ticket's problems are left to check."""
     meta = parse(text)
-    errs = problems([(s, meta if s == slug else m) for s, m in ts], numbered, areas=config_areas(root))
+    errs = own_problems(problems([(s, meta if s == slug else m) for s, m in ts], numbered,
+                                 areas=config_areas(root)), slug, meta.get('id'))[0]
     if errs:
         raise Fail('\n'.join(errs + ['nothing written']))
     (td / slug / 'handoff.md').write_text(text, encoding='utf-8')
     write_roadmap(root, load(td))
 
 
-def claim_preflight(root, numbered):
+def claim_preflight(root, numbered, ref):
+    """(td, ts, numbered, slug, m, warnings) for the ticket ref. T-0805: only a problem naming that ticket refuses;
+    another ticket's problem (an unresolved depends: id held only in a lane worktree) comes back as a warning line."""
     td = layout_paths(root).tickets
     numbered = numbered or config_numbered(root)
     ts = load(td)
-    errs = problems(ts, numbered, areas=config_areas(root)) + strays(root)
+    slug, m = find_ticket(ts, ref)
+    errs, others = own_problems(problems(ts, numbered, areas=config_areas(root)) + strays(root), slug, m.get('id'))
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first (each line names the ticket '
                                       'folder; edit its handoff.md, then run tickets.py check)']))
     router_preflight(root)
-    return td, ts, numbered
+    return td, ts, numbered, slug, m, ''.join(f'\nwarning: {e} (another ticket; run tickets.py check)' for e in others)
 
 
 CLAIM_REFS = 'refs/sdlc/claims/'
@@ -2155,8 +2169,7 @@ def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=
         raise Fail('--handover needs --reason TEXT; nothing written')
     if reason and not handover:
         raise Fail('--reason goes with --handover; nothing written')
-    td, ts, numbered = claim_preflight(root, numbered)
-    slug, m = find_ticket(ts, ref)
+    td, ts, numbered, slug, m, warns = claim_preflight(root, numbered, ref)
     if m.get('status') in ('done', 'dropped'):
         raise Fail(f'{slug}: status {m.get("status")}; a closed ticket cannot be claimed; nothing written')
     tid = m.get('id')
@@ -2193,7 +2206,7 @@ def cmd_claim(root, ref, by, handover=False, reason=None, numbered=False, today=
             else:
                 git('update-ref', '-d', cref)
         raise
-    return f'{slug}: claimed_by: {value}' + (f'; pinned {pinned}' if pinned else '')
+    return f'{slug}: claimed_by: {value}' + (f'; pinned {pinned}' if pinned else '') + warns
 
 
 def pin_branch(root, m):
@@ -2226,31 +2239,29 @@ def pin_branch(root, m):
 def cmd_release(root, ref, numbered=False):
     """Release ref: remove its claimed_by line and set status ready when it was claimed, then the roadmap; in git
     also delete refs/sdlc/claims/<id> (T-0588), which alone is enough when only the ref holds the claim."""
-    td, ts, numbered = claim_preflight(root, numbered)
-    slug, m = find_ticket(ts, ref)
+    td, ts, numbered, slug, m, warns = claim_preflight(root, numbered, ref)
     git = ref_git(root) if isinstance(m.get('id'), str) and ID_RE.fullmatch(m['id']) else None
     cref = CLAIM_REFS + m['id'] if git else None
     if m.get('status') != 'claimed' and 'claimed_by' not in m:
         if git and ref_read(git, cref)[0]:
             git('update-ref', '-d', cref)
-            return f'{slug}: released {cref}; front matter not claimed, left as is'
+            return f'{slug}: released {cref}; front matter not claimed, left as is' + warns
         raise Fail(f'{slug}: not claimed; nothing written')
     status = 'ready' if m.get('status') == 'claimed' else m.get('status')
     text = set_claim((td / slug / 'handoff.md').read_text(encoding='utf-8').replace('\r\n', '\n'), status, None)
     write_claim(root, td, ts, slug, text, numbered)
     if git:
         ref_drop(root, cref)
-    return f'{slug}: released, status {status}'
+    return f'{slug}: released, status {status}' + warns
 
 
 def cmd_branch(root, ref, branch=None, worktree=None):
     """T-0550: set (branch given) or clear the ticket's `branch:` and `worktree:` lines through record_branch."""
-    _, ts, _ = claim_preflight(root, False)
-    slug, m = find_ticket(ts, ref)
+    _, ts, _, slug, m, warns = claim_preflight(root, False, ref)
     got = record_branch(root, m.get('id'), branch, worktree=worktree)
     if got is None:
-        return f'{slug}: nothing to change'
-    return f'{slug}: ' + (f'branch: {branch}' + (f', worktree: {worktree}' if worktree else '') if branch else 'branch: and worktree: removed')
+        return f'{slug}: nothing to change' + warns
+    return f'{slug}: ' + (f'branch: {branch}' + (f', worktree: {worktree}' if worktree else '') if branch else 'branch: and worktree: removed') + warns
 
 
 # ---------- roadmap ----------
@@ -7142,6 +7153,30 @@ def selftest():
         expect(f'refs: claim --handover writes the missing ref and check is quiet again: rc={rc} {err!r} {out_k!r}',
                rc == 0 and gr('cat-file', '-p', 'refs/sdlc/claims/T-0001').stdout == f'claude {day}\n'
                and rc_k == 0 and 'refs/sdlc/claims' not in out_k)
+        # T-0805: an unrelated ticket's depends: id held only in a lane worktree warns, never blocks the claim;
+        # the same miss in the claimed ticket still refuses
+        ua, ub = pathlib.Path(tmp) / 'rt-unrel', pathlib.Path(tmp) / 'rt-unrel-b'
+        ua.mkdir()
+        gu = lambda *x: subprocess.run(['git', '-C', str(ua), '-c', 'user.name=t', '-c', 'user.email=t@t', *x],
+                                       capture_output=True, text=True, env=genv)
+        gu('init', '-q', '-b', 'main')
+        run(ua / '.sdlc', 'new', ('feature', 'a', 'A'))
+        run(ua / '.sdlc', 'new', ('feature', 'b', 'B'))
+        gu('add', '-A')
+        gu('commit', '-q', '-m', 'init')
+        gu('worktree', 'add', '-q', '-b', 'lane', str(ub))
+        run(ub / '.sdlc', 'new', ('feature', 'c', 'C'))
+        rc_c, _, err_c = run(ub / '.sdlc', 'close', ('c',), reason='done in the lane')
+        edit(ua / '.sdlc', 'b', r'^depends:.*$', 'depends: [T-0003]')
+        rc, out, err = run(ua / '.sdlc', 'claim', ('T-0001', 'claude'))
+        expect(f'(T-0805) claim succeeds over an unrelated depends: id held only in a lane worktree, warning naming '
+               f'it: rc_c={rc_c} {err_c!r} rc={rc} {out!r} {err!r}',
+               rc_c == 0 and rc == 0 and 'warning: b: depends on T-0003, which no ticket has' in out
+               and 'status: claimed' in (ua / '.sdlc' / 'a' / 'handoff.md').read_text(encoding='utf-8'))
+        rc, out, err = run(ua / '.sdlc', 'claim', ('T-0002', 'claude'))
+        expect(f'(T-0805) control: claim still refuses when the claimed ticket has the depends: miss: rc={rc} '
+               f'{err!r}', rc == 1 and 'b: depends on T-0003, which no ticket has' in err
+               and 'claimed_by' not in (ua / '.sdlc' / 'b' / 'handoff.md').read_text(encoding='utf-8'))
         # two concurrent new calls, one per worktree: each process reads every tree before either writes (a barrier
         # inside id_floor), so both pick the same next id and only the id ref can keep them apart
         bar = pathlib.Path(tmp) / 'rt-refs-bar'
