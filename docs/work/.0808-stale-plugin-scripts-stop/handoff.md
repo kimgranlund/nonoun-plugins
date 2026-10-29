@@ -8,8 +8,6 @@ priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-29
 claimed_by: sdlc-lite-author 2026-10-29
-branch: lane/T-0808-t-0808-t0808
-worktree: ../sdlc-lite.worktrees/T-0808-t-0808-t0808
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
