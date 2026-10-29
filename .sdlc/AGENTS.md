@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:cbb467fc9740 -->
+<!-- sdlc-lite:managed:start v1 sha256:5db0999ebb52 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -18,7 +18,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0811 Completed attempts that overran their time budget are never reported (docs/work/0811-completed-over-budget)
   - T-0812 Decide diff-scope verifier: drop the revert step or turn it off by default (docs/work/0812-diff-scope-review)
 - claimed: 2
-  - T-0806 Lane rebases conflict on generated .sdlc files (notes, roadmap, router) (docs/work/0806-lane-rebase-generated-sdlc), claimed by sdlc-lite-author 2026-10-29
+  - T-0806 Lane rebases conflict on generated .sdlc files (notes, roadmap, router) (docs/work/0806-lane-rebase-generated-sdlc), claimed by sdlc-lite-author 2026-10-29, branch lane/T-0806-t0806
   - T-0808 A conductor's pinned old plugin scripts keep running after an upgrade (docs/work/0808-stale-plugin-scripts-stop), claimed by sdlc-lite-author 2026-10-29, branch lane/T-0808-t-0808-t0808
 - paused: 0
 - blocked: 1
