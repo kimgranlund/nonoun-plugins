@@ -2,7 +2,7 @@
 id: T-0814
 title: "New repos keep tickets in .sdlc/tickets/"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,13 @@ A repository that starts using SDLC Lite keeps its ticket folders in `.sdlc/tick
 
 ## Constraints
 - Never move or rewrite an existing ticket folder or config line.
+
+## Outcome
+
+2026-10-29 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f4d45da0f0bd
+- Changed: see commits
+- Commits: 37a62e6 T-0814: New repos keep tickets in .sdlc/tickets/; 14244dd T-0814: record lane T-0814-t0814
+- Check: 1 tickets.py selftest exits 0 with new cases (new repo writes config and files under tickets/; flat...: pass
+- Check: 2 onboard.py selftest exits 0 with a case for `--init` in a new repo: pass
+- Check: 3 check.py exits 0: pass
+- Follow-up: note: the steps.py and proposals.py selftests and check.sh were not run... -> notes.md

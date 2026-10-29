@@ -789,3 +789,7 @@
 ## T-0813: onboard declares the conductor agent in .claude/settings.json (2026-10-29)
 
 - note: docs/specs/repo-onboarding/design.md does not mention the settings declaration (the builder already flagged it as a follow-up).
+
+## T-0814: New repos keep tickets in .sdlc/tickets/ (2026-10-29)
+
+- note: the steps.py and proposals.py selftests and check.sh were not run by this verifier; the builder reports steps.py and proposals.py selftests green. `git diff --check` against the base sha is clean.
