@@ -17,7 +17,8 @@ stderr each file --init would create or append a block to. setup --init also cre
 entry files and docs/layout.md and appends a block to an unmanaged entry file, and declares
 `"agent": "sdlc-lite:conductor"` in .claude/settings.json (--local: .claude/settings.local.json) unless
 either settings file already names an agent; other keys and malformed JSON are left untouched, and under
-SDLC_BACKEND=codex it writes no settings and says so on stderr.
+SDLC_BACKEND=codex it writes no settings and says so on stderr. In a new repo (tickets.new_repo) setup --init
+also records `ticket_root: tickets` in .sdlc/config, and the blocks name .sdlc/tickets/ (T-0814).
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
 check writes nothing, prints `<label> <path>` per file, and exits 1 unless every entry file is
@@ -747,8 +748,9 @@ def list_documents(root):
     return sorted(docs)
 
 
-def build_model(root, layout, documents):
-    """Topics, existing homes, and loose documents, per the design's Definitions."""
+def build_model(root, layout, documents, sdlc_config=None):
+    """Topics, existing homes, and loose documents, per the design's Definitions. sdlc_config is the text
+    .sdlc/config is about to get (T-0814); the .sdlc paths then come from it, not from disk."""
     homes = list(layout.homes)
     loose, topics = [], collections.OrderedDict()
     for path in documents:
@@ -775,22 +777,27 @@ def build_model(root, layout, documents):
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
     return Model(name, topic_list, home_list, sorted(loose),
-                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, *_sdlc_paths(root),
+                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, *_sdlc_paths(root, sdlc_config),
                  _lane_root(root))
 
 
-def _sdlc_paths(root):
-    """(roadmap, notes, archive, tickets) from .sdlc/config, relative to root in posix form; archive is
-    <work>/archive/, and archive and tickets end in a slash; tickets is None with no .sdlc/ folder. A bad config
-    is a SetupError."""
+def _sdlc_paths(root, config_text=None):
+    """(roadmap, notes, archive, tickets) from .sdlc/config, or from config_text when given (the config setup is
+    about to write), relative to root in posix form; archive is <work>/archive/, and archive and tickets end in a
+    slash; tickets is None with no .sdlc/ folder and no config_text. A bad config is a SetupError."""
     import pathlib
+    import roots
     import tickets  # function-local: tickets.py imports this module at its top level
     try:
-        paths = tickets.layout_paths(pathlib.Path(root, '.sdlc'))
+        if config_text is None:
+            paths = tickets.layout_paths(pathlib.Path(root, '.sdlc'))
+        else:
+            paths = roots.resolve(pathlib.Path(root, '.sdlc'), config_text)
     except tickets.Fail as e:
         raise SetupError(str(e))
     rel = lambda p: pathlib.Path(os.path.relpath(str(p), root)).as_posix()
-    tickets_root = rel(paths.tickets) + '/' if os.path.isdir(os.path.join(root, '.sdlc')) else None
+    tickets_root = (rel(paths.tickets) + '/' if config_text is not None or os.path.isdir(os.path.join(root, '.sdlc'))
+                    else None)
     return rel(paths.roadmap), rel(paths.notes), rel(paths.work / 'archive') + '/', tickets_root
 
 
@@ -999,8 +1006,26 @@ def settings_change(root, local=False, declare=_declare_agent):
     return Change(path, None, 'create' if text is None else 'replace', 'missing', text, declare(text), [])
 
 
-Impl = collections.namedtuple('Impl', 'render wrap rows find_block labels preflight refresh settings')
-REAL = Impl(render_templates, wrap_block, ROWS, find_block, LABELS, True, is_refresh, settings_change)
+SDLC_CONFIG_PATH = '.sdlc/config'
+
+
+def ticket_root_change(root):
+    """T-0814: .sdlc/config as a Change (row None). In a new repo (tickets.new_repo: no ticket folder, no
+    work_root:, ticket_root: or layout: line, no refs/sdlc/ids/ ref) it is planned with tickets.NEW_REPO_LINE
+    appended, label missing; otherwise it is left alone, label present."""
+    import pathlib
+    import tickets  # function-local: tickets.py imports this module at its top level
+    full = os.path.join(root, *SDLC_CONFIG_PATH.split('/'))
+    text = _read(full) if os.path.isfile(full) else None
+    new = tickets.new_repo_config(pathlib.Path(root, '.sdlc'))
+    if new is None:
+        return Change(SDLC_CONFIG_PATH, None, 'none', 'present', text, None, [])
+    return Change(SDLC_CONFIG_PATH, None, 'create' if text is None else 'replace', 'missing', text, new, [])
+
+
+Impl = collections.namedtuple('Impl', 'render wrap rows find_block labels preflight refresh settings ticket_root')
+REAL = Impl(render_templates, wrap_block, ROWS, find_block, LABELS, True, is_refresh, settings_change,
+            ticket_root_change)
 
 
 def _read(full):
@@ -1095,8 +1120,8 @@ def _entry_change(root, path, tmpl, impl, force):
     return Change(path, row, action, impl.labels[row], text, new, notes)
 
 
-def plan(root, impl=None, force=False):
-    """Every managed file's Change, computed before anything is written.
+def plan(root, impl=None, force=False, sdlc_config=None):
+    """Every managed file's Change, computed before anything is written. sdlc_config: see build_model.
 
     Raises LayoutError on a bad docs/layout.md and SetupError on a path that cannot be written.
     """
@@ -1109,7 +1134,7 @@ def plan(root, impl=None, force=False):
             raise LayoutError(layout_full, e.object[:e.start].count(b'\n') + 1, 'not valid UTF-8')
     else:
         layout = _parse_layout_text(LAYOUT_TEMPLATE, LAYOUT_PATH)
-    model = build_model(root, layout, list_documents(root))
+    model = build_model(root, layout, list_documents(root), sdlc_config)
     targets = [(p, t) for p, t in impl.render(model).items() if not _frozen(layout.frozen, p)]
     with_layout = not _frozen(layout.frozen, LAYOUT_PATH)
     if impl.preflight:
@@ -1134,9 +1159,9 @@ def _diff(path, old, new):
     return ''.join(ln if ln.endswith('\n') else ln + '\n\\ No newline at end of file\n' for ln in lines)
 
 
-def _plan_or_report(root, impl, force, err):
+def _plan_or_report(root, impl, force, err, sdlc_config=None):
     try:
-        return plan(root, impl, force)
+        return plan(root, impl, force, sdlc_config)
     except LayoutError as e:
         err.write('%s:%d: %s\n' % (LAYOUT_PATH, e.line, e.reason))
     except (SetupError, OSError) as e:
@@ -1151,9 +1176,16 @@ def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=Fal
     append to is listed on stderr as `--init would <create|append a block to> <path>`, and a missing
     session-agent declaration as `--init would set agent in <path>`. With init the conductor is declared
     in .claude/settings.json (local: .claude/settings.local.json) unless a settings file names an agent.
+    In a new repo init also records `ticket_root: tickets` in .sdlc/config (T-0814) and the blocks name
+    .sdlc/tickets/; without init stderr lists it as `--init would set ticket_root: tickets in .sdlc/config`.
     """
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
-    changes = _plan_or_report(root, impl, force, err)
+    try:
+        config = impl.ticket_root(root)
+    except OSError as e:
+        err.write('onboard.py: %s\n' % e)
+        return 1
+    changes = _plan_or_report(root, impl, force, err, config.new if init and _changed(config) else None)
     if changes is None:
         return 1
     for c in changes:
@@ -1166,6 +1198,11 @@ def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=Fal
             if not impl.refresh(c):
                 err.write('--init would %s %s\n' % ('create' if c.old is None else 'append a block to', c.path))
         todo = [c for c in todo if impl.refresh(c)]
+    if _changed(config):
+        if init:
+            todo.append(config)
+        else:
+            err.write('--init would set ticket_root: tickets in %s\n' % config.path)
     if os.environ.get('SDLC_BACKEND', 'claude') == 'codex':
         err.write(CODEX_AGENT_NOTE + '\n')
     else:
@@ -1522,7 +1559,8 @@ def gate_create(impl):
     with _fixture() as root:
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'empty fixture: setup exited %d: %s' % (rc, err.strip()))
-        expect(_files(root) == sorted(BASE_FILES + [SETTINGS_PATH]), 'empty fixture: files are %r' % _files(root))
+        expect(_files(root) == sorted(BASE_FILES + [SETTINGS_PATH, SDLC_CONFIG_PATH]),
+               'empty fixture: files are %r' % _files(root))
         before, block, after = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(before == ROOT_STARTER, 'AGENTS.md: starter text is %r' % before)
         expect(after == '', 'AGENTS.md: text after the block: %r' % after)
@@ -1561,7 +1599,8 @@ def gate_create(impl):
     with _fixture(untracked, track=sorted(RICH_DOCS)) as root:
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'topic fixture: setup exited %d: %s' % (rc, err.strip()))
-        want = sorted(BASE_FILES + list(untracked) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md', SETTINGS_PATH])
+        want = sorted(BASE_FILES + list(untracked) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md', SETTINGS_PATH,
+                                                     SDLC_CONFIG_PATH])
         expect(_files(root) == want, 'topic fixture: files are %r' % _files(root))
         expect('docs/reference/' not in _snapshot(root), 'topic fixture: created an empty folder docs/reference/')
         before, block, after = _parts(_text(root, 'docs/alpha/AGENTS.md'), 'docs/alpha/AGENTS.md')
@@ -1686,11 +1725,13 @@ def gate_refresh_only(impl):
             expect(_snapshot(root) == snap, 'no --init (dry run %s): the fixture changed' % dry)
             for line in ('--init would append a block to AGENTS.md', '--init would create CLAUDE.md',
                          '--init would create docs/AGENTS.md', '--init would create docs/alpha/AGENTS.md',
-                         '--init would create docs/layout.md', '--init would set agent in %s' % SETTINGS_PATH):
+                         '--init would create docs/layout.md', '--init would set agent in %s' % SETTINGS_PATH,
+                         '--init would set ticket_root: tickets in %s' % SDLC_CONFIG_PATH):
                 expect(line in err.splitlines(), 'no --init (dry run %s): stderr lacks %r: %r' % (dry, line, err))
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, '--init: setup exited %d: %s' % (rc, err.strip()))
-        want = sorted(BASE_FILES + list(RICH_DOCS) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md', SETTINGS_PATH])
+        want = sorted(BASE_FILES + list(RICH_DOCS) + ['docs/alpha/AGENTS.md', 'docs/alpha/CLAUDE.md', SETTINGS_PATH,
+                                                      SDLC_CONFIG_PATH])
         expect(_files(root) == want, '--init: files are %r' % _files(root))
         before, _, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(before == '# Mine\n\nkeep me\n', '--init: AGENTS.md bytes before the block are %r' % before)
@@ -2036,7 +2077,7 @@ def _render_flat_always(model):
 
 def gate_layout_variant(impl):
     flat = _split_template(ROOT_AGENTS_TEMPLATE).block.replace('<N>', str(TEMPLATE_VERSION))
-    with _fixture({'.sdlc/config': ''}) as root:
+    with _fixture({'.sdlc/config': 'layout: flat\n'}) as root:  # an existing flat repo; an empty one is new (T-0814)
         rc, out, err = _call(run_setup, root, impl, init=True)
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and block.text == flat, 'a flat repo does not get the unsubstituted root block')
@@ -2110,7 +2151,59 @@ def gate_block_paths(impl):
         expect('`%s`' % _lane_root(root) in block, 'a repo with no .sdlc/ folder lost the wtroot.root() lane line')
 
 
+def _ticket_root_never(root):
+    """Defect variant: .sdlc/config is always left alone."""
+    return ticket_root_change(root)._replace(new=None, label='present')
+
+
+def _ticket_root_always(root):
+    """Defect variant: the line is appended whatever the repo already holds."""
+    c = ticket_root_change(root)
+    old = c.old or ''
+    return c._replace(new=old + ('' if not old or old.endswith('\n') else '\n') + 'ticket_root: tickets\n')
+
+
+def gate_ticket_root(impl):
+    """T-0814: setup --init records `ticket_root: tickets` in .sdlc/config of a new repo (--dry-run shows it in
+    the diff and writes nothing; without --init stderr lists it) and the root block names .sdlc/tickets/; a repo
+    with a ticket folder, a work_root:, ticket_root: or layout: line, or a refs/sdlc/ids/ ref is never changed."""
+    config = '.sdlc/config'
+    with _fixture() as root:
+        rc, out, err = _call(run_setup, root, impl, dry_run=True, init=True)
+        expect(rc == 0 and '+++ b/%s' % config in out.splitlines() and '+ticket_root: tickets' in out.splitlines(),
+               'new repo: --dry-run --init diff lacks %s: %r' % (config, out))
+        expect(not os.path.exists(os.path.join(root, '.sdlc')), 'new repo: --dry-run wrote .sdlc/')
+        rc, out, err = _call(run_setup, root, impl, dry_run=True)
+        expect('--init would set ticket_root: tickets in %s' % config in err.splitlines(),
+               'new repo: setup without --init does not list %s: %r' % (config, err))
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        expect(rc == 0 and 'created %s' % config in out.splitlines() and _text(root, config) == 'ticket_root: tickets\n',
+               'new repo: --init did not create %s: %r %r' % (config, out, err))
+        expect('`.sdlc/tickets/` holds SDLC Lite tickets' in _text(root, 'AGENTS.md'),
+               'new repo: the root block does not name .sdlc/tickets/')
+    with _fixture({config: 'claim_days: 9'}) as root:
+        rc, out, err = _call(run_setup, root, impl, init=True)
+        expect(_text(root, config) == 'claim_days: 9\nticket_root: tickets\n' and 'updated %s' % config in out.splitlines(),
+               'new repo with a config: %s is %r' % (config, _text(root, config)))
+    for label, files in (('flat ticket', {'.sdlc/alpha/handoff.md': '---\nid: T-0001\nstatus: ready\n---\n'}),
+                         ('layout: flat', {config: 'layout: flat\n'}), ('work_root', {config: 'work_root: docs/work\n'}),
+                         ('ticket_root', {config: 'ticket_root: tickets\n'}), ('id ref', {})):
+        with _fixture(files) as root:
+            if label == 'id ref':
+                _git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'x')
+                _git(root, 'update-ref', 'refs/sdlc/ids/T-0001', 'HEAD')
+            before = _text(root, config) if os.path.isfile(os.path.join(root, '.sdlc', 'config')) else None
+            rc, out, err = _call(run_setup, root, impl, init=True)
+            after = _text(root, config) if os.path.isfile(os.path.join(root, '.sdlc', 'config')) else None
+            expect(rc == 0 and after == before and config not in out, '%s: --init changed %s: %r -> %r'
+                   % (label, config, before, after))
+
+
 GATES = [
+    ('ticket-root', gate_ticket_root, REAL, [
+        ('never records ticket_root', REAL._replace(ticket_root=_ticket_root_never)),
+        ('records ticket_root in an existing repo', REAL._replace(ticket_root=_ticket_root_always)),
+    ]),
     ('block-paths', gate_block_paths, REAL, [
         ('renders the default lane and ticket roots everywhere', REAL._replace(render=_render_default_paths)),
         ('renders the .sdlc/ lines with no .sdlc/ folder', REAL._replace(render=_render_sdlc_always)),
