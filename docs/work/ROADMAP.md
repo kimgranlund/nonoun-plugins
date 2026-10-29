@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0810 | [0810-advance-already-fixed](0810-advance-already-fixed/handoff.md) | dispatch.py advance prepares a verifier for an already-fixed solo | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0810-t0810) |
 
-Closed: 773 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 774 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

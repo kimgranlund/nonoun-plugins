@@ -2,7 +2,7 @@
 id: T-0810
 title: "dispatch.py advance prepares a verifier for an already-fixed solo"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,10 @@ No verifier is prepared; the conductor closes the ticket with a reason.
 ## Constraints
 - Red check: a `dispatch.py selftest` case advancing an `already fixed` L2 solo; it prepares a verifier before and prints the close line after.
 - outcome metric: verifier attempts prepared for already-fixed solos, before: 1.
+
+## Outcome
+
+2026-10-29 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: c98cfdc53dfc
+- Changed: see commits
+- Commits: 5cce280 T-0810: advance prints the close line with a reason for an already-fixed solo; 60e0514 T-0810: record lane T-0810-t0810
+- Check: 1 Goal and red check: `dispatch.py advance` on an `already fixed` L2 solo prints the close line and...: pass
