@@ -34,3 +34,8 @@ The claim succeeds; at most a warning names the unrelated ticket's unresolved de
 ## Constraints
 - Red check: a `tickets.py selftest` case with an unrelated ticket whose `depends:` id lives only in another worktree; it fails before the fix and passes after.
 - outcome metric: `tickets.py claim` refusals naming a ticket other than the claimed one, before: 2 in agent-ui (2026-10-29).
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` exits 0, including the `(T-0805)` case (claim over an unrelated ticket whose `depends:` id lives only in a lane worktree succeeds with a `warning:` line naming that ticket) and its control (the same miss in the claimed ticket still refuses, nothing written).
+- `python3 plugins/sdlc-lite/scripts/lanes.py selftest` exits 0 (lane open writes `branch:` through the same claim write).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
