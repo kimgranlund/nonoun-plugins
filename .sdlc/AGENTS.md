@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d620c5c28d72 -->
+<!-- sdlc-lite:managed:start v1 sha256:8a33aa97f27f -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -17,7 +17,7 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0808 A conductor's pinned old plugin scripts keep running after an upgrade (docs/work/0808-stale-plugin-scripts-stop), claimed by sdlc-lite-author 2026-10-29, branch lane/T-0808-t-0808-t0808
   - T-0809 fleet_collect counts orphaned attempts differently from dispatch.py status (docs/work/0809-collector-orphans-agree), claimed by sdlc-lite-author 2026-10-29, branch lane/T-0809-t0809
   - T-0810 dispatch.py advance prepares a verifier for an already-fixed solo (docs/work/0810-advance-already-fixed), claimed by sdlc-lite-author 2026-10-29, branch lane/T-0810-t0810
-  - T-0811 Completed attempts that overran their time budget are never reported (docs/work/0811-completed-over-budget), claimed by sdlc-lite-author 2026-10-29
+  - T-0811 Completed attempts that overran their time budget are never reported (docs/work/0811-completed-over-budget), claimed by sdlc-lite-author 2026-10-29, branch lane/T-0811-t0811
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
