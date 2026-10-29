@@ -2,6 +2,21 @@
 
 SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
+## [0.40.0] - 2026-10-28
+
+Report: [docs/reports/2026-10-28-release-0-40-0.md](docs/reports/2026-10-28-release-0-40-0.md). 6 tickets from the speed work: a diff-scoped verifier brief (T-0799), one-command lanes (T-0800, T-0802, T-0804), a stricter verifier verdict (T-0803), and the [speed experiment](docs/reports/2026-10-28-speed-experiment.md) (T-0801).
+
+### Added
+
+- `dispatch.py prepare verifier` adds a `Scope: diff` line for a solo ticket at L1 or L2 whose criteria are all commands: the verifier runs the criteria, reads only the diff, confirms one failing-first claim, and answers `escalate: full` when the diff leaves the ticket's scope, which makes the next prepare give the full brief (T-0799).
+- `lanes.py open --claim [--by]` claims and opens a lane in one call; `lanes.py finish --verifier-agent-id` and `--solo-agent-id` record those runs from their transcripts and prune them before landing (T-0800).
+- `.sdlc/config` key `lane_landing: local` for a repository that lands lanes into main itself while main tracks an upstream: `open` then commits the claim and its branch and worktree record; without it a PR repository is unchanged (T-0804).
+
+### Changed
+
+- `lanes.py finish --backup` pushes in the background and logs to `<git common dir>/sdlc-backup.log` (T-0800); the next `finish` reports a failed push as `backup: previous push failed (exit N)` and exits nonzero (T-0802).
+- The verifier contract: a criterion that passes on a build contradicting the handoff Goal is vacuous, and the verdict is `fail` with a `plan defect:` line, never `pass` with a `fix-now` note (T-0803).
+
 ## [0.39.0] - 2026-10-28
 
 Report: [docs/reports/2026-10-28-release-0-39-0.md](docs/reports/2026-10-28-release-0-39-0.md). 5 tickets: fixes from the [2026-10-28 fleet retro](docs/reports/2026-10-28-fleet-retro.md) and GitHub #83 and #84 (T-0796 to T-0798), the last 0.37.0 follow-up (T-0788), and an inner-link check fix (T-0795).
