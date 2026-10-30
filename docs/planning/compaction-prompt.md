@@ -4,7 +4,7 @@ owner: maintainer
 ---
 # Compaction prompt: `/sdlc:plan compaction <prose>`
 
-Status: proposal. Raised in ultimate-tokens as `/plan compaction` (handoff of 2026-10-12, kept in [`.sdlc/.0465-compaction-prompt/source-handoff.md`](https://github.com/kimgranlund/sdlc-lite/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0465-compaction-prompt/source-handoff.md)). This version is the original spec reviewed and aligned with the plan skill family (`plan-goal`, `plan-loop`, T-0462), the controlled language (T-0461), the document standards (T-0447), the lane lifecycle and the resolve-and-ship posture (T-0464). The report skill (T-0460) is an optional data source, not the home.
+Status: proposal. Raised in ultimate-tokens as `/plan compaction` (handoff of 2026-10-12, kept in [`.sdlc/.0465-compaction-prompt/source-handoff.md`](https://github.com/kimgranlund/nonoun-plugins/blob/51cbf1bacc20ff563669f244978f73ff2c9d78a4/.sdlc/.0465-compaction-prompt/source-handoff.md)). This version is the original spec reviewed and aligned with the plan skill family (`plan-goal`, `plan-loop`, T-0462), the controlled language (T-0461), the document standards (T-0447), the lane lifecycle and the resolve-and-ship posture (T-0464). The report skill (T-0460) is an optional data source, not the home.
 
 ## 1. Answer
 
