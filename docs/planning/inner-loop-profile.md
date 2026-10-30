@@ -105,5 +105,5 @@ Pillar summary. Performance: B1 and B2 remove the measured per-ticket minutes (t
 - No PR path in the plugin: grep `gh pr` over `plugins/sdlc/scripts/*.py`, `agents/factory.md`, `skills/fanout/SKILL.md` hits only `hooks/block-publish.sh:29`.
 - Planner whole-gate rule and the integration-gate exception: `plugins/sdlc/agents/planner.md` rule 14; verifier base rerun: `agents/verifier.md` rule 4.
 - Chain L3 against solo L3 cost: `docs/reports/2026-10-12-ceremony-audit.md:107`.
-- T-0496 gate line `tests_gate: pilot` and `verify_scope.py` with no `tests-gate` yet: `.sdlc/0496-tests-gate-pilot/handoff.md`, grep over `plugins/sdlc-lite/scripts/verify_scope.py`.
+- T-0496 gate line `tests_gate: pilot` and `verify_scope.py` with no `tests-gate` yet: `.sdlc/0496-tests-gate-pilot/handoff.md`, grep over `plugins/sdlc/scripts/verify_scope.py`.
 - Precedent for the design-doc move: `docs/planning/merge-ops-and-queue.md` (T-0488), front matter `status: proposed`.
