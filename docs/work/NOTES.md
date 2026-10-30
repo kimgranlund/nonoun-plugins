@@ -832,3 +832,7 @@
 ## T-0825: Import MacBook base-ui changes into the design plugin (2026-10-30)
 
 - note: nothing was written to /Volumes/kimba; the verifier only read it.
+
+## T-0824: Import MacBook context-fog-of-war changes into the context plugin (2026-10-30)
+
+- note: the builder's include/exclude claims match the sources. The Codex copy differs from the repo only in the investigation.md and contract-audit.md links, the CHANGELOG.md "replay1/0/1" spacing, and the Maison `project:` and `/Users/kimba/...` `backup:` front matter lines in the 20261029 changelog. The repo keeps the newer links, the fixed spacing, and the 20261029 changelog without those two lines. The added lines contain no Maison, kimba, /Volumes or .openai text and no em dashes. `agents/openai.yaml` is unchanged.

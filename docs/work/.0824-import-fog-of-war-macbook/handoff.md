@@ -2,7 +2,7 @@
 id: T-0824
 title: "Import MacBook context-fog-of-war changes into the context plugin"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - the skill's own selftests or validator if it ships one (state which), and `python3 scripts/check-packaging.py` exits 0.
 - `! find plugins/context/skills/context-fog-of-war -name .git -o -name .DS_Store | grep -q .`
 - `git diff --check` is clean.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f34bc5750801
+- Changed: see commits
+- Commits: c6aa3aa T-0824: import MacBook context-fog-of-war changes; 248e5d3 T-0824: record lane T-0824-t0824
+- Check: 1 skill selftests or validator (state which) and `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 2 `! find plugins/context/skills/context-fog-of-war -name .git -o -name .DS_Store | grep -q .`: pass
+- Check: 3 `git diff --check` is clean: pass
+- Follow-up: note: the builder's include/exclude claims match the sources -> notes.md
