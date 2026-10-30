@@ -6,6 +6,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0815 | [0815-session-modes-agents](0815-session-modes-agents/handoff.md) | Direct and hybrid session agents beside the conductor | feature | L2 | P2 | none | 🔵 ready |
+| T-0816 | [0816-onboard-mode-flag](0816-onboard-mode-flag/handoff.md) | onboard --mode picks conductor, hybrid or direct | feature | L2 | P2 | T-0815 | 🔵 ready |
+| T-0817 | [0817-session-record](0817-session-record/handoff.md) | One sessions.jsonl row per session so retros compare modes | feature | L2 | P2 | T-0815 | 🔵 ready |
+| T-0818 | [0818-mode-gate-tests](0818-mode-gate-tests/handoff.md) | Spawn gate and lane path tests for direct and hybrid sessions | chore | L1 | P2 | T-0815 | 🔵 ready |
 
 Closed: 776 done, 30 dropped (git log or .NNNN-* folders)
 
