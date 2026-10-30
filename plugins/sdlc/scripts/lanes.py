@@ -5,11 +5,20 @@
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim | --claim [--by AGENT]] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
-                  [--solo-agent-id ID] [--verifier-agent-id ID]
+                  [--solo-agent-id ID] [--verifier-agent-id ID] [--no-ticket]
+                                           --no-ticket (T-0821): a lane with no local ticket commits, merges into a scratch
+                                           tree at into, runs the land gate there, fast-forwards into and closes the lane;
+                                           no record, verdict or ticket close; a hash_bound: path needs a pass verdict
+                                           from --verifier-agent-id (its transcript's final message or the file it names)
   lanes.py ready [<name|path>] [--ticket ID] [--notify-cmd CMD]   pin the review sha, unlock, and tell the factory (default: the current lane)
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
   lanes.py list --ready [--json]           one line per ready ref: ticket, lane, sha, path, and stale when the lane moved
+  lanes.py list --overlap <path>...        `overlap <lane> <path>` per open plugin lane (not the current tree) whose diff
+                                           from its base (committed, uncommitted, untracked) holds the path or a path under it
+  lanes.py who [--json]                    `factory <session> <evidence>` per sign of an active factory session (T-0821):
+                                           a live claude receiver naming a factory, a *.running marker a live process names,
+                                           an open fanout or solo lane other than the current tree; else `none`; exit 0
   lanes.py check [--warn]                  C1 placement, C2 ports, C3 record drift; --warn prints and exits 0
   lanes.py port [<path>]                   the port of the lane holding <path> (default the cwd); exit 1 if none
   lanes.py archive list [<branch>]
@@ -1336,17 +1345,17 @@ def agent_flags(agent_id, transcript):
 
 
 def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='.', say=print, solo_agent_id=None,
-           verifier_agent_id=None):
+           verifier_agent_id=None, no_ticket=False):
     """Finish one lane end to end (see the docstring, finish); say prints each step's line. Returns the exit code, 1
     at least when the previous background backup push failed (T-0802): read before this run's own push rewrites the log."""
     prev = failed_backup(Ctx(cwd).top)
-    rc = finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id)
+    rc = finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id, no_ticket)
     if prev:
         say(f'backup: previous push failed (exit {prev[0]}), see {prev[1]}')
     return rc or (1 if prev else 0)
 
 
-def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id):
+def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id, no_ticket=False):
     ctx = Ctx(cwd)
     top = ctx.top
     d, refusal = find(ctx, discover(ctx), str(target))
@@ -1376,6 +1385,10 @@ def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo
     if into != ctx.main:
         return stop('lane', f'the lane lands into {into}, not {ctx.main} (the branch of the main checkout {top})')
     ids = [str(t) for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))]
+    if no_ticket:
+        if ids:
+            return stop('lane', f'--no-ticket takes a lane with no local ticket; the record lists {", ".join(ids)}')
+        return finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_transcript)
     if len(ids) != 1:
         return stop('lane', f'finish takes a lane with one local ticket; the record lists {ids or "none"}')
     tid = ids[0]
@@ -1503,6 +1516,119 @@ def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo
     say('lane: ' + '; '.join(l for l in r['message'].splitlines() if l) + (f' ({sha} {tid}: lane {name} closed)' if sha else ''))
 
     # 8. backup: only with --backup, the one push, of main as it now stands
+    if push_backup(top, into, backup, say):
+        return 1
+    say(f'finish: {name} done')
+    return 0
+
+
+def transcript_verdict(agent_id, transcript):
+    """(verdict, why) of a verifier sub-agent (T-0821): its transcript's final message read as a verifier result, else
+    the first existing file that message names; why is set when no transcript or no verdict is found."""
+    import dispatch  # same scripts/ dir; local as in agent_flags
+    import cost_estimate
+    path = transcript or dispatch.find_subagent_transcript(agent_id)
+    final = cost_estimate.transcript_final(path) if path else None
+    if not final:
+        return None, f'no final message in the transcript of agent {agent_id}; pass --verifier-transcript'
+    with tempfile.NamedTemporaryFile('w', suffix='.md', delete=False) as f:
+        f.write(final[0])
+    try:
+        verdict = results.key_value(f.name, 'verifier')
+    finally:
+        os.unlink(f.name)
+    for tok in re.findall(r'\S+\.md\b', final[0]) if verdict is None else ():
+        if os.path.isfile(tok):
+            verdict = results.key_value(tok, 'verifier')
+            break
+    return verdict, None if verdict else f'no verifier verdict in the final message of agent {agent_id}'
+
+
+def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_transcript):
+    """finish --no-ticket (T-0821): a lane with no local ticket (a live session's lane) lands behind the land gate with
+    no record, verdict or ticket close. A lane touching a hash_bound: path stops unless --verifier-agent-id names a
+    verifier whose verdict is pass. Steps: commit, land (merge into a detached scratch tree at into, run the gate there),
+    settle (fast-forward into), lane (close_lane), backup; a rerun skips the done steps."""
+    import steps  # same scripts/ dir; local because steps is heavy
+    top, tree, b, into, name = ctx.top, Path(d['path']), d['branch'], d['into'], d['lane']
+    base = out(top, 'merge-base', f'refs/heads/{into}', f'refs/heads/{b}')
+    if not base:
+        return stop('lane', f'no merge base of {b} and {into}')
+    try:
+        hits = steps.declared_hits(str(tree), tickets.hash_bound_globs(Path(top) / '.sdlc'), base, untracked=True)
+    except ValueError as e:
+        return stop('verdict', f'cannot read the hash_bound paths: {e}')
+    if hits:
+        if not verifier_agent_id:
+            return stop('verdict', f'the lane touches hash_bound paths {", ".join(hits)}; land it with a pass verdict '
+                                   f'(--verifier-agent-id ID); nothing merged')
+        verdict, why = transcript_verdict(verifier_agent_id, verifier_transcript)
+        if verdict != 'pass':
+            return stop('verdict', f'{why or verdict} (hash_bound paths {", ".join(hits)}); nothing merged')
+        say(f'verdict: pass (agent {verifier_agent_id}, hash_bound paths {", ".join(hits)})')
+    else:
+        say('verdict: none needed (no ticket, no hash_bound path)')
+
+    if porcelain(tree):
+        r = git(tree, 'add', '-A', '--', '.', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock',
+                ':(exclude,glob)**/*.running')
+        if r.returncode or git(tree, 'commit', '-q', '-m', f'lane {name}').returncode:
+            return stop('commit', err(r) if r.returncode else 'git commit failed')
+        say(f'commit: {out(tree, "rev-parse", "--short=7", "HEAD")} lane {name}')
+    else:
+        say('commit: clean')
+
+    tip = out(top, 'rev-parse', '--verify', f'refs/heads/{b}^{{commit}}')
+    gate = ctx.cfg['land_gate']
+    if git(top, 'merge-base', '--is-ancestor', tip, f'refs/heads/{into}').returncode == 0:
+        say(f'land: skipped ({b} is in {into})')
+    else:
+        scratch = ctx.root / 'finish' / name
+        if scratch.exists():
+            git(top, 'worktree', 'remove', '--force', str(scratch))
+            shutil.rmtree(str(scratch), ignore_errors=True)
+        scratch.parent.mkdir(parents=True, exist_ok=True)
+        r = git(top, 'worktree', 'add', '-q', '--detach', str(scratch), f'refs/heads/{into}')
+        if r.returncode:
+            return stop('land', err(r))
+
+        def drop():
+            git(top, 'worktree', 'remove', '--force', str(scratch))
+            shutil.rmtree(str(scratch), ignore_errors=True)
+
+        r = git(scratch, 'merge', '--no-ff', '-q', '-m', f'Merge lane {name}', f'refs/heads/{b}')
+        if r.returncode:
+            drop()
+            return stop('land', f'merging {b} into {into} failed: {err(r)}')
+        if gate:
+            cmd = ['bash', '-c', gate]
+            try:
+                slots = int(os.environ.get('SDLC_GATE_SLOTS') or 1)
+            except ValueError:
+                slots = 1
+            if slots >= 1:
+                cmd = [sys.executable, str(HERE / 'gate_lock.py'), 'run', '--nice', '--'] + cmd
+            g = subprocess.run(cmd, cwd=str(scratch), capture_output=True, text=True)
+            if g.returncode:
+                drop()
+                tail = (g.stdout + g.stderr).strip().splitlines()[-1:] or ['']
+                return stop('land', f'land gate red (exit {g.returncode}): {tail[0]}; nothing merged')
+        merged = out(scratch, 'rev-parse', 'HEAD')
+        drop()
+        r = git(top, 'merge', '--ff-only', '-q', merged)
+        if r.returncode:
+            return stop('settle', f'{into} cannot fast-forward to the gated merge {merged[:7]}: {err(r)}')
+        say(f'land: merged {b} into {into}' + (f' (gate: {gate})' if gate else ' (no land_gate)'))
+        say(f'settle: {into} at {out(top, "rev-parse", "--short=7", "HEAD")}')
+
+    pre = porcelain(top)
+    r = close_lane(str(tree), cwd=top)
+    if r['rc']:
+        return stop('lane', r['message'].splitlines()[-1] if r['message'] else f'rc={r["rc"]}')
+    sha = commit_new(top, pre, f'lane {name} closed')
+    if sha is None:
+        return stop('lane', f'{name} closed but the commit failed: commit what it changed as `lane {name} closed`')
+    say('lane: ' + '; '.join(l for l in r['message'].splitlines() if l) + (f' ({sha} lane {name} closed)' if sha else ''))
     if push_backup(top, into, backup, say):
         return 1
     say(f'finish: {name} done')
@@ -2106,6 +2232,73 @@ def list_lanes(all_=False, stale=False, cwd='.'):
     return rows
 
 
+def who(cwd='.'):
+    """T-0821: the evidence of an active factory session in this repo, as dicts {session, evidence}, [] for none:
+    a receiver in the main checkout's .sdlc/messages/receivers.json of harness claude whose name or reader names a
+    factory and whose last_seen is within its expiry; a *.running marker under a .sdlc/runtime/tasks/ of the main
+    checkout or a lane whose task dir a live process names (in_use); an open fanout or solo plugin lane other than the
+    tree this runs in (a live session's own lane never counts as a factory)."""
+    import messages  # same scripts/ dir; local because only who reads the mailbox
+    ctx = Ctx(cwd)
+    hits = []
+    try:
+        reg = messages.load_registry(os.path.join(ctx.top, '.sdlc', 'messages'))
+    except messages.Refuse as e:
+        reg = {}
+        hits.append(dict(session='unknown', evidence=f'unreadable receivers registry: {e}'))
+    now = utcnow()
+    for name, e in sorted(reg.items()):
+        if e['harness'] != 'claude' or e['reader'] == messages.NO_READER or 'factory' not in f'{name} {e["reader"]}':
+            continue
+        if (now - messages.parse_ts(e['last_seen'])).total_seconds() > messages.ttl_seconds(e['expiry']):
+            continue
+        hits.append(dict(session=name, evidence=f'receiver reader {e["reader"]} last seen {e["last_seen"]}'))
+    lanes = discover(ctx)
+    for tree in [ctx.top] + [d['path'] for d in lanes if d['exists']]:
+        for m in sorted(Path(tree, '.sdlc', 'runtime', 'tasks').glob('*/*.running')):
+            pid = in_use(m.parent)
+            if pid:
+                hits.append(dict(session=f'pid {pid}', evidence=f'running {m}'))
+    for d in lanes:
+        if d['owner'] and d['exists'] and d['kind'] in ('fanout', 'solo') and not (ctx.current and samepath(d['path'], ctx.current)):
+            hits.append(dict(session=d['lane'], evidence=f'open {d["kind"]} lane {d["path"]}'))
+    return hits
+
+
+def lane_paths(ctx, d):
+    """The paths lane d changed since its base (record base_sha, else the merge base with its into): committed on its
+    branch, plus uncommitted and untracked in its tree; None when git cannot say."""
+    b = d['branch']
+    if not b or not has_ref(ctx.top, f'refs/heads/{b}'):
+        return None
+    base = d['base_sha'] or out(ctx.top, 'merge-base', f'refs/heads/{d["into"] or ctx.main}', f'refs/heads/{b}')
+    if not base:
+        return None
+    r = git(ctx.top, 'diff', '--no-renames', '--name-only', base, f'refs/heads/{b}')
+    if r.returncode:
+        return None
+    paths = set(r.stdout.splitlines())
+    if d['exists']:
+        for args in (('diff', '--no-renames', '--name-only', 'HEAD'), ('ls-files', '--others', '--exclude-standard')):
+            r = git(d['path'], *args)
+            paths |= set(r.stdout.splitlines()) if not r.returncode else set()
+    return {p for p in paths if p}
+
+
+def overlap(paths, cwd='.'):
+    """T-0821: (lane, path) for each open plugin lane other than the current tree whose lane_paths hold a path, or a
+    path under it when it names a directory; paths are relative to the repository root."""
+    ctx = Ctx(cwd)
+    want = [p.strip('/') for p in paths if p.strip('/')]
+    rows = []
+    for d in discover(ctx):
+        if not d['owner'] or (ctx.current and samepath(d['path'], ctx.current)):
+            continue
+        changed = lane_paths(ctx, d) or set()
+        rows += [(d['lane'], p) for p in want if any(c == p or c.startswith(p + '/') for c in changed)]
+    return rows
+
+
 def still_open(root, ticket):
     """The `lane still open: <path> (branch <b>, <reason>)` lines for every plugin lane whose record lists the
     ticket or whose host name is <ticket>-solo. Prints nothing."""
@@ -2267,7 +2460,7 @@ def orphans(cwd='.'):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,check,port,archive,orphans,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,who,check,port,archive,orphans,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -2297,6 +2490,7 @@ def main(argv=None):
     p.add_argument('--verifier-transcript', metavar='JSONL')
     p.add_argument('--verifier-agent-id', metavar='ID', help='record the verifier from its sub-agent transcript and prune it (T-0800)')
     p.add_argument('--solo-agent-id', metavar='ID', help='record the solo from its sub-agent transcript and prune it (T-0800)')
+    p.add_argument('--no-ticket', action='store_true', help='land a lane with no ticket behind the land gate, no verdict and no close (T-0821)')
     p = sub.add_parser('ready')
     p.add_argument('target', nargs='?')
     p.add_argument('--ticket')
@@ -2308,6 +2502,9 @@ def main(argv=None):
     p.add_argument('--ready', action='store_true')
     p.add_argument('--stale', action='store_true')
     p.add_argument('--fail', action='store_true')
+    p.add_argument('--json', action='store_true')
+    p.add_argument('--overlap', nargs='+', metavar='PATH', help='each open lane whose diff from its base touches a path (T-0821)')
+    p = sub.add_parser('who')
     p.add_argument('--json', action='store_true')
     p = sub.add_parser('check')
     p.add_argument('--warn', action='store_true')
@@ -2331,6 +2528,8 @@ def main(argv=None):
         ap.error('--fail needs --stale')
     if a.cmd == 'list' and a.ready and (a.all or a.stale):
         ap.error('--ready takes no --all or --stale')
+    if a.cmd == 'list' and a.overlap and (a.all or a.stale or a.ready or a.json):
+        ap.error('--overlap takes no --all, --stale, --ready or --json')
     if a.cmd == 'selftest':
         return selftest()
     try:
@@ -2352,11 +2551,24 @@ def main(argv=None):
             return r['rc']
         if a.cmd == 'finish':
             return finish(a.target, backup=a.backup, transcript=a.transcript, verifier_transcript=a.verifier_transcript,
-                          solo_agent_id=a.solo_agent_id, verifier_agent_id=a.verifier_agent_id)
+                          solo_agent_id=a.solo_agent_id, verifier_agent_id=a.verifier_agent_id, no_ticket=a.no_ticket)
         if a.cmd == 'ready':
             r = ready(a.target, ticket=a.ticket, notify_cmd=a.notify_cmd)
             print(r['message'])
             return r['rc']
+        if a.cmd == 'who':
+            hits = who()
+            if a.json:
+                print(json.dumps(dict(who='factory' if hits else 'none', hits=hits), indent=2))
+            for h in hits if not a.json else ():
+                print(f'factory {h["session"]} {h["evidence"]}')
+            if not hits and not a.json:
+                print('none')
+            return 0
+        if a.cmd == 'list' and a.overlap:
+            for lane, path in overlap(a.overlap):
+                print(f'overlap {lane} {path}')
+            return 0
         if a.cmd == 'list' and a.ready:
             rows = ready_rows()
             if a.json:
@@ -4244,6 +4456,88 @@ def case_finish_backup_failed(script, base):
     return fails
 
 
+def case_who(script, base):
+    """T-0821: who is none with no factory evidence (a codex receiver and a reader-less one do not count), then factory
+    with a live claude receiver whose reader is a factory session."""
+    t = Fixture(base, script, 'who')
+    now = utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    entry = dict(harness='codex', repo='repo', reader='repo-codex-factory', last_seen=now, expiry='7d')
+    reg = {'repo-codex-factory': entry, 'repo-claude-factory': dict(entry, harness='claude', reader='none')}
+    t.write({'.sdlc/messages/receivers.json': json.dumps({'receivers': reg})})
+    fails = []
+    rc, o = t.lanes('who')
+    if rc or o != 'none':
+        fails.append(f'who: want exit 0 and none, got {rc}: {o}')
+    reg['repo-claude-factory'] = dict(entry, harness='claude', reader='factory-session-1')
+    t.write({'.sdlc/messages/receivers.json': json.dumps({'receivers': reg})})
+    rc, o = t.lanes('who')
+    if rc or not o.startswith('factory repo-claude-factory '):
+        fails.append(f'who: want exit 0 and factory repo-claude-factory, got {rc}: {o}')
+    rc, o = t.lanes('who', '--json')
+    try:
+        got = json.loads(o)
+    except ValueError:
+        got = None
+    if rc or not got or got.get('who') != 'factory':
+        fails.append(f'who --json: want who factory, got {rc}: {o}')
+    return fails
+
+
+def case_overlap(script, base):
+    """T-0821: list --overlap names a lane whose diff from its base touches the path (committed or uncommitted), and
+    not a lane that does not."""
+    t = Fixture(base, script, 'overlap')
+    la, ta, _ = t.open('a', 'T-1')
+    lb, tb, _ = t.open('b', 'T-2')
+    t.work(ta, {'src/a.txt': 'a\n'})
+    t.work(tb, {'b.txt': 'b\n'})
+    (tb / 'keep.txt').write_text('edited\n')
+    fails = []
+    rc, o = t.lanes('list', '--overlap', 'src/a.txt', 'keep.txt', 'README')
+    want = {f'overlap {la} src/a.txt', f'overlap {lb} keep.txt'}
+    if rc or set(o.splitlines()) != want:
+        fails.append(f'overlap: want exit 0 and {sorted(want)}, got {rc}: {o}')
+    rc, o = t.lanes('list', '--overlap', 'src')
+    if rc or o != f'overlap {la} src':
+        fails.append(f'overlap: a directory names the lane touching a path under it, got {rc}: {o}')
+    return fails
+
+
+def case_finish_no_ticket(script, base):
+    """T-0821: finish --no-ticket lands a ticketless lane through the land gate and closes it; a lane touching a
+    hash_bound: path is refused with nothing merged; a lane with a local ticket refuses --no-ticket."""
+    t = Fixture(base, script, 'fin-noticket')
+    t.commit('track .sdlc', {'.gitignore': '.worktrees/\n.claude/\n.sdlc/runtime/\n',
+                             '.sdlc/config': 'land_gate: test -e live.txt\nhash_bound: gen/*\n'})
+    leaf, tree, b = t.open('live', None, '--kind', 'integration')
+    t.work(tree, {'live.txt': 'live\n'})
+    t.write({'live2.txt': 'more\n'}, cwd=tree)
+    fails = []
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc or f'finish: {leaf} done' not in o or '(gate: test -e live.txt)' not in o:
+        fails.append(f'finish --no-ticket: want exit 0, the gate and done, got {rc}: {o}')
+    if not (t.ok('cat-file', '-e', 'main:live.txt') and t.ok('cat-file', '-e', 'main:live2.txt')):
+        fails.append('finish --no-ticket: main lacks the lane work')
+    if tree.exists() or t.ok('rev-parse', '--verify', '-q', f'refs/heads/{b}'):
+        fails.append('finish --no-ticket: the lane tree or branch is left')
+    if t.g('status', '--porcelain'):
+        fails.append(f'finish --no-ticket: main is dirty: {t.g("status", "--porcelain")!r}')
+    leaf, tree, b = t.open('gen', None, '--kind', 'integration')
+    t.work(tree, {'gen/x.json': '{}\n', 'live.txt': 'again\n'})
+    head = t.g('rev-parse', 'main')
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc != 1 or 'hash_bound' not in o or 'gen/x.json' not in o:
+        fails.append(f'finish --no-ticket hash_bound: want exit 1 naming gen/x.json, got {rc}: {o}')
+    if t.g('rev-parse', 'main') != head or not tree.is_dir():
+        fails.append('finish --no-ticket hash_bound: main moved or the lane was closed')
+    t.commit('ticket', {'.sdlc/0003-t/handoff.md': ticket_file('T-0003', claimed=True)})
+    leaf, tree, b = t.open('tk', 'T-0003', '--kind', 'solo')
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc != 1 or 'T-0003' not in o:
+        fails.append(f'finish --no-ticket on a ticket lane: want exit 1 naming T-0003, got {rc}: {o}')
+    return fails
+
+
 def selftest():
     script = Path(__file__).resolve()
     src = script.read_text()
@@ -4437,6 +4731,11 @@ def run_selftest(script, src, base):
              'finish --backup returns while the push still runs and prints the background log path (T-0800)')
         need('finish backup failed', case_finish_backup_failed(script, base),
              'a failed background push is reported by the next finish: a previous-push-failed line and a nonzero exit (T-0802)')
+        need('who', case_who(script, base), 'none with no live claude factory receiver, factory with one (T-0821)')
+        need('overlap', case_overlap(script, base),
+             'list --overlap names each lane touching a path, committed or uncommitted, and not one that does not (T-0821)')
+        need('finish no ticket', case_finish_no_ticket(script, base),
+             'finish --no-ticket lands a ticketless lane behind the gate, refuses a hash_bound path and a ticket lane (T-0821)')
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')
