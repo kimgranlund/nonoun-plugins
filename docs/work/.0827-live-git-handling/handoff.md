@@ -2,7 +2,7 @@
 id: T-0827
 title: "Live mode picks a branch and a lane, and cleans up after merge"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,13 @@ Regenerate the Codex agents.
 - `grep -q 'live/<slug>' plugins/sdlc/agents/live.md && grep -q 'lanes.py close' plugins/sdlc/agents/live.md`
 - `grep -q 'CLAUDE_PLUGIN_ROOT}/scripts/gate_lock.py' plugins/sdlc/agents/live.md`
 - `python3 plugins/sdlc/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc/scripts/check.py` exit 0.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 2156c367560f
+- Changed: see commits
+- Commits: 4275250 T-0827: live mode picks a branch and a lane, and cleans up after merge; aed1dc8 T-0827: record lane T-0827-t0827
+- Check: 1 grep for `live/<slug>` and `lanes.py close` in live.md: pass
+- Check: 2 gate_lock path: pass
+- Check: 3 codex_roles.py generate --check and check.py exit 0: pass
+- Follow-up: note: plugins/sdlc/agents/live.md ## Branch and checkout: "main tracks a... -> notes.md

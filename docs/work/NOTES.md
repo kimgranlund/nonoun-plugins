@@ -840,3 +840,7 @@
 ## T-0826: Import MacBook mathematical-design-system changes into the design plugin (2026-10-30)
 
 - note: references/current-system.md and the Maison geometry capture were deliberately left out; the report already records the follow-up idea of importing it as a separate versioned snapshot.
+
+## T-0827: Live mode picks a branch and a lane, and cleans up after merge (2026-10-30)
+
+- note: plugins/sdlc/agents/live.md `## Branch and checkout`: "main tracks a remote" is stated as prose and not machine-checked; lane_landing handling lives in lanes.py, consistent with the handoff wording.

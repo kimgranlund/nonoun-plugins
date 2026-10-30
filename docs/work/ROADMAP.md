@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0827 | [0827-live-git-handling](0827-live-git-handling/handoff.md) | Live mode picks a branch and a lane, and cleans up after merge | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0827-t0827) |
 
-Closed: 788 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 789 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
