@@ -2,9 +2,17 @@
 
 SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-30
 
-1.0.0: the plugin, its agents and its marketplace take new names in one clean break (T-0819). No aliases: the old names stop working.
+Report: [docs/reports/2026-10-30-release-1-0-0.md](docs/reports/2026-10-30-release-1-0-0.md). 10 tickets, T-0813 to T-0822: three session modes (factory, hybrid, live), the onboarding defaults that select them, and the rename to `sdlc` in marketplace `nonoun` in one clean break (T-0819). No aliases: the old names stop working.
+
+### Added
+
+- Session modes beside the factory: `sdlc:live` (the session edits live, no tickets or handoffs; sub-agents only for search, research, history and an offered independent check) and `sdlc:hybrid` (small asks live, large ones through ticketed lanes with one verifier) (T-0815, T-0820). Tests pin that the factory spawn gate stays silent in both and that role runs inside them stay guarded (T-0818).
+- `onboard.py setup --init` declares the session agent in `.claude/settings.json` (`--local`: `settings.local.json`), keeping any agent a repository already set; `--mode factory|hybrid|live` picks it; `check` reports it (T-0813, T-0816).
+- A new repository keeps its tickets in `.sdlc/tickets/`: the first `tickets.py new` or `onboard.py setup --init` writes `ticket_root: tickets`. Existing repositories are unchanged (T-0814).
+- A `SessionEnd` hook appends one row per session to `.sdlc/runtime/sessions.jsonl` (mode, cost, commits, checks), and `fleet_collect.py` totals them by mode (T-0817).
+- Live beside a factory: `lanes.py who` names an active factory session, `lanes.py list --overlap <path>` names open lanes touching a path, and `lanes.py finish --no-ticket` lands a ticketless live lane behind the land gate; the live and factory agents follow these steps (T-0821, T-0822).
 
 ### Changed
 
