@@ -8,7 +8,7 @@ Use these distinctions when selecting records:
 | --- | --- | --- |
 | Capability | What can a product, artifact, or process do, and under what contract? | A command's supported input and output |
 | Workflow stage | What context must pass between recurring kinds of work? | Frame a change before implementation |
-| Performer role | Who or what performs work in a particular run? | An SDLC Lite builder or a human editor |
+| Performer role | Who or what performs work in a particular run? | An SDLC builder or a human editor |
 | Concrete plan step | What bounded change and acceptance criteria apply in this task? | Add a link to a handoff template |
 
 A stage can involve multiple roles or plan steps; a role can participate in different stages. Stage position describes where work sits in a workflow. It says nothing by itself about a capability's maturity or reuse eligibility. Those claims still need the capability contract and applicable evidence in [the evidence guide](evidence.md).
@@ -21,4 +21,4 @@ Define only stages whose boundary changes what the next worker needs to read or 
 - **Exit/evidence:** observable conditions and the records that show them. An exit description is guidance unless an existing tool checks it.
 - **Review:** include only when an actual user decision is required before the next stage; identify the decision and its reviewable material.
 
-At a boundary, the task handoff may link the reusable workflow and the relevant stage contract, then name the concrete input revisions, results, unresolved findings, and next operation. Link existing artifacts rather than copying them into the workflow definition. Do not add a stage status field, scheduler, or second next-action rule: use the project's current planner, run, and verification records for execution. If SDLC Lite is present, [its integration guide](sdlc-lite.md) explains the mapping.
+At a boundary, the task handoff may link the reusable workflow and the relevant stage contract, then name the concrete input revisions, results, unresolved findings, and next operation. Link existing artifacts rather than copying them into the workflow definition. Do not add a stage status field, scheduler, or second next-action rule: use the project's current planner, run, and verification records for execution. If SDLC is present, [its integration guide](sdlc.md) explains the mapping.

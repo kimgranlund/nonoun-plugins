@@ -1,0 +1,1536 @@
+#!/usr/bin/env python3
+"""Start the solo agent for one ticket and record its cost, so the default lane is metered.
+
+  solo_run.py run (--task-dir DIR | --new-task [SLUG]) --tier L1|L2|L3 (--brief TEXT | --brief-file FILE | --brief -)
+                  [--backend claude|codex] [--exec] [--cwd DIR] [--worktree NAME | --no-worktree] [--timeout SECONDS] [--raw-out FILE]
+  solo_run.py selftest
+
+Claude (T-0284): run checks the budget gate, appends one `role solo` record (transport subagent, cost null) so the
+verifier's family rule sees the solo's model, and prints the dispatch JSON for the parent to spawn as a background
+sub-agent (`subagent_type sdlc:solo-<level>`, model, effort, prompt = the brief). It starts no `claude -p`. The
+parent then runs one `dispatch.py prepare verifier <level> <task dir>/handoff.md` for levels L2 and L3 (L2, or L3 where
+`steps.py verifier-level` says so, T-0356). `--exec` is the retired
+headless start that the next paragraphs describe: on Claude it exits 2 unless `SDLC_CLAUDE_EXEC=1` (T-0288, T-0361); sub-agent lanes use `fanout.py prep` and `land`, T-0285; Codex always executes.
+
+With --exec (or Codex), run starts the session at the level's model and effort (agents/solo.md), prints the agent's report on
+stdout, and appends one line to <task-dir>/runs.jsonl in the record shape run.sh writes for roles
+(ts, role solo, level L1..L3, model, effort, cost_usd, usage, duration_ms, turns, attempt_id,
+backend, transport, routing_reason). --task-dir is the ticket or task folder, the one holding handoff.md.
+budget.py sums cost_usd over every runs.jsonl under the ticket and counts a record with no numeric cost
+as unmetered, so this record is all the budget gate and the board need.
+
+Budget gate (T-0229): before it starts anything, run checks the ticket's budget the way run.sh does for roles.
+A ticket at 80 percent of its budget or more with no ack prints `solo_run.py: budget <pct>%: ask the user;
+budget.py ack` on stderr and exits 4 with no session, no record; `budget.py ack` raises the ceiling and the next
+start goes. A ticket with no budget (or a task folder with no ticket id) is never blocked. fanout.py starts its solo
+lanes through this wrapper, so the gate covers them too.
+
+--new-task [SLUG] is for a solo run that names no ticket (`/agent solo <instructions>`): it creates
+<ticket root>/<SLUG>/handoff.md from the brief (SLUG defaults to solo-YYYYMMDD-HHMMSS; refused when the folder
+exists), then runs there, so the session's cost is recorded like any other. A task folder without an `id` is not
+a ticket and has no budget.
+
+T-0345: when another solo is live in the checkout (a sub-agent dispatch marker under the git dir, fresh and not yet
+priced by `complete`, or a live --exec lock), run defaults to --worktree solo-<task>, prints the choice, and the dispatch
+JSON carries `worktree`. --worktree and --no-worktree win.
+T-0490: the same default applies when `lanes.py list` shows an open integration lane in the repo (a wave merge needs a
+clean primary checkout); a solo already inside a lane tree stays there.
+
+Cost is never guessed. A result with no total_cost_usd (a crash, a missing result event, Codex, which
+reports none) records cost_usd null with a cost_reason, and the budget reports that run as unmetered.
+
+Claude: `SDLC_ROLE=solo claude -p --plugin-dir <plugin> --agent sdlc:solo --model M --effort E
+--dangerously-skip-permissions --output-format json -- <brief>`. Codex: `codex_exec.py solo L1..L3 <brief>`; with SDLC_CODEX_TRANSPORT=subagent it adds
+`--request-file <records dir>/solo-<level>-<attempt>.request.json` (T-0372), the parent answers it through codex_exchange.py,
+and the record says transport subagent (a standalone run says exec).
+Exit status is the session's own, or 1 when it reported an error or its result text is empty (no result file is
+written, so stdout says FAILED; T-0531). A handoff that is still the unfilled ticket template of its type refuses
+before any session or dispatch (T-0531).
+"""
+import argparse
+import contextlib
+import io
+import json
+import math
+import os
+import pathlib
+import re
+import shlex
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import uuid
+
+SCRIPTS = pathlib.Path(__file__).resolve().parent
+PLUGIN = SCRIPTS.parent
+sys.path.insert(0, str(SCRIPTS))
+import order  # noqa: E402  same scripts/ dir: the records dir rule (records_dir)
+import plugin_min  # noqa: E402  same scripts/ dir: the repo's minimum plugin version (T-0596) and the stale-install warning (T-0679) and refusal (T-0808)
+
+
+def records(task_dir):
+    """The task's records dir (order.records_dir), made when missing: runs.jsonl, dispatch records, results and markers go
+    there; handoff.md and skips.md stay in the task folder."""
+    return order.records_dir(task_dir, create=True)
+# Solo levels (agents/solo.md): level -> (Claude model, Claude effort, level). The same table as fanout.SOLO_TIERS;
+# check.py guards that solo.md, fanout.py and this table agree.
+TIERS = {'L1': ('sonnet', 'high', 'L1'), 'L2': ('opus', 'medium', 'L2'), 'L3': ('opus', 'high', 'L3')}
+# Deprecated 0.21.x tier names, accepted by --tier for one release and normalized to the level. ALIAS_OK
+TIER_ALIASES = {'S': 'L1', 'M': 'L2', 'L': 'L3'}  # ALIAS_OK
+
+
+def tier_of(tier):
+    """The solo level for a --tier value: L1, L2, L3, or a deprecated alias of one; else the value unchanged."""
+    return TIER_ALIASES.get(tier, tier)
+CODEX_MODELS = {'L1': ('gpt-6.1-sol', 'low'), 'L2': ('gpt-6.1-sol', 'high'), 'L3': ('gpt-6.1-sol', 'xhigh')}
+
+
+class Refuse(Exception):
+    pass
+
+
+def command(tier, brief, backend):
+    """(argv, model, effort) that starts solo at the level."""
+    tier = tier_of(tier)
+    if tier not in TIERS:
+        raise Refuse(f'no solo level {tier!r}: want L1, L2, or L3')
+    model, effort, level = TIERS[tier]
+    if backend == 'codex':
+        exe = os.environ.get('SOLO_CODEX_EXEC') or str(SCRIPTS / 'codex_exec.py')
+        m, e = CODEX_MODELS[level]
+        return [sys.executable, exe, 'solo', level, brief], m, e
+    if backend != 'claude':
+        raise Refuse('unknown backend: ' + backend)
+    return ['claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc:solo', '--model', model,
+            '--effort', effort, '--dangerously-skip-permissions', '--output-format', 'json', '--', brief], model, effort
+
+
+def head_sha(where):
+    """HEAD of the repo holding where: the commit the build starts from, recorded for prepare verifier (T-0366)."""
+    r = subprocess.run(['git', '-C', str(where), 'rev-parse', 'HEAD'], capture_output=True, text=True)
+    return r.stdout.strip() or None if r.returncode == 0 else None
+
+
+def inner_loop_brief(task_dir, brief):
+    """The brief for a ticket under the inner-loop profile (T-0510): Refuse when a `## Acceptance criteria` or `Done when:`
+    span equals a `full_gate:` command (the merge gate owns the suite), naming the `local_gate:` lines; else the brief with
+    `Checks: <local_gate lines>` appended when it names none. A repo without `profile: inner-loop` in .sdlc/config, and a
+    handoff with a `profile: default` line, get the brief back unchanged."""
+    handoff = pathlib.Path(task_dir) / 'handoff.md'
+    if not handoff.is_file():
+        return brief
+    sys.path.insert(0, str(SCRIPTS))  # a copy of this file elsewhere (the selftest controls) still finds its siblings
+    import steps
+    import tickets
+    import results
+    text = handoff.read_text(encoding='utf-8')
+    root = steps.sdlc_root(task_dir)
+    if not tickets.inner_loop(root, text):
+        return brief
+    local = tickets.local_gate_commands(root)
+    full = tickets.full_gate_commands(root)
+    for span in results.criterion_spans(text):
+        if span in full:
+            raise Refuse(f'full gate `{span}` in a criterion; the merge gate owns it, the local gate is: '
+                         + (', '.join(local) if local else '(no local_gate: line in .sdlc/config)'))
+    if local and not re.search(r'(?m)^\s*Checks:', brief):
+        brief = brief.rstrip('\n') + '\nChecks: ' + '; '.join(local)
+    return brief
+
+
+def refuse_template(task_dir):
+    """Refuse a handoff that is still the unfilled ticket template of its type (T-0531): every body line that is not a
+    heading or a bare label is a line of that template, by the comparison tickets.py placeholder_problems uses."""
+    sys.path.insert(0, str(SCRIPTS))
+    import steps
+    import tickets
+    handoff = pathlib.Path(task_dir) / 'handoff.md'
+    text = handoff.read_text(encoding='utf-8')
+    kind = re.search(r'(?m)^type:[ \t]*([a-z]+)', text)
+    if not kind or not text.startswith('---'):
+        return
+    try:
+        tpl = tickets.template(steps.sdlc_root(task_dir), kind.group(1)).read_text(encoding='utf-8')
+    except (tickets.Fail, OSError):
+        return
+    prompts = {tickets.prompt_text(ln) for _, ln in tickets.body_lines(tpl)}
+    if all(tickets.prompt_text(ln) in prompts for _, ln in tickets.body_lines(text)):
+        raise Refuse(f'{handoff}: still the unfilled {kind.group(1)} template; write its Goal, Intent and Context first')
+
+
+def report_lines(result, handoff):
+    """The Report file and pointer lines of a solo brief (T-0682), as dispatch.py prepare writes them for every other role
+    (T-0646): the solo writes its report to result and ends with one short line, so the completion notice stays short.
+    Then the search scope line every brief carries (T-0702)."""
+    import dispatch  # same scripts/ dir
+    return (f'Report file: {result} (before you end, write your report to exactly this path with the Write tool; when it says '
+            f'`verify: needed`, check it with python3 {SCRIPTS / "results.py"} solo-report <file> --handoff {handoff}; '
+            'dispatch.py record reads the file)\n'
+            f'End with one line: `solo <status> {result}` (status is done, blocked, or already-fixed), nothing else.\n'
+            + dispatch.SEARCH_SCOPE)  # T-0702
+
+
+def dispatch_json(task_dir, tier, brief, worktree=None, tree=None):
+    """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284). tree (run --cwd)
+    is the tree the solo builds in: base_sha is its HEAD and the prompt carries its Tree line, not the session checkout's (T-0546);
+    a --worktree lane wins over it, so base_sha is the lane tree's HEAD, matching the recorded tree (T-0587)."""
+    tier = tier_of(tier)
+    if tier not in TIERS:
+        raise Refuse(f'no solo level {tier!r}: want L1, L2, or L3')
+    handoff = pathlib.Path(task_dir) / 'handoff.md'
+    if not handoff.is_file():
+        raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    refuse_template(task_dir)
+    brief = inner_loop_brief(task_dir, brief)
+    hold = budget_hold(task_dir)
+    if hold:
+        print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
+        return 4, None
+    model, effort, level = TIERS[tier]
+    import steps  # same scripts/ dir: the one rule for the verifier level (T-0356)
+    vlevel = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))[0]
+    attempt = uuid.uuid4().hex
+    import dispatch  # same scripts/ dir: the names and first prompt lines follow docs/references/subagent-list-style.md (T-0363)
+    tdir = pathlib.Path(task_dir).resolve()
+    d = dict(subagent_type=f'sdlc:solo-{tier}', name=dispatch.agent_name('solo', tier, tdir, 1), description=dispatch.list_description(tdir, 'solo', tier),
+             model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
+             role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(records(tdir)),
+             attempt_id=attempt, base_sha=head_sha(worktree or tree or task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
+    # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
+    d['result'] = str(records(tdir) / f'{d["name"]}.md')  # T-0682: the solo's report file, which dispatch.py record reads
+    # T-0753: a sub-agent's shell has no SDLC_BASE_SHA; the base and the export sentence match dispatch.py prepare (T-0735)
+    base_line = f'Base sha: {d["base_sha"]} (the commit this build started from). {dispatch.base_export(d["base_sha"])}\n' if d['base_sha'] else ''
+    d['prompt'] = (f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {dispatch.handoff_locator(d["handoff"])}\nArtifacts dir: '
+                   f'{dispatch.handoff_locator(d["artifacts_dir"])}\n{report_lines(d["result"], dispatch.handoff_locator(d["handoff"]))}\n{base_line}{brief}')
+    tree = worktree or tree  # T-0550: a --worktree lane gets the same Tree line dispatch.py prepare writes; the lane wins
+    if tree:
+        d['tree'] = os.path.realpath(str(tree))
+        d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nTree: {d["tree"]} (run every Bash call as cd {shlex.quote(d["tree"])} && ...; '
+                                          f'the shell keeps no working directory between calls)\n{dispatch.ports_line(d["tree"])}Artifacts dir:', 1)  # T-0693: Ports line for a lane with a port
+    if worktree:
+        d['worktree'] = worktree
+        d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
+    else:
+        mark_live(task_dir, attempt)
+    where = d['tree'] if tree and os.path.isdir(d['tree']) else str(tdir)
+    skills = dispatch.repo_skills_line(dispatch.git('rev-parse', '--show-toplevel', cwd=where).stdout.strip() or where, handoff)
+    if skills:  # T-0648: the repo skills for the ticket's file scope, resolved against the tree the solo builds in
+        d['prompt'] += '\n' + skills
+    if d['verifier']:  # T-0550: a sub-agent cannot spawn the verifier; the parent runs this command after the report
+        d['prompt'] += (f'\nVerifier: do not start one (a sub-agent cannot spawn agents); the parent runs {d["verifier"]} after your report.')
+    (records(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
+    rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
+    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None, file=pathlib.Path(d['result']).name)
+    append(task_dir, rec)
+    return 0, d
+
+
+def find_result(text):
+    """The result event in a session's stdout: one JSON object, a JSON array of events, or JSON lines."""
+    text = (text or '').strip()
+    if not text:
+        return None
+
+    def pick(obj):
+        if isinstance(obj, dict) and obj.get('type') == 'result':
+            return obj
+        if isinstance(obj, list):
+            for ev in reversed(obj):
+                got = pick(ev)
+                if got is not None:
+                    return got
+        return None
+
+    try:
+        got = pick(json.loads(text))
+        if got is not None:
+            return got
+    except ValueError:
+        pass
+    for line in reversed(text.splitlines()):
+        try:
+            got = pick(json.loads(line))
+        except ValueError:
+            continue
+        if got is not None:
+            return got
+    return None
+
+
+def number(x):
+    return x if isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) else None
+
+
+def native_codex():
+    """True when a Codex solo run uses the native subagent transport (T-0372): the parent answers a request file."""
+    return os.environ.get('SDLC_CODEX_TRANSPORT') == 'subagent'
+
+
+def request_path(task_dir, level, attempt):
+    """The native exchange request for one attempt. The attempt id is fresh per run, so a rerun never overwrites an earlier request."""
+    return records(pathlib.Path(task_dir).resolve()) / f'solo-{level}-{attempt[:8]}.request.json'
+
+
+def clean_exchange(request):
+    """Remove an exchange's lock, owner lock, temp and response files; the request (status received or failed) stays as the record."""
+    request = pathlib.Path(request)
+    for suffix in ('.response.json', '.lock', '.owner.lock', '.tmp'):
+        request.with_suffix(suffix).unlink(missing_ok=True)
+
+
+def build_record(tier, backend, model, effort, result, attempt, started, rc, reason=None, transport=None):
+    """One runs.jsonl line. cost_usd is the result's total_cost_usd, else null with cost_reason: never zero."""
+    tier = tier_of(tier)
+    level = TIERS[tier][2]
+    cost = number((result or {}).get('total_cost_usd'))
+    cost_reason = None
+    if cost is None:
+        cost_reason = ('no result event' if result is None else
+                       'codex reports no cost' if backend == 'codex' else 'result has no total_cost_usd')
+    duration = number((result or {}).get('duration_ms'))
+    if duration is None:
+        duration = round((time.monotonic() - started) * 1000)
+    rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'role': 'solo', 'level': level,
+           'model': model, 'effort': effort, 'file': '', 'shared_with_builder': False, 'attempt_id': attempt,
+           'routing_reason': reason or f'solo lane, level {tier}',
+           'backend': backend, 'transport': (transport or (result or {}).get('transport') or 'exec') if backend == 'codex' else 'claude',
+           'usage': (result or {}).get('usage'), 'cost_usd': cost, 'duration_ms': duration,
+           'turns': number((result or {}).get('num_turns')), 'exit_code': rc,
+           'stray_worktrees': [], 'stray_branches': []}
+    if cost_reason:
+        rec['cost_reason'] = cost_reason
+    if 'profile_fingerprint' in (result or {}):  # T-0507: only the Codex native exchange binds a profile
+        rec['profile_fingerprint'] = result['profile_fingerprint']
+        rec['profile_check'] = result.get('profile_check')
+    return rec
+
+
+LIMIT_RE = re.compile(r'429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit', re.I)
+
+
+RESET_RE = re.compile(r'resets +(\d{1,2}(?::\d{2})? *[ap]m)', re.I)
+
+
+def limit_hint(task_dir, tier, text):
+    """On a 429 or session-limit stop, write <task dir>/solo.limit (one JSON line) and print the resume hint."""
+    m = LIMIT_RE.search(text or '')
+    if not m:
+        return
+    tier = tier_of(tier)
+    resume = f'python3 {pathlib.Path(__file__).resolve()} run --task-dir {task_dir} --tier {tier} --brief <the same brief>'
+    rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'task_dir': str(task_dir), 'tier': tier,
+           'resume': resume, 'evidence': (text or '')[max(0, m.start() - 40):m.end() + 80].strip()[:200]}
+    rm = RESET_RE.search(text or '')
+    if rm:
+        rec['reset'] = rm.group(1)
+    try:
+        (records(task_dir) / 'solo.limit').write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
+    except OSError:
+        pass
+    print('solo_run.py: session limit: the work is in the tree (fanout keeps it in the lane WIP commit); '
+          f'resume after the limit resets: {resume}' + (f' (resets {rm.group(1)})' if rm else ''), file=sys.stderr)
+
+
+def budget_hold(task_dir):
+    """The budget report when the ticket holding task_dir is at 80 percent or more with no ack, else None."""
+    sys.path.insert(0, str(SCRIPTS))
+    import budget
+    ticket = budget.ticket_of(task_dir)
+    rep = budget.report(ticket) if ticket is not None else None
+    return rep if rep and rep['state'] != 'ok' else None
+
+
+def new_task(slug, brief, root='.sdlc'):
+    """Create <ticket root>/<slug>/handoff.md from the brief and return the folder (a task, not a ticket)."""
+    sys.path.insert(0, str(SCRIPTS))
+    import re
+    import tickets
+    slug = slug or time.strftime('solo-%Y%m%d-%H%M%S')
+    if not re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', slug):
+        raise Refuse(f'bad task slug {slug!r}: lowercase letters, digits and single hyphens')
+    try:
+        base = tickets.ticket_dir(pathlib.Path(root))
+    except tickets.Fail as exc:
+        raise Refuse(str(exc))
+    d = base / slug
+    if d.exists():
+        raise Refuse(f'{d}: already exists; pick another slug')
+    d.mkdir(parents=True)
+    first = next((ln.strip() for ln in brief.splitlines() if ln.strip()), 'solo task')[:100]
+    (d / 'handoff.md').write_text(f'## Goal\n{first}\n\n## Brief\n{brief.strip()}\n', encoding='utf-8')
+    return d
+
+
+def append(task_dir, rec):
+    task_dir = pathlib.Path(task_dir)
+    if not (task_dir / 'handoff.md').is_file():
+        raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    with (records(task_dir) / 'runs.jsonl').open('a', encoding='utf-8') as f:
+        f.write(json.dumps(rec, separators=(',', ':')) + '\n')
+
+
+def complete(task_dir, attempt, model_tier, transcript=None, tokens=None, agent_id=None, tool_uses=None, duration_ms=None):
+    """Price the solo row dispatch_json wrote (usage null) from the sub-agent transcript or the notice token count (T-0328).
+    Rewrites that row in place so budget.py does not count the run twice. Returns the priced cost, or None with the row untouched."""
+    sys.path.insert(0, str(SCRIPTS))
+    import cost_estimate
+    usage = cost_estimate.transcript_usage(transcript) if transcript else None
+    if usage is None and tokens is not None:
+        usage = {'subagent_tokens': tokens}
+    if usage is not None and tool_uses is not None:
+        usage = {**usage, 'tool_uses': tool_uses}
+    f = order.records_dir(task_dir) / 'runs.jsonl'
+    if not f.is_file():
+        unmark_live(task_dir, attempt)
+        return None
+    rows, cost, touched = [], None, False
+    for line in f.read_text(encoding='utf-8').splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            rows.append(line)
+            continue
+        if isinstance(r, dict) and r.get('role') == 'solo' and r.get('attempt_id', '').startswith(attempt) and r.get('usage') is None:
+            if agent_id:  # T-0355: the agent id and duration land even when nothing prices the row
+                r['agent_id'], touched = agent_id, True
+            if duration_ms is not None:
+                r['duration_ms'], touched = duration_ms, True
+            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[tier_of(model_tier)][0], usage) if usage is not None else (None, None, None)
+            if est is not None:
+                r.update(usage=usage, cost_usd=est, cost_estimated=True, cost_basis=basis)
+                r.pop('cost_reason', None)
+                cost = est
+                touched = True
+        rows.append(json.dumps(r, separators=(',', ':')) if isinstance(r, dict) else line)
+    if touched:
+        f.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+    unmark_live(task_dir, attempt)
+    return cost
+
+
+class Stopped(Exception):
+    """The wrapper got SIGTERM, SIGINT or SIGHUP (T-0293)."""
+
+    def __init__(self, sig):
+        super().__init__(sig)
+        self.sig = sig
+
+
+def _sig_group(pgid, sig):
+    try:
+        os.killpg(pgid, sig)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def _group_alive(pgid):
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except (ProcessLookupError, PermissionError):
+        return False
+
+
+def kill_group(p):
+    """End the child's whole process group: TERM, then KILL after 2 s (T-0293). Returns the child's captured stdout."""
+    pgid = p.pid
+    _sig_group(pgid, signal.SIGTERM)
+    end = time.monotonic() + 2
+    while time.monotonic() < end:
+        p.poll()
+        if not _group_alive(pgid):
+            break
+        time.sleep(0.05)
+    _sig_group(pgid, signal.SIGKILL)
+    try:
+        out, _ = p.communicate(timeout=3)
+    except subprocess.TimeoutExpired:
+        out = ''
+    p.poll()
+    return out or ''
+
+
+def lock_path(where):
+    """<git dir of the worktree holding where>/solo_run.lock, or None outside a git repository."""
+    try:
+        r = subprocess.run(['git', 'rev-parse', '--absolute-git-dir'], cwd=str(where), capture_output=True,
+                           text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return pathlib.Path(r.stdout.strip()) / 'solo_run.lock' if r.returncode == 0 and r.stdout.strip() else None
+
+
+def _pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def take_lock(path):
+    """Write this wrapper's pid to the lock; Refuse when the pid already there is alive, clear it when dead."""
+    for _ in range(3):
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            try:
+                pid = int(path.read_text().strip())
+            except (OSError, ValueError):
+                pid = 0
+            if pid > 0 and _pid_alive(pid):
+                raise Refuse(f'another solo run is live (pid {pid})')
+            path.unlink(missing_ok=True)
+            continue
+        with os.fdopen(fd, 'w') as f:
+            f.write(str(os.getpid()) + '\n')
+        return
+    raise Refuse('could not take the solo run lock ' + str(path))
+
+
+def drop_lock(path):
+    try:
+        if path.read_text().strip() == str(os.getpid()):
+            path.unlink()
+    except (OSError, ValueError):
+        pass
+
+
+LIVE_TTL = 6 * 3600  # a sub-agent solo leaves no pid; its marker counts as live this long unless complete removes it
+
+
+def _live_dir(where):
+    lp = lock_path(where)
+    return lp.parent / 'solo_live' if lp else None
+
+
+def mark_live(where, attempt):
+    d = _live_dir(where)
+    if d is not None:
+        d.mkdir(exist_ok=True)
+        (d / attempt).write_text(str(time.time()), encoding='utf-8')
+
+
+def unmark_live(where, attempt):
+    d = _live_dir(where)
+    if d is not None and d.is_dir():
+        for f in d.glob(attempt + '*'):
+            f.unlink(missing_ok=True)
+
+
+def live_solos(where):
+    """Count other solos live in the checkout holding where: a fresh sub-agent marker or a live exec lock (T-0345)."""
+    n = 0
+    d = _live_dir(where)
+    if d is not None and d.is_dir():
+        n += sum(1 for f in d.iterdir() if time.time() - f.stat().st_mtime < LIVE_TTL)
+    lp = lock_path(where)
+    if lp is not None and lp.exists():
+        try:
+            n += 1 if _pid_alive(int(lp.read_text().strip())) else 0
+        except (OSError, ValueError):
+            pass
+    return n
+
+
+def open_integration_lane(where):
+    """The name of an open integration lane in the repo holding where, else None (T-0490). Only the primary checkout
+    asks: a solo already inside a lane tree stays there. Reuses lanes.py's discovery and open/closable rule, so a
+    lane whose branch has landed (closable) or a repo with no lanes returns None."""
+    try:
+        import lanes  # same scripts/ dir
+        ctx = lanes.Ctx(where)
+        if not ctx.current or not lanes.samepath(ctx.current, ctx.top):
+            return None
+        for d in lanes.discover(ctx):
+            if d['owner'] and d['kind'] == 'integration' and 'open' in lanes.lane_states(ctx, d):
+                return d['lane']
+    except Exception:  # not a git repository, or lanes unreadable: the checkout stays as today
+        return None
+    return None
+
+
+def auto_worktree(task_dir, cwd):
+    """The worktree name to default to when another solo is live in this checkout, or an integration lane is open
+    in the repo (T-0490), else None."""
+    if not live_solos(cwd or task_dir) and not open_integration_lane(cwd or task_dir):
+        return None
+    slug = re.sub(r'[^a-z0-9]+', '-', pathlib.Path(task_dir).resolve().name.lower()).strip('-')[:40] or 'task'
+    return 'solo-' + slug
+
+
+def ensure_worktree(name, base=None, task_dir=None):
+    """Return the worktree path for --worktree <name>, creating it when missing. The role cannot do this itself:
+    block-stray-worktree.sh denies a role creating worktrees or branches, so the launcher does. When the task's
+    handoff.md front matter has an id, the tree is a lanes.py solo lane, <lanes root>/<id>-<slug> on lane/<id>-<slug>
+    (spec section 17.9 B); else <worktree root>/<name> on a new branch <name>, the root from wtroot.py: the sibling
+    <main checkout parent>/<name>.worktrees (T-0563)."""
+    sys.path.insert(0, str(SCRIPTS))
+    import lanes
+    import tickets
+    hf = pathlib.Path(task_dir) / 'handoff.md' if task_dir else None
+    meta = (tickets.parse(hf.read_text(encoding='utf-8')) if hf and hf.is_file() else None) or {}
+    tid = str(meta.get('id') or '').strip()
+    if tid:
+        try:
+            ctx = lanes.Ctx(base or '.')
+        except lanes.LaneError as exc:
+            raise Refuse(f'--worktree needs a git repository ({exc})')
+        tree = ctx.root / f'{tid.lstrip("#")}-{lanes.slug(name)}'
+        if tree.is_dir():
+            return str(tree)
+        r = lanes.open_lane(name, kind='solo', tickets=[tid], check_claim=False, cwd=base or '.')
+        if r['rc']:
+            raise Refuse(r['message'])
+        return r['path']
+
+    def git(*a):
+        return subprocess.run(['git', *a], cwd=str(base or '.'), capture_output=True, text=True)
+    import wtroot
+    root = wtroot.root(base or '.')
+    if root is None:
+        raise Refuse('--worktree needs a git repository')
+    wt = root / name
+    if wt.is_dir():
+        return str(wt)
+    exists = git('rev-parse', '--verify', '-q', f'refs/heads/{name}').returncode == 0
+    r = git('worktree', 'add', str(wt), name) if exists else git('worktree', 'add', '-b', name, str(wt))
+    if r.returncode:
+        raise Refuse(f'git worktree add failed: {r.stderr.strip()}')
+    return str(wt)
+
+
+def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out=None):
+    tier = tier_of(tier)
+    command(tier, brief, backend)  # an unknown backend or level refuses before anything else
+    if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
+        raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    refuse_template(task_dir)
+    brief = inner_loop_brief(task_dir, brief)
+    argv, model, effort = command(tier, brief, backend)
+    lock = lock_path(cwd or task_dir)
+    if lock is not None:
+        take_lock(lock)
+    old_handlers = {}
+    try:
+        def on_signal(signum, _frame):
+            raise Stopped(signum)
+        try:
+            for sg in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+                old_handlers[sg] = signal.signal(sg, on_signal)
+        except ValueError:  # not the main thread: no handlers
+            pass
+        return _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, model, effort)
+    finally:
+        for sg, h in old_handlers.items():
+            signal.signal(sg, h)
+        if lock is not None:
+            drop_lock(lock)
+
+
+def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, model, effort):
+    hold = budget_hold(task_dir)
+    if hold:
+        print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
+        return 4
+    # Always mint a fresh id: an inherited SDLC_ATTEMPT_ID belongs to a role attempt (fanout.py does the same), and
+    # budget.py skips a second record with a repeated attempt_id, so reusing it would undercount spend.
+    attempt = uuid.uuid4().hex
+    env = dict(os.environ, SDLC_ROLE='solo', SDLC_ATTEMPT_ID=attempt)
+    started = time.monotonic()
+    request = None
+    if backend == 'codex' and native_codex():  # T-0372: solo gets the same request lifecycle as factory
+        request = request_path(task_dir, TIERS[tier][2], attempt)
+        argv = argv + ['--request-file', str(request)]
+        print(f'solo_run.py: native request {request}', file=sys.stderr)
+    p = None
+    try:
+        p = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                             text=True, start_new_session=True)
+        out, _ = p.communicate(timeout=timeout)
+        rc = p.returncode
+    except FileNotFoundError as exc:
+        out, rc = '', 127
+        print(f'solo_run.py: {exc}', file=sys.stderr)
+    except subprocess.TimeoutExpired:
+        out, rc = kill_group(p), 124
+        print(f'solo_run.py: timed out after {timeout}s', file=sys.stderr)
+    except Stopped as exc:
+        out, rc = (kill_group(p) if p else ''), 128 + exc.sig
+        print(f'solo_run.py: stopped by signal {exc.sig}; process group ended', file=sys.stderr)
+    if raw_out:
+        pathlib.Path(raw_out).write_text(out or '', encoding='utf-8')
+    result = find_result(out)
+    if request is not None:
+        clean_exchange(request)
+    rec = build_record(tier, backend, model, effort, result, attempt, started, rc, transport='subagent' if request is not None else None)
+    text = (result or {}).get('result')
+    if isinstance(text, str) and text.strip():  # T-0485: a result file results.py validate --role solo can check
+        name = f"solo-{rec['level']}-{attempt[:8]}.md"
+        head = f"<!-- role=solo level={rec['level']} model={model} effort={effort} -->\n"
+        (records(task_dir) / name).write_text(head + '## Output\n' + text.rstrip() + '\n', encoding='utf-8')
+        rec['file'] = name
+    append(task_dir, rec)
+    if isinstance(text, str) and text:
+        print(text)
+    elif out and result is None:
+        print(out, end='')
+    cost = rec['cost_usd']
+    print('solo_run.py: recorded solo %s attempt %s cost %s' % (
+        rec['level'], attempt[:8], f'${cost:.4f}' if cost is not None else f"none ({rec['cost_reason']})"),
+        file=sys.stderr)
+    failed = 1 if rc == 0 and (result or {}).get('is_error') else rc
+    if rc == 0 and result is None:
+        # T-0346: an unreadable stream (no result event) is a failure, said on stdout with the raw first line and the log path.
+        log = pathlib.Path(raw_out) if raw_out else records(task_dir) / 'solo.stream.log'
+        if not raw_out:
+            log.write_text(out or '', encoding='utf-8')
+        first = (out or '').strip().splitlines()[:1]
+        print(f'solo_run.py: FAILED: session stream has no readable result event (JSON parse failure); '
+              f'first line: {first[0][:200] if first else "(empty)"}; raw stream log: {log}')
+        failed = 1
+    elif rc == 0 and not (isinstance(text, str) and text.strip()):
+        # T-0531: an empty result text writes no result file, so the run left no record of its work: a failure.
+        print('solo_run.py: FAILED: the session result text is empty, so no solo result file was written')
+        failed = 1
+    if failed:
+        limit_hint(task_dir, tier, text if isinstance(text, str) and text else out)
+    else:
+        order.records_dir(task_dir).joinpath('solo.limit').unlink(missing_ok=True)
+    return failed
+
+
+def selftest():
+    sys.path.insert(0, str(SCRIPTS))
+    import budget
+    fails = []
+
+    def q(*a, **k):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            return run(*a, **k)
+
+    def expect(name, ok):
+        if not ok:
+            fails.append(name)
+
+    os.environ['SDLC_CLAUDE_EXEC'] = '1'  # T-0361: the retired Claude --exec start stays testable; the refusal case unsets it
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = pathlib.Path(tmp)
+        bin_dir = tmp / 'bin'
+        bin_dir.mkdir()
+
+        def shim(body):
+            f = bin_dir / 'claude'
+            f.write_text('#!/bin/sh\n' + body)
+            f.chmod(0o755)
+
+        def ticket(name, budget_usd=None):
+            d = tmp / name
+            d.mkdir()
+            fm = f'---\nid: T-0001\ntitle: t\ntype: chore\nstatus: ready\nsize: M\n'
+            if budget_usd is not None:
+                fm += f'budget_usd: {budget_usd}\n'
+            (d / 'handoff.md').write_text(fm + '---\n\n## Goal\ng\n')
+            return d
+
+        def lines(d):
+            f = order.records_dir(d) / 'runs.jsonl'
+            return [json.loads(x) for x in f.read_text().splitlines()] if f.is_file() else []
+
+        old_path = os.environ['PATH']
+        old_env = {k: os.environ.get(k) for k in ('SDLC_ATTEMPT_ID', 'SDLC_ROUTING_REASON')}
+        os.environ['SDLC_ATTEMPT_ID'] = 'inherited-role-attempt'
+        os.environ['SDLC_ROUTING_REASON'] = 'a role routing reason'
+        os.environ['PATH'] = f'{bin_dir}{os.pathsep}{old_path}'
+        try:
+            usage = '{"input_tokens":10,"output_tokens":20,"cache_read_input_tokens":300}'
+            ok_json = ('{"type":"result","subtype":"success","is_error":false,"result":"done report",'
+                       '"total_cost_usd":3.25,"duration_ms":4321,"num_turns":7,"usage":' + usage + '}')
+            shim(f"printf '%s' '{ok_json}'\n")
+            d = ticket('a')
+            rc = q(d, 'M', 'the brief', cwd=str(tmp))
+            r = lines(d)
+            expect('one record', len(r) == 1)
+            rec = r[0] if r else {}
+            expect('record role and level', rec.get('role') == 'solo' and rec.get('level') == 'L2')
+            expect('record model and effort', rec.get('model') == 'opus' and rec.get('effort') == 'medium')
+            expect('cost matches the result event', rec.get('cost_usd') == 3.25)
+            expect('usage, turns, duration copied', rec.get('usage', {}).get('output_tokens') == 20
+                   and rec.get('turns') == 7 and rec.get('duration_ms') == 4321)
+            expect('attempt id set', isinstance(rec.get('attempt_id'), str) and len(rec['attempt_id']) >= 8)
+            expect('exit status 0', rc == 0)
+            rf = order.records_dir(d) / rec.get('file', '')
+            vr = subprocess.run([sys.executable, str(SCRIPTS / 'results.py'), 'validate', str(rf), '--role', 'solo'],
+                                capture_output=True, text=True) if rec.get('file') else None
+            expect('record file is a solo result that results.py validates (T-0485)',
+                   vr is not None and vr.returncode == 0 and 'done report' in rf.read_text())
+            s, un, _est = budget.spend(d)
+            expect('budget counts the solo cost', abs(s - 3.25) < 1e-9 and un == 0)
+
+            shim("printf '%s\\n' 'not json {broken'\n")
+            d = ticket('bad')
+            out_bad = io.StringIO()
+            with contextlib.redirect_stdout(out_bad), contextlib.redirect_stderr(io.StringIO()):
+                rc_bad = run(str(d), 'S', 'b', cwd=str(tmp))
+            expect('malformed stream: non-zero exit and stdout names the log path (T-0346)',
+                   rc_bad != 0 and str(order.records_dir(d) / 'solo.stream.log') in out_bad.getvalue() and 'not json' in out_bad.getvalue()
+                   and (order.records_dir(d) / 'solo.stream.log').is_file())
+
+            shim(f"printf '%s\\n' '[{{\"type\":\"system\"}},{ok_json}]'\n")
+            d = ticket('arr')
+            q(d, 'S', 'b')
+            expect('array output parsed', lines(d)[0].get('cost_usd') == 3.25 and lines(d)[0].get('level') == 'L1')
+
+            # Negative control: no usage in the result records cost null with a reason, never zero.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\"}'\n")
+            d = ticket('nousage')
+            q(d, 'M', 'b')
+            rec = lines(d)[0]
+            expect('no usage: cost null, not zero', rec.get('cost_usd') is None and 'cost_reason' in rec)
+            s, un, _est = budget.spend(d)
+            expect('no usage: budget reports unmetered', s == 0 and un == 1)
+
+            shim('exit 3\n')
+            d = ticket('crash')
+            rc = q(d, 'M', 'b')
+            rec = (lines(d) or [{}])[0]
+            expect('crash: record written with null cost', rec.get('cost_usd') is None
+                   and rec.get('cost_reason') == 'no result event' and rec.get('exit_code') == 3 and rc == 3)
+
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"e\",\"total_cost_usd\":1}'\n")
+            d = ticket('err')
+            expect('is_error result exits 1', q(d, 'M', 'b') == 1 and lines(d)[0].get('cost_usd') == 1)
+            expect('a plain failure leaves no resume marker (T-0260 control)', not (order.records_dir(d) / 'solo.limit').exists())
+
+            # T-0531: a result event with empty text leaves no result file, so the run is a failure, not a silent exit 0.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"\",\"total_cost_usd\":1}'\n")
+            d = ticket('empty')
+            out_empty = io.StringIO()
+            with contextlib.redirect_stdout(out_empty), contextlib.redirect_stderr(io.StringIO()):
+                rc_empty = run(str(d), 'M', 'b', cwd=str(tmp))
+            expect('empty result text: exit 1, prints FAILED, writes no result file (T-0531)',
+                   rc_empty == 1 and 'FAILED' in out_empty.getvalue() and not lines(d)[0].get('file')
+                   and not list(d.glob('solo-*.md')))
+
+            # T-0531: a handoff that is still the stamped ticket template refuses before any session; a filled one runs.
+            d = tmp / 'tpl' / '.sdlc' / '0001-x'
+            d.mkdir(parents=True)
+            tpl_text = (SCRIPTS.parent / 'skills' / 'ticket' / 'templates' / 'chore.md').read_text(encoding='utf-8')
+            (d / 'handoff.md').write_text(tpl_text.replace('id: T-0000', 'id: T-0001').replace('title: ""', 'title: "t"'), encoding='utf-8')
+            refused = ''
+            try:
+                q(d, 'M', 'b', cwd=str(tmp))
+            except Refuse as exc:
+                refused = str(exc)
+            expect('template-equal handoff: solo refuses, writes no record (T-0531)',
+                   'unfilled chore template' in refused and not lines(d))
+            try:
+                dispatch_json(str(d), 'L2', 'b')
+                refused = ''
+            except Refuse as exc:
+                refused = str(exc)
+            expect('template-equal handoff: the dispatch start refuses too (T-0531)', 'unfilled chore template' in refused)
+            (d / 'handoff.md').write_text(tpl_text.replace('One or two sentences: the outcome, not the method.', 'Fix the typo.'), encoding='utf-8')
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+            expect('filled handoff: solo runs (T-0531 negative control)', q(d, 'M', 'b', cwd=str(tmp)) == 0 and len(lines(d)) == 1)
+
+            # T-0260: a 429 session-limit stop leaves solo.limit and prints the resume hint.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"API Error: 429 session limit reached\"}'\n")
+            d = ticket('limit')
+            err = io.StringIO()
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = run(d, 'M', 'b')
+            mk = order.records_dir(d) / 'solo.limit'
+            tmp_limit = d
+            got = json.loads(mk.read_text()) if mk.is_file() else {}
+            expect('limit stop: exits 1, solo.limit has the resume command and evidence',
+                   rc == 1 and '--task-dir' in got.get('resume', '') and '429' in got.get('evidence', ''))
+            expect('limit stop: stderr prints the resume hint', 'session limit' in err.getvalue() and 'resume' in err.getvalue())
+
+            # T-0298: a reset time in the output lands in the marker and the hint.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"API Error: 429 session limit reached, resets 1:40pm\"}'\n")
+            d = ticket('limitreset')
+            err = io.StringIO()
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = run(d, 'M', 'b')
+            mk = order.records_dir(d) / 'solo.limit'
+            got = json.loads(mk.read_text()) if mk.is_file() else {}
+            expect('limit stop with a reset: marker reset is 1:40pm and the hint says so',
+                   rc == 1 and got.get('reset') == '1:40pm' and 'resets 1:40pm' in err.getvalue())
+            expect('limit stop without a reset: no reset field (T-0298 control)', 'reset' not in json.loads((order.records_dir(tmp_limit) / 'solo.limit').read_text()))
+
+            # A ticket over 80 percent through solo cost alone trips the budget stop.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":8.5}'\n")
+            d = ticket('over', budget_usd=10)
+            q(d, 'M', 'b')
+            rep = budget.report(d)
+            expect('over 80 percent via solo cost warns', rep is not None and rep['state'] == 'warn' and rep['percent'] == 85)
+            expect('a second solo start at 85 percent is refused by the gate (T-0229)', q(d, 'M', 'b') == 4)
+            rep = budget.report(d)
+            expect('the refused start added no spend', rep is not None and rep['state'] == 'warn' and rep['percent'] == 85)
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                budget.cmd_ack(str(d), 20, 'selftest')
+            q(d, 'M', 'b')
+            rep = budget.report(d)
+            expect('an acked ticket keeps metering', rep is not None and rep['percent'] == 85 and rep['budget'] == 20 and rep['state'] == 'warn')
+
+            # Budget gate (T-0229): a ticket at 80 percent or more with no ack does not start a session.
+            mark = tmp / 'started.txt'
+            os.environ['SOLO_MARK'] = str(mark)
+            shim("touch \"$SOLO_MARK\"\nprintf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+
+            def seed(d, usd):
+                (d / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'attempt_id': 'seed' + str(usd),
+                                                          'cost_usd': usd}) + '\n')
+
+            d = ticket('gate', budget_usd=10)
+            seed(d, 8.0)  # exactly 80 percent
+            rc = q(d, 'M', 'b')
+            expect('gate: 80 percent with no ack exits 4', rc == 4)
+            expect('gate: no session started at 80 percent', not mark.exists())
+            expect('gate: no record written when refused', len(lines(d)) == 1)
+            d79 = ticket('gate79', budget_usd=10)
+            seed(d79, 7.9)
+            expect('gate: 79 percent starts (boundary control)', q(d79, 'M', 'b') == 0 and mark.exists() and len(lines(d79)) == 2)
+            mark.unlink()
+            dov = ticket('gateover', budget_usd=10)
+            seed(dov, 12.0)
+            expect('gate: over budget exits 4', q(dov, 'M', 'b') == 4 and not mark.exists())
+            # T-0284: the Claude default prints the dispatch JSON for a sub-agent and starts no claude -p.
+            def pj(*a):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    return dispatch_json(*a)
+            rc4, none = pj(d, 'M', 'b')
+            expect('subagent: the budget gate exits 4 with no dispatch and no record', rc4 == 4 and none is None and len(lines(d)) == 1)
+            dsub = ticket('subagent', budget_usd=10)
+            seed(dsub, 1.0)
+            rcd, dd = pj(dsub, 'L2', 'the brief')
+            recs = lines(dsub)
+            expect('subagent: level L2 dispatch names solo-L2, opus medium, the brief, and the verifier command',
+                   rcd == 0 and dd['subagent_type'] == 'sdlc:solo-L2' and dd['name'] == '0001-solo-L2' and dd['tier'] == 'L2'
+                   and (dd['model'], dd['effort']) == ('opus', 'medium')
+                   and dd['prompt'].endswith('the brief\nVerifier: do not start one (a sub-agent cannot spawn agents); the parent runs %s after your report.' % dd['verifier']) and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (order.records_dir(dsub) / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
+            dmark = ticket('subagent-mark', budget_usd=10)
+            (dmark / 'handoff.md').write_text((dmark / 'handoff.md').read_text(encoding='utf-8') + '\nverifier: L3\n', encoding='utf-8')
+            rcv, dv = pj(dmark, 'L2', 'the brief')
+            expect('subagent: a handoff with a verifier: L3 line prints prepare verifier L3 (T-0356 positive control); the plain ticket above printed L2',
+                   rcv == 0 and 'prepare verifier L3' in dv['verifier'] and 'prepare verifier L2' in dd['verifier'])
+            expect('subagent: one solo record with transport subagent and cost null, and no session started',
+                   len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'opus' and recs[1]['transport'] == 'subagent'
+                   and recs[1]['cost_usd'] is None and not mark.exists())
+            expect('subagent: level L1 has no verifier command', pj(dsub, 'L1', 'b')[1]['verifier'] is None)
+            _, dw = dispatch_json(str(dsub), 'L2', 'b', 'lane-x')
+            expect('subagent: with a worktree the title is line 1, Handoff line 2, Tree line 3 (T-0550), Worktree line 4 (T-0363)',
+                   [ln.split(':')[0] for ln in dw['prompt'].splitlines()[1:5]] == ['Handoff', 'Tree', 'Worktree', 'Artifacts dir'] and len(dw['prompt'].splitlines()[0]) <= 50
+                   and 'Tree: %s (run every Bash call as cd ' % os.path.realpath('lane-x') in dw['prompt'])
+            lp = pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix='solo-lane-port-')))
+            (lp / '.lane.json').write_text('{"lane": "x", "port": 47410}\n')
+            _, dlp = dispatch_json(str(dsub), 'L2', 'b', None, str(lp))
+            expect('subagent: a tree that is a lane with port 47410 gets one Ports: SDLC_LANE_PORT=47410 line right after Tree (T-0693)',
+                   [ln for ln in dlp['prompt'].splitlines() if ln.startswith('Ports:')] == [ln for ln in dlp['prompt'].splitlines() if ln.startswith('Ports: SDLC_LANE_PORT=47410 (')]
+                   and dlp['prompt'].count('\nPorts: SDLC_LANE_PORT=47410 (') == 1
+                   and dlp['prompt'].splitlines()[[ln.startswith('Ports:') for ln in dlp['prompt'].splitlines()].index(True) - 1].startswith('Tree: '))
+            (lp / '.lane.json').write_text('{"lane": "x"}\n')
+            _, dnp = dispatch_json(str(dsub), 'L2', 'b', None, str(lp))
+            expect('subagent: negative control: a lane record with no port, and the plain worktree case above, carry no Ports line (T-0693)',
+                   'Ports:' not in dnp['prompt'] and 'Ports:' not in dw['prompt'])
+            shutil.rmtree(lp, ignore_errors=True)
+            expect('subagent: level L1 carries no Verifier line; L2 says the parent runs the verifier (T-0550)',
+                   '\nVerifier:' not in pj(dsub, 'L1', 'b')[1]['prompt'] and '\nVerifier: do not start one' in dw['prompt'])
+            # The deprecated 0.21.x tier names are aliases: each dispatches as its level (same model and effort).
+            for alias, level, me in (('S', 'L1', ('sonnet', 'high')), ('M', 'L2', ('opus', 'medium')), ('L', 'L3', ('opus', 'high'))):
+                _, da = pj(dsub, alias, 'b')
+                expect(f'subagent: alias {alias} dispatches as solo-{level} at {me}',
+                       da['subagent_type'] == f'sdlc:solo-{level}' and da['tier'] == level and da['level'] == level
+                       and (da['model'], da['effort']) == me and da['name'] == f'0001-solo-{level}')
+            _, d3 = pj(dsub, 'L3', 'b')
+            expect('subagent: level L3 is opus high with a verifier command',
+                   d3['subagent_type'] == 'sdlc:solo-L3' and (d3['model'], d3['effort']) == ('opus', 'high') and d3['verifier'])
+            # Ack raises the ceiling: the same ticket then starts.
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_ack = budget.cmd_ack(str(d), 20, 'selftest')
+            expect('gate: ack accepted', rc_ack == 0)
+            expect('gate: acked ticket starts and records', q(d, 'M', 'b') == 0 and mark.exists() and len(lines(d)) == 2)
+            mark.unlink()
+            # No budget field, or a task folder with no ticket id, is never blocked.
+            dn = ticket('gatenone')
+            seed(dn, 999.0)
+            expect('gate: a ticket with no budget starts', q(dn, 'M', 'b') == 0 and mark.exists())
+            mark.unlink()
+            dt = tmp / 'plain-task'
+            dt.mkdir()
+            (dt / 'handoff.md').write_text('## Goal\ng\n')
+            expect('gate: a task folder without a ticket id starts', q(dt, 'S', 'b') == 0 and mark.exists())
+            mark.unlink()
+            # The gate runs before the brief reaches the model: stderr says to ack.
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                run(dov, 'M', 'b')
+            expect('gate: message names budget.py ack', 'budget.py ack' in err.getvalue() and 'budget 120%' in err.getvalue())
+
+            # --new-task: /agent solo with no ticket still leaves a `role solo` record.
+            root = tmp / 'proj' / '.sdlc'
+            root.mkdir(parents=True)
+            td = new_task('quick-fix', 'Fix the typo\nin README', root=str(root))
+            expect('new task: folder and handoff written', (td / 'handoff.md').is_file()
+                   and '## Goal\nFix the typo' in (td / 'handoff.md').read_text())
+            expect('new task: runs and records a solo run', q(td, 'S', 'Fix the typo') == 0
+                   and [x.get('role') for x in lines(td)] == ['solo'])
+            for name, fn in (('existing slug', lambda: new_task('quick-fix', 'x', root=str(root))),
+                             ('bad slug', lambda: new_task('Bad Slug', 'x', root=str(root)))):
+                try:
+                    fn()
+                    expect('new task: ' + name + ' refused', False)
+                except Refuse:
+                    expect('new task: ' + name + ' refused', True)
+            (root / 'config').write_text('ticket_root: tickets\n')
+            td2 = new_task('', 'In the ticket root', root=str(root))
+            expect('new task: default slug under ticket_root', td2.parent == root / 'tickets' and td2.name.startswith('solo-'))
+            wproj = tmp / 'wrproj'  # work_root: the new plain task folder lands in the work root, with its solo record
+            (wproj / '.sdlc').mkdir(parents=True)
+            (wproj / '.sdlc' / 'config').write_text('work_root: docs/work\n')
+            td3 = new_task('wr-task', 'In the work root', root=str(wproj / '.sdlc'))
+            expect('new task: under work_root: docs/work the folder is docs/work/wr-task and .sdlc holds none',
+                   td3 == wproj / 'docs' / 'work' / 'wr-task' and (td3 / 'handoff.md').is_file()
+                   and not (wproj / '.sdlc' / 'wr-task').exists())
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'wr-cli',
+                                 '--tier', 'L1', '--brief', 'cli brief'], cwd=str(wproj), capture_output=True, text=True,
+                                env=dict(os.environ), timeout=60)
+            wrec = order.records_dir(wproj / 'docs' / 'work' / 'wr-cli') / 'runs.jsonl'
+            recs = [json.loads(x) for x in wrec.read_text().splitlines()] if wrec.is_file() else []
+            expect(f'new task CLI: under work_root rc 0, docs/work/wr-cli/handoff.md and one solo record, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
+                   cp.returncode == 0 and (wproj / 'docs' / 'work' / 'wr-cli' / 'handoff.md').is_file()
+                   and [x.get('role') for x in recs] == ['solo'] and not (wproj / '.sdlc' / 'wr-cli').exists())
+            # The CLI path end to end: no ticket, a shim claude, cwd is the project.
+            pr = tmp / 'cliproj'
+            (pr / '.sdlc').mkdir(parents=True)
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-task',
+                                 '--tier', 'L1', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
+                                env=dict(os.environ), timeout=60)
+            recs = [json.loads(x) for x in (order.records_dir(pr / '.sdlc' / 'cli-task') / 'runs.jsonl').read_text().splitlines()] \
+                if (order.records_dir(pr / '.sdlc' / 'cli-task') / 'runs.jsonl').is_file() else []
+            expect(f'new task CLI: rc 0 and one solo record, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
+                   cp.returncode == 0 and [x.get('role') for x in recs] == ['solo'] and recs[0].get('level') == 'L1')
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-alias',
+                                 '--tier', 'S', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
+                                env=dict(os.environ), timeout=60)
+            recs = [json.loads(x) for x in (order.records_dir(pr / '.sdlc' / 'cli-alias') / 'runs.jsonl').read_text().splitlines()] \
+                if (order.records_dir(pr / '.sdlc' / 'cli-alias') / 'runs.jsonl').is_file() else []
+            expect(f'CLI: the deprecated --tier S is accepted as L1 with a notice, got rc={cp.returncode} err={cp.stderr[-200:]!r}',  # ALIAS_OK
+                   cp.returncode == 0 and '--tier S is deprecated; use --tier L1' in cp.stderr  # ALIAS_OK
+                   and [x.get('level') for x in recs] == ['L1'] and recs[0].get('effort') == 'high')
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--tier', 'S',
+                                 '--brief', 'x'], cwd=str(pr), capture_output=True, text=True, timeout=60)
+            expect('CLI: neither --task-dir nor --new-task exits 2', cp.returncode == 2)
+            # T-0361: Claude --exec without SDLC_CLAUDE_EXEC=1 refuses with one line, no record; the flag set starts as before.
+            env_off = {k: v for k, v in os.environ.items() if k != 'SDLC_CLAUDE_EXEC'}
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--exec', '--new-task', 'cli-gate',
+                                 '--tier', 'L1', '--brief', 'b'], cwd=str(pr), capture_output=True, text=True, env=env_off, timeout=60)
+            expect(f'CLI T-0361: Claude --exec without the flag exits 2 with one line and no task, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
+                   cp.returncode == 2 and len(cp.stderr.strip().splitlines()) == 1 and 'SDLC_CLAUDE_EXEC=1' in cp.stderr
+                   and not (pr / '.sdlc' / 'cli-gate').exists())
+            os.environ.pop('SOLO_MARK', None)
+
+            # Codex: codex_exec.py reports no cost; the record says so. A stub stands in for it.
+            stub = tmp / 'codex_stub.py'
+            stub.write_text('import json\nprint(json.dumps({"type":"codex_event","event":{}}))\n'
+                            'print(json.dumps({"type":"result","backend":"codex","is_error":False,"result":"cx",'
+                            '"total_cost_usd":None,"duration_ms":5,"num_turns":2,"usage":{"input_tokens":9}}))\n')
+            os.environ['SOLO_CODEX_EXEC'] = str(stub)
+            d = ticket('codex')
+            q(d, 'L3', 'b', backend='codex')
+            q(d, 'L', 'b', backend='codex')
+            rec = lines(d)[0]
+            expect('codex: alias L runs as level L3 too', lines(d)[1].get('level') == 'L3' and lines(d)[1].get('effort') == 'xhigh')
+            expect('codex: level L3, null cost with reason', rec.get('level') == 'L3' and rec.get('cost_usd') is None
+                   and rec.get('cost_reason') == 'codex reports no cost' and rec.get('turns') == 2
+                   and rec.get('model') == 'gpt-6.1-sol' and rec.get('effort') == 'xhigh')
+            del os.environ['SOLO_CODEX_EXEC']
+
+            # Refusals write nothing.
+            d = ticket('refuse')
+            for name, fn in (('bad tier', lambda: q(d, 'XL', 'b')), ('bad level', lambda: q(d, 'L4', 'b')), ('bad backend', lambda: q(d, 'M', 'b', backend='x')),
+                             ('no handoff', lambda: q(tmp / 'nowhere', 'M', 'b'))):
+                try:
+                    fn()
+                    expect(name + ' refused', False)
+                except Refuse:
+                    expect(name + ' refused', True)
+            expect('refusals wrote no record', not (order.records_dir(d) / 'runs.jsonl').exists())
+
+            # Two runs get two attempt ids.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+            d = ticket('two')
+            q(d, 'L2', 'b')
+            q(d, 'M', 'b')
+            ids = [x['attempt_id'] for x in lines(d)]
+            expect('distinct attempt ids, both counted', len(set(ids)) == 2 and abs(budget.spend(d)[0] - 2) < 1e-9)
+            expect('inherited SDLC_ATTEMPT_ID is not reused', 'inherited-role-attempt' not in ids)
+            expect('inherited SDLC_ROUTING_REASON is not copied', all(x.get('routing_reason') == 'solo lane, level L2' for x in lines(d)))
+
+            # find_result shapes.
+            expect('find_result: none on empty', find_result('') is None and find_result('not json') is None)
+            expect('find_result: json lines', (find_result('{"type":"x"}\n{"type":"result","total_cost_usd":2}\n') or {}).get('total_cost_usd') == 2)
+
+            # T-0293: a real child (a stub claude that spawns sleep): the whole group is gone after a timeout and after
+            # SIGTERM to the wrapper; a second run in a live worktree is refused; a dead pid's lock is cleared.
+            me = pathlib.Path(__file__).resolve()
+            repo = tmp / 'grprepo'
+            repo.mkdir()
+            subprocess.run(['git', 'init', '-q', str(repo)], check=True)
+            dg = ticket('grp')
+            shutil.move(str(dg), str(repo / 'grp'))
+            dg = repo / 'grp'
+            pidf = tmp / 'child.pid'
+            errf = tmp / 'wrapper.err'
+            shim(f'sleep 300 >/dev/null 2>&1 &\necho $! > "{pidf}"\nwait\n')
+
+            def gone(pid, wait=4.0):
+                end = time.monotonic() + wait
+                while time.monotonic() < end:
+                    try:
+                        os.kill(pid, 0)
+                    except ProcessLookupError:
+                        return True
+                    time.sleep(0.05)
+                return False
+
+            def child_pid():
+                end = time.monotonic() + 10
+                while time.monotonic() < end:
+                    if pidf.is_file() and pidf.read_text().strip():
+                        return int(pidf.read_text().strip())
+                    time.sleep(0.05)
+                return None
+
+            def wrapper(script, *extra):
+                pidf.unlink(missing_ok=True)
+                return subprocess.Popen([sys.executable, str(script), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1',
+                                         '--brief', 'b', '--cwd', str(repo), *extra], stdout=subprocess.DEVNULL,
+                                        stderr=open(errf, 'w'))
+
+            def kill_leftover():
+                if pidf.is_file() and pidf.read_text().strip():
+                    try:
+                        os.kill(int(pidf.read_text().strip()), signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
+            def group_case(script, how):
+                w = wrapper(script, *(['--timeout', '1'] if how == 'timeout' else []))
+                cp = child_pid()
+                if cp is None:
+                    w.kill()
+                    return None, None, ''
+                if how == 'sigterm':
+                    time.sleep(0.3)
+                    w.send_signal(signal.SIGTERM)
+                try:
+                    w.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    w.kill()
+                    w.wait()
+                return w.returncode, gone(cp), errf.read_text()
+
+            for how in ('timeout', 'sigterm'):
+                rc_w, child_gone, err = group_case(me, how)
+                expect(f'group kill after {how}: wrapper exits nonzero and the child is gone', bool(rc_w) and child_gone)
+                expect(f'group kill after {how}: lock removed', not (repo / '.git' / 'solo_run.lock').exists())
+                kill_leftover()
+            ctl = tmp / 'solo_run_nokill.py'
+            src = me.read_text()
+            body = '    try:\n        os.killpg(pgid, sig)\n    except (ProcessLookupError, PermissionError):\n        pass\n'
+            assert body in src
+            src = src.replace(body, '    pass\n', 1).replace(
+                'SCRIPTS = pathlib.Path(__file__).resolve().parent', f'SCRIPTS = pathlib.Path({str(SCRIPTS)!r})', 1)
+            ctl.write_text(src)
+            for how in ('timeout', 'sigterm'):
+                res = group_case(ctl, how)
+                survived = res[1] is False
+                kill_leftover()
+                expect(f'negative control: a copy without the group kill leaves the child alive after {how}', survived)
+
+            # Second run while a live pid holds the lock: refused, one line, no session, no record.
+            lock = repo / '.git' / 'solo_run.lock'
+            live = subprocess.Popen(['sleep', '60'])
+            try:
+                lock.write_text(f'{live.pid}\n')
+                pidf.unlink(missing_ok=True)
+                before = len(lines(dg))
+                cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1', '--brief', 'b',
+                                     '--cwd', str(repo), '--no-worktree'], capture_output=True, text=True, timeout=60)
+                msg = cp.stderr.strip().splitlines()
+                expect('second run: refused with the one-line message, nonzero',
+                       cp.returncode != 0 and msg == [f'solo_run.py: another solo run is live (pid {live.pid})'])
+                expect('second run: no session and no record', not pidf.exists() and len(lines(dg)) == before)
+                expect('second run: the first run keeps its lock', lock.read_text().strip() == str(live.pid))
+            finally:
+                live.kill()
+                live.wait()
+            # Stale lock: a dead pid is cleared and the run proceeds.
+            dead = subprocess.Popen(['true'])
+            dead.wait()
+            lock.write_text(f'{dead.pid}\n')
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+            before = len(lines(dg))
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1', '--brief', 'b',
+                                 '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
+            expect('stale lock: a dead pid proceeds and records', cp.returncode == 0 and len(lines(dg)) == before + 1)
+            expect('stale lock: removed on exit', not lock.exists())
+            # T-0313: --worktree creates the lane worktree on a new branch and the session runs inside it.
+            wrepo = tmp / 'wtrepo'
+            wrepo.mkdir()
+            for c in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i']):
+                subprocess.run(['git', *c], cwd=str(wrepo), check=True)
+            dw = wrepo / 'wt'  # no id in the front matter: <worktree root>/<name> on branch <name>
+            dw.mkdir()
+            (dw / 'handoff.md').write_text('## Goal\ng\n')
+            pwdf = tmp / 'pwd.out'
+            shim(f"pwd -P > {pwdf}\nprintf '%s' '{{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}}'\n")
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'L1', '--brief', 'b',
+                                 '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
+            want = (tmp / 'wtrepo.worktrees' / 'lane-x').resolve()  # the sibling root, outside the repo (T-0563)
+            br = subprocess.run(['git', 'branch', '--list', 'lane-x'], cwd=str(wrepo), capture_output=True, text=True).stdout
+            expect('--worktree: run succeeds', cp.returncode == 0)
+            expect('--worktree: worktree on a new branch', want.is_dir() and 'lane-x' in br)
+            expect('--worktree: session cwd is the worktree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
+            # T-0452: a ticketed task opens its worktree through lanes.py as a solo lane (spec 17.9 B).
+            dl = ticket('wtl')
+            shutil.move(str(dl), str(wrepo / 'wtl'))
+            dl = wrepo / 'wtl'
+            pwdf.unlink(missing_ok=True)
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dl), '--tier', 'L1', '--brief', 'b',
+                                 '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
+            want = (tmp / 'wtrepo.worktrees' / 'T-0001-lane-x').resolve()
+            head = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=str(want), capture_output=True, text=True).stdout.strip() \
+                if want.is_dir() else ''
+            try:
+                lrec = json.loads((want / '.lane.json').read_text())
+            except (OSError, ValueError):
+                lrec = {}
+            expect('--worktree lanes: run succeeds', cp.returncode == 0)
+            expect('--worktree lanes: the tree is <repo>.worktrees/T-0001-lane-x on lane/T-0001-lane-x', head == 'lane/T-0001-lane-x')
+            expect('--worktree lanes: a .lane.json of kind solo lists the ticket',
+                   lrec.get('kind') == 'solo' and lrec.get('tickets') == ['T-0001'] and lrec.get('branch') == 'lane/T-0001-lane-x')
+            expect('--worktree lanes: session cwd is the lane tree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dl), '--tier', 'L1', '--brief', 'b',
+                                 '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
+            expect('--worktree lanes: a second run reuses the existing tree', cp.returncode == 0)
+            # T-0345: a second dispatch while a first solo is live defaults to a worktree; a single run keeps today's behavior.
+            wr2 = tmp / 'dfrepo'
+            wr2.mkdir()
+            for c in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i']):
+                subprocess.run(['git', *c], cwd=str(wr2), check=True)
+            def disp(name, *extra):
+                d_ = ticket(name)
+                shutil.move(str(d_), str(wr2 / name))
+                cp_ = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(wr2 / name), '--tier', 'L1', '--brief', 'b',
+                                      '--cwd', str(wr2), *extra], capture_output=True, text=True, timeout=60)
+                return cp_, (json.loads(cp_.stdout) if cp_.stdout.strip() else {})
+            c1, j1 = disp('par1')
+            expect('default worktree: a single run keeps the checkout', c1.returncode == 0 and 'worktree' not in j1)
+            c2, j2 = disp('par2')
+            expect('default worktree: the second live solo gets a worktree', c2.returncode == 0 and j2.get('worktree')
+                   and pathlib.Path(j2['worktree']).is_dir() and 'solo-par2' in c2.stderr)
+            expect('default worktree: the Tree line names the worktree, not the --cwd checkout (T-0550)',
+                   f"\nTree: {os.path.realpath(j2['worktree'])} " in j2.get('prompt', '') and f"\nTree: {os.path.realpath(str(wr2))} " not in j2.get('prompt', ''))
+            c3, j3 = disp('par3', '--no-worktree')
+            expect('default worktree: --no-worktree wins', c3.returncode == 0 and 'worktree' not in j3)
+            unmark_live(wr2, j1['attempt_id'])
+            for f in (wr2 / '.git' / 'solo_live').glob('*'):
+                f.unlink()
+            c4, j4 = disp('par4')
+            expect('default worktree: none live again keeps the checkout', c4.returncode == 0 and 'worktree' not in j4)
+            # T-0350: recording a finished sub-agent solo (dispatch.py record) clears its marker, so the next solo stays here.
+            c5, j5 = disp('par5')
+            expect('recorded solo: before the record, a live marker forces the next solo into a worktree', c5.returncode == 0 and j5.get('worktree'))
+            pathlib.Path(j4['result']).write_text('## Report\ndone\n', encoding='utf-8')  # T-0682: record reads the solo's report file
+            rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(wr2 / 'par4') / f'{j4["name"]}.dispatch.json')],
+                                capture_output=True, text=True, timeout=60)
+            c6, j6 = disp('par6')
+            expect(f'recorded solo: record exits 0 and clears the marker, the next solo keeps the checkout (record rc {rp.returncode} {rp.stderr[-300:]!r}, next {c6.returncode} {j6.get("worktree")})',
+                   rp.returncode == 0 and c6.returncode == 0 and 'worktree' not in j6)
+            # T-0490: an open integration lane in the repo defaults the next solo to a worktree; --no-worktree wins.
+            for f in (wr2 / '.git' / 'solo_live').glob('*'):
+                f.unlink()
+            lanes_py = str(SCRIPTS / 'lanes.py')
+            subprocess.run(['git', 'config', 'user.name', 't'], cwd=str(wr2), check=True)
+            subprocess.run(['git', 'config', 'user.email', 't@t'], cwd=str(wr2), check=True)
+            (wr2 / '.gitignore').write_text('.claude/worktrees/\n.sdlc/\n', encoding='utf-8')  # host-owned
+            subprocess.run(['git', 'add', '.gitignore'], cwd=str(wr2), check=True)
+            subprocess.run(['git', 'commit', '-q', '-m', 'ignore'], cwd=str(wr2), check=True)
+            op = subprocess.run([sys.executable, lanes_py, 'open', 'wave/1', '--kind', 'integration'], cwd=str(wr2),
+                                capture_output=True, text=True, timeout=60)
+            itree = tmp / 'dfrepo.worktrees' / 'wave-1'
+            expect('integration lane: lanes.py opens the integration lane', op.returncode == 0 and (itree / '.lane.json').is_file())
+            c7, j7 = disp('par7')
+            expect('integration lane: a closable lane (no unlanded work) keeps the checkout', c7.returncode == 0 and 'worktree' not in j7)
+            for f in (wr2 / '.git' / 'solo_live').glob('*'):
+                f.unlink()
+            (itree / 'wave.txt').write_text('wave work\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'wave.txt'], cwd=str(itree), check=True)
+            subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'wave work'],
+                           cwd=str(itree), check=True)
+            c8, j8 = disp('par8')
+            expect('integration lane: an open lane defaults the solo to a worktree',
+                   c8.returncode == 0 and j8.get('worktree') and pathlib.Path(j8['worktree']).is_dir() and 'solo-par8' in c8.stderr)
+            c9, j9 = disp('par9', '--no-worktree')
+            expect('integration lane: --no-worktree wins', c9.returncode == 0 and 'worktree' not in j9)
+            expect('integration lane: a solo already inside a lane tree stays there (no nested worktree)',
+                   open_integration_lane(itree) is None and open_integration_lane(wr2) == 'wave-1')
+        finally:
+            os.environ['PATH'] = old_path
+            for k, v in old_env.items():
+                if v is None: os.environ.pop(k, None)
+                else: os.environ[k] = v
+    with tempfile.TemporaryDirectory() as tmp:
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        tr = d / 't.jsonl'
+        tr.write_text(json.dumps({'message': {'id': 'm1', 'usage': {'input_tokens': 10, 'output_tokens': 1000,
+                                                                      'cache_read_input_tokens': 500000}}}) + '\n')
+        row = lambda: [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
+        expect('solo row starts unpriced', row()[0]['cost_usd'] is None)
+        expect('complete: unknown attempt prices nothing', complete(d, 'zzzz', 'M', str(tr)) is None and row()[0]['cost_usd'] is None)
+        got = complete(d, disp['attempt_id'], 'M', str(tr))
+        r0 = row()
+        expect('complete: solo row priced in place, one row', got and len(r0) == 1 and r0[0]['cost_usd'] == got and got > 0
+               and r0[0].get('cost_estimated') and 'cost_reason' not in r0[0] and r0[0]['usage']['output_tokens'] == 1000)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0352: the notice's agent id, tool uses and duration reach the row
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        got = complete(d, disp['attempt_id'], 'M', None, 1234, agent_id='ag-3', tool_uses=7, duration_ms=900)
+        r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()][0]
+        expect('complete: row carries agent_id, duration_ms and tool_uses', got is not None and r0.get('agent_id') == 'ag-3'
+               and r0.get('duration_ms') == 900 and r0['usage'].get('tool_uses') == 7)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0355: dispatch.py record takes the solo_run.py dispatch file end to end
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        # T-0682: the brief carries the Report file and pointer lines right after Artifacts dir; the row names the report file
+        import dispatch  # same scripts/ dir
+        lines = disp['prompt'].splitlines()
+        expect('T-0682 the solo brief carries Report file: <result> and End with one line: `solo <status> <result>` after Artifacts dir, '
+               'and the runs row file names the report', lines[2].startswith('Artifacts dir: ')
+               and lines[3].startswith(f"Report file: {disp['result']} (before you end") and 'results.py solo-report' in lines[3]
+               and lines[4].startswith(f"End with one line: `solo <status> {disp['result']}`")
+               and lines[5] == dispatch.SEARCH_SCOPE  # T-0702
+               and pathlib.Path(disp['result']).name == f"{disp['name']}.md" and pathlib.Path(disp['result']).parent.samefile(order.records_dir(d))
+               and json.loads((order.records_dir(d) / 'runs.jsonl').read_text().splitlines()[0])['file'] == f"{disp['name']}.md")
+        # T-0753: a solo sub-agent's shell has no SDLC_BASE_SHA, so the brief names the base and the export, as dispatch.py prepare does (T-0735)
+        gd = d / 'g'
+        gd.mkdir()
+        (gd / 'handoff.md').write_text('x\n')
+        subprocess.run(['git', '-C', str(gd), 'init', '-q'], check=True)
+        subprocess.run(['git', '-C', str(gd), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'c'], check=True)
+        rcg, dg0 = dispatch_json(str(gd), 'M', 'brief')
+        gb = dg0 and dg0.get('base_sha')
+        expect('T-0753 a repo solo brief carries the base and `export SDLC_BASE_SHA=<base> &&` ahead of the brief text',
+               rcg == 0 and bool(gb) and f'Base sha: {gb} ' in dg0['prompt'] and f'`export SDLC_BASE_SHA={gb} &&`' in dg0['prompt']
+               and dg0['prompt'].index('export SDLC_BASE_SHA') < dg0['prompt'].index('\nbrief'))
+        rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json')],
+                            capture_output=True, text=True, timeout=60)
+        r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
+        expect('T-0682 record with no report file and no transcript exits 2 and leaves the row unrecorded',
+               rp.returncode == 2 and 'no solo report' in rp.stderr and r0[0].get('agent_id') is None)
+        pathlib.Path(disp['result']).write_text('## Report\ndone\n', encoding='utf-8')
+        rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(order.records_dir(d) / f'{disp["name"]}.dispatch.json'),
+                             '--tokens', '5000', '--agent-id', 'ag-9', '--duration-ms', '4321'], capture_output=True, text=True, timeout=60)
+        r0 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()]
+        expect('record: a solo dispatch file records end to end with cost, agent_id and duration', rp.returncode == 0 and len(r0) == 1
+               and r0[0]['cost_usd'] and r0[0].get('agent_id') == 'ag-9' and r0[0].get('duration_ms') == 4321)
+        (order.records_dir(d) / 'runs.jsonl').unlink()
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        complete(d, disp['attempt_id'], 'M', None, None, agent_id='ag-8', duration_ms=77)
+        r1 = [json.loads(l) for l in (order.records_dir(d) / 'runs.jsonl').read_text().splitlines()][0]
+        expect('complete: with nothing to price, agent_id and duration still land', r1.get('agent_id') == 'ag-8' and r1.get('duration_ms') == 77
+               and r1['cost_usd'] is None)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0510: the inner-loop profile refuses a full-suite criterion
+        tmp = pathlib.Path(tmp)
+        cfg = 'profile: inner-loop\nlocal_gate: python3 check.py\nfull_gate: python3 suite.py\n'
+
+        def il(name, config, crit, extra=''):
+            d = tmp / name / '.sdlc' / '0001-x'
+            d.mkdir(parents=True)
+            (d.parent / 'config').write_text(config)
+            (d / 'handoff.md').write_text('---\nid: T-0001\ntitle: t\ntype: chore\nstatus: ready\nsize: L2\n---\n' + extra
+                                          + f'\n## Goal\ng\n\n## Acceptance criteria\n- [ ] `{crit}` exits 0\n')
+            return d
+
+        def il_run(d):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                try:
+                    rc, disp = dispatch_json(str(d), 'L2', 'the brief')
+                except Refuse as exc:
+                    print(f'solo_run.py: {exc}', file=sys.stderr)
+                    rc, disp = 2, None
+            return rc, disp, err.getvalue(), (order.records_dir(d) / 'runs.jsonl').is_file()
+        rc, disp, err, rec = il_run(il('on', cfg, 'python3 suite.py'))
+        expect('profile: a full-gate criterion exits 2 naming the local gate, no record, no dispatch',
+               rc == 2 and disp is None and not rec and 'full gate `python3 suite.py`' in err and 'python3 check.py' in err)
+        rc, disp, err, rec = il_run(il('off', cfg.replace('profile: inner-loop\n', ''), 'python3 suite.py'))
+        expect('profile control: no profile line dispatches, the brief unchanged',
+               rc == 0 and disp and rec and 'Checks:' not in disp['prompt'])
+        rc, disp, err, rec = il_run(il('local', cfg, 'python3 check.py'))
+        expect('profile control: a local-gate criterion dispatches with Checks: python3 check.py in the prompt',
+               rc == 0 and disp and rec and 'the brief\nChecks: python3 check.py' in disp['prompt'])
+        rc, disp, err, rec = il_run(il('dflt', cfg, 'python3 suite.py', 'profile: default\n'))
+        expect('profile control: profile: default in the handoff dispatches', rc == 0 and disp and rec)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0546: run --cwd <tree> takes base_sha and Tree from <tree>, not the session checkout
+        tmp = pathlib.Path(tmp)
+
+        def mkrepo(name, n):
+            r = tmp / name
+            r.mkdir()
+            for c in (['init', '-q'], ['config', 'user.name', 't'], ['config', 'user.email', 't@t']):
+                subprocess.run(['git', *c], cwd=str(r), check=True)
+            for i in range(n):
+                (r / 'f.txt').write_text(str(i))
+                subprocess.run(['git', 'add', '-A'], cwd=str(r), check=True)
+                subprocess.run(['git', 'commit', '-qm', 'c%d' % i], cwd=str(r), check=True)
+            return r
+        sess, other = mkrepo('session', 1), mkrepo('other', 2)
+        td = sess / '.sdlc' / '0001-x'
+        td.mkdir(parents=True)
+        (td / 'handoff.md').write_text('x\n')
+        env_c = {**os.environ, 'SDLC_HEADLESS': '1'}
+
+        def cli(*extra):
+            r = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--task-dir', str(td), '--tier', 'L1',
+                                '--brief', 'b', '--no-worktree', *extra], cwd=str(sess), capture_output=True, text=True, env=env_c, timeout=60)
+            try:
+                return json.loads(r.stdout)
+            except ValueError:
+                return {'err': r.stderr}
+        sess_head, other_head = head_sha(sess), head_sha(other)
+        real = os.path.realpath(str(other))
+        dc = cli('--cwd', str(other))
+        expect('run --cwd: base_sha is the --cwd HEAD and the prompt names that tree as Tree (T-0546)',
+               dc.get('base_sha') == other_head != sess_head and dc.get('tree') == real and f'\nTree: {real} ' in dc.get('prompt', ''))
+        dn = cli()
+        expect('negative control: without --cwd the base is the session checkout HEAD and the prompt has no Tree line',
+               dn.get('base_sha') == sess_head != other_head and '\nTree: ' not in dn.get('prompt', '') and 'tree' not in dn)
+        # T-0587: a reused --worktree lane already ahead of the session checkout: base_sha is the lane HEAD, matching tree.
+        lane = ['--worktree', 'lane-y', '--cwd', str(sess)]
+        cli(*lane)
+        lane_tree = tmp / 'session.worktrees' / 'lane-y'
+        subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'ahead'], cwd=str(lane_tree), check=True)
+        dl = cli(*lane)
+        expect('run --worktree reuse: base_sha is the lane HEAD (ahead of the session checkout), matching tree (T-0587)',
+               dl.get('base_sha') == head_sha(lane_tree) != sess_head and dl.get('tree') == os.path.realpath(str(lane_tree)))
+        # T-0596: run (the maintainer's --no-worktree path included) refuses with exit 2 when plugin_min: is above the
+        # running plugin's version, before any record; an equal version dispatches.
+        have = json.loads((PLUGIN / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
+        vp = have.split('.')
+        need = '.'.join(vp[:-1] + [str(int(vp[-1]) + 1)])
+        env_c.update(CLAUDE_PLUGIN_ROOT='', SDLC_PLUGIN_CACHE=str(tmp / 'no-cache'))
+        (sess / '.sdlc' / 'config').write_text(f'plugin_min: {need}\n')
+        runs = order.records_dir(td) / 'runs.jsonl'
+        before = runs.read_text() if runs.is_file() else ''
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--task-dir', str(td), '--tier', 'L1',
+                            '--brief', 'b', '--no-worktree'], cwd=str(sess), capture_output=True, text=True, env=env_c, timeout=60)
+        expect('plugin_min: run --no-worktree with plugin_min above the version exits 2 naming both, no dispatch, no record (T-0596)',
+               r.returncode == 2 and need in r.stderr and have in r.stderr and not r.stdout.strip()
+               and (runs.read_text() if runs.is_file() else '') == before)
+        (sess / '.sdlc' / 'config').write_text(f'plugin_min: {have}\n')
+        expect('plugin_min control: run --no-worktree with plugin_min equal to the version dispatches', cli().get('attempt_id'))
+    if fails:
+        for f in fails:
+            print('solo_run selftest FAIL: ' + f)
+        return 1
+    print('solo_run selftest: PASS')
+    return 0
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    sub = p.add_subparsers(dest='cmd', required=True)
+    r = sub.add_parser('run')
+    r.add_argument('--task-dir', help='the ticket or task folder holding handoff.md')
+    r.add_argument('--new-task', nargs='?', const='', metavar='SLUG', help='no ticket: create '
+                   '<ticket root>/<SLUG>/handoff.md from the brief and run there (default slug solo-<timestamp>)')
+    r.add_argument('--tier', required=True, choices=sorted(TIERS) + sorted(TIER_ALIASES),
+                   help='L1, L2, or L3 (S, M, L: deprecated aliases)')  # ALIAS_OK
+    g = r.add_mutually_exclusive_group(required=True)
+    g.add_argument('--brief')
+    g.add_argument('--brief-file')
+    r.add_argument('--backend', default=os.environ.get('SDLC_BACKEND', 'claude'))
+    r.add_argument('--exec', action='store_true', help='Claude: start the headless session instead of printing the dispatch JSON')
+    r.add_argument('--cwd')
+    r.add_argument('--worktree', metavar='NAME', help='create <worktree root>/NAME (the sibling <main checkout>.worktrees) '
+                   'on a new branch NAME first '
+                   '(unless it exists) and run the session there')
+    r.add_argument('--no-worktree', action='store_true', help='stay in this checkout even when another solo is live')
+    r.add_argument('--timeout', type=float)
+    r.add_argument('--raw-out', help='also save the session stdout (the result JSON) to this file')
+    c = sub.add_parser('complete', help='price a finished solo sub-agent row from its transcript usage or notice tokens')
+    c.add_argument('--task-dir', required=True)
+    c.add_argument('--attempt', required=True, help='attempt_id (or a prefix) from the dispatch JSON')
+    c.add_argument('--tier', required=True, choices=sorted(TIERS) + sorted(TIER_ALIASES))
+    c.add_argument('--transcript')
+    c.add_argument('--tokens', type=int)
+    sub.add_parser('selftest')
+    a = p.parse_args()
+    if a.cmd == 'selftest':
+        return selftest()
+    if plugin_min.check_stale():  # T-0679 warning; T-0808: exit 2 from an older install folder beside a newer one
+        return 2
+    if a.tier in TIER_ALIASES:
+        print(f'solo_run.py: --tier {a.tier} is deprecated; use --tier {tier_of(a.tier)}', file=sys.stderr)
+        a.tier = tier_of(a.tier)
+    if a.cmd == 'complete':
+        cost = complete(a.task_dir, a.attempt, a.tier, a.transcript, a.tokens)
+        print('solo_run.py: no row priced (no usage, or no unpriced solo row for that attempt)' if cost is None else 'priced $%.4f' % cost)
+        return 0 if cost is not None else 2
+    brief = a.brief
+    if a.brief_file:
+        brief = sys.stdin.read() if a.brief_file == '-' else pathlib.Path(a.brief_file).read_text(encoding='utf-8')
+    if brief == '-':
+        brief = sys.stdin.read()
+    if not brief or not brief.strip():
+        print('solo_run.py: empty brief', file=sys.stderr)
+        return 2
+    if bool(a.task_dir) == (a.new_task is not None):
+        print('solo_run.py: give exactly one of --task-dir or --new-task', file=sys.stderr)
+        return 2
+    if a.backend == 'claude' and a.exec and os.environ.get('SDLC_CLAUDE_EXEC') != '1':
+        print('solo_run.py: the Claude headless start is retired: use fanout.py prep and land or dispatch.py prepare (sub-agent), or SDLC_CLAUDE_EXEC=1', file=sys.stderr)
+        return 2
+    refused = plugin_min.refusal(a.task_dir or a.cwd or '.', PLUGIN, a.backend if a.backend in plugin_min.MANIFEST else None)
+    if refused:
+        print(refused, file=sys.stderr)
+        return 2
+    try:
+        task_dir = a.task_dir if a.task_dir else new_task(a.new_task, brief)
+        if a.new_task is not None:
+            print(f'solo_run.py: task folder {task_dir}', file=sys.stderr)
+        wt = a.worktree
+        if not wt and not a.no_worktree:
+            wt = auto_worktree(task_dir, a.cwd)
+            if wt:
+                print(f'solo_run.py: another solo is live or an integration lane is open; using worktree {wt} (--no-worktree to stay)', file=sys.stderr)
+        if a.backend == 'claude' and not a.exec:
+            path = ensure_worktree(wt, a.cwd, task_dir) if wt else None
+            rc, d = dispatch_json(task_dir, a.tier, brief, path, a.cwd)
+            if d:
+                print(json.dumps(d, indent=2))
+                if d.get('verifier'):
+                    print(f'solo_run.py: after the solo reports, the parent runs: {d["verifier"]}', file=sys.stderr)
+            return rc
+        cwd = ensure_worktree(wt, a.cwd, task_dir) if wt else a.cwd
+        return run(task_dir, a.tier, brief, a.backend, cwd, a.timeout, a.raw_out)
+    except Refuse as exc:
+        print(f'solo_run.py: {exc}', file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())

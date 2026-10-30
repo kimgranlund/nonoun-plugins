@@ -8,7 +8,7 @@ unit: percent
 direction: down
 target: "<= 5"
 baseline: {value: 29.2, date: 2026-10-08, source: docs/reports/2026-10-08-fleet-retro-06.md, verified: false}
-measure: python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since <date>
+measure: python3 plugins/sdlc/scripts/fleet_collect.py collect <repo> --since <date>
 read: runs.unmetered / runs.total * 100
 cadence: per retro
 goals: [G-001]

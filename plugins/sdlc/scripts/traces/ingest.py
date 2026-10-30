@@ -1,0 +1,307 @@
+"""Ingest: walk one repo's sdlc trace sources into <out>/events.jsonl, aux.json, and cursor.json.
+
+run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresholds=None,
+    load_series=None, factory_transcripts=()) returns the out dir (store.out_dir). It walks:
+  handoff dirs  each task dir directly under <repo>/.sdlc/ (closed .NNNN-<slug> folders and
+                other `.`-prefixed folders holding a handoff.md included; `_templates`,
+                `runtime`, other `_`- or `.`-prefixed names, and plain files skipped; when
+                <repo>/.sdlc/config sets `ticket_root: tickets`, the `tickets` dir itself is not a
+                task and each task dir under it follows as tickets/<name>, by the same filter; with
+                `layout: topics` too, the `work` and `notes` dirs are not tasks either and each task
+                dir under `work` follows as work/<name>), then each step-<n> and step-<n>.superseded-<k> dir under it, then any
+                other subdir holding a runs.jsonl (its rows keep step None). Per dir:
+                the attempt, run, and result readers, the transcript reader on each <name>.log
+                next to a result <name>.md (its tool_calls, denials count, and rate_limits go on
+                the result record, and the log path joins the row's sources; its loaded_context
+                comes from sources/context.py, {'status': 'log absent'} when no log sits beside the
+                result, used by table.join only when the run record has none), then table.join
+                with the ticket id from the task dir's handoff.md front matter (tickets.parse).
+                Record paths are repo-relative, so row sources and legacy ids are too.
+                The records (attempts, runs.jsonl, results, logs, step-<n> dirs) are read from the
+                task dir's records dir (order.records_dir: <repo>/.sdlc/runtime/tasks/<key>/, or the
+                task dir itself for a legacy folder that holds its records in place); row sources name
+                the records-dir paths and a row's task_dir stays the task dir. Each
+                runtime/tasks/<key> dir no listed task dir reads is ingested as its own task dir, with
+                the ticket of its order.task_dir folder, else None.
+  lanes dirs    the fanout reader on every given lanes dir plus each <root>/*/ that holds a report.md or a logs/
+                dir, for the worktree root and then each legacy root (git.roots: wtroot.py root and legacy;
+                deduplicated by real path, in sorted order).
+  aux           the git reader on repo (integration = the first report's integration worktree
+                that exists), the ticket reader on <repo>/.sdlc, and the bench baseline of
+                bench_dir or bench.default_bench_dir().
+Each handoff dir and lanes dir is a cursor key (a task dir's fingerprint covers the task dir and its
+records dir): when its store.fingerprint equals the cursor's
+(and, for a handoff dir, the ticket id it was joined with is unchanged), its rows come from the
+cursor and none of its files is opened. Nothing is written outside the out dir.
+With rerun_criteria, aux also gets `criteria_reruns`: rerun.run(repo, rows, thresholds), which
+runs each passed step's non-guard criteria at its base-sha in throwaway worktrees it removes
+again (never cached; without the flag aux has no such key and no span runs).
+With load_series (a path to a JSON list of [iso timestamp, load1] pairs, the CLI's
+--load-series), aux also gets `load_series`: those pairs (a pair that is not a two-item list
+with a string timestamp and a numeric load is dropped; an unreadable file gives []).
+With factory_transcripts (paths of factory session .jsonl files, the CLI's repeatable
+--factory-transcript), aux also gets `factory_transcripts`: those paths made absolute.
+"""
+import contextlib, json, os, pathlib
+
+import order  # same scripts/ dir
+import tickets
+
+from . import rerun, store, table
+from .sources import attempts, bench, context, fanout, git, results, runs, transcripts
+from .sources import tickets as ticket_reader
+
+SKIP_TASK = ('_templates', 'runtime')
+LANES_SUBDIRS = ('logs',)
+
+
+def _rel(path, repo):
+    return os.path.relpath(path, repo).replace(os.sep, '/')
+
+
+def _names(d):
+    """Task dir names directly under d, by the task dir filter, sorted."""
+    try:
+        names = sorted(os.listdir(d))
+    except OSError:
+        return []
+    out = []
+    for n in names:
+        if n in SKIP_TASK or n.startswith('_'):
+            continue
+        if (n.startswith('.') and not tickets.DOT_RE.fullmatch(n)
+                and not os.path.isfile(os.path.join(d, n, 'handoff.md'))):
+            continue
+        if os.path.isdir(os.path.join(d, n)):
+            out.append(n)
+    return out
+
+
+def task_dirs(sdlc):
+    root = pathlib.Path(sdlc)
+    try:
+        tdir = tickets.ticket_dir(root)
+    except tickets.Fail:
+        tdir = root
+    out = _names(sdlc)
+    if tdir == root:
+        return out
+    try:
+        lp = tickets.layout_paths(root)
+    except tickets.Fail:
+        lp = None
+    if lp is None or lp.layout != 'topics':
+        return [n for n in out if n != 'tickets'] + ['tickets/' + n for n in _names(tdir)]
+    # layout: topics: tickets/, work/ and notes/ are topic folders, not tasks; work/<name> are ticket-less tasks.
+    topics = (tdir.name, lp.work.name, lp.notes.parent.name)
+    return ([n for n in out if n not in topics] + ['tickets/' + n for n in _names(tdir)]
+            + ['work/' + n for n in _names(lp.work)])
+
+
+def records_tasks(repo):
+    """[(task dir rel, records dir rel, task dir abs or None)] of every handoff root ingest reads: each listed task
+    dir with its records dir (order.records_dir, no create), then each <repo>/.sdlc/runtime/tasks/<key> dir that no
+    listed task dir reads, with its order.task_dir folder (else None) for the ticket."""
+    sdlc = os.path.join(repo, '.sdlc')
+    out, claimed = [], set()
+    for tname in task_dirs(sdlc):
+        task_abs = os.path.join(sdlc, tname)
+        rec_abs = str(order.records_dir(task_abs))
+        if not os.path.isdir(rec_abs):
+            rec_abs = task_abs   # no records dir yet: a legacy folder whose records sit only in a subdir such as verify/
+        claimed.add(os.path.realpath(rec_abs))
+        out.append((_rel(task_abs, repo), _rel(rec_abs, repo), task_abs))
+    tasks = os.path.join(sdlc, 'runtime', 'tasks')
+    try:
+        keys = sorted(os.listdir(tasks))
+    except OSError:
+        keys = []
+    for key in keys:
+        p = os.path.join(tasks, key)
+        if not os.path.isdir(p) or os.path.realpath(p) in claimed:
+            continue
+        tf = order.task_dir(p)
+        out.append((_rel(p, repo), _rel(p, repo), str(tf) if tf is not None else None))
+    return out
+
+
+def step_dirs(task):
+    try:
+        names = os.listdir(task)
+    except OSError:
+        return []
+    found = []
+    for n in names:
+        m = table.STEP_DIR.match(n)
+        if m and os.path.isdir(os.path.join(task, n)):
+            found.append((int(m.group(1)), n))
+    return [n for _, n in sorted(found)]
+
+
+def other_dirs(task):
+    """Non-step subdirs of a task dir that hold a runs.jsonl (e.g. verify/, old-step-3/)."""
+    try:
+        names = sorted(os.listdir(task))
+    except OSError:
+        return []
+    return [n for n in names if not table.STEP_DIR.match(n)
+            and os.path.isfile(os.path.join(task, n, 'runs.jsonl'))]
+
+
+def _ticket(task):
+    try:
+        with open(os.path.join(task, 'handoff.md'), encoding='utf-8') as f:
+            meta = tickets.parse(f.read())
+    except (OSError, UnicodeDecodeError):
+        return None
+    tid = (meta or {}).get('id')
+    return tid if isinstance(tid, str) and tid else None
+
+
+def read_dir(repo, rel, ticket):
+    """Rows of one handoff dir (rel is repo-relative), read from its files."""
+    d = os.path.join(repo, rel)
+    att, _ = attempts.read(d)
+    run_recs, _ = runs.read(d)
+    res, _ = results.read(d)
+    logs = {}
+    backends = {rec.get('file'): rec.get('backend') for rec in run_recs}
+    for r in res:
+        log = os.path.join(d, r['name'] + '.log')
+        # loaded_context: a result with no log beside it is reported as 'log absent', never as [].
+        r['loaded_context'] = context.read(log, backend=backends.get(r['name'] + '.md'))
+        if os.path.isfile(log):
+            t = transcripts.read(log)
+            r['tool_calls'], r['rate_limits'] = t['tool_calls'], t['rate_limits']
+            r['denials'] = len(t['denials']) if isinstance(t['denials'], list) else None
+            logs[r['name']] = _rel(log, repo)
+    for rec in (*att, *run_recs, *res):
+        if rec.get('path'):
+            rec['path'] = _rel(rec['path'], repo)
+    rows = table.join(rel, att, run_recs, res, ticket=ticket)
+    for row in rows:
+        name = store.attempt_name(row)
+        if name in logs and logs[name] not in row['sources']:
+            row['sources'].append(logs[name])
+    return rows
+
+
+def _lanes_dirs(repo, given):
+    cands = [os.path.abspath(p) for p in given]
+    names = []
+    for wt in git.roots(repo):  # T-0575: the worktree root, then the legacy ones
+        try:
+            names += [os.path.join(wt, n) for n in sorted(os.listdir(wt))]
+        except OSError:
+            pass
+    for p in names:
+        if os.path.isdir(p) and (os.path.isfile(os.path.join(p, 'report.md'))
+                                 or os.path.isdir(os.path.join(p, 'logs'))):
+            cands.append(p)
+    out, seen = [], set()
+    for p in cands:
+        real = os.path.realpath(p)
+        if real not in seen:
+            seen.add(real)
+            out.append(p)
+    return out
+
+
+def _integration(repo, lanes):
+    for lane in lanes:
+        w = ((lane.get('report') or {}).get('integration_worktree'))
+        if not w:
+            continue
+        p = w if os.path.isabs(w) else os.path.join(repo, w)
+        if os.path.isdir(p):
+            return p
+    return None
+
+
+def read_load_series(path):
+    """The [iso timestamp, load1] pairs of a JSON file, bad pairs dropped; [] when unreadable."""
+    try:
+        with open(path, encoding='utf-8') as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return []
+    out = []
+    for pair in data if isinstance(data, list) else []:
+        if (isinstance(pair, list) and len(pair) == 2 and isinstance(pair[0], str)
+                and isinstance(pair[1], (int, float)) and not isinstance(pair[1], bool)):
+            out.append([pair[0], pair[1]])
+    return out
+
+
+def run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresholds=None,
+        load_series=None, factory_transcripts=()):
+    store.READS = 0
+    repo = os.path.abspath(repo)
+    out = store.out_dir(repo, out)
+    old = store.load_cursor(out)
+    cursor, rows = {}, []
+    sdlc = os.path.join(repo, '.sdlc')
+
+    def owned(found, task_rel):
+        for row in found:
+            row['task_dir'] = task_rel   # sources name the records dir; the task dir stays the task folder
+        return found
+
+    for task_rel, rec_rel, folder in records_tasks(repo):
+        rec_abs = os.path.join(repo, rec_rel)
+        fp = store.fingerprint(rec_abs)
+        apart = folder is not None and os.path.realpath(folder) != os.path.realpath(rec_abs)
+        if apart:
+            fp = store.fingerprint(folder) + ':' + fp
+        prev = old.get(task_rel)
+        if isinstance(prev, dict) and prev.get('fingerprint') == fp:
+            ticket, task_rows = prev.get('ticket'), prev.get('rows') or []
+        else:
+            with store.reading(rec_abs), (store.reading(folder) if apart else contextlib.nullcontext()):
+                ticket = _ticket(folder) if folder is not None else None
+                task_rows = owned(read_dir(repo, rec_rel, ticket), task_rel)
+        cursor[task_rel] = {'fingerprint': fp, 'ticket': ticket, 'rows': task_rows}
+        rows.extend(task_rows)
+        for sname in (*step_dirs(rec_abs), *other_dirs(rec_abs)):
+            rel = f'{rec_rel}/{sname}'
+            d = os.path.join(repo, rel)
+            fp = store.fingerprint(d)
+            prev = old.get(rel)
+            if (isinstance(prev, dict) and prev.get('fingerprint') == fp
+                    and prev.get('ticket') == ticket and prev.get('task_dir', task_rel) == task_rel):
+                step_rows = prev.get('rows') or []
+            else:
+                with store.reading(d):
+                    step_rows = owned(read_dir(repo, rel, ticket), task_rel)
+            cursor[rel] = {'fingerprint': fp, 'ticket': ticket, 'task_dir': task_rel, 'rows': step_rows}
+            rows.extend(step_rows)
+    lanes = []
+    for ld in _lanes_dirs(repo, lanes_dirs):
+        fp = store.fingerprint(ld, LANES_SUBDIRS)
+        prev = old.get(ld)
+        if isinstance(prev, dict) and prev.get('fingerprint') == fp and prev.get('rows'):
+            facts = prev['rows']
+        else:
+            with store.reading(ld):
+                facts = fanout.read(ld)
+        cursor[ld] = {'fingerprint': fp, 'rows': facts}
+        lanes.append(facts)
+    gates = [dict(g, lanes_dir=lane['lanes_dir']) for lane in lanes for g in lane['gate_logs']]
+    aux = {
+        'repo': repo,
+        'lanes': lanes,
+        'gates': gates,
+        'git': git.read(repo, integration=_integration(repo, lanes)),
+        'tickets': ticket_reader.read(sdlc),
+        'baseline': bench.baseline(bench_dir or bench.default_bench_dir()),
+    }
+    if rerun_criteria:
+        aux['criteria_reruns'] = rerun.run(repo, rows, thresholds)
+    if load_series:
+        aux['load_series'] = read_load_series(load_series)
+    if factory_transcripts:
+        aux['factory_transcripts'] = [os.path.abspath(p) for p in factory_transcripts]
+    store.write_events(out, rows)
+    store.write_aux(out, aux)
+    store.write_cursor(out, cursor)
+    return out

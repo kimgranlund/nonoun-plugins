@@ -6,7 +6,7 @@ Labels on every claim: **[O]** observed in a file read for this analysis (path:l
 
 ## Scope
 
-- System: the `progressive-context` plugin 0.1.2 (one skill, six references, one example), its proposal set in `docs/specs/generative-constructs/`, and how SDLC Lite consumes it (`PC/references/sdlc-lite.md`, `plugins/sdlc-lite/scripts/onboard.py`, `.sdlc/AGENTS.md`, the `docs/layout.md` that `onboard.py setup` writes, `docs/planning/docs-schema/design.md`).
+- System: the `progressive-context` plugin 0.1.2 (one skill, six references, one example), its proposal set in `docs/specs/generative-constructs/`, and how SDLC consumes it (`PC/references/sdlc.md`, `plugins/sdlc/scripts/onboard.py`, `.sdlc/AGENTS.md`, the `docs/layout.md` that `onboard.py setup` writes, `docs/planning/docs-schema/design.md`).
 - Harnesses: Claude Code and Codex [O `plugins/context/.codex-plugin/plugin.json:8`]; a browser JavaScript harness exists only as a proposal [O `docs/specs/generative-constructs/04-context-and-harness.md:1-9`].
 - Workflows: author a capability contract, assess it against evidence, qualify it for reuse, leave a navigation route [O `PC/SKILL.md:10-18`].
 - Rendered targets: none ship. A2UI is optional guidance and "the plugin does not supply a renderer" [O `PC/references/a2ui.md:3`].
@@ -39,7 +39,7 @@ Scores use the rubric's 0 to 3 scale per tier [E generative-systems skill, `refe
 | T5 Intent | 2 | T12 Governance | 1 |
 | T6 Context | 2 | Total (eleven scored tiers) | 16 of 33 |
 
-The rubric has 13 tier headings (T0 to T12, maximum 39) but its bands top at 36 [E rubric lines 99-104]; the rubric is inconsistent there. Scaled to 36 this is about 17; to 39 with T4 and T9 skipped it is 16 of 39 at worst, about 19 if the two skipped tiers are scaled in. The 13 to 24 band ("emerging structured system") holds under every reading [I]. The scores grade Progressive Context as deployed in this repository, including the SDLC Lite machinery around it, not the plugin text alone.
+The rubric has 13 tier headings (T0 to T12, maximum 39) but its bands top at 36 [E rubric lines 99-104]; the rubric is inconsistent there. Scaled to 36 this is about 17; to 39 with T4 and T9 skipped it is 16 of 39 at worst, about 19 if the two skipped tiers are scaled in. The 13 to 24 band ("emerging structured system") holds under every reading [I]. The scores grade Progressive Context as deployed in this repository, including the SDLC machinery around it, not the plugin text alone.
 
 ## Tier map
 
@@ -55,7 +55,7 @@ The rubric has 13 tier headings (T0 to T12, maximum 39) but its bands top at 36 
 | T8 | One shared skill, no agents. Optional routes load only when needed [O `PC/SKILL.md:32-38`]. | None material. | L | None |
 | T10 | Packaging checks and a skill validator [O `plugins/context/AGENTS.md:11`]. "Schema validation establishes structural validity only" [O `evidence.md:13`]. Assessments are written by hand. | No link check over documents (packaging checks cover the plugin's own routes [O `scripts/check-packaging.py:59,75`]) and no ID check; the proposal lists required checks [O `04-context-and-harness.md:80-86`] that nothing runs. | H | R4, R6, R1 |
 | T11 | Lifecycle views derived from facts, not stored; stale evidence kept as history [O `PC/SKILL.md:26`; `evidence.md:15-25`]. | Nothing detects staleness; no rule promotes a work record into durable knowledge. | M | R5 (in the docs schema), R9 |
-| T12 | Provenance concepts cited (W3C PROV [E W3C PROV, named at `docs/specs/generative-constructs/README.md:47`]); an inspection surface is proposed [O `04-context-and-harness.md:74-78`]. SDLC Lite records `routing_reason` per run [O `plugins/sdlc-lite/scripts/run.sh:520-524`]. | Why a role was routed is recorded; what it read is not. | M | R3 |
+| T12 | Provenance concepts cited (W3C PROV [E W3C PROV, named at `docs/specs/generative-constructs/README.md:47`]); an inspection surface is proposed [O `04-context-and-harness.md:74-78`]. SDLC records `routing_reason` per run [O `plugins/sdlc/scripts/run.sh:520-524`]. | Why a role was routed is recorded; what it read is not. | M | R3 |
 
 ## Critical distinctions
 
@@ -86,7 +86,7 @@ Ambiguity to resolve: the proposal set says "construct", "revision" and "instanc
 
 ## Context engineering risks
 
-- Context overloading: low in the skill (small entry files), but SDLC Lite entry files are bounded only by a 60-line target in `onboard.py` [O `docs/planning/docs-schema/design.md:104`; `plugins/sdlc-lite/scripts/onboard.py:321`].
+- Context overloading: low in the skill (small entry files), but SDLC entry files are bounded only by a 60-line target in `onboard.py` [O `docs/planning/docs-schema/design.md:104`; `plugins/sdlc/scripts/onboard.py:321`].
 - Hidden dependencies: loading differs by host (see coupling).
 - Stale knowledge: defined, not detected [O `evidence.md:13`].
 - Poor entry points: this repository's `docs/` had 5 loose files and no schema [O `docs/planning/docs-schema/design.md:10`].
@@ -95,7 +95,7 @@ Ambiguity to resolve: the proposal set says "construct", "revision" and "instanc
 
 ## The pattern applied to docs/ and .sdlc/
 
-Progressive Context says "add no registry ... without an actual need" [O `PC/SKILL.md:24`]. The need for `docs/` and `.sdlc/` is evidenced here: the schema design cites a thin default layout, a repository that does not follow it, and no rule for what may live in `.sdlc/` [O `docs/planning/docs-schema/design.md:9-12`]. The registry belongs in SDLC Lite, not in Progressive Context, which "stays domain-neutral and keeps its rule against a prescribed folder tree" [O `docs/specs/repo-onboarding/design.md:195`].
+Progressive Context says "add no registry ... without an actual need" [O `PC/SKILL.md:24`]. The need for `docs/` and `.sdlc/` is evidenced here: the schema design cites a thin default layout, a repository that does not follow it, and no rule for what may live in `.sdlc/` [O `docs/planning/docs-schema/design.md:9-12`]. The registry belongs in SDLC, not in Progressive Context, which "stays domain-neutral and keeps its rule against a prescribed folder tree" [O `docs/specs/repo-onboarding/design.md:195`].
 
 | Progressive Context idea | docs/ and .sdlc/ application |
 | --- | --- |
@@ -112,7 +112,7 @@ Cross-check against `docs/planning/docs-schema/design.md` (v0.2 as merged at `5a
 - **Agrees:** one machine-readable source (`## Kinds` in `docs/layout.md` [O `design.md:138-147`]); entry files with the import [O `design.md:126-127`]; named deterministic checks with negative controls [O `design.md:153-175`]; promotion into `docs/`; a boundary check in both directions [O `design.md:171-173`].
 - **(a) Conflict:** a home gets an entry file only at two or more documents [O `design.md:127`], but a registry needs its row in `docs/AGENTS.md` from day one [I]. Keep the row at the root unconditionally; keep the per-home file optional.
 - **(b) Missing:** `## Kinds` binds a folder to a kind but the kind's own row (holds, does not hold, why, naming, lifecycle) exists only as prose and tables [O `design.md:54-70,138-147`]. Define the row schema in the layout file.
-- **(c) Narrower than it looks:** the drift check exists for homes. `onboard.py` renders `docs/AGENTS.md` from `docs/layout.md`, hashes the block, and `onboard.py check` reports a mismatch as `stale` [O `plugins/sdlc-lite/scripts/onboard.py:221-226,451-465,581,696-711`]; `tickets.py` reuses those helpers for the `.sdlc` router [O `plugins/sdlc-lite/scripts/tickets.py:145,189`]. The real gap is that `## Kinds` and `## Legacy` are not in the rendered model until build ticket 1 [O `design.md:151`], so a kind change does not yet make the block stale.
+- **(c) Narrower than it looks:** the drift check exists for homes. `onboard.py` renders `docs/AGENTS.md` from `docs/layout.md`, hashes the block, and `onboard.py check` reports a mismatch as `stale` [O `plugins/sdlc/scripts/onboard.py:221-226,451-465,581,696-711`]; `tickets.py` reuses those helpers for the `.sdlc` router [O `plugins/sdlc/scripts/tickets.py:145,189`]. The real gap is that `## Kinds` and `## Legacy` are not in the rendered model until build ticket 1 [O `design.md:151`], so a kind change does not yet make the block stale.
 - **(d) Missing:** `.sdlc` record types are hard-coded in a check (`B-2a` [O `design.md:172`]), not held in a registry. Give `.sdlc` the same registry source so one parser serves both.
 - **(e) Missing, being added:** the placement proof is not in v0.2; the revision in review adds it.
 
@@ -120,13 +120,13 @@ Cross-check against `docs/planning/docs-schema/design.md` (v0.2 as merged at `5a
 
 Ranked by evidence of repeated failure in this repository, then by cost. "Det" means script-checkable; "Judg" means judgment.
 
-1. **R1. One registry row schema, with the existing drift check extended to kinds, for docs and .sdlc** (T2, T10; M; Det). Files: `docs/planning/docs-schema/design.md`, `plugins/sdlc-lite/scripts/onboard.py`. Risk: entry-file size. Why: hand-kept lists drift [O `release-0.20.6.md:13`]; the managed-block drift check already works for homes (item c). Covered by tickets T-0241 and T-0242; extend their handoffs.
+1. **R1. One registry row schema, with the existing drift check extended to kinds, for docs and .sdlc** (T2, T10; M; Det). Files: `docs/planning/docs-schema/design.md`, `plugins/sdlc/scripts/onboard.py`. Risk: entry-file size. Why: hand-kept lists drift [O `release-0.20.6.md:13`]; the managed-block drift check already works for homes (item c). Covered by tickets T-0241 and T-0242; extend their handoffs.
 2. **R2. Placement proof harness** (T6, T10, qualification; M; Det scoring, Judg briefs). Files: a new script and a validation record. Risk: small samples, model cost. Why: the loading probe had one trial per arm [O `nested-entry-file-loading.md:3`]. Filed by the docs-schema pass.
-3. **R3. Record which context a run loaded** (T12, T6; M; Det). Files: `plugins/sdlc-lite/scripts/run.sh`, trace ingestion. Risk: one Codex run had no rollout file to ingest [O `docs/reports/codex-conductor-solo-live-run.md:23`]. Why: only the routing reason is stored [O `run.sh:520-524`].
+3. **R3. Record which context a run loaded** (T12, T6; M; Det). Files: `plugins/sdlc/scripts/run.sh`, trace ingestion. Risk: one Codex run had no rollout file to ingest [O `docs/reports/codex-conductor-solo-live-run.md:23`]. Why: only the routing reason is stored [O `run.sh:520-524`].
 4. **R4. Entry-file resolver** (T10; S; Det). Files: a new script or `onboard.py check`. Checks: every `AGENTS.md` has a `CLAUDE.md` importing it, every link and import resolves, size target met. Why: Claude Code loads nested files only through the import [O `layered-context-pattern.md:40`].
 5. **R5. Promotion rule** (T11; S; Judg). In the docs-schema design as promotion by copy; ticket T-0245. No new work.
 6. **R6. Handoff and evidence lints** (T10; M; Det). Files: `tickets.py check`, a docs evidence-link check. Checks: no template placeholder text in a closed ticket; every evidence path a record cites exists in git and is not ignored. Why: both failures happened [O `.sdlc/verify-0224/verifier-L3.md:15`; `.sdlc/verify-0229/verifier-L3.md:11`]. Risk: false positives, so start as warnings.
-7. **R7. One real capability contract** (T1; S; Judg). Write a contract and assessment for one SDLC Lite capability (for example the solo lane) using `contracts.md`, to learn whether the format holds. Why: no contract exists to learn from (see gap 2).
+7. **R7. One real capability contract** (T1; S; Judg). Write a contract and assessment for one SDLC capability (for example the solo lane) using `contracts.md`, to learn whether the format holds. Why: no contract exists to learn from (see gap 2).
 8. **R8. Reconcile the two vocabularies** (T0, T3; S; Judg). Add a status banner to each numbered spec pointing at the shipped skill, and a glossary mapping construct to capability. Files: `docs/specs/generative-constructs/*.md`.
 9. **R9. A portable host-loading matrix with a re-probe script** (T7, T10; M; Det). The facts in `nested-entry-file-loading.md` were a one-time manual probe; host versions change.
 10. **R10. Evidence staleness report** (T11; M; Det). For validation records that bind a plugin commit, list those whose bound paths changed since. Why: "stale" is defined but nothing detects it [O `evidence.md:13`].
@@ -140,7 +140,7 @@ Filed as proposed tickets, one solo step each: R3 is T-0252, R4 is T-0253, R6 is
 - A T9 or T4 tier (UI IR, composition grammar, renderer). The A2UI route is optional and no renderer ships [O `a2ui.md:3`].
 - Stored lifecycle states or a state machine [O `PC/SKILL.md:24,26`; `evidence.md:25`].
 - Semantic retrieval over docs. The proposal itself says to start lexical [O `04-context-and-harness.md:23`], and entry files route by task.
-- A prescribed folder tree inside Progressive Context [O `docs/specs/repo-onboarding/design.md:195`]. The layout stays in SDLC Lite.
+- A prescribed folder tree inside Progressive Context [O `docs/specs/repo-onboarding/design.md:195`]. The layout stays in SDLC.
 
 ## Limits of this analysis
 

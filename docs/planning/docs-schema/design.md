@@ -37,7 +37,7 @@ The user decided these on 2026-10-05. They override any older sentence below tha
 | | `docs/` | `.sdlc/` |
 | --- | --- | --- |
 | Holds | Durable knowledge for readers: specs, plans for decisions, decisions, lookups, guides, dated evidence | Work records and runtime state: tickets, task folders, handoffs, `skips.md`, messages, notes, roadmap, evals, proposals, supervisor state, config; plans, role results, step folders and `runs.jsonl` in the ignored records dir `runtime/tasks/<folder>/` (0.23.0) |
-| Written by | A person or a role, deliberately, then reviewed | `tickets.py`, `run.sh`, `steps.py`, `messages.py`, `fanout.py`, `budget.py`, roles and the conductor, as a side effect of work |
+| Written by | A person or a role, deliberately, then reviewed | `tickets.py`, `run.sh`, `steps.py`, `messages.py`, `fanout.py`, `budget.py`, roles and the factory, as a side effect of work |
 | Lifetime | Outlives the ticket that produced it | Lives with the ticket; closed ticket folders are renamed `.NNNN-slug` and hidden, keeping `handoff.md` with its `## Outcome`; run records stay local |
 | Edited | In place, by a change that updates the doc | Appended or regenerated; a generated block is never hand-edited |
 | Read by default | Only the folder the task needs | Only the router and the stage the task needs |
@@ -59,7 +59,7 @@ A `.sdlc/` artifact that should outlive its ticket (an architect result, a desig
 3. The promoted file's `source:` key is the link back. The ticket's `handoff.md` is not edited, because it is frozen once a role reads it and hidden after the ticket closes. A line in the notes file (`.sdlc/notes.md`, or `.sdlc/notes/notes.md` with `layout: topics`) may record the promotion.
 4. Which home: a design that is accepted goes to `specs/`, a record of one choice goes to `decisions/`, evidence goes to `reports/`.
 
-Usage: `python3 plugins/sdlc-lite/scripts/promote.py <artifact path> <home> [--slug S] [--ticket T-NNNN] [--note]` does steps 1 to 3 (it adds `source:` and `source-file:`, plus `status: proposed` for planning and decisions or `date:` and a date prefix for reports, and refuses an unknown home or an existing target). Choosing the home stays a person's call.
+Usage: `python3 plugins/sdlc/scripts/promote.py <artifact path> <home> [--slug S] [--ticket T-NNNN] [--note]` does steps 1 to 3 (it adds `source:` and `source-file:`, plus `status: proposed` for planning and decisions or `date:` and a date prefix for reports, and refuses an unknown home or an existing target). Choosing the home stays a person's call.
 
 Promotion is advice in version 1 and the script above in version 2. A check cannot know what "should outlive" a ticket, so it only checks a promoted file's front matter.
 
@@ -149,7 +149,7 @@ Added 2026-10-05 at the user's request: any harness or session must be able to a
 
 ### Need, and what grounds it
 
-Progressive Context says to "add no registry ... without an actual need" (`plugins/context/skills/progressive-context/SKILL.md`, line 24). The need here is placement: a session that must put a new document or record somewhere has no stated rule. This repository's `docs/` holds 7 folders and 5 loose files, and the review counted that only 8 of 69 `docs/reports/` names carry a date. That shows the rule is missing, not that a registry fixes it, so the placement proof decides whether the registry stays. The registry is owned by SDLC Lite and not by Progressive Context, which keeps its rule against a prescribed folder tree.
+Progressive Context says to "add no registry ... without an actual need" (`plugins/context/skills/progressive-context/SKILL.md`, line 24). The need here is placement: a session that must put a new document or record somewhere has no stated rule. This repository's `docs/` holds 7 folders and 5 loose files, and the review counted that only 8 of 69 `docs/reports/` names carry a date. That shows the rule is missing, not that a registry fixes it, so the placement proof decides whether the registry stays. The registry is owned by SDLC and not by Progressive Context, which keeps its rule against a prescribed folder tree.
 
 | Claim | Label | Source |
 | --- | --- | --- |
@@ -296,7 +296,7 @@ The test that decides whether the pattern is "proven":
 
 ## Overriding: docs/layout.md
 
-The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) reads the two required sections `## Homes` and `## Frozen paths`, raises a `LayoutError` on a list line under `## Homes` that does not fit `` `<home>/` [takes `<glob>`, ...] ``, and, as first built, ignored any other heading of level 2 or less (T-0241 now also reads `## Kinds`, `## Decide` and `## Legacy`). The review ran the parser on the text below and confirmed that new sections are ignored by it, so a **new section is backward compatible** and a new form inside `## Homes` is not.
+The parser in `plugins/sdlc/scripts/onboard.py` (`_parse_layout_text`) reads the two required sections `## Homes` and `## Frozen paths`, raises a `LayoutError` on a list line under `## Homes` that does not fit `` `<home>/` [takes `<glob>`, ...] ``, and, as first built, ignored any other heading of level 2 or less (T-0241 now also reads `## Kinds`, `## Decide` and `## Legacy`). The review ran the parser on the text below and confirmed that new sections are ignored by it, so a **new section is backward compatible** and a new form inside `## Homes` is not.
 
 `## Homes` stays the single list of top-level folders. Two new sections add meaning to it:
 
@@ -324,7 +324,7 @@ Parser change (build ticket 1): `Layout` in `onboard.py` gains `kinds` and `lega
 
 ## Enforcement
 
-A new script `plugins/sdlc-lite/scripts/docs_check.py` (not built) imports `parse_layout` from `onboard.py` and runs these checks against a repository root. `onboard.py check` is left unchanged, since its job is entry-file ownership. Each check has a selftest case and a negative control. Any error exits 1. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10, D-11, D-12, D-13 and B-3a. It never exempts D-5, D-6, B-1a or B-2a.
+A new script `plugins/sdlc/scripts/docs_check.py` (not built) imports `parse_layout` from `onboard.py` and runs these checks against a repository root. `onboard.py check` is left unchanged, since its job is entry-file ownership. Each check has a selftest case and a negative control. Any error exits 1. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10, D-11, D-12, D-13 and B-3a. It never exempts D-5, D-6, B-1a or B-2a.
 
 | ID | Check | Default |
 | --- | --- | --- |
@@ -370,7 +370,7 @@ These come from folder and file names only. The inventory and a person decide an
 | Today | Becomes | Note |
 | --- | --- | --- |
 | `docs/validation/` (385 tracked files on 2026-10-05, about 325 to 329 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, waited for the `reorg-inventory` merge, which has landed; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
-| `docs/sdlc-lite/` | `specs/sdlc-lite/` | The lane design and cost-control addendum describe shipped behavior. |
+| `docs/sdlc/` | `specs/sdlc/` | The lane design and cost-control addendum describe shipped behavior. |
 | `docs/ticket-stages/` | `specs/ticket-stages/` | Router, messages and watcher designs describe built features. |
 | `docs/repo-onboarding/design.md` | `specs/repo-onboarding/` | Built (T-0160). |
 | `docs/repo-onboarding/reorganization.md` | `planning/repo-onboarding/` | A draft with `Nothing in this document is implemented`; status `proposed`. |
@@ -383,7 +383,7 @@ These come from folder and file names only. The inventory and a person decide an
 | `docs/other/orchestration-optimization-question.md` | `other/` | Needs `owner:` and `review-by:`. |
 | `docs/docs-schema/` (this design) | `planning/docs-schema/` | Status `proposed`; until it moves it is a tenth top-level folder and fails D-1, so it is listed in `## Legacy`. |
 
-Applied to this repository by T-0244 on 2026-10-06 (record: [the migration record](../../reports/2026-10-06-docs-schema-migration.md)). The Today column above is the table as designed, so it keeps the old paths. Departures made by content: `sdlc-lite/subagent-mode.md`, `ticket-stages/watcher-design.md` and `generative-constructs/05-*`, `06-*` went to `planning/` (they state they are proposals), and `repo-onboarding/reorganization-plan-procedure.md` went to `planning/` with `reorganization.md`.
+Applied to this repository by T-0244 on 2026-10-06 (record: [the migration record](../../reports/2026-10-06-docs-schema-migration.md)). The Today column above is the table as designed, so it keeps the old paths. Departures made by content: `sdlc/subagent-mode.md`, `ticket-stages/watcher-design.md` and `generative-constructs/05-*`, `06-*` went to `planning/` (they state they are proposals), and `repo-onboarding/reorganization-plan-procedure.md` went to `planning/` with `reorganization.md`.
 
 ### maison
 
@@ -399,7 +399,7 @@ Applied to this repository by T-0244 on 2026-10-06 (record: [the migration recor
 
 - **Opt-in and never automatic.** A repository with an existing coherent layout keeps it. Adopting means binding its non-default homes in `## Kinds` and listing the paths it will not touch in `## Legacy`. New files are fully checked from that point.
 - **Order:** inventory (read-only), then a plan, then a gated apply that moves in batches with a citing-file scan, one commit per batch and undo by `git revert`. The apply gate is the follow-up ticket from the reorganization project and is not part of this design.
-- **The citing scan covers code and entry files, not only Markdown.** `check.py` reads `docs/references/claude-hooks.md` by path at run time, and root `AGENTS.md`, `plugins/sdlc-lite/AGENTS.md`, `README.md` and the two `HARNESS-NOTES.md` files cite moving paths. The rewriter in the reorganization draft covers tracked Markdown, so ticket 4 widens it.
+- **The citing scan covers code and entry files, not only Markdown.** `check.py` reads `docs/references/claude-hooks.md` by path at run time, and root `AGENTS.md`, `plugins/sdlc/AGENTS.md`, `README.md` and the two `HARNESS-NOTES.md` files cite moving paths. The rewriter in the reorganization draft covers tracked Markdown, so ticket 4 widens it.
 - **The validation move is separate and earlier.** The user decided to rename `docs/validation/` to `docs/reports/` now. T-0246 does it as a one-off mechanical rename with the apply step's safety properties (dry-run list, citing scan, one commit per batch, undo by `git revert`), because the gated apply tool does not exist yet. It amends the reorganization draft's frozen list. T-0244 covers the rest of this repository's moves and no longer includes validation.
 - **Published artifacts keep old paths.** Tags and already-published GitHub release pages cite `docs/validation/...`; they cannot change, and the next release record says so in one sentence.
 - **This repository goes last.** It is the test of the tooling, so its migration depends on the apply ticket.

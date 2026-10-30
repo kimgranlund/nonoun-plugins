@@ -23,4 +23,4 @@ Use when a recurring, bounded repository change needs a clean-context handoff fr
 - **Outputs:** verification or assessment record linked to the checked revision, plus the next task action in the project's existing workflow.
 - **Exit/evidence:** each claim cites an observed check or is marked unassessed. A passing task check qualifies only the named change; capability reuse needs its own assessment and independent consumer exercise.
 
-For SDLC Lite, the task handoff and `step-<n>/handoff.md` are the concrete inputs; builder and verifier result files are run outputs. `steps.py next` remains the next-action authority. The stage headings here do not assign roles, advance the board, or enforce exit conditions.
+For SDLC, the task handoff and `step-<n>/handoff.md` are the concrete inputs; builder and verifier result files are run outputs. `steps.py next` remains the next-action authority. The stage headings here do not assign roles, advance the board, or enforce exit conditions.

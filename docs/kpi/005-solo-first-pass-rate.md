@@ -8,7 +8,7 @@ unit: percent
 direction: up
 target: ">= 85"
 baseline: {value: 72, date: 2026-10-11, source: docs/reports/2026-10-11-solo-campaign-baseline.md, verified: true}
-measure: python3 plugins/sdlc-lite/scripts/solo_stats.py stats <repo> [<repo> ...] --since <date> [--until <date>]
+measure: python3 plugins/sdlc/scripts/solo_stats.py stats <repo> [<repo> ...] --since <date> [--until <date>]
 read: first_pass / verified * 100 (the "first round pass" line); also "ended in a pass" and "multi-round" beside it
 cadence: per retro
 goals: [G-003]

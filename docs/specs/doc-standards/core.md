@@ -81,7 +81,7 @@ The tense is the status. Past tense says the work finished (`recent`), present p
 
 ## Controlled handoff words
 
-A clarify handoff takes its Do verbs and its banned hedge words from two closed lists, `CLARIFY_VERBS` and `CLARIFY_HEDGE`. Their one home is `plugins/sdlc-lite/scripts/plan_check.py`, whose `clarify` lint enforces them. This file copies neither list.
+A clarify handoff takes its Do verbs and its banned hedge words from two closed lists, `CLARIFY_VERBS` and `CLARIFY_HEDGE`. Their one home is `plugins/sdlc/scripts/plan_check.py`, whose `clarify` lint enforces them. This file copies neither list.
 
 ## Document type key
 

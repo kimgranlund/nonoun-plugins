@@ -1,27 +1,27 @@
-# SDLC Lite, Context, Design and Dev Tools plugins
+# SDLC, Context, Design and Dev Tools plugins
 
 Independently installable plugins, with Codex and Claude Code manifests and marketplace catalogs.
 
 | Plugin | Purpose | Codex invocation |
 |---|---|---|
 | Context (formerly Progressive Context) | Durable capability contracts, selective context loading, evidence and reuse qualification, context-routing diagnosis, system atlases and ICM workspaces | `$progressive-context` and the other skills in [its guidance](plugins/context/AGENTS.md) |
-| SDLC Lite | Tickets, plans, execution, verification and work closure | `$sdlc-lite` |
+| SDLC | Tickets, plans, execution, verification and work closure | `$sdlc` |
 | Design | UI construction, Differential Forms geometry, HCT palettes, inspector jigs, wireframes and design critique | `$base-ui`, `$wireframe-review`, and the other skills in [its guidance](plugins/design/AGENTS.md) |
 | Dev Tools | Machine, repo and harness care: verification loops, flaky gates, port zombies, bare repos, cross-harness plugins, skill report cards | `$closed-loop-run` and the other skill names |
 
-Context works directly in either host. SDLC Lite supports native Codex execution and Claude execution, selected with `SDLC_BACKEND=codex|claude`. Its project setup installs predefined Codex subagents. See [compatibility and validation](docs/references/plugin-compatibility.md).
+Context works directly in either host. SDLC supports native Codex execution and Claude execution, selected with `SDLC_BACKEND=codex|claude`. Its project setup installs predefined Codex subagents. See [compatibility and validation](docs/references/plugin-compatibility.md).
 
 ## Install
 
 Codex: add this repository as a marketplace with `codex plugin marketplace add /absolute/path/to/sdlc-lite`, then select the plugins in the app. The catalog is `.agents/plugins/marketplace.json`.
 
-Claude Code: `/plugin marketplace add /absolute/path/to/sdlc-lite`, then install any of `context@sdlc-lite`, `sdlc-lite@sdlc-lite`, `design@sdlc-lite` and `dev-tools@sdlc-lite`. Its catalog is `.claude-plugin/marketplace.json`.
+Claude Code: `/plugin marketplace add /absolute/path/to/sdlc-lite`, then install any of `context@nonoun`, `sdlc@nonoun`, `design@nonoun` and `dev-tools@nonoun`. Its catalog is `.claude-plugin/marketplace.json`.
 
 Start a fresh chat after installation. No plugin installs itself or modifies your user configuration.
 
 ## Development
 
-- Run `bash plugins/sdlc-lite/scripts/check.sh` for the SDLC Lite regression suite, or `check.sh --fast` for its quick tier.
+- Run `bash plugins/sdlc/scripts/check.sh` for the SDLC regression suite, or `check.sh --fast` for its quick tier.
 - Run `python3 scripts/check-packaging.py` for both catalogs, manifest parity, skill discovery and local links.
 - Read [specifications](docs/README.md) for design scope and deferred runtime work.
 

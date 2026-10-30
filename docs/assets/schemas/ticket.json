@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ticket.json",
   "title": "Ticket front matter",
-  "description": "Front matter of an SDLC Lite ticket handoff.md, as in plugins/sdlc-lite/skills/ticket/templates/*.md.",
+  "description": "Front matter of an SDLC ticket handoff.md, as in plugins/sdlc/skills/ticket/templates/*.md.",
   "type": "object",
   "required": [
     "id",

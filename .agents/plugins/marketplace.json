@@ -1,7 +1,7 @@
 {
-  "name": "sdlc-lite",
+  "name": "nonoun",
   "interface": {
-    "displayName": "SDLC Lite"
+    "displayName": "nonoun"
   },
   "plugins": [
     {
@@ -29,10 +29,10 @@
       "category": "Productivity"
     },
     {
-      "name": "sdlc-lite",
+      "name": "sdlc",
       "source": {
         "source": "local",
-        "path": "./plugins/sdlc-lite"
+        "path": "./plugins/sdlc"
       },
       "policy": {
         "installation": "AVAILABLE",

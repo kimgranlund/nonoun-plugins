@@ -1,0 +1,368 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fleet_status.py collect output",
+  "description": "The one JSON object `fleet_status.py collect` prints and `render` draws. This file is the authority for the key list, the types and the allowed values; fleet_status.py selftest validates a collected fixture against it. A key in an object marked additionalProperties false that is not listed here is a defect in the script or in this file.",
+  "type": "object",
+  "required": ["time", "machine", "repos", "needs_you", "delta", "report_since", "snapshot"],
+  "additionalProperties": false,
+  "properties": {
+    "time": {"type": "string", "description": "UTC ISO instant of this call, e.g. 2026-10-06T14:30:00Z."},
+    "machine": {"$ref": "#/$defs/machine"},
+    "repos": {"type": "array", "items": {"$ref": "#/$defs/repo"}, "description": "One entry per inspected repo, in registry or argument order."},
+    "needs_you": {
+      "type": "array",
+      "description": "The repos' needs_you lists joined, each item carrying `repo`.",
+      "items": {"allOf": [{"$ref": "#/$defs/needs_item"}, {"required": ["repo"]}]}
+    },
+    "delta": {"$ref": "#/$defs/delta"},
+    "report_since": {
+      "type": "object",
+      "required": ["mode", "at"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["last", "date"], "description": "last diffs against the stored snapshot; date lists what closed since `at`."},
+        "at": {"type": ["string", "null"], "description": "UTC ISO instant of the --since DATE, null for mode last."}
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "required": ["path", "written"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {"type": ["string", "null"], "description": "<state-dir>/fleet-status.json, null when no state dir applies."},
+        "written": {"type": "boolean", "description": "False with --no-write or no state dir."}
+      }
+    }
+  },
+  "$defs": {
+    "machine": {
+      "type": "object",
+      "required": ["load", "consumers", "ranked"],
+      "additionalProperties": false,
+      "properties": {
+        "load": {"$ref": "#/$defs/load"},
+        "consumers": {
+          "type": "object",
+          "required": ["chromium", "hooks", "claude", "watchers"],
+          "additionalProperties": false,
+          "properties": {
+            "chromium": {"$ref": "#/$defs/consumer"},
+            "hooks": {"$ref": "#/$defs/consumer"},
+            "claude": {"$ref": "#/$defs/consumer"},
+            "watchers": {"$ref": "#/$defs/consumer"}
+          }
+        },
+        "ranked": {
+          "type": "array",
+          "items": {"enum": ["chromium", "hooks", "claude", "watchers"]},
+          "description": "The consumer classes with a process, by cpu_pct descending."
+        },
+        "error": {"type": "string", "description": "Present only when `ps` failed."}
+      }
+    },
+    "load": {
+      "type": "object",
+      "required": ["load1", "load5", "load15", "cpus", "stop_line", "verdict", "headroom", "arrow", "trend"],
+      "additionalProperties": false,
+      "properties": {
+        "load1": {"type": "number"},
+        "load5": {"type": "number"},
+        "load15": {"type": "number"},
+        "cpus": {"type": ["integer", "null"]},
+        "stop_line": {"type": "number"},
+        "verdict": {"enum": ["ok", "near", "over"], "description": "over when load1 is above the stop line, near from 80 percent of it."},
+        "headroom": {"type": "number", "description": "stop_line minus load1."},
+        "arrow": {"enum": ["↑", "↓", "→"], "description": "The trend's arrow."},
+        "trend": {
+          "type": "object",
+          "required": ["arrow", "delta", "minutes", "source", "samples"],
+          "additionalProperties": false,
+          "properties": {
+            "arrow": {"enum": ["↑", "↓", "→"]},
+            "delta": {"type": "number"},
+            "minutes": {"type": ["number", "null"], "description": "Age of the reference sample, null for source loadavg."},
+            "source": {"enum": ["samples", "loadavg"]},
+            "samples": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "required": ["count", "cpu_pct", "top"],
+      "additionalProperties": false,
+      "properties": {
+        "count": {"type": "integer", "minimum": 0},
+        "cpu_pct": {"type": "number"},
+        "top": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pid", "cpu", "cmd"],
+            "additionalProperties": false,
+            "properties": {"pid": {"type": "integer"}, "cpu": {"type": "number"}, "cmd": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "repo": {
+      "type": "object",
+      "required": ["name", "path", "factory", "gh", "rows", "counts", "needs_you", "prs", "release", "worktrees", "unread", "supervisor"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string"},
+        "path": {"type": "string"},
+        "factory": {"type": ["string", "null"]},
+        "gh": {"type": ["string", "null"], "description": "owner/repo for gh -R, null to use the checkout's remote."},
+        "error": {"type": "string", "description": "Present only for a registry repo whose directory is missing; the repo is listed and not inspected."},
+        "rows": {"type": "array", "items": {"$ref": "#/$defs/row"}},
+        "counts": {
+          "type": "object",
+          "description": "Rows per state; a state with no row is absent.",
+          "additionalProperties": false,
+          "properties": {
+            "live": {"type": "integer", "minimum": 0},
+            "dead": {"type": "integer", "minimum": 0},
+            "idle": {"type": "integer", "minimum": 0},
+            "stale": {"type": "integer", "minimum": 0},
+            "queued": {"type": "integer", "minimum": 0},
+            "done": {"type": "integer", "minimum": 0}
+          }
+        },
+        "needs_you": {"type": "array", "items": {"$ref": "#/$defs/needs_item"}},
+        "prs": {
+          "description": "`skipped` with --no-gh or a missing directory.",
+          "oneOf": [{"const": "skipped"}, {"$ref": "#/$defs/prs_ok"}, {"$ref": "#/$defs/prs_error"}]
+        },
+        "release": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/release"}], "description": "Null for a missing directory."},
+        "worktrees": {"type": "integer", "minimum": 0, "description": "Linked worktree count."},
+        "work_dir": {"type": "string", "description": "Repo-relative dir of the ticket folders: the work root under a work_root line, else .sdlc. Optional; render reads an absent key as .sdlc."},
+        "pruning": {"type": "array", "items": {"type": "object", "required": ["name", "role", "level", "recorded_at", "age_s"], "additionalProperties": false,
+          "properties": {"name": {"type": "string"}, "role": {"type": "string"}, "level": {"type": "string"}, "recorded_at": {"type": "string"},
+                         "age_s": {"type": ["integer", "null"]}}},
+          "description": "Finished sub-agents queued in .sdlc/runtime/prune.json (T-0368); optional, an absent file is an empty list."},
+        "unread": {"type": "array", "items": {"type": "string"}, "description": "Message ids from file names under .sdlc/messages/new/<receiver>/, never a body."},
+        "supervisor": {
+          "description": "Null when .sdlc/supervisor/status.json is absent.",
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/supervisor_error"}, {"$ref": "#/$defs/supervisor_status"}]
+        },
+        "closed_since": {
+          "type": "array",
+          "description": "Only with --since DATE: the `close T-NNNN` commits on the default branch since the date.",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "task", "sha", "when"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"type": "string"}, "title": {"type": "string"}, "task": {"type": "string"},
+              "sha": {"type": "string"}, "when": {"type": "string"}
+            }
+          }
+        },
+        "merged_since": {
+          "description": "Only with --since DATE: the PRs gh lists as merged since the date; null with --no-gh, {error} when gh failed.",
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/prs_error"},
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["number", "title", "merged"],
+                "additionalProperties": false,
+                "properties": {
+                  "number": {"type": ["integer", "null"]}, "title": {"type": ["string", "null"]}, "merged": {"type": ["string", "null"]}
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "row": {
+      "type": "object",
+      "description": "One board row (a task board.py shows) with the state judged for it.",
+      "required": ["id", "task", "title", "ticket_status", "board", "pct", "claims_work", "state", "evidence", "flags"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "description": "Ticket id, empty for a task with no ticket front matter."},
+        "task": {"type": "string", "description": "Task folder name under .sdlc, a closed ticket keeps its leading dot."},
+        "title": {"type": "string"},
+        "ticket_status": {"type": "string"},
+        "board": {"type": "string", "description": "The most telling board cell: a red step, else a yellow one, else the first."},
+        "pct": {"type": "number"},
+        "claims_work": {"type": "boolean", "description": "The board shows a yellow or red step."},
+        "state": {"enum": ["live", "dead", "idle", "stale", "queued", "done"]},
+        "evidence": {"type": "array", "items": {"type": "string"}},
+        "flags": {"type": "array", "items": {"enum": ["ticket-done-board-open"]}}
+      }
+    },
+    "needs_item": {
+      "description": "A blocked ticket or an open non-draft pull request that may need the user. `repo` is set on the top-level needs_you list only.",
+      "oneOf": [{"$ref": "#/$defs/needs_blocked"}, {"$ref": "#/$defs/needs_pr"}]
+    },
+    "needs_blocked": {
+      "type": "object",
+      "required": ["kind", "id", "task", "title", "owner", "note", "age_s"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"const": "blocked"},
+        "id": {"type": "string"},
+        "task": {"type": "string"},
+        "title": {"type": "string"},
+        "owner": {"enum": ["user", "factory", "unknown"]},
+        "note": {"type": "string"},
+        "age_s": {"type": ["integer", "null"]},
+        "repo": {"type": "string"}
+      }
+    },
+    "needs_pr": {
+      "type": "object",
+      "required": ["kind", "number", "title", "url", "detail", "age_s"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"const": "pr"},
+        "number": {"type": ["integer", "null"]},
+        "title": {"type": ["string", "null"]},
+        "url": {"type": ["string", "null"]},
+        "detail": {"type": "string", "description": "Review decision and merge state, comma separated."},
+        "age_s": {"type": ["integer", "null"]},
+        "repo": {"type": "string"}
+      }
+    },
+    "prs_ok": {
+      "type": "object",
+      "required": ["open", "drafts"],
+      "additionalProperties": false,
+      "properties": {
+        "open": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["number", "title", "url", "draft", "review", "merge_state", "branch", "created"],
+            "additionalProperties": false,
+            "properties": {
+              "number": {"type": ["integer", "null"]},
+              "title": {"type": ["string", "null"]},
+              "url": {"type": ["string", "null"]},
+              "draft": {"type": "boolean"},
+              "review": {"type": ["string", "null"]},
+              "merge_state": {"type": ["string", "null"]},
+              "branch": {"type": ["string", "null"]},
+              "created": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "drafts": {"type": "integer", "minimum": 0}
+      }
+    },
+    "prs_error": {
+      "type": "object",
+      "required": ["error"],
+      "additionalProperties": false,
+      "properties": {"error": {"type": "string"}}
+    },
+    "release": {
+      "type": "object",
+      "description": "Local default branch against origin/<default>; a field is null when git cannot say.",
+      "required": ["branch", "default", "local", "remote", "ahead", "behind", "last_tag", "tag_distance", "fetched_age_s", "unpushed", "unpushed_branch_commits"],
+      "additionalProperties": false,
+      "properties": {
+        "branch": {"type": ["string", "null"]},
+        "default": {"type": ["string", "null"]},
+        "local": {"type": ["string", "null"]},
+        "remote": {"type": ["string", "null"]},
+        "ahead": {"type": ["integer", "null"]},
+        "behind": {"type": ["integer", "null"]},
+        "last_tag": {"type": ["string", "null"]},
+        "tag_distance": {"type": ["integer", "null"]},
+        "fetched_age_s": {"type": ["integer", "null"]},
+        "unpushed": {
+          "type": "array",
+          "description": "Commits the default branch holds that origin/<default> lacks, newest first, at most 10.",
+          "items": {
+            "type": "object",
+            "required": ["sha", "subject"],
+            "additionalProperties": false,
+            "properties": {"sha": {"type": "string"}, "subject": {"type": "string"}}
+          }
+        },
+        "unpushed_branch_commits": {"type": ["integer", "null"]}
+      }
+    },
+    "supervisor_error": {
+      "type": "object",
+      "required": ["error"],
+      "additionalProperties": false,
+      "properties": {"error": {"type": "string"}}
+    },
+    "supervisor_status": {
+      "type": "object",
+      "required": ["running", "age_s", "receivers"],
+      "additionalProperties": false,
+      "properties": {
+        "running": {"type": "boolean"},
+        "age_s": {"type": ["integer", "null"]},
+        "receivers": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "delta": {
+      "type": "object",
+      "description": "Against the previous snapshot. A ticket is keyed by id, so closing one (which renames its folder to .NNNN-<slug>) is a close, not a vanished row plus a new one.",
+      "required": ["since", "first_run", "state_changes", "closed", "dropped", "new", "gone", "prs_merged", "prs_closed"],
+      "additionalProperties": false,
+      "properties": {
+        "since": {"type": ["string", "null"], "description": "The previous snapshot's time, null on the first run."},
+        "first_run": {"type": "boolean"},
+        "state_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["repo", "id", "task", "kind", "from", "to"],
+            "additionalProperties": false,
+            "properties": {
+              "repo": {"type": "string"}, "id": {"type": "string"}, "task": {"type": "string"},
+              "kind": {"enum": ["state", "status"]},
+              "from": {"type": ["string", "null"]}, "to": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "closed": {"type": "array", "items": {"$ref": "#/$defs/delta_titled"}, "description": "A ticket id first seen with status done."},
+        "dropped": {"type": "array", "items": {"$ref": "#/$defs/delta_titled"}},
+        "new": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["repo", "id", "task", "status"],
+            "additionalProperties": false,
+            "properties": {"repo": {"type": "string"}, "id": {"type": "string"}, "task": {"type": "string"}, "status": {"type": "string"}}
+          }
+        },
+        "gone": {
+          "type": "array",
+          "description": "A ticket that vanished while not done.",
+          "items": {
+            "type": "object",
+            "required": ["repo", "id", "task"],
+            "additionalProperties": false,
+            "properties": {"repo": {"type": "string"}, "id": {"type": "string"}, "task": {"type": ["string", "null"]}}
+          }
+        },
+        "prs_merged": {"type": "array", "items": {"$ref": "#/$defs/delta_pr"}, "description": "gh only."},
+        "prs_closed": {"type": "array", "items": {"$ref": "#/$defs/delta_pr"}, "description": "Closed unmerged; gh only."}
+      }
+    },
+    "delta_titled": {
+      "type": "object",
+      "required": ["repo", "id", "task", "title"],
+      "additionalProperties": false,
+      "properties": {"repo": {"type": "string"}, "id": {"type": "string"}, "task": {"type": "string"}, "title": {"type": "string"}}
+    },
+    "delta_pr": {
+      "type": "object",
+      "required": ["repo", "number", "title"],
+      "additionalProperties": false,
+      "properties": {"repo": {"type": "string"}, "number": {"type": ["integer", "null"]}, "title": {"type": ["string", "null"]}}
+    }
+  }
+}

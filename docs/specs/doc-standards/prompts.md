@@ -2,12 +2,12 @@
 
 Agent files, skills, level overlays, handoffs, tickets read as agent tasks, system prompts, and tool descriptions: every document a model reads as instructions. [Core rules](core.md) apply. This card is later and more specific than [knowledge-ops.md](knowledge-ops.md) for system prompts, and wins where they differ.
 
-It is designed for SDLC Lite's roles and levels, not ported. Prior art: the `prompt-wording-rules` skill of the claude-plugins repository (github.com/kimgranlund/claude-plugins, `harness/skills/prompt-wording-rules`, commit 5f9819b86b4dc77934fd36226025cec2e2a88d81). Nothing is vendored from it; what still holds is restated below in this system's terms.
+It is designed for SDLC's roles and levels, not ported. Prior art: the `prompt-wording-rules` skill of the claude-plugins repository (github.com/kimgranlund/claude-plugins, `harness/skills/prompt-wording-rules`, commit 5f9819b86b4dc77934fd36226025cec2e2a88d81). Nothing is vendored from it; what still holds is restated below in this system's terms.
 
 | Type | Shape | Machine-checked |
 |---|---|---|
 | System prompts / agent instructions | Plain Language, imperative mood, one rule per line, an explicit priority order for rules that conflict, glossary terms. Each hard rule has an eval case. | none outside the plugin |
-| Agent file | `plugins/sdlc-lite/agents/<role>.md`: the role body with numbered rules, a closed-step line, and the result keys. | prompt_lint P-1, P-2, P-3, P-5, P-6 |
+| Agent file | `plugins/sdlc/agents/<role>.md`: the role body with numbered rules, a closed-step line, and the result keys. | prompt_lint P-1, P-2, P-3, P-5, P-6 |
 | Skill | `skills/<name>/SKILL.md`: when to use, then the procedure, with each script call real. | prompt_lint P-2, P-3, P-6 |
 | Overlay | `overlays/<role>.md`: one section per level band over the shared role body. | prompt_lint P-1, P-2, P-3, P-4, P-6 |
 | Handoff | `.sdlc/<task>/handoff.md` and `step-N/handoff.md`: self-contained, with runnable acceptance criteria. | none |
@@ -78,7 +78,7 @@ One row per positional and per flag the skill exposes to the user. The first col
 
 ### Hint rules
 
-Checked by `plugins/sdlc-lite/scripts/check.py` item 60. Every rule runs on every skill it applies to.
+Checked by `plugins/sdlc/scripts/check.py` item 60. Every rule runs on every skill it applies to.
 
 - H-1: a skill that reads arguments has an `argument-hint` frontmatter line.
 - H-2: the hint parses under the grammar.

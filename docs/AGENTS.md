@@ -4,14 +4,14 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 
 | Topic | Holds | Read it for |
 |---|---|---|
-| `specs/sdlc-lite/` | The lane design, cost control, pillars, fleet config, solo lane contract, gate lock admission design (for review) | How lanes are chosen and how cost is controlled; the evidence for solo as the default is [the benchmark](reports/solo-vs-lean-benchmark-2026-10-04.md) |
+| `specs/sdlc/` | The lane design, cost control, pillars, fleet config, solo lane contract, gate lock admission design (for review) | How lanes are chosen and how cost is controlled; the evidence for solo as the default is [the benchmark](reports/solo-vs-lean-benchmark-2026-10-04.md) |
 | `specs/ticket-stages/`, `specs/repo-onboarding/` | The `.sdlc` router, ticket root and mailbox design; entry-file and docs-layout design for adopting repositories | Changing `.sdlc/` layout, messages, `onboard.py` or its templates |
 | `specs/generative-constructs/` | Progressive Context specifications | Changing the Progressive Context plugin |
 | `references/` | Runner and ticket internals, Claude hooks, Codex execution, packaging | Changing runner, hook, Codex adapter or marketplace behavior |
 | `planning/` | Unbuilt proposals: sub-agent mode, the idle-host watcher, reorganization, the docs schema | Before building one; a built one moves into `specs/` |
 | `reports/` | Dated evidence, including the [readiness and recovery trials](reports/readiness-recovery-validation.md) | What was verified; history, not instructions |
 
-<!-- sdlc-lite:managed:start v1 sha256:2a2402f27120 -->
+<!-- sdlc:managed:start v1 sha256:2a2402f27120 -->
 # Documents
 
 Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
@@ -70,4 +70,4 @@ The first line that matches wins.
 - [reports/](reports/AGENTS.md)
 - `assets/`
 - [other/](other/AGENTS.md)
-<!-- sdlc-lite:managed:end -->
+<!-- sdlc:managed:end -->

@@ -278,15 +278,15 @@ Resolve these against the existing project before scaffolding a skill. This docu
 
 ## Agreed packaging direction
 
-Ship as a sibling plugin to SDLC Lite in this repository. Keep installation independent: the capability plugin owns durable contracts, intent, context navigation, composition, and reuse assessments; SDLC Lite owns tickets, plans, execution attempts, verification, and work closure. Existing UI-authoring plugins continue to own UI implementation.
+Ship as a sibling plugin to SDLC in this repository. Keep installation independent: the capability plugin owns durable contracts, intent, context navigation, composition, and reuse assessments; SDLC owns tickets, plans, execution attempts, verification, and work closure. Existing UI-authoring plugins continue to own UI implementation.
 
-Integrate through references rather than duplicated records. Tickets identify affected capabilities and claims; assessments cite applicable verification records. The integration is optional, so non-development projects can use the capability plugin alone and ordinary development can continue using SDLC Lite alone.
+Integrate through references rather than duplicated records. Tickets identify affected capabilities and claims; assessments cite applicable verification records. The integration is optional, so non-development projects can use the capability plugin alone and ordinary development can continue using SDLC alone.
 
-The first release should contain one routed skill, a minimal capability contract, assessments that reference existing evidence, a filesystem adapter, optional SDLC Lite integration guidance, and a UI profile referencing the existing ontology. Defer a general lifecycle engine, custom revision infrastructure, and browser adapters until a deployment needs them. Validate one existing component and ticket through contract, plan, verification, and assessment before expanding the architecture.
+The first release should contain one routed skill, a minimal capability contract, assessments that reference existing evidence, a filesystem adapter, optional SDLC integration guidance, and a UI profile referencing the existing ontology. Defer a general lifecycle engine, custom revision infrastructure, and browser adapters until a deployment needs them. Validate one existing component and ticket through contract, plan, verification, and assessment before expanding the architecture.
 
 
 ## Initial implementation boundary (2026-09-27)
 
 The peer plugin now exists at `plugins/context` (named `progressive-context` until 2026-10-25, T-0793), with one shared authoring skill and contract, evidence, and integration references. It implements the minimal file-based authoring workflow; larger runtime requirements above remain proposals. The name is Progressive Context. No superiority over ICM Architect has been experimentally established.
 
-Initial simplification: keep one capability contract, a linked assessment only after evaluation, and an optional release pointer. Derive lifecycle descriptions from these facts. Reuse existing Git revisions and SDLC Lite artifacts. Do not require a registry, stage engine, custom revision service, or a complete domain ontology for an intent stub.
+Initial simplification: keep one capability contract, a linked assessment only after evaluation, and an optional release pointer. Derive lifecycle descriptions from these facts. Reuse existing Git revisions and SDLC artifacts. Do not require a registry, stage engine, custom revision service, or a complete domain ontology for an intent stub.
