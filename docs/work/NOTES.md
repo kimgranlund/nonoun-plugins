@@ -819,3 +819,8 @@
 ## T-0818: Spawn gate and lane path tests for direct and hybrid sessions (2026-10-30)
 
 - note: Do item 2 (_role.sh no-role case for live/hybrid) was not added; builder states existing resolver CASES already cover it (docs/references/claude-hooks.md:7 lists live and hybrid as session agents).
+
+## T-0821: lanes.py who, overlap warning, and ticketless land for live lanes (2026-10-30)
+
+- decide: plugins/sdlc/scripts/lanes.py (finish_ticketless): the `--verifier-agent-id` accept path for a hash_bound lane (transcript_verdict) has no selftest case, as the builder reported; the criteria do not ask for it.
+- decide: Live run in the lane tree: `lanes.py who` printed `factory v open fanout lane .../.worktrees/fanout40/v` and `lanes.py list --overlap plugins/sdlc/scripts/lanes.py` printed nothing, both exit 0.

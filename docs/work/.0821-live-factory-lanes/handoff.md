@@ -2,7 +2,7 @@
 id: T-0821
 title: "lanes.py who, overlap warning, and ticketless land for live lanes"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0819]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,13 @@ Three lane helpers let a live session share a repo with a factory session: `lane
 ## Acceptance criteria
 - `python3 plugins/sdlc/scripts/lanes.py selftest` exits 0 with new cases: `who` reports `none`, then `factory` with a fixture receiver; `--overlap` reports a lane touching the path and not one that does not; `finish --no-ticket` lands a ticketless lane and refuses one touching a `hash_bound:` path. Each new case fails before the change.
 - `python3 plugins/sdlc/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 5f09c511a7e8
+- Changed: see commits
+- Commits: bc23d69 T-0821: lanes.py who, overlap warning, and ticketless land for live lanes; 4d9c9a4 T-0821: record lane T-0821-t0821
+- Check: 1 selftest exits 0 with new who, overlap and finish --no-ticket cases, each failing before the change: pass
+- Check: 2 `python3 plugins/sdlc/scripts/check.py` exits 0: pass
+- Follow-up: decide: plugins/sdlc/scripts/lanes.py finish_ticketless: the... -> notes.md
+- Follow-up: decide: Live run in the lane tree: lanes.py who printed factory v open... -> notes.md
