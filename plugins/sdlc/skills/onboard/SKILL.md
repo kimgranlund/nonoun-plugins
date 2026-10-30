@@ -1,7 +1,7 @@
 ---
 name: onboard
 description: "Set up or check the entry files (AGENTS.md, CLAUDE.md) and the docs layout for a repository adopting SDLC, keeping anything the repository already wrote. NOT for moving existing documents into the layout."
-argument-hint: "[setup [--init [--local]] [--force] | check]"
+argument-hint: "[setup [--init [--local] [--mode factory|hybrid|live]] [--force] | check]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py:*), Bash(git init:*)
 ---
 
@@ -16,15 +16,16 @@ Arguments: `$ARGUMENTS`
 | `setup` | Refresh only: show the diff of every managed block the repository already holds, then write it on approval | the default | `setup` |
 | `--init` | With `setup`: also create missing entry files and `docs/layout.md`, append a block to an unmanaged entry file, record `ticket_root: tickets` in `.sdlc/config` of a new repo (no ticket folder, config line or id ref yet), and declare `"agent": "sdlc:factory"` in `.claude/settings.json`. Only when the user asks to onboard the repository | off | `setup --init` |
 | `--local` | With `setup --init`: declare the factory agent in `.claude/settings.local.json` (personal, not committed) instead of `.claude/settings.json` (shared, committed) | off | `setup --init --local` |
+| `--mode` | With `setup --init`: the session agent to declare, `factory` (`sdlc:factory`), `hybrid` (`sdlc:hybrid`) or `live` (`sdlc:live`). An unknown value is refused before any write; an agent the repo already names is kept and setup says `--mode` did not apply | `factory` | `setup --init --mode live` |
 | `--force` | With `setup`: also replace a managed block edited by hand | off | `setup --force` |
 | `check` | Report the state of each managed file and write nothing. When an AGENTS.md names a `.agents/skills/<name>/SKILL.md` path yet no skill route resolves, it also prints `warning: AGENTS.md names <skill path> but no skill route resolves; see steps.py routes` on stderr; the exit code does not change | - | `check` |
 
 Commands, all run from the repository root:
-- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup --dry-run [--init [--local]]` prints a unified diff of every change and writes nothing.
-- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup [--init [--local]] [--force]` writes the same changes; `--force` also replaces a managed block edited by hand.
-- With `--init`, setup adds `"agent": "sdlc:factory"` to `.claude/settings.json` (`--local`: `.claude/settings.local.json`) and keeps every other key. When either settings file already names an agent, it leaves it and prints `agent: kept <value> in <path>`; a malformed settings file is reported and left untouched. Under Codex (`SDLC_BACKEND=codex`), which has no session-agent setting, it writes no settings and prints one `agent:` line saying so.
+- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup --dry-run [--init [--local] [--mode M]]` prints a unified diff of every change and writes nothing.
+- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py setup [--init [--local] [--mode M]] [--force]` writes the same changes; `--force` also replaces a managed block edited by hand.
+- With `--init`, setup adds `"agent": "sdlc:factory"` to `.claude/settings.json` (`--local`: `.claude/settings.local.json`) and keeps every other key; `--mode hybrid` or `--mode live` declares `sdlc:hybrid` or `sdlc:live` instead. When either settings file already names an agent, it leaves it and prints `agent: kept <value> in <path>`, adding `; --mode <mode> did not apply` when a different mode was asked for; a malformed settings file is reported and left untouched. Under Codex (`SDLC_BACKEND=codex`), which has no session-agent setting, it writes no settings and prints one `agent:` line saying so.
 - Without `--init`, setup refreshes the managed blocks that files already hold and changes nothing else. It prints one `--init would create <path>` or `--init would append a block to <path>` line on stderr for each file `--init` would add, and `--init would set agent in <path>` when the factory declaration is missing.
-- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py check` reports the state of each file as one `<label> <path>` line and writes nothing. Labels: `missing`, `malformed`, `newer`, `edited`, `current`, `stale`, `unmanaged`, and `present` for `docs/layout.md`. It exits 1 unless every entry file is `current` and `docs/layout.md` is `present`. One more line reports the session-agent declaration: `current <path>` when the effective settings file (`.claude/settings.local.json` before `.claude/settings.json`) names `sdlc:factory`, `other <path>` when it names another agent, `malformed <path>` for unreadable JSON, and `missing .claude/settings.json` when neither file names one; this line never changes the exit code.
+- `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/onboard.py check` reports the state of each file as one `<label> <path>` line and writes nothing. Labels: `missing`, `malformed`, `newer`, `edited`, `current`, `stale`, `unmanaged`, and `present` for `docs/layout.md`. It exits 1 unless every entry file is `current` and `docs/layout.md` is `present`. One more line reports the session-agent declaration: `current <path>` when the effective settings file (`.claude/settings.local.json` before `.claude/settings.json`) names `sdlc:factory`, `sdlc:hybrid` or `sdlc:live` (stderr then names the mode as `agent: mode <mode> in <path>`), `other <path>` when it names another agent, `malformed <path>` for unreadable JSON, and `missing .claude/settings.json` when neither file names one; this line never changes the exit code.
 
 Workflow:
 1. With `check` as the argument, run `onboard.py check`, report its lines and any stderr, and stop.
