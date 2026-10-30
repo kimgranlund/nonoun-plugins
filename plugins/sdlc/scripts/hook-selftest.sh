@@ -697,6 +697,30 @@ jq -n '{tool_name:"Agent",tool_input:{subagent_type:"fork",name:"verifier-L3-x",
 run "$rs" "$(cat "$wtmp/fork-nofactory.json")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "fork verifier- outside a factory session: exit $rc, want 0"
 
+# T-0818 mode boundaries. The session agents sdlc:live and sdlc:hybrid are not the factory, so the spawn gate stays
+# silent for them: calls the factory gate denies (no record, wrong model, a verifier fork, a bare role name, another
+# plugin's builder) pass, and so does a prepared dispatch (a hybrid lane). The same calls from sdlc:factory deny.
+for at in sdlc:live sdlc:hybrid; do
+  run "$rs" "$(gj sdlc:verifier-L3 mode-no-record-verifier-L3 sonnet "$gh" "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate is silent for $at (unprepared verifier): exit $rc, want 0"
+  run "$rs" "$(gj $vt $vn sonnet "$gh" "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate is silent for $at (wrong model): exit $rc, want 0"
+  run "$rs" "$(gj $vt $vn opus "$gh" "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate passes a prepared dispatch from $at: exit $rc, want 0"
+  run "$rs" "$(gj sdlc:solo-L2 solo-L2-gate-task opus "$gh" "$at")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate passes a solo lane spawn from $at: exit $rc, want 0"
+  run "$rs" "$(rsj "$at" sdlc:builder)" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate is silent for $at (bare sdlc:builder): exit $rc, want 0"
+  run "$rs" "$(rsj "$at" other:code-builder)" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate is silent for $at (other:code-builder): exit $rc, want 0"
+  run "$rs" "$(jq -n --arg at "$at" '{tool_name:"Agent",agent_type:$at,tool_input:{subagent_type:"fork",name:"verifier-L3-x",prompt:"x"}}')" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate is silent for $at (verifier fork): exit $rc, want 0"
+done
+run "$rs" "$(gj sdlc:verifier-L3 mode-no-record-verifier-L3 sonnet "$gh" sdlc:factory)" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate control: sdlc:factory still denies an unprepared verifier: exit $rc, want 2"
+run "$rs" "$(gj $vt $vn sonnet "$gh" sdlc:factory)" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate control: sdlc:factory still denies a wrong-model verifier: exit $rc, want 2"
+
 # warn-handoff-edit.sh: warn mode allows and logs; deny mode blocks; everything else passes silently.
 mkdir -p "$wtmp/live" "$wtmp/idle" "$wtmp/other"
 : >"$wtmp/live/handoff.md"; : >"$wtmp/idle/handoff.md"; : >"$wtmp/live/notes.md"; : >"$wtmp/other/handoff.md"
@@ -912,6 +936,23 @@ for at in "" sdlc:factory factory general-purpose Explore harness:agent-checker 
     run "$hook" "$(rj "$at" "$c")" >/dev/null; rc=$?
     [[ $rc -eq 0 ]] || fail "$(basename "$hook") passes '$c' with agent_type '${at:-none}': exit $rc, want 0"
   done
+done
+# The guards bind the role, not the session agent: a role run (SDLC_ROLE, as a lane driver sets it) inside a live or
+# hybrid session still has publishing and stray worktrees blocked, and so does a role sub-agent such as sdlc:solo-L2.
+modetw=/r/.worktrees/tmp/solo-1
+for at in sdlc:live sdlc:hybrid; do
+  run "$pub" "$(rj "$at" "$pushc")" SDLC_ROLE=solo >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-publish blocks push for SDLC_ROLE=solo in a $at session: exit $rc, want 2"
+  run "$sw" "$(rj "$at" "git worktree add -b lane-x /tmp/x HEAD")" SDLC_ROLE=solo SDLC_TMP_WORKTREES=$modetw >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree blocks a stray add for SDLC_ROLE=solo in a $at session: exit $rc, want 2"
+  run "$sw" "$(rj "$at" "git worktree add --detach $modetw/x HEAD")" SDLC_ROLE=solo SDLC_TMP_WORKTREES=$modetw >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree allows a detached add under the prefix for SDLC_ROLE=solo in a $at session: exit $rc, want 0"
+done
+run "$sw" "$(rj sdlc:solo-L2 "git worktree add -b lane-x /tmp/x HEAD")" SDLC_TMP_WORKTREES=$modetw >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-stray-worktree blocks a stray add for a sdlc:solo-L2 sub-agent: exit $rc, want 2"
+# A hybrid lane goes through a prepared dispatch: the agent definition names the same steps the factory runs.
+for phrase in "lanes.py open" "solo_run.py run" "dispatch.py record" "dispatch.py prepare verifier" "lanes.py finish"; do
+  grep -qF "$phrase" "$hooks/../agents/hybrid.md" || fail "agents/hybrid.md lost the lane step '$phrase'"
 done
 for at in sdlc:verifier-L2 sdlc:solo-L2 sdlc:solo-M sdlc:planner-L1; do
   run "$rf" "$(rj "$at" "$fmtc")" >/dev/null; rc=$?
