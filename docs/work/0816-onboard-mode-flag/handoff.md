@@ -2,11 +2,12 @@
 id: T-0816
 title: "onboard --mode picks conductor, hybrid or direct"
 type: feature        # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0815, T-0819]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-30
+claimed_by: sdlc-lite-author 2026-10-30
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
