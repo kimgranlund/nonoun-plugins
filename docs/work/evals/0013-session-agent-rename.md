@@ -8,7 +8,7 @@ task_set: T-0819 session agent rename, no experiment
 pass_rate: 0/0
 cost_usd: unknown
 date: 2026-10-30
-evidence: docs/work/0819-rename-sdlc-plugin/handoff.md
+evidence: [plugins/sdlc/adapters/codex/models.json, CHANGELOG.md]
 ---
 ## Method
 
