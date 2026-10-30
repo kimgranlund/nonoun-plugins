@@ -6,12 +6,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0816 | [0816-onboard-mode-flag](0816-onboard-mode-flag/handoff.md) | onboard --mode picks conductor, hybrid or direct | feature | L2 | P2 | T-0815, T-0819 | 🟡 claimed (branch lane/T-0816-t0816) |
 | T-0818 | [0818-mode-gate-tests](0818-mode-gate-tests/handoff.md) | Spawn gate and lane path tests for direct and hybrid sessions | chore | L1 | P2 | T-0815, T-0819 | 🟡 claimed (branch lane/T-0818-t0818) |
 | T-0821 | [0821-live-factory-lanes](0821-live-factory-lanes/handoff.md) | lanes.py who, overlap warning, and ticketless land for live lanes | feature | L2 | P2 | T-0819 | 🟡 claimed (branch lane/T-0821-t0821) |
 | T-0822 | [0822-live-shares-repo](0822-live-shares-repo/handoff.md) | Live agent works as a worker beside a factory session | chore | L1 | P2 | T-0819, T-0821 | 🔵 ready |
 
-Closed: 780 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 781 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -126,3 +125,5 @@ Closed: 780 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc/scripts/migrate-worktrees.sh:233,282,284: criterion 1 is green only because of this uncommitted edit; at commit 686b2f5b the migrate-worktrees job is red (the builder's run and base 2896f0eb agree). Decide before landing: commit the fix under its own ticket or ticket id, or the lane lands with a red gate. (from T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30))
 - decide: plugins/sdlc/scripts/hook-selftest.sh:616: `inbox-sdlc-lite-codex` keeps the old plugin name as a fixture peer name; harmless, rename if you want zero residue. (from T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30))
 - decide: Open tickets T-0816 and T-0818 and the docs/work ledgers still use the old names, as the builder noted. (from T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30))
+- decide: plugins/sdlc/scripts/onboard.py:76: the handoff Goal says "default stays conductor"; after T-0819 the default is `sdlc:factory` (the renamed conductor, plugins/sdlc/agents/factory.md), so the default is unchanged in substance. note: no action. (from T-0816: onboard --mode picks conductor, hybrid or direct (2026-10-30))
+- decide: Red-first order was not separately replayed; `redck.py deviations` printed no `red-checkpoint` line, and the negative variants prove the new cases can fail. (from T-0816: onboard --mode picks conductor, hybrid or direct (2026-10-30))

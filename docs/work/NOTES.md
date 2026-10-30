@@ -810,3 +810,8 @@
 - note: the handoff names `plugins/sdlc/hooks/hooks.json` as the registration file, but the repo keeps it in `plugins/sdlc/adapters/claude/hooks.json` (claude-hooks.md:3 forbids a shared hooks/hooks.json); the builder registered it in the right place.
 - note: no live SessionEnd run was observed (the builder says so); whether the real hook input carries `agent_type` is unverified, and `mode` falls back to the project settings `agent` key, then `none`.
 - note: the fleet_collect cases "--since drops an older session" and "no sessions file" also pass against a stub that returns an empty by_mode; only the aggregation case discriminates.
+
+## T-0816: onboard --mode picks conductor, hybrid or direct (2026-10-30)
+
+- decide: plugins/sdlc/scripts/onboard.py:76: the handoff Goal says "default stays conductor"; after T-0819 the default is `sdlc:factory` (the renamed conductor, plugins/sdlc/agents/factory.md), so the default is unchanged in substance. note: no action.
+- decide: Red-first order was not separately replayed; `redck.py deviations` printed no `red-checkpoint` line, and the negative variants prove the new cases can fail.

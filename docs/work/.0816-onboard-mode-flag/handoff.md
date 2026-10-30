@@ -2,7 +2,7 @@
 id: T-0816
 title: "onboard --mode picks conductor, hybrid or direct"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0815, T-0819]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Acceptance criteria
 - `python3 plugins/sdlc/scripts/onboard.py selftest` exits 0 with new cases: each mode writes its agent; an unknown mode is refused with nothing written; an existing agent is kept. Each new case fails before the change.
 - `python3 plugins/sdlc/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 1de29b3b3083
+- Changed: see commits
+- Commits: bb61515 T-0816: onboard --mode picks factory, hybrid or live; 589bdaa T-0816: record lane T-0816-t0816
+- Check: 1 `python3 plugins/sdlc/scripts/onboard.py selftest` exits 0 with new cases (each mode writes its a...: pass
+- Check: 2 `python3 plugins/sdlc/scripts/check.py` exits 0: pass
+- Follow-up: decide: plugins/sdlc/scripts/onboard.py:76: the handoff Goal says "default... -> notes.md
+- Follow-up: decide: Red-first order was not separately replayed; redck.py deviations... -> notes.md
