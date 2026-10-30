@@ -34,6 +34,13 @@
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/warn-handoff-edit.sh\"" }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/session_record.py\" hook" }
+        ]
+      }
     ]
   }
 }

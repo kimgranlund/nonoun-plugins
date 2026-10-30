@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Plugin checks: level-table and agent consistency, the generated Claude and Codex agent definitions (claude_roles.py, codex_roles.py) and the claude_roles.py selftest, the dispatch.py selftest (prepare parity with the run.sh dry run, gate refusals, attempt records; record parity with a stub-claude run.sh run, invalid and failed results, strays, cleanup), the coverage_check, roots.py, tickets.py, board.py,
-# results.py, evals.py, proposals.py, steps.py, redck.py, order.py, fanout.py, gate_lock.py, lanes.py, onboard.py, traces.py, messages.py, footprint.py, fleet_collect.py, solo_stats.py, fleet_detect.py, fleet_config.py, fleet_status.py, report.py, specgate.py, cite_check.py, verify_scope.py, prompt_lint.py (prompt references, one negative per rule), reply_lint.py (reply rules, one observed-red fixture per rule), plan_check.py (the plan-doc rules, one observed mutant per rule), compaction_handoff.py (the compaction handoff section: its three write refusals, replace, clear, and stale status), plan_doc.py, plan_done.py (the plan-doc stop condition, one case per truth-table row), and supervisor.py selftests (fanout: throwaway repos and a stub driver, no model
+# results.py, evals.py, proposals.py, steps.py, redck.py, order.py, fanout.py, gate_lock.py, lanes.py, onboard.py, traces.py, messages.py, footprint.py, fleet_collect.py, session_record.py, solo_stats.py, fleet_detect.py, fleet_config.py, fleet_status.py, report.py, specgate.py, cite_check.py, verify_scope.py, prompt_lint.py (prompt references, one negative per rule), reply_lint.py (reply rules, one observed-red fixture per rule), plan_check.py (the plan-doc rules, one observed mutant per rule), compaction_handoff.py (the compaction handoff section: its three write refusals, replace, clear, and stale status), plan_doc.py, plan_done.py (the plan-doc stop condition, one case per truth-table row), and supervisor.py selftests (fanout: throwaway repos and a stub driver, no model
 # call), the budget.py selftest (per-ticket budget meter), the solo_run.py selftest (solo cost capture; stub claude), the run.sh selftest (result numbering, stream-json result pick, Bash timeout env; stub claude, no model call), the hook selftest
 # (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, block-role-write.sh, block-role-rm.sh, close-role-stdin.sh, and block-role-spawn.sh on fixture JSON, with the _role.sh resolver), the
 # hook live probe selftest
@@ -64,6 +64,7 @@ job fast board python3 "$root/scripts/board.py" selftest
 job fast inventory python3 "$root/scripts/inventory.py" selftest
 job fast evals python3 "$root/scripts/evals.py" selftest
 job fast fleet_collect python3 "$root/scripts/fleet_collect.py" selftest
+job fast session_record python3 "$root/scripts/session_record.py" selftest
 job fast plan_done python3 "$root/scripts/plan_done.py" selftest
 job fast plan_check python3 "$root/scripts/plan_check.py" selftest
 job fast results python3 "$root/scripts/results.py" selftest
