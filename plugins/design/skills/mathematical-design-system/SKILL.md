@@ -10,6 +10,14 @@ The adopted model is **Differential Forms**. The bundled portable snapshot is th
 
 Identify **intent**, **semantic component**, **geometry family**, and **parent context** separately. A DOM wrapper does not automatically establish a geometry family.
 
+Select one authority before choosing geometry:
+
+- **Inside a repository or installed package:** start at its `AGENTS.md`, registry and versioned contracts. Local guidance is preferred; this skill does not replace it or become a prerequisite. A newer checkout does not establish an older installed version’s behavior.
+- **Standalone numerical work without an authoritative local system:** use the bundled snapshot below as a numerical reference, not a component library or live synchronization.
+- **Explicit historical work:** use the frozen v0.2.2 baseline. Do not mix historical defaults with current formulas.
+
+If local sources conflict, identify and reconcile the conflict rather than silently choosing a snapshot. Missing local guidance is a contract gap; the bundled snapshot cannot certify local behavior.
+
 For current work, follow the consuming repository’s entry point to its authoritative contracts, resolvers and companion CSS. For historical baseline work, read the [frozen v0.2.2 baseline](references/geometry-contract.md), then only the relevant files in [the portable source snapshot](assets/differential-forms/system.manifest.json):
 
 - Geometry: `contracts/foundations.json`, `contracts/geometry-families.json`, `docs/geometry.md`, and the relevant `geometry/resolve-*.ts`.
@@ -20,7 +28,7 @@ For current work, follow the consuming repository’s entry point to its authori
 
 The listed contracts/, docs/, geometry/, recipes/, specimens/ and verification/ paths are relative to `<skill-root>/assets/differential-forms/`. Markdown reference links are relative to the file containing them. Resolve the skill root from this SKILL.md location, never the caller's working directory. The snapshot runs independently of the originating checkout and has no deployment credentials.
 
-For current component work, public attributes configure geometry/state; companion `components/{component}/{component}.css` owns every style and token mapping. TypeScript reflects inputs/state and implements behavior only. Never generate inline styles or stylesheets at runtime. Pure resolvers remain numerical references, not a runtime CSS transport. Shared templates may construct custom-part anatomy. Start component selection at `registry.json`, check implemented availability and `avoidWhen`/`useInstead`, and register required parts explicitly.
+For current component work, public attributes configure geometry/state; companion `components/{component}/{component}.css` owns every style and token mapping. TypeScript reflects inputs/state and implements behavior only. Never generate inline styles or stylesheets at runtime. Pure resolvers remain numerical references, not a runtime CSS transport. Shared templates may construct custom-part anatomy. Start component selection at `registry.json`, check implemented availability and `avoidWhen`/`useInstead`, and register required parts explicitly. Use a consuming project's documented local exceptions rather than blanket prohibitions that invalidate its supported adapters.
 
 ## Operating constraints
 
@@ -43,7 +51,7 @@ For the bundled snapshot only: use Node 24+, no install step. From `assets/diffe
 
 Check finite/domain-valid results, border conservation, fixed slots, density-independent typography/label edges, zero-inset composites, curvature endpoints and growth under tight budgets. Inspect relevant `verification/visual-cases.json` cases for UI changes. Numerical passes do not establish visual quality, accessibility, contrast or responsiveness. Report verified behavior and remaining exceptions separately.
 
-For consuming projects, use their scoped browser-verification policy and output locations. Reconcile geometry contracts, implementation and attribute/property metadata together, but do not synchronize a frozen bundled snapshot merely because the live project changed. Preserve snapshot provenance unless explicitly updating that snapshot.
+For consuming projects, use their scoped browser-verification policy and output locations. Test independent parent/child density and narrow layouts; check light/dark paint, state/focus continuity and reduced motion separately. Inspect captures after transition settlement. Compilation alone does not establish correct CSS inclusion or cascade order. Reconcile geometry contracts, implementation and attribute/property metadata together, but do not synchronize a frozen bundled snapshot merely because the live project changed. Preserve snapshot provenance unless explicitly updating that snapshot.
 
 ## Superseded resources
 
