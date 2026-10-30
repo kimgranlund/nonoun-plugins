@@ -824,3 +824,7 @@
 
 - decide: plugins/sdlc/scripts/lanes.py (finish_ticketless): the `--verifier-agent-id` accept path for a hash_bound lane (transcript_verdict) has no selftest case, as the builder reported; the criteria do not ask for it.
 - decide: Live run in the lane tree: `lanes.py who` printed `factory v open fanout lane .../.worktrees/fanout40/v` and `lanes.py list --overlap plugins/sdlc/scripts/lanes.py` printed nothing, both exit 0.
+
+## T-0823: Cross-harness plugin standard: a doc-standards card and a current compatibility reference (2026-10-30)
+
+- note: docs/specs/doc-standards/plugins.md:27 and docs/references/plugin-compatibility.md:16 describe the `design` validator result as `$ARGUMENTS` only; the run also reports `${CLAUDE_PLUGIN_ROOT}` and a missing `allow_implicit_invocation: false` in the same skill, and the sdlc run reports "hooks are configured for Claude but not both harnesses" and two model-only visibility warnings. The claims about context and dev-tools (clean) and the sdlc `${CLAUDE_PLUGIN_ROOT}` finding are accurate; the summaries understate the rest.
