@@ -1,6 +1,6 @@
 # Visual anchors
 
-The closed emoji set for chat replies of the author agent and the session `report`. One anchor per line, first character of the line, followed by the item and the reason. The set carries meaning only. It is not used in code, commit messages, tickets or documents. `rag-board` uses the same four state glyphs. Source of the rule: `.claude/agents/sdlc-lite-author.md` (Output, line 3) and `docs/planning/author-output-block-draft.md`.
+The closed emoji set for chat replies of the author agent and the session `report`. One anchor per line, first character of the line, followed by the item and the reason. The set carries meaning only. It is not used in code, commit messages, tickets or documents. `rag-board` uses the same four state glyphs. Source of the rule: `.claude/agents/nonoun-author.md` (Output, line 3) and `docs/planning/author-output-block-draft.md`.
 
 | Group | Anchor | Means | Example line |
 |---|---|---|---|

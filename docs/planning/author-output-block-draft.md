@@ -4,7 +4,7 @@ owner: maintainer
 ---
 # Author agent output block, tightened draft
 
-Status: proposal. Version 1 is applied in `.claude/agents/sdlc-lite-author.md` (commit eae4ebd3). This draft tightens it with the controlled language of `docs/specs/doc-standards/core.md` and `prompts.md`. It is not applied: swap it in only for the next session that is meant to compare.
+Status: proposal. Version 1 is applied in `.claude/agents/nonoun-author.md` (commit eae4ebd3). This draft tightens it with the controlled language of `docs/specs/doc-standards/core.md` and `prompts.md`. It is not applied: swap it in only for the next session that is meant to compare.
 
 ## 1. Version 2 text
 
@@ -34,7 +34,7 @@ Handles: Answer-first, Status-line, Anchor, Decision, Evidence, One-next.
 | Line 8 names the two rules that still apply in depth mode | a priority rule | an exception only |
 | Line 9 ranks safety above the rest | explicit priority order | absent |
 
-Emoji, added 2026-10-12 at the maintainer's request and extended the same day to 20 anchors in five groups (state, direction, event, guard, measure; the table is `docs/references/visual-anchors.md`): one per line at the start, never decoration, never in code, commit messages, tickets or documents, and never alone. Add a glyph to the set only with a measured use. Version 1 received the same change in `.claude/agents/sdlc-lite-author.md`, so the V1 arm below includes it from that commit.
+Emoji, added 2026-10-12 at the maintainer's request and extended the same day to 20 anchors in five groups (state, direction, event, guard, measure; the table is `docs/references/visual-anchors.md`): one per line at the start, never decoration, never in code, commit messages, tickets or documents, and never alone. Add a glyph to the set only with a measured use. Version 1 received the same change in `.claude/agents/nonoun-author.md`, so the V1 arm below includes it from that commit.
 
 Not changed: the 20-word cap, the `[U]` mark and the AskUserQuestion rule.
 

@@ -96,7 +96,7 @@
    it. Each has a negative control (the phrase, file, or registration removed must be flagged).
 21. Solo start path: agents/solo.md holds the start command `--agent sdlc:solo`, and the routing texts send ticket
    levels L1 and L2 to `solo`: agents/factory.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
-   .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged. Claude headless retirement (T-0288):
+   .claude/agents/nonoun-author.md. Negative control: each phrase removed must be flagged. Claude headless retirement (T-0288):
    scripts/run.sh holds `SDLC_CLAUDE_EXEC` and `dispatch.py prepare` in its Claude refusal, and scripts/solo_run.py holds `SDLC_CLAUDE_EXEC` and fanout.py's default_driver body holds it
    so no `claude -p` runs by default (items 4, 20, 27 name the opt-in path only). Negative control: each phrase removed.
 22. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
@@ -941,7 +941,7 @@ SOLO_ROUTE = (('agents/solo.md', '--agent sdlc:solo'),
               (FACTORY, 'Ticket levels L1 and L2 go to `solo` by default'),
               ('skills/fix/SKILL.md', 'ticket levels L1 and L2 go to `solo`'),
               ('AGENTS.md', 'Ticket level L1 and L2 plugin work goes to `solo` by default'),
-              ('.claude/agents/sdlc-lite-author.md', '`solo` for ticket levels L1 and L2 by default'))
+              ('.claude/agents/nonoun-author.md', '`solo` for ticket levels L1 and L2 by default'))
 def solo_route_missing(text, phrase): return phrase not in text
 for rel, phrase in SOLO_ROUTE:
     srt = _rd(root.resolve().parent.parent/rel) if rel.startswith('.claude/') else _rd(root/rel)

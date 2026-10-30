@@ -62,7 +62,7 @@ Dated one-line changes: status moves, retargeting, who decided.
 id: K-003
 title: Share of runs with no cost row
 status: active            # proposed | active | retired
-owner: sdlc-lite-author
+owner: nonoun-author
 created: 2026-10-08
 unit: percent
 direction: down           # up | down | hold
