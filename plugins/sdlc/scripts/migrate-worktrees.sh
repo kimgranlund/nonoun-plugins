@@ -230,7 +230,7 @@ selftest() {
     git -C "$r" worktree list --porcelain
     (cd "$r" && find .worktrees .claude .sdlc -print 2>/dev/null | sort)
     (cd "$t" && find repo.worktrees -print 2>/dev/null | sort)
-    cat "$r/.gitignore"; git -C "$r" status --porcelain; cat "$r"/.sdlc/c-clean/handoff.md
+    cat "$r/.gitignore"; git -C "$r" status --porcelain; cat "$r"/.sdlc/tickets/c-clean/handoff.md
   }
   mkdir -p "$r" && git -C "$r" init -q -b main
   L=.claude/worktrees  # the legacy 0.23 root; Claude Code's agent-* trees in it are host-owned
@@ -279,9 +279,9 @@ selftest() {
     || bad "a clean landed .worktrees/ lane moves with git worktree move and git worktree list shows the sibling path"
   listed "$s/c-clean" && [[ ! -e "$r/$L/c-clean" ]] \
     && ok "a clean landed $L/ lane moves to the sibling root" || bad "a clean landed $L/ lane moves to the sibling root"
-  [[ "$out" == *'ticket T-0001: worktree: ../repo.worktrees/c-clean'* ]] && grep -qx 'worktree: ../repo.worktrees/c-clean' "$r/.sdlc/c-clean/handoff.md" \
+  [[ "$out" == *'ticket T-0001: worktree: ../repo.worktrees/c-clean'* ]] && grep -qx 'worktree: ../repo.worktrees/c-clean' "$r/.sdlc/tickets/c-clean/handoff.md" \
     && ok "a moved lane's ticket worktree: line names the new path, relative to the main checkout" \
-    || bad "a moved lane's ticket worktree: line names the new path, relative to the main checkout: $(grep '^worktree:' "$r/.sdlc/c-clean/handoff.md") $out"
+    || bad "a moved lane's ticket worktree: line names the new path, relative to the main checkout: $(grep '^worktree:' "$r/.sdlc/tickets/c-clean/handoff.md") $out"
   ck=$(tk check)
   [[ "$ck" != *'worktree:'* ]] && ok "tickets.py check prints no worktree warning for the moved lane" \
     || bad "tickets.py check prints no worktree warning for the moved lane: $ck"

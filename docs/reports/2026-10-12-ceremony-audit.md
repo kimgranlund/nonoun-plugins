@@ -10,7 +10,7 @@ Result: the filer-warning close refusal stalled 8 distinct tickets in waves f50 
 
 Recorded 2026-10-12 on branch `fanout/wave41-w` at base `46a1f500`. Everything below is read-only; the other three repos were read, never written. Run every command from the repository root.
 
-- Main counter: `python3 docs/reports/2026-10-12-ceremony-audit/count.py > docs/reports/2026-10-12-ceremony-audit/counts.txt`. Output captured in `docs/reports/2026-10-12-ceremony-audit/counts.txt`; its sections A to J are cited below as "counts A" and so on. It reads every `runs.jsonl` under each ticket folder (step folders included), the result files, the `## Closed` line of each closed `handoff.md`, the git commit that created each closed folder, and `/tmp/fanout-f5N.log` when present. It orders verifier results with the plugin's own `plugins/sdlc-lite/scripts/order.py`, never by file time.
+- Main counter: `python3 docs/reports/2026-10-12-ceremony-audit/count.py > docs/reports/2026-10-12-ceremony-audit/counts.txt`. Output captured in `docs/reports/2026-10-12-ceremony-audit/counts.txt`; its sections A to J are cited below as "counts A" and so on. It reads every `runs.jsonl` under each ticket folder (step folders included), the result files, the `## Closed` line of each closed `handoff.md`, the git commit that created each closed folder, and `/tmp/fanout-f5N.log` when present. It orders verifier results with the plugin's own `plugins/sdlc/scripts/order.py`, never by file time.
 - Sets: WINDOW is the 27 closed folders `.sdlc/.0431-*` to `.sdlc/.0459-*` (closed since T-0431); ALL is the 439 closed `.sdlc/.0NNN-*` folders in this tree.
 - First case, this repo: `find .sdlc -maxdepth 2 -path '.sdlc/.04*' -name 'filer-L1*.md' | wc -l` gives 11 files; count A groups them per ticket.
 - First case, other repos (the settled sample): `find <root> -maxdepth 2 -name 'filer-L1*.md' | wc -l` for the three roots gives 20 (`/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets`), 12 (`/Users/kimgranlund/Projects/nonoun/agent-ui/.sdlc`) and 8 (`/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.sdlc`), matching the planner probe. Count A2 classifies them.
@@ -62,10 +62,10 @@ Totals over the 7 latest filer files: 29 entries; red-checkpoint retrospective 1
 
 Kinds and outcomes:
 
-- Red-checkpoint retrospective (10 entries, 6 tickets): every entry names step 2 or later and gives one cause, earlier steps' uncommitted work already in the shared tree, so `redck.py record` stored the controls as retrospective (the phase rule is in the `plugins/sdlc-lite/scripts/redck.py` docstring). In each entry the step verifier ran its own red control or probed the base and found the criterion red. None led to a fix, a reopened ticket or a later defect: no closed or open handoff reopens these tickets, and the `## Closed` line of each says the verifiers passed [U for "no later defect", which rests on the absence of a record]. Prior redck work (T-0420, `.sdlc/.0420-redck-execution-tree/`; T-0395) narrowed the cause but did not remove it for multi-step chains.
+- Red-checkpoint retrospective (10 entries, 6 tickets): every entry names step 2 or later and gives one cause, earlier steps' uncommitted work already in the shared tree, so `redck.py record` stored the controls as retrospective (the phase rule is in the `plugins/sdlc/scripts/redck.py` docstring). In each entry the step verifier ran its own red control or probed the base and found the criterion red. None led to a fix, a reopened ticket or a later defect: no closed or open handoff reopens these tickets, and the `## Closed` line of each says the verifiers passed [U for "no later defect", which rests on the absence of a record]. Prior redck work (T-0420, `.sdlc/.0420-redck-execution-tree/`; T-0395) narrowed the cause but did not remove it for multi-step chains.
 - Flake (3 entries, 2 tickets): gate_lock selftest and `check.sh` reds under parallel sessions. These led to T-0459 (its handoff names T-0447 and T-0452). A real catch, but of a flaky check, and the builder notes saw it first.
 - Unverified claim (7 entries): builder claims the verifier could not re-observe (removed clones in T-0442, a non-independent replay in T-0448). The T-0442 entry preceded T-0458, which re-tests the overlays. The others led to nothing recorded [U].
-- How cleared: all 6 by `--ack-warnings` (each `## Closed` line starts "warnings acknowledged:"); none by `--force`; `--reason` closed the 19 filer-less solo tickets and T-0447 (`tickets.py close` refuses a filer-less close without `--reason`; see the usage line in `plugins/sdlc-lite/scripts/tickets.py`).
+- How cleared: all 6 by `--ack-warnings` (each `## Closed` line starts "warnings acknowledged:"); none by `--force`; `--reason` closed the 19 filer-less solo tickets and T-0447 (`tickets.py close` refuses a filer-less close without `--reason`; see the usage line in `plugins/sdlc/scripts/tickets.py`).
 - Minutes lost: the fanout logs have no timestamps and the ack lines carry dates only. The bound used is the last `runs.jsonl` timestamp to the commit that created the closed folder: 547 wall minutes over 6 tickets, median 50. It includes merge gates and idle time, so it is an upper bound, not working minutes [U]. The model spend on the ack itself is not recorded (the ack is a conductor action, not a role run).
 
 Other repos (counts A2):
@@ -86,17 +86,17 @@ P-6 against `docs/reports/2026-10-11-agent-prompt-lint-baseline.md` (base files 
 
 | File | Baseline prohibitions / NEVER / vague | Now prohibitions / NEVER / vague |
 |---|---|---|
-| `plugins/sdlc-lite/agents/builder.md` | 14 / 11 / 6 | 19 / 0 / 0 |
-| `plugins/sdlc-lite/agents/solo.md` | 17 / 11 / 14 | 19 / 0 / 0 |
-| `plugins/sdlc-lite/agents/verifier.md` | 15 / 12 / 6 | 20 / 0 / 0 |
-| `plugins/sdlc-lite/agents/planner.md` | 36 / 33 / 6 | 40 / 0 / 0 |
-| `plugins/sdlc-lite/agents/conductor.md` | 29 / 26 / 3 | 30 / 0 / 2 |
-| `plugins/sdlc-lite/agents/plan-reviewer.md` | 8 / 8 / 4 | 10 / 0 / 0 |
-| `plugins/sdlc-lite/overlays/builder.md` | 0 / 0 / 0 | 0 / 0 / 0 |
+| `plugins/sdlc/agents/builder.md` | 14 / 11 / 6 | 19 / 0 / 0 |
+| `plugins/sdlc/agents/solo.md` | 17 / 11 / 14 | 19 / 0 / 0 |
+| `plugins/sdlc/agents/verifier.md` | 15 / 12 / 6 | 20 / 0 / 0 |
+| `plugins/sdlc/agents/planner.md` | 36 / 33 / 6 | 40 / 0 / 0 |
+| `plugins/sdlc/agents/factory.md` | 29 / 26 / 3 | 30 / 0 / 2 |
+| `plugins/sdlc/agents/plan-reviewer.md` | 8 / 8 / 4 | 10 / 0 / 0 |
+| `plugins/sdlc/overlays/builder.md` | 0 / 0 / 0 | 0 / 0 / 0 |
 
 The baseline came from the upstream `potency_lint.py`, a different tool with different word lists, so the two columns are not a like-for-like diff [U]: the NEVER column going to 0 may be a counting difference rather than a rewrite.
 
-Wording counts over `agents/*.md`, `skills/*/SKILL.md` and `overlays/*.md` under `plugins/sdlc-lite/` (informational only): loop 36, verify (`re-verify` family) 9, re-run 55; these match the planner probe. Reading the re-run lines in the role files: `plugins/sdlc-lite/agents/builder.md` (line 27) and `plugins/sdlc-lite/agents/solo.md` (line 17) say "re-run no green check", and `plugins/sdlc-lite/agents/conductor.md` (line 9) says to reverify a pass only when a verified file changed. No rule found tells a role to re-run or re-verify a green result. The remaining hits are reruns after a fail, a missing verdict, or a swap [U: judged from the matched lines, not each file read in full].
+Wording counts over `agents/*.md`, `skills/*/SKILL.md` and `overlays/*.md` under `plugins/sdlc-lite/` (informational only): loop 36, verify (`re-verify` family) 9, re-run 55; these match the planner probe. Reading the re-run lines in the role files: `plugins/sdlc/agents/builder.md` (line 27) and `plugins/sdlc/agents/solo.md` (line 17) say "re-run no green check", and `plugins/sdlc/agents/factory.md` (line 9) says to reverify a pass only when a verified file changed. No rule found tells a role to re-run or re-verify a green result. The remaining hits are reruns after a fail, a missing verdict, or a swap [U: judged from the matched lines, not each file read in full].
 
 ## Ranked changes
 
@@ -106,7 +106,7 @@ Ranked by measured cost removed, with every check that has a real catch kept. Qu
 2. [propose a ticket] Make `steps.py lint` stop refusing test-fixture paths in criteria. Cost: window replans T-0444 (fixture spans under `$d/.sdlc/0001-a/`) plus this ticket's own refusal (`## Plan review` of T-0464, a probe fixture path); the window's three second-planner runs cost $7.64 and 32 model minutes, and `refusals.jsonl` holds 11 lint refusals in all. Catches: 0 real defects among the window refusals [U]. Change: a cited path built under a shell variable or a scratch prefix is not a citation. Measure: plan defects from `steps.py lint` per wave (collector `plan_defects.early`, 24 since 2026-10-10). Guard: the existing negative case, a cited path that should exist and does not, must still refuse.
 3. [propose a ticket] Trial solo L3 with one independent verifier for L3 tickets with no merge step and no cross-cutting scope. Cost: chain L3 median $13.07 and 74 model minutes against solo L3 $10.91 and 49 (n = 5, so [U]); in the window, planner plus filer were $29.05 of $73.68 on 8 chain tickets, and every manual ack fell on a chain L3 ticket. Catches kept: the 3 verifier fails in chain L3 tickets are verifier catches, which this lane keeps; plan-reviewer did not run on any window ticket. Change: route those L3 tickets to `solo-L3` for a measured batch. What is cut is the planner and the filer (no catch of their own in the window); the independent verifier is kept, run once per ticket instead of once per step. The plan-reviewer is not affected: it ran on no window ticket. Measure: dollars and model minutes per L3 ticket, rounds to close. Guard: K-005 and rework after close on the batch against the chain L3 history; stop the trial at the first rework.
 4. Keep the plan-reviewer. It costs $4.17 a run and caught a replan in 7 of 24 runs; no change.
-5. Keep `inherited red` stops and the builder's pre-build base check (`plugins/sdlc-lite/agents/builder.md` rule 8): 2 stops, 2 real catches.
+5. Keep `inherited red` stops and the builder's pre-build base check (`plugins/sdlc/agents/builder.md` rule 8): 2 stops, 2 real catches.
 6. Keep the second verifier round as is: 14 rounds with 1 catch, and the conductor already reverifies a pass only after a change.
 7. Watch the `skips.md` close refusal (T-0450, T-0462: lane full with planner or filer skipped and no `## Skipped` entry). Two tickets, minutes not recorded [U]; no ticket proposed until a second wave shows it.
 
