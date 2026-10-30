@@ -2,6 +2,16 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [0.4.0] - 2026-10-30
+
+### Added
+
+- `context-fog-of-war` gains explicit delivery diagnostics from the MacBook working copy (T-0824): `scripts/delivery.py`, a `--delivery-contract` option in `engineer.py`, delivery keys in `session.schema.json`, two new test files, Claude adapter 1.1.0, scoped read requests and a persisted-output preview in truncation. Project-specific front matter was left out.
+
+### Upgrade
+
+- Update the plugin. A machine that keeps a hand-copied `context-fog-of-war` in `~/.claude/skills` or `~/.codex/skills` should remove it so each host loads one version.
+
 ## [0.3.0] - 2026-10-25
 
 ### Added

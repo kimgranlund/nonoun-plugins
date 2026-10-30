@@ -1,0 +1,19 @@
+🟢 The button-geometry-model rerun passed the hidden check, and it cost less and took fewer attempts than last time.
+
+| run | hidden | verifier | steps | attempts | cost |
+|---|---|---|---|---|---|
+| 2026-09-24 | pass | pass | 3/3 | 5 | $20.07 |
+| 2026-09-27 | pass | pass | 3/3 | 3 | $14.73 |
+
+- **Change since last run:** cost dropped by $5.34 (27%) and attempts went from 5 to 3. Every step was built once and passed on the first verify. Split accepted the plan the first time, so no replans were needed; the last run had two.
+- **Verifier vs hidden check:** they agree. No case where the verifier passed and the hidden check failed.
+- **Loose ends:** the filer found no follow-ups, so no Loose ends step ran. The file stage was skipped, as bench requires.
+- **Results:** in `plugins/sdlc-lite/bench/results/2026-09-27-button-geometry-model/`, committed locally as `5ff7797` and not pushed. The worktree is removed.
+
+Two problems in sdlc-lite itself turned up during the run:
+
+- 🟡 **The bench grade step doesn't use the repo's `.nvmrc`.** The first grade ran on system Node 22 and failed in `gen:check`. Regraded on Node 24, it passed; `grade.md` records both. `run.sh` already picks up `.nvmrc` for role runs, but the grade step in the bench skill doesn't, so a correct build can grade as a fail.
+- 🟡 **`block-repo-format.sh` blocks check-only format scripts in builder runs.** `pnpm format:check`, `pnpm run format:check` and `npm run format:check` all exit 2, but CLAUDE.md says check-only modes pass. In this run the step 3 builder couldn't run the format gate and handed it to the verifier.
+
+Both are small fixes (a hook fixture plus a matching change, and applying `.nvmrc` in the grade step). Say if you want them.
+exit=0 duration=4503s

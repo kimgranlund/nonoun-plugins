@@ -1,0 +1,16 @@
+🟢 command-modal-footer passed the hidden check (62/62 unit, 32/32 browser) for $4.36. The previous run on 2026-09-24 failed it and cost $12.24.
+
+```
+run                                       hidden  steps  passed  attempts  cost_usd
+2026-09-24-command-modal-footer             fail      3       3         5     12.24
+2026-09-27-command-modal-footer             pass      4       3         4      4.36
+```
+
+- **What changed since the last run:** the hidden check went from fail to pass, attempts dropped from 5 to 4, and cost fell by $7.88. Every step built and verified on its first try (planner L2, builders L2/L2/L1, verifiers L1). Last time the verifier passed while the hidden check failed, a missed defect. This time the verifier and the hidden check agree, so nothing is flagged 🔴.
+- 🟡 **Task spec fixed before the run:** the hidden tests find the hints by `[data-hint]`, but the task's Goal never said so. I added it to the Goal. The fix only changes what the agents are told, not the base or the hidden tests, so the task's red/green check is unaffected.
+- 🟡 **Step 4 (`gates green`) stopped:** its builder reported `inherited red`, meaning some project test suites were already failing before this run started. Those are `site-nav.browser`, `theme-provider-build-fixture`, `dogfood-assets-freshness` and some site-shard page flows. The run had no one to ask, so the rule is to stop the task there. That skipped the loose-ends and file stages, and no verifier ran on step 4. The "already failing" claim comes only from that builder; I didn't re-run those suites on the base to confirm it.
+
+`check.sh` passes, and the worktree is removed. The task fix and the results are committed as `301166c`, not pushed.
+
+Results are in `plugins/sdlc-lite/bench/results/2026-09-27-command-modal-footer/`.
+exit=0 duration=2004s

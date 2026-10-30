@@ -2,7 +2,21 @@
 
 SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
-## [1.0.0] - 2026-10-30
+## [1.0.1] - 2026-10-30
+
+Report: [docs/reports/2026-10-30-release-1-0-1.md](docs/reports/2026-10-30-release-1-0-1.md). `sdlc` 1.0.1, `context` 0.4.0, `design` 0.2.0; `dev-tools` is unchanged. 4 tickets: a cross-harness plugin standard (T-0823) and three skill imports from the MacBook working copies (T-0824 to T-0826).
+
+### Added
+
+- A document standard for plugins that ship to both Claude Code and Codex: the card `docs/specs/doc-standards/plugins.md` and its registry row, enforced by `scripts/check-packaging.py`; `docs/references/plugin-compatibility.md` describes the four plugins as shipped (T-0823).
+- `context` 0.4.0: delivery diagnostics in `context-fog-of-war` (T-0824; details in `plugins/context/CHANGELOG.md`).
+- `design` 0.2.0: `base-ui` routes to the consuming project's UI kit first and adds a governed-project checkpoint (T-0825); `mathematical-design-system` adds a three-way choice of authority, a conflict and contract-gap rule, and scoped-route, installed-package and composition checks (T-0826). Maison-specific material from the working copies stays out.
+
+### Changed
+
+- `sdlc` 1.0.1: repository links point at `kimgranlund/nonoun-plugins`, and the maintainer agent is `nonoun-author`. No behavior change.
+
+
 
 Report: [docs/reports/2026-10-30-release-1-0-0.md](docs/reports/2026-10-30-release-1-0-0.md). 10 tickets, T-0813 to T-0822: three session modes (factory, hybrid, live), the onboarding defaults that select them, and the rename to `sdlc` in marketplace `nonoun` in one clean break (T-0819). No aliases: the old names stop working.
 

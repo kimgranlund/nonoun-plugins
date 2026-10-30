@@ -1,0 +1,20 @@
+`button-geometry-model` passed the hidden check (exit 0: 11 test files, 37 tests, typecheck and both gen checks green). This is the task's first run, so there's no earlier run to compare against.
+
+```
+run                                       hidden  steps  passed  attempts  cost_usd
+2026-09-24-button-geometry-model            pass      3       3         5     20.07
+2026-09-24-command-modal-footer             fail      3       3         5     12.24
+2026-09-24-figma-stale-skip-report          fail      2       2         2      1.81
+2026-09-24-subagent-tool-names              pass      1       1         1      0.52
+2026-09-24-svelte-icon-component            pass      3       3         3      2.49
+```
+
+- 🟢 **This run:** the verifier passed all 3 steps and the hidden check agrees.
+- 🟡 **Cost:** $20.07, the most expensive task so far. Step 2 took 3 builder attempts, but the code was never the problem. Both blocks were caused by acceptance criteria the planner wrote:
+  - The first plan expected a clean typecheck and a failing old test, which can't happen while test files are off-limits.
+  - The first replan asked for an HTML check that contradicted itself: the button's class had to contain `iconOnly` while its HTML could not.
+  - Each builder caught the problem and reported blocked instead of editing tests. It took two planner L3 replans to fix the criteria.
+- 🟡 **My mistake:** I ran the verifier after both blocked builds. /chain says to go straight to a replan there. Those two extra verifier runs are part of the $20.07.
+- 🔴 **Older runs:** `command-modal-footer` and `figma-stale-skip-report` still show the verifier passing every step while the hidden check fails. Those are earlier results, not from this run.
+
+Results are in `bench/results/2026-09-24-button-geometry-model/`, and the worktree has been removed.

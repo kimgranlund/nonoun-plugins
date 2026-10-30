@@ -1,0 +1,24 @@
+The command-modal-footer task failed the hidden check, even though the verifier passed every step.
+
+| run | hidden | steps | passed | attempts | cost |
+|---|---|---|---|---|---|
+| 2026-09-24-command-modal-footer | fail | 3 | 3 | 5 | $12.24 |
+| 2026-09-24-figma-stale-skip-report | fail | 2 | 2 | 2 | $1.81 |
+| 2026-09-24-subagent-tool-names | pass | 1 | 1 | 1 | $0.52 |
+| 2026-09-24-svelte-icon-component | pass | 3 | 3 | 3 | $2.49 |
+
+The other three rows are earlier runs of other tasks. This was the first run of command-modal-footer, so there is no previous run to compare against.
+
+🔴 **Verifier passed, hidden check failed.** 61 of 62 unit and descriptor tests passed. The one that failed expects different markup from what the builder wrote:
+- **Footer element:** the test wants a real `<footer data-part="footer">`; the builder used a `div`.
+- **Hint items:** the test wants three `[data-hint]` items, each with a `<kbd>`. The builder's items had no `data-hint` attribute.
+
+The handoff never specified either detail. The planner guessed, and named this exact risk in its plan ("hidden grader may expect different markup"). The verifier checked against the plan, so this is really a gap in the task spec, not a missed bug. The browser tests never ran because the unit run failed first and the check chains them with `&&`.
+
+What drove the $12 cost:
+- **Replan 1 (Planner L3):** step 2 was blocked because `data-role="hint"` isn't in the list of allowed `data-role` values that `naming-gates.test.ts` checks. The replanned step dropped the attribute and regenerated the two build fixtures.
+- **Replan 2 (Planner L3):** step 3 was blocked by a `site-nav.browser.test.ts` failure that is outside this task and also fails on the base commit. The replan left that one file out of the browser test run, and the rebuild at L3 passed.
+
+🟡 One slip on my side: in step 2, I ran the verifier before checking that the builder had reported blocked. It returned fail, and that result is still in the task's results folder.
+
+The worktree is removed. The results, including `grade.md` and `final.diff`, are in `bench/results/2026-09-24-command-modal-footer/`.

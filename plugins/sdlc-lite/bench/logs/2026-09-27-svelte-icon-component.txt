@@ -1,0 +1,16 @@
+🟢 svelte-icon-component passed the hidden check: 28 of 28 tests, and `svelte-check` reported 0 errors. The verifier passed every step, so there's no 🔴 miss.
+
+| run | hidden | steps | passed | attempts | cost |
+|---|---|---|---|---|---|
+| 2026-09-24 | pass | 3 | 3 | 3 | $2.49 |
+| 2026-09-27 | pass | 4 | 4 | 4 | $7.05 |
+
+Compared with the previous run:
+- **Result:** still passing, with one more step, because the plan now ends with a separate "gates green" step.
+- **Cost:** $4.56 higher, and most of that is one planner L3 replan ($3.05). Step 3's first builder blocked on a real plan defect: the check `! grep -qF "×" src/routes/+page.svelte` always fails, because the page already has a `Tier × scale × size` heading. The replan fixed that check. The rebuilt steps 3 and 4 then passed on their first attempt.
+- **My mistake:** my step script ran step 4 once before the step 3 replan, which shouldn't have happened. That run was set aside with the replan and changed nothing, but its $0.29 is in the total.
+
+The filer's draft had no `fix-now:` items, so there was no loose-ends step. It left one `decide:` item: Phosphor's own CDN CSS might override the geometry sizing in a real browser, and the offline tests can't see that.
+
+The throwaway worktree is removed. Results are in `bench/results/2026-09-27-svelte-icon-component/` and not committed yet, next to the uncommitted figma-stale-skip-report and subagent-tool-names results from today.
+exit=0 duration=2138s

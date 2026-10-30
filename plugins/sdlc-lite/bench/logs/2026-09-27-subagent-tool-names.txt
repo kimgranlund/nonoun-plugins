@@ -1,0 +1,15 @@
+🟢 subagent-tool-names passed the hidden check (vitest 9/9, `npx tsc` clean). The verifier also passed, so it didn't miss anything.
+
+| Run | Hidden | Steps | Passed | Attempts | Cost |
+|---|---|---|---|---|---|
+| 2026-09-24-subagent-tool-names | pass | 1 | 1 | 1 | $0.52 |
+| 2026-09-27-subagent-tool-names | pass | 1 | 1 | 1 | $4.69 |
+
+Compared with the previous run, the result is the same (one step, one attempt) but the cost is 9x higher. The planner L3 replan cost $3.47 of that. The L1 planner cost $0.30, builder L1 $0.38 and verifier L1 $0.55.
+
+🔴 The replan came from a false positive in the `steps.py split` lint, not from a real plan defect. The lint flags a `||` inside a double-quoted string nested in `"$(...)"` as a fallback between two checks. In bash that `||` is quoted, so it is only JavaScript code. I reproduced it with a small fixture: `echo "$(node -e "process.exit(a || b)")"` is refused as a `plan defect`. Every plan with a JavaScript `||` inside a nested `node -e` probe will pay for an extra L3 replan until the lint handles quotes nested inside `$(...)`.
+
+I haven't changed `steps.py`. Fixing it means making the lint handle those nested quotes, adding that fixture as a negative control, and running `check.sh`.
+
+The results are in `plugins/sdlc-lite/bench/results/2026-09-27-subagent-tool-names/` and aren't committed yet. The worktree has been removed and pruned.
+exit=0 duration=1786s

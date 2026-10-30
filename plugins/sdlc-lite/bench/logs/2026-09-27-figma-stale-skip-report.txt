@@ -1,0 +1,17 @@
+🔴 `figma-stale-skip-report` failed the hidden check again. The cause is a gap in the task spec, not a missed defect: 1 hidden failure now, down from 4 last time.
+
+| run | hidden | steps | passed | attempts | cost |
+|---|---|---|---|---|---|
+| 2026-09-24 | fail (4 gates) | 2 | 2 | 2 | $1.81 |
+| 2026-09-27 | fail (1 gate) | 1 | 1 | 1 | $11.45 |
+
+- **Verifier:** passed while the hidden check failed. I checked which side was wrong before tuning anything: the hidden test was.
+  - The one failing assertion wants a `console.warn` containing the literal text `stale color name(s), left live` followed by `taken: <names>`.
+  - The task goal never mentions a console warning at all.
+  - The build did print one naming all 96 skipped names, just in other words.
+  - Every behavior the goal does name passed: the `skipped` arrays at all three sites, `N stale skipped (rename target taken)`, and `N stale kept (published library)`.
+- **Cost:** it went up because the Opus plan (L2) had a criterion that didn't parse as shell. The replan on Fable (L3) cost $8.50 of the $11.45. Build and verify passed on the first try.
+- **To fix the task:** add the exact warn wording to its Goal, then red/green check it in a throwaway worktree before the next run. That's a task edit, so it's your call.
+
+The results are in `plugins/sdlc-lite/bench/results/2026-09-27-figma-stale-skip-report/`, not committed yet. I removed the worktree, and the ultimate-tokens checkout is unchanged.
+exit=0 duration=4790s

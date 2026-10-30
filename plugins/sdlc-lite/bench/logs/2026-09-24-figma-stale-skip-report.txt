@@ -1,0 +1,22 @@
+The figma-stale-skip-report task failed the hidden check (4 of the hidden test gates failed), even though the verifier passed both steps.
+
+| run | hidden | steps | passed | attempts | cost_usd |
+|---|---|---|---|---|---|
+| 2026-09-24-figma-stale-skip-report | fail | 2 | 2 | 2 | 1.81 |
+| 2026-09-24-subagent-tool-names | pass | 1 | 1 | 1 | 0.52 |
+| 2026-09-24-svelte-icon-component | pass | 3 | 3 | 3 | 2.49 |
+
+This is the task's first run, so there's nothing to compare against. The other two rows are from earlier runs today and weren't rerun.
+
+- 🟢 Step 1 (record the skips): built at L2, verifier passed, 1 attempt.
+- 🟢 Step 2 (show the skips to the user): built at L2, verifier passed, 1 attempt. `npm test` was green, 48/48 files.
+- 🔴 The verifier passed but the hidden check failed. Four gates failed:
+  - The tests read a field called `skipped` on the color, float and Font Primitives reports. The planner invented the name `skippedDeprecates`, so the color and float checks found nothing there.
+  - For Font Primitives, `libraryReport.skipped` came back as `[]`. That field may already exist for another purpose; I didn't dig further.
+  - The tests expect an "N stale kept" notice when a stale Type/Geometry breakpoint mode is kept in library mode. The plan never covered that case.
+
+🟡 This task probably can't be passed as written. The handoff names neither the `skipped` field nor the "stale kept" notice, and the hidden tests assert both exactly. So this run mostly tests guessing the spec, though the verifier also missed that there was no test for the collision path. To make the task fair, add the report field name and the kept-stale-mode notice to `## Goal` or `## Context` in `bench/tasks/figma-stale-skip-report.md`, then rerun.
+
+The step 2 builder made its own commit in the throwaway worktree and edited two review docs to fix a citation gate. The worktree is removed, and the commit is left orphaned in `ultimate-tokens`, where it does nothing.
+
+The results are in `bench/results/2026-09-24-figma-stale-skip-report/`.

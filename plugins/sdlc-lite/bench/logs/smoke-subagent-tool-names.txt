@@ -1,0 +1,13 @@
+🟢 `subagent-tool-names` passed the hidden check, and the verifier also said pass, so the two agree.
+
+```
+run                              hidden  steps  passed  attempts  cost_usd
+2026-09-24-subagent-tool-names   pass    1      1       1         0.52
+```
+
+- **Run:** planner L1 → builder L1 (1 attempt) → verifier L1. All three ran on Sonnet. The builder level matches the task's expected L1.
+- **Hidden tests:** 9 of 9 passed, and `tsc` was clean. The visible test file only had 6 tests.
+- **Previous run:** none. This is the first result in `bench/results/`, so it's the baseline for this task.
+- 🟡 **Verifier report format:** the verifier added a stray line above `## Verdict`. The summary script still read the verdict correctly. A format check at the end of each run (the Stop hook on your "Later" list) would catch this.
+
+The results are in `bench/results/2026-09-24-subagent-tool-names/`, and the worktree has been removed. The other four tasks still have no baseline.

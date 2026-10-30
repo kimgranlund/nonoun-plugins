@@ -1,0 +1,21 @@
+🟢 The `svelte-icon-component` task passed the hidden check. The verifier passed all 3 steps, so it didn't miss anything this time.
+
+| run | hidden | steps | passed | attempts | cost_usd |
+|---|---|---|---|---|---|
+| 2026-09-24-subagent-tool-names | pass | 1 | 1 | 1 | 0.52 |
+| 2026-09-24-svelte-icon-component | pass | 3 | 3 | 3 | 2.49 |
+
+This is the first run of this task, so there's no earlier run to compare against.
+
+| Step | What it did | Builder | Verifier | Attempts |
+|---|---|---|---|---|
+| 1 🟢 | Added the icon recipe and regenerated | L2 | L1 pass | 1 |
+| 2 🟢 | Built the Icon component, its spec and the package export | L3 | L2 pass | 1 |
+| 3 🟢 | Used Icon in the showcase's icon-only Button | L1 | L1 pass | 1 |
+
+- **Level:** the planner gave the core step L3, which matches the task's expected level. It wasn't told that level.
+- **Pre-planning:** a researcher L1 run fetched the SRI hashes before planning, and its cost is in the $2.49.
+- **Grading:** with the hidden `Icon.svelte.spec.ts` copied in, 34 tests in 7 files passed and `svelte-check` found 0 errors.
+- 🟡 **Task file:** the handoff says "Read AGENTS.md first", but AGENTS.md doesn't exist at the base commit. It didn't hurt this run, but that line in `bench/tasks/svelte-icon-component.md` should probably point to CLAUDE.md.
+
+The results are in `bench/results/2026-09-24-svelte-icon-component/`. The worktree has been removed and pruned.
