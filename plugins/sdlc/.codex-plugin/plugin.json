@@ -1,6 +1,6 @@
 {
   "name": "sdlc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SDLC agent team with native Codex and Claude role execution, explicit model levels, and shared delivery artifacts.",
   "author": {
     "name": "Kim Granlund"

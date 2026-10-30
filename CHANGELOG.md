@@ -2,7 +2,15 @@
 
 SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
-## [1.0.1] - 2026-10-30
+## [1.0.2] - 2026-10-30
+
+Report: [docs/reports/2026-10-30-release-1-0-2.md](docs/reports/2026-10-30-release-1-0-2.md). `sdlc` 1.0.2; `context`, `design` and `dev-tools` are unchanged. 1 ticket (T-0827).
+
+### Changed
+
+- The live session agent picks a branch and a checkout when it is alone in a repository: it works on `live/<slug>` when the repository lands through pull requests (main tracks a remote and `.sdlc/config` has no `lane_landing: local`) or the user asks, gives a second parallel task its own lane, and closes a merged branch or lane. Its gate rule now names `${CLAUDE_PLUGIN_ROOT}/scripts/gate_lock.py` (T-0827).
+
+
 
 Report: [docs/reports/2026-10-30-release-1-0-1.md](docs/reports/2026-10-30-release-1-0-1.md). `sdlc` 1.0.1, `context` 0.4.0, `design` 0.2.0; `dev-tools` is unchanged. 4 tickets: a cross-harness plugin standard (T-0823) and three skill imports from the MacBook working copies (T-0824 to T-0826).
 
