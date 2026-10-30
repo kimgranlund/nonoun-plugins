@@ -2,7 +2,7 @@
 id: T-0826
 title: "Import MacBook mathematical-design-system changes into the design plugin"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - `python3 scripts/check-packaging.py` exits 0.
 - `! find plugins/design/skills/mathematical-design-system -name .git -o -name .DS_Store | grep -q .`
 - `git diff --check` is clean.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 6a73d9df936a
+- Changed: see commits
+- Commits: 0663f2e T-0826: Import MacBook mathematical-design-system changes into the design plugin; 1063ccc T-0826: record lane T-0826-t0826
+- Check: 1 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 2 no `.git` or `.DS_Store` under the skill: pass
+- Check: 3 `git diff --check` clean: pass
+- Follow-up: note: references/current-system.md and the Maison geometry capture were... -> notes.md

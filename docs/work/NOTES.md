@@ -836,3 +836,7 @@
 ## T-0824: Import MacBook context-fog-of-war changes into the context plugin (2026-10-30)
 
 - note: the builder's include/exclude claims match the sources. The Codex copy differs from the repo only in the investigation.md and contract-audit.md links, the CHANGELOG.md "replay1/0/1" spacing, and the Maison `project:` and `/Users/kimba/...` `backup:` front matter lines in the 20261029 changelog. The repo keeps the newer links, the fixed spacing, and the 20261029 changelog without those two lines. The added lines contain no Maison, kimba, /Volumes or .openai text and no em dashes. `agents/openai.yaml` is unchanged.
+
+## T-0826: Import MacBook mathematical-design-system changes into the design plugin (2026-10-30)
+
+- note: references/current-system.md and the Maison geometry capture were deliberately left out; the report already records the follow-up idea of importing it as a separate versioned snapshot.

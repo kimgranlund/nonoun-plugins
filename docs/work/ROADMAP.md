@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0826 | [0826-import-mds-macbook](0826-import-mds-macbook/handoff.md) | Import MacBook mathematical-design-system changes into the design plugin | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0826-t0826) |
 
-Closed: 787 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 788 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
