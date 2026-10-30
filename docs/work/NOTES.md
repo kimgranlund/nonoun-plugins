@@ -815,3 +815,7 @@
 
 - decide: plugins/sdlc/scripts/onboard.py:76: the handoff Goal says "default stays conductor"; after T-0819 the default is `sdlc:factory` (the renamed conductor, plugins/sdlc/agents/factory.md), so the default is unchanged in substance. note: no action.
 - decide: Red-first order was not separately replayed; `redck.py deviations` printed no `red-checkpoint` line, and the negative variants prove the new cases can fail.
+
+## T-0818: Spawn gate and lane path tests for direct and hybrid sessions (2026-10-30)
+
+- note: Do item 2 (_role.sh no-role case for live/hybrid) was not added; builder states existing resolver CASES already cover it (docs/references/claude-hooks.md:7 lists live and hybrid as session agents).
