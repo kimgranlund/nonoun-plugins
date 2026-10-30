@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1d90d6d0c927 -->
+<!-- sdlc-lite:managed:start v1 sha256:1684710dd133 -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,12 +16,11 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
   - T-0817 One sessions.jsonl row per session so retros compare modes (docs/work/0817-session-record)
   - T-0818 Spawn gate and lane path tests for direct and hybrid sessions (docs/work/0818-mode-gate-tests)
   - T-0819 Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (docs/work/0819-rename-sdlc-plugin)
-- claimed: 1
-  - T-0815 Direct and hybrid session agents beside the conductor (docs/work/0815-session-modes-agents), claimed by sdlc-lite-author 2026-10-30, branch lane/T-0815-t0815
+- claimed: 0
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 776
+- done: 777
 - dropped: 30
 
 ## Procedures

@@ -2,7 +2,7 @@
 id: T-0815
 title: "Direct and hybrid session agents beside the conductor"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,14 @@ Two new session agents ship beside `sdlc-lite:conductor`: `sdlc-lite:direct`, wh
 
 ## Constraints
 - No change to conductor behavior. No new hook.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 62e6563c44be
+- Changed: see commits
+- Commits: f87979d T-0815: Direct and hybrid session agents beside the conductor; 801cdd1 T-0815: record lane T-0815-t0815
+- Check: 1 check.py exits 0 with both new agent files present: pass
+- Check: 2 codex_roles.py and claude_roles.py `generate --check` exit 0: pass
+- Check: 3 check-packaging.py exits 0: pass
+- Follow-up: note: plugins/sdlc-lite/adapters/codex/models.json:12-13 give the direct... -> notes.md
+- Follow-up: note: plugins/sdlc-lite/agents/conductor.md:87-89 adds only the prose... -> notes.md

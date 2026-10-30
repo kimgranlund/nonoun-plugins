@@ -793,3 +793,8 @@
 ## T-0814: New repos keep tickets in .sdlc/tickets/ (2026-10-29)
 
 - note: the steps.py and proposals.py selftests and check.sh were not run by this verifier; the builder reports steps.py and proposals.py selftests green. `git diff --check` against the base sha is clean.
+
+## T-0815: Direct and hybrid session agents beside the conductor (2026-10-30)
+
+- note: plugins/sdlc-lite/adapters/codex/models.json:12-13 give the direct and hybrid Codex rows the conductor's gpt-6-astra medium. The ticket named no model, so the builder recorded them as inherited in eval 0012. Model and effort defaults are a user decision, and the user may override.
+- note: plugins/sdlc-lite/agents/conductor.md:87-89 adds only the prose Modes section, so conductor behavior is unchanged as the Constraints require. Do item 1 and the Constraints are met: direct.md carries the offer-`/verify`-once rule and the conductor's publish and push rules.

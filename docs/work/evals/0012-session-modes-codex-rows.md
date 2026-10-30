@@ -8,7 +8,7 @@ task_set: T-0815 new session agent rows, no experiment
 pass_rate: 0/0
 cost_usd: unknown
 date: 2026-10-30
-evidence: [docs/work/0815-session-modes-agents/handoff.md, docs/reports/2026-10-28-speed-experiment.md]
+evidence: [docs/work/.0815-session-modes-agents/handoff.md, docs/reports/2026-10-28-speed-experiment.md]
 ---
 ## Method
 
