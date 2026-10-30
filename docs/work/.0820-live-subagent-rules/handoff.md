@@ -2,7 +2,7 @@
 id: T-0820
 title: "Live mode states when it uses sub-agents"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0819]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,12 @@ Regenerate the Codex agents.
 - `grep -q '^## Sub-agents' plugins/sdlc/agents/live.md`
 - `python3 plugins/sdlc/scripts/codex_roles.py generate --check` exits 0.
 - `python3 plugins/sdlc/scripts/check.py` exits 0.
+
+## Outcome
+
+2026-10-30 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: 486ce8c251da
+- Changed: see commits
+- Commits: a22bf51 T-0820: live mode states when it uses sub-agents; 351ebd0 T-0820: record lane T-0820-t0820
+- Check: 1 `grep -q '^## Sub-agents' plugins/sdlc/agents/live.md`: pass
+- Check: 2 `python3 plugins/sdlc/scripts/codex_roles.py generate --check` exits 0: pass
+- Check: 3 `python3 plugins/sdlc/scripts/check.py` exits 0: pass
