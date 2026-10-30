@@ -27,6 +27,9 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   level, wall_min, budget_min, path}}}: completed `*.attempt.json` records in the window, minutes
                   from started_at to finished_at; over_budget lists those whose wall time reached their budget
                   (dispatch.over_budget: the record's time_budget_min, else the role's ROLE_MINUTES) (T-0811)
+  sessions        {by_mode: {mode: {count, cost_usd, commits}}}: rows of each checkout's `.sdlc/runtime/sessions.jsonl`
+                  (session_record.py, one per Claude Code session, T-0817) deduplicated by session_id, windowed on
+                  started_at; a null cost_usd or commits adds 0
   plan_review_share   (plan-reviewer + planner cost_usd) / total cost_usd, null with no cost
   tickets         {count, items[]}: each `.sdlc/<folder>/handoff.md` (main checkout first, then worktrees; the first
                   copy of a folder wins) is counted. A ticket folder is keyed by its path under `.sdlc`: its name,
@@ -973,6 +976,29 @@ def ci_info(repo, window, days, now=None):
             'runs': total, 'wall_minutes': round(wall, 1), 'failed': failed, 'by_workflow': out}
 
 
+def sessions_info(repo, window):
+    """{by_mode: {mode: {count, cost_usd, commits}}} from each checkout's `.sdlc/runtime/sessions.jsonl` (T-0817),
+    deduplicated by session_id, windowed on started_at. A null cost or commits adds 0."""
+    by_mode, seen = {}, set()
+    for root in worktree_roots(repo)[0]:
+        for line in read_text(os.path.join(root, '.sdlc', 'runtime', 'sessions.jsonl')).splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(r, dict) or not window.has(r.get('started_at')):
+                continue
+            key = r.get('session_id') or line
+            if key in seen:
+                continue
+            seen.add(key)
+            b = by_mode.setdefault(str(r.get('mode') or 'none'), {'count': 0, 'cost_usd': 0.0, 'commits': 0})
+            b['count'] += 1
+            b['cost_usd'] = round(b['cost_usd'] + (num(r.get('cost_usd')) or 0), 6)
+            b['commits'] += int(num(r.get('commits')) or 0)
+    return {'by_mode': by_mode}
+
+
 def summary_line(runs):
     if runs == 'none':
         return 'runs: none'
@@ -995,6 +1021,7 @@ def collect(repo, since=None, until=None, gh=False, days=14, du_timeout=None, de
         ('plan_defects', extra.get('plan_defects', {'late': 0, 'early': 0})),
         ('attempts', extra.get('attempts', {'by_role': {}, 'over_budget': {'count': 0, 'attempts': []}})),
         ('tickets', tickets_info(repo)),
+        ('sessions', sessions_info(repo, window)),
         ('processes', process_info()),
         ('worktrees', worktree_info(repo, du_timeout)),
         ('ci', ci_info(os.path.realpath(repo), window, days) if gh else 'skipped'),
@@ -1522,6 +1549,28 @@ def selftest():
         ok('processes: a ps line gives pid, cpu, etime, rss and the command', parse_ps_line(
             '  4321  99.5   00:31 20480 /bin/bash /p/hooks/block-disk-scan.sh')
            == (4321, 99.5, 31, 20480, '/bin/bash /p/hooks/block-disk-scan.sh') and parse_ps_line('garbage') is None)
+
+        # sessions (T-0817): rows of two modes aggregate per mode; a lane's copy of a row counts once
+        srepo = os.path.join(tmp, 'srepo')
+
+        def srow(sid, mode, cost, commits, start):
+            return {'session_id': sid, 'mode': mode, 'started_at': start, 'ended_at': start, 'cost_usd': cost,
+                    'commits': commits, 'checks': 1}
+        write(os.path.join(srepo, '.sdlc', 'runtime', 'sessions.jsonl'), rows(
+            srow('s1', 'sdlc:live', 0.5, 2, '2026-10-20T10:00:00Z'), srow('s2', 'sdlc:live', 0.25, 1, '2026-10-21T10:00:00Z'),
+            srow('s3', 'sdlc:factory', 2.0, 3, '2026-10-21T11:00:00Z'), srow('s4', 'none', None, None, '2026-09-01T10:00:00Z'))
+            + 'not json\n')
+        write(os.path.join(srepo, '.worktrees', 'l1', '.sdlc', 'runtime', 'sessions.jsonl'), rows(
+            srow('s3', 'sdlc:factory', 2.0, 3, '2026-10-21T11:00:00Z'), srow('s5', 'sdlc:hybrid', 1.0, 0, '2026-10-22T10:00:00Z')))
+        ss = sessions_info(srepo, Window())
+        ok('sessions: two modes aggregate count, cost and commits, a lane copy counts once, a bad line is skipped',
+           ss['by_mode'].get('sdlc:live') == {'count': 2, 'cost_usd': 0.75, 'commits': 3}
+           and ss['by_mode'].get('sdlc:factory') == {'count': 1, 'cost_usd': 2.0, 'commits': 3}
+           and ss['by_mode'].get('sdlc:hybrid') == {'count': 1, 'cost_usd': 1.0, 'commits': 0}
+           and ss['by_mode'].get('none') == {'count': 1, 'cost_usd': 0.0, 'commits': 0})
+        ok('sessions: --since drops an older session', 'none' not in sessions_info(srepo, Window(since='2026-10-01'))['by_mode'])
+        ok('sessions: a repo with no sessions file has an empty by_mode', sessions_info(os.path.join(tmp, 'nowhere'), Window())
+           == {'by_mode': {}})
 
         # gh: a stub gh feeds the aggregation; a missing gh is an error object, not a crash
         stub = os.path.join(tmp, 'bin', 'gh')
