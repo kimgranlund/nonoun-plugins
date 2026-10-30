@@ -68,7 +68,7 @@ unit: percent
 direction: down           # up | down | hold
 target: "<= 5"            # a number or a bounded expression the measure can be compared with
 baseline: {value: 78, date: 2026-10-08, source: docs/reports/2026-10-08-fleet-retro-06.md}
-measure: python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d
+measure: python3 plugins/sdlc/scripts/fleet_collect.py collect . --since 7d
 read: runs.unmetered / runs.total * 100     # how to turn the output into the number
 cadence: weekly           # per retro, weekly, per release
 goals: [G-001]
@@ -113,4 +113,4 @@ The homes are added to `DEFAULT_HOMES` in `docs_check.py`, to `DOC_KINDS` in `on
 
 ## Not covered
 
-How a conductor picks work from goals, and any automatic goal-to-ticket generation. Both need a goal ledger in `.sdlc/` and are a separate design if they are wanted.
+How a factory picks work from goals, and any automatic goal-to-ticket generation. Both need a goal ledger in `.sdlc/` and are a separate design if they are wanted.

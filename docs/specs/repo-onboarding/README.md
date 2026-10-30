@@ -1,6 +1,6 @@
 # Repository onboarding
 
-Proposals for preparing a repository that adopts SDLC Lite. The design is implemented, and so are the reorganization's inventory and apply; glob classification is not.
+Proposals for preparing a repository that adopts SDLC. The design is implemented, and so are the reorganization's inventory and apply; glob classification is not.
 
 - [Entry files and docs layout](design.md): the `onboard` skill, entry file rules, upsert behavior, default layout, and templates. Ticket T-0160. Role access is ticket T-0162.
 - [Goals and KPIs](goals-and-kpi.md): the `goals/` and `kpi/` homes, the file shapes, and checks G-1 to G-5. Ticket T-0392.

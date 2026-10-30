@@ -1,6 +1,6 @@
 # Dev Tools maintenance
 
-Read [repository guidance](../../AGENTS.md) first. This plugin ships skills for machine, repo and harness care. It has no hooks, subagents, model mapping or SDLC Lite dependency.
+Read [repository guidance](../../AGENTS.md) first. This plugin ships skills for machine, repo and harness care. It has no hooks, subagents, model mapping or SDLC dependency.
 
 | Skill | Use | Source (2026-10-25) |
 |---|---|---|

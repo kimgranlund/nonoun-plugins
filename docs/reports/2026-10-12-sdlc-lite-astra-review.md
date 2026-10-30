@@ -15,7 +15,7 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Claude discovery and generated declarations. **Confirmed:** invalid YAML. **Unverified:** how Claude 2.1.296 handles these particular files at runtime.
 
-**[V] Evidence.** The generator retains the source description's surrounding quotes at [claude_roles.py:104](../../plugins/sdlc-lite/scripts/claude_roles.py#L104), then appends a level suffix outside that scalar at [claude_roles.py:180](../../plugins/sdlc-lite/scripts/claude_roles.py#L180). For example, [builder-L2.md:3](../../plugins/sdlc-lite/agents/builder-L2.md#L3) ends its quoted description before `Level L2: opus low.`. All **22 generated Claude definitions** fail a standard YAML parse. The parser reports `expected <block end>, but found '<scalar>'` at the appended `Level` text. The shared [conductor.md:3](../../plugins/sdlc-lite/agents/conductor.md#L3) also fails: its unquoted description contains the colon-space sequence in `"agent": "sdlc-lite:conductor"`, producing `mapping values are not allowed here`. In total, **23 of 34 agent frontmatter blocks fail**, while all 38 skill frontmatter blocks parse.
+**[V] Evidence.** The generator retains the source description's surrounding quotes at [claude_roles.py:104](../../plugins/sdlc/scripts/claude_roles.py#L104), then appends a level suffix outside that scalar at [claude_roles.py:180](../../plugins/sdlc/scripts/claude_roles.py#L180). For example, [builder-L2.md:3](../../plugins/sdlc/agents/builder-L2.md#L3) ends its quoted description before `Level L2: opus low.`. All **22 generated Claude definitions** fail a standard YAML parse. The parser reports `expected <block end>, but found '<scalar>'` at the appended `Level` text. The shared [conductor.md:3](../../plugins/sdlc/agents/factory.md#L3) also fails: its unquoted description contains the colon-space sequence in `"agent": "sdlc-lite:conductor"`, producing `mapping values are not allowed here`. In total, **23 of 34 agent frontmatter blocks fail**, while all 38 skill frontmatter blocks parse.
 
 **Impact and steelman.** Claude documents these files as YAML frontmatter. A loader that follows that contract cannot parse these definitions normally, putting the plugin's primary launch routes at risk. However, `claude plugin validate plugins/sdlc-lite` succeeds, and this review did not execute live agent discovery. A permissive host parser could recover some fields. Therefore this finding does **not** claim that 23 agents were observed unavailable. Generated parity also passes because checked-in files reproduce the same invalid output; parity does not establish syntax validity.
 
@@ -27,11 +27,11 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Claude prepared role spawning.
 
-**[V] Evidence.** [dispatch.py:778](../../plugins/sdlc-lite/scripts/dispatch.py#L778) emits an absolute `Handoff:` path. [block-role-spawn.sh:86](../../plugins/sdlc-lite/hooks/block-role-spawn.sh#L86) truncates it at the first whitespace before locating the dispatch record. A real `dispatch.py prepare scout L1` in a disposable repository named `plain` yields a payload accepted by the hook, exit 0. The same operation under `with spaces`, passing the printed fields unchanged, is rejected with exit 2: `no dispatch record ... beside .../with`.
+**[V] Evidence.** [dispatch.py:778](../../plugins/sdlc/scripts/dispatch.py#L778) emits an absolute `Handoff:` path. [block-role-spawn.sh:86](../../plugins/sdlc/hooks/block-role-spawn.sh#L86) truncates it at the first whitespace before locating the dispatch record. A real `dispatch.py prepare scout L1` in a disposable repository named `plain` yields a payload accepted by the hook, exit 0. The same operation under `with spaces`, passing the printed fields unchanged, is rejected with exit 2: `no dispatch record ... beside .../with`.
 
-**Impact and steelman.** A valid repository path can prevent every prepared role from starting. Ignoring trailing explanatory text was an intentional compatibility choice, also documented in [conductor.md:41](../../plugins/sdlc-lite/agents/conductor.md#L41); it nevertheless conflicts with the prepare command's own path output. This is not a fixture inventing an invalid dispatch.
+**Impact and steelman.** A valid repository path can prevent every prepared role from starting. Ignoring trailing explanatory text was an intentional compatibility choice, also documented in [conductor.md:41](../../plugins/sdlc/agents/factory.md#L41); it nevertheless conflicts with the prepare command's own path output. This is not a fixture inventing an invalid dispatch.
 
-**Fix.** Give the handoff locator an unambiguous encoding and parse it as a whole path. Keep any optional explanation outside that field. Also quote the `cd` path in the generated execution-tree instruction at [dispatch.py:780](../../plugins/sdlc-lite/scripts/dispatch.py#L780).
+**Fix.** Give the handoff locator an unambiguous encoding and parse it as a whole path. Keep any optional explanation outside that field. Also quote the `cd` path in the generated execution-tree instruction at [dispatch.py:780](../../plugins/sdlc/scripts/dispatch.py#L780).
 
 **Validate.** Prepare and pass the exact spawn payload through the hook for plain paths, spaces in both project and task paths, and any supported explanatory suffix. Assert that a truly missing dispatch still fails. One fresh-Claude smoke run under a path with spaces should complete before claiming host validation.
 
@@ -39,7 +39,7 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Claude default subagent transport; the legacy shell runner has a different marker lifecycle.
 
-**[V] Evidence.** [warn-handoff-edit.sh:14](../../plugins/sdlc-lite/hooks/warn-handoff-edit.sh#L14) recognizes only sibling `*.running` files. The current prepared transport writes running attempt and dispatch JSON at [dispatch.py:815](../../plugins/sdlc-lite/scripts/dispatch.py#L815) through line 822, but no such marker. In both disposable prepared scout cases, the attempt is `running`, there are zero running markers, and an Edit of its handoff passes silently even with `SDLC_HANDOFF_EDIT_MODE=deny`. Adding the expected marker makes the same hook reject the same edit, exit 2.
+**[V] Evidence.** [warn-handoff-edit.sh:14](../../plugins/sdlc/hooks/warn-handoff-edit.sh#L14) recognizes only sibling `*.running` files. The current prepared transport writes running attempt and dispatch JSON at [dispatch.py:815](../../plugins/sdlc/scripts/dispatch.py#L815) through line 822, but no such marker. In both disposable prepared scout cases, the attempt is `running`, there are zero running markers, and an Edit of its handoff passes silently even with `SDLC_HANDOFF_EDIT_MODE=deny`. Adding the expected marker makes the same hook reject the same edit, exit 2.
 
 **Impact and steelman.** The default transport bypasses the advertised warning and deny modes while a role reads the handoff. The hook itself works on its older marker input; the integration is missing. Completion-time handoff hashing still provides a `stale_input` signal, so this is not a claim that all stale-input detection disappeared. Nor does it demand implementing the separately deferred stale-result routing policy.
 
@@ -51,7 +51,7 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Generated Codex profiles and shared output contracts.
 
-**[V] Evidence.** [codex_roles.py:104](../../plugins/sdlc-lite/scripts/codex_roles.py#L104) requires `profile: <fingerprint>` to be the first line of both the first message and final report. **23 of 28 generated profiles** also include the literal instruction `nothing before the first heading`; for example the shared [scout.md:16](../../plugins/sdlc-lite/agents/scout.md#L16). Both requirements cannot hold for the same final message.
+**[V] Evidence.** [codex_roles.py:104](../../plugins/sdlc/scripts/codex_roles.py#L104) requires `profile: <fingerprint>` to be the first line of both the first message and final report. **23 of 28 generated profiles** also include the literal instruction `nothing before the first heading`; for example the shared [scout.md:16](../../plugins/sdlc/agents/scout.md#L16). Both requirements cannot hold for the same final message.
 
 **Impact and steelman.** A role has to violate one output instruction. A capable model may prioritize the appended fingerprint, and the result-section validator can still accept useful content. No live bad report was observed. The contradiction nevertheless makes a deliberately strict report contract ambiguous at exactly the point where freshness is checked.
 
@@ -63,7 +63,7 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Codex native pipeline exchange; this is a workflow integrity gap, not host attestation or an adversarial security claim.
 
-**[V] Evidence.** The helper at [codex_roles.py:117](../../plugins/sdlc-lite/scripts/codex_roles.py#L117) correctly classifies a missing fingerprint as `unknown`, a stale one as `refused`, and the current one as `ready`. But the request at [codex_exchange.py:53](../../plugins/sdlc-lite/scripts/codex_exchange.py#L53) carries no expected fingerprint, and [codex_exchange.py:89](../../plugins/sdlc-lite/scripts/codex_exchange.py#L89) checks ownership, response destination, and nonempty text without invoking that helper. Using a real waiting exchange in a subprocess, all three reports—missing, stale, current—were accepted with respond exit 0, exchange exit 0, `is_error: false`, and request status `received`.
+**[V] Evidence.** The helper at [codex_roles.py:117](../../plugins/sdlc/scripts/codex_roles.py#L117) correctly classifies a missing fingerprint as `unknown`, a stale one as `refused`, and the current one as `ready`. But the request at [codex_exchange.py:53](../../plugins/sdlc/scripts/codex_exchange.py#L53) carries no expected fingerprint, and [codex_exchange.py:89](../../plugins/sdlc/scripts/codex_exchange.py#L89) checks ownership, response destination, and nonempty text without invoking that helper. Using a real waiting exchange in a subprocess, all three reports—missing, stale, current—were accepted with respond exit 0, exchange exit 0, `is_error: false`, and request status `received`.
 
 **Impact and steelman.** The adapter separately instructs the conductor to perform a handshake. A fully compliant conductor can enforce that manual step, so the fixture does not prove every current run is unsafe or that an old profile executed. It proves the exchange accepts an otherwise ordinary report without the required check. The documented attempt binding is also not materialized in the request; checking against regenerated files later can confuse a mid-run plugin update with the revision actually dispatched. A final-report check alone cannot establish that checking occurred before edits.
 
@@ -75,7 +75,7 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Shared `/ask` workflow on Claude and Codex.
 
-**[V] Evidence.** [ask/SKILL.md:24](../../plugins/sdlc-lite/skills/ask/SKILL.md#L24) searches blocked and deferred tickets only under `.sdlc/tickets`, although [ticket/SKILL.md:23](../../plugins/sdlc-lite/skills/ticket/SKILL.md#L23) makes that root opt-in and explicitly supports flat layout. A disposable flat blocked ticket is missed with exit 2 (`No such file or directory`); the otherwise identical search from the actual root finds it with exit 0. A blocked ticket with no result or gap lines is not rescued by the following verdict/gap searches.
+**[V] Evidence.** [ask/SKILL.md:24](../../plugins/sdlc/skills/ask/SKILL.md#L24) searches blocked and deferred tickets only under `.sdlc/tickets`, although [ticket/SKILL.md:23](../../plugins/sdlc/skills/ticket/SKILL.md#L23) makes that root opt-in and explicitly supports flat layout. A disposable flat blocked ticket is missed with exit 2 (`No such file or directory`); the otherwise identical search from the actual root finds it with exit 0. A blocked ticket with no result or gap lines is not rescued by the following verdict/gap searches.
 
 **Impact and steelman.** Following the supplied commands can miss a real blocker and lead toward `Nothing open.`. The prose says to inspect tickets, and an attentive conductor may recover by noticing the missing directory. That recovery is not encoded in the workflow. The searches are also described as runnable from a supplied task directory even though their paths are repository-relative.
 
@@ -87,7 +87,7 @@ This is a source and focused integration review, not live certification of eithe
 
 **Scope:** Shared conductor instructions and Codex reference documentation.
 
-**[V] Evidence.** [conductor.md:37](../../plugins/sdlc-lite/agents/conductor.md#L37) says recording with no result closes the attempt as failed and prevents another record. [dispatch.py:1128](../../plugins/sdlc-lite/scripts/dispatch.py#L1128) instead returns exit 2 and leaves it running, unless explicit failure closure is requested. This implementation deliberately permits recording again. Separately, [codex-role-execution.md:25](../references/codex-role-execution.md#L25) says 25 definitions / 21 base and omits the three solo profiles; the current generator produces 28 / 24.
+**[V] Evidence.** [conductor.md:37](../../plugins/sdlc/agents/factory.md#L37) says recording with no result closes the attempt as failed and prevents another record. [dispatch.py:1128](../../plugins/sdlc/scripts/dispatch.py#L1128) instead returns exit 2 and leaves it running, unless explicit failure closure is requested. This implementation deliberately permits recording again. Separately, [codex-role-execution.md:25](../references/codex-role-execution.md#L25) says 25 definitions / 21 base and omits the three solo profiles; the current generator produces 28 / 24.
 
 **Impact and steelman.** The script's diagnostic gives the correct recovery, so a conductor reading stderr can recover. The authoritative role prose nevertheless describes the opposite state transition and can encourage unnecessary reruns or misreported state. The profile count is a smaller discovery/documentation defect. Dated compatibility evidence was not treated as a promise to describe today's inventory.
 
@@ -113,44 +113,44 @@ For the Claude-based author, items 1–3 are directly reproducible without Codex
 
 | Skill / command surface | Review coverage and conclusion |
 |---|---|
-| [agent](../../plugins/sdlc-lite/skills/agent/SKILL.md) | Name routing, solo versus question roles, deferral to owning skills; generated-agent finding F1 applies. |
-| [architect](../../plugins/sdlc-lite/skills/architect/SKILL.md) | Handoff and design-role dispatch; host translation and source-role contract read. |
-| [ask](../../plugins/sdlc-lite/skills/ask/SKILL.md) | Sweep, question batching, unattended behavior; layout failure F6. |
-| [bench](../../plugins/sdlc-lite/skills/bench/SKILL.md) | Throwaway task flow, hidden-test grading, cost/attempt semantics; no benchmark executed. |
-| [board](../../plugins/sdlc-lite/skills/board/SKILL.md) | Script-rendered status and artifact ownership; board selftest passes. |
-| [build](../../plugins/sdlc-lite/skills/build/SKILL.md) | Level selection, prepared dispatch, result/escalation handoff. |
-| [chain](../../plugins/sdlc-lite/skills/chain/SKILL.md) | Lane choice, review/split, retry/bump/replan, loose ends and closure; steps selftest passes. |
-| [checking-rules](../../plugins/sdlc-lite/skills/checking-rules/SKILL.md) | Symmetric evidence, independent checking and steelmanning; applied in this review. |
-| [checks-that-bite](../../plugins/sdlc-lite/skills/checks-that-bite/SKILL.md) | Discriminating checks and observed negative controls; applied in focused probes. |
-| [clarify](../../plugins/sdlc-lite/skills/clarify/SKILL.md) | Goal/delta/done-condition refinement, ambiguity and unattended gaps; saved evals inventoried, not model-graded. |
-| [decompose](../../plugins/sdlc-lite/skills/decompose/SKILL.md) | Structure/behavior coverage, conditional domain references; coverage-check selftest passes. |
-| [dig](../../plugins/sdlc-lite/skills/dig/SKILL.md) | Archaeologist routing, history evidence, read-only intent. |
-| [fanout](../../plugins/sdlc-lite/skills/fanout/SKILL.md) | Lane isolation, prep/land, integration gates, host driver split; broad fanout selftest did not finish in this review. |
-| [file](../../plugins/sdlc-lite/skills/file/SKILL.md) | Draft records, publish authorization, follow-up classifications and closure. |
-| [fix](../../plugins/sdlc-lite/skills/fix/SKILL.md) | Explicit fast-lane trigger, builder/verifier separation, inline ticket close. |
-| [fleet-retro](../../plugins/sdlc-lite/skills/fleet-retro/SKILL.md) | Collection, evidence labels, sampled verification and approved filing; no fleet run. |
-| [fleet-status](../../plugins/sdlc-lite/skills/fleet-status/SKILL.md) | Fixed rendered order, needs-user collection, machine/release state; schema inventoried. |
-| [grill](../../plugins/sdlc-lite/skills/grill/SKILL.md) | Cascading design decisions and ratification; no live interview. |
-| [handoff](../../plugins/sdlc-lite/skills/handoff/SKILL.md) | Context capture, self-contained task boundary and artifacts. |
-| [handoff-format](../../plugins/sdlc-lite/skills/handoff-format/SKILL.md) | Reference-only; ticket/task/step/result shapes and shared run operations. |
-| [level-rubric](../../plugins/sdlc-lite/skills/level-rubric/SKILL.md) | Reference-only; role/level selection and host-owned model tables; values preserved. |
-| [onboard](../../plugins/sdlc-lite/skills/onboard/SKILL.md) | Entry-file setup, managed blocks, preserving repository instructions; no user config changed. |
-| [open-questions](../../plugins/sdlc-lite/skills/open-questions/SKILL.md) | Task-local close-out and unresolved defaults; distinct from broader ask sweep. |
-| [plan](../../plugins/sdlc-lite/skills/plan/SKILL.md) | Planner dispatch, ordered steps, readiness and review routing. |
+| [agent](../../plugins/sdlc/skills/agent/SKILL.md) | Name routing, solo versus question roles, deferral to owning skills; generated-agent finding F1 applies. |
+| [architect](../../plugins/sdlc/skills/architect/SKILL.md) | Handoff and design-role dispatch; host translation and source-role contract read. |
+| [ask](../../plugins/sdlc/skills/ask/SKILL.md) | Sweep, question batching, unattended behavior; layout failure F6. |
+| [bench](../../plugins/sdlc/skills/bench/SKILL.md) | Throwaway task flow, hidden-test grading, cost/attempt semantics; no benchmark executed. |
+| [board](../../plugins/sdlc/skills/board/SKILL.md) | Script-rendered status and artifact ownership; board selftest passes. |
+| [build](../../plugins/sdlc/skills/build/SKILL.md) | Level selection, prepared dispatch, result/escalation handoff. |
+| [chain](../../plugins/sdlc/skills/chain/SKILL.md) | Lane choice, review/split, retry/bump/replan, loose ends and closure; steps selftest passes. |
+| [checking-rules](../../plugins/sdlc/skills/checking-rules/SKILL.md) | Symmetric evidence, independent checking and steelmanning; applied in this review. |
+| [checks-that-bite](../../plugins/sdlc/skills/checks-that-bite/SKILL.md) | Discriminating checks and observed negative controls; applied in focused probes. |
+| [clarify](../../plugins/sdlc/skills/clarify/SKILL.md) | Goal/delta/done-condition refinement, ambiguity and unattended gaps; saved evals inventoried, not model-graded. |
+| [decompose](../../plugins/sdlc/skills/decompose/SKILL.md) | Structure/behavior coverage, conditional domain references; coverage-check selftest passes. |
+| [dig](../../plugins/sdlc/skills/dig/SKILL.md) | Archaeologist routing, history evidence, read-only intent. |
+| [fanout](../../plugins/sdlc/skills/fanout/SKILL.md) | Lane isolation, prep/land, integration gates, host driver split; broad fanout selftest did not finish in this review. |
+| [file](../../plugins/sdlc/skills/file/SKILL.md) | Draft records, publish authorization, follow-up classifications and closure. |
+| [fix](../../plugins/sdlc/skills/fix/SKILL.md) | Explicit fast-lane trigger, builder/verifier separation, inline ticket close. |
+| [fleet-retro](../../plugins/sdlc/skills/fleet-retro/SKILL.md) | Collection, evidence labels, sampled verification and approved filing; no fleet run. |
+| [fleet-status](../../plugins/sdlc/skills/fleet-status/SKILL.md) | Fixed rendered order, needs-user collection, machine/release state; schema inventoried. |
+| [grill](../../plugins/sdlc/skills/grill/SKILL.md) | Cascading design decisions and ratification; no live interview. |
+| [handoff](../../plugins/sdlc/skills/handoff/SKILL.md) | Context capture, self-contained task boundary and artifacts. |
+| [handoff-format](../../plugins/sdlc/skills/handoff-format/SKILL.md) | Reference-only; ticket/task/step/result shapes and shared run operations. |
+| [level-rubric](../../plugins/sdlc/skills/level-rubric/SKILL.md) | Reference-only; role/level selection and host-owned model tables; values preserved. |
+| [onboard](../../plugins/sdlc/skills/onboard/SKILL.md) | Entry-file setup, managed blocks, preserving repository instructions; no user config changed. |
+| [open-questions](../../plugins/sdlc/skills/open-questions/SKILL.md) | Task-local close-out and unresolved defaults; distinct from broader ask sweep. |
+| [plan](../../plugins/sdlc/skills/plan/SKILL.md) | Planner dispatch, ordered steps, readiness and review routing. |
 | `plan-campaign` (now `/sdlc-lite:plan campaign`) | Wave planning, lane partition and outcome constraints; planning-only scope. |
 | `plan-doc` (now `/sdlc-lite:plan doc`) | Executable plan structure, authorization and lint routing. |
 | `plan-fanout` (now `/sdlc-lite:plan fanout`) | Nonoverlap, lane caps, gate/budget command construction and dry run. |
 | `plan-goal` (now `/sdlc-lite:plan goal`) | Done condition, numeric stops, authority and goal-block generation. |
-| [plan-loop](../../plugins/sdlc-lite/skills/plan-loop/SKILL.md) | Idempotence, cadence and stop condition; host loop syntax remains a live-check limitation. |
-| [plan-verification](../../plugins/sdlc-lite/skills/plan-verification/SKILL.md) | Outcome, measure/baseline, rubric and negative control; distinct from step verifier. |
-| [report](../../plugins/sdlc-lite/skills/report/SKILL.md) | Thread views, structured record/output, evidence and context reporting. |
-| [research](../../plugins/sdlc-lite/skills/research/SKILL.md) | Outside-world citations, researcher levels and handoff. |
-| [review-traces](../../plugins/sdlc-lite/skills/review-traces/SKILL.md) | Mechanical ingest/detect, diagnosis, verification and approved filing; no historical traces ingested. |
-| [run-plan](../../plugins/sdlc-lite/skills/run-plan/SKILL.md) | Preflight, deterministic completion/stop loop, dispatch and recovery; run-rules reference read. |
-| [scout](../../plugins/sdlc-lite/skills/scout/SKILL.md) | Map-only handoff and dispatch; actual prepare used by focused hook fixtures. |
-| [sdlc-lite](../../plugins/sdlc-lite/skills/sdlc-lite/SKILL.md) | Codex adapter, install/preflight/native exchange/exec split and limitations; F4–F5. |
-| [ticket](../../plugins/sdlc-lite/skills/ticket/SKILL.md) | Typed creation, numbering, layouts, close/follow-up consent and roadmap; tickets selftest passes. |
-| [verify](../../plugins/sdlc-lite/skills/verify/SKILL.md) | Independent role dispatch, result acceptance and next-step routing. |
+| [plan-loop](../../plugins/sdlc/skills/plan-loop/SKILL.md) | Idempotence, cadence and stop condition; host loop syntax remains a live-check limitation. |
+| [plan-verification](../../plugins/sdlc/skills/plan-verification/SKILL.md) | Outcome, measure/baseline, rubric and negative control; distinct from step verifier. |
+| [report](../../plugins/sdlc/skills/report/SKILL.md) | Thread views, structured record/output, evidence and context reporting. |
+| [research](../../plugins/sdlc/skills/research/SKILL.md) | Outside-world citations, researcher levels and handoff. |
+| [review-traces](../../plugins/sdlc/skills/review-traces/SKILL.md) | Mechanical ingest/detect, diagnosis, verification and approved filing; no historical traces ingested. |
+| [run-plan](../../plugins/sdlc/skills/run-plan/SKILL.md) | Preflight, deterministic completion/stop loop, dispatch and recovery; run-rules reference read. |
+| [scout](../../plugins/sdlc/skills/scout/SKILL.md) | Map-only handoff and dispatch; actual prepare used by focused hook fixtures. |
+| [sdlc-lite](../../plugins/sdlc/skills/sdlc/SKILL.md) | Codex adapter, install/preflight/native exchange/exec split and limitations; F4–F5. |
+| [ticket](../../plugins/sdlc/skills/ticket/SKILL.md) | Typed creation, numbering, layouts, close/follow-up consent and roadmap; tickets selftest passes. |
+| [verify](../../plugins/sdlc/skills/verify/SKILL.md) | Independent role dispatch, result acceptance and next-step routing. |
 
 ### Shared and generated agents
 
@@ -158,18 +158,18 @@ All 12 shared role bodies were read. Generated declarations were covered through
 
 | Shared contract | Claude generated levels | Codex base levels | Contract focus |
 |---|---|---|---|
-| [conductor](../../plugins/sdlc-lite/agents/conductor.md) | Shared session agent | L1 | Routing, host dispatch, recovery, pruning, escalation and closure; F1/F7. |
-| [messenger](../../plugins/sdlc-lite/agents/messenger.md) | Shared session agent | L1 | Mailbox ownership, delivery and active-parent lifetime. |
-| [solo](../../plugins/sdlc-lite/agents/solo.md) | L1–L3 | L1–L3 | Small-ticket end-to-end work, independent verification and cost recording. |
-| [scout](../../plugins/sdlc-lite/agents/scout.md) | L1 | L1 | Code map and bounded read-only search. |
-| [researcher](../../plugins/sdlc-lite/agents/researcher.md) | L1–L3 | L1–L3 | Outside evidence, citations and uncertainty. |
-| [architect](../../plugins/sdlc-lite/agents/architect.md) | L1 | L1 | Design fit, alternatives and assessment artifacts. |
-| [archaeologist](../../plugins/sdlc-lite/agents/archaeologist.md) | L1 | L1 | Git history, decisions and landmines. |
-| [planner](../../plugins/sdlc-lite/agents/planner.md) | L1–L3 | L1–L3 | Buildable steps, acceptance criteria and readiness. |
-| [plan-reviewer](../../plugins/sdlc-lite/agents/plan-reviewer.md) | L1 | L1 | Independent plan critique and decision gaps. |
-| [builder](../../plugins/sdlc-lite/agents/builder.md) | L1–L5 | L1–L5 | Scoped implementation, evidence and blocked/plan-defect reports; level overlay read. |
-| [verifier](../../plugins/sdlc-lite/agents/verifier.md) | L1–L3 | L1–L3 | Independent acceptance checking, negative controls and actionable verdicts. |
-| [filer](../../plugins/sdlc-lite/agents/filer.md) | L1 | L1 | Draft records, warnings and classified follow-ups. |
+| [conductor](../../plugins/sdlc/agents/factory.md) | Shared session agent | L1 | Routing, host dispatch, recovery, pruning, escalation and closure; F1/F7. |
+| [messenger](../../plugins/sdlc/agents/messenger.md) | Shared session agent | L1 | Mailbox ownership, delivery and active-parent lifetime. |
+| [solo](../../plugins/sdlc/agents/solo.md) | L1–L3 | L1–L3 | Small-ticket end-to-end work, independent verification and cost recording. |
+| [scout](../../plugins/sdlc/agents/scout.md) | L1 | L1 | Code map and bounded read-only search. |
+| [researcher](../../plugins/sdlc/agents/researcher.md) | L1–L3 | L1–L3 | Outside evidence, citations and uncertainty. |
+| [architect](../../plugins/sdlc/agents/architect.md) | L1 | L1 | Design fit, alternatives and assessment artifacts. |
+| [archaeologist](../../plugins/sdlc/agents/archaeologist.md) | L1 | L1 | Git history, decisions and landmines. |
+| [planner](../../plugins/sdlc/agents/planner.md) | L1–L3 | L1–L3 | Buildable steps, acceptance criteria and readiness. |
+| [plan-reviewer](../../plugins/sdlc/agents/plan-reviewer.md) | L1 | L1 | Independent plan critique and decision gaps. |
+| [builder](../../plugins/sdlc/agents/builder.md) | L1–L5 | L1–L5 | Scoped implementation, evidence and blocked/plan-defect reports; level overlay read. |
+| [verifier](../../plugins/sdlc/agents/verifier.md) | L1–L3 | L1–L3 | Independent acceptance checking, negative controls and actionable verdicts. |
+| [filer](../../plugins/sdlc/agents/filer.md) | L1 | L1 | Draft records, warnings and classified follow-ups. |
 
 **[V] Totals:** 22 generated Claude rows, all represented among Codex's 24 base profiles; Codex additionally has conductor and messenger. Four Codex alternates cover verifier L1–L3 and plan-reviewer L1, for 28 TOML files. Claude's 34 Markdown files consist of the 12 shared contracts plus 22 generated rows. Fixed host model/effort declarations were compared with the authoritative tables; no values were changed.
 
@@ -186,7 +186,7 @@ The script inventory contains **58 top-level script files** plus the decompositi
 | Benchmark and maintenance launchers | `bench.sh`, `bench-dir.sh`, `bench-summary.sh`, `reap-tmp-worktrees.sh`: launcher ownership and cleanup scope inventoried; no benchmarks or cleanup jobs run. |
 | Check entry points | `check.sh`, `check.py`, `codex-selftest.py`, `lifecycle-selftest.py`, `run-selftest.sh`, `hook-selftest.sh`, `hook-live-probe.sh`, and decomposition's `coverage_check.py`: offline versus live distinction and execution order inspected. |
 
-**[V] Claude hook registration:** [adapters/claude/hooks.json](../../plugins/sdlc-lite/adapters/claude/hooks.json) registers nine guards: background, publish, pattern-kill, stray-worktree, repository-format, disk-scan, role-spawn, role-write, and handoff-edit. The shared `_role.sh` resolver, registration, role guards and handoff hook were inspected; F2–F3 have executable probes. The other hook implementations were not independently exhaustively audited in this review, and the later general hook selftest was not reached.
+**[V] Claude hook registration:** [adapters/claude/hooks.json](../../plugins/sdlc/adapters/claude/hooks.json) registers nine guards: background, publish, pattern-kill, stray-worktree, repository-format, disk-scan, role-spawn, role-write, and handoff-edit. The shared `_role.sh` resolver, registration, role guards and handoff hook were inspected; F2–F3 have executable probes. The other hook implementations were not independently exhaustively audited in this review, and the later general hook selftest was not reached.
 
 **[V] Packaging:** Claude and Codex manifests both identify version 0.22.5; Claude points to its host hook registration, and Codex points to the skills directory. Marketplace parity, package identity, skill routes, hook isolation and context links pass the repository packaging check. Installing the plugin alone does not install project Codex roles; the explicit managed install route and refusal to overwrite user edits are documented. No project configuration was installed for this review.
 

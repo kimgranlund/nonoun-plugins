@@ -8,7 +8,7 @@ unit: percent
 direction: down
 target: "<= 5"
 baseline: {value: 10.9, date: 2026-10-09, source: docs/work/plan-reliability-docs/kpi-baseline-probe.py, verified: false}
-measure: python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since <date>
+measure: python3 plugins/sdlc/scripts/fleet_collect.py collect <repo> --since <date>
 read: results.builder.blocked / results.builder.total * 100
 cadence: per retro
 goals: [G-002]

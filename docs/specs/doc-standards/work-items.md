@@ -22,7 +22,7 @@ Tickets, bug reports, feature requests, chores, spikes, issue titles, labels, an
 
 ## This repository's tickets
 
-SDLC Lite tickets already follow this family. The front matter of the ticket templates in `plugins/sdlc-lite/skills/ticket/templates/*.md` (`feature.md`, `bug.md`, `chore.md`, `spike.md`, `idea.md`) is the source; [ticket.json](../../assets/schemas/ticket.json) states the same fields as a schema and adds nothing. When the two differ, the templates and `tickets.py` win, and the schema is fixed to match.
+SDLC tickets already follow this family. The front matter of the ticket templates in `plugins/sdlc/skills/ticket/templates/*.md` (`feature.md`, `bug.md`, `chore.md`, `spike.md`, `idea.md`) is the source; [ticket.json](../../assets/schemas/ticket.json) states the same fields as a schema and adds nothing. When the two differ, the templates and `tickets.py` win, and the schema is fixed to match.
 
 | Template front matter | Schema property | Values |
 |---|---|---|

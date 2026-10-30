@@ -4,7 +4,7 @@ One term, one part of speech, one definition. An alias in the last column is una
 
 | Term | Part of speech | Definition | Unapproved aliases |
 |---|---|---|---|
-| close-first | adjective | Of the doctrine that builders, solo, and the conductor lean toward closing and merging a step or ticket, not toward layered verification (T-0428). | close-early |
+| close-first | adjective | Of the doctrine that builders, solo, and the factory lean toward closing and merging a step or ticket, not toward layered verification (T-0428). | close-early |
 | fanout lane | noun | A git worktree whose tickets run one at a time, in parallel with other fanout lanes, merged into an integration branch behind gates (`/fanout`). | worker, shard |
 | handoff | noun | The self-contained file a role reads as its whole brief: a task's or ticket's `handoff.md`, or a step's `step-N/handoff.md`. | brief file, prompt file |
 | lane | noun | The route a ticket runs through, one of fix, solo, or chain, as `steps.py lane` prints it. | track, mode, pipeline |

@@ -7,7 +7,7 @@ Version 0.2, 2026-10-01. Design for T-0183, review findings 1 to 17 applied (see
 
 ## Problem
 
-A subagent, including the `messenger`, and a `messages.py wait` call can report only into a parent turn that is still running. They cannot wake an idle host. A host whose turn has ended never sees new mail. Today a user keeps a Codex host awake with `/goal`. Only a process outside any agent can start a new turn. This document designs that process, the watcher, and its safety limits. The planned script is `plugins/sdlc-lite/scripts/supervisor.py`, with its configuration and state in the supervisor folder (section 3).
+A subagent, including the `messenger`, and a `messages.py wait` call can report only into a parent turn that is still running. They cannot wake an idle host. A host whose turn has ended never sees new mail. Today a user keeps a Codex host awake with `/goal`. Only a process outside any agent can start a new turn. This document designs that process, the watcher, and its safety limits. The planned script is `plugins/sdlc/scripts/supervisor.py`, with its configuration and state in the supervisor folder (section 3).
 
 ## Resolved decision
 

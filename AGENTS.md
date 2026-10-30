@@ -1,13 +1,13 @@
 # Repository guidance
 
-This repository maintains four peer plugins for Claude Code and Codex: SDLC Lite, Context (formerly Progressive Context), design, and dev-tools.
+This repository maintains four peer plugins for Claude Code and Codex: SDLC, Context (formerly Progressive Context), design, and dev-tools.
 `CLAUDE.md` imports this file for Claude Code. Read the scoped guidance linked below before editing that plugin; do not assume the host loaded it automatically.
 All paths and shell commands in this file are relative to the repository root.
 
 ## Purpose and ownership
 
 - **Context** (formerly Progressive Context) owns durable intent, capability contracts, context navigation, context routing, system mapping, evidence, and qualification for reuse.
-- **SDLC Lite** owns work execution: tickets, plans, roles, runs, verification, escalation, and closure.
+- **SDLC** owns work execution: tickets, plans, roles, runs, verification, escalation, and closure.
 - **design** owns UI construction, geometry, palettes, and design review.
 - **dev-tools** owns machine, repo, and harness care.
 - Integrate through links to authoritative records. Keep execution status and capability qualification distinct.
@@ -17,9 +17,9 @@ All paths and shell commands in this file are relative to the repository root.
 
 - `plugins/` holds the plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
 - Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/reports/` evidence, and `docs/other/`.
-- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/specs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
+- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/specs/sdlc/pillars.md): performance, cost, quality, resilience.
 - Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for ticket levels L1 and L2 (a ticket's `size:` is its level, L1 to L5), `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
-- Worktrees: lanes live in `../<repo>.worktrees/` (`plugins/sdlc-lite/scripts/wtroot.py root`; the rule is the [Lanes section](plugins/sdlc-lite/AGENTS.md#lanes)). Lane open, the solo and verifier runs in a lane, land and close write `.git` or the lane tree outside the checkout, so under Codex run them with full access, not the `workspace-write` sandbox.
+- Worktrees: lanes live in `../<repo>.worktrees/` (`plugins/sdlc/scripts/wtroot.py root`; the rule is the [Lanes section](plugins/sdlc/AGENTS.md#lanes)). Lane open, the solo and verifier runs in a lane, land and close write `.git` or the lane tree outside the checkout, so under Codex run them with full access, not the `workspace-write` sandbox.
 - A new idea becomes a new ticket, not a larger one. Freeze a handoff once a role reads it, replan at most once, then ask.
 
 ## Read for the task
@@ -27,7 +27,7 @@ All paths and shell commands in this file are relative to the repository root.
 | Task | Read next |
 |---|---|
 | Context plugin (formerly progressive-context) skill or references | [Plugin guidance](plugins/context/AGENTS.md) |
-| SDLC Lite roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
+| SDLC roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc/AGENTS.md) |
 | design skills (UI, geometry, palettes, inspectors, wireframes, critique) | [Plugin guidance](plugins/design/AGENTS.md) |
 | dev-tools skills or references | [Plugin guidance](plugins/dev-tools/AGENTS.md) |
 | Codex execution or generated agents | [Codex execution guide](docs/references/codex-role-execution.md) |
@@ -52,10 +52,10 @@ Read only the linked details needed for the change. Keep scope-specific instruct
 
 | Concern | Source |
 |---|---|
-| Shared role and output contracts | `plugins/sdlc-lite/agents/*.md` (pipeline roles plus the `conductor` and `messenger` session agents) |
-| Claude role models and efforts | `plugins/sdlc-lite/adapters/claude/levels.json`; `run.sh` and the level rubric are checked against it, and `scripts/claude_roles.py` generates one agent definition per row |
-| Codex models and efforts | `plugins/sdlc-lite/adapters/codex/models.json` |
-| Codex agent generation | `plugins/sdlc-lite/scripts/codex_roles.py`; generated TOML files are not edited directly |
+| Shared role and output contracts | `plugins/sdlc/agents/*.md` (pipeline roles plus the `factory` and `messenger` session agents) |
+| Claude role models and efforts | `plugins/sdlc/adapters/claude/levels.json`; `run.sh` and the level rubric are checked against it, and `scripts/claude_roles.py` generates one agent definition per row |
+| Codex models and efforts | `plugins/sdlc/adapters/codex/models.json` |
+| Codex agent generation | `plugins/sdlc/scripts/codex_roles.py`; generated TOML files are not edited directly |
 | Skill behavior and conditional references | Each plugin's `skills/` directory |
 | Host manifests | Each plugin's `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` |
 | Marketplace membership | `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`; preserve parity |
@@ -69,8 +69,8 @@ Run commands from the repository root. Select checks for the affected behavior; 
 |---|---|
 | Documentation or reference-only edits | Inspect local links, run `git diff --check`; validate changed skills and run packaging checks when plugin files or routes change |
 | Skill frontmatter or packaging | `python3 scripts/check-packaging.py`, available host/skill validators, and inspection of discovery routes |
-| SDLC Lite role or execution behavior | Relevant regression checks, generated-agent parity, and a focused live run in a throwaway project |
-| Shared runner, cross-workflow behavior, or release | `bash plugins/sdlc-lite/scripts/check.sh` and packaging checks; live evidence for changed host behavior |
+| SDLC role or execution behavior | Relevant regression checks, generated-agent parity, and a focused live run in a throwaway project |
+| Shared runner, cross-workflow behavior, or release | `bash plugins/sdlc/scripts/check.sh` and packaging checks; live evidence for changed host behavior |
 | New or changed check/gate | A positive case and an observed negative control proving the gate rejects the defect |
 
 Scoped plugin guidance names the relevant checks. For a documentation-only change, do not run unrelated role and hook suites. Broaden testing when changes or failures justify it.

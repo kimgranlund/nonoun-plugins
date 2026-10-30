@@ -11,8 +11,8 @@ Date: 2026-10-12. Ticket: T-0505, step 1. Base commit: `fdd2254a`. Source findin
 
 ## What changed
 
-- **[V]** `plugins/sdlc-lite/scripts/dispatch.py`: `prepare` writes `<role>-<level>.running` after the attempt and dispatch records, under the directory lock. The content is the epoch start in whole seconds, as `run.sh` writes it. `--dry-run` and a refused prepare write none.
-- **[V]** `plugins/sdlc-lite/hooks/warn-handoff-edit.sh` is unchanged. It reads the marker only, so there is one source for "an attempt is live".
+- **[V]** `plugins/sdlc/scripts/dispatch.py`: `prepare` writes `<role>-<level>.running` after the attempt and dispatch records, under the directory lock. The content is the epoch start in whole seconds, as `run.sh` writes it. `--dry-run` and a refused prepare write none.
+- **[V]** `plugins/sdlc/hooks/warn-handoff-edit.sh` is unchanged. It reads the marker only, so there is one source for "an attempt is live".
 - **[V]** `record` and both recover paths are unchanged. They already removed the marker by role and level; before this change nothing wrote it for a sub-agent dispatch.
 
 ## Baseline
@@ -68,7 +68,7 @@ Reason: this step was built by a headless sub-agent. Its loaded plugin is the ma
 Recipe for a later live run, after [the T-0212 record](handoff-freeze-live-run.md):
 
 1. Make a throwaway git project in a temporary folder outside this repository, with one task folder holding a handoff.
-2. Register `plugins/sdlc-lite/adapters/claude/hooks.json` from this tree through `--settings`, with the commands rewritten to this tree's plugin path.
+2. Register `plugins/sdlc/adapters/claude/hooks.json` from this tree through `--settings`, with the commands rewritten to this tree's plugin path.
 3. Run `dispatch.py prepare scout L1` on that handoff. Do not create a marker by hand.
 4. Warn arm: start Claude Code with `--permission-mode acceptEdits` and `--allowedTools Read Edit`, and ask it to edit the handoff. Expected: the edit is applied and `stale-edits.log` gains one `edited while scout-L1 ran` line.
 5. Deny arm: the same with `SDLC_HANDOFF_EDIT_MODE=deny`. Expected: the handoff is unchanged and the model reports that a hook blocked the edit.
@@ -77,6 +77,6 @@ Recipe for a later live run, after [the T-0212 record](handoff-freeze-live-run.m
 
 ## Limits
 
-- **[V]** The marker is named by role and level, not by stem, because `record` and both recover paths unlink it by that name (`close` and `recover_orphans` in `plugins/sdlc-lite/scripts/dispatch.py`, `recover_unlocked` in `plugins/sdlc-lite/scripts/run_lifecycle.py`). Two running attempts of the same role and level in one folder therefore share one marker, and the first to close removes it. Prepare refuses a second attempt in a folder while another session's attempt is alive; an attempt the same session owns does not block it (T-0371), so that is the one way to reach this state.
+- **[V]** The marker is named by role and level, not by stem, because `record` and both recover paths unlink it by that name (`close` and `recover_orphans` in `plugins/sdlc/scripts/dispatch.py`, `recover_unlocked` in `plugins/sdlc/scripts/run_lifecycle.py`). Two running attempts of the same role and level in one folder therefore share one marker, and the first to close removes it. Prepare refuses a second attempt in a folder while another session's attempt is alive; an attempt the same session owns does not block it (T-0371), so that is the one way to reach this state.
 - **[U]** `board.py` and `fleet_status.py` now see a marker for sub-agent dispatches. Their selftests pass; no board or fleet view of a real sub-agent run was inspected.
 - **[U]** Codex has no hooks, so nothing here changes on Codex.

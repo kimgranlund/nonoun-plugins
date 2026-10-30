@@ -34,9 +34,9 @@ One row per document type: where it lives, the standard it follows, its card, it
 | Issue / PR labels | tracker | Closed documented vocabulary, one axis per family: type, priority, status, area | [work-items.md](work-items.md) | - | - | advisory |
 | Definition of done / acceptance checklist | issue template | Gherkin or a yes or no checklist, every item verifiable | [work-items.md](work-items.md) | - | - | advisory |
 | Release / milestone | `CHANGELOG.md` | Keep a Changelog scoped to one version; closed issues by ID | [delivery.md](delivery.md) | - | - | advisory |
-| Agent file | `plugins/sdlc-lite/agents/` | Role body: numbered rules, closed-step line, result keys from results.py | [prompts.md](prompts.md) | - | prompt_lint P-1, P-2, P-3, P-5, P-6 | enforced |
-| Skill | `plugins/sdlc-lite/skills/` | When to use, then the procedure; every script call real | [prompts.md](prompts.md) | - | prompt_lint P-2, P-3, P-6; check.py argument hints (H-1 to H-7) | enforced |
-| Overlay | `plugins/sdlc-lite/overlays/` | One section per level band: gap defaults low, goal, KPI and budget high | [prompts.md](prompts.md) | - | prompt_lint P-1, P-2, P-3, P-4, P-6 | enforced |
+| Agent file | `plugins/sdlc/agents/` | Role body: numbered rules, closed-step line, result keys from results.py | [prompts.md](prompts.md) | - | prompt_lint P-1, P-2, P-3, P-5, P-6 | enforced |
+| Skill | `plugins/sdlc/skills/` | When to use, then the procedure; every script call real | [prompts.md](prompts.md) | - | prompt_lint P-2, P-3, P-6; check.py argument hints (H-1 to H-7) | enforced |
+| Overlay | `plugins/sdlc/overlays/` | One section per level band: gap defaults low, goal, KPI and budget high | [prompts.md](prompts.md) | - | prompt_lint P-1, P-2, P-3, P-4, P-6 | enforced |
 | Handoff | `.sdlc/` | Self-contained brief with runnable acceptance criteria | [prompts.md](prompts.md) | - | - | advisory |
 | Tool description | host tool definition | What it does, when to call it, when not to | [prompts.md](prompts.md) | - | - | advisory |
 

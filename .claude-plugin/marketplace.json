@@ -1,13 +1,13 @@
 {
-  "name": "sdlc-lite",
+  "name": "nonoun",
   "owner": {
     "name": "Kim Granlund"
   },
   "plugins": [
     {
-      "name": "sdlc-lite",
-      "source": "./plugins/sdlc-lite",
-      "description": "SDLC Lite agent team: leveled builders, planners, verifiers and more, dispatched as sub-agents on Claude and natively on Codex, at a fixed model and effort per level."
+      "name": "sdlc",
+      "source": "./plugins/sdlc",
+      "description": "SDLC agent team: leveled builders, planners, verifiers and more, dispatched as sub-agents on Claude and natively on Codex, at a fixed model and effort per level."
     },
     {
       "name": "context",
@@ -26,6 +26,6 @@
     }
   ],
   "metadata": {
-    "description": "SDLC Lite agent plugins by nonoun."
+    "description": "SDLC agent plugins by nonoun."
   }
 }

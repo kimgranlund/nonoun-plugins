@@ -29,7 +29,7 @@ def check(root):
             source = entry['source']['path'] if host == 'codex' else entry['source']
             require(source == f'./plugins/{name}', f'{host}: wrong source for {name}')
             require((root / source).is_dir(), f'{host}: missing source for {name}')
-    require(catalogs[0] == catalogs[1] == {'sdlc-lite', 'context', 'dev-tools', 'design'},
+    require(catalogs[0] == catalogs[1] == {'sdlc', 'context', 'dev-tools', 'design'},
             'catalogs must contain every peer plugin')
     for name in sorted(catalogs[0]):
         plugin = root / 'plugins' / name
@@ -46,7 +46,7 @@ def check(root):
             require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
         entry = ENTRY_SKILL.get(name, name)  # None: a skill collection with no skill named after the plugin
         require(entry is None or (plugin / 'skills' / entry / 'SKILL.md').is_file(), f'{name}: missing entry point')
-    sdlc = root / 'plugins/sdlc-lite'
+    sdlc = root / 'plugins/sdlc'
     require(not (sdlc / 'hooks/hooks.json').exists(), 'Claude hooks leak into Codex discovery')
     manifest = json.loads((sdlc / '.claude-plugin/plugin.json').read_text())
     hooks = sdlc / manifest['hooks']
@@ -57,8 +57,8 @@ def check(root):
     require(any(r.get('matcher') == 'Edit|Write|NotebookEdit' and 'warn-handoff-edit.sh' in json.dumps(r) for r in pre),
             'Claude handoff-freeze hook route lost')
     for skill in (sdlc / 'skills').glob('*/SKILL.md'):
-        if skill.parent.name != 'sdlc-lite':
-            require('${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
+        if skill.parent.name != 'sdlc':
+            require('${CLAUDE_PLUGIN_ROOT}/skills/sdlc/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
     for path in [p for n in ('context', 'dev-tools') for p in (root / 'plugins' / n / 'skills').rglob('*.md')]:
         # Contract templates use illustrative paths inside fenced examples and inline code.
         text = re.sub(r'`[^`\n]*`', '', re.sub(r'```.*?```', '', path.read_text(), flags=re.S))

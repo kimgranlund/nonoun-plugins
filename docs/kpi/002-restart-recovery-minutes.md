@@ -8,7 +8,7 @@ unit: minutes
 direction: down
 target: "<= 15"
 baseline: {value: 34.3, date: 2026-10-09, source: docs/work/plan-reliability-docs/kpi-baseline-probe.py, verified: false}
-measure: python3 plugins/sdlc-lite/scripts/fleet_collect.py collect <repo> --since <date>
+measure: python3 plugins/sdlc/scripts/fleet_collect.py collect <repo> --since <date>
 read: runs.interrupted.lost_min_median
 cadence: per retro
 goals: [G-002]

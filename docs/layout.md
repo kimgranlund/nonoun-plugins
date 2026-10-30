@@ -52,8 +52,8 @@ otherwise -> `other/`
 ## Frozen paths
 
 - `docs/reports/`
-- `plugins/sdlc-lite/bench/results/`
-- `plugins/sdlc-lite/adapters/codex/agents/`
+- `plugins/sdlc/bench/results/`
+- `plugins/sdlc/adapters/codex/agents/`
 
 ## Legacy
 

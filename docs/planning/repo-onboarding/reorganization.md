@@ -123,9 +123,9 @@ This repository does not match the default layout, which makes it a realistic fi
 
 - Four documents sit directly in `docs/`: `claude-handoff.md`, `claude-response.md`, `codex-role-execution.md`, and `plugin-compatibility.md`. (`readiness-recovery-validation.md` sat there until T-0246 moved it into `docs/reports/`.)
 - `docs/reports/` holds dated evidence. It is listed as frozen in `docs/layout.md`. It was `docs/validation/` until T-0246 renamed it to match the schema; earlier tags and published release notes keep the old paths, which is the accepted limit for frozen records.
-- `plugins/sdlc-lite/bench/results/` and `plugins/sdlc-lite/adapters/codex/agents/` are listed as frozen in `docs/layout.md`. T-0244 applied the move step by hand with `rename_refs.py`, since this apply step is not built.
+- `plugins/sdlc/bench/results/` and `plugins/sdlc/adapters/codex/agents/` are listed as frozen in `docs/layout.md`. T-0244 applied the move step by hand with `rename_refs.py`, since this apply step is not built.
 - `docs/`, `docs/specs/generative-constructs/`, and `docs/specs/repo-onboarding/` use `README.md` as their index and have no `AGENTS.md`.
-- `docs/` paths are cited by the root `AGENTS.md`, the root `README.md`, `plugins/sdlc-lite/AGENTS.md`, and both plugins' `HARNESS-NOTES.md`. A move would change those cites.
+- `docs/` paths are cited by the root `AGENTS.md`, the root `README.md`, `plugins/sdlc/AGENTS.md`, and both plugins' `HARNESS-NOTES.md`. A move would change those cites.
 - Two links already do not resolve on a machine without the sibling UI project: one in `docs/specs/generative-constructs/README.md` and one in `docs/specs/generative-constructs/progressive-context-plugin.md`. They belong in the baseline.
 
 ## Unverified assumptions

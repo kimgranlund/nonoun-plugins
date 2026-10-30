@@ -5,7 +5,7 @@
 .board-state.json
 *.running
 .run.lock
-plugins/sdlc-lite/bench/logs/
+plugins/sdlc/bench/logs/
 .sdlc/dogfood/
 .worktrees/
 __pycache__/

@@ -122,3 +122,5 @@ Links that stay unresolved on purpose. `scripts/check.py` item 32 fails when a t
 | `docs/reports/workflow-stage-pilot/handoff.md` | `../../../plugins/progressive-context/skills/progressive-context/references/examples/small-repository-change.md` | Dated report; the plugin moved to `plugins/context/` (T-0793) |
 | `docs/reports/workflow-stage-pilot/handoff.md` | `../../../plugins/progressive-context/skills/progressive-context/references/examples/small-repository-change.md#check-and-hand-off` | Dated report; the plugin moved to `plugins/context/` (T-0793) |
 | `docs/reports/workflow-stage-pilot/handoff.md` | `../../../plugins/progressive-context/skills/progressive-context/references/examples/small-repository-change.md#make-the-change` | Dated report; the plugin moved to `plugins/context/` (T-0793) |
+| `docs/reports/2026-10-10-plan-doc-live-run.md` | `../specs/sdlc-lite/plan-doc-executor.md` | Dated report; the plugin moved to `plugins/sdlc/` (T-0819) |
+| `docs/reports/solo-cost-live-run.md` | `../../plugins/sdlc-lite/scripts/solo_run.py` | Dated report; the plugin moved to `plugins/sdlc/` (T-0819) |

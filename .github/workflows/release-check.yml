@@ -30,4 +30,4 @@ jobs:
       - run: npm install -g @anthropic-ai/claude-code@2.1.300
       - run: git config --global user.name ci && git config --global user.email ci@localhost
       - run: python3 scripts/check-packaging.py
-      - run: bash plugins/sdlc-lite/scripts/check.sh --fast
+      - run: bash plugins/sdlc/scripts/check.sh --fast

@@ -1,6 +1,25 @@
 # Changelog
 
-SDLC Lite releases, newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
+SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
+
+## [Unreleased]
+
+1.0.0: the plugin, its agents and its marketplace take new names in one clean break (T-0819). No aliases: the old names stop working.
+
+### Changed
+
+- The plugin `sdlc-lite` is now `sdlc` (folder `plugins/sdlc/`, agent and skill prefix `sdlc:`), version 1.0.0. The marketplace `sdlc-lite` is now `nonoun`: install `sdlc@nonoun`, `context@nonoun`, `design@nonoun` and `dev-tools@nonoun`.
+- The session agent `conductor` is now `factory` (`sdlc:factory`) and `direct` is now `live` (`sdlc:live`); `hybrid` keeps its name (`sdlc:hybrid`). The Codex agents follow: `sdlc-factory-l1` and `sdlc-live-l1`.
+
+### Upgrade
+
+1. Claude Code: `/plugin uninstall sdlc-lite@sdlc-lite`, then `/plugin marketplace add <this repository>` (it registers as `nonoun`), then `/plugin install sdlc@nonoun`. Codex: remove the `sdlc-lite` marketplace and add this repository again as `nonoun`.
+2. In each repository's `.claude/settings.json`, change `"agent": "sdlc-lite:conductor"` to `"agent": "sdlc:factory"` (`sdlc-lite:direct` to `sdlc:live`, `sdlc-lite:hybrid` to `sdlc:hybrid`), then start a fresh session.
+3. Re-resolve helper script paths: the install folder moves from `~/.claude/plugins/cache/sdlc-lite/sdlc-lite/<version>` to `~/.claude/plugins/cache/nonoun/sdlc/<version>`, so a pinned scripts path or `SDLC_PLUGIN_CACHE` value must change.
+4. Run `onboard.py setup --force` once per repository: the managed block markers are now `<!-- sdlc:managed:start ... -->`, and a block under the old marker is no longer recognized.
+5. Codex: rerun `codex_roles.py install <project>` to replace the generated agents; a project that opted in with `--conductor` reruns it with `--factory` (`conductor-off` is now `factory-off`), since the old instruction block is no longer detected.
+6. `fleet.json`: rename each repo's `conductor` key to `factory`. A blocked ticket's `owner: conductor` line now reads `owner: factory`.
+7. State folders move with the name: `~/.local/state/sdlc/gate-lock`, `$TMPDIR/sdlc` and `~/.cache/sdlc` replace the `sdlc-lite` ones. A machine that still runs a 0.41 install beside 1.0.0 has two separate gate-lock queues until the old install is gone.
 
 ## [0.41.0] - 2026-10-29
 

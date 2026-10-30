@@ -66,7 +66,7 @@ Keep three mechanisms distinct:
 |---|---|---|
 | Plugin-provided agent | Plugin root `agents/<name>.md` | Preserve the shared body and Claude frontmatter arrangement described in [surface-matrix.md](surface-matrix.md). |
 | Optional native Codex subagent | Project `.codex/agents/<name>.toml`, where supported by the target Codex version | Generate from the same role contract if it adds useful native role settings. Installation is a separate, opt-in project step; verify discovery in a fresh session. Keep generated definitions in parity with their source. |
-| Main-session conductor guidance | Session or project instruction mechanism supported by the target host | This is instruction guidance for the top-level session, not a named agent binding. A TOML `developer_instructions` field in an agent definition describes that agent; a top-level config field does not select a named conductor. |
+| Main-session factory guidance | Session or project instruction mechanism supported by the target host | This is instruction guidance for the top-level session, not a named agent binding. A TOML `developer_instructions` field in an agent definition describes that agent; a top-level config field does not select a named factory. |
 
 Native project agents are an optional enhancement, not a correction to plugin-level
 agents. If offered, document the install and removal path, project trust requirements,
