@@ -4,13 +4,17 @@ description: Build and adapt interfaces with Differential Forms components, comp
 ---
 # Base UI — Differential Forms
 
-Use **Differential Forms** for new UI. [mathematical-design-system](../mathematical-design-system/SKILL.md) owns the adopted geometry model and portable source; this skill owns how to consume it in semantic UI. The name base-ui is unrelated to `@base-ui/react`.
+Use the consuming project's current UI kit and authoring routes for implementation. For standalone Differential Forms work without a governing project, [mathematical-design-system](../mathematical-design-system/SKILL.md) owns the portable geometry baseline. This skill owns how to consume the selected source in semantic UI. The name base-ui is unrelated to `@base-ui/react`.
 
 ## Source and routing
 
 The shared source root is `../mathematical-design-system/assets/differential-forms/`, resolved relative to this skill directory. Snapshot paths below are relative to that source root; current-project paths come from that project’s entry point. Do not resolve them against the calling project or a personal checkout. Existing project instructions and explicit user decisions take precedence over the bundled baseline.
 
 For current development, start at the consuming project’s `AGENTS.md` and follow its registry and package routes. Read the relevant manifest fields and linked governing documents; do not assume filenames, field names or package locations. Use the project’s shared terminology and construction conventions rather than introducing synonyms. Evaluate `avoidWhen` and `useInstead`, implemented availability, registration dependencies and the public component API. The bundled v0.2.2 snapshot is a frozen historical geometry/specimen baseline, not the current custom-component distribution; do not export it as a current component starter. Use a verified current project export for new component adoption.
+
+Before the first implementation write in a governed project, follow its consumer or author checkpoint to close required governing-body follow-ups for the selected capability, parts, parents, geometry family and renderer. Record actual canonical-body reads and contract-backed exclusions in the existing task record; required unread bodies remain pending or blocked. Links, summaries and complete packet delivery do not establish task readiness. Reevaluate before implementing scope changes, reusing unchanged reads and reading newly applicable or changed authorities. A missing reusable capability follows the project's existing author route for create, update or extension work.
+
+The implementation defaults below describe the portable baseline. A current project's native HTML policy, authored style sources, resolver contracts, readiness/FOUC rules and icon construction govern where specified. Do not invoke the portable mathematical skill automatically for a project that routes to local authority, or use its snapshot to fill a missing local contract.
 
 Identify intent, semantic component, geometry family and parent context separately. Follow the registry’s resolved contract, parts and composition references before creating markup, including generated markup. For standalone examples as well as routed applications, discover and import the project’s shared CSS foundation before component companions; do not reconstruct it from selected token files. Verify its readiness, typography and motion dependencies through the chosen delivery path.
 

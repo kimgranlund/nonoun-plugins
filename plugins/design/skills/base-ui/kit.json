@@ -9,7 +9,7 @@
     "build": "scripts/build.mjs"
   },
   "files": {
-    "SKILL.md": "7e4850f8e3c1758603435d5e3258a4eb040a26738ed40100f27f632b7aadd4da",
+    "SKILL.md": "77e93dc4dc7dd0675013ad170ac4b66763c568ba159a30a9d950f5d342c8d5cd",
     "agents/openai.yaml": "d53c63bb219faf795ff83aa113abd88628bc460d7a9df93c564dfa2e971ac02d",
     "assets/control-markup.mjs": "f2dee41dc7f58ca219c5e798b7572800058dc7272ed2166422ebf14aaf104217",
     "assets/fonts/bricolagegrotesque/BricolageGrotesque[opsz,wdth,wght].ttf": "413e7357809ddd12fd80a96a8a396de0e401638d4acd3cb3e37532f0472ac682",
