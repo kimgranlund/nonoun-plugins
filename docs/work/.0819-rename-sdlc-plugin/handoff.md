@@ -2,7 +2,7 @@
 id: T-0819
 title: "Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0815]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,16 @@ One replan (2026-10-30, conductor): the solo found that check.sh docs-repo fails
 
 ## Constraints
 - No behavior change beyond names and paths. No alias for an old name.
+
+## Outcome
+
+2026-10-30 · lane: solo L3 · verdict: pass · verifier: verifier-L2 (sonnet) · base: 2896f0eb8ef9
+- Changed: see commits
+- Commits: bc322f6 T-0819: record skipped planner and plan review; fb0d221 T-0819: record the solo L3 lane override; c35da21 T-0819: rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun; a307689 T-0819: replan (report path spans, criteria 3 and 4); 7386349 T-0819: record lane T-0819-t0819
+- Check: 1 `bash plugins/sdlc/scripts/check.sh` exits 0: pass
+- Check: 2 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 3 `git grep -n "sdlc-lite"` over the named paths prints only repo-name, `sdlc-lite-author`, recorde...: pass
+- Check: 4 `! git grep -q "sdlc:conductor\|sdlc:direct" -- plugins/`: pass
+- Follow-up: decide: plugins/sdlc/scripts/migrate-worktrees.sh:233,282,284: criterion 1... -> notes.md
+- Follow-up: decide: plugins/sdlc/scripts/hook-selftest.sh:616: inbox-sdlc-lite-codex... -> notes.md
+- Follow-up: decide: Open tickets T-0816 and T-0818 and the docs/work ledgers still use... -> notes.md

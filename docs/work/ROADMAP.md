@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0819 | [0819-rename-sdlc-plugin](0819-rename-sdlc-plugin/handoff.md) | Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun | chore | L3 | P2 | T-0815 | 🟡 claimed (branch lane/T-0819-t0819) |
 | T-0816 | [0816-onboard-mode-flag](0816-onboard-mode-flag/handoff.md) | onboard --mode picks conductor, hybrid or direct | feature | L2 | P2 | T-0815, T-0819 | 🔵 ready |
 | T-0817 | [0817-session-record](0817-session-record/handoff.md) | One sessions.jsonl row per session so retros compare modes | feature | L2 | P2 | T-0815, T-0819 | 🔵 ready |
 | T-0818 | [0818-mode-gate-tests](0818-mode-gate-tests/handoff.md) | Spawn gate and lane path tests for direct and hybrid sessions | chore | L1 | P2 | T-0815, T-0819 | 🔵 ready |
@@ -14,7 +13,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0821 | [0821-live-factory-lanes](0821-live-factory-lanes/handoff.md) | lanes.py who, overlap warning, and ticketless land for live lanes | feature | L2 | P2 | T-0819 | 🔵 ready |
 | T-0822 | [0822-live-shares-repo](0822-live-shares-repo/handoff.md) | Live agent works as a worker beside a factory session | chore | L1 | P2 | T-0819, T-0821 | 🔵 ready |
 
-Closed: 777 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 778 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -126,3 +125,6 @@ Closed: 777 done, 30 dropped (git log or .NNNN-* folders)
 - decide: b6 `verifier-L1.attempt.json`: an aborted first diff-control dispatch (status `running`, no result) exists; the report's "6 diff-scoped runs" counts only the completed `-2` run. (from T-0801: measure single session vs solo lane with the diff-scoped verifier on 5 L1 tickets (2026-10-28))
 - decide: plugins/sdlc-lite/scripts/lanes.py:1338 the Goal's parenthetical "and `lanes.py finish` itself when the push already ended" is not implemented: the log is read only before this run's own push, so a finish never reports its own push failure; the Outcome section records this choice and no criterion requires it. (from T-0802: a failed background backup push is silent after T-0800 (2026-10-28))
 - decide: plugins/sdlc-lite/scripts/lanes.py:4069 note: the local half of `case_open_claim_upstream` does not assert the `record lane` commit or the `branch:` line in main, so the record-commit half of the change is only covered indirectly (clean main plus lane copy claimed). A one-line assertion would pin it; decide whether to add. (from T-0804: lanes.py open --claim leaves the claim uncommitted in a repo that lands locally while main tracks an upstream (2026-10-28))
+- decide: plugins/sdlc/scripts/migrate-worktrees.sh:233,282,284: criterion 1 is green only because of this uncommitted edit; at commit 686b2f5b the migrate-worktrees job is red (the builder's run and base 2896f0eb agree). Decide before landing: commit the fix under its own ticket or ticket id, or the lane lands with a red gate. (from T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30))
+- decide: plugins/sdlc/scripts/hook-selftest.sh:616: `inbox-sdlc-lite-codex` keeps the old plugin name as a fixture peer name; harmless, rename if you want zero residue. (from T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30))
+- decide: Open tickets T-0816 and T-0818 and the docs/work ledgers still use the old names, as the builder noted. (from T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30))

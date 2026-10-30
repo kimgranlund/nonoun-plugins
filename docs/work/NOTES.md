@@ -798,3 +798,9 @@
 
 - note: plugins/sdlc-lite/adapters/codex/models.json:12-13 give the direct and hybrid Codex rows the conductor's gpt-6-astra medium. The ticket named no model, so the builder recorded them as inherited in eval 0012. Model and effort defaults are a user decision, and the user may override.
 - note: plugins/sdlc-lite/agents/conductor.md:87-89 adds only the prose Modes section, so conductor behavior is unchanged as the Constraints require. Do item 1 and the Constraints are met: direct.md carries the offer-`/verify`-once rule and the conductor's publish and push rules.
+
+## T-0819: Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (2026-10-30)
+
+- decide: plugins/sdlc/scripts/migrate-worktrees.sh:233,282,284: criterion 1 is green only because of this uncommitted edit; at commit 686b2f5b the migrate-worktrees job is red (the builder's run and base 2896f0eb agree). Decide before landing: commit the fix under its own ticket or ticket id, or the lane lands with a red gate.
+- decide: plugins/sdlc/scripts/hook-selftest.sh:616: `inbox-sdlc-lite-codex` keeps the old plugin name as a fixture peer name; harmless, rename if you want zero residue.
+- decide: Open tickets T-0816 and T-0818 and the docs/work ledgers still use the old names, as the builder noted.
