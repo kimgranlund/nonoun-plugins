@@ -39,6 +39,7 @@ One row per document type: where it lives, the standard it follows, its card, it
 | Overlay | `plugins/sdlc/overlays/` | One section per level band: gap defaults low, goal, KPI and budget high | [prompts.md](prompts.md) | - | prompt_lint P-1, P-2, P-3, P-4, P-6 | enforced |
 | Handoff | `.sdlc/` | Self-contained brief with runnable acceptance criteria | [prompts.md](prompts.md) | - | - | advisory |
 | Tool description | host tool definition | What it does, when to call it, when not to | [prompts.md](prompts.md) | - | - | advisory |
+| Plugin surface (manifests, skills, agents, commands, hooks, MCP, scripts) | `plugins/<name>/` | One source, two host manifests with matching identity; shared core, thin host adapters; host-only gaps recorded | [plugins.md](plugins.md) | - | check-packaging.py | enforced |
 
 Home is a folder under `docs/` unless it names another place. Enforcement is `enforced` when a check.sh gate fails on at least one rule in the row's Check cell, and `advisory` otherwise; the tier of each rule is below. A row whose Check is `-` is advisory.
 

@@ -1,16 +1,25 @@
 # Plugin compatibility and validation
 
-Date: 2026-09-27. Packaging implementation: Progressive Context 0.1.0 and SDLC 0.16.0.
+Updated: 2026-10-30. Marketplace `nonoun` ships four plugins: `sdlc` 1.0.0, `context` 0.3.0, `design` 0.1.0, and `dev-tools` 0.1.0. The standard these follow is [the plugin card](../specs/doc-standards/plugins.md).
 
 ## Shipped scope
 
-Progressive Context is a shared skill for expressing intent, navigating context, evaluating the gap to implementation, and qualifying bounded reuse. Its small reference set covers contracts, evidence, SDLC links, and filesystem/browser/A2UI representations. Browser persistence and A2UI runtime adapters remain proposals.
+- `sdlc` executes roles natively through Codex or Claude. Codex uses generated agent configurations in `plugins/sdlc/adapters/codex/agents/`, the model and effort table in `adapters/codex/models.json`, and `codex exec`; no Claude installation is needed on that path. Claude agents are generated from `adapters/claude/levels.json`. See [native execution](codex-role-execution.md).
+- `context` (formerly Progressive Context) is a skill set for intent, context navigation, routing, evidence, and qualified reuse.
+- `design` holds UI construction, geometry, palette, inspector, wireframe, and critique skills.
+- `dev-tools` holds machine, repo, and harness care skills, including `author-cross-harness-plugins`.
 
-SDLC now executes roles natively through Codex or Claude. Codex uses generated predefined agent configurations, an explicit model/effort table, and `codex exec`; no Claude installation is required on that path. The shared runner retains result artifacts, base tracking, cleanup and output validation. Project setup additionally installs named in-session agents. See [native execution](codex-role-execution.md) for setup, model choices and live test evidence.
+Both catalogs point to the same four roots under `./plugins/`. Every plugin has two manifests with the same identity, and each Codex manifest reads `./skills/`. Every SDLC skill routes Codex through the adapter before Claude-specific tool syntax. Claude hooks are selected from `plugins/sdlc/adapters/claude/hooks.json`, outside Codex's hook discovery location. Host-only gaps are in `plugins/sdlc/HARNESS-NOTES.md` and `plugins/context/HARNESS-NOTES.md`.
 
-Both repository catalogs point to the same two plugin roots. Both host manifests preserve plugin identity. Every SDLC skill routes Codex through the adapter before Claude-specific tool syntax. Claude's hook configuration is explicitly selected from `adapters/claude/hooks.json`, outside Codex's automatic hook discovery location.
+## Validation evidence (2026-10-30)
 
-## Validation evidence
+- [V] `python3 scripts/check-packaging.py`: exit 0, PASS on catalog parity, identity, skill routes and sizes, hook isolation, links, and CI triggers.
+- [V] `validate_cross_harness.py` per plugin: `context` and `dev-tools` clean. `sdlc` fails on `${CLAUDE_PLUGIN_ROOT}` in shared skills, the pattern its Codex adapter translates. `design` fails on `$ARGUMENTS` in `make-figma-agent-connector`.
+- [U] Live discovery in a fresh Codex or Claude session was not rerun for the 1.0.0 layout.
+
+## Validation evidence (2026-09-27)
+
+Packaging then: Progressive Context 0.1.0 and SDLC 0.16.0, two plugin roots.
 
 - Codex plugin-creator validator: both manifests and their discovered skill metadata pass.
 - Claude plugin validator: both plugins and the repository marketplace pass.
@@ -31,4 +40,4 @@ Before claiming full end-to-end host parity, run fresh installed sessions in eac
 
 ## Maintenance
 
-Run `python3 scripts/check-packaging.py` and `bash plugins/sdlc/scripts/check.sh`. Repeat Codex native discovery after changing skill paths or hook wiring. The two catalogs use different schemas; do not copy one over the other. The supported compatibility manifest layout is documented in [OpenAI's plugin packaging guide](https://developers.openai.com/plugins/build/plugins).
+Run `python3 scripts/check-packaging.py` and `bash plugins/sdlc/scripts/check.sh`. Repeat Codex native discovery after changing skill paths or hook wiring. Regenerate agents with `claude_roles.py generate` and `codex_roles.py generate` after a role or level change. The two catalogs use different schemas; do not copy one over the other. The supported compatibility manifest layout is documented in [OpenAI's plugin packaging guide](https://developers.openai.com/plugins/build/plugins).
