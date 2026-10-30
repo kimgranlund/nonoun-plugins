@@ -42,7 +42,7 @@
   dispatch.py selftest
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
-factory passes to the Agent tool (design: docs/sdlc/subagent-mode.md sections 1 to 3). It launches
+factory passes to the Agent tool (design: docs/planning/sdlc/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
 goal precheck, unfilled-handoff gate, replan cap, link check, lane gate, spec gate, budget gate, time gate, lane guidance
 check, then the one write section.

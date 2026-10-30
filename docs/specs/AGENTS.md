@@ -2,7 +2,7 @@
 
 Built and accepted designs and contracts, one folder per subject. Read the one for the subject you are changing; a proposal goes in `planning/`.
 
-<!-- sdlc:managed:start v1 sha256:746f47913e80 -->
+<!-- sdlc:managed:start v1 sha256:c90867750650 -->
 ## Contents
 
 - [doc-standards/](doc-standards/AGENTS.md)

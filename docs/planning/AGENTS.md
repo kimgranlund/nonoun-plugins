@@ -2,7 +2,7 @@
 
 Proposals and plans that are not built. Each file carries `status:` front matter; when one is built, its content moves into `specs/` and it goes to `archive/`.
 
-<!-- sdlc:managed:start v1 sha256:af1b49064e84 -->
+<!-- sdlc:managed:start v1 sha256:f13c0116c575 -->
 ## Contents
 
 - [generative-constructs/](generative-constructs/AGENTS.md)

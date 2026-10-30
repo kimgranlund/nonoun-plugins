@@ -1,6 +1,6 @@
 # Proposals
 
-This folder holds candidate changes that `proposals.py scan` mines from past runs: `runs.jsonl` files, builder and verifier results, and `docs/work/NOTES.md`. Nothing is applied automatically. `accept` needs a valid eval in `docs/work/evals/`, and `promote` only files an idea ticket through `tickets.py new idea`. The script never edits a plugin file, runs an experiment, or changes a model default. Run every command from the repository root; `P` below means `python3 plugins/sdlc-lite/scripts/proposals.py`.
+This folder holds candidate changes that `proposals.py scan` mines from past runs: `runs.jsonl` files, builder and verifier results, and `docs/work/NOTES.md`. Nothing is applied automatically. `accept` needs a valid eval in `docs/work/evals/`, and `promote` only files an idea ticket through `tickets.py new idea`. The script never edits a plugin file, runs an experiment, or changes a model default. Run every command from the repository root; `P` below means `python3 plugins/sdlc/scripts/proposals.py`.
 
 ## File format
 
@@ -66,12 +66,12 @@ No move goes backward, and any other move is refused.
 
 ## Procedures
 
-- Scan: `python3 plugins/sdlc-lite/scripts/proposals.py scan`. Add `--proposals <dir>` before `scan` for a look that writes elsewhere. It prints one line per new or updated proposal and ends `proposals scan: <n> new, <n> updated, <n> unchanged`.
-- List: `python3 plugins/sdlc-lite/scripts/proposals.py list` prints id, status, occurrences, folder, and title per proposal.
-- Show: `python3 plugins/sdlc-lite/scripts/proposals.py show <id>`.
-- Accept: add the eval first by following `docs/work/evals/AGENTS.md`, then `python3 plugins/sdlc-lite/scripts/proposals.py accept <id> --eval docs/work/evals/<file>`. It refuses with no eval, a missing file, a file outside `docs/work/evals/`, or an invalid eval.
-- Reject: `python3 plugins/sdlc-lite/scripts/proposals.py reject <id> --reason TEXT`.
-- Promote: `python3 plugins/sdlc-lite/scripts/proposals.py promote <id>` files an idea ticket through `tickets.py new idea` and records its id.
+- Scan: `python3 plugins/sdlc/scripts/proposals.py scan`. Add `--proposals <dir>` before `scan` for a look that writes elsewhere. It prints one line per new or updated proposal and ends `proposals scan: <n> new, <n> updated, <n> unchanged`.
+- List: `python3 plugins/sdlc/scripts/proposals.py list` prints id, status, occurrences, folder, and title per proposal.
+- Show: `python3 plugins/sdlc/scripts/proposals.py show <id>`.
+- Accept: add the eval first by following `docs/work/evals/AGENTS.md`, then `python3 plugins/sdlc/scripts/proposals.py accept <id> --eval docs/work/evals/<file>`. It refuses with no eval, a missing file, a file outside `docs/work/evals/`, or an invalid eval.
+- Reject: `python3 plugins/sdlc/scripts/proposals.py reject <id> --reason TEXT`.
+- Promote: `python3 plugins/sdlc/scripts/proposals.py promote <id>` files an idea ticket through `tickets.py new idea` and records its id.
 - Never edit a proposal's front matter by hand.
 
 Exit codes: 0 ok, 1 refusal (`proposals.py: <reason>` on stderr), 2 usage error.

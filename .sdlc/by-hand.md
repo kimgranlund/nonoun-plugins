@@ -1,4 +1,4 @@
-<!-- sdlc:managed:start v1 sha256:a957e6d3ad6b -->
+<!-- sdlc:managed:start v1 sha256:c029de6360b6 -->
 # Working by hand
 
 Use this file when the SDLC plugin is not installed: it creates, claims, releases and closes a ticket with git and a POSIX shell. Run each block from the repository root after replacing `T-NNNN` and `NNNN` (the ticket id), `<slug>`, `<title>`, `<by>` (your name), `<one line>` and `YYYY-MM-DD` (today). `tickets.py roadmap` generates this block: do not edit inside it. `docs/work/ROADMAP.md` and the routers stay stale until the next plugin run regenerates them.

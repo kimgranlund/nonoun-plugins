@@ -8,7 +8,7 @@ task_set: maintainer decision 2026-10-12, no replay run
 pass_rate: 0/0
 cost_usd: unknown
 date: 2026-10-14
-evidence: docs/specs/sdlc-lite/solo-lane-contract.md
+evidence: docs/specs/sdlc/solo-lane-contract.md
 ---
 ## Method
 
