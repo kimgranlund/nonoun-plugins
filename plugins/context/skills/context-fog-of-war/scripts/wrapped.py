@@ -291,6 +291,34 @@ def read_requests(command):
     return requests
 
 
+
+def scoped_read_requests(command, cwd):
+    """Literal compound readers with one leading cd; paths are lexical, never executed.
+
+    Returned bytes still need independent corroboration. An attempted cd is not
+    itself proof that a shell changed directories, so callers must retain that limit.
+    """
+    if not isinstance(command,str) or '<<' in command:return []
+    try:
+        lex=shlex.shlex(command,posix=True,punctuation_chars=';&|<>\n')
+        lex.whitespace=' \t\r';lex.whitespace_split=True;lex.commenters='#';tokens=list(lex)
+    except ValueError:return []
+    if tokens[:1]==['cd']:
+        if len(tokens)<4 or tokens[2]!='&&' or any(c in tokens[1] for c in '$*?`'):return []
+        import os
+        cwd=os.path.normpath(tokens[1] if tokens[1].startswith('/') else os.path.join(cwd,tokens[1]))
+        tokens=tokens[3:]
+    segments=[];current=[]
+    for token in tokens+[';']:
+        if token in (';','\n','&&','||'):
+            if current:segments.append(current)
+            current=[]
+        else:current.append(token)
+    if any(words and words[0] in ('cd','pushd','popd') for words in segments):return []
+    import os
+    return [(os.path.normpath(target if target.startswith('/') else os.path.join(cwd,target)),start,end)
+            for words in segments for target,start,end in read_requests(shlex.join(words))]
+
 def corroborate(path, roots, output, start=None, end=None):
     """Match returned bytes against a bounded current-source witness, never invent contents."""
     resolved=Path(path).resolve()

@@ -171,8 +171,8 @@ def summary(record):
         lines.extend(['',f['id']+' · '+f['observation'],('Action: No corrective change proposed from this signal alone.' if benign(f) else 'Conditional action: '+f['action']),'Verify: '+f['verification'],
             'Uncertainty: '+'; '.join(f['uncertainty'])])
         for t in f.get('triage',[]):
-            lines.append('Triage: '+t['state']+' — '+t['reason']+' Need: '+t['nextEvidence'])
-        for e in f['evidence'][:2]: lines.append('Evidence: '+e.get('eventId',e.get('artifact',''))+' '+e.get('pointer','')+' — '+e['excerpt'][:180].replace('\n',' '))
+            lines.append('Triage: '+t['state']+' - '+t['reason']+' Need: '+t['nextEvidence'])
+        for e in f['evidence'][:2]: lines.append('Evidence: '+e.get('eventId',e.get('artifact',''))+' '+e.get('pointer','')+' - '+e['excerpt'][:180].replace('\n',' '))
     lines.append('\nDetector coverage (eligibility, not correctness):')
     for c in record['coverage']:
         x=c.get('explanation')
@@ -192,7 +192,7 @@ def summary(record):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--root',type=Path,default=default_root());p.add_argument('--json',action='store_true')
     sub=p.add_subparsers(dest='command',required=True)
-    d=sub.add_parser('diagnose');d.add_argument('--data',required=True);d.add_argument('--context');d.add_argument('--assessment');d.add_argument('--experiment');d.add_argument('--actual-change')
+    d=sub.add_parser('diagnose');d.add_argument('--data',required=True);d.add_argument('--context');d.add_argument('--delivery-contract');d.add_argument('--assessment');d.add_argument('--experiment');d.add_argument('--actual-change')
     i=sub.add_parser('ingest');i.add_argument('folder',type=Path);i.add_argument('--mapping',type=Path);i.add_argument('--repo',type=Path);i.add_argument('--out',type=Path,required=True);i.add_argument('--context');i.add_argument('--assessment');i.add_argument('--experiment');i.add_argument('--actual-change')
     e=sub.add_parser('experiment');e.add_argument('--baseline',required=True);e.add_argument('--finding',required=True);e.add_argument('--hypothesis');e.add_argument('--intervention');e.add_argument('--criterion');e.add_argument('--type',choices=['context-engineering','product-repair','instrumentation','unspecified'],default='unspecified');e.add_argument('--contract',help='JSON contextIntervention, expectedBehavior, acceptanceCheck')
     c=sub.add_parser('compare');c.add_argument('--baseline',required=True);c.add_argument('--run',required=True);c.add_argument('--experiment');c.add_argument('--mode',choices=['auto','extraction','execution'],default='auto');c.add_argument('--experiment-type',choices=['context-engineering','product-repair','instrumentation']);c.add_argument('--contract');c.add_argument('--reassessment',help='JSON array of cited finding reassessments')
@@ -218,6 +218,7 @@ def main():
                 data=reconstruct(bundle,a.repo.resolve() if a.repo else None)
                 (a.out/'session.json').write_text(json.dumps(data,indent=2)+'\n')
             else:data=read(a.data)
+            if getattr(a,'delivery_contract',None):data['deliveryContract']=read(a.delivery_contract)
             value=diagnosis(data,read(a.context) if a.context else {})
             value['assessment']=assessment(a.assessment)
             if a.experiment:

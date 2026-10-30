@@ -72,8 +72,9 @@ Records live under the existing per-user library's `engineering/{run,experiment,
 ## Progressive routing investigations
 
 Use the [CLI routing checks](learnings/cli-routing.md) for the applicable evidence
-and acceptance criteria. They are analyst-guided checks, not additional detector
-coverage. Keep route correctness, independently checked answer quality and measured
+and acceptance criteria. Requirement selection and applicability remain analyst
+judgments; explicit delivery contracts enable the bounded detectors linked below.
+Keep route correctness, independently checked answer quality and measured
 retrieval overhead separate in the assessment artifacts; use existing mechanism,
 behavior, outcome and cost fields only where their cited evidence supports them.
 Do not invent automatic scores or treat native tool returns as complete submission.
@@ -127,3 +128,10 @@ Product repairs may demonstrate scoped product acceptance improvement, but canno
 The CLI remains backward compatible with unspecified experiments, but only an explicitly typed context experiment with a complete chain and passing comparative assessments can set `contextEngineeringImprovement`. Retrospective classifications remain qualified and do not become preregistered experiments.
 
 Diagnosis version 4 prints per-detector eligibility, blocked prerequisites, exclusions and the smallest next evidence request. See [coverage explanations](diagnostics.md#coverage-explanations-and-blind-spots). Saved records retain exact gap citations and unsupported-wrapper warnings. A zero finding count is never substituted for sufficient telemetry.
+
+For explicit task-required body delivery, executable continuation and context
+exclusion checks, `diagnose --delivery-contract contract.json` supplies the cited
+interpretation alongside the hydrated input. See the [delivery contract](diagnostics.md#explicit-source-delivery-contracts)
+for source identity, first-write boundaries, observation-window qualifications and
+retrospective-policy labeling. Missing historical completeness evidence remains a
+coverage gap; this option does not reconstruct hidden context or execute trace code.

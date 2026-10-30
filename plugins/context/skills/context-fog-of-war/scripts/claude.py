@@ -5,7 +5,7 @@ import os
 import re
 from pathlib import Path
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 
 def records(trace, through_line=None):
     with Path(trace).open() as stream:
@@ -37,7 +37,7 @@ def hydrate(trace, repo, trace_root=None, title=None, through_line=None, include
     from diagnostics import diagnose
     from candidates import discover_candidates
     from connections import connect
-    from wrapped import read_requests
+    from wrapped import read_requests, scoped_read_requests, corroborate
     trace=Path(trace).resolve();repo=Path(repo).resolve();seen=set(_seen or ())
     if trace in seen or _depth>8: raise ValueError('Child cycle or depth limit')
     seen.add(trace)
@@ -139,6 +139,18 @@ def hydrate(trace, repo, trace_root=None, title=None, through_line=None, include
                         spill=bool(structured.get('persistedOutputPath')) or bool(re.search(r'truncat',text,re.I))
                         if spill:warnings.add('Spilled tool output not opened; only returned portion considered.')
                         cmd=args.get('command','')
+                        # Reuse the bounded source witness used by Codex. Current source
+                        # bytes corroborate a literal request, never fill missing output.
+                        compound=bool(isinstance(cmd,str) and re.search(r'[;&\n]',cmd))
+                        if compound:
+                            for target,start,end in scoped_read_requests(cmd,call_cwd):
+                                p=norm(target,call_cwd)
+                                exposure(previous,p,'discovered','Literal compound Bash request; lexical path scope')
+                                witness=repo/p if p and not p.startswith('/') else Path(target)
+                                state=corroborate(witness,[repo],text,start,end) if text and not structured.get('interrupted') else None
+                                if state:
+                                    exposure(e,p,state,'Recorded output matches bounded source bytes for a literal compound request; snapshot revision and attempted cd success are unverified',start if state=='partial' else None,end if state=='partial' else None)
+                            warnings.add('Compound Bash reads require matching bounded source bytes; lexical cd requests and current snapshot matches do not prove historical revision or shell directory state.')
                         if isinstance(cmd,str) and not re.search(r'[|;&<>`\n]|\$\(',cmd):
                             req=read_requests(cmd)
                             for target,start,end in req:

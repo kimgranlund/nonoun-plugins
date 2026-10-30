@@ -76,3 +76,107 @@ The CLI retains likely-benign groups for inspection but does not propose correct
 
 
 Legacy plain command strings and nested `arguments` envelopes use the same lookup parser. A generic missing-file result can establish failed discovery for one plain single-file reader. Compound commands, redirects, pipelines, multiple operands and unresolved variables still require explicit attribution; a sibling failure never establishes that a read failed.
+
+## Explicit source delivery contracts
+
+Four additive checks use `deliveryContract`: `required-source-before-write`,
+`incomplete-source-delivery`, `unfinished-continuation`, and `excluded-source-read`.
+They never derive a required selection from the full manifest, infer an unseen
+ledger read, or equate returned bytes with understanding. Existing detector IDs,
+findings, triage and scan counts remain available.
+
+Supply the contract on an existing hydrated report, or as a separate CLI input:
+
+```sh
+python3 scripts/diagnostics.py --data session.json --delivery-contract contract.json --out diagnosed.json
+python3 scripts/engineer.py diagnose --data session.json --delivery-contract contract.json
+```
+
+The engineering run saves the supplied contract in its input snapshot. Hydrate
+native traces first with the existing host adapter. Neither command executes a
+command found in a trace or reads a source path named by the contract.
+
+```json
+{
+  "mode": "authored-replay",
+  "intent": "fresh-builder",
+  "requiredSources": [{
+    "path": "packages/kit/docs/api.md",
+    "contentHash": "optional SHA256 of the complete required resolved body",
+    "evidence": {"eventId": "e1", "traceLine": 1, "excerpt": "Exact instruction declaring the required body."}
+  }],
+  "applicationPaths": ["apps/example/"],
+  "excludedPaths": ["history/"],
+  "sanctionedPaths": ["history/sanctioned-example/"],
+  "evidence": {"eventId": "e1", "traceLine": 1, "excerpt": "Exact applicable policy text."},
+  "observationWindow": {
+    "throughEventId": "e20",
+    "sourceReturnsComplete": true,
+    "evidence": {"eventId": "e2", "traceLine": 2, "excerpt": "Exact assertion of the bounded returned-read observation coverage."}
+  }
+}
+```
+
+The example contains placeholders, not usable citations. Every citation must name
+an existing event, its original trace line, and an exact nonempty excerpt. Invalid
+citations prevent the relevant finding and produce a coverage gap. Citation checks
+verify provenance, not the truth of an analyst's interpretation. In particular,
+pointing at an unrelated event does not establish an observation window or an
+exclusion policy. Review these semantics independently before supplying a contract.
+
+`mode` records interpretation provenance: `analyst-supplied` (default), `observed`,
+`authored-replay`, or `retrospective-policy`. These are supplied labels, never an
+automatic authenticity determination. Historical traces must not gain fabricated
+policy or completeness events. A retrospective exclusion is a replay of an explicit
+policy against observed reads, not proof of contemporaneous disobedience. The
+finding metrics and `diagnostics.delivery` retain the mode and qualification.
+
+`observationWindow.sourceReturnsComplete` means that relevant returned-read evidence
+through the cited cutoff was captured and reviewed. It does not mean the model's
+complete context, hidden helper execution, retained memory, or understanding was
+observed. Missing or uncited coverage, hidden relevant calls, or an opaque recovery
+must remain unknown. Do not manufacture a completeness assertion to force a finding.
+Without this assertion, missing required returns and unresolved recovery generate
+coverage gaps. A first write requires an attributed mutation result within an
+explicit `applicationPaths` prefix. A call alone is not a successful write. Reads
+must precede that first observed write; later recovery does not erase the earlier
+gap. Without a write, continuation analysis may use the inclusive window cutoff,
+while before-write coverage remains unassessable.
+
+Paths use report-relative identities. Optional `sourceBase` supplies a base only
+when a returned page has no `pathBase`; explicit page bases take precedence.
+Directory comparisons use path boundaries, so `history-extra` does not match
+`history`. An exact file exclusion also covers its fragments. Maintenance intent
+never inherits fresh-builder exclusions, and sanctioned examples suppress only the
+excluded-read signal. Source requests, inventory entries and edits are not reads.
+`diagnostics.delivery.sources` distinguishes inventory availability, observed
+requests, returned evidence, complete matching bodies and unknown coverage.
+
+### Returned page and packet support
+
+Source pages carry `source` (or legacy recipe `id`), optional `renderer`, `sha256`
+delivery identity, `offset`, `end`, `total`, string `content`, `complete` and `next`.
+`contentSha256`, when present, is the complete resolved body's hash, not a page
+hash. Matching contiguous ranges must have consistent identity, totals and content;
+conflicting overlaps, missing prefixes, changed hashes, or a terminal page alone
+cannot establish a complete body. Offsets use Unicode code points. A complete
+native read can establish a body without a requested content hash, unless recorded
+clipping or command bounds contradict completeness.
+
+Metadata and search pages can finish their own continuations without establishing
+referenced source bodies. Complete `task-packet-page` chains are reconstructed as
+recorded JSON, then each complete inner `kind: body` is credited only after its
+content hash verifies. Direct complete `task-packet` results use the same check.
+References never count as bodies; selected JSON records do not substitute for an
+entire source file. An output-file receipt establishes that bytes were written,
+not that the file's body was returned. This parser does not open receipt paths.
+
+Only returned nonempty executable `next.args` lists are continuation candidates.
+Legacy offset-only descriptors produce an explicit eligibility gap. Following the
+request without its matching complete return does not resolve the signal. Tool
+clipping remains the existing `truncation` detector. Intentional `head`, `cut`,
+`tail` and bounded `sed` requests are separately recorded as command bounds in
+`incomplete-source-delivery`; they do not become tool-output truncation.
+
+Synthetic and producer-integration checks establish these mechanics, not autonomous
+routing efficacy, production precision, reduced cost or improved generation quality.
