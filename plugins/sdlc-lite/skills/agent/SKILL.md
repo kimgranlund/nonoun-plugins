@@ -28,7 +28,7 @@ The first word is the agent name. Everything after the optional `--level` flag i
 | `archaeologist` | dispatch `archaeologist` L1 on `<handoff>` (Codex: `scripts/run.sh archaeologist L1 <handoff>`) | L1 |
 | `ui-designer` | dispatch `ui-designer` at `<level>` on a `<handoff>` that holds a `mode:` line (Codex: `scripts/run.sh ui-designer <level> <handoff>`), level per the `ui-designer` section of the level-rubric skill | L1 |
 
-Other SDLC Lite agents have their own path; answer in one line and stop: `planner` to `/sdlc-lite:plan`, `builder` to `/sdlc-lite:build`, `verifier` to `/sdlc-lite:verify`, `plan-reviewer` to `steps.py review`, `filer` to `/sdlc-lite:file`, `messenger` to `.sdlc/messages/AGENTS.md`. Refuse `conductor`: it is the session you are in. For any other name, print the names above and stop.
+Other SDLC Lite agents have their own path; answer in one line and stop: `planner` to `/sdlc-lite:plan`, `builder` to `/sdlc-lite:build`, `verifier` to `/sdlc-lite:verify`, `plan-reviewer` to `steps.py review`, `filer` to `/sdlc-lite:file`, `messenger` to `.sdlc/messages/AGENTS.md`. Refuse `conductor`, `direct`, and `hybrid`: each is a session agent, set with `"agent"` in `.claude/settings.json` for a new session, not launched. For any other name, print the names above and stop.
 
 Workflow:
 1. Resolve the level from the flag, else the default in the table. For `solo`, the ticket level is the solo level (L1, L2, or L3).

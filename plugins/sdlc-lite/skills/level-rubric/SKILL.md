@@ -112,7 +112,7 @@ The mode comes from the handoff's `mode:` line (`plan`, `review`, or `generate`)
 
 ## Session agents (not pipeline roles)
 
-The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `sonnet` at effort low is pinned in its own front matter, as is the conductor's `opus` at effort medium, and the messenger's Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case. The messenger is never a prepared dispatch, so `record` does not queue it: when its parent is done with it, run `dispatch.py prune --add <name> --role messenger`, then `dispatch.py prune`.
+The `conductor`, its `direct` and `hybrid` modes, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `sonnet` at effort low is pinned in its own front matter, as is the `opus` at effort medium of the conductor, direct, and hybrid, and the messenger's Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case. The messenger is never a prepared dispatch, so `record` does not queue it: when its parent is done with it, run `dispatch.py prune --add <name> --role messenger`, then `dispatch.py prune`.
 
 ## Agent-tool spawns (outside a dispatch)
 

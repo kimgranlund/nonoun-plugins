@@ -842,6 +842,8 @@ verifier-L2|verifier
 sdlc-lite:conductor|
 conductor|
 sdlc-lite:messenger|
+sdlc-lite:direct|
+sdlc-lite:hybrid|
 general-purpose|
 Explore|
 harness:agent-checker|
@@ -904,7 +906,7 @@ CASES
 out=$(run "$rf" "$(rj sdlc-lite:builder-L2 "$fmtc")"); rc=$?
 [[ $rc -eq 2 ]] || fail "block-repo-format blocks '$fmtc' for sub-agent sdlc-lite:builder-L2: exit $rc, want 2"
 grep -q "role 'builder'" <<<"$out" || fail "block-repo-format for sdlc-lite:builder-L2: stderr does not name the role"
-for at in "" sdlc-lite:conductor conductor general-purpose Explore harness:agent-checker sdlc-lite:messenger; do
+for at in "" sdlc-lite:conductor conductor general-purpose Explore harness:agent-checker sdlc-lite:messenger sdlc-lite:direct sdlc-lite:hybrid; do
   for spec in "$pub|$pushc" "$pk|$pkc" "$ds|$dsc" "$rf|$fmtc"; do
     hook="${spec%%|*}"; c="${spec#*|}"
     run "$hook" "$(rj "$at" "$c")" >/dev/null; rc=$?

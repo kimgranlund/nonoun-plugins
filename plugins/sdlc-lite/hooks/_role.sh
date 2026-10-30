@@ -10,7 +10,7 @@
 # inherits its parent's environment, so the per-process variable cannot tell it from the
 # parent, and the hook input can. When both exist the variable wins, so a headless parent's
 # role is what its sub-agents resolve to; the sub-agent's own type counts only in a session
-# that has no SDLC_ROLE. The session agents conductor and messenger are not roles, so an
+# that has no SDLC_ROLE. The session agents conductor, direct, hybrid and messenger are not roles, so an
 # interactive conductor that publishes after approval is never blocked. A bare agent_type
 # counts only when it names a pipeline role; any other agent (Explore, general-purpose,
 # another plugin's agent) has no role.
@@ -59,7 +59,7 @@ sdlc_role() {
     name="${BASH_REMATCH[1]}"
   fi
   case "$name" in
-    ''|conductor|messenger) return 0 ;;
+    ''|conductor|direct|hybrid|messenger) return 0 ;;
   esac
   if [[ "$at" == sdlc-lite:* || "$SDLC_PIPELINE_ROLES" == *" $name "* ]]; then
     printf '%s' "$name"
