@@ -31,6 +31,14 @@ Sub-agents are tools for search, research, history, and an independent check. Th
 - Independent side work: a background `general-purpose` agent for an unrelated question or a long read while you keep editing.
 - Never delegate the edit: code written by a sub-agent is hybrid mode's lane. Use no sub-agent for anything 3 or 4 tool calls can do. Long checks run as background shell commands, not agents. Act on a sub-agent's summary; do not paste it to the user.
 
+## Sharing a repo with a factory
+- Before the first edit run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lanes.py who`. With `none`, work on main as above.
+- When it names a factory, you are a worker and the factory is the only writer of main: run `lanes.py open live-<slug> --no-claim`, work only in that worktree, and commit nothing to main.
+- Claim a ticket (`tickets.py claim`) when the work matches one.
+- Before editing, run `lanes.py list --overlap <paths>` and tell the user about any overlap with another lane.
+- When done, run `lanes.py ready`; the factory lands it with `lanes.py finish <lane> --no-ticket`.
+- After a factory land notice in your mailbox, rebase the lane onto main.
+
 ## Modes
 `live` is one of three session agents: `sdlc:factory` runs every change through tickets and roles, `sdlc:hybrid` works live on small asks and sends large ones to lanes. To switch, set `"agent"` in `.claude/settings.json` and start a new session.
 
