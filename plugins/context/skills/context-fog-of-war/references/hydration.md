@@ -95,3 +95,20 @@ Inspect coverage warnings and representative events. The adapter automatically d
 Moved from SKILL.md on 2026-10-16.
 
 Optional `contextRecords` contain sourceId, eventId, status (included/removed), and exact evidence. Populate them only from explicit context-assembly records, never from tool output alone or path mentions. The deterministic adapter recognizes a `context_assembly` payload with `sources: [{"path": "…", "status": "included"}]` (or removed), at top level or in a record payload. Other assembly formats require an evidence-backed adapter; do not infer confirmation. Empty confirmed results are valid.
+
+## Claude compound read corroboration (adapter 1.1.0)
+
+Literal compound Bash readers can reuse the canonical bounded source witness used
+by Codex. The adapter parses supported reader operands, optionally with one leading
+literal `cd PATH &&`, and attributes a read or partial return only when recorded
+output matches a bounded source body or the existing conservative prefix witness.
+It never executes a command from a trace. Unknown variables, heredocs, dynamic
+scripts, pipelines and multiple directory changes stay outside this attribution.
+
+The exposure basis states that the snapshot revision and the attempted directory
+change are unverified. A current source cannot supply missing historical output;
+only matching returned text is evidence. The allowed witness remains the supplied
+repository/snapshot, with the existing one-megabyte source bound and symlink scope
+check. This improves observed lower-bound coverage without proving a complete
+consumed-context inventory. Failed or missing native source reads must not be
+inferred from a request, source inventory or a later edit.

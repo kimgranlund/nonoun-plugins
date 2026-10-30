@@ -68,6 +68,29 @@ class Diagnostics(unittest.TestCase):
         self.assertEqual(diagnose(data)['diagnostics']['findings'], [])
         self.assertEqual(self.findings('cat guide.md', 'Truncated text is discussed here; no explicit marker', 0), [])
 
+
+    def test_persisted_preview_envelope(self):
+        envelope = '<persisted-output>\nOutput too large (52.7KB). Full output saved to: /tmp/not-opened.txt\n\nPreview (first 2KB):\nSome returned text\n</persisted-output>'
+        for content in (envelope, [{'type': 'text', 'text': envelope}]):
+            data = fixture('cat guide.md', '', 0)
+            data['events'][1]['evidence']['text'] = json.dumps({'block': {'type': 'tool_result', 'content': content}})
+            report = diagnose(data)
+            signals = [f for f in report['diagnostics']['findings'] if f['detector'] == 'truncation']
+            self.assertEqual(len(signals), 1)
+            self.assertEqual(signals[0]['metrics']['truncationSites'][0]['marker'].strip(), '<persisted-output>')
+            self.assertIn('Downstream harm is unproven', signals[0]['observation'])
+
+    def test_persisted_preview_negative_controls(self):
+        envelope = '<persisted-output>\nOutput too large (40.5KB). Full output saved to: /tmp/not-opened.txt\n\nPreview (first 2KB):\nSome text\n</persisted-output>'
+        for output in ('All output returned', '<persisted-output>\nFull output saved to: /tmp/output.txt\n</persisted-output>',
+                       'Output too large (40.5KB)', 'Documentation example:\n' + envelope,
+                       '```text\n' + envelope + '\n```', envelope.replace('Preview (first 2KB):', 'Complete output:')):
+            self.assertNotIn('truncation', self.findings('cat guide.md', output, 0))
+        self.assertEqual(self.findings('echo ' + envelope, 'Complete output', 0), [])
+        data = fixture('cat guide.md', '', 0)
+        data['events'][1]['evidence']['text'] = json.dumps({'block': {'type': 'tool_use', 'input': {'command': envelope}}})
+        self.assertEqual(diagnose(data)['diagnostics']['findings'], [])
+
     def test_unknown_wrapped_arguments_remain_unknown(self):
         self.assertFalse(lookup_request('text(await tools.exec_command({cmd: dynamic}));'))
 

@@ -3,8 +3,9 @@
 Applies to: CLI harness.
 
 Observed in a cross-host repository routing and hardening study. These are
-analyst checks, not new automated detectors or universal requirements. Use recorded
-calls, returned bodies and independent acceptance; missing telemetry stays unknown.
+analyst checks, not universal requirements. Optional cited delivery contracts automate
+bounded observable portions, as qualified below. Use recorded calls, returned bodies
+and independent acceptance; missing telemetry stays unknown.
 The architecture/refactoring skill progressive-context is complementary when
 available, but is not required to apply these checks.
 
@@ -45,3 +46,8 @@ static checks, authored replay, evaluator-directed execution and fresh-agent run
 separate. A disappearing signal or a later passing retry does not establish cause.
 Reuse maintained probes; run broader packaging/browser checks only when their
 boundary is affected or at an integration checkpoint. Record deferred checks.
+
+The canonical delivery-contract diagnostics now automate the bounded observable
+portions of checks 33 and 38 when the explicit cited prerequisites are supplied.
+They do not automate requirement selection, applicability, complete telemetry
+assessment, answer quality or causal evaluation. See the [delivery contract](../diagnostics.md#explicit-source-delivery-contracts).

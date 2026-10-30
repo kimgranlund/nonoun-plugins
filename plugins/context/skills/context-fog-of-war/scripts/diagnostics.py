@@ -16,6 +16,8 @@ CATALOG = [
 
 from reconstruct import CATALOG as BUNDLE_CATALOG
 CATALOG += BUNDLE_CATALOG
+from delivery import CATALOG as DELIVERY_CATALOG
+CATALOG += DELIVERY_CATALOG
 
 def unpack(value):
     if isinstance(value,str):
@@ -248,9 +250,13 @@ def diagnose(data):
     if data.get('bundle'):
         from reconstruct import signals
         extra,counts=signals(data,coverage);findings.extend(extra);assessed.update(counts)
+    from delivery import analyze as analyze_delivery
+    delivery_counts,delivery_summary=analyze_delivery(data,coverage,add,cite)
+    assessed.update(delivery_counts)
     from triage import classify
     for finding in findings:finding['triage']=classify(finding,by)
     data['diagnostics']={'version':VERSION,'catalog':CATALOG,'findings':findings,'coverage':[{'detector':c['id'],'assessed':assessed[c['id']],'findings':sum(f['detector']==c['id'] for f in findings),'status':'assessed' if assessed[c['id']] else 'insufficient-evidence'} for c in CATALOG],'limits':['Candidates are not proven defects or causal explanations. Confidence describes the observed signal, not the proposed remedy.','No exact retained-context accounting, relevance verdict, wasted-token estimate, or counterfactual improvement is inferred.','Unknown/opaque wrappers and missing outcomes reduce coverage. No findings does not mean no problems.','No baseline comparison was performed; proposed validations require comparable tasks and correctness checks.','Guidance applicability is directory-based unless separately reviewed. Search failure detection excludes ordinary no-match exit codes.']}
+    data['diagnostics']['delivery']=delivery_summary
     matched_calls={parent['id'] for parent in parents.values()}
     for e in events:
         if e['kind']=='call' and e['id'] not in matched_calls:
@@ -283,4 +289,6 @@ def validate_diagnostics(data):
         if any(x not in by for x in f['eventIds']):raise ValueError('Invalid diagnostic event')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--data',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args();d=diagnose(json.loads(a.data.read_text()));validate_diagnostics(d);a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_text(json.dumps(d,indent=2)+'\n');print(json.dumps(d['diagnostics']['coverage']))
+    p=argparse.ArgumentParser();p.add_argument('--data',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--delivery-contract',type=Path);a=p.parse_args();d=json.loads(a.data.read_text());
+    if a.delivery_contract:d['deliveryContract']=json.loads(a.delivery_contract.read_text())
+    d=diagnose(d);validate_diagnostics(d);a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_text(json.dumps(d,indent=2)+'\n');print(json.dumps(d['diagnostics']['coverage']))

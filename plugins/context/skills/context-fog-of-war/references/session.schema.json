@@ -324,6 +324,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "delivery": {
+          "type": "object"
         }
       },
       "required": [
@@ -487,6 +490,9 @@
       }
     },
     "bundle": {
+      "type": "object"
+    },
+    "deliveryContract": {
       "type": "object"
     }
   },

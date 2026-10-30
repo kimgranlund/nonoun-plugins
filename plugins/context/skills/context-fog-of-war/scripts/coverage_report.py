@@ -10,6 +10,9 @@ SPECS={
  'stop-at-cap':('model requests with outputTokens and maxTokens and no stop reason','Record outputTokens and maxTokens on the model_request, or the provider stop reason.','Usage equal to the cap is indirect evidence; a recorded stop reason settles it.'),
  'evaluation-artifact-mismatch':('linked evaluation/delivery hash pairs','Record an explicit delivery ID and SHA256 for both evaluated and delivered bytes.','A comparison may intentionally evaluate an intermediate artifact.')}
 
+from delivery import SPECS as DELIVERY_SPECS
+SPECS.update(DELIVERY_SPECS)
+
 class Coverage:
  def __init__(self):self.items={k:{'eligible':0,'blocked':[],'excluded':[]} for k in SPECS}
  def eligible(self,k):self.items[k]['eligible']+=1
