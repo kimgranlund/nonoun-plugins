@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Onboard a repository to SDLC: entry files, docs layout, and check mode.
 
-Usage: onboard.py setup [--dry-run] [--force] [--init [--local]]   refresh the managed blocks (--init: create them)
+Usage: onboard.py setup [--dry-run] [--force] [--init [--local] [--mode M]]   refresh the managed blocks (--init: create them)
        onboard.py check                                  report the state of every managed file
        onboard.py selftest                               run the gates on temp fixtures
 
@@ -15,15 +15,16 @@ the lane root from the sibling wtroot.py (`<bare parent>/lanes/` in a bare clone
 setup refreshes the managed blocks a file already holds and changes nothing else; it lists on
 stderr each file --init would create or append a block to. setup --init also creates missing
 entry files and docs/layout.md and appends a block to an unmanaged entry file, and declares
-`"agent": "sdlc:factory"` in .claude/settings.json (--local: .claude/settings.local.json) unless
-either settings file already names an agent; other keys and malformed JSON are left untouched, and under
+`"agent": "sdlc:factory"` in .claude/settings.json (--local: .claude/settings.local.json; --mode hybrid or live
+declares sdlc:hybrid or sdlc:live, an unknown mode is refused before any write) unless
+either settings file already names an agent (then --mode did not apply, and stderr says so); other keys and malformed JSON are left untouched, and under
 SDLC_BACKEND=codex it writes no settings and says so on stderr. In a new repo (tickets.new_repo) setup --init
 also records `ticket_root: tickets` in .sdlc/config, and the blocks name .sdlc/tickets/ (T-0814).
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
 check writes nothing, prints `<label> <path>` per file, and exits 1 unless every entry file is
-current and docs/layout.md is present; its session-agent line (current, other, malformed, missing) never
-changes the exit status. Reports (malformed, newer, edited, skipped symbolic
+current and docs/layout.md is present; its session-agent line (current, other, malformed, missing; current
+names the mode on stderr as `agent: mode <mode> in <path>`) never changes the exit status. Reports (malformed, newer, edited, skipped symbolic
 links, size targets) go to stderr. Outside a Git work tree, or on a docs/layout.md parse error,
 both commands print the reason to stderr, exit 1, and write nothing.
 
@@ -74,6 +75,7 @@ SEPARATOR_CELL = re.compile(r'^:?-{3,}:?$')
 SETTINGS_PATH = '.claude/settings.json'
 LOCAL_SETTINGS_PATH = '.claude/settings.local.json'
 FACTORY = 'sdlc:factory'
+MODES = {'factory': FACTORY, 'hybrid': 'sdlc:hybrid', 'live': 'sdlc:live'}
 CODEX_AGENT_NOTE = 'agent: Codex has no session-agent setting; nothing written'
 FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 
@@ -970,18 +972,19 @@ Change = collections.namedtuple('Change', 'path row action label old new notes')
 Change.__doc__ = 'One file. row is None outside the upsert table. old/new are None when not read or not written.'
 
 
-def _declare_agent(text):
-    """The settings text with the factory as its first key; every other byte stays."""
+def _declare_agent(text, agent=FACTORY):
+    """The settings text with agent as its first key; every other byte stays."""
     if text is None or not text.strip() or json.loads(text) == {}:
-        return '{\n  "agent": "%s"\n}\n' % FACTORY
+        return '{\n  "agent": "%s"\n}\n' % agent
     i = text.index('{') + 1
-    return text[:i] + '\n  "agent": "%s",' % FACTORY + text[i:]
+    return text[:i] + '\n  "agent": "%s",' % agent + text[i:]
 
 
-def settings_change(root, local=False, declare=_declare_agent):
+def settings_change(root, local=False, mode=None, declare=_declare_agent):
     """The session-agent declaration as a Change (row None). label: current or other (the effective file,
-    settings.local.json before settings.json, names the factory or another agent), malformed, or missing.
-    A missing declaration is planned for settings.json, or settings.local.json with local."""
+    settings.local.json before settings.json, names one of the MODES agents or another agent), malformed, or
+    missing. A missing declaration is planned for settings.json, or settings.local.json with local, naming
+    the agent of mode (default factory). A kept agent's note says when an explicit mode did not apply."""
     found = []
     for path in (LOCAL_SETTINGS_PATH, SETTINGS_PATH):
         full = os.path.join(root, *path.split('/'))
@@ -997,13 +1000,17 @@ def settings_change(root, local=False, declare=_declare_agent):
         found.append((path, text, data))
     for path, text, data in found:
         if isinstance(data, dict) and 'agent' in data:
-            return Change(path, None, 'none', 'current' if data['agent'] == FACTORY else 'other', text, None,
-                          ['agent: kept %s in %s' % (data['agent'], path)])
+            kept = 'agent: kept %s in %s' % (data['agent'], path)
+            if mode is not None and data['agent'] != MODES[mode]:
+                kept += '; --mode %s did not apply' % mode
+            current = data['agent'] in MODES.values()
+            return Change(path, None, 'none', 'current' if current else 'other', text, None, [kept])
     path, text, data = found[0] if local else found[1]
     if isinstance(data, ValueError):
         return Change(path, None, 'skip', 'malformed', text, None,
                       ['malformed %s: %s; left unchanged' % (path, data)])
-    return Change(path, None, 'create' if text is None else 'replace', 'missing', text, declare(text), [])
+    return Change(path, None, 'create' if text is None else 'replace', 'missing', text,
+                  declare(text, MODES[mode or 'factory']), [])
 
 
 SDLC_CONFIG_PATH = '.sdlc/config'
@@ -1169,7 +1176,7 @@ def _plan_or_report(root, impl, force, err, sdlc_config=None):
     return None
 
 
-def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=False, out=None, err=None):
+def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=False, mode=None, out=None, err=None):
     """setup: print the diff (dry run) or write it. Returns the exit status.
 
     Without init only existing managed blocks are refreshed; every file init would create or
@@ -1178,8 +1185,12 @@ def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=Fal
     in .claude/settings.json (local: .claude/settings.local.json) unless a settings file names an agent.
     In a new repo init also records `ticket_root: tickets` in .sdlc/config (T-0814) and the blocks name
     .sdlc/tickets/; without init stderr lists it as `--init would set ticket_root: tickets in .sdlc/config`.
+    mode (a MODES key, default factory) picks the declared agent; an unknown mode is refused before any write.
     """
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
+    if mode is not None and mode not in MODES:
+        err.write('onboard.py: unknown mode %s; choose one of %s\n' % (mode, ', '.join(sorted(MODES))))
+        return 2
     try:
         config = impl.ticket_root(root)
     except OSError as e:
@@ -1206,7 +1217,7 @@ def run_setup(root, impl=None, dry_run=False, force=False, init=False, local=Fal
     if os.environ.get('SDLC_BACKEND', 'claude') == 'codex':
         err.write(CODEX_AGENT_NOTE + '\n')
     else:
-        agent = impl.settings(root, local)
+        agent = impl.settings(root, local, mode)
         if init:
             for note in agent.notes:
                 err.write(note + '\n')
@@ -1270,6 +1281,10 @@ def run_check(root, impl=None, out=None, err=None, resolver=None, warner=None):
         out.write('%s %s\n' % (c.label, c.path))
     agent = impl.settings(root)
     out.write('%s %s\n' % (agent.label, agent.path))
+    if agent.label == 'current':
+        named = json.loads(agent.old)['agent']
+        for mode in (m for m, a in MODES.items() if a == named):
+            err.write('agent: mode %s in %s\n' % (mode, agent.path))
     problems = (resolver or resolve_entries)(root)
     for p in problems:
         out.write(p + '\n')
@@ -1880,22 +1895,30 @@ def gate_check_mode(impl):
             expect(_snapshot(root) == snap, '%s fixture: check wrote to the tree' % label)
 
 
-def _declare_only(text):
+def _declare_only(text, agent=FACTORY):
     """Defect variant: writes the declaration alone, dropping every other key."""
-    return _declare_agent(None)
+    return _declare_agent(None, agent)
 
 
-def _settings_overwriting(root, local=False):
+def _settings_overwriting(root, local=False, mode=None):
     """Defect variant: declares the factory over an agent the repository set."""
-    c = settings_change(root, local)
+    c = settings_change(root, local, mode)
     if c.label != 'other':
         return c
     return c._replace(action='replace', notes=[], new=c.old.replace(json.loads(c.old)['agent'], FACTORY))
 
 
+def _settings_only_factory_current(root, local=False, mode=None):
+    """Defect variant: counts only the factory as a current session agent."""
+    c = settings_change(root, local, mode)
+    if c.label == 'current' and json.loads(c.old)['agent'] != FACTORY:
+        return c._replace(label='other')
+    return c
+
+
 def _settings_relabel(label, as_label):
-    def variant(root, local=False):
-        c = settings_change(root, local)
+    def variant(root, local=False, mode=None):
+        c = settings_change(root, local, mode)
         return c._replace(label=as_label) if c.label == label else c
     return variant
 
@@ -1913,8 +1936,42 @@ def _backend(name):
             os.environ['SDLC_BACKEND'] = saved
 
 
+def _gate_agent_mode(impl):
+    """T-0816: setup --init --mode writes that mode's session agent (--local too); check names the mode; an
+    unknown mode is refused before any write; an agent the repository set is kept and --mode said not to apply."""
+    for mode, agent in sorted(MODES.items()):
+        with _fixture() as root:
+            rc, out, err = _call(run_setup, root, impl, init=True, mode=mode)
+            expect(rc == 0, '--mode %s: setup exited %d: %s' % (mode, rc, err.strip()))
+            expect(SETTINGS_PATH in _files(root) and json.loads(_text(root, SETTINGS_PATH)) == {'agent': agent},
+                   '--mode %s: %s not written: %r' % (mode, SETTINGS_PATH, _files(root)))
+            rc, out, err = _call(run_check, root, impl)
+            expect('current %s' % SETTINGS_PATH in out.splitlines(), '--mode %s: check printed %r' % (mode, out))
+            expect('agent: mode %s in %s' % (mode, SETTINGS_PATH) in err.splitlines(),
+                   '--mode %s: check stderr is %r' % (mode, err))
+    with _fixture() as root:
+        rc, out, err = _call(run_setup, root, impl, init=True, local=True, mode='live')
+        expect(LOCAL_SETTINGS_PATH in _files(root) and json.loads(_text(root, LOCAL_SETTINGS_PATH)) == {'agent': MODES['live']},
+               '--mode live --local: %s not written: %r' % (LOCAL_SETTINGS_PATH, _files(root)))
+    with _fixture() as root:
+        snap = _snapshot(root)
+        for dry in (True, False):
+            rc, out, err = _call(run_setup, root, impl, init=True, dry_run=dry, mode='bogus')
+            expect(rc != 0 and out == '', 'unknown mode (dry run %s): setup exited %d and printed %r' % (dry, rc, out))
+            expect('onboard.py: unknown mode bogus' in err, 'unknown mode (dry run %s): stderr is %r' % (dry, err))
+            expect(_snapshot(root) == snap, 'unknown mode (dry run %s): the fixture changed' % dry)
+    for path in (SETTINGS_PATH, LOCAL_SETTINGS_PATH):
+        mine = '{"agent": "mine", "model": "x"}\n'
+        with _fixture({path: mine}) as root:
+            rc, out, err = _call(run_setup, root, impl, init=True, mode='hybrid')
+            expect(rc == 0 and _text(root, path) == mine, 'kept agent with --mode: %s changed to %r' % (path, _text(root, path)))
+            expect('agent: kept mine in %s; --mode hybrid did not apply' % path in err.splitlines(),
+                   'kept agent with --mode: stderr is %r' % err)
+
+
 def gate_agent_setting(impl):
     _gate_agent_setting(impl)
+    _gate_agent_mode(impl)
     with _backend('codex'), _fixture() as root:
         rc, out, err = _call(run_setup, root, impl, init=True)
         expect(rc == 0, 'codex: setup exited %d: %s' % (rc, err.strip()))
@@ -2278,7 +2335,9 @@ GATES = [
     ('agent-setting', gate_agent_setting, REAL, [
         ('replaces the settings file', REAL._replace(settings=functools.partial(settings_change, declare=_declare_only))),
         ('overwrites an existing agent', REAL._replace(settings=_settings_overwriting)),
-        ('ignores --local', REAL._replace(settings=lambda root, local=False: settings_change(root))),
+        ('ignores --local', REAL._replace(settings=lambda root, local=False, mode=None: settings_change(root, mode=mode))),
+        ('ignores --mode', REAL._replace(settings=lambda root, local=False, mode=None: settings_change(root, local))),
+        ('labels a hybrid agent other', REAL._replace(settings=_settings_only_factory_current)),
         ('labels another agent current', REAL._replace(settings=_settings_relabel('other', 'current'))),
     ]),
     ('check-mode', gate_check_mode, REAL, [
@@ -2342,6 +2401,9 @@ def main(argv=None):
     sp.add_argument('--local', action='store_true',
                     help='with --init, declare the factory agent in .claude/settings.local.json (personal) '
                          'instead of .claude/settings.json (shared)')
+    sp.add_argument('--mode', choices=sorted(MODES),
+                    help='with --init, the session agent to declare: factory (sdlc:factory, the default), '
+                         'hybrid (sdlc:hybrid) or live (sdlc:live)')
     sp.add_argument('--yes', action='store_true', help='write without asking (an interactive run asks once after the diff)')
     sub.add_parser('check', help='report the state of every managed file and write nothing')
     sub.add_parser('selftest', help='run the gates on temp fixtures')
@@ -2357,13 +2419,13 @@ def main(argv=None):
         return 1
     if args.cmd == 'setup':
         if not args.dry_run and not args.yes and sys.stdin.isatty():
-            rc = run_setup(root, dry_run=True, force=args.force, init=args.init, local=args.local)
+            rc = run_setup(root, dry_run=True, force=args.force, init=args.init, local=args.local, mode=args.mode)
             if rc:
                 return rc
             if input('Write these changes? [y/N] ').strip().lower() not in ('y', 'yes'):
                 print('nothing written')
                 return 0
-        return run_setup(root, dry_run=args.dry_run, force=args.force, init=args.init, local=args.local)
+        return run_setup(root, dry_run=args.dry_run, force=args.force, init=args.init, local=args.local, mode=args.mode)
     return run_check(root)
 
 
