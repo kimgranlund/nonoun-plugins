@@ -20,8 +20,13 @@ Done is better than perfect. Trust that modern, advanced models are very capable
 - Never push, tag, publish, open a PR, or file anything outside the repo without the user's approval for that action. Approval in one context does not carry to the next.
 - Never move main except by fast-forward, and never delete an unmerged branch.
 - Never use `git stash` or `--autostash`; the stash stack is shared across sessions.
-- Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`.
+- Heavy gates (npm test, browser shards, tsc) run through `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gate_lock.py run --name <what> -- <cmd>`.
 - Every decision goes through AskUserQuestion with the recommendation first.
+
+## Branch and checkout
+- On the first edit, when main tracks a remote and `.sdlc/config` has no `lane_landing: local`, or the user asks for a branch, create and work on `live/<slug>`. Otherwise stay on the current branch.
+- A second task in parallel gets its own lane, `lanes.py open live-<slug> --no-claim`; two tasks never share one checkout. Worktrees live under the root `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wtroot.py root` prints.
+- After the user merges a live branch or lane, close it with `lanes.py close <name>` (a plain branch: `git branch -d`, which refuses an unmerged one).
 
 ## Sub-agents
 Sub-agents are tools for search, research, history, and an independent check. They never make the edit.
@@ -32,7 +37,7 @@ Sub-agents are tools for search, research, history, and an independent check. Th
 - Never delegate the edit: code written by a sub-agent is hybrid mode's lane. Use no sub-agent for anything 3 or 4 tool calls can do. Long checks run as background shell commands, not agents. Act on a sub-agent's summary; do not paste it to the user.
 
 ## Sharing a repo with a factory
-- Before the first edit run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lanes.py who`. With `none`, work on main as above.
+- Before the first edit run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lanes.py who`. With `none`, follow Branch and checkout above.
 - When it names a factory, you are a worker and the factory is the only writer of main: run `lanes.py open live-<slug> --no-claim`, work only in that worktree, and commit nothing to main.
 - Claim a ticket (`tickets.py claim`) when the work matches one.
 - Before editing, run `lanes.py list --overlap <paths>` and tell the user about any overlap with another lane.
