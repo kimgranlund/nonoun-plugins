@@ -828,3 +828,7 @@
 ## T-0823: Cross-harness plugin standard: a doc-standards card and a current compatibility reference (2026-10-30)
 
 - note: docs/specs/doc-standards/plugins.md:27 and docs/references/plugin-compatibility.md:16 describe the `design` validator result as `$ARGUMENTS` only; the run also reports `${CLAUDE_PLUGIN_ROOT}` and a missing `allow_implicit_invocation: false` in the same skill, and the sdlc run reports "hooks are configured for Claude but not both harnesses" and two model-only visibility warnings. The claims about context and dev-tools (clean) and the sdlc `${CLAUDE_PLUGIN_ROOT}` finding are accurate; the summaries understate the rest.
+
+## T-0825: Import MacBook base-ui changes into the design plugin (2026-10-30)
+
+- note: nothing was written to /Volumes/kimba; the verifier only read it.

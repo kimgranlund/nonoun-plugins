@@ -2,7 +2,7 @@
 id: T-0825
 title: "Import MacBook base-ui changes into the design plugin"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - `python3 scripts/check-packaging.py` exits 0.
 - `! find plugins/design/skills/base-ui -name .git -o -name .DS_Store | grep -q .`
 - `git diff --check` is clean.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 732703d40ddd
+- Changed: see commits
+- Commits: b4aa2ca T-0825: Import MacBook base-ui changes into the design plugin; a9f73b4 T-0825: record lane T-0825-t0825
+- Check: 1 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 2 `! find plugins/design/skills/base-ui -name .git -o -name .DS_Store | grep -q .`: pass
+- Check: 3 `git diff --check` is clean: pass
+- Follow-up: note: nothing was written to /Volumes/kimba; the verifier only read it. -> notes.md
