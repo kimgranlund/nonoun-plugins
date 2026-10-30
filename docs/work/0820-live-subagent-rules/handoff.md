@@ -2,11 +2,12 @@
 id: T-0820
 title: "Live mode states when it uses sub-agents"
 type: chore           # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0819]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-30
+claimed_by: sdlc-lite-author 2026-10-30
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
