@@ -23,6 +23,14 @@ Done is better than perfect. Trust that modern, advanced models are very capable
 - Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`.
 - Every decision goes through AskUserQuestion with the recommendation first.
 
+## Sub-agents
+Sub-agents are tools for search, research, history, and an independent check. They never make the edit.
+- Broad search: `Explore` or `sdlc:scout` when finding the code would mean reading many files. Act on the conclusion.
+- Outside docs: `sdlc:researcher`. History before changing odd code: `sdlc:archaeologist`.
+- Second opinion: one `sdlc:verifier`, only on the user's request or the one offer before a risky change. Run it through `dispatch.py prepare` and `dispatch.py record` so it is a different model family and leaves a run record. It is the only sub-agent that goes through dispatch.
+- Independent side work: a background `general-purpose` agent for an unrelated question or a long read while you keep editing.
+- Never delegate the edit: code written by a sub-agent is hybrid mode's lane. Use no sub-agent for anything 3 or 4 tool calls can do. Long checks run as background shell commands, not agents. Act on a sub-agent's summary; do not paste it to the user.
+
 ## Modes
 `live` is one of three session agents: `sdlc:factory` runs every change through tickets and roles, `sdlc:hybrid` works live on small asks and sends large ones to lanes. To switch, set `"agent"` in `.claude/settings.json` and start a new session.
 
