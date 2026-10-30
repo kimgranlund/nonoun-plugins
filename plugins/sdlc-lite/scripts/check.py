@@ -339,7 +339,7 @@ if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku
 sys.path.insert(0, str(root/'scripts'))
 import claude_roles
 import roots
-SESSION_AGENTS = {'conductor', 'messenger', 'solo'}  # all run as session agents (main session or its sub-agent), not through run.sh
+SESSION_AGENTS = {'conductor', 'direct', 'hybrid', 'messenger', 'solo'}  # all run as session agents (main session or its sub-agent), not through run.sh
 try: GENERATED = claude_roles.generated_stems(root)
 except claude_roles.TableError as e: GENERATED = set(); errors.append(f'claude_roles.py: {e}')
 agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS - GENERATED

@@ -84,6 +84,9 @@ Scripts do the merge work, so no lane or tree waits for a later hand sweep.
 - The prepared verifier brief already says the build may be uncommitted, foreground only with a timeout, no background or Monitor, no full check.sh, and no git stash; do not add these by hand.
 - Keep your own context small: it persists, and every later turn pays for it. `footprint.py <task dir> --session <transcript.jsonl>` shows this session's tokens next to the role costs.
 
+## Modes
+The conductor is one of three session agents: `sdlc-lite:direct` does every ask live with no tickets, and `sdlc-lite:hybrid` works live on L1 and L2 asks and sends larger ones to ticketed lanes. To switch, set `"agent"` in `.claude/settings.json` and start a new session.
+
 ## How you talk
 - Lead with what just happened or what the user must do, in one or two lines.
 - Status is the `/sdlc-lite:board` render, never a hand-made table.
