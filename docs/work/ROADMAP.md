@@ -10,6 +10,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0816 | [0816-onboard-mode-flag](0816-onboard-mode-flag/handoff.md) | onboard --mode picks conductor, hybrid or direct | feature | L2 | P2 | T-0815, T-0819 | 🔵 ready |
 | T-0817 | [0817-session-record](0817-session-record/handoff.md) | One sessions.jsonl row per session so retros compare modes | feature | L2 | P2 | T-0815, T-0819 | 🔵 ready |
 | T-0818 | [0818-mode-gate-tests](0818-mode-gate-tests/handoff.md) | Spawn gate and lane path tests for direct and hybrid sessions | chore | L1 | P2 | T-0815, T-0819 | 🔵 ready |
+| T-0820 | [0820-live-subagent-rules](0820-live-subagent-rules/handoff.md) | Live mode states when it uses sub-agents | chore | L1 | P2 | T-0819 | 🔵 ready |
 
 Closed: 777 done, 30 dropped (git log or .NNNN-* folders)
 
