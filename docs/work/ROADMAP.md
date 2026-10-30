@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0822 | [0822-live-shares-repo](0822-live-shares-repo/handoff.md) | Live agent works as a worker beside a factory session | chore | L1 | P2 | T-0819, T-0821 | 🔵 ready |
+| T-0822 | [0822-live-shares-repo](0822-live-shares-repo/handoff.md) | Live agent works as a worker beside a factory session | chore | L1 | P2 | T-0819, T-0821 | 🟡 claimed |
 
 Closed: 783 done, 30 dropped (git log or .NNNN-* folders)
 
