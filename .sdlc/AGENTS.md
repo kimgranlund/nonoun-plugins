@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:1684710dd133 -->
+<!-- sdlc-lite:managed:start v1 sha256:e45f4f4c395e -->
 # Work records
 
 This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -11,12 +11,12 @@ This folder holds SDLC Lite `config`, this router, and the git-ignored `runtime/
 ## Stages
 
 - proposed: 0
-- ready: 4
+- ready: 3
   - T-0816 onboard --mode picks conductor, hybrid or direct (docs/work/0816-onboard-mode-flag)
   - T-0817 One sessions.jsonl row per session so retros compare modes (docs/work/0817-session-record)
   - T-0818 Spawn gate and lane path tests for direct and hybrid sessions (docs/work/0818-mode-gate-tests)
-  - T-0819 Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (docs/work/0819-rename-sdlc-plugin)
-- claimed: 0
+- claimed: 1
+  - T-0819 Rename sdlc-lite to sdlc, conductor to factory, direct to live; marketplace nonoun (docs/work/0819-rename-sdlc-plugin), claimed by sdlc-lite-author 2026-10-30
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
