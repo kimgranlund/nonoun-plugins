@@ -14,3 +14,5 @@ Document standards: one registry row, one card, and a template or schema per doc
 - [prompts.md](prompts.md)
 - [work-items.md](work-items.md)
 <!-- sdlc:managed:end -->
+
+Plugin packaging for both hosts: [plugins.md](plugins.md).
