@@ -804,3 +804,9 @@
 - decide: plugins/sdlc/scripts/migrate-worktrees.sh:233,282,284: criterion 1 is green only because of this uncommitted edit; at commit 686b2f5b the migrate-worktrees job is red (the builder's run and base 2896f0eb agree). Decide before landing: commit the fix under its own ticket or ticket id, or the lane lands with a red gate.
 - decide: plugins/sdlc/scripts/hook-selftest.sh:616: `inbox-sdlc-lite-codex` keeps the old plugin name as a fixture peer name; harmless, rename if you want zero residue.
 - decide: Open tickets T-0816 and T-0818 and the docs/work ledgers still use the old names, as the builder noted.
+
+## T-0817: One sessions.jsonl row per session so retros compare modes (2026-10-30)
+
+- note: the handoff names `plugins/sdlc/hooks/hooks.json` as the registration file, but the repo keeps it in `plugins/sdlc/adapters/claude/hooks.json` (claude-hooks.md:3 forbids a shared hooks/hooks.json); the builder registered it in the right place.
+- note: no live SessionEnd run was observed (the builder says so); whether the real hook input carries `agent_type` is unverified, and `mode` falls back to the project settings `agent` key, then `none`.
+- note: the fleet_collect cases "--since drops an older session" and "no sessions file" also pass against a stub that returns an empty by_mode; only the aggregation case discriminates.

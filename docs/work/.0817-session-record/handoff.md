@@ -2,7 +2,7 @@
 id: T-0817
 title: "One sessions.jsonl row per session so retros compare modes"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0815, T-0819]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,15 @@ Each Claude Code session in a repo using SDLC Lite leaves one row in `.sdlc/runt
 
 ## Constraints
 - Claude Code only; Codex gets no hook and no row, stated in the reference.
+
+## Outcome
+
+2026-10-30 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f6da57408f25
+- Changed: see commits
+- Commits: adfe4d9 T-0817: One sessions.jsonl row per session so retros compare modes; 6be4550 T-0817: record lane T-0817-t0817
+- Check: 1 New script selftest exits 0, fixture transcript gives one row, unreadable transcript gives none w...: pass
+- Check: 2 `fleet_collect.py selftest` exits 0 with a two-mode aggregation case, each new case failing befor...: pass
+- Check: 3 `check.py` exits 0 and `check-packaging.py` exits 0: pass
+- Follow-up: note: the handoff names plugins/sdlc/hooks/hooks.json as the registration... -> notes.md
+- Follow-up: note: no live SessionEnd run was observed the builder says so; whether... -> notes.md
+- Follow-up: note: the fleet_collect cases "--since drops an older session" and "no... -> notes.md
