@@ -8,6 +8,10 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 - `knowledge-modeling` moves in from the MacBook working copy (T-0828): define and evolve domain concepts, typed relationships, evidence-backed mappings and interpretation rules. Its content is unchanged; `.DS_Store` was left out.
 
+### Changed
+
+- `progressive-context` is replaced by the MacBook rewrite (T-0829): context-system design through traversal, a tier model, a review rubric, semantic handoff to `knowledge-modeling` and route evaluation, with JSON schemas, `scripts/validate.py`, `scripts/replay.py`, tests, templates and a worked corpus. `references/contracts.md` now holds the optional JSON contract; the earlier capability-contract guide moves unchanged to `references/capability-contracts.md`. It and the six references the rewrite drops (`evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages`, `performance-contract`) stay unchanged and are linked from one SKILL.md line. `.DS_Store` and `__pycache__` were left out.
+
 ### Upgrade
 
 - Update the plugin, then remove a hand-copied `knowledge-modeling` from `~/.claude/skills` or `~/.codex/skills` so each host loads one version.
