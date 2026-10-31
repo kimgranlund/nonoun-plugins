@@ -2,7 +2,19 @@
 
 SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
-## [1.0.2] - 2026-10-30
+## [1.0.3] - 2026-10-31
+
+Report: [docs/reports/2026-10-31-release-1-0-3.md](docs/reports/2026-10-31-release-1-0-3.md). Marketplace release: `context` 0.5.0; `sdlc` stays 1.0.2, `design` 0.2.0 and `dev-tools` 0.1.0 are unchanged. 2 tickets (T-0828, T-0829).
+
+### Added
+
+- `context` 0.5.0: the `knowledge-modeling` skill (T-0828).
+
+### Changed
+
+- `context` 0.5.0: `progressive-context` is the rewrite for designing context systems (traversal, tier model, review rubric, semantic handoff, evaluation, schemas, scripts and tests); the earlier capability-contract guide and six other references stay linked (T-0829). Details in `plugins/context/CHANGELOG.md`.
+
+
 
 Report: [docs/reports/2026-10-30-release-1-0-2.md](docs/reports/2026-10-30-release-1-0-2.md). `sdlc` 1.0.2; `context`, `design` and `dev-tools` are unchanged. 1 ticket (T-0827).
 
