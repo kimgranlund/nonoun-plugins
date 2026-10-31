@@ -2,6 +2,12 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [Unreleased]
+
+### Changed
+
+- `progressive-context` takes the MacBook edits made after the T-0829 import (T-0830), so the skill reads less: start from the task and its authoritative context, open a reference only for an unresolved context mechanism, and treat evaluation, semantic handoff and gap-analysis templates as optional when local checks or formats suffice. `SKILL.md` and the `evaluation`, `semantic-handoff`, `review-rubric` and `tier-model` references change; the SKILL.md line linking the earlier references stays.
+
 ## [0.5.0] - 2026-10-31
 
 ### Added

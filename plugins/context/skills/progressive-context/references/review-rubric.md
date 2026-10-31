@@ -26,12 +26,14 @@ from demonstrated retrieval performance. More metadata is not necessarily better
 | Integrity (T10) | Are targets reachable and current? | Link/hash checks; independent semantic review |
 | Governance (T11) | Can disagreement and change be resolved? | Authority scope, source owner, supersession, migration |
 
-Follow the [working procedure](../SKILL.md#working-procedure), using the
-[practical evaluation criteria](evaluation.md#practical-evaluation-criteria) for
-affected boundaries. Check both missing context and unnecessary machinery: repeated
+Follow the [working procedure](../SKILL.md#working-procedure). Consult
+[practical evaluation criteria](evaluation.md#practical-evaluation-criteria) when
+an affected boundary needs a new probe or experiment; existing source/consumer
+checks may settle a local finding. Check missing context and unnecessary machinery: repeated
 rules, parallel inventories, alternate parsers/resolvers and tests that reproduce
 the implementation’s assumptions. Prefer a shared cause and bounded repair over
 another local exception.
 
-Use [gap analysis](../templates/gap-analysis.md). Never infer a missing capability
+Use [gap analysis](../templates/gap-analysis.md) if no suitable local format exists.
+Never infer a missing capability
 solely because a particular filename or tier-specific artifact is absent.

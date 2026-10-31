@@ -1,9 +1,11 @@
 # Handoff to semantic modeling
 
-Use when a retrieval problem depends on what domain concepts or relationships mean.
-Progressive-context owns required discovery and delivery. When available, the
-`knowledge-modeling` skill can define, reconcile, audit or evolve domain meaning;
-its context-integration reference owns the semantic side of this handoff.
+Use when unresolved domain meaning changes which governing source a task needs,
+or its delivery order. If local definitions already settle that choice, apply them
+directly; a semantic task alone does not require a handoff. Progressive-context
+owns discovery and delivery. When a modeling-method question remains,
+`knowledge-modeling` can help define, reconcile, audit or evolve meaning. Open its
+context-integration reference only when the concept-to-artifact connection needs work.
 
 Keep the domain model in its project authority. Route to its definitions, mapping
 decisions and interpretation policy as the task requires. A semantic summary can
@@ -23,11 +25,12 @@ select sources but cannot replace required contracts.
   A semantic resolver or projection needs its own tested adapter before it can be
   advertised as functioning runtime integration.
 
-Verify the handoff with both semantic acceptance and this skill's
-[delivery evaluation](evaluation.md). Include a task needing a governing definition
-and one related-but-optional source, so both omission and indiscriminate expansion
-can be detected. The [descriptor contract](contracts.md) and its executable tools
-remain unchanged by this optional companion.
+Check the semantic decision against project evidence. If retrieval changes, verify
+that its governing definition arrives and related-but-optional material stays
+optional. Existing source or consumer checks may suffice. Open
+[delivery evaluation](evaluation.md) when designing route/delivery probes or using
+bundled replay, not merely because a semantic decision needs verification. The
+[descriptor contract](contracts.md) and its executable tools remain unchanged.
 
 If knowledge-modeling is unavailable, follow the local domain authority directly.
 Neither skill introduces a new approval authority or runtime permission boundary.
