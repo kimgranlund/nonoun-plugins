@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knowledge Modeling"
+  short_description: "Model meaning, mappings, evidence, and semantic change"
+  default_prompt: "Use $knowledge-modeling to model this domain and verify its concepts, relationships, mappings, and compatibility."
