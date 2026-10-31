@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "edit-menu",
+      "intent": "edit-menu",
+      "budget": {
+        "reads": 3,
+        "bytes": 1024
+      },
+      "acceptance": {
+        "required": {
+          "policy": [
+            "Keep keyboard navigation."
+          ],
+          "menu": [
+            "Use the custom menu."
+          ]
+        },
+        "forbidden": [
+          "billing"
+        ],
+        "acceptablePaths": [
+          [
+            "policy",
+            "menu"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "known-entry",
+      "target": "legacy-menu",
+      "acceptance": {
+        "required": {
+          "policy": [
+            "Keep keyboard navigation."
+          ],
+          "menu": [
+            "Use the custom menu."
+          ]
+        },
+        "forbidden": [
+          "billing"
+        ],
+        "acceptablePaths": [
+          [
+            "policy",
+            "menu"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "passing-neighbor",
+      "intent": "status",
+      "acceptance": {
+        "required": {
+          "status": [
+            "Return the current status."
+          ]
+        },
+        "forbidden": [
+          "billing",
+          "menu",
+          "policy"
+        ]
+      }
+    }
+  ]
+}
