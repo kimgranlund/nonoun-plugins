@@ -2,7 +2,7 @@
 id: T-0828
 title: "Add the knowledge-modeling skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,15 @@ The context plugin ships `knowledge-modeling` as a skill, copied from the MacBoo
 - `python3 scripts/check-packaging.py` exits 0.
 - `! find plugins/context/skills/knowledge-modeling -name .DS_Store -o -name __pycache__ | grep -q .`
 - `git diff --check` is clean.
+
+## Outcome
+
+2026-10-31 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: b4c8b81a0985
+- Changed: see commits
+- Commits: 4a69332 T-0828: Add the knowledge-modeling skill to the context plugin; c2a3b46 T-0828: record lane T-0828-t0828
+- Check: 1 `test -f plugins/context/skills/knowledge-modeling/SKILL.md`: pass
+- Check: 2 `python3 scripts/check-packaging.py` exits 0: pass
+- Check: 3 no `.DS_Store` or `__pycache__` under the skill: pass
+- Check: 4 `git diff --check` is clean: pass
+- Check: 5 Do 3 (text as authored): pass
+- Check: 6 Do 2 (packaging lines): pass
