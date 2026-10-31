@@ -9,21 +9,31 @@ description: >
 
 # Progressive Context
 
-Start with the tasks people need to complete and the context they actually need.
-Choose the smallest change that makes those routes reliable. A small corpus may
-need only a short entry file and links; descriptors and registries are optional
-until discovery cost or ambiguity justifies them.
+Start with the task and the authoritative context it needs. Change discovery or
+delivery only where the task exposes a problem. When using an existing corpus,
+follow its local entry and governing sources; if they suffice, complete the task.
+Reading this skill does not make an architecture review or benchmark necessary.
+A short entry and links may suffice; descriptors and registries are optional.
 
 ## Choose the work
 
-| Request | Read next | Deliver |
-|---|---|---|
-| Review an existing system | [Review workflow](references/review-rubric.md) | Cited gaps, unknowns, and bounded remediation using [gap analysis](templates/gap-analysis.md) |
-| Design or refactor | [Architecture reference](references/tier-model.md), relevant tiers only | Proportional design and migration plan using [system specification](templates/context-system-spec.md) |
-| Fix poor retrieval or excessive reading | [Traversal](references/traversal.md) | One observed route, its failure point, a bounded change and acceptance test |
-| Add machine-readable metadata | [Contracts](references/contracts.md) | Validated descriptors/registry with ownership of generated data |
-| Resolve domain meaning that affects discovery | [Semantic handoff](references/semantic-handoff.md); knowledge-modeling when available | Project-owned definitions/mappings and explicitly justified retrieval routes |
-| Verify a change | [Evaluation](references/evaluation.md) | Before/after route results, correctness first, costs and limits separately |
+Open a reference for a specific unresolved context mechanism, then return to the
+task. A topic appearing in the request, or a reference linking to another module,
+is not a requirement to read it. Missing domain facts call for source evidence or
+an explicit unknown, rather than more generic methodology.
+
+| Unresolved question | Reference |
+|---|---|
+| What discovery or delivery responsibility is failing? | [Review workflow](references/review-rubric.md) |
+| What architecture or migration serves the task routes? | [Architecture](references/tier-model.md), relevant tiers only |
+| How should intent, required context, reuse or incomplete delivery work? | [Traversal](references/traversal.md) |
+| What must an executable descriptor or registry contain? | [Contracts](references/contracts.md) |
+| Does unresolved domain meaning change which authority must be delivered, or its order? | [Semantic handoff](references/semantic-handoff.md) |
+| How should a route/delivery experiment be designed, or bundled replay results interpreted? | [Evaluation](references/evaluation.md) |
+
+Keep the project's output format. If none fits a new artifact, the
+[gap analysis](templates/gap-analysis.md) and
+[system specification](templates/context-system-spec.md) are optional starting points.
 
 ## Invariants
 
@@ -41,36 +51,25 @@ until discovery cost or ambiguity justifies them.
 
 ## Working procedure
 
-1. Establish scope, representative tasks, runtime entry behavior and current
-   friction from the request and available evidence. Use a few tasks that include
-   a common success, a known failure and a boundary case. Do not require a full
-   inventory or all tiers before making a useful local fix.
-2. Follow each task from its real starting point. Record observed versus proposed
-   edges, applicable constraints, source revisions and missing evidence. Static
-   links describe possible routes; they do not establish runtime behavior.
-3. Identify the first broken contract: routing, scope, freshness, dependency,
-   delivery or acceptance. Check alternative explanations before naming a cause.
-4. Propose or implement the smallest authorized change. Preserve stable IDs and
-   existing entry points; migrate callers or retain aliases when moving content.
-   Consolidate the shared cause rather than adding per-case exceptions. Do not impose
-   registries, a directory tree or new governance on a small corpus.
-5. Verify governing information arrives before action. Compare against the same
-   tasks and acceptance criteria, including previously passing cases. State which
-   results are static checks, authored replays, or actual runtime observations. Use
-   focused checks during iteration and broader checks at integration checkpoints;
-   report deferred checks. Evaluation criteria live in the reference, not this entry.
-6. Deliver what changed, file evidence, acceptance results, cost differences and
-   unresolved limitations. If reviewing only, do not modify the corpus.
+1. Bound the context problem using the actual entry, representative tasks and
+   observed friction. Trace required sources, revisions, constraints and missing
+   evidence. Static links describe possible routes, not runtime behavior.
+2. Find the first broken routing, scope, freshness, dependency, delivery or acceptance
+   contract. Check alternative explanations before naming a cause. A domain model
+   or semantic decision alone does not imply a broken retrieval mechanism.
+3. Make the smallest authorized change. Preserve stable IDs and entry points;
+   migrate callers or retain aliases when moving content. Repair the shared cause
+   without imposing registries, a directory tree or new governance. For a review-only
+   request, report findings without changing the corpus.
+4. Verify governing context arrives before action against unchanged task acceptance,
+   including a passing neighbor and an applicable failure/boundary case. Use existing
+   source checks or consumer tests where they suffice. Distinguish static inspection,
+   authored replay and observed runtime; ordinary verification does not require an
+   evaluation reference or a new harness.
 
-## Retrieval and evaluation
-
-When designing or diagnosing retrieval, use the [traversal contract](references/traversal.md) for intent selection,
-required context, pending delivery, reuse and conflict handling. It owns these
-rules; architecture references and local entries should link rather than restate them.
-
-Use [practical evaluation criteria](references/evaluation.md#practical-evaluation-criteria)
-for the mechanisms being changed. That reference owns fresh-agent setup and separate
-measures of route correctness, answer quality and retrieval cost.
+Deliver the change or findings, evidence, acceptance results and unresolved limits.
+Report cost only as observed. Stop when the requested route is supported or its
+missing evidence is explicit; do not expand unrelated mechanisms or tiers.
 
 ## Verification tools
 
@@ -82,17 +81,15 @@ absolute path beneath this skill; they never execute corpus code or use a networ
 - `python3 scripts/replay.py --root CORPUS --registry REGISTRY --suite SUITE --out NEW.json`
 - `python3 scripts/replay.py compare --before BEFORE.json --after AFTER.json`
 
-Use the [worked example](examples/worked-corpus/README.md) and
-[evaluation contract](references/evaluation.md) before interpreting results.
-Non-file corpora can implement the same responsibilities with their own adapter;
-these scripts cover the local JSON profile, not every storage backend.
+For bundled replay, read the evaluation reference's suite and result semantics
+before configuring or interpreting it. Use the
+[worked example](examples/worked-corpus/README.md) if a concrete pattern is still
+needed. These scripts cover the local JSON profile; non-file corpora need their own
+adapter. They are not prerequisites for ordinary source-backed decisions.
 
-Context Fog-of-War, when available, can supply observed paths, delivery evidence
-and diagnostic comparisons. This skill owns discovery architecture and repairs;
-it does not replace trace analysis or require that skill to function.
-
-Knowledge-modeling, when available, owns methods for defining and evolving domain
-meaning. Use the [semantic handoff](references/semantic-handoff.md) when concepts or
-mappings affect a route; semantic relationships are not automatic read dependencies.
+Context Fog-of-War can supply observed paths and delivery evidence when available.
+Knowledge-modeling can supply methods when a domain-modeling question remains.
+Neither companion is required: local domain authority governs meaning, and domain
+relationships do not automatically become retrieval dependencies.
 
 Earlier references, kept for existing links and read only when the topic applies: [capability contracts](references/capability-contracts.md), [evidence and reuse](references/evidence.md), [SDLC links](references/sdlc.md), [A2UI](references/a2ui.md) and [browser harness](references/browser-harness.md) representations, [workflow stages](references/workflow-stages.md), and the [performance contract](references/performance-contract.json).

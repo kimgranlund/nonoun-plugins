@@ -43,8 +43,9 @@ Distinguish the physical graph (locations), semantic graph (relationships) and
 context graph (required retrieval). Support both browsing from broad to specific
 and expansion from a known target to governing scope and dependencies.
 
-Use the [semantic handoff](semantic-handoff.md) when definitions or mappings need
-modeling work. Keep domain relationships distinct from task-required retrieval edges.
+Use the [semantic handoff](semantic-handoff.md) when unresolved domain meaning
+changes the required source or delivery order. Apply sufficient local definitions
+directly. Keep domain relationships distinct from task-required retrieval edges.
 
 Keep each rule and inventory authoritative in one place. Declare authored inputs,
 generated projections and observed behavior separately. Generated output can

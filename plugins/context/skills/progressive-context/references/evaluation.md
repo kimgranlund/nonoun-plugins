@@ -1,8 +1,11 @@
 # Route evaluation
 
-For reviews, read evidence levels and practical criteria. Read the handoff section
-only for executable contracts, and the replay sections only when using the bundled
-JSON tools.
+Use when designing or assessing a context-route/delivery experiment, planning a
+fresh-agent comparison, or configuring/interpreting the bundled replay. Ordinary
+source-backed decisions and local checks do not require this reference. For a route
+review, select the evidence levels and practical criteria relevant to its mechanism.
+Read the handoff section only for executable contracts, and replay sections only
+when using the bundled JSON tools.
 
 Freeze task acceptance independently of the route implementation before changing
 metadata. Keep the same suite for before/after comparison. Required sources and
@@ -193,5 +196,6 @@ first-page-only delivery, complete pagination with unchanged acceptance, summary
 impersonation, projected fields/records, added governing dependencies, cumulative
 budgets across scope changes, UTF-8 clipping and passing neighboring tasks.
 
-Use the [discovery evaluation record](../templates/discovery-evaluation.md) to keep
-authored, informed and fresh-agent results distinct.
+Keep authored, informed and fresh-agent results distinct. The
+[discovery evaluation record](../templates/discovery-evaluation.md) is an optional
+format when no suitable project record exists.
