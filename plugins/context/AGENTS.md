@@ -14,7 +14,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 
 ## progressive-context
 
-- Keep `skills/progressive-context/SKILL.md` and its references domain-neutral. The earlier `evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages` and `performance-contract` references stay reachable from the one SKILL.md line that links them; live docs link into them.
+- Keep `skills/progressive-context/SKILL.md` and its references domain-neutral. The earlier `capability-contracts`, `evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages` and `performance-contract` references stay reachable from the one SKILL.md line that links them; live docs link into them.
 - Preserve evidence-bound assessments and qualification for a named reuse scope. Do not turn descriptive lifecycle views into mandatory stored states.
 - Use existing project records; avoid duplicate tickets, plans, registries, or assessments. Keep examples explicitly illustrative and project decisions in repository design docs.
 - Add a reference only when it has a distinct retrieval purpose. Link it from the skill with a clear loading condition.

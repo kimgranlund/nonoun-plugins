@@ -14,7 +14,7 @@ Labels on every claim: **[O]** observed in a file read for this analysis (path:l
 
 ## Executive assessment
 
-Progressive Context is an authoring skill, "not a lifecycle runtime or execution engine" [O `plugins/context/AGENTS.md:3`]. Its core is three things: entry-file routing [O `PC/SKILL.md:8,18`], a small capability contract [O `PC/references/contracts.md:5-33`], and an assessment bound to an exact revision [O `PC/references/evidence.md:3-9`]. It states its limits honestly: a skill file alone cannot guarantee immutability, freshness or resource loading, and a filesystem-only deployment should report those as process claims [O `docs/specs/generative-constructs/progressive-context-plugin.md:179`].
+Progressive Context is an authoring skill, "not a lifecycle runtime or execution engine" [O `plugins/context/AGENTS.md:3`]. Its core is three things: entry-file routing [O `PC/SKILL.md:8,18`], a small capability contract [O `PC/references/capability-contracts.md:5-33`], and an assessment bound to an exact revision [O `PC/references/evidence.md:3-9`]. It states its limits honestly: a skill file alone cannot guarantee immutability, freshness or resource loading, and a filesystem-only deployment should report those as process claims [O `docs/specs/generative-constructs/progressive-context-plugin.md:179`].
 
 Strengths: evidence discipline (`not assessed`, `failed`, `stale`; a change invalidates affected claims only [O `PC/references/evidence.md:13`]); qualification means an independent consumer exercise, never a status flag [O `PC/references/evidence.md:27`]; host-loading facts were probed rather than assumed [O `docs/reports/nested-entry-file-loading.md:39-41,66-70`].
 
@@ -24,7 +24,7 @@ Highest-impact gaps: (1) no deterministic check for any rule it states, so drift
 
 Evidence for gap 1, all from this repository's own runs: a hand-numbered guard list in `scripts/check.py` carried two guards 17 and two guards 18 until it was caught [O `docs/reports/release-0.20.6.md:13`]; a closed ticket still held the bug template's placeholder text [O `.sdlc/verify-0224/verifier-L3.md:15`]; a live-run record cited file contents that no committed file backed [O `.sdlc/verify-0229/verifier-L3.md:11`].
 
-Evidence for gap 2: `git grep` for a contract header (`ID: <ns>/<name>`) over tracked files finds only the format example in this repository [O `PC/references/contracts.md:7`], and none in `/Users/kimgranlund/Projects/maison/ui-kit-maison` (its `.sdlc/` is git-ignored [O maison `.gitignore:6`], so ticket text there is not searched). Maison mentions "progressive context" in three files, all its own gen-ui concept [O maison `.agents/skills/gen-ui-manifests/SKILL.md:17`, `docs/reference/gen-ui-system/specs/gen-ui-system.md:28`, `scripts/gen-ui-harness/lib.mjs:147`], not this plugin. [I] Contracts are not in use yet.
+Evidence for gap 2: `git grep` for a contract header (`ID: <ns>/<name>`) over tracked files finds only the format example in this repository [O `PC/references/capability-contracts.md:7`], and none in `/Users/kimgranlund/Projects/maison/ui-kit-maison` (its `.sdlc/` is git-ignored [O maison `.gitignore:6`], so ticket text there is not searched). Maison mentions "progressive context" in three files, all its own gen-ui concept [O maison `.agents/skills/gen-ui-manifests/SKILL.md:17`, `docs/reference/gen-ui-system/specs/gen-ui-system.md:28`, `scripts/gen-ui-harness/lib.mjs:147`], not this plugin. [I] Contracts are not in use yet.
 
 ## Rubric score
 
@@ -45,7 +45,7 @@ The rubric has 13 tier headings (T0 to T12, maximum 39) but its bands top at 36 
 
 | Tier | Current state | Gap | Severity | Recommendation |
 | --- | --- | --- | --- | --- |
-| T0 | Stable IDs are advised: "the path is a locator, not identity" [O `PC/references/contracts.md:35`]. No namespace or ID grammar beyond the `billing/invoice-review` example [O `contracts.md:7`]. | No schema for an ID, no uniqueness check. | M | R1 (kinds as ids), R7 |
+| T0 | Stable IDs are advised: "the path is a locator, not identity" [O `PC/references/capability-contracts.md:35`]. No namespace or ID grammar beyond the `billing/invoice-review` example [O `capability-contracts.md:7`]. | No schema for an ID, no uniqueness check. | M | R1 (kinds as ids), R7 |
 | T1 | A markdown contract with fixed headings [O `contracts.md:5-33`]. The `.claude-plugin` and `.codex-plugin` manifests describe the plugin, not capabilities [O `plugins/context/.codex-plugin/plugin.json:1-20`]. | Fields are prose; a tool can only regex them. | M | R7 before any schema |
 | T2 | None, by design [O `PC/SKILL.md:24`]. The proposal set designs `discover`, `inspect`, `read` over a catalog [O `04-context-and-harness.md:29-33`], unbuilt. Entry files act as informal indexes [O `PC/SKILL.md:18`]. | A project with many contracts can only grep. | L, but only if contracts get used | Do not build (see below); R1 for docs and `.sdlc` |
 | T3 | Domain profiles are "a small optional vocabulary", "not a second core ontology" [O `contracts.md:39`]. An ontology and record model are proposed [O `02-construct-model.md:5-66`]. | Profile schema is open [O `progressive-context-plugin.md:271`]. | L | Leave open; R8 reconciles vocabularies |
@@ -79,7 +79,7 @@ Ambiguity to resolve: the proposal set says "construct", "revision" and "instanc
 
 ## Missing structures
 
-- Typed contracts: a parseable contract header (front matter) instead of an `ID:` prose line [O `contracts.md:7`].
+- Typed contracts: a parseable contract header (front matter) instead of an `ID:` prose line [O `capability-contracts.md:7`].
 - Discovery: any list of contracts. Entry files hold links only.
 - Semantics: a domain profile schema, still open [O `progressive-context-plugin.md:271`].
 - Validators: entry-file import and link resolution; no check that every folder with an `AGENTS.md` has a `CLAUDE.md` importing it, although the loading probe shows that is required [O `layered-context-pattern.md:40`].

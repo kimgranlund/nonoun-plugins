@@ -10,7 +10,7 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 ### Changed
 
-- `progressive-context` is replaced by the MacBook rewrite (T-0829): context-system design through traversal, a tier model, a review rubric, semantic handoff to `knowledge-modeling` and route evaluation, with JSON schemas, `scripts/validate.py`, `scripts/replay.py`, tests, templates and a worked corpus. `references/contracts.md` now holds the optional JSON contract. The six references the rewrite drops (`evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages`, `performance-contract`) stay unchanged and are linked from one SKILL.md line. `.DS_Store` and `__pycache__` were left out.
+- `progressive-context` is replaced by the MacBook rewrite (T-0829): context-system design through traversal, a tier model, a review rubric, semantic handoff to `knowledge-modeling` and route evaluation, with JSON schemas, `scripts/validate.py`, `scripts/replay.py`, tests, templates and a worked corpus. `references/contracts.md` now holds the optional JSON contract; the earlier capability-contract guide moves unchanged to `references/capability-contracts.md`. It and the six references the rewrite drops (`evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages`, `performance-contract`) stay unchanged and are linked from one SKILL.md line. `.DS_Store` and `__pycache__` were left out.
 
 ### Upgrade
 

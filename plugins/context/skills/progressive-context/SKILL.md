@@ -95,4 +95,4 @@ Knowledge-modeling, when available, owns methods for defining and evolving domai
 meaning. Use the [semantic handoff](references/semantic-handoff.md) when concepts or
 mappings affect a route; semantic relationships are not automatic read dependencies.
 
-Earlier references, kept for existing links and read only when the topic applies: [evidence and reuse](references/evidence.md), [SDLC links](references/sdlc.md), [A2UI](references/a2ui.md) and [browser harness](references/browser-harness.md) representations, [workflow stages](references/workflow-stages.md), and the [performance contract](references/performance-contract.json).
+Earlier references, kept for existing links and read only when the topic applies: [capability contracts](references/capability-contracts.md), [evidence and reuse](references/evidence.md), [SDLC links](references/sdlc.md), [A2UI](references/a2ui.md) and [browser harness](references/browser-harness.md) representations, [workflow stages](references/workflow-stages.md), and the [performance contract](references/performance-contract.json).
