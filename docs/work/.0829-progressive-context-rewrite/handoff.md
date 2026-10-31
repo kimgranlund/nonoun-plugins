@@ -2,7 +2,7 @@
 id: T-0829
 title: "Ship the progressive-context rewrite, keeping the old references reachable"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0828]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,15 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - `for f in sdlc.md evidence.md a2ui.md browser-harness.md workflow-stages.md performance-contract.json; do test -f plugins/context/skills/progressive-context/references/$f || exit 1; done`
 - `python3 scripts/check-packaging.py` exits 0 and `python3 plugins/sdlc/scripts/docs_check.py --root .` reports 0 errors.
 - `git diff --check` is clean.
+
+## Outcome
+
+2026-10-31 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: bb13f0b9c993
+- Changed: see commits
+- Commits: a57aad5 T-0829: keep the earlier capability-contract guide as references/capability-contracts.md; c2f05e1 T-0829: Ship the progressive-context rewrite, keeping the old references reachable; 4e989ed T-0829: record lane T-0829-t0829
+- Check: 1 rewrite tests pass: pass
+- Check: 2 six dropped references present: pass
+- Check: 3 packaging and docs check: pass
+- Check: 4 diff check clean: pass
+- Follow-up: note: SKILL.md differs from the SMB source by one added line 97-98 that... -> notes.md
+- Follow-up: note: The red deviation check redck.py deviations printed nothing, and no... -> notes.md

@@ -844,3 +844,8 @@
 ## T-0827: Live mode picks a branch and a lane, and cleans up after merge (2026-10-30)
 
 - note: plugins/sdlc/agents/live.md `## Branch and checkout`: "main tracks a remote" is stated as prose and not machine-checked; lane_landing handling lives in lanes.py, consistent with the handoff wording.
+
+## T-0829: Ship the progressive-context rewrite, keeping the old references reachable (2026-10-31)
+
+- note: SKILL.md differs from the SMB source by one added line (97-98) that links the earlier references. No other file differs: `diff -rq` against the source shows only the kept references and `.DS_Store`.
+- note: The `(red)` deviation check (`redck.py deviations`) printed nothing, and no criterion is marked `(red)`.
