@@ -10,6 +10,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 | `generative-systems` | Generative systems grounded in authoritative kits, contracts and assets | `~/.claude/skills/generative-systems` |
 | `system-atlas` | Whole-system workflow diagrams, machinery inventory and enforcement matrix | `~/.claude/skills/system-atlas` |
 | `icm-architect` | ICM workspaces: folder structure as agent architecture | `~/.claude/skills/icm-architect` (upstream in its `SOURCE`) |
+| `knowledge-modeling` | Domain concepts, typed relationships, evidence-backed mappings and semantic change (added 2026-10-31) | `/Volumes/kimba/.codex/skills/knowledge-modeling` |
 
 ## progressive-context
 

@@ -2,6 +2,16 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [Unreleased]
+
+### Added
+
+- `knowledge-modeling` moves in from the MacBook working copy (T-0828): define and evolve domain concepts, typed relationships, evidence-backed mappings and interpretation rules. Its content is unchanged; `.DS_Store` was left out.
+
+### Upgrade
+
+- Update the plugin, then remove a hand-copied `knowledge-modeling` from `~/.claude/skills` or `~/.codex/skills` so each host loads one version.
+
 ## [0.4.0] - 2026-10-30
 
 ### Added
