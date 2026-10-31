@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0828 | [0828-add-knowledge-modeling](0828-add-knowledge-modeling/handoff.md) | Add the knowledge-modeling skill to the context plugin | feature | L2 | P2 | none | 🔵 ready |
+| T-0828 | [0828-add-knowledge-modeling](0828-add-knowledge-modeling/handoff.md) | Add the knowledge-modeling skill to the context plugin | feature | L2 | P2 | none | 🟡 claimed |
 | T-0829 | [0829-progressive-context-rewrite](0829-progressive-context-rewrite/handoff.md) | Ship the progressive-context rewrite, keeping the old references reachable | chore | L2 | P2 | T-0828 | 🔵 ready |
 
 Closed: 789 done, 30 dropped (git log or .NNNN-* folders)
