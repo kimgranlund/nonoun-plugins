@@ -2,7 +2,7 @@
 id: T-0835
 title: "Add the classify-and-resolve skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0833]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,17 @@ The context plugin ships `classify-and-resolve`, a skill for typed classify-and-
 ## Constraints
 - Do not edit other skills; a defect found in a peer is reported, not fixed.
 - Keep SKILL.md runtime-neutral and domain-neutral.
+
+## Outcome
+
+2026-11-01 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: bda20a4fc553
+- Changed: see commits
+- Commits: none
+- Check: 1 validate_pipeline.py exits 0 on templates/pipeline.yaml with a starter scheme and an empty gates....: pass
+- Check: 2 broken-pipeline.yaml exits non-zero with one distinct message per each of the 10 rules: pass
+- Check: 3 logs_to_cases.py turns the 30-record log into a suite that validate_suite.py accepts: pass
+- Check: 4 unclassified_report.py prints at least one candidate concept with evidence item ids: pass
+- Check: 5 trigger suite validates with 10 activating and 5 non-activating cases: pass
+- Check: 6 unittest discover exits 0 and SKILL.md is at most 300 lines: pass
+- Check: 7 check-packaging.py exits 0 and git diff --check is clean: pass
+- Follow-up: note: plugins/context/skills/classify-and-resolve/templates/pipeline.yaml... -> notes.md
