@@ -2,11 +2,12 @@
 
 Built and accepted designs and contracts, one folder per subject. Read the one for the subject you are changing; a proposal goes in `planning/`.
 
-<!-- sdlc:managed:start v1 sha256:c90867750650 -->
+<!-- sdlc:managed:start v1 sha256:3a3d7dcbdb71 -->
 ## Contents
 
 - [doc-standards/](doc-standards/AGENTS.md)
 - [generative-constructs/](generative-constructs/AGENTS.md)
+- [new-skills/](new-skills/AGENTS.md)
 - [repo-onboarding/](repo-onboarding/AGENTS.md)
 - [sdlc/](sdlc/AGENTS.md)
 - [ticket-stages/design.md](ticket-stages/design.md)

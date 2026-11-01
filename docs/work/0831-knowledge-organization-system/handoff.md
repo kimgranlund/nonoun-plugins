@@ -14,12 +14,12 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 The context plugin ships `knowledge-organization-system`, a skill that keeps a corpus's vocabulary consistent through a lightweight SKOS model, evidence-gated growth stages and a validator, as specified in the brief.
 
 ## Intent
-- Do: build the skill exactly per the brief `docs/specs/new-skills/knowledge-organization-system.instructions.md` (deliverables, frontmatter triggers, stages, rules, validator contract, three-domain examples, definition of done), then package it.
+- Do: build the skill exactly per the brief `docs/specs/new-skills/knowledge-organization-system.md` (deliverables, frontmatter triggers, stages, rules, validator contract, three-domain examples, definition of done), then package it.
 - Non-goals: RDF/OWL, NLP extraction, one-pass vocabulary generation (the brief's Out of scope); cross-links to `knowledge-modeling` (user decision 2026-11-01: keep the two skills separate).
 - Done when: the brief's Definition of done holds and the plugin packaging check passes.
 
 ## Context
-- The brief is the spec: `docs/specs/new-skills/knowledge-organization-system.instructions.md`. Its Process says to write a one-page spec first and proceed; put that spec at the top of your report, not in a file.
+- The brief is the spec: `docs/specs/new-skills/knowledge-organization-system.md`. Its Process says to write a one-page spec first and proceed; put that spec at the top of your report, not in a file.
 - Target: `plugins/context/skills/knowledge-organization-system/`. Packaging rules: `docs/specs/doc-standards/plugins.md`; plugin guidance: `plugins/context/AGENTS.md` (skill table, CHANGELOG `[Unreleased]`, `agents/openai.yaml` like `plugins/context/skills/knowledge-modeling/agents/openai.yaml`).
 - The schema's field names (`id`, `prefLabel`, `altLabel`, `hiddenLabel`, `definition`, `scopeNote`, `broader`, `narrower`, `related`, `scheme`) are a stable contract: T-0832 (`controlled-natural-language`) reads them and the vocabulary file. Keep them exactly.
 - PyYAML 6.0.3 and Python 3.9 are on this machine; the validator must run on Python 3.9.

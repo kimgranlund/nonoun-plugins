@@ -14,12 +14,12 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 The context plugin ships `controlled-natural-language`, a skill that governs sentence patterns in high-stakes documents (STE, EARS, Attempto traditions) with evidence-gated stages and a linter that resolves slots against the KOS vocabulary, as specified in the brief.
 
 ## Intent
-- Do: build the skill exactly per the brief `docs/specs/new-skills/controlled-natural-language.instructions.md`, reading the vocabulary schema and validator that T-0831 shipped, then package it.
+- Do: build the skill exactly per the brief `docs/specs/new-skills/controlled-natural-language.md`, reading the vocabulary schema and validator that T-0831 shipped, then package it.
 - Non-goals: grammar parsers, NLP semantics, translation, casual or narrative writing (the brief's Out of scope); cross-links to `knowledge-modeling` (user decision 2026-11-01).
 - Done when: the brief's Definition of done holds and the plugin packaging check passes.
 
 ## Context
-- The brief is the spec: `docs/specs/new-skills/controlled-natural-language.instructions.md`. Its Process says to write a one-page spec first and proceed; put that spec at the top of your report, not in a file.
+- The brief is the spec: `docs/specs/new-skills/controlled-natural-language.md`. Its Process says to write a one-page spec first and proceed; put that spec at the top of your report, not in a file.
 - Dependency: `plugins/context/skills/knowledge-organization-system/` (T-0831): its `templates/vocabulary.yaml` is the template vocabulary, its `references/model.md` the field semantics. Use its field names exactly; never define, redefine or alias terms in this skill.
 - Target: `plugins/context/skills/controlled-natural-language/`. Packaging rules: `docs/specs/doc-standards/plugins.md`; plugin guidance: `plugins/context/AGENTS.md`.
 - PyYAML 6.0.3 and Python 3.9 are on this machine; the linter must run on Python 3.9.
