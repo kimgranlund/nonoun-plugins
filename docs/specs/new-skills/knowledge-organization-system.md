@@ -31,7 +31,7 @@ skills/knowledge-organization-system/
   SKILL.md                      # ≤300 lines: when to use, core model, 0→1 procedure, guardrails
   references/model.md           # full field semantics, relation rules, worked examples
   references/growth.md          # stage gates, promotion/retirement rules, anti-patterns
-  references/trigger-tests.md   # activation evaluation set
+  evals/trigger-activation.suite.yaml   # activation suite in evaluation-system format
   templates/vocabulary.yaml     # Stage 0 starter, valid against the validator
   fixtures/broken.yaml          # deliberately invalid; one case per validator rule
   scripts/validate_kos.py
@@ -124,7 +124,7 @@ Nothing in SKILL.md may assume software-only work.
 ## Definition of done
 
 - The validator passes on `templates/vocabulary.yaml`. It fails on `fixtures/broken.yaml` with one clear message per rule.
-- `references/trigger-tests.md` lists 10 prompts that should activate the skill and 5 that should not, each with its expected outcome.
+- `evals/trigger-activation.suite.yaml` lists 10 prompts that should activate the skill and 5 that should not, in `evaluation-system` suite format. Each case has `expected`, `added_because` and a `human` grader. If `evaluation-system` is not built yet, use its typed spine as written in that brief and validate once it exists.
 - A documented walkthrough goes from an empty repo through Stage 0 and Stage 1, showing the exact files and diffs at each step.
 - SKILL.md is ≤300 lines.
 
