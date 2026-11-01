@@ -1,0 +1,121 @@
+# This skill's own trigger suite. Run each prompt in a fresh session with the plugin installed,
+# record whether the skill activated and whether it behaved as `expected.behavior` says, then run:
+#   python3 scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
+# A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
+# Pass means the observed activation equals expected.activates. Rerun it when the description changes.
+id: evaluation-system-trigger-activation
+version: 1
+target: evaluation-system skill description (SKILL.md frontmatter)
+target_spec:
+  - When a prompt asks whether a prompt, agent, classifier, skill trigger or process is good enough, the skill shall activate.
+  - When a prompt asks for a deterministic unit test, a load benchmark or a casual review, the skill shall not activate.
+graders:
+  - id: observed-activation
+    kind: human
+slices: [should-activate, should-not-activate]
+cases:
+  - id: a1
+    input: {prompt: "Build a small eval set for our support-reply prompt before we change it."}
+    expected: {activates: true, behavior: "Stage 0: one suite of 10 to 20 cases from known failures, each with added_because, and one exact or programmatic grader."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: evals, test set (docs/specs/new-skills/evaluation-system.md, Frontmatter and triggers)"
+    added_at: 2026-11-01
+  - id: a2
+    input: {prompt: "Is this triage classifier good enough to ship? Here are last week's predictions."}
+    expected: {activates: true, behavior: "Asks which decision the answer drives, reports pass rate per class with n and a Wilson interval, and says insufficient_n where the counts are small."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: is this good enough to ship"
+    added_at: 2026-11-01
+  - id: a3
+    input: {prompt: "Our LLM-as-judge says 92% of answers are good. Can we trust it?"}
+    expected: {activates: true, behavior: "Treats the judge as an unvalidated rubric-model grader until its agreement with human labels is measured and recorded in validated_against."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: LLM-as-judge, rubric grading"
+    added_at: 2026-11-01
+  - id: a4
+    input: {prompt: "Compare prompt v3 and v4 on the same test cases and tell me which is better."}
+    expected: {activates: true, behavior: "Runs both versions on one suite version and the dev split, compares them case by case per slice, and calls no winner on fewer than 10 discordant cases."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: A/B comparison of prompts or models"
+    added_at: 2026-11-01
+  - id: a5
+    input: {prompt: "Set a quality bar the resolver must meet before it auto-closes tickets."}
+    expected: {activates: true, behavior: "Writes a gate with threshold, min_n, action and owner on a slice, backed only by validated graders; checks the Stage 3 entry criterion first."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: promotion gates, quality bars, acceptance thresholds"
+    added_at: 2026-11-01
+  - id: a6
+    input: {prompt: "What are precision and recall per class for this classifier on the gold set?"}
+    expected: {activates: true, behavior: "Reports per-class counts with intervals and checks gold-set label quality before trusting the numbers."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: precision/recall, confusion matrix, gold set"
+    added_at: 2026-11-01
+  - id: a7
+    input: {prompt: "Add regression tests for the summarization prompt; it broke twice last month."}
+    expected: {activates: true, behavior: "Stage 1: each known break becomes a regression case with added_because naming the incident, added in the same change as its fix."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: regression tests for prompts or agents"
+    added_at: 2026-11-01
+  - id: a8
+    input: {prompt: "I tweaked the system prompt and it seems better now. Done?"}
+    expected: {activates: true, behavior: "Refuses the claim without a run: asks for or seeds the cases that show better, and reports the result with n."}
+    tags: [should-activate]
+    source: adversarial
+    added_because: "brief goal: activate when an agent is about to claim a change works; the prompt names no eval keyword"
+    added_at: 2026-11-01
+  - id: a9
+    input: {prompt: "Our reviewers disagree on which vendor contracts breach the retention policy. How do we tell whether the new checklist helps?"}
+    expected: {activates: true, behavior: "Treats the review as the target, uses human graders with recorded outcomes, and seeds cases from past audit findings."}
+    tags: [should-activate]
+    source: adversarial
+    added_because: "brief domain coverage: a non-software corpus whose target is a human process"
+    added_at: 2026-11-01
+  - id: a10
+    input: {prompt: "Did the new SKILL.md description fix the triggering problem?"}
+    expected: {activates: true, behavior: "Runs or builds a trigger-activation suite with activating and non-activating prompts and human-recorded outcomes."}
+    tags: [should-activate]
+    source: adversarial
+    added_because: "brief goal: a skill's triggering is an evaluation target; the prompt names no eval keyword"
+    added_at: 2026-11-01
+  - id: n1
+    input: {prompt: "Write a unit test for the date parser's leap-year branch."}
+    expected: {activates: false, behavior: "Does not activate: a deterministic unit test with no judgment involved."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: ordinary unit tests of deterministic code"
+    added_at: 2026-11-01
+  - id: n2
+    input: {prompt: "Benchmark the API's p99 latency at 1000 requests per second."}
+    expected: {activates: false, behavior: "Does not activate: performance and load benchmarking are out of scope."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: performance or load benchmarking"
+    added_at: 2026-11-01
+  - id: n3
+    input: {prompt: "Looks good to me, can you merge it?"}
+    expected: {activates: false, behavior: "Does not activate: a casual review with no quality claim to evidence."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: casual looks-good reviews"
+    added_at: 2026-11-01
+  - id: n4
+    input: {prompt: "Which label should the triage classifier use for card disputes, 'chargeback' or 'dispute'?"}
+    expected: {activates: false, behavior: "Does not activate: what a label means belongs to knowledge-organization-system."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief peer hand-off: when the problem is what a label means, hand off to KOS"
+    added_at: 2026-11-01
+  - id: n5
+    input: {prompt: "Rewrite this rubric criterion so it has exactly one reading: 'the reply should be helpful'."}
+    expected: {activates: false, behavior: "Does not activate: how a criterion is phrased belongs to controlled-natural-language."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief peer hand-off: when the problem is how a criterion is phrased, hand off to CNL"
+    added_at: 2026-11-01

@@ -1,0 +1,18 @@
+# Gate registry: empty until a real decision needs an automated answer (Stage 3).
+# A gate is threshold + min_n + action + owner on one suite slice. Below min_n it reports
+# insufficient_n, never passed. Field semantics: references/model.md. Check:
+#   python3 scripts/validate_suite.py suite.yaml --gates gates.yaml
+#
+# gates:
+#   - id: triage-billing-autonomy        # stable
+#     suite_id: triage                   # the suite it reads
+#     suite_version: 2                   # optional pin; another version leaves the gate open
+#     metric: pass_rate
+#     slice: billing                     # a declared slice id, or all
+#     threshold: 0.97                    # passed when the value is at least this
+#     min_n: 300                         # below it: insufficient_n
+#     action: route billing tickets without human review
+#     owner: support-ops
+#     status: open                       # open | passed | failed | insufficient_n
+
+gates: []

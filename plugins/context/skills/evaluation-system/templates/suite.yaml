@@ -1,0 +1,52 @@
+# Stage 0 suite: one target, 10 to 20 hand-written cases, one exact or programmatic grader, run by hand.
+# Copy it next to the target and replace every "Replace with" value. Each case states the evidence
+# that produced it in added_because. Spine and field semantics: references/model.md. Check:
+#   python3 scripts/validate_suite.py suite.yaml
+# Run (the target is any command that reads one case's input as JSON on stdin and writes JSON on stdout):
+#   python3 scripts/run_suite.py suite.yaml --target "python3 scripts/echo_target.py" --out eval-runs/first
+#
+# Full case shape (optional fields are added only when a stage allows them):
+#
+#   - id: case-001                 # stable; never reused, even after it retires
+#     input: {...}                 # exactly what the target receives
+#     expected: {...}              # what the grader compares against; a label is a string or expected.label
+#     tags: [concept-id]           # slice keys; concept ids when a vocabulary exists
+#     source: production           # production | synthetic | adversarial | regression
+#     added_because: bug 311       # the evidence: bug link, log id, spec clause
+#     split: dev                   # Stage 2: dev | holdout; tune only on dev
+#     added_at: 2026-11-01
+#     graders: [grader-id]         # only when a case needs a subset of the graders
+#     status: retired              # retire instead of deleting
+#     retired_reason: the spec clause it tested was removed
+
+id: replace-with-target-name
+version: 1
+target: Replace with the name of the prompt, agent, classifier or process under test.
+target_spec:
+  - Replace with one statement of the behavior under test (a controlled-natural-language statement when a rule set exists).
+
+graders:
+  - id: exact-output
+    kind: exact          # Stage 0: exact or programmatic only (references/graders.md)
+
+slices: []               # Stage 2: per-slice metrics; the slice `all` always exists
+
+cases:
+  - id: case-001
+    input: {text: Replace with an input that failed or that the spec names.}
+    expected: {text: Replace with the output the target must produce.}
+    source: production
+    added_because: Replace with the evidence, for example a bug link or log id.
+    added_at: 2026-11-01
+  - id: case-002
+    input: {text: Replace with an input written to probe a boundary the spec names.}
+    expected: {text: Replace with the output the spec requires at that boundary.}
+    source: adversarial
+    added_because: Replace with the spec clause or near miss it probes.
+    added_at: 2026-11-01
+  - id: case-003
+    input: {text: Replace with an input the spec names but nobody has sent yet.}
+    expected: {text: Replace with the output the spec requires.}
+    source: synthetic
+    added_because: Replace with the spec clause it checks.
+    added_at: 2026-11-01

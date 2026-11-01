@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evaluation System"
+  short_description: "Decide whether a prompt, agent or classifier is good enough, with evidence-gated evals"
+  default_prompt: "Use $evaluation-system to check this claim against a suite of cases, run it, and report each slice with n, an interval and its gate status."
