@@ -7,7 +7,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0834 | [0834-kos-cnl-trigger-suites](0834-kos-cnl-trigger-suites/handoff.md) | Convert the KOS and CNL trigger tests to evaluation-system suites | chore | L2 | P2 | T-0833 | 🟡 claimed (branch lane/T-0834-t0834) |
-| T-0835 | [0835-classify-and-resolve](0835-classify-and-resolve/handoff.md) | Add the classify-and-resolve skill to the context plugin | feature | L3 | P2 | T-0833 | 🟡 claimed |
+| T-0835 | [0835-classify-and-resolve](0835-classify-and-resolve/handoff.md) | Add the classify-and-resolve skill to the context plugin | feature | L3 | P2 | T-0833 | 🟡 claimed (branch lane/T-0835-t0835) |
 
 Closed: 795 done, 30 dropped (git log or .NNNN-* folders)
 
