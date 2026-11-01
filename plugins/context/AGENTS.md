@@ -11,6 +11,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 | `system-atlas` | Whole-system workflow diagrams, machinery inventory and enforcement matrix | `~/.claude/skills/system-atlas` |
 | `icm-architect` | ICM workspaces: folder structure as agent architecture | `~/.claude/skills/icm-architect` (upstream in its `SOURCE`) |
 | `knowledge-modeling` | Domain concepts, typed relationships, evidence-backed mappings and semantic change (added 2026-10-31) | `/Volumes/kimba/.codex/skills/knowledge-modeling` |
+| `knowledge-organization-system` | Corpus vocabulary as a lightweight SKOS KOS: evidence-gated stages, `vocabulary.yaml` and `validate_kos.py` (added 2026-11-01) | Authored here (T-0831) from `docs/specs/new-skills/knowledge-organization-system.md` |
 
 ## progressive-context
 
@@ -26,5 +27,5 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 - Do not ship `.DS_Store`, `__pycache__`, `node_modules`, symlinks or dated evidence trees. `generative-systems/resources/reports/` stays in the user-level folder; links into it are code spans.
 - Keep host manifests consistent. This plugin requires no model mapping, subagents, hooks, or SDLC dependency.
 
-For any change, inspect changed links, run `python3 scripts/check-packaging.py` from the repository root (identity, skill sizes, relative links), validate the skill with the available skill validator, and run `git diff --check`. Run a skill's own tests when its scripts change: `python3 -B -m unittest discover -s tests` in `context-fog-of-war` and `progressive-context`, `python3 -B scripts/test_atlas_renderer.py` in `system-atlas`. The SDLC runner/hook suite is unnecessary unless that implementation also changes.
+For any change, inspect changed links, run `python3 scripts/check-packaging.py` from the repository root (identity, skill sizes, relative links), validate the skill with the available skill validator, and run `git diff --check`. Run a skill's own tests when its scripts change: `python3 -B -m unittest discover -s tests` in `context-fog-of-war`, `progressive-context` and `knowledge-organization-system`, `python3 -B scripts/test_atlas_renderer.py` in `system-atlas`. The SDLC runner/hook suite is unnecessary unless that implementation also changes.
 For substantive workflow changes, evaluate a realistic request against the revised guidance and report observed behavior separately from structural validation.

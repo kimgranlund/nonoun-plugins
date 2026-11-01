@@ -12,7 +12,7 @@
 #     scopeNote: What it covers and excludes.
 #     broader: [parent-id]                    # Stage 2
 #     narrower: [child-id]                    # Stage 2
-#     related: [neighbor-id]
+#     related: [neighbor-id]                  # Stage 2
 #     scheme: main
 #     evidence: [path/to/file.md:12, "disputed in review: X vs Y"]
 #     deprecated: true                        # retire instead of deleting
