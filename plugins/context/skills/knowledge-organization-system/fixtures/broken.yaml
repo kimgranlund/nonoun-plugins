@@ -1,0 +1,84 @@
+# Deliberately invalid: each validator rule fires exactly once.
+# python3 scripts/validate_kos.py fixtures/broken.yaml                          (8 errors, 1 warning)
+# python3 scripts/validate_kos.py fixtures/broken.yaml --corpus fixtures/corpus (adds 2 corpus warnings)
+
+schemes:
+  - id: main
+    definition: Incident response for one product team.
+
+concepts:
+  # Clean baseline. Its hiddenLabel is used once in fixtures/corpus (retired-label-used).
+  - id: incident
+    prefLabel: incident
+    altLabel: [outage]
+    hiddenLabel: [incidnet]
+    definition: An unplanned interruption or degradation that someone must respond to.
+    scheme: main
+
+  # duplicate-preflabel: same prefLabel as `incident` in the same scheme (case differs).
+  - id: incident-copy
+    prefLabel: Incident
+    definition: A customer-visible failure logged by support.
+    scheme: main
+
+  # label-collision: altLabel `outage` already belongs to `incident`.
+  - id: alert
+    prefLabel: alert
+    altLabel: [outage]
+    definition: A machine-generated signal that a threshold was crossed.
+    scheme: main
+
+  # missing-definition
+  - id: runbook
+    prefLabel: runbook
+    definition: ""
+    scheme: main
+
+  # circular-definition: the definition is the label itself.
+  - id: pager
+    prefLabel: pager
+    definition: A pager.
+    scheme: main
+
+  # dangling-link: `on-call-rota` is not a concept id. Unused in the corpus (unreferenced).
+  - id: escalation
+    prefLabel: escalation
+    definition: Handing an open incident to a responder with more authority or skill.
+    related: [on-call-rota]
+    scheme: main
+
+  # broader-cycle: severity and priority are each other's parent.
+  - id: severity
+    prefLabel: severity
+    definition: How much harm an incident is causing right now.
+    broader: [priority]
+    scheme: main
+  - id: priority
+    prefLabel: priority
+    definition: The order in which open work is handled.
+    broader: [severity]
+    scheme: main
+
+  # unknown-scheme: `support` is not declared under schemes.
+  - id: ticket
+    prefLabel: ticket
+    definition: A tracked request from a customer.
+    scheme: support
+
+  # schema: `synonyms` is not a field (accepted synonyms go in altLabel).
+  - id: postmortem
+    prefLabel: postmortem
+    synonyms: [retro]
+    definition: A written review of an incident after it is resolved.
+    scheme: main
+
+  # stage-gate: `service` has one narrower concept; Stage 2 needs three.
+  - id: service
+    prefLabel: service
+    definition: A deployable unit that a team owns and operates.
+    scheme: main
+  - id: database
+    prefLabel: database
+    definition: A stateful service that stores records.
+    broader: [service]
+    scheme: main
