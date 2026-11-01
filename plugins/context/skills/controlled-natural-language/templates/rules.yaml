@@ -1,0 +1,97 @@
+# Stage 0 rule set: one governed doc type, 3 to 5 patterns, a short banned-word list.
+# Copy it next to the corpus's vocabulary.yaml (knowledge-organization-system) and replace
+# every "Replace with" line with real sentences from the doc type that caused the trouble.
+# Schema and linter rules: references/patterns.md. Check:
+#   python3 scripts/lint_cnl.py rules.yaml vocabulary.yaml <governed docs>
+#
+# Full shape (optional keys are added only when a stage allows them):
+#
+#   version: 1
+#   bannedWords:                     # optional; applies to every governed doc type
+#     - word: and/or
+#       fix: Write "and" or "or".
+#   docTypes:
+#     - id: requirement              # a doc also opts in with front matter `cnl: requirement`
+#       description: What the doc type is and who reads it.
+#       paths: ["requirements/**/*.md"]
+#       bannedWords: [{word: should, fix: Write "shall".}]
+#   patterns:
+#     - id: ears-event               # stable; never reused
+#       docType: requirement
+#       template: "When {trigger}, the {system} shall {response}."
+#       slots:
+#         system: {type: concept}                    # resolves to a vocabulary id, prefLabel or altLabel
+#         # {type: concept, concepts: [ids], scheme: id} narrows what may fill the slot
+#         trigger: {type: text, maxWords: 12}        # constrained free text; `pattern:` adds a regex
+#         response: {type: text, maxWords: 20}
+#       sources: [requirements/login.md:4]          # the real sentence(s) the pattern came from
+#       deprecated: true                             # retire instead of deleting
+#       replacedBy: ears-event-v2
+
+version: 1
+
+docTypes:
+  - id: requirement
+    description: Replace with the doc type that caused errors or ambiguity, and who reads it.
+    paths: ["requirements/**/*.md"]
+    bannedWords:
+      - word: should
+        fix: Write "shall" for a requirement; move a wish or rationale out of the requirement.
+      - word: as appropriate
+        fix: Name the condition or the value.
+      - word: and/or
+        fix: Write "and" or "or", or split the statement.
+      - word: quickly
+        fix: State a measurable limit, for example "within 2 seconds".
+      - word: user-friendly
+        fix: State the observable behavior a reader can test.
+
+patterns:
+  - id: ears-ubiquitous
+    docType: requirement
+    template: "The {system} shall {response}."
+    slots:
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where, for example requirements/login.md:4.
+
+  - id: ears-event
+    docType: requirement
+    template: "When {trigger}, the {system} shall {response}."
+    slots:
+      trigger: {type: text, maxWords: 12}
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
+
+  - id: ears-state
+    docType: requirement
+    template: "While {state}, the {system} shall {response}."
+    slots:
+      state: {type: text, maxWords: 12}
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
+
+  - id: ears-unwanted
+    docType: requirement
+    template: "If {condition}, then the {system} shall {response}."
+    slots:
+      condition: {type: text, maxWords: 12}
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
+
+  - id: ears-optional
+    docType: requirement
+    template: "Where {feature}, the {system} shall {response}."
+    slots:
+      feature: {type: text, maxWords: 12}
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
