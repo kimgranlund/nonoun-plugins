@@ -2,6 +2,14 @@
 
 SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
+## [1.0.5] - 2026-11-01
+
+Report: [docs/reports/2026-11-01-release-1-0-5.md](docs/reports/2026-11-01-release-1-0-5.md). Marketplace release: `context` 0.6.0; `sdlc` 1.0.2, `design` 0.2.0 and `dev-tools` 0.1.0 are unchanged. 5 tickets (T-0831 to T-0835).
+
+### Added
+
+- `context` 0.6.0: four skills built from the briefs in `docs/specs/new-skills/`. `knowledge-organization-system` keeps a corpus vocabulary consistent (T-0831). `controlled-natural-language` lints sentence patterns in high-stakes docs (T-0832). `evaluation-system` owns cases, graders, suites, runs and gates (T-0833). `classify-and-resolve` designs classify-and-dispatch workflows (T-0835). Each ships a validator, tests and `evals/trigger-activation.suite.yaml` (T-0834).
+
 ## [1.0.4] - 2026-10-31
 
 Report: [docs/reports/2026-10-31-release-1-0-4.md](docs/reports/2026-10-31-release-1-0-4.md). Marketplace release: `context` 0.5.1; `sdlc` 1.0.2, `design` 0.2.0 and `dev-tools` 0.1.0 are unchanged. 1 ticket (T-0830).

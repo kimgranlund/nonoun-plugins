@@ -60,6 +60,7 @@
 - [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC, with verifier history and known limits.
 - [Haiku 5.5 pin](reports/2026-10-07-haiku-5-5.md): dated record of moving the scout L1 row and the messenger to `claude-haiku-5-5` (T-0353): the sites changed, the grep inventory, the eval and lock, the live scout proof (the alias `haiku` resolved to `claude-haiku-5-5`), and the unrefit haiku price rate.
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
+- [Release 1.0.5](reports/2026-11-01-release-1-0-5.md): `context` 0.6.0 with four new skills: knowledge-organization-system, controlled-natural-language, evaluation-system and classify-and-resolve.
 - [Release 1.0.4](reports/2026-10-31-release-1-0-4.md): `context` 0.5.1, a leaner `progressive-context`.
 - [Release 1.0.3](reports/2026-10-31-release-1-0-3.md): `context` 0.5.0 with the `knowledge-modeling` skill and the `progressive-context` rewrite.
 - [Release 1.0.2](reports/2026-10-30-release-1-0-2.md): the live session agent picks a branch and a lane and cleans up after a merge.
