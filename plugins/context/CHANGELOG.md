@@ -11,6 +11,10 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 - `controlled-natural-language` (T-0832): governs sentence patterns in high-stakes docs (requirements, ADRs, runbooks, policies, prompts, research findings) after the STE, EARS and Attempto traditions. A Stage 0 rule set (`templates/rules.yaml`) holds typed-slot patterns for one doc type, four evidence-gated stages (seed, enforce, extend patterns, extend doc types) govern growth, and `scripts/lint_cnl.py` (standard library plus PyYAML) reports retired labels, sentences that fit no pattern, unresolved concept slots, banned words and rules naming missing concepts, resolving slots against the `knowledge-organization-system` vocabulary without defining terms. References cover the rules file and a pattern catalog, growth with a Stage 0 to Stage 1 walkthrough, and trigger tests.
 - `knowledge-organization-system` (T-0831): keeps a corpus's vocabulary consistent through a lightweight SKOS model (`templates/vocabulary.yaml`), four evidence-gated growth stages (seed, synonyms, hierarchy, schemes) and `scripts/validate_kos.py` (standard library plus PyYAML), which checks labels, definitions, links, hierarchy cycles, schemes and stage gates and, given `--corpus`, unreferenced concepts and retired-label use. The vocabulary field names are a stable contract for `controlled-natural-language`. References cover the model, growth with a Stage 0 to Stage 1 walkthrough, and trigger tests.
 
+### Changed
+
+- `knowledge-organization-system` and `controlled-natural-language` carry their trigger tests as `evals/trigger-activation.suite.yaml` in the `evaluation-system` suite format (T-0834): the same 10 activating and 5 non-activating prompts, each with `expected`, `added_because` and a `human` grader; `references/trigger-tests.md` is gone from both.
+
 ## [0.5.1] - 2026-10-31
 
 ### Changed

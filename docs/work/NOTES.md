@@ -863,3 +863,8 @@
 ## T-0833: Add the evaluation-system skill to the context plugin (2026-11-01)
 
 - note: the Stage 3 gate-demo registry lives in `fixtures/template-gates.yaml` rather than `templates/gates.yaml`, a recorded assumption in the solo report; not a criterion defect.
+
+## T-0834: Convert the KOS and CNL trigger tests to evaluation-system suites (2026-11-01)
+
+- note: `plugins/context/CHANGELOG.md:10` (the existing T-0832 entry) still says references cover "trigger tests", and the T-0831 entry at line 11 says the same. These describe the earlier release state and are now stale next to the new Changed line; optional to reword.
+- note: both new suites mark the 10 activating cases `source: synthetic`, which gives a `synthetic-majority` warning (exit 0). Adding production or regression cases is a later follow-up.

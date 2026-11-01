@@ -1,0 +1,123 @@
+# This skill's trigger suite, in evaluation-system suite format. Run it when you change the skill's
+# description or scope: run each prompt in a fresh session with the plugin installed, record whether
+# the skill activated and whether it behaved as `expected.behavior` says, then run:
+#   python3 ../evaluation-system/scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
+# A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
+# Pass means the observed activation equals expected.activates. A description change passes when every case passes.
+# Prompts span software, operations or policy, and research or notes corpora.
+id: controlled-natural-language-trigger-activation
+version: 1
+target: controlled-natural-language skill description (SKILL.md frontmatter)
+target_spec:
+  - When a prompt asks to write, review or tighten the phrasing of requirements, specs, ADRs, acceptance criteria, runbooks, SOPs, policies, prompts or style guides, the skill shall activate.
+  - When a prompt asks for casual prose, marketing copy, code comments, a naming decision or a translation, the skill shall not activate.
+graders:
+  - id: observed-activation
+    kind: human
+slices: [should-activate, should-not-activate]
+cases:
+  - id: a1
+    input: {prompt: "Review these requirements before QA starts on them."}
+    expected: {activates: true, behavior: "Checks for a `rules.yaml`; if the requirements doc type is governed, runs `lint_cnl.py` and rewrites each violation to a pattern; if not, reports the ambiguous sentences and asks for the failure that would justify Stage 0."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: writing or reviewing requirements (docs/specs/new-skills/controlled-natural-language.md, Frontmatter and triggers)"
+    added_at: 2026-11-01
+  - id: a2
+    input: {prompt: "Make this acceptance criterion testable: the page should load fast."}
+    expected: {activates: true, behavior: "Rewrites to a pattern with a measurable slot (\"The search page shall render within 2 seconds.\"), names the banned words it removed, and resolves \"search page\" against the vocabulary."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: acceptance criteria; \"make this precise / testable / unambiguous\""
+    added_at: 2026-11-01
+  - id: a3
+    input: {prompt: "Write an ADR for moving sessions to Redis."}
+    expected: {activates: true, behavior: "Activates for the decision statement only: the decision log line follows the governed pattern if one exists; the ADR's context and consequences stay narrative."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: ADRs"
+    added_at: 2026-11-01
+  - id: a4
+    input: {prompt: "Turn this incident write-up into runbook steps."}
+    expected: {activates: true, behavior: "One instruction per sentence, conditions first, roles resolved against the vocabulary; proposes Stage 0 for runbooks only if a recorded failure exists."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: runbooks"
+    added_at: 2026-11-01
+  - id: a5
+    input: {prompt: "Our privacy policy says requests are handled promptly. Tighten the compliance language."}
+    expected: {activates: true, behavior: "Rewrites to an obligation pattern with an actor and a period; a role the vocabulary lacks goes to `knowledge-organization-system` first."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: policies, compliance language"
+    added_at: 2026-11-01
+  - id: a6
+    input: {prompt: "Edit this system prompt so the model can't read the instructions two ways."}
+    expected: {activates: true, behavior: "Applies one-reading rules (one instruction per sentence, no hedges, vocabulary labels); does not create a rule set for prompts without a recorded failure."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: prompts and system prompts"
+    added_at: 2026-11-01
+  - id: a7
+    input: {prompt: "Write a style guide for how we phrase findings in our research notes."}
+    expected: {activates: true, behavior: "Proposes patterns only from sentences the notes already contain, each with sources, and a short banned-word list; refuses to write rules for shapes nobody has written."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: style guides"
+    added_at: 2026-11-01
+  - id: a8
+    input: {prompt: "Set up CNL for our specs."}
+    expected: {activates: true, behavior: "Asks which spec doc type has caused errors; seeds `rules.yaml` from the template for that one type with 3 to 5 patterns from real sentences."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: specs; brief frontmatter rule: the description includes the acronym CNL"
+    added_at: 2026-11-01
+  - id: a9
+    input: {prompt: "This SOP says 'contact the on-call as appropriate'. Half the team emails, half pages. Fix the wording."}
+    expected: {activates: true, behavior: "Treats it as a Stage 1 refinement: bans \"as appropriate\", rewrites the step, and retires the old step pattern with `replacedBy` if one exists."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: SOPs; ambiguous, vague or inconsistent phrasing"
+    added_at: 2026-11-01
+  - id: a10
+    input: {prompt: "Run the CNL linter on docs/requirements and fix what it finds."}
+    expected: {activates: true, behavior: "Runs `lint_cnl.py`, fixes each error by rule, hands unresolved terms to the vocabulary, and reports warnings it left with the reason."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief frontmatter rule: the description includes the acronym CNL"
+    added_at: 2026-11-01
+  - id: n1
+    input: {prompt: "Write a quick reply thanking Sam for the review."}
+    expected: {activates: false, behavior: "Does not activate: casual prose and one-off chat."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: casual prose and one-off chat answers"
+    added_at: 2026-11-01
+  - id: n2
+    input: {prompt: "Make our product launch blog post more exciting."}
+    expected: {activates: false, behavior: "Does not activate: marketing or narrative copy."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: marketing or narrative copy"
+    added_at: 2026-11-01
+  - id: n3
+    input: {prompt: "Add a comment explaining this regex."}
+    expected: {activates: false, behavior: "Does not activate: code comments."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: code comments"
+    added_at: 2026-11-01
+  - id: n4
+    input: {prompt: "Should we call it a tenant or a workspace?"}
+    expected: {activates: false, behavior: "Does not activate: a naming question, which belongs to `knowledge-organization-system`."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: naming questions (hand off to knowledge-organization-system)"
+    added_at: 2026-11-01
+  - id: n5
+    input: {prompt: "Translate the runbook into German."}
+    expected: {activates: false, behavior: "Does not activate: machine translation is out of scope."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief out of scope: machine translation"
+    added_at: 2026-11-01

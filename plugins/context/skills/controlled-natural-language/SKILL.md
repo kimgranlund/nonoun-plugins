@@ -104,4 +104,4 @@ Full grammar parsers and NLP-based semantic analysis; machine translation; gover
 
 - [references/patterns.md](references/patterns.md): load when writing or changing `rules.yaml`, choosing a pattern for a doc type, or reading a linter message.
 - [references/growth.md](references/growth.md): load before moving a doc type to a new stage, adding, promoting or retiring a pattern, or when an anti-pattern is suspected. It ends with the Stage 0 to Stage 1 walkthrough.
-- [references/trigger-tests.md](references/trigger-tests.md): load when changing this skill's description or scope.
+- [evals/trigger-activation.suite.yaml](evals/trigger-activation.suite.yaml): run when changing this skill's description or scope; the suite format belongs to `evaluation-system`.
