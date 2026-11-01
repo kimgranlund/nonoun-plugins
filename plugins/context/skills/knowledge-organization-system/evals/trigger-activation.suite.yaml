@@ -1,0 +1,123 @@
+# This skill's trigger suite, in evaluation-system suite format. Run it when you change the skill's
+# description or scope: run each prompt in a fresh session with the plugin installed, record whether
+# the skill activated and whether it behaved as `expected.behavior` says, then run:
+#   python3 ../evaluation-system/scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
+# A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
+# Pass means the observed activation equals expected.activates. A description change passes when every case passes.
+# Prompts span software, operations or policy, and research or notes corpora.
+id: knowledge-organization-system-trigger-activation
+version: 1
+target: knowledge-organization-system skill description (SKILL.md frontmatter)
+target_spec:
+  - When a prompt asks what to call a thing, which of two names to use, or how to tag, categorize or structure a corpus's terms, the skill shall activate.
+  - When a prompt asks for casual prose, marketing copy, a code change with no naming impact, formal ontology work or a phrasing fix, the skill shall not activate.
+graders:
+  - id: observed-activation
+    kind: human
+slices: [should-activate, should-not-activate]
+cases:
+  - id: a1
+    input: {prompt: "We call it a workspace in the API and a project in the UI. Which should the docs use?"}
+    expected: {activates: true, behavior: "Checks or seeds `vocabulary.yaml`, picks one `prefLabel` with evidence from both files, records the other as `altLabel` or `hiddenLabel`, and rewrites the docs in the same change."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: the same thing named differently across files (docs/specs/new-skills/knowledge-organization-system.md, Frontmatter and triggers)"
+    added_at: 2026-11-01
+  - id: a2
+    input: {prompt: "Set up a glossary for our runbooks."}
+    expected: {activates: true, behavior: "Asks for (or finds) terms that were disputed or used in two places; creates a Stage 0 file with at most 15 evidenced concepts, not a speculative list."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: glossary, terminology"
+    added_at: 2026-11-01
+  - id: a3
+    input: {prompt: "What do we call the thing a customer files when they want their data deleted?"}
+    expected: {activates: true, behavior: "Looks the concept up in the vocabulary and answers with its `prefLabel` and definition; if it is absent and disputed, proposes adding it with evidence."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: \"what do we call X\""
+    added_at: 2026-11-01
+  - id: a4
+    input: {prompt: "Half the notes say 'subject' and half say 'participant'. Clean that up."}
+    expected: {activates: true, behavior: "Stage 1: keeps one `prefLabel`, moves the retired form to `hiddenLabel`, rewrites the notes, and runs the validator with `--corpus`."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: synonyms or ambiguous terms"
+    added_at: 2026-11-01
+  - id: a5
+    input: {prompt: "Add tags to these research notes so we can filter them by method."}
+    expected: {activates: true, behavior: "Reuses existing concepts as tags; adds a concept only for a method used in two notes; adds no hierarchy unless three methods share a parent."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: tagging, categories"
+    added_at: 2026-11-01
+  - id: a6
+    input: {prompt: "Design the folder structure for our compliance docs."}
+    expected: {activates: true, behavior: "Activates for the vocabulary part: folder names use `prefLabel`s of evidenced concepts; does not create one vocabulary per folder."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: documentation folder structure"
+    added_at: 2026-11-01
+  - id: a7
+    input: {prompt: "New hires keep asking what 'SLO' means versus 'SLA'."}
+    expected: {activates: true, behavior: "Onboarding confusion is evidence; seeds or updates both concepts with definitions and a `scopeNote` that separates them."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: onboarding confusion about terms"
+    added_at: 2026-11-01
+  - id: a8
+    input: {prompt: "Our naming conventions doc says 'customer' but the code says 'tenant'. Which is right?"}
+    expected: {activates: true, behavior: "Treats it as drift: decides with the owner which label is preferred, fixes the vocabulary or the doc in the same change."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: naming conventions"
+    added_at: 2026-11-01
+  - id: a9
+    input: {prompt: "Build a taxonomy of incident types for the ops wiki."}
+    expected: {activates: true, behavior: "Checks the Stage 2 entry criterion first; builds hierarchy only for a cluster of three evidenced concepts and says what evidence is missing for the rest."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: taxonomy, information architecture"
+    added_at: 2026-11-01
+  - id: a10
+    input: {prompt: "Run the KOS validator and fix what it finds."}
+    expected: {activates: true, behavior: "Runs `validate_kos.py`, fixes each error by rule, and reports warnings it left with the reason."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief frontmatter rule: the description includes the acronym KOS"
+    added_at: 2026-11-01
+  - id: n1
+    input: {prompt: "Write a friendly paragraph thanking the team for the launch."}
+    expected: {activates: false, behavior: "Does not activate: casual prose."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: casual prose and one-off answers"
+    added_at: 2026-11-01
+  - id: n2
+    input: {prompt: "Punch up this landing page headline."}
+    expected: {activates: false, behavior: "Does not activate: marketing copy."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: marketing copy"
+    added_at: 2026-11-01
+  - id: n3
+    input: {prompt: "Fix the off-by-one error in the pagination loop."}
+    expected: {activates: false, behavior: "Does not activate: a code change with no naming impact."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: code changes with no naming impact"
+    added_at: 2026-11-01
+  - id: n4
+    input: {prompt: "Convert our ontology to OWL and load it into a triple store."}
+    expected: {activates: false, behavior: "Does not activate: formal ontology and RDF work are out of scope."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: formal ontology or RDF work"
+    added_at: 2026-11-01
+  - id: n5
+    input: {prompt: "Rewrite this requirement so it is testable: the system should respond quickly."}
+    expected: {activates: false, behavior: "Does not activate: the problem is how a statement is phrased, which belongs to `controlled-natural-language`. If the requirement uses an undefined term, that term comes back here."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "peer hand-off: phrasing belongs to controlled-natural-language (docs/specs/new-skills/controlled-natural-language.md, Frontmatter and triggers)"
+    added_at: 2026-11-01
