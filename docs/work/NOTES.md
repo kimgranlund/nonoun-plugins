@@ -855,3 +855,7 @@
 - note: `references/growth.md:97-190` walkthrough (empty repo, Stage 0, Stage 1 with diffs and validator output) and the three-domain examples in `references/model.md:79-141` and `references/growth.md:52-96` satisfy the brief's Definition of done. Not a listed criterion, so I read it and did not run it; the builder reports it ran the YAML examples.
 - note: SKILL.md "The model" field list overlaps the field table in `references/model.md:20-33`. It is a short summary rather than a copy, but the brief says no content is duplicated across files.
 - note: Live activation of the trigger tests in a fresh host session was not run by the builder or by me; the checks above are structural.
+
+## T-0832: Add the controlled-natural-language (CNL) skill to the context plugin (2026-11-01)
+
+- note: Live fresh-session trigger evaluation of the 15 prompts was not run; the criterion only requires the list.

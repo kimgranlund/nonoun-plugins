@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0832 | [0832-controlled-natural-language](0832-controlled-natural-language/handoff.md) | Add the controlled-natural-language (CNL) skill to the context plugin | feature | L3 | P2 | T-0831 | 🟡 claimed (branch lane/T-0832-t0832) |
 
-Closed: 793 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 794 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

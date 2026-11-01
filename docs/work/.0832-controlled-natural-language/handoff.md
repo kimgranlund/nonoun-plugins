@@ -2,7 +2,7 @@
 id: T-0832
 title: "Add the controlled-natural-language (CNL) skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0831]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,16 @@ The context plugin ships `controlled-natural-language`, a skill that governs sen
 ## Constraints
 - Do not edit `knowledge-organization-system` except to fix a defect the linter exposes; report any such edit.
 - Keep SKILL.md domain-neutral.
+
+## Outcome
+
+2026-11-01 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 3ed3c57bf209
+- Changed: see commits
+- Commits: e744398 T-0832: replan criterion 2 to the fixture-companion run (verifier plan defect); f69f204 T-0832: record lane T-0832-t0832
+- Check: 1 Linter with `templates/rules.yaml`, KOS `templates/vocabulary.yaml` and the clean sample exits 0: pass
+- Check: 2 Fixture run exits non-zero with one distinct message per brief error rule, each naming file, line...: pass
+- Check: 3 `python3 -B -m unittest discover -s plugins/context/skills/controlled-natural-language/tests` exi...: pass
+- Check: 4 `test $(wc -l < SKILL.md) -le 300`: pass
+- Check: 5 `references/trigger-tests.md` lists 10 activating and 5 non-activating prompts, each with an expe...: pass
+- Check: 6 `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: Live fresh-session trigger evaluation of the 15 prompts was not... -> notes.md
