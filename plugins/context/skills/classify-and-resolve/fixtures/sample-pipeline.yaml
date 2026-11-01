@@ -1,0 +1,33 @@
+# Stage 0 support-triage pipeline that wrote sample-log.jsonl (references/growth.md walkthrough).
+id: support-triage
+version: 1
+scheme: support
+cascade:
+  - classifier_id: triage-lead
+    kind: human
+routes:
+  billing: billing-desk
+  outage: on-call
+  account-access: access-desk
+unclassified_route: triage-backlog
+resolvers:
+  - id: billing-desk
+    accepts: [billing]
+    output_type: a reply and, when owed, a refund request
+    side_effects: none
+    autonomy: manual
+  - id: on-call
+    accepts: [outage]
+    output_type: an incident record
+    side_effects: none
+    autonomy: manual
+  - id: access-desk
+    accepts: [account-access]
+    output_type: a verified account recovery
+    side_effects: none
+    autonomy: manual
+  - id: triage-backlog
+    accepts: [unclassified]
+    output_type: a deferred ticket awaiting a class decision
+    side_effects: none
+    autonomy: manual

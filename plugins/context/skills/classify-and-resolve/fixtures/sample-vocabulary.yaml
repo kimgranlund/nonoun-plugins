@@ -1,0 +1,20 @@
+# Stage 0 support-triage scheme for the sample pipeline and log (references/growth.md walkthrough).
+schemes:
+  - id: support
+    definition: Tickets arriving at the customer support inbox of a hosted billing product.
+concepts:
+  - id: billing
+    prefLabel: billing
+    definition: A ticket about charges, invoices, refunds or prices on the customer's account.
+    scheme: support
+    evidence: [sample-log.jsonl l-001]
+  - id: outage
+    prefLabel: outage
+    definition: A ticket reporting that a hosted service is unavailable or failing for the customer.
+    scheme: support
+    evidence: [sample-log.jsonl l-009]
+  - id: account-access
+    prefLabel: account access
+    definition: A ticket from someone who cannot sign in or prove who they are.
+    scheme: support
+    evidence: [sample-log.jsonl l-015]

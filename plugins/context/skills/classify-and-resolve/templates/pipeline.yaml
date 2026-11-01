@@ -1,0 +1,64 @@
+# Stage 0 pipeline: three classes plus the unclassified route, one human cascade step, every
+# resolver manual, every decision logged in templates/log.schema.json. Replace every "replace-with"
+# id. Field semantics: references/model.md; resolver contracts: references/resolvers.md. Check:
+#   python3 scripts/validate_pipeline.py templates/pipeline.yaml --vocabulary templates/scheme.yaml --gates gates.yaml
+#
+# Full shape (optional fields are added only when a stage allows them):
+#
+#   cascade:
+#     - classifier_id: keyword-rules     # Stage 1: deterministic rules first
+#       kind: rule                       # rule | model | human
+#       rules:                           # controlled-natural-language statements
+#         - If the subject contains "invoice", then the class is request.
+#     - classifier_id: small-model       # Stage 2
+#       kind: model
+#       abstain_below: 0.8               # tuned on dev cases only; below it the next step decides
+#     - classifier_id: triage-desk
+#       kind: human                      # the final step is human, or abstains to unclassified
+#   resolvers:
+#     - id: replace-with-resolver
+#       accepts: [request]
+#       output_type: reply draft
+#       side_effects: none               # none | reversible | irreversible
+#       autonomy: manual                 # manual | suggest | auto; new resolvers start manual
+#       promotion_gate: gate-id          # evaluation-system gates.yaml; required above the matrix's free cells
+#       review_sample_rate: 0.05         # required for irreversible + auto
+#       policy:
+#         - The resolver shall reply within 1 business day.
+
+id: replace-with-pipeline-id
+version: 1
+scheme: intake
+
+cascade:
+  - classifier_id: replace-with-triage-person-or-desk
+    kind: human
+
+routes:
+  request: request-desk
+  problem-report: problem-desk
+  question: question-desk
+
+unclassified_route: triage-backlog
+
+resolvers:
+  - id: request-desk
+    accepts: [request]
+    output_type: Replace with what handling a request produces.
+    side_effects: none
+    autonomy: manual
+  - id: problem-desk
+    accepts: [problem-report]
+    output_type: Replace with what handling a problem report produces.
+    side_effects: none
+    autonomy: manual
+  - id: question-desk
+    accepts: [question]
+    output_type: Replace with what answering a question produces.
+    side_effects: none
+    autonomy: manual
+  - id: triage-backlog
+    accepts: [unclassified]
+    output_type: A deferred item awaiting a class decision, logged for unclassified_report.py.
+    side_effects: none
+    autonomy: manual
