@@ -1,0 +1,4 @@
+interface:
+  display_name: "Controlled Natural Language"
+  short_description: "Govern high-stakes statements with evidence-gated sentence patterns"
+  default_prompt: "Use $controlled-natural-language to lint these governed docs against their CNL rules and rewrite each violation to a pattern."

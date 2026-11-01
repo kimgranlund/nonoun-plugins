@@ -1,0 +1,48 @@
+# Fixture rule set for lint_cnl.py tests. With fixtures/vocabulary.yaml and
+# fixtures/violations.md it trips every linter rule exactly once.
+version: 1
+
+docTypes:
+  - id: requirement
+    description: Requirements for the shop's checkout.
+    paths: ["requirements/**/*.md"]
+    owner: platform team            # schema: unknown key
+    bannedWords:
+      - word: as appropriate
+        fix: Name the condition or the value.
+
+patterns:
+  - id: ears-ubiquitous
+    docType: requirement
+    template: "The {system} shall {response}."
+    slots:
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources: ["requirements/checkout.md:3: The checkout service shall store each order."]
+
+  - id: ears-event                  # no-source: no sentence recorded
+    docType: requirement
+    template: "When {trigger}, the {system} shall {response}."
+    slots:
+      trigger: {type: text, maxWords: 12}
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+
+  - id: ears-optional
+    docType: requirement
+    template: "Where {feature}, the {system} shall {response}."
+    slots:
+      feature: {type: text, maxWords: 12}
+      system: {type: concept, concepts: [checkout-service, loyalty-program]}   # unknown-concept
+      response: {type: text, maxWords: 20}
+    sources: ["requirements/loyalty.md:1: Where loyalty points are enabled, the checkout service shall show the balance."]
+
+  - id: legacy-must
+    docType: requirement
+    template: "The {system} must {response}."
+    slots:
+      system: {type: concept}
+      response: {type: text, maxWords: 20}
+    sources: ["requirements/refunds.md:2: The checkout service must log each refund."]
+    deprecated: true
+    replacedBy: ears-ubiquitous

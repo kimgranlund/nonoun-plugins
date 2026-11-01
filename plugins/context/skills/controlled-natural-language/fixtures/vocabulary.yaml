@@ -1,0 +1,19 @@
+# Fixture vocabulary in the knowledge-organization-system format, for lint_cnl.py tests.
+# It is test data, not a term source: the test runs validate_kos.py on it.
+schemes:
+  - id: shop
+    definition: Requirements and runbooks of a web shop's checkout.
+
+concepts:
+  - id: checkout-service
+    prefLabel: checkout service
+    altLabel: [checkout]
+    hiddenLabel: [cart service]
+    definition: The backend component that turns a basket into a paid order.
+    scheme: shop
+    evidence: [requirements/checkout.md:3, "review: cart service is the old name"]
+  - id: order
+    prefLabel: order
+    definition: A customer's confirmed purchase of one or more items, with its payment state.
+    scheme: shop
+    evidence: [requirements/checkout.md:3, requirements/refunds.md:2]
