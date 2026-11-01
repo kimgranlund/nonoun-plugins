@@ -1,0 +1,31 @@
+# Stage 0 vocabulary: one flat file per corpus, at most 15 concepts, each defined.
+# Field names are a stable contract (controlled-natural-language reads them).
+# Semantics: references/model.md. Check: python3 scripts/validate_kos.py <this file>
+#
+# Full concept shape (optional fields are added only when a stage allows them):
+#
+#   - id: stable-kebab-id          # never reused or renamed once referenced
+#     prefLabel: preferred label   # exactly one per scheme
+#     altLabel: [accepted synonym]            # Stage 1
+#     hiddenLabel: [retired or misspelled form]  # Stage 1; tools flag its use
+#     definition: What it means, in words other than the label.
+#     scopeNote: What it covers and excludes.
+#     broader: [parent-id]                    # Stage 2
+#     narrower: [child-id]                    # Stage 2
+#     related: [neighbor-id]                  # Stage 2
+#     scheme: main
+#     evidence: [path/to/file.md:12, "disputed in review: X vs Y"]
+#     deprecated: true                        # retire instead of deleting
+#     replacedBy: successor-id
+
+schemes:
+  - id: main
+    definition: Replace with one sentence naming the corpus this vocabulary covers.
+
+concepts:
+  - id: example-term
+    prefLabel: example term
+    definition: Replace with what this term means in this corpus, without repeating the label.
+    scheme: main
+    evidence:
+      - Replace with where the term is used or disputed, for example docs/setup.md:12.

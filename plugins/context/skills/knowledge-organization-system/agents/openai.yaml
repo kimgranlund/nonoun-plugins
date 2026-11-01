@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knowledge Organization System"
+  short_description: "Keep a corpus's vocabulary consistent with an evidence-gated KOS"
+  default_prompt: "Use $knowledge-organization-system to check this corpus's terms against its vocabulary and grow it only on evidence."

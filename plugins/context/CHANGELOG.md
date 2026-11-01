@@ -2,6 +2,12 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [Unreleased]
+
+### Added
+
+- `knowledge-organization-system` (T-0831): keeps a corpus's vocabulary consistent through a lightweight SKOS model (`templates/vocabulary.yaml`), four evidence-gated growth stages (seed, synonyms, hierarchy, schemes) and `scripts/validate_kos.py` (standard library plus PyYAML), which checks labels, definitions, links, hierarchy cycles, schemes and stage gates and, given `--corpus`, unreferenced concepts and retired-label use. The vocabulary field names are a stable contract for `controlled-natural-language`. References cover the model, growth with a Stage 0 to Stage 1 walkthrough, and trigger tests.
+
 ## [0.5.1] - 2026-10-31
 
 ### Changed
