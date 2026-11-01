@@ -98,4 +98,4 @@ RDF, OWL, axioms and triple stores; automatic term extraction; generating a full
 
 - [references/model.md](references/model.md): load when adding or changing fields, labels or links, reading a validator message, or building a tool that reads the vocabulary.
 - [references/growth.md](references/growth.md): load before moving to a new stage, renaming, merging or retiring, or when an anti-pattern is suspected. It ends with an empty-repo to Stage 1 walkthrough.
-- [references/trigger-tests.md](references/trigger-tests.md): load when changing this skill's description or scope.
+- [evals/trigger-activation.suite.yaml](evals/trigger-activation.suite.yaml): run when changing this skill's description or scope; the suite format belongs to `evaluation-system`.
