@@ -2,7 +2,7 @@
 id: T-0833
 title: "Add the evaluation-system skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,16 @@ The context plugin ships `evaluation-system`, a skill that governs case sets, gr
 ## Constraints
 - Do not edit other skills; T-0834 converts the KOS and CNL suites.
 - Keep SKILL.md domain-neutral.
+
+## Outcome
+
+2026-11-01 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 1a8e9f68c041
+- Changed: see commits
+- Commits: 9f4823e T-0833: record lane T-0833-t0833
+- Check: 1 validator exits 0 on template and own trigger suite: pass
+- Check: 2 broken-suite fixture, one distinct message per brief error rule: pass
+- Check: 3 runner on template with echo target writes run.json and report.md with n, value, Wilson interval,...: pass
+- Check: 4 trigger suite has 10 activating and 5 non-activating cases, each with expected, added_because and...: pass
+- Check: 5 unittest discover exits 0 and SKILL.md at most 300 lines: pass
+- Check: 6 check-packaging exits 0 and git diff --check clean: pass
+- Follow-up: note: the Stage 3 gate-demo registry lives in... -> notes.md

@@ -859,3 +859,7 @@
 ## T-0832: Add the controlled-natural-language (CNL) skill to the context plugin (2026-11-01)
 
 - note: Live fresh-session trigger evaluation of the 15 prompts was not run; the criterion only requires the list.
+
+## T-0833: Add the evaluation-system skill to the context plugin (2026-11-01)
+
+- note: the Stage 3 gate-demo registry lives in `fixtures/template-gates.yaml` rather than `templates/gates.yaml`, a recorded assumption in the solo report; not a criterion defect.
