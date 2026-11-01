@@ -33,7 +33,7 @@ The context plugin ships `controlled-natural-language`, a skill that governs sen
 
 ## Acceptance criteria
 - The linter run with `templates/rules.yaml`, the KOS `templates/vocabulary.yaml` and the clean sample doc exits 0.
-- The same run on `fixtures/violations.md` exits non-zero with one distinct message for each of the 5 error rules in the brief, each naming file, line, rule id and fix.
+- `cd plugins/context/skills/controlled-natural-language && python3 -B scripts/lint_cnl.py fixtures/rules.yaml fixtures/vocabulary.yaml fixtures/violations.md` exits non-zero with one distinct message for each of the 5 error rules in the brief, each naming file, line, rule id and fix; the fixture vocabulary passes `validate_kos.py` (replan 2026-11-01: the template vocabulary has no retired labels, so the pass run cannot trip `hidden-label` or `unknown-concept`).
 - `python3 -B -m unittest discover -s plugins/context/skills/controlled-natural-language/tests` exits 0.
 - `test $(wc -l < plugins/context/skills/controlled-natural-language/SKILL.md) -le 300`
 - `references/trigger-tests.md` lists 10 activating and 5 non-activating prompts, each with an expected outcome.
