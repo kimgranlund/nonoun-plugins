@@ -121,6 +121,7 @@ def _read_concepts(data, findings):
                 _schema(findings, cid, field, 'must be a string.', f'write `{field}` as text.')
                 value = None
             concept[field] = value
+        concept['scheme'] = concept['scheme'] or ''  # missing: reported as unknown-scheme
         if not concept['prefLabel'] or not concept['prefLabel'].strip():
             _schema(findings, cid, 'prefLabel', 'concept has no prefLabel.', 'give it exactly one preferred label.')
             concept['prefLabel'] = None

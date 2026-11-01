@@ -90,6 +90,20 @@ class ValidateKosTests(unittest.TestCase):
             self.assertEqual(rules(result.stdout), Counter())
             self.assertIn('inferred stage 3', result.stdout)
 
+    def test_missing_scheme_is_unknown_scheme(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vocab = Path(tmp) / 'vocabulary.yaml'
+            vocab.write_text(
+                'schemes: [{id: main, definition: Docs.}]\n'
+                'concepts:\n'
+                '  - {id: alpha, prefLabel: alpha, definition: The first release channel., scheme: main}\n'
+                '  - {id: beta, prefLabel: beta, definition: The second release channel.}\n')
+            result = run(str(vocab))
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(result.stderr, '')
+            self.assertEqual(rules(result.stdout), Counter({'unknown-scheme': 1}))
+            self.assertIn("scheme '(none)'", result.stdout)
+
     def test_unparseable_file_is_a_schema_error(self):
         with tempfile.TemporaryDirectory() as tmp:
             vocab = Path(tmp) / 'vocabulary.yaml'
