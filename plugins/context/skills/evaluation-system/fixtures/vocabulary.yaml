@@ -1,0 +1,14 @@
+# Companion of broken-suite.yaml: a knowledge-organization-system vocabulary.
+schemes:
+  - id: triage
+    definition: Queues a support ticket can be routed to.
+concepts:
+  - id: billing
+    prefLabel: billing
+    definition: Tickets about charges, invoices and payment methods.
+    scheme: triage
+  - id: refund
+    prefLabel: refund
+    altLabel: [money back]
+    definition: Tickets asking to return a charge to the customer.
+    scheme: triage

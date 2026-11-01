@@ -1,0 +1,2 @@
+# Companion of broken-suite.yaml: the cases a prompt or threshold is tuned against.
+cases: [t-1, t-5]   # t-5 is holdout: holdout-in-tuning

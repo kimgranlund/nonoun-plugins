@@ -1,0 +1,13 @@
+# One gate on templates/suite.yaml for the echo-target demo run. Three cases are far below min_n,
+# so the run reports insufficient_n:
+#   python3 scripts/run_suite.py templates/suite.yaml --target "python3 scripts/echo_target.py" \
+#     --gates fixtures/template-gates.yaml --out <dir>
+gates:
+  - id: starter-release
+    suite_id: replace-with-target-name
+    metric: pass_rate
+    slice: all
+    threshold: 0.9
+    min_n: 30
+    action: Replace with the decision a pass allows.
+    owner: Replace with who acts on the outcome.
