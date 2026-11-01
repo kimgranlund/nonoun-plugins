@@ -2,7 +2,7 @@
 id: T-0831
 title: "Add the knowledge-organization-system (KOS) skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,18 @@ The context plugin ships `knowledge-organization-system`, a skill that keeps a c
 ## Constraints
 - Do not edit `knowledge-modeling` or any other skill.
 - Keep SKILL.md domain-neutral (software, operations or policy, research or notes).
+
+## Outcome
+
+2026-11-01 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 649affd13c2b
+- Changed: see commits
+- Commits: 268d87a T-0831: record solo lane in skips.md; b5b594b T-0831: record lane T-0831-t0831
+- Check: 1 Validator exits 0 on the template: pass
+- Check: 2 Validator exits non-zero on the fixture with one distinct message per each of the 7 brief error r...: pass
+- Check: 3 `python3 -B -m unittest discover -s .../tests` exits 0: pass
+- Check: 4 SKILL.md is 300 lines or fewer: pass
+- Check: 5 `references/trigger-tests.md` lists 10 activating and 5 non-activating prompts, each with an expe...: pass
+- Check: 6 `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: references/growth.md:97-190 walkthrough empty repo, Stage 0, Stage... -> notes.md
+- Follow-up: note: SKILL.md "The model" field list overlaps the field table in... -> notes.md
+- Follow-up: note: Live activation of the trigger tests in a fresh host session was... -> notes.md
