@@ -1,0 +1,31 @@
+# Stage 0 starter scheme: a knowledge-organization-system vocabulary holding the pipeline's classes.
+# Three classes; `unclassified` is a reserved label, never a concept. Replace each class with the kinds
+# your items actually arrive as, defined by meaning, not by who handles them. Concept fields and the
+# validator belong to knowledge-organization-system (its references/model.md and validate_kos.py).
+# Check the pipeline against it:
+#   python3 scripts/validate_pipeline.py templates/pipeline.yaml --vocabulary templates/scheme.yaml
+
+schemes:
+  - id: intake
+    definition: Replace with one sentence naming the items this pipeline sorts, for example the support inbox.
+
+concepts:
+  - id: request
+    prefLabel: request
+    definition: An item asking for something to be done or provided, where nothing is broken.
+    scopeNote: Replace with the boundary against problem-report for your items.
+    scheme: intake
+    evidence:
+      - Replace with the log ids or files that show this kind of item arriving.
+  - id: problem-report
+    prefLabel: problem report
+    definition: An item stating that something that should work does not.
+    scheme: intake
+    evidence:
+      - Replace with the log ids or files that show this kind of item arriving.
+  - id: question
+    prefLabel: question
+    definition: An item asking for information, with no action or fix expected.
+    scheme: intake
+    evidence:
+      - Replace with the log ids or files that show this kind of item arriving.

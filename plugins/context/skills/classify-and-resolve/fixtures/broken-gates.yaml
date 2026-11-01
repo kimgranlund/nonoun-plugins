@@ -1,0 +1,6 @@
+# Companion to broken-pipeline.yaml, in evaluation-system gates.yaml format.
+gates:
+  - {id: catchall-gate, suite_id: broken-intake-classification, metric: pass_rate, slice: all, threshold: 0.95,
+     min_n: 100, action: let the catch-all resolver act alone, owner: legal-ops, status: passed}
+  - {id: open-gate, suite_id: broken-intake-classification, metric: pass_rate, slice: all, threshold: 0.95,
+     min_n: 100, action: let the notifier act alone, owner: legal-ops, status: open}

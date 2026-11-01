@@ -1,0 +1,30 @@
+# Companion to broken-pipeline.yaml: a policy-intake scheme with one unrouted class (complaint)
+# and one deprecated class (memo), plus an ops scheme for the second pipeline document.
+schemes:
+  - id: docs
+    definition: Documents arriving at the legal team's intake folder.
+  - id: ops
+    definition: Monitoring alerts arriving at the operations queue.
+concepts:
+  - id: contract
+    prefLabel: contract
+    definition: A signed or draft agreement that binds the company to a counterparty.
+    scheme: docs
+  - id: policy
+    prefLabel: policy
+    definition: An internal rule document that staff must follow.
+    scheme: docs
+  - id: complaint
+    prefLabel: complaint
+    definition: A grievance from a customer or regulator that needs a formal reply.
+    scheme: docs
+  - id: memo
+    prefLabel: memo
+    definition: An informal internal note, retired as a class when memos were filed as policies.
+    scheme: docs
+    deprecated: true
+    replacedBy: policy
+  - id: alert
+    prefLabel: alert
+    definition: A machine-generated signal that a monitored service crossed a threshold.
+    scheme: ops

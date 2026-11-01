@@ -1,0 +1,68 @@
+# Trips each validate_pipeline.py error rule exactly once. Run:
+#   python3 scripts/validate_pipeline.py fixtures/broken-pipeline.yaml \
+#     --vocabulary fixtures/broken-vocabulary.yaml --gates fixtures/broken-gates.yaml
+# Two documents, because a missing unclassified_route and an auto one cannot share a pipeline.
+id: broken-intake
+version: 3
+scheme: docs
+cascade:
+  - classifier_id: keyword-rules
+    kind: rule
+    rules:
+      - If the title contains "agreement", then the class is contract.
+  - classifier_id: small-model
+    kind: model
+    abstain_below: 1.5                 # abstain-range
+  - classifier_id: big-model
+    kind: model                        # no-fallthrough: a final model with no abstain_below
+routes:
+  contract: contract-desk
+  policy: ghost-desk                   # unknown-resolver
+  memo: policy-desk                    # unresolved-route: memo is deprecated
+                                       # unrouted-class: complaint has no route
+unclassified_route: auto-catchall      # auto-unclassified
+resolvers:
+  - id: contract-desk
+    accepts: [contract]
+    output_type: a contract review note
+    side_effects: none
+    autonomy: manual
+  - id: policy-desk
+    accepts: [policy, memo]
+    output_type: a filed policy record
+    side_effects: reversible
+    autonomy: auto                     # autonomy-matrix: auto with no promotion_gate
+  - id: auto-catchall
+    accepts: [unclassified]
+    output_type: an archived item
+    side_effects: none
+    autonomy: auto
+    promotion_gate: catchall-gate      # passed, so only auto-unclassified fires here
+  - id: archiver
+    accepts: [contract]
+    output_type: an archive entry
+    side_effects: reversible
+    autonomy: auto
+    promotion_gate: ghost-gate         # unknown-gate
+  - id: notifier
+    accepts: [complaint]
+    output_type: an acknowledgement email
+    side_effects: none
+    autonomy: auto
+    promotion_gate: open-gate          # gate-not-passed: status open
+---
+id: broken-catchall
+version: 1
+scheme: ops
+cascade:
+  - classifier_id: ops-desk-human
+    kind: human
+routes:
+  alert: ops-desk
+                                       # missing-unclassified-route
+resolvers:
+  - id: ops-desk
+    accepts: [alert]
+    output_type: an incident ticket
+    side_effects: none
+    autonomy: manual

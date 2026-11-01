@@ -1,0 +1,4 @@
+interface:
+  display_name: "Classify and Resolve"
+  short_description: "Triage and route items through a typed cascade to resolvers that earn autonomy by evidence"
+  default_prompt: "Use $classify-and-resolve to design or grow this triage pipeline: closed classes with an unclassified route, a logged cascade, and resolver autonomy only behind passed gates."

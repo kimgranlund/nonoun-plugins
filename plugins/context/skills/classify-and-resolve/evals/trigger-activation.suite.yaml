@@ -1,0 +1,122 @@
+# This skill's own trigger suite, in evaluation-system format. Run each prompt in a fresh session with
+# the plugin installed, record whether the skill activated and whether it behaved as `expected.behavior`
+# says, then run evaluation-system's runner:
+#   python3 <evaluation-system>/scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
+# A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
+# Pass means the observed activation equals expected.activates. Rerun it when the description changes.
+id: classify-and-resolve-trigger-activation
+version: 1
+target: classify-and-resolve skill description (SKILL.md frontmatter)
+target_spec:
+  - When a prompt asks to sort, triage, route or dispatch items by kind and handle each kind differently, the skill shall activate.
+  - When a prompt asks for a one-off categorization, pure taxonomy design, pure evaluation or orchestration with no classification step, the skill shall not activate.
+graders:
+  - id: observed-activation
+    kind: human
+slices: [should-activate, should-not-activate]
+cases:
+  - id: a1
+    input: {prompt: "Set up triage for our support inbox: billing, outages and login problems go to different teams."}
+    expected: {activates: true, behavior: "Stage 0: a seed scheme of 3 to 5 classes plus unclassified, one human cascade step, manual resolvers, and the log format before any automation."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: triage, ticket queues (docs/specs/new-skills/classify-and-resolve.md, Frontmatter and triggers)"
+    added_at: 2026-11-01
+  - id: a2
+    input: {prompt: "Build a router agent that sends each user request to the right specialist subagent."}
+    expected: {activates: true, behavior: "Treats specialist subagents as resolvers with contracts (accepts, output_type, side_effects, autonomy) and adds an unclassified route to a human."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: router agents and specialist agents, intent classification"
+    added_at: 2026-11-01
+  - id: a3
+    input: {prompt: "Route each incoming incident to the right on-call runbook."}
+    expected: {activates: true, behavior: "Designs incident classes as concept ids, one resolver per class, and keeps runbooks that change production at manual or suggest until a gate passes."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: incident routing, route each X to"
+    added_at: 2026-11-01
+  - id: a4
+    input: {prompt: "Sort these incoming contracts into NDAs, MSAs and amendments and file each one in the right place."}
+    expected: {activates: true, behavior: "Uses a KOS scheme for the document classes, an optional entity-resolution stage for parties and clauses, and logs every filing."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: document intake, sort these into"
+    added_at: 2026-11-01
+  - id: a5
+    input: {prompt: "Our classifier should auto-close spam tickets. Can we turn that on?"}
+    expected: {activates: true, behavior: "Reads the resolver's side_effects and the autonomy matrix, requires a passed promotion_gate from evaluation-system, and changes no other class."}
+    tags: [should-activate]
+    source: adversarial
+    added_because: "brief autonomy matrix: autonomy never increases without a passed gate; the prompt names no routing keyword"
+    added_at: 2026-11-01
+  - id: a6
+    input: {prompt: "Too many tickets land in 'other' and nobody looks at them. Fix our categories."}
+    expected: {activates: true, behavior: "Names the silently dropped other bucket as an anti-pattern, routes unclassified to a human queue, and runs unclassified_report.py to propose classes to KOS."}
+    tags: [should-activate]
+    source: adversarial
+    added_because: "brief anti-pattern: an other bucket that is silently dropped; taxonomy feedback loop"
+    added_at: 2026-11-01
+  - id: a7
+    input: {prompt: "Handle different kinds of customer emails differently: refunds, complaints, and press inquiries."}
+    expected: {activates: true, behavior: "Starts at Stage 0 with these classes plus unclassified and a human cascade step; no model until the logs show the need."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: handle different kinds of X differently, inbox processing"
+    added_at: 2026-11-01
+  - id: a8
+    input: {prompt: "Design the escalation path for when the triage model is unsure."}
+    expected: {activates: true, behavior: "Makes abstention first-class: abstain_below on the model step, a human step or unclassified route after it, tuned on dev cases only."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: escalation paths, low-confidence policy"
+    added_at: 2026-11-01
+  - id: a9
+    input: {prompt: "Set up a human-in-the-loop review queue for content flagged by our moderation rules."}
+    expected: {activates: true, behavior: "Treats moderation rules as a rule cascade step written as CNL statements and the review queue as a manual resolver whose corrections are logged."}
+    tags: [should-activate]
+    source: synthetic
+    added_because: "brief trigger list: human-in-the-loop review queues"
+    added_at: 2026-11-01
+  - id: a10
+    input: {prompt: "Clean up this corpus: tag every note by type and archive the obsolete ones."}
+    expected: {activates: true, behavior: "Classifies notes into a closed set with an unclassified route, and keeps the archive resolver at manual or suggest because archiving is a side effect."}
+    tags: [should-activate]
+    source: adversarial
+    added_because: "brief goal: corpus cleanup is a classify-and-resolve workflow; the prompt names no routing keyword"
+    added_at: 2026-11-01
+  - id: n1
+    input: {prompt: "Which of these five fruits are citrus: lemon, apple, lime, pear, orange?"}
+    expected: {activates: false, behavior: "Does not activate: a one-off categorization of a few items in chat."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: one-off categorization of a few items in chat"
+    added_at: 2026-11-01
+  - id: n2
+    input: {prompt: "Define our product vocabulary: is a workspace the same thing as a project?"}
+    expected: {activates: false, behavior: "Does not activate: pure taxonomy design with no handling belongs to knowledge-organization-system."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: pure taxonomy design with no handling"
+    added_at: 2026-11-01
+  - id: n3
+    input: {prompt: "What is the precision and recall of our triage classifier on last month's gold set?"}
+    expected: {activates: false, behavior: "Does not activate: a pure evaluation question belongs to evaluation-system."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: pure evaluation questions"
+    added_at: 2026-11-01
+  - id: n4
+    input: {prompt: "Write a workflow that builds the app, runs the tests, then deploys to staging."}
+    expected: {activates: false, behavior: "Does not activate: orchestration with no classification step."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief do-not-trigger list: general workflow orchestration with no classification step"
+    added_at: 2026-11-01
+  - id: n5
+    input: {prompt: "Rewrite this routing rule so it has one reading: 'urgent stuff should usually go to ops'."}
+    expected: {activates: false, behavior: "Does not activate: how a rule is phrased belongs to controlled-natural-language."}
+    tags: [should-not-activate]
+    source: adversarial
+    added_because: "brief peer hand-off: when criteria or policies are written or reviewed, hand off to CNL"
+    added_at: 2026-11-01
