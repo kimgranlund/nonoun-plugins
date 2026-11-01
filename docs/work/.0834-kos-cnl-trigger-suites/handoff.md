@@ -2,7 +2,7 @@
 id: T-0834
 title: "Convert the KOS and CNL trigger tests to evaluation-system suites"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done       # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0833]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Do not edit `evaluation-system`; a defect found there is reported, not fixed.
+
+## Outcome
+
+2026-11-01 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: b32e2cb60437
+- Changed: see commits
+- Commits: f01c503 T-0834: record lane T-0834-t0834
+- Check: 1 Both suites validate: pass
+- Check: 2 Old files gone, no remaining links: pass
+- Check: 3 Unittests, packaging, diff check: pass
+- Follow-up: note: plugins/context/CHANGELOG.md:10 the existing T-0832 entry still... -> notes.md
+- Follow-up: note: both new suites mark the 10 activating cases source: synthetic... -> notes.md
