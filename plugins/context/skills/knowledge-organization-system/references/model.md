@@ -22,6 +22,7 @@ The concept field names below are published as stable. `controlled-natural-langu
 | `hiddenLabel` | list of strings | no | Retired, deprecated or misspelled forms. Tools flag any use of them. |
 | `definition` | string | yes | What the concept means in this corpus, in words other than its label. |
 | `scopeNote` | string | no | What the concept includes and excludes; the boundary with a neighbor. |
+| `excludes` | list of `{neighbor, statement}` | no | What the concept is *not*: `neighbor` is the id of the concept it gets confused with, `statement` says how they differ. Added only after an observed confusion and written by hand (see [Exclusions](#exclusions)). |
 | `broader` | list of ids | no | Parent concepts (Stage 2). |
 | `narrower` | list of ids | no | Child concepts; the inverse of `broader` (Stage 2). |
 | `related` | list of ids | no | Associative links between concepts that are neither parent nor child. |
@@ -47,12 +48,32 @@ Any other key is a `schema` error, so a typo such as `synonyms` or `preflabel` c
 - Write the definition for this corpus, not the dictionary. If a reader could swap in the general meaning without losing anything, the concept may not need an entry.
 - Use `scopeNote` for exclusions ("Excludes emergency fixes, which follow the incident runbook").
 
+## Exclusions
+
+`excludes` records a confusion that actually happened: an evaluation run picked the wrong concept, a review disputed which term applies, or work was misrouted. Add an entry only after such an observation, record it in `evidence`, and write the statement by hand. Never generate one; generated contrast does worse than none, and hand-written contrast is the largest accuracy lever for models choosing between concepts. `decision-questions` compiles these entries into contrastive option descriptions.
+
+```yaml
+  - id: incident
+    prefLabel: incident
+    definition: An unplanned interruption or degradation that someone must respond to.
+    excludes:
+      - neighbor: alert
+        statement: Not every alert; an incident starts when someone must act, and one incident may raise many alerts.
+    scheme: ops
+    evidence: [runbooks/triage.md:4, "eval run 2026-10-12: 6 of 20 alert-only items routed as incidents"]
+```
+
+- `neighbor` must be another concept's id (`excludes-neighbor`).
+- `statement` must say what this concept is not, in words that tell it apart from the neighbor. An empty statement, an entry whose neighbor is the concept itself, or a statement that only restates the concept's own `prefLabel` is an `excludes-statement` error.
+- One entry per neighbor. `scopeNote` keeps general boundaries; `excludes` is for a specific, observed confusion with one named concept.
+
 ## Relations
 
 - `broader` and `narrower` express "is a kind of" or "is a part of" as the corpus uses it. Write one direction, preferably `broader` on the child; the validator reads `narrower` as the inverse and does not require both. A concept may have several parents.
 - The `broader` chain must not loop back to a concept (`broader-cycle`).
 - `related` is symmetric and associative ("see also"): `incident` related to `postmortem`. It arrives with Stage 2, when evidence shows readers confuse or consult two distinct concepts together. Do not use it for a parent or child, and do not use it to express sameness. Two concepts that mean the same thing are one concept with an `altLabel`.
 - `replacedBy` points from a deprecated concept to its successor. Every link target must be an existing id (`dangling-link`).
+- An `excludes` neighbor is not a link: it carries no hierarchy and does not raise the inferred stage. It must still be an existing id (`excludes-neighbor`).
 
 ## Validator
 
@@ -68,6 +89,8 @@ Each finding is one line, `SEVERITY RULE CONCEPT FIELD: problem. Fix: fix.`, sor
 | `missing-definition` | error | `definition` is absent or blank. | Write it. |
 | `circular-definition` | error | The definition is only the `prefLabel` (ignoring case, a leading article and a final period). | Define it in other words. |
 | `dangling-link` | error | A `broader`, `narrower`, `related` or `replacedBy` target is not a concept id. | Correct the id or add the concept with evidence. |
+| `excludes-neighbor` | error | An `excludes` entry's `neighbor` is not a concept id. | Name the existing concept it is confused with, or remove the entry. |
+| `excludes-statement` | error | An `excludes` entry has an empty `statement`, names the concept itself as `neighbor`, or only restates the concept's `prefLabel`. | Write by hand what the concept is not, against the named neighbor. |
 | `broader-cycle` | error | The hierarchy loops. | Remove the link that makes a concept its own ancestor. |
 | `unknown-scheme` | error | `scheme` is missing or not declared under `schemes`. | Use a declared scheme. |
 | `stage-gate` | warning | A parent has fewer than three children, or several schemes are declared but no label is used in two of them. | Remove the structure until its entry criterion holds. |

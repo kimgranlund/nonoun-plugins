@@ -104,6 +104,38 @@ class ValidateKosTests(unittest.TestCase):
             self.assertEqual(rules(result.stdout), Counter({'unknown-scheme': 1}))
             self.assertIn("scheme '(none)'", result.stdout)
 
+    def test_fixture_reports_each_excludes_error_once(self):
+        stdout = run('fixtures/broken.yaml').stdout
+        self.assertIn("ERROR excludes-neighbor outage-report excludes: neighbor 'on-call-shift' is not a concept id.", stdout)
+        self.assertIn("ERROR excludes-statement outage-report excludes: the entry for neighbor 'incident' has an empty statement.", stdout)
+
+    def test_excludes_entries(self):
+        head = ('schemes: [{id: main, definition: Docs.}]\n'
+                'concepts:\n'
+                '  - {id: alert, prefLabel: alert, scheme: main, definition: A machine signal that a threshold was crossed.}\n'
+                '  - id: incident\n'
+                '    prefLabel: incident\n'
+                '    definition: An interruption someone must respond to.\n'
+                '    scheme: main\n'
+                '    excludes:\n')
+        cases = {
+            '      - {neighbor: alert, statement: Not every alert; one incident may raise many.}\n': Counter(),
+            '      - {neighbor: incident, statement: Not an alert.}\n': Counter({'excludes-statement': 1}),
+            '      - {neighbor: alert, statement: The incident.}\n': Counter({'excludes-statement': 1}),
+            '      - {neighbor: alert}\n': Counter({'excludes-statement': 1}),
+            '      - {neighbor: alert, statement: Not an alert., why: eval}\n': Counter({'schema': 1}),
+            '      - alert\n': Counter({'schema': 1}),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            vocab = Path(tmp) / 'vocabulary.yaml'
+            for entry, expected in cases.items():
+                vocab.write_text(head + entry)
+                result = run(str(vocab))
+                self.assertEqual(rules(result.stdout), expected, entry + result.stdout)
+                self.assertEqual(result.returncode, 1 if expected else 0, entry)
+                if not expected:
+                    self.assertIn('inferred stage 0', result.stdout)
+
     def test_unparseable_file_is_a_schema_error(self):
         with tempfile.TemporaryDirectory() as tmp:
             vocab = Path(tmp) / 'vocabulary.yaml'

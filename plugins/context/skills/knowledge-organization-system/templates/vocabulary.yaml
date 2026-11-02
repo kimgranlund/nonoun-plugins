@@ -10,6 +10,8 @@
 #     hiddenLabel: [retired or misspelled form]  # Stage 1; tools flag its use
 #     definition: What it means, in words other than the label.
 #     scopeNote: What it covers and excludes.
+#     excludes:                               # only after an observed confusion; hand-written
+#       - {neighbor: confused-id, statement: What this concept is not.}
 #     broader: [parent-id]                    # Stage 2
 #     narrower: [child-id]                    # Stage 2
 #     related: [neighbor-id]                  # Stage 2
