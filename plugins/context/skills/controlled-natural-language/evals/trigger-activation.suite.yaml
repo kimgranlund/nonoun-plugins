@@ -9,7 +9,7 @@ id: controlled-natural-language-trigger-activation
 version: 1
 target: controlled-natural-language skill description (SKILL.md frontmatter)
 target_spec:
-  - When a prompt asks to write, review or tighten the phrasing of requirements, specs, ADRs, acceptance criteria, runbooks, SOPs, policies, prompts or style guides, the skill shall activate.
+  - When a prompt asks to write, review or tighten the phrasing of requirements, specs, ADRs, acceptance criteria, runbooks, SOPs, policies, prompts, style guides or questions for a decision model, the skill shall activate.
   - When a prompt asks for casual prose, marketing copy, code comments, a naming decision or a translation, the skill shall not activate.
 graders:
   - id: observed-activation
@@ -80,11 +80,11 @@ cases:
     added_because: "brief trigger list: SOPs; ambiguous, vague or inconsistent phrasing"
     added_at: 2026-11-01
   - id: a10
-    input: {prompt: "Run the CNL linter on docs/requirements and fix what it finds."}
-    expected: {activates: true, behavior: "Runs `lint_cnl.py`, fixes each error by rule, hands unresolved terms to the vocabulary, and reports warnings it left with the reason."}
+    input: {prompt: "Tighten the option descriptions and score levels our triage model reads; it keeps picking the wrong team."}
+    expected: {activates: true, behavior: "Applies the decision-question doc type: one proposition per statement, no negation, boundary cases stated, no counting or date comparison; lints with `templates/decision-question.rules.yaml` and names which rules it checked by eye."}
     tags: [should-activate]
     source: synthetic
-    added_because: "brief frontmatter rule: the description includes the acronym CNL"
+    added_because: "brief trigger list: writing or reviewing questions for a decision model (T-0837); replaces the CNL-linter prompt, whose acronym trigger a8 still covers"
     added_at: 2026-11-01
   - id: n1
     input: {prompt: "Write a quick reply thanking Sam for the review."}

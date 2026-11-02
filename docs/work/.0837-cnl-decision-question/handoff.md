@@ -2,14 +2,12 @@
 id: T-0837
 title: "Add the decision-question doc type to controlled-natural-language"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-01
 claimed_by: nonoun-author 2026-11-01
-branch: lane/T-0837-t0837
-worktree: ../sdlc-lite.worktrees/T-0837-t0837
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -43,3 +41,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Do not edit other skills. Existing rules and doc types keep working.
+
+## Outcome
+
+2026-11-01 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: ac005cf1afa4
+- Changed: see commits
+- Commits: ea90441 T-0837: decision-question doc type in controlled-natural-language; d1e39ca T-0837: record lane T-0837-t0837
+- Check: 1 lint_cnl.py with the decision-question rules exits 0 on the clean fixture and non-zero on the vio...: pass
+- Check: 2 validate_suite.py on trigger-activation.suite.yaml exits 0: pass
+- Check: 3 unittest discover exits 0, check-packaging.py exits 0, git diff --check is clean: pass
+- Follow-up: note: plugins/context/skills/controlled-natural-language/templates/decisi... -> notes.md
+- Follow-up: note: plugins/context/skills/controlled-natural-language/references/patte... -> notes.md
