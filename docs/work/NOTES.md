@@ -872,3 +872,7 @@
 ## T-0835: Add the classify-and-resolve skill to the context plugin (2026-11-01)
 
 - note: `plugins/context/skills/classify-and-resolve/templates/pipeline.yaml` does not pass against the KOS `templates/vocabulary.yaml` (the criterion's primary form). It passes only with the starter `templates/scheme.yaml`, which the criterion allows and the report names. Scheme `intake` is not in the KOS template.
+
+## T-0836: Add the excludes field to knowledge-organization-system (2026-11-01)
+
+- note: references/model.md Exclusions section mentions that `decision-questions` compiles these entries; the brief says the same (docs/specs/new-skills/knowledge-organization-system.md:23) and no compiler is built, so it is consistent with the Non-goals.
