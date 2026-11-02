@@ -1,0 +1,49 @@
+# Fail case for validate_questions.py: each error rule except `schema` fires exactly once, with no
+# companion files (the CNL rules file and linter are the defaults beside this skill). The comment on
+# each line names the rule it trips.
+id: broken-triage
+version: 1
+# unpinned-model: no `model` key
+shape: single-choice
+role: suggester          # ungated-role: no passed gate backs any question
+gate_ids: []
+questions:
+  - id: team
+    kind: choice
+    instructions: Choose the one option that best describes the message and its tone.   # cnl: banned word "and"
+    options:
+      billing: {definition: The customer asks about a charge on an invoice.}
+      outage: {definition: The customer reports a service that is down.}
+  - id: urgency
+    kind: score
+    instructions: Choose the one level that best describes the urgency of the message.
+    levels:
+      - {description: the customer asks a question}
+      - {description: the customer reports a blocked task}
+  - id: needs-human
+    kind: proposition
+    instructions: Answer yes when the message names a legal deadline.
+  - id: routine
+    kind: proposition
+    instructions: Answer yes when the message asks a routine question.
+decisions:
+  - id: escalate
+    mode: threshold                  # threshold-on-proposition
+    inputs: [needs-human]
+    bands: {act: 0.9, review: 0.6}
+    outcome: flag
+  - id: escalate-compare
+    mode: compare                    # compare-incomplete: no margin
+    inputs: [needs-human]
+    rival: routine
+    outcome: flag
+  - id: queue
+    mode: threshold
+    inputs: [team, urgency]          # missing-assemble: a joint label with no assemble validator
+    bands: {act: 0.85, review: 0.5}
+    outcome: act
+  - id: sentiment
+    mode: threshold
+    inputs: [tone]                   # missing-question
+    bands: {act: 0.85, review: 0.5}
+    outcome: flag
