@@ -2,6 +2,12 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [Unreleased]
+
+### Changed
+
+- `controlled-natural-language` governs a decision-question doc type (T-0837): question instructions, option descriptions, score levels, propositions and boundary cases for a decision model, in its own rules file `templates/decision-question.rules.yaml` with a clean and a violating fixture. Banned words catch conjunctions, negations, counting and date comparison; alignment and missing boundary cases are checked by eye (`references/patterns.md`). The description and trigger suite cover writing questions for a decision model.
+
 ## [0.6.0] - 2026-11-01
 
 ### Added

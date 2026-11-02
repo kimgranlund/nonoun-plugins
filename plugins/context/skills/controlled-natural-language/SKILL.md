@@ -5,7 +5,8 @@ description: >
   evidence-gated set of sentence patterns per document type, checked by a linter against
   the corpus vocabulary. Use for requirements, specs, ADRs, acceptance criteria, runbooks,
   SOPs, policies, compliance language, prompts and system prompts, and style guides for
-  them; for ambiguous, vague or inconsistent phrasing; and for "make this precise",
+  them; for questions written for a decision model (choice options, score levels, yes/no
+  propositions); for ambiguous, vague or inconsistent phrasing; and for "make this precise",
   "testable" or "unambiguous". Not for casual prose or one-off chat answers, marketing or
   narrative copy, code comments, or naming questions (which term to use belongs to
   knowledge-organization-system).
@@ -40,7 +41,7 @@ Add the term there with evidence, then come back. A term never goes into `rules.
 - A **banned word** list names words and phrases that caused misreadings, each with its fix.
 - A retired pattern keeps `deprecated: true` and `replacedBy` until no governed doc uses it.
 
-Start from `templates/rules.yaml`. Field tables, slot rules, how the linter reads a doc, and a pattern catalog for requirements, decision logs, runbooks, compliance statements, findings and methods are in [references/patterns.md](references/patterns.md).
+Start from `templates/rules.yaml`, or `templates/decision-question.rules.yaml` for questions a decision model answers. Field tables, slot rules, how the linter reads a doc, and a pattern catalog for requirements, decision logs, runbooks, compliance statements, findings, methods and decision questions are in [references/patterns.md](references/patterns.md).
 
 ## Stages
 

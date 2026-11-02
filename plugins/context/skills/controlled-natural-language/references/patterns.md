@@ -56,7 +56,7 @@ Each finding is one line, `SEVERITY RULE FILE:LINE: problem Fix: fix`, sorted er
 | `deprecated-pattern` | warning | A sentence fits only a retired pattern. | Rewrite it to the `replacedBy` pattern; delete the retired pattern once no doc uses it. |
 | `no-source` | warning | A pattern records no source sentence. | Record the sentence it came from, or remove the pattern. |
 
-`fixtures/violations.md`, with `fixtures/rules.yaml` and `fixtures/vocabulary.yaml`, trips every rule once; `fixtures/clean.md` passes with `templates/rules.yaml` and the KOS template vocabulary.
+`fixtures/violations.md`, with `fixtures/rules.yaml` and `fixtures/vocabulary.yaml`, trips every rule once; `fixtures/clean.md` passes with `templates/rules.yaml` and the KOS template vocabulary. For the decision-question doc type, `fixtures/decision-question.md` passes and `fixtures/decision-question-violations.md` fails with `templates/decision-question.rules.yaml` and `fixtures/decision-question.vocabulary.yaml`.
 
 ## Catalog by doc type
 
@@ -168,3 +168,35 @@ A claim names what was found, in whom, and the evidence, so a reader can check i
 ```
 
 - "We interviewed each subject using ..." resolves `subject` to `participant` (its `hiddenLabel` in the KOS research example), so the shape passes and the line gets a `hidden-label` error naming `participant`.
+
+### Decision model: decision questions
+
+A decision question is what a decision model reads to answer a choice, a score or a yes/no proposition: the question instructions, the option descriptions, the score levels, the propositions and the boundary cases. The model reads literally and struggles with indirection, so the doc type follows five rules:
+
+| Rule | Checked by |
+|---|---|
+| One proposition per statement. | The linter, partly: `and`, `or`, `but` and `as well as` are banned words. Two claims joined without a conjunction (a relative clause, a comma list) are checked by eye. |
+| No negation or double negation in a proposition. | The linter, partly: `not`, `no`, `never`, `none`, `nor`, `neither`, `without`, `unless`, `except`, `cannot` and the common `n't` forms are banned words, so a double negation trips on its first negation. Negation carried by a word such as `unable`, `fails to` or `lacks` is checked by eye. |
+| Instructions and option descriptions aligned, never contradictory. | Partly: the instruction pattern asks for exactly one option or level, and each option slot must resolve to a vocabulary concept. Whether the instruction's subject matches what the options describe is checked by eye. |
+| Boundary cases stated explicitly. | By eye. The `boundary-case` pattern gives a boundary its shape; the linter cannot tell that a boundary is missing. |
+| No arithmetic, counting or date comparison requested. | The linter, partly: `how many`, `number of`, `total`, `sum`, `average`, `percent`, the comparison phrases (`more than`, `at least`, `older than`, ...) and `before`, `after` and `days ago` are banned words. Other phrasings are checked by eye. Ask for the parts (a Choice over months) and compute in code. |
+
+The doc type ships as its own rules file, `templates/decision-question.rules.yaml`, so its banned words never reach another doc type. Its five patterns:
+
+```yaml
+  - id: question-instruction
+    template: "Choose the one {kind} that best describes {subject}."   # kind: option | level
+  - id: option-description
+    template: "Choose {option} when {condition}."                      # option: concept slot
+  - id: score-level
+    template: "Level {level} means {description}."
+  - id: proposition
+    template: "Answer yes when {claim}."
+  - id: boundary-case
+    template: "If {case}, the answer is {answer}."
+```
+
+- Source: "Choose billing when the message asks about a charge on an invoice." (`fixtures/decision-question.md`)
+- Rejected: "Choose billing when the message is not about an outage." (`banned-word` `not`: state the positive case, and give the outage case its own boundary.)
+- Rejected: "Choose outage when the service is down and the status page is red." (`banned-word` `and`: two propositions; split them.)
+- Known limits: an option label that contains a banned word, such as "terms and conditions", trips `banned-word`; treat it as a sign the option names two concepts and take it to the vocabulary. In YAML, quote a banned word that YAML reads as a boolean (`"no"`, `"yes"`, `"on"`, `"off"`), or the rules file gets a `schema` error.
