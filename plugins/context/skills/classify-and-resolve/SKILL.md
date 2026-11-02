@@ -3,7 +3,7 @@ name: classify-and-resolve
 description: >
   Design and grow classify-and-resolve workflows: incoming items get a class from a closed set,
   with an explicit unclassified route, and go to a resolver with a declared contract, through a
-  cascade of rules, models and humans, an autonomy matrix guarded by evaluation gates, and a
+  cascade of rules, observed evidence, decision models and humans, an autonomy matrix guarded by evaluation gates, and a
   taxonomy feedback loop, with a pipeline validator, a log-to-cases converter and an
   unclassified report. Use for triage, routing, dispatch and intake; "sort these into", "route each X to",
   "categorize and handle", "handle different kinds of X differently"; ticket, incident or request
@@ -22,7 +22,7 @@ Give every incoming item a class from a closed set, then hand it to the one reso
 
 Three stages, in order:
 
-1. **Classify.** A cascade of steps: deterministic `rule` steps, then `model` steps (cheap before expensive), then a `human` step. Each step sees only what the previous steps abstained on.
+1. **Classify.** A cascade of five kinds of step, in order: deterministic `rule` steps (every known convention), `observed` steps (what real data says: usage in shipped code, historical decisions), a decision model and then any expensive model (`model` steps, each a `decision-questions` question set), then a `human` step. Each step sees only what the previous steps abstained on.
 2. **Resolve entities** (optional). Map mentions in the item to canonical concepts by `knowledge-organization-system` label matching: `prefLabel` and `altLabel` resolve, a `hiddenLabel` resolves with a flag.
 3. **Dispatch.** Each class routes to exactly one resolver. Fan-out happens inside a resolver, never in the routing table.
 
@@ -40,12 +40,13 @@ Three limiting factors matter more than classifier sophistication. Name them whe
 
 - **knowledge-organization-system** owns the label set. The classes are the active concepts of one KOS scheme, referenced by concept id; hierarchical classes use `broader` and `narrower`. Hand off whenever a class is added, split, merged, renamed or redefined, then come back to update routes.
 - **controlled-natural-language** owns how rules and policies are phrased. Classification rules ("If `<condition>`, then the class is `<concept>`.") and resolver policies are CNL statements. Hand off when criteria or policies are written or reviewed.
+- **decision-questions** owns every `model` step's question: the question set's shape, decision mode, bands, pinned model and role, and the DecisionModel adapter contract. A model step names its set by `question_set`. Hand off whenever a model question is written, tuned or promoted.
 - **evaluation-system** owns "is this good enough?". Logs convert into its Cases; every autonomy promotion is guarded by a gate in its `gates.yaml`; this skill reads gate statuses and never computes a quality metric. Hand off whenever the question is whether a classifier or resolver is good enough.
 - **Without the peers**, classes may be an inline list with one-line definitions and rules plain if/then sentences. Autonomy then stays at `manual` or `suggest`, because no gate can pass, and the validator reports which guarantees are missing (`peer-absent`).
 
 ## The model
 
-An **Item** arrives. Each cascade step writes a **Classification** (a concept id or `unclassified`, with confidence, rationale, evidence and its step). An optional **EntityMatch** maps a mention to a concept. A **Resolver** declares its contract: the classes it `accepts`, its `output_type`, its `side_effects` (`none`, `reversible`, `irreversible`) and its `autonomy` (`manual`, `suggest`, `auto`), plus a `promotion_gate` and `review_sample_rate` where the matrix requires them. A **Resolution** records the outcome (`resolved`, `escalated`, `deferred`, `rejected`), who decided, and a `corrected_label` when the item was misrouted. A **Pipeline** ties them together: a scheme, a cascade, routes and the unclassified route.
+An **Item** arrives. Each cascade step writes a **Classification** (a concept id or `unclassified`, its `level` (`exact` or `broader`), confidence, typed `evidence` (`rule`, `observed` or `answer`), an optional rationale, its step and, for a model, its `model_version`). An optional **EntityMatch** maps a mention to a concept. A **Resolver** declares its contract: the classes it `accepts`, its `output_type`, its `side_effects` (`none`, `reversible`, `irreversible`) and its `autonomy` (`manual`, `suggest`, `auto`), plus a `promotion_gate` and `review_sample_rate` where the matrix requires them. A **Resolution** records the outcome (`resolved`, `escalated`, `deferred`, `rejected`), who decided, and a `corrected_label` when the item was misrouted. A **Pipeline** ties them together: a scheme, a cascade, a `fallback` (`unclassified` or `broader`), routes, the unclassified route and a `rule_repair_route` for disagreements.
 
 These field names are a stable contract. Start from `templates/pipeline.yaml` and `templates/scheme.yaml`, and log in the shape of `templates/log.schema.json`. Field tables, cascade semantics, the entity-resolution stage, the log format and the script rules are in [references/model.md](references/model.md).
 
@@ -64,7 +65,7 @@ Every change happens at one stage. Never skip a stage, and never raise autonomy 
 |---|---|---|
 | 0 Manual | Items of more than one kind arrive and are handled inconsistently | KOS seed scheme with 3 to 5 classes plus `unclassified`; one `human` cascade step; all resolvers `manual`; every decision logged in the JSONL format |
 | 1 Rules | At least one class has a high-volume, unambiguous signal in the logs | A deterministic `rule` step first in the cascade, written as CNL statements, abstaining on anything else; logs feed an evaluation suite via `logs_to_cases.py` |
-| 2 Model | Rules leave a large abstained remainder and the evaluation suite has holdout cases | A `model` step with `abstain_below` tuned on dev only; resolvers may move to `suggest` |
+| 2 Model | Rules and observed evidence leave a large abstained remainder, and the evaluation suite has holdout cases | A `model` step backed by a `decision-questions` question set, bands tuned on dev only. Resolvers may move to `suggest` only once that question set reaches role `suggester` |
 | 3 Automate | A resolver's `promotion_gate` passes | That resolver alone moves along the autonomy matrix; other classes are unaffected |
 
 What each stage leaves behind, the taxonomy feedback loop and the anti-patterns are in [references/growth.md](references/growth.md), which ends with a walkthrough from no pipeline through Stage 1, including a KOS change driven by the unclassified report.
@@ -86,7 +87,10 @@ When you only review a design and no pipeline exists, still apply the topology: 
 
 - **Closed set, explicit catch-all.** Exactly one `unclassified_route`, leading to a human or deferred queue, never to discard.
 - **One class, one resolver.** Every class in the scheme routes to exactly one resolver.
-- **Abstain over guess.** A step below its `abstain_below` passes the item on. The final step is `human`, or can abstain to `unclassified`.
+- **Abstain over guess.** A step below its `abstain_below`, or below its question set's review band, passes the item on. The final step is `human`, or can abstain to `unclassified`.
+- **Broader before unclassified.** With `fallback: broader` and a hierarchical scheme, a low-confidence item gets its `broader` concept (`level: broader`) when that concept has a route, before it falls to `unclassified`.
+- **Disagreement repairs rules first.** When a model step disagrees with a rule or observed step on an item, the item goes to `rule_repair_route` as a candidate rule bug, as well as to normal review.
+- **Hard cases stay human.** A model step acts on hard or disputed items only when its question set has role `voter`, which is rarely earned.
 - **Log everything.** Every Classification and Resolution is written in the log schema. A pipeline without logs cannot reach Stage 1.
 - **Evidence before automation.** Autonomy follows the matrix. Gates live in `evaluation-system` and are never re-implemented here.
 - **Drift is a defect.** Routes reference KOS concept ids. A deprecated concept still routed is an error. A class definition changed without re-running its evaluation suite is an error: the definition, the version bump and the suite run ship together.
@@ -108,12 +112,12 @@ How to spot and fix each is in [references/growth.md](references/growth.md).
 Standard library plus PyYAML, Python 3.9 or later. Output is deterministic.
 
 ```bash
-python3 scripts/validate_pipeline.py PIPELINE [PIPELINE ...] [--vocabulary FILE] [--gates FILE] [--log FILE ...] [--strict]
+python3 scripts/validate_pipeline.py PIPELINE [PIPELINE ...] [--vocabulary FILE] [--gates FILE] [--question-set FILE ...] [--log FILE ...] [--strict]
 python3 scripts/logs_to_cases.py LOG [LOG ...] --pipeline FILE [--holdout-percent N] [--out FILE]
 python3 scripts/unclassified_report.py LOG [LOG ...] --pipeline FILE [--vocabulary FILE] [--min-items N] [--out FILE]
 ```
 
-- The validator exits 1 on any error, so it can run in CI. Errors: `unrouted-class`, `unknown-resolver`, `unresolved-route` (unknown or deprecated concept), `missing-unclassified-route`, `auto-unclassified`, `no-fallthrough`, `autonomy-matrix`, `unknown-gate`, `gate-not-passed`, `abstain-range`, and `schema`. Warnings with `--log`: `idle-class`, `unclassified-share`, `unreviewed-suggest`; and `peer-absent`.
+- The validator exits 1 on any error, so it can run in CI. Errors: `unrouted-class`, `unknown-resolver`, `unresolved-route` (unknown or deprecated concept), `missing-unclassified-route`, `auto-unclassified`, `no-fallthrough`, `autonomy-matrix`, `unknown-gate`, `gate-not-passed`, `abstain-range`, `model-question-set` (missing, or failing `decision-questions`' `validate_questions.py`, which it runs by path), `question-set-role`, `broader-fallback`, `missing-rule-repair-route`, and `schema`. Warnings with `--log`: `idle-class`, `unclassified-share`, `unreviewed-suggest`; and `peer-absent`.
 - `logs_to_cases.py` writes an `evaluation-system` suite of `production` cases: `expected` from `corrected_label` or a human decision, `added_because` the log id, the split by a hash of the item id. Validate it with that skill's `validate_suite.py`.
 - `unclassified_report.py` groups unclassified items by rationale tag, then shared keyword, and writes Markdown candidates with evidence ids for a KOS change proposal.
 

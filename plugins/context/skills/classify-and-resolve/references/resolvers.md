@@ -1,6 +1,6 @@
 # Resolvers
 
-Load this when you add or change a resolver, raise or lower its autonomy, name a promotion gate, design an escalation path, or read an `autonomy-matrix`, `unknown-gate`, `gate-not-passed` or `auto-unclassified` finding. Field names are defined in [model.md](model.md); stages are in [growth.md](growth.md).
+Load this when you add or change a resolver, raise or lower its autonomy, name a promotion gate, design an escalation path, or read an `autonomy-matrix`, `unknown-gate`, `gate-not-passed`, `question-set-role` or `auto-unclassified` finding. Field names are defined in [model.md](model.md); stages are in [growth.md](growth.md).
 
 ## The contract
 
@@ -30,6 +30,7 @@ Judge `side_effects` by the worst thing the resolver can do, not the usual case.
 - `manual` is always allowed and is the default. `suggest` is free where a wrong suggestion costs a person's minute, and gated where an approved-without-reading suggestion can do lasting harm.
 - "Passed" means the gate's `status` in `gates.yaml` is `passed`, as `evaluation-system` records it. This skill reads that status and never computes the metric behind it. Without a registry no gate can pass, so autonomy stays at the free cells.
 - Promotion is per resolver. Gating the billing resolver says nothing about the outage resolver.
+- A resolver fed by a `model` step also needs that step's question set at role `suggester` or above before it moves to `suggest` or `auto` (`question-set-role`). The role is promoted in `decision-questions`, behind its own per-question gates.
 - A gate guards one slice: write it on the slice for the resolver's class (`slice: billing`), not `all`, so one weak class cannot ride on the aggregate.
 - Demotion needs no gate. When a gate fails, a sample review finds harm, or the class definition changes, move the resolver back to `manual` or `suggest` in the same change that records why.
 
@@ -37,7 +38,8 @@ Judge `side_effects` by the worst thing the resolver can do, not the usual case.
 
 Every resolver has a way out that is not "do it anyway":
 
-- **Abstain before dispatch.** Classification uncertainty belongs to the cascade (`abstain_below`, a human step, `unclassified_route`), not to the resolver.
+- **Abstain before dispatch.** Classification uncertainty belongs to the cascade (`abstain_below`, a question set's review band, `fallback: broader`, a human step, `unclassified_route`), not to the resolver.
+- **Repair rules on disagreement.** An item where a model step disagrees with a rule or observed step also goes to `rule_repair_route`, a `manual` queue owned by whoever maintains the rules. It is not a resolver for any class; it fixes the cascade.
 - **Escalate after dispatch.** A resolver that receives an item it cannot handle logs `status: escalated` and hands it on (to a person, a second-line resolver, the unclassified queue). An item that is not its class at all is `rejected` with `corrected_label` naming the class it should have had; that record is the misroute signal.
 - **Defer.** `deferred` parks an item with a reason, for example waiting on the customer. A deferred item is still owned; the unclassified queue defers until a class decision exists.
 - **The unclassified route is human.** It leads to a `manual` or `suggest` resolver a person works. An `auto` resolver there would turn abstention back into guessing (`auto-unclassified`).

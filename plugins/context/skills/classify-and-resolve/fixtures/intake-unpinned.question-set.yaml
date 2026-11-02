@@ -1,0 +1,33 @@
+# Companion to broken-pipeline.yaml: the question set behind small-model. Its model is the
+# moving alias latest, so decision-questions' validate_questions.py rejects it (model-question-set).
+id: intake-unpinned
+version: 1
+model: latest
+shape: single-choice
+role: checker
+gate_ids: []
+questions:
+  - id: kind
+    kind: choice
+    instructions: >-
+      Choose the one option that best describes the document.
+      If the document is a signed order form, the answer is contract.
+    options:
+      contract:
+        definition: The document is an agreement that binds the company to a counterparty.
+        examples: ["Mutual NDA between Acme and Example Ltd."]
+      policy:
+        definition: The document is an internal rule that staff must follow.
+        examples: ["Travel expense policy, version 4."]
+      complaint:
+        definition: The document is a grievance from a customer.
+        examples: ["Formal complaint about a late refund."]
+      none:
+        definition: The document belongs to a kind outside this list.
+        examples: ["A lunch menu.", "A conference flyer."]
+decisions:
+  - id: kind-flag
+    mode: threshold
+    inputs: [kind]
+    bands: {act: 0.9, review: 0.6}
+    outcome: flag
