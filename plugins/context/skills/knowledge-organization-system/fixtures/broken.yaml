@@ -1,5 +1,5 @@
 # Deliberately invalid: each validator rule fires exactly once.
-# python3 scripts/validate_kos.py fixtures/broken.yaml                          (8 errors, 1 warning)
+# python3 scripts/validate_kos.py fixtures/broken.yaml                          (10 errors, 1 warning)
 # python3 scripts/validate_kos.py fixtures/broken.yaml --corpus fixtures/corpus (adds 2 corpus warnings)
 
 schemes:
@@ -45,6 +45,18 @@ concepts:
     prefLabel: escalation
     definition: Handing an open incident to a responder with more authority or skill.
     related: [on-call-rota]
+    scheme: main
+
+  # excludes-neighbor: `on-call-shift` is not a concept id.
+  # excludes-statement: the entry for neighbor `incident` has an empty statement.
+  - id: outage-report
+    prefLabel: outage report
+    definition: A status-page notice telling customers what is broken and when it should recover.
+    excludes:
+      - neighbor: on-call-shift
+        statement: Not a responder's shift; a report is written for customers.
+      - neighbor: incident
+        statement: ""
     scheme: main
 
   # broader-cycle: severity and priority are each other's parent.

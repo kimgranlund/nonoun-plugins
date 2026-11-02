@@ -2,6 +2,12 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [Unreleased]
+
+### Changed
+
+- `knowledge-organization-system` concepts take an optional, hand-written `excludes` list of `{neighbor, statement}` entries saying what a concept is not and which concept it gets confused with, added only after an observed confusion (T-0836). `validate_kos.py` adds two errors, `excludes-neighbor` (the neighbor is not a concept id) and `excludes-statement` (an empty statement, the concept itself as neighbor, or a statement that only restates its `prefLabel`); `references/model.md`, `references/growth.md`, the template comment and `fixtures/broken.yaml` cover them.
+
 ## [0.6.0] - 2026-11-01
 
 ### Added
