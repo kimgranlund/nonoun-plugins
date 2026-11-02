@@ -9,14 +9,15 @@ A stage is left only when its exit evidence exists. Autonomy never rises without
 | Stage | Artifacts it leaves | Evidence to leave it |
 |---|---|---|
 | 0 Manual | A KOS scheme with 3 to 5 defined classes; a pipeline with one `human` step, every resolver `manual`, an `unclassified_route`; a JSONL log of every decision | The log shows one class with a high-volume signal a rule can state without exceptions |
-| 1 Rules | A `rule` step first in the cascade, written as CNL statements that abstain on anything else; a suite from `logs_to_cases.py`, run on every rule change | Rules leave a large abstained remainder, and the suite has `holdout` cases |
-| 2 Model | A `model` step with `abstain_below` tuned on `dev` cases only; resolvers may be `suggest` | A resolver's slice has enough cases for a gate's `min_n` |
+| 1 Rules | A `rule` step first in the cascade, written as CNL statements that abstain on anything else, then any `observed` step that reads real data; a suite from `logs_to_cases.py`, run on every rule change | Rules and observed evidence leave a large abstained remainder, and the suite has `holdout` cases |
+| 2 Model | A `model` step backed by a `decision-questions` question set, bands tuned on `dev` cases only; a `rule_repair_route` for disagreements; resolvers may be `suggest` once the set reaches role `suggester` | A resolver's slice has enough cases for a gate's `min_n` |
 | 3 Automate | A gate in `gates.yaml` per promoted resolver; `review_sample_rate` on `irreversible` + `auto` | Stays at 3; each further resolver promotes on its own gate |
 
 Changes at any stage:
 
 - **Rules.** A rule is added only with the log ids that show its signal, and only after the suite shows it fires on no case of another class. A rule that needs an exception is two rules or a model's job.
-- **Thresholds.** `abstain_below` is tuned on `dev` cases. A holdout run reports; it never tunes.
+- **Thresholds.** `abstain_below` and a question set's bands are tuned on `dev` cases. A holdout run reports; it never tunes.
+- **Disagreements.** Work the `rule_repair_route` queue before relabeling: a model that disagrees with a rule or observed step is first evidence that the rule misfires.
 - **Versions.** Every class, route, cascade or resolver change bumps `Pipeline.version` and re-runs the suites for the affected classes in the same change. Log records carry `pipeline_version`, so a report can split before and after.
 
 ## Taxonomy feedback loop
@@ -39,10 +40,10 @@ The pipeline grows its own label set. Unclassified items and misroutes are the e
 |---|---|---|
 | An `other` bucket that is silently dropped | A class named `other` or `misc` routed to an auto-closing or archiving resolver; no `unclassified` records in the logs | Route abstentions to a human or deferred queue (`unclassified_route`) and report on them. |
 | Classes defined by resolver convenience | Definitions that name a team ("things the payments team handles"); a class whose items share no meaning | Define classes by what the item is; let routing map meaning to handler. |
-| One giant model step | A cascade with a single `model` step and no `abstain_below` (`no-fallthrough`) | Put deterministic rules first, give the model a threshold, end with a human or unclassified. |
+| One giant model step | A cascade with a single `model` step whose question set never abstains (`no-fallthrough`) | Put deterministic rules and observed evidence first, give the question set a review band, end with a human or unclassified. |
 | Automating irreversible actions without sampling | `irreversible` + `auto` with no `review_sample_rate` (`autonomy-matrix`) | Add sample review, or stay at `suggest`. |
 | Routing tables that duplicate taxonomy | Classes listed in the pipeline when a vocabulary exists; route keys written as labels | Keep classes in the KOS scheme and route by concept id; inline `classes` only when no vocabulary exists. |
-| Tuning thresholds on production without a holdout | `abstain_below` changed after looking at live traffic or holdout results | Tune on `dev`; read holdout once per decision. |
+| Tuning thresholds on production without a holdout | `abstain_below` or a question set's bands changed after looking at live traffic or holdout results | Tune on `dev`; read holdout once per decision. |
 | Classifier changes shipped without re-running evaluations | A rule, threshold or definition change with no suite run in the same change | Run the suites for the affected classes before the change lands. |
 
 ## Examples across domains
@@ -102,7 +103,7 @@ triage/logs/2026-10.jsonl   # one Classification and one Resolution per ticket
 The triage lead logs every ticket. A ticket that fits no class is logged `unclassified` with a rationale tag:
 
 ```json
-{"log_id": "l-019", "at": "2026-10-10T09:00:00Z", "pipeline_id": "support-triage", "pipeline_version": 1, "record": "classification", "item_id": "i-010", "item": {"id": "i-010", "source": "support-inbox", "payload": {"subject": "How do I export all invoices as CSV?", "body": "Our accountant needs a year of invoices."}, "received_at": "2026-10-10T08:55:00Z"}, "label": "unclassified", "confidence": null, "rationale": "#data-export no class fits a data export request", "evidence": [], "classifier_id": "triage-lead", "cascade_step": 0}
+{"log_id": "l-019", "at": "2026-10-10T09:00:00Z", "pipeline_id": "support-triage", "pipeline_version": 1, "record": "classification", "item_id": "i-010", "item": {"id": "i-010", "source": "support-inbox", "payload": {"subject": "How do I export all invoices as CSV?", "body": "Our accountant needs a year of invoices."}, "received_at": "2026-10-10T08:55:00Z"}, "label": "unclassified", "level": "exact", "confidence": null, "rationale": "#data-export no class fits a data export request", "evidence": [], "classifier_id": "triage-lead", "cascade_step": 0}
 ```
 
 After two weeks the log holds 30 records. The validator, given the log, flags the share:

@@ -2,19 +2,25 @@
 # resolver manual, every decision logged in templates/log.schema.json. Replace every "replace-with"
 # id. Field semantics: references/model.md; resolver contracts: references/resolvers.md. Check:
 #   python3 scripts/validate_pipeline.py templates/pipeline.yaml --vocabulary templates/scheme.yaml --gates gates.yaml
+# (add --question-set FILE for each decision-questions question set a model step names)
 #
 # Full shape (optional fields are added only when a stage allows them):
 #
 #   cascade:
-#     - classifier_id: keyword-rules     # Stage 1: deterministic rules first
-#       kind: rule                       # rule | model | human
+#     - classifier_id: keyword-rules     # Stage 1: deterministic rules and known conventions first
+#       kind: rule                       # rule | observed | model | human
 #       rules:                           # controlled-natural-language statements
 #         - If the subject contains "invoice", then the class is request.
-#     - classifier_id: small-model       # Stage 2
+#     - classifier_id: past-decisions    # what real data says: shipped usage, historical decisions
+#       kind: observed
+#       abstain_below: 0.9               # rule and observed steps; tuned on dev cases only
+#     - classifier_id: team-question     # Stage 2
 #       kind: model
-#       abstain_below: 0.8               # tuned on dev cases only; below it the next step decides
+#       question_set: support-team       # a decision-questions question set id; its bands decide abstention
 #     - classifier_id: triage-desk
 #       kind: human                      # the final step is human, or abstains to unclassified
+#   fallback: unclassified               # broader: label a low-confidence item with its routed broader concept
+#   rule_repair_route: rules-owner       # required with a rule or observed step and a model step
 #   resolvers:
 #     - id: replace-with-resolver
 #       accepts: [request]
@@ -33,6 +39,8 @@ scheme: intake
 cascade:
   - classifier_id: replace-with-triage-person-or-desk
     kind: human
+
+fallback: unclassified
 
 routes:
   request: request-desk

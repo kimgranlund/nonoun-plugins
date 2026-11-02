@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Validate classify-and-resolve pipeline specs against a KOS vocabulary, a gate registry and, optionally, logs.
+"""Validate classify-and-resolve pipeline specs against a KOS vocabulary, a gate registry, question sets and logs.
 
-Usage: validate_pipeline.py PIPELINE [PIPELINE ...] [--vocabulary FILE] [--gates FILE] [--log FILE ...]
-                            [--window-days N] [--max-unclassified-share X] [--today YYYY-MM-DD] [--strict]
+Usage: validate_pipeline.py PIPELINE [PIPELINE ...] [--vocabulary FILE] [--gates FILE] [--question-set FILE ...]
+                            [--log FILE ...] [--window-days N] [--max-unclassified-share X]
+                            [--today YYYY-MM-DD] [--strict]
 
 A pipeline file may hold several YAML documents; each is one pipeline, validated on its own.
 Each finding is one line: SEVERITY RULE SUBJECT FIELD: problem. Fix: fix.
 Exit 0 when there are no errors (warnings allowed unless --strict), 1 on errors,
 2 when an input file cannot be read. Rule semantics: references/model.md.
+Question sets are checked by decision-questions' validate_questions.py, run as a subprocess by path.
 Standard library plus PyYAML; runs on Python 3.9.
 """
 import argparse
 import datetime
 import json
+import subprocess
 import sys
 from collections import namedtuple
 from pathlib import Path
@@ -20,19 +23,27 @@ from pathlib import Path
 import yaml
 
 UNCLASSIFIED = 'unclassified'  # reserved label: never a concept id, never a route key
+VALIDATE_QUESTIONS = Path(__file__).resolve().parents[2] / 'decision-questions' / 'scripts' / 'validate_questions.py'
 
-PIPELINE_FIELDS = ('id', 'version', 'scheme', 'classes', 'cascade', 'routes', 'unclassified_route', 'resolvers')
+PIPELINE_FIELDS = ('id', 'version', 'scheme', 'classes', 'cascade', 'fallback', 'routes', 'unclassified_route',
+                   'rule_repair_route', 'resolvers')
 CLASS_FIELDS = ('id', 'definition')
-STEP_FIELDS = ('classifier_id', 'kind', 'abstain_below', 'rules')
+STEP_FIELDS = ('classifier_id', 'kind', 'question_set', 'abstain_below', 'rules')
 RESOLVER_FIELDS = ('id', 'accepts', 'output_type', 'side_effects', 'autonomy', 'promotion_gate',
                    'review_sample_rate', 'policy')
-STEP_KINDS = ('rule', 'model', 'human')
+STEP_KINDS = ('rule', 'observed', 'model', 'human')
+FALLBACKS = ('broader', 'unclassified')
 SIDE_EFFECTS = ('none', 'reversible', 'irreversible')
 AUTONOMY = ('manual', 'suggest', 'auto')
+ROLES = ('checker', 'suggester', 'voter')  # decision-questions role ladder, lowest first
 
 ENVELOPE_FIELDS = ('log_id', 'at', 'pipeline_id', 'pipeline_version', 'record', 'item_id')
-CLASSIFICATION_FIELDS = ('item', 'label', 'confidence', 'rationale', 'evidence', 'classifier_id', 'cascade_step')
-CLASSIFICATION_REQUIRED = ('label', 'confidence', 'rationale', 'classifier_id', 'cascade_step')
+CLASSIFICATION_FIELDS = ('item', 'label', 'level', 'confidence', 'rationale', 'evidence', 'classifier_id',
+                         'cascade_step', 'model_version')
+CLASSIFICATION_REQUIRED = ('label', 'level', 'confidence', 'classifier_id', 'cascade_step')
+LEVELS = ('exact', 'broader')
+EVIDENCE_FIELDS = ('kind', 'ref', 'value')
+EVIDENCE_KINDS = ('rule', 'observed', 'answer')
 RESOLUTION_FIELDS = ('resolver_id', 'status', 'output', 'decided_by', 'corrected_label')
 RESOLUTION_REQUIRED = ('resolver_id', 'status', 'output', 'decided_by')
 ITEM_FIELDS = ('id', 'source', 'payload', 'received_at')
@@ -42,7 +53,8 @@ DECIDERS = ('resolver', 'human')
 
 ERROR_RULES = ('schema', 'unrouted-class', 'unknown-resolver', 'unresolved-route', 'missing-unclassified-route',
                'auto-unclassified', 'no-fallthrough', 'autonomy-matrix', 'unknown-gate', 'gate-not-passed',
-               'abstain-range')
+               'abstain-range', 'model-question-set', 'question-set-role', 'broader-fallback',
+               'missing-rule-repair-route')
 WARNING_RULES = ('idle-class', 'unclassified-share', 'unreviewed-suggest', 'peer-absent')
 RULE_ORDER = {rule: i for i, rule in enumerate(ERROR_RULES + WARNING_RULES)}
 
@@ -98,6 +110,42 @@ def load_vocabulary(path):
     return {'schemes': schemes, 'concepts': concepts}
 
 
+def load_question_sets(paths, gates_path):
+    """Read question sets and check each with validate_questions.py. Returns {id: {data, path, problems}}."""
+    sets = {}
+    for path in paths:
+        data = load_yaml(path, 'question set')
+        qid = data.get('id') if isinstance(data, dict) else None
+        if not isinstance(qid, str):
+            raise InputError(f'{path}: not a decision-questions question set (no `id`)')
+        if not VALIDATE_QUESTIONS.is_file():
+            sets[qid] = {'data': data, 'path': path, 'problems': None}
+            continue
+        command = [sys.executable, '-B', str(VALIDATE_QUESTIONS), str(path)]
+        if gates_path:
+            command += ['--gates', str(gates_path)]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode == 2:
+            raise InputError(f'{path}: validate_questions.py could not read its inputs: '
+                             f'{result.stderr.strip() or result.stdout.strip()}')
+        errors = [line.split(' ', 2)[1] for line in result.stdout.splitlines() if line.startswith('ERROR ')]
+        sets[qid] = {'data': data, 'path': path, 'problems': sorted(set(errors))}
+    return sets
+
+
+def can_abstain(question_set):
+    """True when a question set has a decision that can hold an answer back: a review band or a margin above 0."""
+    decisions = question_set.get('decisions') if isinstance(question_set, dict) else None
+    for decision in decisions if isinstance(decisions, list) else []:
+        if not isinstance(decision, dict):
+            continue
+        bands = decision.get('bands') if isinstance(decision.get('bands'), dict) else {}
+        if (is_number(bands.get('review')) and bands['review'] > 0) or \
+                (is_number(decision.get('margin')) and decision['margin'] > 0):
+            return True
+    return False
+
+
 def load_gates(path):
     data = load_yaml(path, 'gate registry')
     gates = data.get('gates') if isinstance(data, dict) else None
@@ -126,8 +174,16 @@ def check_record(record):
                                              and not isinstance(record['cascade_step'], bool)
                                              and record['cascade_step'] >= 0):
             problems.append('`cascade_step` is not a non-negative integer')
-        if not isinstance(record.get('evidence', []), list):
+        if 'level' in record and record['level'] not in LEVELS:
+            problems.append(f'`level` is {record["level"]!r}, not one of {", ".join(LEVELS)}')
+        evidence = record.get('evidence', [])
+        if not isinstance(evidence, list):
             problems.append('`evidence` is not a list')
+        else:
+            for i, entry in enumerate(evidence):
+                if not isinstance(entry, dict) or entry.get('kind') not in EVIDENCE_KINDS or 'ref' not in entry \
+                        or set(entry) - set(EVIDENCE_FIELDS):
+                    problems.append(f'`evidence[{i}]` is not {{kind: {"|".join(EVIDENCE_KINDS)}, ref, value}}')
         item = record.get('item')
         if item is not None:
             if not isinstance(item, dict):
@@ -250,12 +306,21 @@ def _check_shape(pipeline, pid, findings):
             schema(subject, 'classifier_id', 'the step has no `classifier_id`.', 'name the classifier.')
         if step.get('kind') not in STEP_KINDS:
             schema(subject, 'kind', f'kind {step.get("kind")!r} is not one of {", ".join(STEP_KINDS)}.',
-                   'use rule, model or human.')
+                   'use rule, observed, model or human.')
+        if 'question_set' in step and step.get('kind') != 'model':
+            schema(subject, 'question_set', 'only a `model` step reads a question set.',
+                   'remove `question_set`, or make the step kind model.')
+        elif 'question_set' in step and not isinstance(step['question_set'], str):
+            schema(subject, 'question_set', '`question_set` is not a question set id.',
+                   'name the decision-questions question set by its `id`.')
         if 'abstain_below' in step and not is_number(step['abstain_below']):
             schema(subject, 'abstain_below', '`abstain_below` is not a number.', 'write a confidence between 0 and 1.')
         if 'rules' in step and not (isinstance(step['rules'], list) and all(isinstance(r, str) for r in step['rules'])):
             schema(subject, 'rules', '`rules` is not a list of statements.',
                    'write each rule as one controlled-natural-language statement.')
+    if 'fallback' in pipeline and pipeline['fallback'] not in FALLBACKS:
+        schema(pid, 'fallback', f'fallback {pipeline["fallback"]!r} is not one of {", ".join(FALLBACKS)}.',
+               'use broader or unclassified.')
     if 'routes' in pipeline and not isinstance(pipeline['routes'], dict):
         schema(pid, 'routes', '`routes` is not a mapping of class id to resolver id.', 'write `routes: {class-id: resolver-id}`.')
     resolvers = pipeline.get('resolvers')
@@ -290,8 +355,10 @@ def _check_shape(pipeline, pid, findings):
                    'write the share of auto decisions a human reviews, for example 0.05.')
 
 
-def validate_pipeline(pipeline, vocab, gates, findings):
-    """Append findings for one pipeline document. Returns (pipeline id, inferred stage, classes, resolvers)."""
+def validate_pipeline(pipeline, vocab, gates, findings, question_sets=None):
+    """Append findings for one pipeline document. Returns (pipeline id, inferred stage, classes, resolvers).
+
+    question_sets is {id: {data, path, problems}} from load_question_sets, or None when none were given."""
     if not isinstance(pipeline, dict):
         findings.append(Finding('ERROR', 'schema', '-', '-', 'a document is not a pipeline mapping.',
                                 'write the Pipeline fields from references/model.md.'))
@@ -351,21 +418,44 @@ def validate_pipeline(pipeline, vocab, gates, findings):
                                 f'unclassified_route leads to {catch!r}, which acts with autonomy auto.',
                                 'send unclassified items to a manual or suggest resolver a human works.'))
 
+    repair = pipeline.get('rule_repair_route')
+    if 'rule_repair_route' in pipeline and (not isinstance(repair, str) or repair not in resolvers):
+        findings.append(Finding('ERROR', 'unknown-resolver', pid, 'rule_repair_route',
+                                f'rule_repair_route {repair!r} is not a declared resolver.',
+                                'declare a manual resolver that owns rule and observed-evidence fixes.'))
+
     cascade = [s for s in pipeline.get('cascade') or [] if isinstance(s, dict)] \
         if isinstance(pipeline.get('cascade'), list) else []
+    kinds = {s.get('kind') for s in cascade}
     for i, step in enumerate(cascade):
         value = step.get('abstain_below')
         if is_number(value) and not 0 <= value <= 1:
             findings.append(Finding('ERROR', 'abstain-range', f'{pid}:cascade[{i}]', 'abstain_below',
                                     f'abstain_below {value} is outside [0, 1].',
                                     'write a confidence between 0 and 1, tuned on dev cases only.'))
+    _check_model_steps(pid, cascade, routes, resolvers, question_sets, findings)
     if cascade:
         last = cascade[-1]
         threshold = last.get('abstain_below')
-        if last.get('kind') == 'model' and not (is_number(threshold) and threshold > 0):
+        known = (question_sets or {}).get(last.get('question_set'))
+        if last.get('kind') == 'model' and not (is_number(threshold) and threshold > 0) \
+                and (known is not None or not last.get('question_set')) \
+                and not (known is not None and can_abstain(known['data'])):
             findings.append(Finding('ERROR', 'no-fallthrough', f'{pid}:cascade[{len(cascade) - 1}]', 'kind',
                                     'the final step is a model that never abstains, so no item can fall through to unclassified.',
-                                    'end the cascade with a `human` step, or give the final model an `abstain_below` above 0.'))
+                                    'end the cascade with a `human` step, or give the final model a question set '
+                                    'with a review band above 0.'))
+    if kinds & {'rule', 'observed'} and 'model' in kinds and 'rule_repair_route' not in pipeline:
+        findings.append(Finding('ERROR', 'missing-rule-repair-route', pid, 'rule_repair_route',
+                                'the cascade has a rule or observed step and a model step, but no `rule_repair_route` '
+                                'for items where they disagree.',
+                                'route disagreements to a manual resolver that checks the rule first; '
+                                'they go to normal review as well.'))
+    if pipeline.get('fallback') == 'broader' and not any(c.get('broader') for c in classes.values()):
+        findings.append(Finding('ERROR', 'broader-fallback', pid, 'fallback',
+                                f'fallback is broader, but scheme {scheme!r} has no `broader` links, so no item '
+                                'can fall back to a coarser class.',
+                                'use `fallback: unclassified`, or add the hierarchy through knowledge-organization-system.'))
 
     promoted = False
     for rid in sorted(resolvers):
@@ -401,21 +491,65 @@ def validate_pipeline(pipeline, vocab, gates, findings):
         findings.append(Finding('WARNING', 'peer-absent', pid, 'scheme',
                                 'no vocabulary was given, so classes are an inline list and route keys are not checked against a KOS scheme.',
                                 'pass --vocabulary with the knowledge-organization-system vocabulary.'))
+    if question_sets is None and any(s.get('kind') == 'model' and s.get('question_set') for s in cascade):
+        findings.append(Finding('WARNING', 'peer-absent', pid, 'question_set',
+                                'no question set was given, so model steps were not checked against decision-questions.',
+                                'pass --question-set with each decision-questions question set the cascade names.'))
     if gates is None and any(r.get('promotion_gate') for r in resolvers.values()):
         findings.append(Finding('WARNING', 'peer-absent', pid, 'promotion_gate',
                                 'no gate registry was given, so no promotion_gate can count as passed.',
                                 'pass --gates with the evaluation-system gates.yaml.'))
 
-    kinds = {s.get('kind') for s in cascade}
     if promoted:
         stage = 3
     elif 'model' in kinds or any(r.get('autonomy') == 'suggest' for r in resolvers.values()):
         stage = 2
-    elif 'rule' in kinds:
+    elif kinds & {'rule', 'observed'}:
         stage = 1
     else:
         stage = 0
     return pid, stage, classes, resolvers
+
+
+def _check_model_steps(pid, cascade, routes, resolvers, question_sets, findings):
+    """model-question-set and question-set-role: each model step reads a valid question set whose role
+    covers the autonomy of the resolvers it routes to (suggester for suggest or auto)."""
+    routed = [resolvers[t].get('autonomy') for t in routes.values() if isinstance(t, str) and t in resolvers]
+    highest = max((AUTONOMY.index(a) for a in routed if a in AUTONOMY), default=0)
+    needed = 'suggester' if highest > 0 else 'checker'
+    for i, step in enumerate(cascade):
+        if step.get('kind') != 'model':
+            continue
+        subject, qid = f'{pid}:cascade[{i}]', step.get('question_set')
+        if not qid:
+            findings.append(Finding('ERROR', 'model-question-set', subject, 'question_set',
+                                    'the model step names no question set.',
+                                    'write its question as a decision-questions question set and name it by id.'))
+            continue
+        if not isinstance(qid, str) or question_sets is None:
+            continue
+        known = question_sets.get(qid)
+        if known is None:
+            findings.append(Finding('ERROR', 'model-question-set', subject, 'question_set',
+                                    f'question set {qid!r} is not among the --question-set files.',
+                                    'pass its file with --question-set, or correct the id.'))
+        elif known['problems']:
+            findings.append(Finding('ERROR', 'model-question-set', subject, 'question_set',
+                                    f'question set {qid!r} fails validate_questions.py '
+                                    f'({", ".join(known["problems"])}).',
+                                    f'run decision-questions validate_questions.py {known["path"]} and fix it.'))
+        else:
+            if known['problems'] is None:
+                findings.append(Finding('WARNING', 'peer-absent', subject, 'question_set',
+                                        f'{VALIDATE_QUESTIONS} is missing, so question set {qid!r} was not validated.',
+                                        'install decision-questions beside this skill.'))
+            role = known['data'].get('role')
+            if role in ROLES and ROLES.index(role) < ROLES.index(needed):
+                findings.append(Finding('ERROR', 'question-set-role', subject, 'question_set',
+                                        f'question set {qid!r} has role {role}, but it routes to resolvers at autonomy '
+                                        f'{AUTONOMY[highest]}, which needs role {needed}.',
+                                        'keep those resolvers at manual until decision-questions promotes the set '
+                                        'to suggester behind its gates.'))
 
 
 # ---------------------------------------------------------------- log warnings
@@ -458,6 +592,8 @@ def main(argv=None):
     parser.add_argument('pipelines', nargs='+', metavar='PIPELINE', help='pipeline YAML file(s)')
     parser.add_argument('--vocabulary', help='knowledge-organization-system vocabulary.yaml')
     parser.add_argument('--gates', help='evaluation-system gates.yaml')
+    parser.add_argument('--question-set', action='append', default=[], metavar='FILE', dest='question_sets',
+                        help='decision-questions question set a model step names (repeatable)')
     parser.add_argument('--log', action='append', default=[], metavar='FILE', help='JSONL log (repeatable)')
     parser.add_argument('--window-days', type=int, default=30, help='log window for warnings (default 30)')
     parser.add_argument('--max-unclassified-share', type=float, default=0.2,
@@ -469,6 +605,7 @@ def main(argv=None):
         today = datetime.date.fromisoformat(args.today) if args.today else datetime.date.today()
         vocab = load_vocabulary(args.vocabulary) if args.vocabulary else None
         gates = load_gates(args.gates) if args.gates else None
+        question_sets = load_question_sets(args.question_sets, args.gates) if args.question_sets else None
         records, problems = read_log(args.log)
     except (InputError, ValueError) as exc:
         print(exc, file=sys.stderr)
@@ -491,7 +628,7 @@ def main(argv=None):
             findings.append(Finding('ERROR', 'schema', path, '-', 'the file holds no pipeline.',
                                     'start from templates/pipeline.yaml.'))
         for doc in docs:
-            result = validate_pipeline(doc, vocab, gates, findings)
+            result = validate_pipeline(doc, vocab, gates, findings, question_sets)
             pid, stage = result[0], result[1]
             if pid != '-' and pid in seen:
                 findings.append(Finding('ERROR', 'schema', pid, 'id', f'pipeline id {pid!r} is used twice.',
