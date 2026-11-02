@@ -12,6 +12,9 @@
 #     expected: {...}              # what the grader compares against; a label is a string or expected.label
 #     tags: [concept-id]           # slice keys; concept ids when a vocabulary exists
 #     source: production           # production | synthetic | adversarial | regression
+#     basis: owner                 # who decided expected: owner | judgment | convention | agent
+#     kind: standard               # standard | invariance (options permuted) | negation (proposition flipped)
+#     variant_of: case-000         # required for invariance and negation: the case it varies
 #     added_because: bug 311       # the evidence: bug link, log id, spec clause
 #     split: dev                   # Stage 2: dev | holdout; tune only on dev
 #     added_at: 2026-11-01
@@ -36,17 +39,20 @@ cases:
     input: {text: Replace with an input that failed or that the spec names.}
     expected: {text: Replace with the output the target must produce.}
     source: production
+    basis: owner         # Replace with who decided expected: owner, judgment, convention or agent.
     added_because: Replace with the evidence, for example a bug link or log id.
     added_at: 2026-11-01
   - id: case-002
     input: {text: Replace with an input written to probe a boundary the spec names.}
     expected: {text: Replace with the output the spec requires at that boundary.}
     source: adversarial
+    basis: owner         # Replace with who decided expected: owner, judgment, convention or agent.
     added_because: Replace with the spec clause or near miss it probes.
     added_at: 2026-11-01
   - id: case-003
     input: {text: Replace with an input the spec names but nobody has sent yet.}
     expected: {text: Replace with the output the spec requires.}
     source: synthetic
+    basis: owner         # Replace with who decided expected: owner, judgment, convention or agent.
     added_because: Replace with the spec clause it checks.
     added_at: 2026-11-01

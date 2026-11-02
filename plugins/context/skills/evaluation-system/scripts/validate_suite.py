@@ -2,7 +2,8 @@
 """Validate evaluation suites and, optionally, the gate registry, KOS vocabulary and tuning config they use.
 
 Usage: validate_suite.py SUITE [SUITE ...] [--gates FILE] [--vocabulary FILE] [--tune FILE]
-                         [--rules FILE] [--max-validation-age DAYS] [--today YYYY-MM-DD] [--strict]
+                         [--rules FILE] [--target-version V] [--runs PATH]
+                         [--max-validation-age DAYS] [--today YYYY-MM-DD] [--strict]
 
 Each finding is one line: SEVERITY RULE SUBJECT FIELD: problem. Fix: fix.
 Exit 0 when there are no errors (warnings allowed unless --strict), 1 on errors,
@@ -19,22 +20,28 @@ from pathlib import Path
 import yaml
 
 SUITE_FIELDS = ('id', 'version', 'target', 'target_spec', 'cases', 'cases_path', 'graders', 'slices')
-CASE_FIELDS = ('id', 'input', 'expected', 'tags', 'source', 'added_because', 'split', 'added_at',
-               'graders', 'status', 'retired_reason')
+CASE_FIELDS = ('id', 'input', 'expected', 'tags', 'source', 'basis', 'kind', 'variant_of', 'added_because',
+               'split', 'added_at', 'graders', 'status', 'retired_reason')
 GRADER_FIELDS = ('id', 'kind', 'config', 'validated_against')
 VALIDATION_FIELDS = ('human_set', 'agreement', 'n', 'measured_at')
-GATE_FIELDS = ('id', 'suite_id', 'suite_version', 'metric', 'slice', 'threshold', 'min_n', 'action', 'owner', 'status')
+GATE_FIELDS = ('id', 'suite_id', 'suite_version', 'question_id', 'metric', 'slice', 'basis', 'threshold', 'min_n',
+               'min_coverage', 'pinned_target_version', 'action', 'owner', 'status')
 SOURCES = ('production', 'synthetic', 'adversarial', 'regression')
+BASES = ('owner', 'judgment', 'convention', 'agent')  # who or what decided `expected`
+KINDS = ('standard', 'invariance', 'negation')
+VARIANT_KINDS = ('invariance', 'negation')  # kinds that must name the case they vary
 SPLITS = ('dev', 'holdout')
 GRADER_KINDS = ('exact', 'programmatic', 'reference', 'rubric-model', 'human')
 TRUST_KINDS = ('rubric-model', 'reference')  # graders that must be validated before backing a gate
-GATE_STATUSES = ('open', 'passed', 'failed', 'insufficient_n')
+GATE_STATUSES = ('open', 'passed', 'failed', 'insufficient_n', 'stale')
 METRICS = ('pass_rate',)
 ALL = 'all'
 
 ERROR_RULES = ('schema', 'duplicate-case-id', 'missing-evidence', 'unknown-grader', 'gate-reference',
-               'unvalidated-grader', 'holdout-in-tuning', 'unresolved-label')
-WARNING_RULES = ('synthetic-majority', 'ungated-metric', 'retired-case-gated', 'stale-validation', 'peer-absent')
+               'unvalidated-grader', 'holdout-in-tuning', 'unresolved-label', 'missing-variant',
+               'convention-in-judgment-gate', 'uncalibrated-gate', 'stale-gate')
+WARNING_RULES = ('synthetic-majority', 'ungated-metric', 'retired-case-gated', 'stale-validation', 'peer-absent',
+                 'missing-basis', 'convention-in-judgment-suite')
 RULE_ORDER = {rule: i for i, rule in enumerate(ERROR_RULES + WARNING_RULES)}
 DEFAULT_MAX_AGE_DAYS = 180
 
@@ -74,6 +81,13 @@ def as_date(value):
         return datetime.date.fromisoformat(str(value))
     except ValueError:
         return None
+
+
+def direction(expected):
+    """The truth value a proposition case expects: a boolean `expected` or `expected.answer`; else None."""
+    if isinstance(expected, dict):
+        expected = expected.get('answer')
+    return expected if isinstance(expected, bool) else None
 
 
 def expected_labels(expected):
@@ -293,12 +307,22 @@ class Suite:
         if 'input' not in item:
             self._schema(findings, cid, 'input', 'case has no input.', 'write what the target receives.')
         for field, choices, default in (('source', SOURCES, None), ('split', SPLITS, 'dev'),
-                                        ('status', ('active', 'retired'), 'active')):
+                                        ('status', ('active', 'retired'), 'active'), ('kind', KINDS, 'standard')):
             value = item.get(field, default)
             if value not in choices:
                 self._schema(findings, cid, field, f"'{value}' is not one of {', '.join(choices)}.", f'set `{field}`.')
                 value = default
             case[field] = value
+        case['basis'] = item.get('basis')
+        if case['basis'] is not None and case['basis'] not in BASES:
+            self._schema(findings, cid, 'basis', f"'{case['basis']}' is not one of {', '.join(BASES)}.",
+                         'name who or what decided `expected`.')
+            case['basis'] = None
+        variant_of = item.get('variant_of')
+        if variant_of is not None and (not isinstance(variant_of, (str, int)) or isinstance(variant_of, bool)):
+            self._schema(findings, cid, 'variant_of', 'must be a case id.', 'name the case this one varies.')
+            variant_of = None
+        case['variant_of'] = None if variant_of is None else str(variant_of)
         for field in ('tags', 'graders'):
             value = item.get(field)
             if value is not None and not (isinstance(value, list) and all(isinstance(v, str) for v in value)):
@@ -329,6 +353,15 @@ class Suite:
         if spec['cases']:
             return [c for c in cases if c['id'] in spec['cases']]
         return [c for c in cases if spec['tags'] & set(c['tags'])]
+
+    def gate_cases(self, gate, cases=None):
+        """The cases a gate reads: its slice, narrowed to its `question_id` tag and its `basis` list."""
+        members = self.slice_cases(gate['slice'], cases)
+        if gate.get('question_id'):
+            members = [c for c in members if gate['question_id'] in c['tags']]
+        if gate.get('basis'):
+            members = [c for c in members if c['basis'] in gate['basis']]
+        return members
 
     def inferred_stage(self, gated):
         if gated:
@@ -365,6 +398,18 @@ def read_gates(data, findings):
             problems.append('`min_n` must be a positive integer')
         if item.get('status', 'open') not in GATE_STATUSES:
             problems.append(f"`status` must be one of {', '.join(GATE_STATUSES)}")
+        pinned = item.get('pinned_target_version')
+        if not isinstance(pinned, (int, str)) or isinstance(pinned, bool) or not str(pinned).strip():
+            problems.append('`pinned_target_version` is missing')
+        if 'question_id' in item and (not isinstance(item['question_id'], str) or not item['question_id'].strip()):
+            problems.append('`question_id` must be a case tag')
+        basis = item.get('basis')
+        if basis is not None and not (isinstance(basis, list) and basis and all(b in BASES for b in basis)):
+            problems.append(f"`basis` must be a list of {', '.join(BASES)}")
+        coverage = item.get('min_coverage')
+        if coverage is not None and (not isinstance(coverage, (int, float)) or isinstance(coverage, bool)
+                                     or not 0 <= coverage <= 1):
+            problems.append('`min_coverage` must be a number from 0 to 1')
         if problems:
             findings.append(Finding('ERROR', 'schema', gid, '-', '; '.join(problems) + '.',
                                     'write the gate with the Gate fields in references/model.md.'))
@@ -373,7 +418,7 @@ def read_gates(data, findings):
     return gates
 
 
-def _check_gates(suites, gates, findings):
+def _check_gates(suites, gates, findings, target_version=None, runs=None):
     """Return {suite id: [gates]} for gates whose references resolve."""
     by_id = {s.id: s for s in suites}
     resolved = {}
@@ -388,11 +433,15 @@ def _check_gates(suites, gates, findings):
         elif gate['slice'] != ALL and gate['slice'] not in suite.slices:
             problem = (f"slice '{gate['slice']}' is not declared in suite '{suite.id}'.",
                        f"declare it under `slices`, or use one of: {', '.join([ALL] + sorted(suite.slices))}.", 'slice')
+        elif gate.get('question_id') and not any(gate['question_id'] in c['tags'] for c in suite.active_cases()):
+            problem = (f"no active case in suite '{suite.id}' is tagged with question '{gate['question_id']}'.",
+                       'tag the question\'s cases with its id, or correct `question_id`.', 'question_id')
         if problem:
             findings.append(Finding('ERROR', 'gate-reference', gate['id'], problem[2], problem[0], problem[1]))
             continue
         resolved.setdefault(suite.id, []).append(gate)
-        backing = sorted({g for c in suite.slice_cases(gate['slice']) for g in suite.case_graders(c)
+        members = suite.gate_cases(gate)
+        backing = sorted({g for c in members for g in suite.case_graders(c)
                           if g in suite.graders and suite.graders[g]['kind'] in TRUST_KINDS
                           and not suite.graders[g]['validated_against']})
         if backing:
@@ -405,6 +454,24 @@ def _check_gates(suites, gates, findings):
                     findings.append(Finding('WARNING', 'retired-case-gated', gate['id'], 'slice',
                                             f"slice '{gate['slice']}' names retired case '{cid}'.",
                                             'repoint the slice at active cases.'))
+        bases = {c['basis'] for c in members}
+        if {'judgment', 'convention'} <= bases:
+            findings.append(Finding('ERROR', 'convention-in-judgment-gate', gate['id'], 'basis',
+                                    f"the gate reads judgment cases and {sum(c['basis'] == 'convention' for c in members)} "
+                                    'convention case(s), whose rule-derived gold inflates measured accuracy.',
+                                    'set the gate\'s `basis` to exclude convention, for example [owner, judgment].'))
+        if runs is not None and 'min_coverage' in gate:
+            latest = runs.get(suite.id)
+            if not (latest and isinstance(latest.get('calibration'), dict)):
+                where = f"run '{latest.get('id')}'" if latest else 'no run given for this suite'
+                findings.append(Finding('ERROR', 'uncalibrated-gate', gate['id'], 'min_coverage',
+                                        f'the gate relies on confidence bands but its latest run has no calibration ({where}).',
+                                        'run the suite on dev with a target that returns `confidence`, so the run records calibration.'))
+        pinned = str(gate['pinned_target_version'])
+        if target_version is not None and gate['status'] == 'passed' and pinned != str(target_version):
+            findings.append(Finding('ERROR', 'stale-gate', gate['id'], 'status',
+                                    f"the gate is recorded passed at target version {pinned}, but the target is now {target_version}.",
+                                    'record `status: stale`, re-run the suite on the new version, then re-pin the gate.'))
     return resolved
 
 
@@ -433,7 +500,25 @@ def _check_suite(suite, vocabulary, rules_given, max_age, today, findings):
         findings.append(Finding('WARNING', 'peer-absent', suite.id, 'criteria',
                                 'rubric criteria are plain sentences with no controlled-natural-language rules file.',
                                 'pass --rules and lint the criteria with controlled-natural-language, or accept plain criteria knowingly.'))
+    ids = {c['id'] for c in suite.cases}
+    for case in suite.cases:
+        if case['kind'] in VARIANT_KINDS and case['variant_of'] not in ids:
+            problem = (f"`variant_of` names '{case['variant_of']}', which is not a case in suite '{suite.id}'."
+                       if case['variant_of'] else 'the case does not name the case it varies.')
+            findings.append(Finding('ERROR', 'missing-variant', case['id'], 'variant_of',
+                                    f"{case['kind']} case: {problem}",
+                                    'set `variant_of` to the id of the standard case it permutes or negates.'))
     active = suite.active_cases()
+    unstated = [c['id'] for c in active if c['basis'] is None]
+    if unstated:
+        listed = ', '.join(unstated[:5]) + (f' and {len(unstated) - 5} more' if len(unstated) > 5 else '')
+        findings.append(Finding('WARNING', 'missing-basis', suite.id, 'basis',
+                                f'{len(unstated)} active case(s) state no basis ({listed}); nobody can tell who decided their gold.',
+                                f"set `basis` on each case to one of {', '.join(BASES)}."))
+    if {'judgment', 'convention'} <= {c['basis'] for c in active}:
+        findings.append(Finding('WARNING', 'convention-in-judgment-suite', suite.id, 'basis',
+                                'the suite mixes judgment and convention cases.',
+                                'give every judgment gate a `basis` that excludes convention, or move convention cases to their own suite.'))
     synthetic = sum(c['source'] == 'synthetic' for c in active)
     if active and synthetic * 2 > len(active):
         findings.append(Finding('WARNING', 'synthetic-majority', suite.id, 'source',
@@ -464,8 +549,27 @@ def _check_tuning(suites, tune, findings):
                                     'tune on dev cases only; move this case to dev and add a fresh holdout case.'))
 
 
+def latest_runs(paths):
+    """Return {suite id: the run.json with the latest started_at} from run.json files and folders holding them."""
+    files = []
+    for path in map(Path, paths):
+        files += sorted(path.rglob('run.json')) if path.is_dir() else [path]
+    latest = {}
+    for path in files:
+        try:
+            run = json.loads(path.read_text(encoding='utf-8'))
+        except (OSError, ValueError) as exc:
+            raise InputError(f'{path}: cannot read a run: {exc}')
+        if not isinstance(run, dict) or not isinstance(run.get('suite_id'), str):
+            raise InputError(f'{path}: not a run.json (no suite_id)')
+        current = latest.get(run['suite_id'])
+        if current is None or str(run.get('started_at')) > str(current.get('started_at')):
+            latest[run['suite_id']] = run
+    return latest
+
+
 def check(suite_paths, gates_path=None, vocabulary_path=None, tune_path=None, rules_path=None,
-          max_age=DEFAULT_MAX_AGE_DAYS, today=None):
+          max_age=DEFAULT_MAX_AGE_DAYS, today=None, target_version=None, run_paths=None):
     """Return (sorted findings, suites, {suite id: gates}, Vocabulary or None). Raises InputError."""
     findings = []
     today = today or datetime.date.today()
@@ -486,7 +590,8 @@ def check(suite_paths, gates_path=None, vocabulary_path=None, tune_path=None, ru
         _check_suite(suite, vocabulary, bool(rules_path), max_age, today, findings)
     gates = {}
     if gates_path:
-        gates = _check_gates(suites, read_gates(parse(gates_path, 'gates'), findings), findings)
+        runs = latest_runs(run_paths) if run_paths else None
+        gates = _check_gates(suites, read_gates(parse(gates_path, 'gates'), findings), findings, target_version, runs)
         for suite in suites:
             gated = {g['slice'] for g in gates.get(suite.id, [])}
             if gates.get(suite.id):
@@ -511,6 +616,9 @@ def main(argv=None):
     parser.add_argument('suites', nargs='+', metavar='SUITE', help='suite YAML file(s)')
     add_input_arguments(parser)
     parser.add_argument('--rules', metavar='FILE', help='controlled-natural-language rules file for rubric criteria')
+    parser.add_argument('--target-version', metavar='V', help="the target's current version, for stale gates")
+    parser.add_argument('--runs', action='append', metavar='PATH',
+                        help='a run.json or a folder of them (repeatable); the latest per suite is checked for calibration')
     parser.add_argument('--max-validation-age', type=int, default=DEFAULT_MAX_AGE_DAYS, metavar='DAYS',
                         help=f'age after which validated_against is stale (default {DEFAULT_MAX_AGE_DAYS})')
     parser.add_argument('--today', type=datetime.date.fromisoformat, help='date for staleness checks (YYYY-MM-DD)')
@@ -518,7 +626,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         findings, suites, gates, _ = check(args.suites, args.gates, args.vocabulary, args.tune, args.rules,
-                                           args.max_validation_age, args.today)
+                                           args.max_validation_age, args.today, args.target_version, args.runs)
     except InputError as exc:
         print(exc, file=sys.stderr)
         return 2

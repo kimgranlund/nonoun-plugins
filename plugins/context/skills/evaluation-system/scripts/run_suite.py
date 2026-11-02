@@ -5,9 +5,10 @@ Usage: run_suite.py SUITE [--target CMD] [--target-version V] [--split dev|holdo
                     [--gates FILE] [--vocabulary FILE] [--human-results FILE] [--traffic FILE]
                     [--max-drift X] [--out DIR] [--timeout S] [--strict]
 
-The target reads one case's input as JSON on stdin and writes its output as JSON on stdout.
+The target reads one case's input as JSON on stdin and writes its output as JSON on stdout; an output
+mapping may carry `confidence` (0 to 1) or `abstain: true`.
 Exit 0 when no gate failed, 1 when a gate failed or tag drift exceeded the limit (or a gate is
-insufficient_n under --strict), 2 when the run was refused or an input could not be read.
+insufficient_n or stale under --strict), 2 when the run was refused or an input could not be read.
 Protocol and file shapes: references/model.md. Standard library plus PyYAML; runs on Python 3.9.
 """
 import argparse
@@ -27,6 +28,7 @@ import validate_suite as vs
 
 OUTCOMES = ('pass', 'fail', 'score', 'abstain')
 Z95 = 1.959964
+BANDS = 10  # equal-width confidence bands for calibration
 
 
 class Refusal(Exception):
@@ -108,6 +110,8 @@ def grade(grader, case, output, target_error, ran_target, human, vocabulary, tim
         return 'abstain', 'no target command was given'
     if target_error:
         return 'fail', f'target error: {target_error}'
+    if isinstance(output, dict) and output.get('abstain') is True:
+        return 'abstain', 'the target abstained'
     payload = {'input': case['input'], 'output': output, 'expected': case['expected']}
     if kind == 'exact':
         actual, expected = compared(case, config, output)
@@ -169,6 +173,62 @@ def read_human(path, suite):
     return records
 
 
+def measure(members, outcomes):
+    """pass_rate over cases: value, n (answered cases), Wilson interval, passes and coverage (share answered)."""
+    answered = [outcomes[c['id']] for c in members if outcomes[c['id']] != 'abstain']
+    n, passes = len(answered), answered.count('pass')
+    return {'value': round(passes / n, 4) if n else None, 'n': n, 'interval': wilson(passes, n), 'passes': passes,
+            'coverage': round(n / len(members), 4) if members else None}
+
+
+def by_direction(members, outcomes):
+    """pass_rate per expected truth value, for the members that state one; empty when none does."""
+    directions = {}
+    for value in (True, False):
+        cases = [c for c in members if vs.direction(c['expected']) is value]
+        if cases:
+            directions[str(value).lower()] = measure(cases, outcomes)
+    return directions
+
+
+def calibration(cases, outcomes, confidence):
+    """Per-band accuracy and expected calibration error over answered dev cases that returned a confidence."""
+    scored = [(confidence[c['id']], outcomes[c['id']] == 'pass') for c in cases
+              if c['split'] == 'dev' and c['id'] in confidence and outcomes[c['id']] != 'abstain']
+    if not scored:
+        return None
+    bands, ece = [], 0.0
+    for b in range(BANDS):
+        low, high = b / BANDS, (b + 1) / BANDS
+        members = [(p, ok) for p, ok in scored if low <= p < high or (b == BANDS - 1 and p == 1.0)]
+        if not members:
+            continue
+        accuracy = sum(ok for _, ok in members) / len(members)
+        mean = sum(p for p, _ in members) / len(members)
+        ece += len(members) / len(scored) * abs(accuracy - mean)
+        bands.append({'range': [low, high], 'n': len(members), 'accuracy': round(accuracy, 4),
+                      'confidence': round(mean, 4)})
+    return {'bands': bands, 'ece': round(ece, 4), 'n': len(scored)}
+
+
+def gate_status(gate, metric, directions, target_version, suite_version):
+    """Return (status, note) for one gate; earlier checks win."""
+    if 'suite_version' in gate and str(gate['suite_version']) != str(suite_version):
+        return 'open', f"pinned to suite version {gate['suite_version']}"
+    if target_version is not None and str(gate['pinned_target_version']) != str(target_version):
+        return 'stale', f"pinned to target version {gate['pinned_target_version']}; re-pin after review"
+    if metric['n'] < gate['min_n']:
+        return 'insufficient_n', f"n {metric['n']} is below min_n {gate['min_n']}"
+    if 'min_coverage' in gate and metric['coverage'] < gate['min_coverage']:
+        return 'failed', f"coverage {fmt(metric['coverage'])} is below min_coverage {gate['min_coverage']}"
+    if metric['value'] < gate['threshold']:
+        return 'failed', ''
+    weak = [f"{d} {fmt(m['value'])}" for d, m in directions.items() if m['n'] and m['value'] < gate['threshold']]
+    if weak:
+        return 'failed', f"direction below threshold: {', '.join(weak)}"
+    return 'passed', ''
+
+
 def drift(cases, path, limit):
     traffic = vs.read_yaml(path)
     if not isinstance(traffic, dict) or not all(isinstance(v, (int, float)) and v >= 0 for v in traffic.values()):
@@ -189,7 +249,7 @@ def evaluate(suite, gates, args, vocabulary):
     cases = [c for c in suite.active_cases() if c['split'] in splits]
     human = read_human(args.human_results, suite)
     argv = shlex.split(args.target) if args.target else None
-    results, by_case = [], {}
+    results, by_case, confidence = [], {}, {}
     for case in cases:
         output, error = None, None
         graders = [suite.graders[g] for g in suite.case_graders(case)]
@@ -199,6 +259,9 @@ def evaluate(suite, gates, args, vocabulary):
                 error = stderr or f'exit {code}'
             elif output is None:
                 error = 'stdout was not JSON'
+            elif isinstance(output, dict) and isinstance(output.get('confidence'), (int, float)) \
+                    and not isinstance(output['confidence'], bool) and 0 <= output['confidence'] <= 1:
+                confidence[case['id']] = output['confidence']
         for grader in graders:
             outcome, detail = grade(grader, case, output, error, bool(argv), human, vocabulary, args.timeout)
             result = {'case_id': case['id'], 'grader_id': grader['id'], 'outcome': outcome, 'detail': detail}
@@ -207,26 +270,29 @@ def evaluate(suite, gates, args, vocabulary):
     outcomes = {c['id']: case_outcome(by_case.get(c['id'], [])) for c in cases}
     metrics = {}
     for slice_id in [vs.ALL] + list(suite.slices):
-        members = [outcomes[c['id']] for c in suite.slice_cases(slice_id, cases)]
-        n = sum(o != 'abstain' for o in members)
-        passes = members.count('pass')
-        metrics[slice_id] = {'value': round(passes / n, 4) if n else None, 'n': n,
-                             'interval': wilson(passes, n), 'passes': passes}
+        members = suite.slice_cases(slice_id, cases)
+        metrics[slice_id] = measure(members, outcomes)
+        directions = by_direction(members, outcomes)
+        if directions:
+            metrics[slice_id]['directions'] = directions
     gate_results = []
     for gate in gates:
-        metric = metrics[gate['slice']]
-        if 'suite_version' in gate and str(gate['suite_version']) != str(suite.version):
-            status, note = 'open', f"pinned to suite version {gate['suite_version']}"
-        elif metric['n'] < gate['min_n']:
-            status, note = 'insufficient_n', f"n {metric['n']} is below min_n {gate['min_n']}"
-        else:
-            status = 'passed' if metric['value'] >= gate['threshold'] else 'failed'
-            note = ''
-        gate_results.append(dict(gate, status=status, value=metric['value'], n=metric['n'], note=note))
+        members = suite.gate_cases(gate, cases)
+        metric, directions = measure(members, outcomes), by_direction(members, outcomes)
+        status, note = gate_status(gate, metric, directions, args.target_version, suite.version)
+        gate_results.append(dict(gate, status=status, value=metric['value'], n=metric['n'],
+                                 coverage=metric['coverage'], directions=directions, note=note))
     run = {'id': f"{suite.id}-{started:%Y%m%dT%H%M%SZ}", 'suite_id': suite.id, 'suite_version': suite.version,
-           'target_version': args.target_version, 'started_at': started.isoformat().replace('+00:00', 'Z'),
+           'target_version': args.target_version or 'unversioned',
+           'started_at': started.isoformat().replace('+00:00', 'Z'),
            'split': args.split, 'tuning': bool(args.tune), 'results': results, 'metrics': metrics,
            'gates': gate_results}
+    if any(c['basis'] for c in cases):
+        run['by_basis'] = {b: measure([c for c in cases if c['basis'] == b], outcomes)
+                           for b in vs.BASES if b == 'owner' or any(c['basis'] == b for c in cases)}
+    calibrated = calibration(cases, outcomes, confidence)
+    if calibrated:
+        run['calibration'] = calibrated
     if args.traffic:
         run['drift'] = drift(cases, args.traffic, args.max_drift)
     return run, cases, outcomes
@@ -250,6 +316,10 @@ def fmt(value):
     return 'n/a' if value is None else f'{value:.2f}'
 
 
+def interval_text(interval):
+    return 'n/a' if interval is None else f'{fmt(interval[0])} to {fmt(interval[1])}'
+
+
 def report(suite, run, outcomes, holdout_runs):
     abstained = sum(o == 'abstain' for o in outcomes.values())
     lines = [f"# Run {run['id']}", '',
@@ -257,18 +327,41 @@ def report(suite, run, outcomes, holdout_runs):
              f"- Split `{run['split']}`; tuning run: {'yes' if run['tuning'] else 'no'}; started {run['started_at']}",
              f'- Cases run: {len(outcomes)} ({abstained} abstained, left out of n); holdout runs logged for this suite: {holdout_runs}',
              '', '## Metrics (pass_rate)', '',
-             '| Slice | n | Passes | Value | 95% interval (Wilson) |', '|---|---|---|---|---|']
+             '| Slice | n | Passes | Value | 95% interval (Wilson) | Coverage |', '|---|---|---|---|---|---|']
     for slice_id, m in run['metrics'].items():
-        interval = 'n/a' if m['interval'] is None else f"{fmt(m['interval'][0])} to {fmt(m['interval'][1])}"
-        lines.append(f"| {slice_id} | {m['n']} | {m['passes']} | {fmt(m['value'])} | {interval} |")
+        lines.append(f"| {slice_id} | {m['n']} | {m['passes']} | {fmt(m['value'])} | {interval_text(m['interval'])} "
+                     f"| {fmt(m['coverage'])} |")
+    directional = [(s, d, m) for s, sm in run['metrics'].items() for d, m in sm.get('directions', {}).items()]
+    if directional:
+        lines += ['', '## Accuracy per direction', '',
+                  'Cases whose expected answer is true and cases whose expected answer is false, scored apart.', '',
+                  '| Slice | Expected | n | Passes | Value | 95% interval (Wilson) | Coverage |',
+                  '|---|---|---|---|---|---|---|']
+        for slice_id, d, m in directional:
+            lines.append(f"| {slice_id} | {d} | {m['n']} | {m['passes']} | {fmt(m['value'])} "
+                         f"| {interval_text(m['interval'])} | {fmt(m['coverage'])} |")
+    if 'by_basis' in run:
+        lines += ['', '## By basis (who decided expected)', '',
+                  '| Basis | n | Passes | Value | 95% interval (Wilson) | Coverage |', '|---|---|---|---|---|---|']
+        for basis, m in run['by_basis'].items():
+            lines.append(f"| {basis} | {m['n']} | {m['passes']} | {fmt(m['value'])} | {interval_text(m['interval'])} "
+                         f"| {fmt(m['coverage'])} |")
+    if 'calibration' in run:
+        c = run['calibration']
+        lines += ['', '## Calibration (dev)', '',
+                  f"Expected calibration error {c['ece']:.3f} over {c['n']} answered dev case(s).", '',
+                  '| Confidence band | n | Accuracy | Mean confidence |', '|---|---|---|---|']
+        for band in c['bands']:
+            lines.append(f"| {fmt(band['range'][0])} to {fmt(band['range'][1])} | {band['n']} | {fmt(band['accuracy'])} "
+                         f"| {fmt(band['confidence'])} |")
     lines += ['', '## Gates', '']
     if run['gates']:
-        lines += ['| Gate | Slice | Threshold | min_n | n | Value | Status | Action | Owner |',
-                  '|---|---|---|---|---|---|---|---|---|']
+        lines += ['| Gate | Slice | Threshold | min_n | n | Value | Coverage | Status | Action | Owner |',
+                  '|---|---|---|---|---|---|---|---|---|---|']
         for g in run['gates']:
             status = f"`{g['status']}`" + (f" ({g['note']})" if g['note'] else '')
             lines.append(f"| {g['id']} | {g['slice']} | {g['threshold']} | {g['min_n']} | {g['n']} | {fmt(g['value'])} "
-                         f"| {status} | {g['action']} | {g['owner']} |")
+                         f"| {fmt(g['coverage'])} | {status} | {g['action']} | {g['owner']} |")
     else:
         lines.append('No gate reads this suite: these numbers decide nothing yet.')
     if 'drift' in run:
@@ -292,7 +385,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('suite', help='the suite YAML file')
     parser.add_argument('--target', metavar='CMD', help='command that reads one input as JSON on stdin and writes JSON on stdout')
-    parser.add_argument('--target-version', default='unversioned', help='recorded in run.json')
+    parser.add_argument('--target-version', help="the target's version: recorded in run.json, and a gate pinned to "
+                                                  'another version is stale (default: unversioned, no stale check)')
     parser.add_argument('--split', choices=('dev', 'holdout', 'all'), default='dev', help='cases to run (default dev)')
     vs.add_input_arguments(parser)
     parser.add_argument('--human-results', metavar='FILE', help='recorded human outcomes: [{case_id, grader_id, outcome, detail}]')
@@ -300,7 +394,7 @@ def main(argv=None):
     parser.add_argument('--max-drift', type=float, default=0.2, help='largest allowed tag distance (default 0.2)')
     parser.add_argument('--out', metavar='DIR', help='output folder (default eval-runs/<run id>)')
     parser.add_argument('--timeout', type=float, default=60, help='seconds per target or grader call (default 60)')
-    parser.add_argument('--strict', action='store_true', help='exit 1 when a gate is insufficient_n')
+    parser.add_argument('--strict', action='store_true', help='exit 1 when a gate is insufficient_n or stale')
     args = parser.parse_args(argv)
     try:
         if args.tune and args.split != 'dev':
@@ -323,7 +417,8 @@ def main(argv=None):
     print(f"{out / 'run.json'}, {out / 'report.md'}: {len(cases)} case(s), "
           f"pass_rate {fmt(run['metrics'][vs.ALL]['value'])} (n {run['metrics'][vs.ALL]['n']}), "
           f"gates {dict(sorted(statuses.items())) or 'none'}")
-    failed = statuses['failed'] or run.get('drift', {}).get('exceeded') or (args.strict and statuses['insufficient_n'])
+    failed = statuses['failed'] or run.get('drift', {}).get('exceeded') or \
+        (args.strict and (statuses['insufficient_n'] or statuses['stale']))
     return 1 if failed else 0
 
 

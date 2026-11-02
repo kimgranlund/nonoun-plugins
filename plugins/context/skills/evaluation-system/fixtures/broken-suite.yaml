@@ -1,6 +1,7 @@
 # Trips every validator rule except `schema` exactly once. Run with its companions:
 #   python3 scripts/validate_suite.py fixtures/broken-suite.yaml --gates fixtures/gates.yaml \
-#     --vocabulary fixtures/vocabulary.yaml --tune fixtures/tune.yaml
+#     --vocabulary fixtures/vocabulary.yaml --tune fixtures/tune.yaml \
+#     --target-version triage-2026-10 --runs fixtures/broken-run.json
 id: broken-triage
 version: 1
 target: ticket-triage-classifier
@@ -22,17 +23,20 @@ slices:
   - billing
   - refund                                   # declared, never gated at Stage 3: ungated-metric
   - {id: legacy, cases: [t-6]}               # gated, names a retired case: retired-case-gated
-cases:                                       # 3 of 5 active cases are synthetic: synthetic-majority
-  - {id: t-1, input: {subject: Card declined}, expected: billing, tags: [billing], source: synthetic,
+cases:                                       # 4 of 6 active cases are synthetic: synthetic-majority
+  - {id: t-1, input: {subject: Card declined}, expected: billing, tags: [billing], source: synthetic, basis: judgment,
      added_because: spec clause 2}
   - {id: t-1, input: {subject: Charged twice}, expected: billing, tags: [billing], source: synthetic,
      added_because: spec clause 2}           # duplicate-case-id
-  - {id: t-2, input: {subject: Invoice address}, expected: billing, tags: [billing], source: synthetic}   # missing-evidence
-  - {id: t-3, input: {subject: Refund status}, expected: refund, tags: [refund], source: synthetic,
+  - {id: t-2, input: {subject: Invoice address}, expected: billing, tags: [billing], source: synthetic,
+     basis: convention}                      # missing-evidence; judgment and convention mixed: convention-in-judgment-suite
+  - {id: t-3, input: {subject: Refund status}, expected: refund, tags: [refund], source: synthetic, basis: owner,
      added_because: spec clause 3, graders: [queue-match, tone-judge]}   # unknown-grader
-  - {id: t-4, input: {subject: Money back please}, expected: refnd, tags: [refund], source: production,
+  - {id: t-4, input: {subject: Money back please}, expected: refnd, tags: [refund], source: production, basis: owner,
      added_because: log 8812, graders: [queue-match]}                    # unresolved-label
-  - {id: t-5, input: {subject: Double charge on card}, expected: billing, tags: [billing], source: regression,
+  - {id: t-5, input: {subject: Double charge on card}, expected: billing, tags: [billing], source: regression, basis: owner,
      added_because: bug 311, split: holdout, graders: [queue-match]}     # named in tune.yaml: holdout-in-tuning
-  - {id: t-6, input: {subject: Fax a refund form}, expected: refund, tags: [refund], source: production,
+  - {id: t-6, input: {subject: Fax a refund form}, expected: refund, tags: [refund], source: production, basis: owner,
      added_because: log 102, status: retired, retired_reason: fax intake closed in 2025, graders: [queue-match]}
+  - {id: t-7, input: {subject: Not a card decline}, expected: billing, source: synthetic, kind: negation,
+     added_because: spec clause 2}           # no variant_of: missing-variant; no basis: missing-basis

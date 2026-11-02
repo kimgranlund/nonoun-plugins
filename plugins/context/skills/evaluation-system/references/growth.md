@@ -30,13 +30,15 @@ The validator prints the stage a suite's contents imply (`inferred stage N`): 1 
 ### Stage 3 (Gate)
 
 - Entry: a real decision needs an automated answer.
-- Allowed artifacts: gates in `gates.yaml` (threshold, `min_n`, action, owner, a pinned suite version); production sampling into the case set; a drift check of case tags against live traffic (`--traffic`).
-- Not allowed: a gate on a slice graded by an unvalidated judge, a gate whose slice cannot reach `min_n`, metrics no gate reads.
-- Steady state: no `ungated-metric`, `stale-validation` or `retired-case-gated` warnings; holdout runs stay rare (the report counts them).
+- Allowed artifacts: gates in `gates.yaml` (threshold, `min_n`, action, owner, a pinned suite version, a `pinned_target_version`, and where it fits a `question_id`, a `basis` list and `min_coverage`); production sampling into the case set; a drift check of case tags against live traffic (`--traffic`); a `LESSONS.md` ledger from `templates/LESSONS.md`.
+- Not allowed: a gate on a slice graded by an unvalidated judge, a gate whose slice cannot reach `min_n`, metrics no gate reads, a judgment gate that also reads convention cases, a coverage gate without calibration on dev, a `passed` gate kept after the target version moved.
+- Steady state: no `ungated-metric`, `stale-validation`, `retired-case-gated` or `missing-basis` warnings; holdout runs stay rare (the report counts them); every gate pins the target version that is live.
 
 ## Case lifecycle
 
 - **Add** with evidence: a bug link, a log id, a spec clause, a review comment, in `added_because`. Set `source` honestly; a case written to probe a boundary is `adversarial`, one written from imagination is `synthetic`, one from a fixed failure is `regression`.
+- **Record who decided the gold** in `basis`. Report `owner` cases as their own slice (the runner's by-basis table does), because `agent`-approved gold inherits the agent's biases and `convention` gold rewards rule-following, not judgment.
+- **Add variants** for choice and proposition targets: an `invariance` case per option-order permutation (a changed answer is a failure; option-order bias is a documented failure mode) and a `negation` case that flips the proposition, each with `variant_of`. Keep true and false cases balanced so accuracy per direction means something.
 - **Version.** Bump the suite `version` whenever a case or grader is added, retired or changed. Gates pin a version, so a changed suite does not silently move a gate's bar.
 - **Split** at Stage 2. A holdout case that was looked at during tuning is spent: move it to `dev` and add a fresh holdout case.
 - **Change with the spec.** When the target spec changes, the affected cases change in the same commit; a case that tests a removed clause retires.
@@ -54,6 +56,13 @@ The validator prints the stage a suite's contents imply (`inferred stage N`): 1 
 | All-synthetic suites | Fifty generated paraphrases of one prompt. | `synthetic-majority` | Add production, adversarial and regression cases. |
 | Cases nobody can explain | An expected output no one can justify. | `missing-evidence` | Record the evidence, or retire the case. |
 | One aggregate hiding a failing slice | 94% overall, 61% on refunds. | Per-slice metrics in every report; gates on slices | Gate the weak slice, not only `all`. |
+| One direction hiding the other | 95% on true cases, 50% on false ones, 80% overall. | Accuracy per direction in the report; a gate fails when either direction is below its threshold | Add negation variants and false cases; gate the question (`question_id`). |
+| Rule-derived gold in a judgment score | Convention cases lift measured judgment accuracy from 37% to 68%. | `convention-in-judgment-gate`, `convention-in-judgment-suite` | Give the gate a `basis` list without convention. |
+| A gate that outlived its target | A gate passed on last month's model alias still reads `passed`. | `stale` from the runner; `stale-gate` in the validator | Re-run on the new version, then re-pin. |
+
+## Lessons ledger
+
+Keep `LESSONS.md` beside the suite (copy `templates/LESSONS.md`) once runs start deciding things. Each row is a claim with the run ids, the counts and intervals, and the target version measured, marked `holds`, `did not hold` or `re-measure`. Write the row in the same change that quotes the claim; never delete a refuted one, so nobody re-tests it blind. When a gate re-pins to a new target version, mark every row measured on the old one `re-measure`.
 
 ## Examples across domains
 

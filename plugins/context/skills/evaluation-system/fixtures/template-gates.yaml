@@ -9,5 +9,6 @@ gates:
     slice: all
     threshold: 0.9
     min_n: 30
+    pinned_target_version: Replace with the target version the decision is made on.
     action: Replace with the decision a pass allows.
     owner: Replace with who acts on the outcome.

@@ -29,7 +29,7 @@ Call something an evaluation only when all five exist. If one is missing, say wh
 
 Three limiting factors matter more than the choice of metric. Name them when they apply:
 
-- **Gold-set quality:** label noise in `expected` makes correct outputs fail.
+- **Gold-set quality:** label noise in `expected` makes correct outputs fail, and gold nobody can trace to a decider cannot be weighed. Every case records its `basis`.
 - **Grader validity:** a `rubric-model` or `reference` grader is trusted only after its agreement with human judgment is measured.
 - **Distribution match:** a case set that has drifted from live inputs passes tests that no longer matter. Drift is a defect.
 
@@ -37,14 +37,15 @@ Three limiting factors matter more than the choice of metric. Name them when the
 
 - **knowledge-organization-system** owns what a label means. Expected labels, tags and slice keys are concept ids from its `vocabulary.yaml`. When a dispute is about what a label means or which label to use, hand it off, then come back.
 - **controlled-natural-language** owns how a statement is phrased. Target specs and rubric criteria are CNL statements. When a criterion has two readings or a vague word, hand it off.
+- **decision-questions** consumes this skill: it declares which cases a question set needs (invariance, negation and balanced cases, tagged by basis) and reads per-question gate outcomes before any role promotion. The dependency is one-way: a `rubric-model` grader reaches a decision model only through its command adapter (the `DecisionModel` contract), and this skill never imports that skill's schemas.
 - **classify-and-resolve** consumes this skill: its logs become cases, it names the gates that guard each autonomy promotion, and it reads gate outcomes. This skill owns the Case, Grader, Suite, Run and Gate schemas; consumers never redefine them.
 - **Without the peers**, labels may be plain strings and criteria plain sentences. The validator warns (`peer-absent`) that those guarantees are lost.
 
 ## The model
 
-A **suite** holds the target's name and spec, its cases, graders and slices. A **case** has an `input`, an `expected` outcome, a `source` (`production`, `synthetic`, `adversarial`, `regression`), `added_because`, `tags`, a `split` (`dev` or `holdout`) and, when it leaves, `status: retired` with a reason. A **grader** has a `kind`, a `config` and, for a judge, `validated_against` (human set, agreement, n, date). A **run** records every case result and the per-slice metrics. A **gate** reads one slice's `pass_rate` and returns `passed`, `failed`, `insufficient_n` or `open`.
+A **suite** holds the target's name and spec, its cases, graders and slices. A **case** has an `input`, an `expected` outcome, a `source` (`production`, `synthetic`, `adversarial`, `regression`), a `basis` (who decided `expected`: `owner`, `judgment`, `convention`, `agent`), a `kind` (`standard`, `invariance`, `negation`, the last two with `variant_of`), `added_because`, `tags`, a `split` (`dev` or `holdout`) and, when it leaves, `status: retired` with a reason. A **grader** has a `kind`, a `config` and, for a judge, `validated_against` (human set, agreement, n, date). A **run** records every case result, the per-slice metrics with coverage and accuracy per direction, results by basis, and calibration when the target returns confidence. A **gate** reads one slice's `pass_rate`, optionally narrowed to one `question_id` and a `basis` list, pins a `pinned_target_version`, and returns `passed`, `failed`, `insufficient_n`, `stale` or `open`.
 
-These field names are a stable contract. Start from `templates/suite.yaml` and `templates/gates.yaml`. Field tables, the target adapter protocol, the validator and runner rules, and worked examples from three domains are in [references/model.md](references/model.md).
+These field names are a stable contract. Start from `templates/suite.yaml`, `templates/gates.yaml` and `templates/LESSONS.md`. Field tables, the target adapter protocol, the validator and runner rules, and worked examples from three domains are in [references/model.md](references/model.md).
 
 ## Stages
 
@@ -68,7 +69,7 @@ Allowed artifacts, the gate to leave each stage, the case lifecycle and the anti
 5. **Seed (Stage 0).** Copy `templates/suite.yaml`. Write the target spec, 10 to 20 cases from known failures and the spec, and one `exact` or `programmatic` grader. Wrap the target in an adapter that reads one input as JSON on stdin and writes JSON on stdout.
 6. **Run.** Run the validator, then the runner. Read every slice with its `n` and interval; report counts ("7 of 10"), not bare percentages.
 7. **Fix and grow.** Fix the target, not the cases. Each new failure becomes a `regression` case in the same change as its fix. Move up a stage only when its entry criterion holds.
-8. **Report** the target and version, the suite id and version, the stage, each slice's n, value and interval, each gate's status with its owner, cases added or retired with their evidence, and what evidence the next stage needs.
+8. **Report** the target and version, the suite id and version, the stage, each slice's n, value, interval and coverage (per direction for propositions), each gate's status with its owner, cases added or retired with their evidence, the `LESSONS.md` rows written, and what evidence the next stage needs.
 
 When you only review a claim and no suite exists, still apply the five parts: ask for the cases behind the claim, the grader, the n and the decision it drives. Offer Stage 0 when the user names a real failure or expected behavior.
 
@@ -79,7 +80,15 @@ When you only review a claim and no suite exists, still apply the five parts: as
 - **Small n honesty.** Below `min_n` a gate reports `insufficient_n`, never pass. Reports show counts beside rates and an interval for every rate.
 - **Holdout is sacred.** Tune prompts, rules and thresholds on `dev` only. Holdout runs are logged so overuse shows.
 - **Graders earn trust.** A `rubric-model` or `reference` grader without `validated_against` cannot back a gate. Rubric criteria are checked one at a time.
+- **Gold has provenance.** Every case states `basis`. Judgment gates exclude `convention` cases (rule-derived gold once inflated measured accuracy from 37% to 68%). Reports show `owner` cases as their own slice, because agent-approved gold inherits agent biases.
+- **Gate the question, not the model.** Per-question accuracy on one model can range from 50% to 100%, so a gate may name a `question_id`.
+- **Score both directions.** Proposition suites hold true and false cases plus `negation` variants, and accuracy is reported per direction. A question right on 95% of positives and half of negatives fails its gate.
+- **Coverage beside accuracy.** Any metric over abstaining or banded answers reports `coverage`, the share answered; a gate may set `min_coverage`.
+- **Calibration is measured.** A gate that relies on confidence bands needs `calibration` (per-band accuracy and ECE, on dev) in its latest run.
+- **Invariance cases.** Choice-based targets include option-order permutations (`kind: invariance`); a changed answer is a failure.
+- **Version changes stale the gates.** A gate pins `pinned_target_version`. When the target's version moves (a model alias, a prompt revision), every gate on it is `stale` until it is re-run and re-pinned.
 - **Retire, don't delete.** An obsolete case gets `status: retired` and a reason. Gates pin a suite version.
+- **Keep a lessons ledger.** `LESSONS.md` holds each finding: the claim, the run ids, the numbers, and whether it holds. Findings that did not hold stay, marked; a finding measured on an older target version is marked `re-measure`.
 - **Drift is a defect.** When the target spec changes, the affected cases change in the same commit. When live tags diverge from case tags past the limit, the run fails.
 
 Anti-patterns to name when you see them:
@@ -99,12 +108,12 @@ How to spot and fix each is in [references/growth.md](references/growth.md).
 Standard library plus PyYAML, Python 3.9 or later. Output is deterministic, one finding per line with rule id, subject and fix.
 
 ```bash
-python3 scripts/validate_suite.py SUITE [SUITE ...] [--gates FILE] [--vocabulary FILE] [--tune FILE] [--rules FILE] [--strict]
-python3 scripts/run_suite.py SUITE [--target CMD] [--split dev|holdout|all] [--gates FILE] [--human-results FILE] [--traffic FILE] [--out DIR] [--strict]
+python3 scripts/validate_suite.py SUITE [SUITE ...] [--gates FILE] [--vocabulary FILE] [--tune FILE] [--rules FILE] [--target-version V] [--runs PATH] [--strict]
+python3 scripts/run_suite.py SUITE [--target CMD] [--target-version V] [--split dev|holdout|all] [--gates FILE] [--human-results FILE] [--traffic FILE] [--out DIR] [--strict]
 ```
 
-- The validator exits 1 on any error, so it can run in CI. Errors: `duplicate-case-id`, `missing-evidence` (no `expected` or `added_because`), `unknown-grader`, `gate-reference` (a missing suite, metric or slice), `unvalidated-grader` (a judge without `validated_against` backing a gate), `holdout-in-tuning`, `unresolved-label` (an expected label missing from the vocabulary), and `schema`. Warnings: `synthetic-majority`, `ungated-metric`, `retired-case-gated`, `stale-validation`, `peer-absent`.
-- The runner sends each case's `input` to the target command as JSON on stdin and reads JSON from stdout, so any runtime fits behind a small adapter (`scripts/echo_target.py` is the trivial one). `human` graders read recorded outcomes from `--human-results`, so human-graded and trigger-activation suites run through the same pipeline. It writes `run.json` and `report.md`, refuses `--tune` with a holdout split, and exits 1 when a gate fails; `insufficient_n` fails the run only with `--strict`.
+- The validator exits 1 on any error, so it can run in CI. Errors: `duplicate-case-id`, `missing-evidence` (no `expected` or `added_because`), `unknown-grader`, `gate-reference` (a missing suite, metric or slice), `unvalidated-grader` (a judge without `validated_against` backing a gate), `holdout-in-tuning`, `unresolved-label` (an expected label missing from the vocabulary), `missing-variant` (an invariance or negation case without `variant_of`), `convention-in-judgment-gate`, `uncalibrated-gate` (a `min_coverage` gate whose latest run in `--runs` has no calibration), `stale-gate` (a `passed` gate pinned to a version other than `--target-version`), and `schema`. Warnings: `synthetic-majority`, `ungated-metric`, `retired-case-gated`, `stale-validation`, `peer-absent`, `missing-basis`, `convention-in-judgment-suite`.
+- The runner sends each case's `input` to the target command as JSON on stdin and reads JSON from stdout, so any runtime fits behind a small adapter (`scripts/echo_target.py` is the trivial one). `human` graders read recorded outcomes from `--human-results`, so human-graded and trigger-activation suites run through the same pipeline. A target may return `confidence` (calibration) or `abstain: true` (coverage). It writes `run.json` and `report.md` with coverage, accuracy per direction, results by basis and calibration, refuses `--tune` with a holdout split, marks a gate `stale` when its `pinned_target_version` differs from `--target-version`, and exits 1 when a gate fails; `insufficient_n` and `stale` fail the run only with `--strict`.
 
 Options and rule details are in [references/model.md](references/model.md).
 

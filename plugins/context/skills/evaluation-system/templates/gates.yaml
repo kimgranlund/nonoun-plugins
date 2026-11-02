@@ -7,12 +7,16 @@
 #   - id: triage-billing-autonomy        # stable
 #     suite_id: triage                   # the suite it reads
 #     suite_version: 2                   # optional pin; another version leaves the gate open
+#     question_id: is-billing            # optional: only the slice's cases tagged with this question
 #     metric: pass_rate
 #     slice: billing                     # a declared slice id, or all
-#     threshold: 0.97                    # passed when the value is at least this
+#     basis: [owner, judgment]           # optional: only cases whose gold these decided; never convention with judgment
+#     threshold: 0.97                    # passed when the value, and each direction's value, is at least this
 #     min_n: 300                         # below it: insufficient_n
+#     min_coverage: 0.9                  # optional: share answered; needs calibration in the latest run
+#     pinned_target_version: triage-v7   # the target version the decision was made on; another one: stale
 #     action: route billing tickets without human review
 #     owner: support-ops
-#     status: open                       # open | passed | failed | insufficient_n
+#     status: open                       # open | passed | failed | insufficient_n | stale
 
 gates: []
