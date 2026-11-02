@@ -1,0 +1,16 @@
+# Fail case for compile_questions.py: concept `outage` has no definition, so compiling the scheme
+# exits 1 with missing-definition and writes nothing. validate_kos.py reports the same gap.
+schemes:
+  - id: support
+    definition: Teams that answer customer messages in a support queue.
+
+concepts:
+  - id: billing
+    prefLabel: billing
+    definition: The team that answers questions about charges on an invoice.
+    scheme: support
+    evidence: [questions/triage.md:9]
+  - id: outage
+    prefLabel: outage
+    scheme: support
+    evidence: [questions/triage.md:10]

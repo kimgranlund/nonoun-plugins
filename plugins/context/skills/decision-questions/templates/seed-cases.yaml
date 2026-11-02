@@ -1,0 +1,31 @@
+# Stage 0 seed cases for templates/question-set.yaml: 10 to 20 real messages, ambiguous ones
+# included, each with who decided the answer (basis) and where it came from (added_because).
+# Turn them into an evaluation-system suite with scripts/make_eval_cases.py. Replace them with
+# items from your own domain; never with answers a rule already derives (convention gold
+# inflates judgment accuracy).
+- {id: t01, question: team, state: {id: t01, message: "I was charged twice for March."}, expected: billing,
+   basis: owner, added_because: "ticket 4410"}
+- {id: t02, question: team, state: {id: t02, message: "Why does my invoice show a seat I removed?"}, expected: billing,
+   basis: judgment, added_because: "ticket 4417"}
+- {id: t03, question: team, state: {id: t03, message: "Please send last quarter's invoice as a PDF."}, expected: billing,
+   basis: owner, added_because: "ticket 4423"}
+- {id: t04, question: team, state: {id: t04, message: "The API returns 503 for every request."}, expected: outage,
+   basis: owner, added_because: "ticket 4431"}
+- {id: t05, question: team, state: {id: t05, message: "Dashboards have been blank since 9am."}, expected: outage,
+   basis: judgment, added_because: "ticket 4436"}
+- {id: t06, question: team, state: {id: t06, message: "Webhooks stopped arriving an hour ago."}, expected: outage,
+   basis: owner, added_because: "ticket 4440"}
+- {id: t07, question: team, state: {id: t07, message: "My password reset link expired."}, expected: account-access,
+   basis: owner, added_because: "ticket 4442"}
+- {id: t08, question: team, state: {id: t08, message: "I am locked out after too many tries."}, expected: account-access,
+   basis: owner, added_because: "ticket 4451"}
+- {id: t09, question: team, state: {id: t09, message: "SSO sends me back to the login page."}, expected: account-access,
+   basis: judgment, added_because: "ticket 4458"}
+- {id: t10, question: team, state: {id: t10, message: "Do you sponsor meetups?"}, expected: none,
+   basis: owner, added_because: "ticket 4460"}
+- {id: t11, question: team, state: {id: t11, message: "Can I change the colour of my dashboard?"}, expected: none,
+   basis: judgment, added_because: "ticket 4463"}
+- {id: t12, question: team, state: {id: t12, message: "I cannot sign in and your status page shows an incident."},
+   expected: outage, basis: owner, added_because: "ticket 4470: the boundary case in the instructions"}
+- {id: t13, question: team, state: {id: t13, message: "My account is locked because a card payment failed."},
+   expected: billing, basis: judgment, split: dev, added_because: "ticket 4475: locked for payment, owner routed to billing"}

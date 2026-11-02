@@ -1,0 +1,26 @@
+# Support-triage vocabulary in the knowledge-organization-system format, used by the compile tests
+# and the growth.md walkthrough. The excludes entry on account-access was authored after an
+# evaluation run confused it with billing (references/growth.md, Stage 1).
+schemes:
+  - id: support
+    definition: Teams that answer customer messages in a support queue.
+
+concepts:
+  - id: billing
+    prefLabel: billing
+    definition: The team that answers questions about charges on an invoice.
+    scheme: support
+    evidence: [questions/triage.md:9]
+  - id: outage
+    prefLabel: outage
+    definition: The team that handles reports of a service that is down.
+    scheme: support
+    evidence: [questions/triage.md:10]
+  - id: account-access
+    prefLabel: account access
+    definition: The team that handles failed sign-ins to a customer account.
+    excludes:
+      - neighbor: billing
+        statement: A sign-in blocked by an unpaid invoice belongs to billing; account access covers credentials, resets and lockouts.
+    scheme: support
+    evidence: [questions/triage.md:11, "eval run support-team-cases-20261101: 2 of 3 locked-for-payment messages picked account-access"]

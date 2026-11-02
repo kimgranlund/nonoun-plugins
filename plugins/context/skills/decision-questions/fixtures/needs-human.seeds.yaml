@@ -1,0 +1,14 @@
+# Seeds for fixtures/needs-human.question-set.yaml: three true and three false, so the suite is
+# balanced before negation variants double it.
+- {id: h01, question: needs-human, state: {id: h01, message: "Our lawyer needs your reply before the 14 March hearing."},
+   expected: true, basis: owner, added_because: "ticket 5102"}
+- {id: h02, question: needs-human, state: {id: h02, message: "We will cancel the contract unless someone calls us today."},
+   expected: true, basis: owner, added_because: "ticket 5110"}
+- {id: h03, question: needs-human, state: {id: h03, message: "I want a refund for the whole year, outside your policy."},
+   expected: true, basis: judgment, added_because: "ticket 5117"}
+- {id: h04, question: needs-human, state: {id: h04, message: "How do I reset my password?"},
+   expected: false, basis: owner, added_because: "ticket 5121"}
+- {id: h05, question: needs-human, state: {id: h05, message: "Where can I download my invoice?"},
+   expected: false, basis: owner, added_because: "ticket 5126"}
+- {id: h06, question: needs-human, state: {id: h06, message: "Does the export include archived projects?"},
+   expected: false, basis: judgment, added_because: "ticket 5133"}

@@ -1,0 +1,24 @@
+# A boundary-pair question set for the eval-case and adapter tests: the boundary statement and its
+# positive complement, compared with a margin. Same model pin as templates/question-set.yaml.
+id: support-needs-human
+version: 1
+model: example-model-2026-11-01
+shape: boundary-pair
+role: checker
+gate_ids: []
+questions:
+  - id: needs-human
+    kind: proposition
+    instructions: >-
+      Answer yes when the message needs a person to decide.
+      If the message names a court date, the answer is yes.
+  - id: self-serve
+    kind: proposition
+    instructions: Answer yes when a help center article answers the message.
+decisions:
+  - id: escalate
+    mode: compare
+    inputs: [needs-human]
+    rival: self-serve
+    margin: 0.2
+    outcome: flag

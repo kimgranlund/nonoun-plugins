@@ -151,7 +151,7 @@ It reads the KOS vocabulary by field name (`schemes`, `concepts`, `id`, `definit
 
 Seeds are a YAML list (or a `cases:` list) of `{id, question, state, expected, basis, added_because}` with optional `source`, `split` and `tags`; `expected` is an option key, a level number or `true`/`false`. It writes an `evaluation-system` suite (see that skill's `references/model.md`):
 
-- every case tagged with its `question` id and sliced by it, so a Gate's `question_id` reads only that question;
+- every case tagged with its seed's `question` id and sliced by it, so a Gate's `question_id` reads only that question (a negation keeps its base question's tag, so the boundary pair is gated as one question in both directions);
 - standard cases with `expected: {value: ...}` (choice, score) or `expected: {answer: ...}` (proposition), graded by `exact` on `value` or `answer`;
 - option-order permutations as `kind: invariance` with `variant_of` (choices: reversed, then rotations; propositions: `[no, yes]`);
 - for `boundary-pair`, the rival asked with the answer flipped, as `kind: negation` with `variant_of`;

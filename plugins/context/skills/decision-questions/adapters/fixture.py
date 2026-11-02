@@ -31,6 +31,11 @@ def state_key(state):
     return hashlib.sha256(blob.encode('utf-8')).hexdigest()[:12]
 
 
+def key_text(key):
+    """A recording key as text; YAML reads a bare yes or no as a boolean."""
+    return 'yes' if key is True else 'no' if key is False else str(key)
+
+
 def answer_keys(question):
     """The keys an answer's probabilities range over, in presentation order."""
     if question['kind'] == 'choice':
@@ -50,7 +55,7 @@ class FixtureModel:
         self.model_version = str(data.get('model_version', ''))
         self.recordings = {}
         for row in data['answers']:
-            order = tuple(str(k) for k in row['order']) if row.get('order') else None
+            order = tuple(key_text(k) for k in row['order']) if row.get('order') else None
             self.recordings[(str(row['state']), str(row['question']), order)] = row['probabilities']
 
     def recorded(self, key, question, order):
@@ -62,8 +67,8 @@ class FixtureModel:
     def answer(self, state, question, order=None):
         """One Answer. `order` is the presented option order when it differs from the question's own."""
         keys = answer_keys(question)
-        raw = self.recorded(state_key(state), question, tuple(str(k) for k in order or keys))
-        raw = {str(k): float(v) for k, v in raw.items()}
+        raw = self.recorded(state_key(state), question, tuple(key_text(k) for k in order or keys))
+        raw = {key_text(k): float(v) for k, v in raw.items()}
         if question['kind'] == 'proposition':
             yes = raw.get('yes', 0.0)
             return {'question_id': question['id'], 'kind': 'proposition', 'value': yes,
