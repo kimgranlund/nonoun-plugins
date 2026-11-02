@@ -1,20 +1,26 @@
-# Trips each validate_pipeline.py error rule exactly once. Run:
+# Trips each validate_pipeline.py error rule but schema exactly once. Run:
 #   python3 scripts/validate_pipeline.py fixtures/broken-pipeline.yaml \
-#     --vocabulary fixtures/broken-vocabulary.yaml --gates fixtures/broken-gates.yaml
+#     --vocabulary fixtures/broken-vocabulary.yaml --gates fixtures/broken-gates.yaml \
+#     --question-set fixtures/intake-unpinned.question-set.yaml \
+#     --question-set fixtures/intake-checker.question-set.yaml
 # Two documents, because a missing unclassified_route and an auto one cannot share a pipeline.
 id: broken-intake
 version: 3
 scheme: docs
-cascade:
+cascade:                               # missing-rule-repair-route: rule and model steps, no rule_repair_route
   - classifier_id: keyword-rules
     kind: rule
+    abstain_below: 1.5                 # abstain-range
     rules:
       - If the title contains "agreement", then the class is contract.
   - classifier_id: small-model
     kind: model
-    abstain_below: 1.5                 # abstain-range
+    question_set: intake-unpinned      # model-question-set: fails validate_questions.py (model: latest)
   - classifier_id: big-model
-    kind: model                        # no-fallthrough: a final model with no abstain_below
+    kind: model
+    question_set: intake-checker       # question-set-role: checker, yet routes reach auto resolvers
+                                       # no-fallthrough: the final model's review band is 0
+fallback: broader                      # broader-fallback: the docs scheme has no broader links
 routes:
   contract: contract-desk
   policy: ghost-desk                   # unknown-resolver

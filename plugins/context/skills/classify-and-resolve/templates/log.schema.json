@@ -16,11 +16,13 @@
 
     "item": {"$ref": "#/definitions/Item", "description": "Classification only, optional: the Item, logged once (usually on cascade step 0) so the log can become evaluation cases."},
     "label": {"type": "string", "minLength": 1, "description": "A concept id from the pipeline's scheme, or the reserved value unclassified."},
+    "level": {"enum": ["exact", "broader"], "description": "exact for the class the step chose; broader when fallback: broader labeled a low-confidence item with the chosen class's broader concept."},
     "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-    "rationale": {"type": "string", "description": "Why the classifier chose or abstained. #tag tokens are rationale tags that unclassified_report.py groups by."},
-    "evidence": {"type": "array", "items": {"type": "string"}, "description": "What the decision rests on: a rule id, a span, a matched label."},
+    "rationale": {"type": "string", "description": "Optional. Why the classifier chose or abstained; decision models give none. #tag tokens are rationale tags that unclassified_report.py groups by."},
+    "evidence": {"type": "array", "items": {"$ref": "#/definitions/Evidence"}, "description": "What the decision rests on, typed: a fired rule, an observed fact, a question-set answer."},
     "classifier_id": {"type": "string", "minLength": 1},
     "cascade_step": {"type": "integer", "minimum": 0, "description": "Index into Pipeline.cascade."},
+    "model_version": {"type": "string", "minLength": 1, "description": "Model steps: the pinned model version the question set's adapter reported."},
 
     "resolver_id": {"type": "string", "minLength": 1},
     "status": {"enum": ["resolved", "escalated", "deferred", "rejected"]},
@@ -31,7 +33,7 @@
   "oneOf": [
     {
       "properties": {"record": {"const": "classification"}},
-      "required": ["label", "confidence", "rationale", "classifier_id", "cascade_step"],
+      "required": ["label", "level", "confidence", "classifier_id", "cascade_step"],
       "not": {"anyOf": [{"required": ["resolver_id"]}, {"required": ["status"]}, {"required": ["output"]},
                         {"required": ["decided_by"]}, {"required": ["corrected_label"]}]}
     },
@@ -40,10 +42,20 @@
       "required": ["resolver_id", "status", "output", "decided_by"],
       "not": {"anyOf": [{"required": ["item"]}, {"required": ["label"]}, {"required": ["confidence"]},
                         {"required": ["rationale"]}, {"required": ["evidence"]}, {"required": ["classifier_id"]},
-                        {"required": ["cascade_step"]}]}
+                        {"required": ["cascade_step"]}, {"required": ["level"]}, {"required": ["model_version"]}]}
     }
   ],
   "definitions": {
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": {"enum": ["rule", "observed", "answer"], "description": "rule: a rule fired; observed: a fact from real data, such as usage in shipped code or a past decision; answer: a decision-questions answer."},
+        "ref": {"type": "string", "minLength": 1, "description": "The rule id, the data source, or the question id."},
+        "value": {"description": "What it said: the matched text, the observed value, the answer given."}
+      }
+    },
     "Item": {
       "type": "object",
       "additionalProperties": false,

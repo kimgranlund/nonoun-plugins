@@ -22,11 +22,16 @@ import validate_pipeline as vp  # noqa: E402
 from logs_to_cases import split_for  # noqa: E402
 
 BROKEN = ('fixtures/broken-pipeline.yaml', '--vocabulary', 'fixtures/broken-vocabulary.yaml',
-          '--gates', 'fixtures/broken-gates.yaml')
+          '--gates', 'fixtures/broken-gates.yaml',
+          '--question-set', 'fixtures/intake-unpinned.question-set.yaml',
+          '--question-set', 'fixtures/intake-checker.question-set.yaml')
+CHECKER_SET = ROOT / 'fixtures' / 'intake-checker.question-set.yaml'
+VALIDATE_QUESTIONS = PEERS / 'decision-questions' / 'scripts' / 'validate_questions.py'
 SAMPLE = ('fixtures/sample-log.jsonl', '--pipeline', 'fixtures/sample-pipeline.yaml')
 BRIEF_ERRORS = {'unrouted-class', 'unknown-resolver', 'unresolved-route', 'missing-unclassified-route',
                 'auto-unclassified', 'no-fallthrough', 'autonomy-matrix', 'unknown-gate', 'gate-not-passed',
-                'abstain-range'}
+                'abstain-range', 'model-question-set', 'question-set-role', 'broader-fallback',
+                'missing-rule-repair-route'}
 
 
 def run(script, *args, cwd=ROOT):
@@ -136,13 +141,113 @@ class ValidatePipelineTests(unittest.TestCase):
         folder = tempfile.mkdtemp()
         base = PIPELINE + '  - {id: rb, accepts: [b], output_type: x, side_effects: none, autonomy: manual}\n'
         for cascade, expected in [('[{classifier_id: r, kind: rule}]', Counter()),
-                                  ('[{classifier_id: m, kind: model, abstain_below: 0.7}]', Counter()),
-                                  ('[{classifier_id: m, kind: model, abstain_below: 0}]', Counter({'no-fallthrough': 1}))]:
+                                  ('[{classifier_id: o, kind: observed, abstain_below: 0.9}]', Counter()),
+                                  ('[{classifier_id: m, kind: model, abstain_below: 0.7}]',
+                                   Counter({'model-question-set': 1})),
+                                  ('[{classifier_id: m, kind: model, abstain_below: 0}]',
+                                   Counter({'no-fallthrough': 1, 'model-question-set': 1}))]:
             with self.subTest(cascade=cascade):
                 text = base.replace('[{classifier_id: desk, kind: human}]', cascade)
                 found = rules(run(VALIDATE, write(folder, 'p.yaml', text)).stdout)
                 found.pop('peer-absent', None)
                 self.assertEqual(found, expected)
+
+    def model_pipeline(self, folder, cascade, rb_autonomy='manual', review=0.5, role='checker', model=None,
+                       extra=''):
+        """The inline pipeline with the given cascade and the checker question set, its bands and role adjusted."""
+        text = (PIPELINE + f'  - {{id: rb, accepts: [b], output_type: x, side_effects: none, autonomy: {rb_autonomy}}}\n'
+                + '  - {id: fixer, accepts: [unclassified], output_type: x, side_effects: none, autonomy: manual}\n'
+                + extra).replace('[{classifier_id: desk, kind: human}]', cascade)
+        qs = CHECKER_SET.read_text().replace('id: intake-checker', 'id: qs').replace(
+            'review: 0}', f'review: {review}}}').replace('role: checker', f'role: {role}')
+        if model:
+            qs = qs.replace('model: example-model-2026-11-01', f'model: {model}')
+        return [write(folder, 'p.yaml', text), '--question-set', write(folder, 'qs.yaml', qs)]
+
+    @unittest.skipUnless(VALIDATE_QUESTIONS.exists(), 'decision-questions is not installed beside this skill')
+    def test_model_steps_read_a_valid_question_set_whose_role_covers_the_routes(self):
+        folder = tempfile.mkdtemp()
+        model = '[{classifier_id: m, kind: model, question_set: qs}, {classifier_id: desk, kind: human}]'
+        cases = [
+            (dict(), Counter()),
+            (dict(model='latest'), Counter({'model-question-set': 1})),
+            (dict(rb_autonomy='suggest'), Counter({'question-set-role': 1})),
+            (dict(cascade='[{classifier_id: m, kind: model, question_set: other}]'), Counter({'model-question-set': 1})),
+            (dict(rb_autonomy='suggest', model='latest'), Counter({'model-question-set': 1})),
+        ]
+        for options, expected in cases:
+            with self.subTest(options=options):
+                cascade = options.pop('cascade', model)
+                result = run(VALIDATE, *self.model_pipeline(folder, cascade, **options))
+                found = rules(result.stdout)
+                found.pop('peer-absent', None)
+                self.assertEqual(found, expected, result.stdout)
+        # With no --question-set at all, the step is reported peer-absent, not guessed at.
+        text = self.model_pipeline(folder, model)[0]
+        result = run(VALIDATE, text)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn('no question set was given', result.stdout)
+
+    @unittest.skipUnless(VALIDATE_QUESTIONS.exists(), 'decision-questions is not installed beside this skill')
+    def test_final_model_falls_through_by_its_review_band(self):
+        folder = tempfile.mkdtemp()
+        final = '[{classifier_id: m, kind: model, question_set: qs}]'
+        for review, expected in [(0.5, Counter()), (0, Counter({'no-fallthrough': 1}))]:
+            with self.subTest(review=review):
+                result = run(VALIDATE, *self.model_pipeline(folder, final, review=review))
+                found = rules(result.stdout)
+                found.pop('peer-absent', None)
+                self.assertEqual(found, expected, result.stdout)
+
+    @unittest.skipUnless(VALIDATE_QUESTIONS.exists(), 'decision-questions is not installed beside this skill')
+    def test_rule_and_model_steps_need_a_rule_repair_route(self):
+        folder = tempfile.mkdtemp()
+        cascade = ('[{classifier_id: r, kind: KIND}, {classifier_id: m, kind: model, question_set: qs}, '
+                   '{classifier_id: desk, kind: human}]')
+        for kind, extra, expected in [
+                ('rule', '', Counter({'missing-rule-repair-route': 1})),
+                ('observed', '', Counter({'missing-rule-repair-route': 1})),
+                ('rule', 'rule_repair_route: fixer\n', Counter()),
+                ('rule', 'rule_repair_route: nobody\n', Counter({'unknown-resolver': 1})),
+                ('human', '', Counter())]:
+            with self.subTest(kind=kind, extra=extra):
+                args = self.model_pipeline(folder, cascade.replace('KIND', kind), extra=extra)
+                result = run(VALIDATE, *args)
+                found = rules(result.stdout)
+                found.pop('peer-absent', None)
+                self.assertEqual(found, expected, result.stdout)
+
+    def test_broader_fallback_needs_a_hierarchy(self):
+        folder = tempfile.mkdtemp()
+        vocab = Path(ROOT / 'fixtures/sample-vocabulary.yaml').read_text()
+        hierarchy = vocab + ('  - {id: refund, prefLabel: refund, definition: A request to return a charge.,'
+                             ' scheme: support, broader: [billing]}\n')
+        pipeline = Path(ROOT / 'fixtures/sample-pipeline.yaml').read_text()
+        for text, vocabulary, expected in [
+                (pipeline.replace('routes:', 'fallback: broader\nroutes:'), vocab, Counter({'broader-fallback': 1})),
+                (pipeline.replace('routes:', 'fallback: broader\nroutes:').replace(
+                    '  billing: billing-desk\n', '  billing: billing-desk\n  refund: billing-desk\n'),
+                 hierarchy, Counter()),
+                (pipeline.replace('routes:', 'fallback: unclassified\nroutes:'), vocab, Counter()),
+                (pipeline.replace('routes:', 'fallback: nearest\nroutes:'), vocab, Counter({'schema': 1}))]:
+            with self.subTest(text=text[-60:], vocabulary=len(vocabulary)):
+                result = run(VALIDATE, write(folder, 'p.yaml', text), '--vocabulary', write(folder, 'v.yaml', vocabulary))
+                self.assertEqual(rules(result.stdout), expected, result.stdout)
+
+    def test_typed_evidence_and_level_in_log_records(self):
+        folder = tempfile.mkdtemp()
+        record = json.loads(Path(ROOT / 'fixtures/sample-log.jsonl').read_text().splitlines()[0])
+        good = dict(record, log_id='g', evidence=[{'kind': 'answer', 'ref': 'team', 'value': 'billing'}],
+                    level='broader', model_version='example-model-2026-11-01')
+        good.pop('rationale')
+        bad = dict(record, log_id='b', evidence=['rule-2'], level='coarse')
+        log = write(folder, 'log.jsonl', json.dumps(good) + '\n' + json.dumps(bad) + '\n')
+        result = run(VALIDATE, 'fixtures/sample-pipeline.yaml', '--vocabulary', 'fixtures/sample-vocabulary.yaml',
+                     '--log', log, '--today', '2026-10-31')
+        self.assertEqual(rules(result.stdout)['schema'], 1, result.stdout)
+        self.assertIn(':2 record:', result.stdout)
+        self.assertIn('`level` is', result.stdout)
+        self.assertIn('`evidence[0]` is not', result.stdout)
 
     def test_unknown_key_and_reserved_route_are_schema_errors(self):
         folder = tempfile.mkdtemp()
@@ -266,7 +371,7 @@ class UnclassifiedReportTests(unittest.TestCase):
                             'pipeline_version': 1, 'record': 'classification', 'item_id': f'x-{n}',
                             'item': {'id': f'x-{n}', 'source': 's', 'payload': {'subject': subject},
                                      'received_at': '2026-10-01'},
-                            'label': 'unclassified', 'confidence': None, 'rationale': 'unsure',
+                            'label': 'unclassified', 'level': 'exact', 'confidence': None, 'rationale': 'unsure',
                             'classifier_id': 'triage-lead', 'cascade_step': 0})
         log = write(folder, 'log.jsonl', ''.join(json.dumps(r) + '\n' for r in records))
         result = run(REPORT, log, '--pipeline', 'fixtures/sample-pipeline.yaml')
