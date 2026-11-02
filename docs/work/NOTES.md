@@ -876,3 +876,8 @@
 ## T-0836: Add the excludes field to knowledge-organization-system (2026-11-01)
 
 - note: references/model.md Exclusions section mentions that `decision-questions` compiles these entries; the brief says the same (docs/specs/new-skills/knowledge-organization-system.md:23) and no compiler is built, so it is consistent with the Non-goals.
+
+## T-0837: Add the decision-question doc type to controlled-natural-language (2026-11-01)
+
+- note: plugins/context/skills/controlled-natural-language/templates/decision-question.rules.yaml sources are "Replace with ..." placeholders, which is the template convention; the linter raises no `no-source` warning on them.
+- note: plugins/context/skills/controlled-natural-language/references/patterns.md "Decision model: decision questions" states which rules are checked by the linter and which by eye, as the handoff required.
