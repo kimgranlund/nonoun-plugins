@@ -2,11 +2,12 @@
 id: T-0839
 title: "Add the decision-questions skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0836, T-0837, T-0838]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-01
+claimed_by: nonoun-author 2026-11-01
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
