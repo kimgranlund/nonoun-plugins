@@ -6,11 +6,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0838 | [0838-eval-provenance-calibration](0838-eval-provenance-calibration/handoff.md) | Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system | feature | L3 | P2 | none | 🟡 claimed (branch lane/T-0838-t0838) |
 | T-0839 | [0839-decision-questions](0839-decision-questions/handoff.md) | Add the decision-questions skill to the context plugin | feature | L3 | P2 | T-0836, T-0837, T-0838 | 🔵 ready |
 | T-0840 | [0840-car-decision-cascade](0840-car-decision-cascade/handoff.md) | Update the classify-and-resolve cascade for observed evidence and decision-questions | feature | L2 | P2 | T-0839 | 🔵 ready |
 
-Closed: 799 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 800 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -129,3 +128,5 @@ Closed: 799 done, 30 dropped (git log or .NNNN-* folders)
 - decide: Red-first order was not separately replayed; `redck.py deviations` printed no `red-checkpoint` line, and the negative variants prove the new cases can fail. (from T-0816: onboard --mode picks conductor, hybrid or direct (2026-10-30))
 - decide: plugins/sdlc/scripts/lanes.py (finish_ticketless): the `--verifier-agent-id` accept path for a hash_bound lane (transcript_verdict) has no selftest case, as the builder reported; the criteria do not ask for it. (from T-0821: lanes.py who, overlap warning, and ticketless land for live lanes (2026-10-30))
 - decide: Live run in the lane tree: `lanes.py who` printed `factory v open fanout lane .../.worktrees/fanout40/v` and `lanes.py list --overlap plugins/sdlc/scripts/lanes.py` printed nothing, both exit 0. (from T-0821: lanes.py who, overlap warning, and ticketless land for live lanes (2026-10-30))
+- decide: plugins/context/skills/evaluation-system/references/model.md: `basis` is a warning rather than the brief's error, and the CHANGELOG records why (logs_to_cases.py writes no basis). This follows the handoff's allowance; the builder's follow-up idea (make logs_to_cases.py write `basis`) is worth a ticket. (from T-0838: Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system (2026-11-01))
+- decide: plugins/context/CHANGELOG.md: gate registries without `pinned_target_version` now fail validation. `git grep` finds no other in-repo registry outside evaluation-system, so nothing else breaks. (from T-0838: Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system (2026-11-01))

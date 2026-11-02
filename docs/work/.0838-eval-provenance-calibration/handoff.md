@@ -2,7 +2,7 @@
 id: T-0838
 title: "Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,17 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Do not edit other skills, except in-repo trigger suites when a field becomes required. Existing field names stay unchanged.
+
+## Outcome
+
+2026-11-01 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 96076c57b87d
+- Changed: see commits
+- Commits: 8e4f95f T-0838: provenance, variants, coverage, calibration and stale gates in evaluation-system
+- Check: 1 validate_suite.py exits 0 on templates/suite.yaml with templates/gates.yaml: pass
+- Check: 2 broken fixture with companions exits non-zero with one distinct message per new rule plus every e...: pass
+- Check: 3 run_suite.py on a confidence-returning fixture writes coverage and calibration to run.json and pe...: pass
+- Check: 4 trigger-suite loop exits 0: pass
+- Check: 5 unittest in evaluation-system and classify-and-resolve, check-packaging, git diff --check: pass
+- Follow-up: decide: plugins/context/skills/evaluation-system/references/model.md: basis... -> notes.md
+- Follow-up: decide: plugins/context/CHANGELOG.md: gate registries without... -> notes.md
+- Follow-up: note: convention-in-judgment-gate and stale-gate messages were observed... -> notes.md

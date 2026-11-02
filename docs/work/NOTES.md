@@ -881,3 +881,9 @@
 
 - note: plugins/context/skills/controlled-natural-language/templates/decision-question.rules.yaml sources are "Replace with ..." placeholders, which is the template convention; the linter raises no `no-source` warning on them.
 - note: plugins/context/skills/controlled-natural-language/references/patterns.md "Decision model: decision questions" states which rules are checked by the linter and which by eye, as the handoff required.
+
+## T-0838: Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system (2026-11-01)
+
+- decide: plugins/context/skills/evaluation-system/references/model.md: `basis` is a warning rather than the brief's error, and the CHANGELOG records why (logs_to_cases.py writes no basis). This follows the handoff's allowance; the builder's follow-up idea (make logs_to_cases.py write `basis`) is worth a ticket.
+- decide: plugins/context/CHANGELOG.md: gate registries without `pinned_target_version` now fail validation. `git grep` finds no other in-repo registry outside evaluation-system, so nothing else breaks.
+- note: `convention-in-judgment-gate` and `stale-gate` messages were observed on the broken fixture only; I did not mutate the validator to confirm each rule's negative control beyond the unit tests (the unittest suite passes and test_stale_and_uncalibrated_gates_need_their_inputs checks the absent-input case).
