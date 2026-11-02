@@ -2,7 +2,7 @@
 id: T-0840
 title: "Update the classify-and-resolve cascade for observed evidence and decision-questions"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0839]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Do not edit other skills. Existing field names stay unchanged.
+
+## Outcome
+
+2026-11-01 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 3a44cd744ca0
+- Changed: see commits
+- Commits: 1e869f0 T-0840: template states fallback: unclassified; 5282fd3 T-0840: Update the classify-and-resolve cascade for observed evidence and decision-questions
+- Check: 1 `validate_pipeline.py` exits 0 on `templates/pipeline.yaml` with its starter scheme and an empty ...: pass
+- Check: 2 broken fixtures with companions exit non-zero with one distinct message per new rule plus every e...: pass
+- Check: 3 unit tests, SKILL.md size, packaging, diff check: pass
+- Follow-up: note: templates/log.schema.json:36 makes level required on Classification... -> notes.md

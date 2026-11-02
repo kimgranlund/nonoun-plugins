@@ -892,3 +892,7 @@
 
 - note: `evals/trigger-activation.suite.yaml:27` and `:123` use the vendor names Jev and TypeSafe, and so does the vendor-neutrality regex test. The handoff limits vendor names to `decision-models.md` and `evidence.md`, but the brief's own trigger and non-trigger lists need them; SKILL.md stays clean (grep finds no vendor name).
 - note: the live trigger-activation run was not done (the builder says it needs a fresh host session); the suite is structurally valid only, which is all the criterion asks.
+
+## T-0840: Update the classify-and-resolve cascade for observed evidence and decision-questions (2026-11-01)
+
+- note: `templates/log.schema.json:36` makes `level` required on Classification records, so older logs without it now fail the schema check. The builder flagged this; it matches the brief spine, and `fixtures/sample-log.jsonl` was updated.
