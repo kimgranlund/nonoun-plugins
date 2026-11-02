@@ -887,3 +887,8 @@
 - decide: plugins/context/skills/evaluation-system/references/model.md: `basis` is a warning rather than the brief's error, and the CHANGELOG records why (logs_to_cases.py writes no basis). This follows the handoff's allowance; the builder's follow-up idea (make logs_to_cases.py write `basis`) is worth a ticket.
 - decide: plugins/context/CHANGELOG.md: gate registries without `pinned_target_version` now fail validation. `git grep` finds no other in-repo registry outside evaluation-system, so nothing else breaks.
 - note: `convention-in-judgment-gate` and `stale-gate` messages were observed on the broken fixture only; I did not mutate the validator to confirm each rule's negative control beyond the unit tests (the unittest suite passes and test_stale_and_uncalibrated_gates_need_their_inputs checks the absent-input case).
+
+## T-0839: Add the decision-questions skill to the context plugin (2026-11-01)
+
+- note: `evals/trigger-activation.suite.yaml:27` and `:123` use the vendor names Jev and TypeSafe, and so does the vendor-neutrality regex test. The handoff limits vendor names to `decision-models.md` and `evidence.md`, but the brief's own trigger and non-trigger lists need them; SKILL.md stays clean (grep finds no vendor name).
+- note: the live trigger-activation run was not done (the builder says it needs a fresh host session); the suite is structurally valid only, which is all the criterion asks.

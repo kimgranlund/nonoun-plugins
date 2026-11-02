@@ -2,7 +2,7 @@
 id: T-0839
 title: "Add the decision-questions skill to the context plugin"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0836, T-0837, T-0838]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -49,3 +49,17 @@ The context plugin ships `decision-questions`, a skill for designing bounded que
 
 ## Constraints
 - Do not edit other skills; a defect found in a peer is reported, not fixed.
+
+## Outcome
+
+2026-11-01 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 2684deb5e4d2
+- Changed: see commits
+- Commits: none
+- Check: 1 validate_questions.py exits 0 on the template and non-zero on the broken fixture with one distinc...: pass
+- Check: 2 compile_questions.py builds a valid set from the KOS template vocabulary and refuses a missing de...: pass
+- Check: 3 make_eval_cases.py suite accepted by validate_suite.py, with invariance, negation, balanced cases...: pass
+- Check: 4 run_suite.py run of the template question set through the fixture adapter writes a report with ba...: pass
+- Check: 5 trigger-activation suite valid with 10 activating and 5 non-activating cases: pass
+- Check: 6 unittest, SKILL.md length, packaging, diff --check: pass
+- Follow-up: note: evals/trigger-activation.suite.yaml:27 and :123 use the vendor... -> notes.md
+- Follow-up: note: the live trigger-activation run was not done the builder says it... -> notes.md
