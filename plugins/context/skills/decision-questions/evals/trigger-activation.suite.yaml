@@ -1,0 +1,137 @@
+# This skill's own trigger suite, in evaluation-system format. Run each prompt in a fresh session with
+# the plugin installed, record whether the skill activated and whether it behaved as `expected.behavior`
+# says, then run evaluation-system's runner:
+#   python3 <evaluation-system>/scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
+# A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
+# Pass means the observed activation equals expected.activates. Rerun it when the description changes.
+id: decision-questions-trigger-activation
+version: 1
+target: decision-questions skill description (SKILL.md frontmatter)
+target_spec:
+  - When a prompt asks a model to pick from a list, score on a rubric or answer yes or no and then branches on the answer, the skill shall activate.
+  - When a prompt asks for open-ended generation, pipeline topology, metric or gate mechanics, or vendor API usage, the skill shall not activate.
+graders:
+  - id: observed-activation
+    kind: human
+slices: [should-activate, should-not-activate]
+cases:
+  - id: a1
+    input: {prompt: "Have the model pick which of our five support teams should get each ticket, and auto-assign it."}
+    expected: {activates: true, behavior: "Stage 0: one single-choice question with domain-scoped options and a general option with examples, role checker, answers logged and never auto-assigned until a per-question gate passes."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: asking a model to pick from a list, then branching on it (docs/specs/new-skills/decision-questions.md, Frontmatter and triggers)"
+    added_at: 2026-11-01
+  - id: a2
+    input: {prompt: "We want to use Jev from TypeSafe to check whether each design token maps to the right concept."}
+    expected: {activates: true, behavior: "Uses verify-against-rival in compare mode with a margin, treats flags as leads, and hands request fields to the vendor's own skill."}
+    tags: [should-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief trigger list: Jev, TypeSafe, System One models; vendor names stay out of SKILL.md, so the description alone must carry it"
+    added_at: 2026-11-01
+  - id: a3
+    input: {prompt: "Read the logprobs of yes and no to classify whether a message is spam, and drop anything above 0.7."}
+    expected: {activates: true, behavior: "Names thresholding a raw proposition value as an anti-pattern and moves the proposition to compare mode against a rival with a margin."}
+    tags: [should-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief trigger list: logprob-based classification; rule: propositions use compare mode"
+    added_at: 2026-11-01
+  - id: a4
+    input: {prompt: "At what confidence should we let the model's answer count, and when should it abstain?"}
+    expected: {activates: true, behavior: "Sets act and review bands per question, tuned on dev only, reports coverage beside accuracy, and keeps the role at checker until a gate passes."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: confidence thresholds, abstention, when should the model's answer count"
+    added_at: 2026-11-01
+  - id: a5
+    input: {prompt: "Add a guardrail where a model checks every outgoing reply for promised refund amounts before it is sent."}
+    expected: {activates: true, behavior: "Asks the model for the component (does the reply state an amount) and does any comparison in code; the check starts as a checker that flags for a person."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: guardrail checks; rule: compute in code"
+    added_at: 2026-11-01
+  - id: a6
+    input: {prompt: "Pre-screen our audit log so reviewers only look at entries the model thinks are suspicious."}
+    expected: {activates: true, behavior: "Treats model flags as leads with a minimum margin, keeps reviewers on unflagged samples, and routes model and rule disagreements to rule repair first."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: audit pre-screens"
+    added_at: 2026-11-01
+  - id: a7
+    input: {prompt: "Preselect a category in our review UI from the model's top choice."}
+    expected: {activates: true, behavior: "Requires role suggester behind a passed per-question gate on owner-tier holdout at the band used for preselection; never approves."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: review suggestions; roles ladder"
+    added_at: 2026-11-01
+  - id: a8
+    input: {prompt: "We extracted six candidate dates from the contract; have the model choose which one is the renewal date."}
+    expected: {activates: true, behavior: "One Choice among the extracted candidates plus a general option; reports list hit rate and pick accuracy apart; any date arithmetic stays in code."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: choosing among extracted candidates"
+    added_at: 2026-11-01
+  - id: a9
+    input: {prompt: "Design the rubric questions for an LLM judge that grades our chatbot's answers."}
+    expected: {activates: true, behavior: "Shapes each criterion as its own score or proposition with authored level descriptions; validating the judge against humans is handed to evaluation-system."}
+    tags: [should-activate]
+    source: synthetic
+    basis: owner
+    added_because: "brief trigger list: LLM-as-judge question design"
+    added_at: 2026-11-01
+  - id: a10
+    input: {prompt: "Ask the model six separate questions for usage, state and property, then combine them into the token's full label."}
+    expected: {activates: true, behavior: "Names decomposed joint labels as an anti-pattern and requires an assemble validator that enforces the label grammar in code."}
+    tags: [should-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief evidence: independent facet questions fail on joint labels; anti-pattern list"
+    added_at: 2026-11-01
+  - id: n1
+    input: {prompt: "Write a friendly onboarding email for new customers."}
+    expected: {activates: false, behavior: "Does not activate: open-ended generation with no closed-set answer."}
+    tags: [should-not-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief do-not-trigger list: open-ended generation"
+    added_at: 2026-11-01
+  - id: n2
+    input: {prompt: "Design the cascade of rules, models and humans that routes incoming tickets to resolvers."}
+    expected: {activates: false, behavior: "Does not activate: pipeline topology belongs to classify-and-resolve, which uses question sets for its model step."}
+    tags: [should-not-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief do-not-trigger list: pipeline topology (classify-and-resolve)"
+    added_at: 2026-11-01
+  - id: n3
+    input: {prompt: "How do I compute a Wilson interval for our classifier's pass rate and set a release gate on it?"}
+    expected: {activates: false, behavior: "Does not activate: metric and gate mechanics belong to evaluation-system."}
+    tags: [should-not-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief do-not-trigger list: metric and gate mechanics (evaluation-system)"
+    added_at: 2026-11-01
+  - id: n4
+    input: {prompt: "What is the request body format for TypeSafe's batch endpoint?"}
+    expected: {activates: false, behavior: "Does not activate: vendor API usage belongs to the vendor's own skill."}
+    tags: [should-not-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief do-not-trigger list: vendor API usage questions"
+    added_at: 2026-11-01
+  - id: n5
+    input: {prompt: "Summarize this support thread for the account manager."}
+    expected: {activates: false, behavior: "Does not activate: open-ended summarization with no decision to branch on."}
+    tags: [should-not-activate]
+    source: adversarial
+    basis: owner
+    added_because: "brief do-not-trigger list: open-ended generation"
+    added_at: 2026-11-01

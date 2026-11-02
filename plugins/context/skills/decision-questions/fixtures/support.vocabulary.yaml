@@ -23,4 +23,4 @@ concepts:
       - neighbor: billing
         statement: A sign-in blocked by an unpaid invoice belongs to billing; account access covers credentials, resets and lockouts.
     scheme: support
-    evidence: [questions/triage.md:11, "eval run support-team-cases-20261101: 2 of 3 locked-for-payment messages picked account-access"]
+    evidence: [questions/triage.md:11, "eval run support-team-cases v1: t13, a locked-for-payment message, picked account-access in all three option orders"]
