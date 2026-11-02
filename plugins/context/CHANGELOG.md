@@ -2,6 +2,12 @@
 
 The context plugin (formerly Progressive Context), newest first. Releases before 0.2.0 are recorded only in git history.
 
+## [Unreleased]
+
+### Changed
+
+- `evaluation-system` (T-0838): gold has provenance and gates track the target version. Cases gain `basis` (owner, judgment, convention, agent), `kind` (standard, invariance, negation) and `variant_of`; gates gain `question_id`, a `basis` filter, `min_coverage`, a required `pinned_target_version` and the `stale` status. `run_suite.py` reports coverage, accuracy per direction (a gate fails when either direction is below its threshold), results by basis with an owner row, and calibration (per-band accuracy and ECE on dev) when the target returns `confidence`, and marks a gate `stale` when `--target-version` differs from its pin. `validate_suite.py` adds `missing-variant`, `convention-in-judgment-gate`, `uncalibrated-gate` (`--runs`) and `stale-gate` (`--target-version`) errors and `missing-basis` and `convention-in-judgment-suite` warnings; `missing-basis` stays a warning while `classify-and-resolve`'s `logs_to_cases.py` writes no basis. New `templates/LESSONS.md` ledger. A gate registry without `pinned_target_version` now fails validation.
+
 ## [0.6.0] - 2026-11-01
 
 ### Added

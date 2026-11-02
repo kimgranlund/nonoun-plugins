@@ -3,6 +3,7 @@
 #   python3 scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
 # A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
 # Pass means the observed activation equals expected.activates. Rerun it when the description changes.
+# basis: owner, because each expected.activates comes from the brief's trigger lists, which the owner wrote.
 id: evaluation-system-trigger-activation
 version: 1
 target: evaluation-system skill description (SKILL.md frontmatter)
@@ -19,6 +20,7 @@ cases:
     expected: {activates: true, behavior: "Stage 0: one suite of 10 to 20 cases from known failures, each with added_because, and one exact or programmatic grader."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: evals, test set (docs/specs/new-skills/evaluation-system.md, Frontmatter and triggers)"
     added_at: 2026-11-01
   - id: a2
@@ -26,6 +28,7 @@ cases:
     expected: {activates: true, behavior: "Asks which decision the answer drives, reports pass rate per class with n and a Wilson interval, and says insufficient_n where the counts are small."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: is this good enough to ship"
     added_at: 2026-11-01
   - id: a3
@@ -33,6 +36,7 @@ cases:
     expected: {activates: true, behavior: "Treats the judge as an unvalidated rubric-model grader until its agreement with human labels is measured and recorded in validated_against."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: LLM-as-judge, rubric grading"
     added_at: 2026-11-01
   - id: a4
@@ -40,6 +44,7 @@ cases:
     expected: {activates: true, behavior: "Runs both versions on one suite version and the dev split, compares them case by case per slice, and calls no winner on fewer than 10 discordant cases."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: A/B comparison of prompts or models"
     added_at: 2026-11-01
   - id: a5
@@ -47,6 +52,7 @@ cases:
     expected: {activates: true, behavior: "Writes a gate with threshold, min_n, action and owner on a slice, backed only by validated graders; checks the Stage 3 entry criterion first."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: promotion gates, quality bars, acceptance thresholds"
     added_at: 2026-11-01
   - id: a6
@@ -54,6 +60,7 @@ cases:
     expected: {activates: true, behavior: "Reports per-class counts with intervals and checks gold-set label quality before trusting the numbers."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: precision/recall, confusion matrix, gold set"
     added_at: 2026-11-01
   - id: a7
@@ -61,6 +68,7 @@ cases:
     expected: {activates: true, behavior: "Stage 1: each known break becomes a regression case with added_because naming the incident, added in the same change as its fix."}
     tags: [should-activate]
     source: synthetic
+    basis: owner
     added_because: "brief trigger list: regression tests for prompts or agents"
     added_at: 2026-11-01
   - id: a8
@@ -68,6 +76,7 @@ cases:
     expected: {activates: true, behavior: "Refuses the claim without a run: asks for or seeds the cases that show better, and reports the result with n."}
     tags: [should-activate]
     source: adversarial
+    basis: owner
     added_because: "brief goal: activate when an agent is about to claim a change works; the prompt names no eval keyword"
     added_at: 2026-11-01
   - id: a9
@@ -75,6 +84,7 @@ cases:
     expected: {activates: true, behavior: "Treats the review as the target, uses human graders with recorded outcomes, and seeds cases from past audit findings."}
     tags: [should-activate]
     source: adversarial
+    basis: owner
     added_because: "brief domain coverage: a non-software corpus whose target is a human process"
     added_at: 2026-11-01
   - id: a10
@@ -82,6 +92,7 @@ cases:
     expected: {activates: true, behavior: "Runs or builds a trigger-activation suite with activating and non-activating prompts and human-recorded outcomes."}
     tags: [should-activate]
     source: adversarial
+    basis: owner
     added_because: "brief goal: a skill's triggering is an evaluation target; the prompt names no eval keyword"
     added_at: 2026-11-01
   - id: n1
@@ -89,6 +100,7 @@ cases:
     expected: {activates: false, behavior: "Does not activate: a deterministic unit test with no judgment involved."}
     tags: [should-not-activate]
     source: adversarial
+    basis: owner
     added_because: "brief do-not-trigger list: ordinary unit tests of deterministic code"
     added_at: 2026-11-01
   - id: n2
@@ -96,6 +108,7 @@ cases:
     expected: {activates: false, behavior: "Does not activate: performance and load benchmarking are out of scope."}
     tags: [should-not-activate]
     source: adversarial
+    basis: owner
     added_because: "brief do-not-trigger list: performance or load benchmarking"
     added_at: 2026-11-01
   - id: n3
@@ -103,6 +116,7 @@ cases:
     expected: {activates: false, behavior: "Does not activate: a casual review with no quality claim to evidence."}
     tags: [should-not-activate]
     source: adversarial
+    basis: owner
     added_because: "brief do-not-trigger list: casual looks-good reviews"
     added_at: 2026-11-01
   - id: n4
@@ -110,6 +124,7 @@ cases:
     expected: {activates: false, behavior: "Does not activate: what a label means belongs to knowledge-organization-system."}
     tags: [should-not-activate]
     source: adversarial
+    basis: owner
     added_because: "brief peer hand-off: when the problem is what a label means, hand off to KOS"
     added_at: 2026-11-01
   - id: n5
@@ -117,5 +132,6 @@ cases:
     expected: {activates: false, behavior: "Does not activate: how a criterion is phrased belongs to controlled-natural-language."}
     tags: [should-not-activate]
     source: adversarial
+    basis: owner
     added_because: "brief peer hand-off: when the problem is how a criterion is phrased, hand off to CNL"
     added_at: 2026-11-01

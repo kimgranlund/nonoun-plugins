@@ -1,0 +1,9 @@
+# Companion of proposition-suite.yaml. Run on target version model-2026-10, the first gate fails
+# (5 of 7 overall clears 0.7, but false cases pass 1 of 3) and the second is stale.
+gates:
+  - {id: refund-eligible-autonomy, suite_id: refund-eligibility, question_id: refund-eligible, metric: pass_rate,
+     slice: all, basis: [owner, judgment], threshold: 0.7, min_n: 5, min_coverage: 0.8,
+     pinned_target_version: model-2026-10, action: answer refund eligibility without review, owner: support-ops}
+  - {id: refund-eligible-release, suite_id: refund-eligibility, question_id: refund-eligible, metric: pass_rate,
+     slice: all, threshold: 0.7, min_n: 5, pinned_target_version: model-2026-09,
+     action: release the eligibility prompt, owner: support-platform}

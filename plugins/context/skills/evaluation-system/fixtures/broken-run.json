@@ -1,0 +1,12 @@
+{
+  "id": "broken-triage-20261020T090000Z",
+  "suite_id": "broken-triage",
+  "suite_version": 1,
+  "target_version": "triage-2026-10",
+  "started_at": "2026-10-20T09:00:00Z",
+  "split": "dev",
+  "tuning": false,
+  "results": [],
+  "metrics": {"all": {"value": null, "n": 0, "interval": null, "passes": 0, "coverage": null}},
+  "gates": []
+}

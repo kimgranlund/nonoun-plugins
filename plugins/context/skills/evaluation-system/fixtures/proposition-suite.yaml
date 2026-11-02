@@ -1,0 +1,34 @@
+# A proposition suite for the runner demo: the echo target writes each input back, so the `answer`,
+# `confidence` and `abstain` in an input are what the "model" returns. Every case is dev, so a run
+# leaves no holdout log. The target is right on every true case and wrong on two of three false ones:
+#   python3 scripts/run_suite.py fixtures/proposition-suite.yaml --target "python3 scripts/echo_target.py" \
+#     --gates fixtures/proposition-gates.yaml --target-version model-2026-10 --out <dir>
+id: refund-eligibility
+version: 1
+target: refund-eligibility-question
+target_spec:
+  - If the order arrived damaged, then the answer to "is this order eligible for a refund?" shall be true.
+graders:
+  - id: answer-match
+    kind: exact
+    config: {field: answer}
+slices: []
+cases:
+  - {id: p1, input: {order: damaged on arrival, answer: true, confidence: 0.92}, expected: {answer: true},
+     tags: [refund-eligible], source: production, basis: owner, added_because: ticket 5521}
+  - {id: p2, input: {order: box crushed, options: [yes, no], answer: true, confidence: 0.81}, expected: {answer: true},
+     tags: [refund-eligible], source: production, basis: judgment, added_because: ticket 5530}
+  - {id: p3, input: {order: screen cracked in transit, answer: true, confidence: 0.95}, expected: {answer: true},
+     tags: [refund-eligible], source: production, basis: owner, added_because: ticket 5544}
+  - {id: p4, input: {order: arrived intact, answer: false, confidence: 0.71}, expected: {answer: false},
+     tags: [refund-eligible], source: adversarial, basis: owner, kind: negation, variant_of: p1,
+     added_because: negation of p1}
+  - {id: p5, input: {order: changed my mind after 40 days, answer: true, confidence: 0.62}, expected: {answer: false},
+     tags: [refund-eligible], source: production, basis: judgment, added_because: ticket 5561}
+  - {id: p6, input: {order: box crushed, options: [no, yes], answer: true, confidence: 0.84}, expected: {answer: true},
+     tags: [refund-eligible], source: adversarial, basis: judgment, kind: invariance, variant_of: p2,
+     added_because: options of p2 reversed}
+  - {id: p7, input: {order: no order number given, abstain: true}, expected: {answer: false},
+     tags: [refund-eligible], source: production, basis: owner, added_because: ticket 5570}
+  - {id: p8, input: {order: wrong colour ordered by the customer, answer: true, confidence: 0.55}, expected: {answer: false},
+     tags: [refund-eligible], source: production, basis: owner, added_because: ticket 5582}

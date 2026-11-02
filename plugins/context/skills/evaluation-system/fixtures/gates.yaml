@@ -1,8 +1,14 @@
-# Companion of broken-suite.yaml.
+# Companion of broken-suite.yaml; validate with --target-version triage-2026-10.
 gates:
   - {id: billing-autonomy, suite_id: broken-triage, metric: pass_rate, slice: billing, threshold: 0.95, min_n: 100,
-     action: route billing tickets without review, owner: support-ops}       # graded by rationale-judge: unvalidated-grader
+     min_coverage: 0.9, pinned_target_version: triage-2026-10,
+     action: route billing tickets without review, owner: support-ops}
+     # graded by rationale-judge: unvalidated-grader; reads judgment t-1 and convention t-2: convention-in-judgment-gate;
+     # min_coverage while broken-run.json has no calibration: uncalibrated-gate
   - {id: outage-autonomy, suite_id: broken-triage, metric: pass_rate, slice: outage, threshold: 0.95, min_n: 100,
+     pinned_target_version: triage-2026-10,
      action: route outage tickets without review, owner: support-ops}        # slice not declared: gate-reference
   - {id: legacy-watch, suite_id: broken-triage, metric: pass_rate, slice: legacy, threshold: 0.9, min_n: 10,
-     action: keep legacy intake routing, owner: support-ops}                 # names retired t-6: retired-case-gated
+     pinned_target_version: triage-2026-09, status: passed,
+     action: keep legacy intake routing, owner: support-ops}
+     # names retired t-6: retired-case-gated; passed on triage-2026-09: stale-gate
