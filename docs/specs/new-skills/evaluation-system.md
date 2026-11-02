@@ -1,7 +1,7 @@
 # Build the `evaluation-system` Agent Skill
 
-> **Build order:** this is the third of four skills.
-> `knowledge-organization-system` → `controlled-natural-language` → `evaluation-system` → `classify-and-resolve`.
+> **Build order:** this is the third of five skills.
+> `knowledge-organization-system` → `controlled-natural-language` → `evaluation-system` → `decision-questions` → `classify-and-resolve`.
 > This skill reads the KOS vocabulary schema and the CNL rules schema, and never redefines either.
 
 ## Goal
@@ -44,6 +44,10 @@ An evaluation has five parts. The skill refuses to call anything an evaluation u
 
 - **Uses `knowledge-organization-system`.** Expected labels, tags and slice keys are concept ids. When the problem is what a label means, hand off to KOS.
 - **Uses `controlled-natural-language`.** Rubric criteria and target specs are CNL statements. When the problem is how a criterion is phrased, hand off to CNL.
+- **Is consumed by `decision-questions`.**
+  - That skill declares which cases a question set needs: invariance, negation and balanced cases, tagged by basis.
+  - It reads per-question gate outcomes before any role promotion.
+  - The dependency is one-way. This skill's `rubric-model` graders call a decision model only through the `DecisionModel` adapter contract, and never import that skill's schemas.
 - **Is consumed by `classify-and-resolve`.**
   - That skill emits logs that become cases.
   - It declares which gates guard each autonomy promotion.
@@ -57,14 +61,20 @@ Publish this as the stable contract in `references/model.md`. Field names are fr
 
 ```yaml
 Case:   { id, input, expected, tags[], source: production|synthetic|adversarial|regression,
+          basis: owner|judgment|convention|agent,       # who or what decided `expected`
+          kind: standard|invariance|negation,           # invariance = permuted options; negation = flipped proposition
+          variant_of?: case_id,
           added_because, split: dev|holdout, added_at }
 Grader: { id, kind: exact|programmatic|reference|rubric-model|human,
           config, validated_against?: { human_set, agreement, n, measured_at } }
 Suite:  { id, version, target, target_spec, cases[] | cases_path, graders[], slices[] }
 Run:    { id, suite_id, suite_version, target_version, started_at,
           results[]: { case_id, grader_id, outcome: pass|fail|score|abstain, detail },
-          metrics: { slice → { value, n, interval } } }
-Gate:   { id, suite_id, metric, slice, threshold, min_n, action, owner, status: open|passed|failed|insufficient_n }
+          metrics: { slice → { value, n, interval, coverage } },
+          calibration?: { bands: [{ range, n, accuracy }], ece } }
+Gate:   { id, suite_id, question_id?, metric, slice, basis?: [owner|judgment|convention|agent],
+          threshold, min_n, min_coverage?, pinned_target_version, action, owner,
+          status: open|passed|failed|insufficient_n|stale }
 ```
 
 ## Deliverables
@@ -77,6 +87,7 @@ skills/evaluation-system/
   references/growth.md                    # stage gates, case lifecycle, anti-patterns
   templates/suite.yaml                    # Stage 0 starter suite
   templates/gates.yaml                    # empty gate registry with one commented example
+  templates/LESSONS.md                    # findings ledger: claim, experiment ids, numbers, status (holds | did not hold)
   fixtures/broken-suite.yaml              # one violation per validator rule
   evals/trigger-activation.suite.yaml     # this skill's own trigger suite (dogfooding)
   scripts/validate_suite.py
@@ -125,7 +136,24 @@ Every stage defines entry criteria, allowed artifacts and a promotion gate. Agen
 - **Small n honesty.** Below `min_n`, a gate reports `insufficient_n`, never pass. Reports show counts alongside rates and give intervals for every rate (Wilson for proportions).
 - **Holdout is sacred.** Prompts, rules and thresholds are tuned against `dev` only. The runner refuses `--split holdout` together with `--tune`. Holdout runs are logged so overuse is visible.
 - **Graders earn trust.** A `rubric-model` or `reference` grader without `validated_against` cannot back a gate. Rubric criteria are CNL statements, so each criterion is checked separately.
+- **Gold has provenance.** Every case states `basis`, meaning who or what decided `expected`.
+  - Judgment gates exclude `convention` cases. In one project, rule-derived gold inflated measured accuracy from 37% to 68%.
+  - Reports always show `owner`-tier results as their own slice, because agent-approved gold inherits agent biases.
+  - The validator warns when a judgment suite contains convention cases.
+- **Gate the question, not the model.** In the same project, per-question accuracy on the same model ranged from 50% to 100%, so gates may name a `question_id`.
+- **Score both directions.** Proposition suites are balanced, with true and false cases plus `negation` variants, and accuracy is reported per direction. A question that is right on 95% of positives but only half of negatives must fail its gate.
+- **Coverage is reported beside accuracy.** Any metric over abstaining or banded answers reports `coverage`, the share answered. Gates may set `min_coverage`.
+- **Calibration is measured.** Any gate that relies on confidence bands requires `Run.calibration`: per-band accuracy and ECE, computed on dev.
+- **Invariance cases.** Choice-based targets include option-order permutations (`kind: invariance`). A changed answer is a failure, because option-order bias is a documented failure mode.
+- **Version changes stale the gates.** A gate pins `pinned_target_version`. When the target's version changes, for example when a model alias moves, every gate on it becomes `stale` until it is re-run.
 - **Retire, don't delete.** Obsolete cases move to `status: retired` with a reason. Gates pin a suite version.
+- **Keep a lessons ledger.** `LESSONS.md` is the human-readable companion to `run.json`. Each finding states:
+  - the claim
+  - the run or experiment ids that show it
+  - the numbers
+  - whether it holds
+  
+  Hypotheses that did not hold stay in the ledger, marked as such. A finding whose runs are older than the current pinned target version is marked for re-measurement.
 - **Drift is a defect.** If the target spec changes, the affected cases change in the same commit. If production tags diverge from case tags beyond a configured threshold, the run fails.
 - **Anti-patterns to name explicitly:**
   - tuning on holdout
@@ -147,6 +175,11 @@ Every stage defines entry criteria, allowed artifacts and a promotion gate. Agen
   - an unknown grader reference
   - a gate referencing a missing suite, metric or slice
   - a gate backed by an unvalidated `rubric-model`/`reference` grader
+  - a case missing `basis`
+  - a judgment gate whose slice includes `convention` cases
+  - a gate relying on confidence bands with no calibration in its latest run
+  - an `invariance` or `negation` case whose `variant_of` is missing
+  - a `passed` gate whose `pinned_target_version` differs from the target's current version (it should be `stale`)
   - a holdout case referenced by tuning config
   - an expected label that fails to resolve in the KOS vocabulary (when one is configured)
 - **Warnings:**

@@ -17,6 +17,10 @@ It must activate on its own when an agent touches naming, terminology or content
 - `altLabel` (accepted synonyms)
 - `hiddenLabel` (deprecated or misspelled forms that tools should flag)
 - `definition` (required) and `scopeNote` (optional)
+- `excludes` (optional): a list of `{neighbor, statement}` entries, each saying what this concept is *not* and naming the concept it gets confused with.
+  - Add an entry only after a real confusion is observed, such as an evaluation run, a review dispute or a misroute.
+  - Write entries by hand. Never generate them.
+  - `decision-questions` compiles these into contrastive option descriptions. Measured results show that hand-written contrast is the biggest accuracy lever for decision models, while generated contrast performs worse than none.
 - `broader`, `narrower` and `related` links
 - `scheme` (the domain the concept belongs to)
 
@@ -93,7 +97,8 @@ Every stage defines entry criteria, allowed artifacts and a promotion gate. Agen
   - a label that collides with another concept's `altLabel` or `prefLabel`
   - missing or empty definition
   - a definition that contains its own `prefLabel` as the whole definition
-  - dangling `broader`/`related` ids
+  - dangling `broader`/`related` ids, or an `excludes` neighbor that is not a concept id
+  - an `excludes` entry with an empty statement, or one that names the concept itself
   - cycles in `broader`
   - an unknown scheme
 - **Warnings:**

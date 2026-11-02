@@ -1,8 +1,8 @@
 # Build the `classify-and-resolve` Agent Skill
 
-> **Build order:** this is the fourth of four skills.
-> `knowledge-organization-system` → `controlled-natural-language` → `evaluation-system` → `classify-and-resolve`.
-> This skill consumes all three peers' schemas and never redefines them.
+> **Build order:** this is the fifth of five skills.
+> `knowledge-organization-system` → `controlled-natural-language` → `evaluation-system` → `decision-questions` → `classify-and-resolve`.
+> This skill consumes all four peers' schemas and never redefines them.
 
 ## Goal
 
@@ -26,10 +26,13 @@ It must activate on its own when an agent is asked to sort, triage, route, or di
 
 **Classification is a cascade.** Each step sees only what the previous step abstained on:
 
-1. deterministic rules
-2. cheap model
-3. expensive model
-4. human
+1. deterministic rules, including every known convention
+2. observed evidence: what real data says, such as usage in shipped code or historical decisions
+3. decision model (a `decision-questions` question set)
+4. expensive model
+5. human
+
+Observed evidence gets its own step because in one project it beat the decision model on exactly the facets where the model was weakest.
 
 **Abstention is a first-class outcome.** Every pipeline has an `unclassified` route, and it is never silently dropped.
 
@@ -59,6 +62,10 @@ Classifier sophistication is rarely the bottleneck.
 
 - **`knowledge-organization-system`.** The label set is a KOS concept scheme. Every class is a concept id, and hierarchical classes use `broader`/`narrower`. Hand off whenever a class is added, split, merged, renamed or redefined.
 - **`controlled-natural-language`.** Classification rules and resolver policies are CNL statements, for example "If `<condition>`, then the class is `<concept>`". Hand off whenever criteria or policies are written or reviewed.
+- **`decision-questions`.**
+  - Every `model` cascade step is a question set from that skill. Its shape, decision mode, bands and role come from there.
+  - The `DecisionModel` adapter contract is defined there, not here.
+  - Hand off whenever a model question is written, tuned or promoted.
 - **`evaluation-system`.**
   - Classification and Resolution logs convert into evaluation Cases.
   - Every autonomy promotion is guarded by a gate in `gates.yaml`.
@@ -72,15 +79,22 @@ Publish this as the stable contract in `references/model.md`.
 
 ```yaml
 Item:           { id, source, payload, received_at }
-Classification: { item_id, label: <concept_id> | "unclassified", confidence, rationale,
-                  evidence[], classifier_id, cascade_step }
+Classification: { item_id, label: <concept_id> | "unclassified", level: exact|broader,
+                  confidence, rationale?,
+                  evidence[]: { kind: rule|observed|answer, ref, value },   # typed; decision models give no prose rationale
+                  classifier_id, cascade_step, model_version? }
 EntityMatch:    { item_id, mention, concept_id, matched_via: prefLabel|altLabel|hiddenLabel }
 Resolver:       { id, accepts: [concept_id], output_type, side_effects: none|reversible|irreversible,
                   autonomy: manual|suggest|auto, promotion_gate?: <gate_id>, review_sample_rate? }
 Resolution:     { item_id, resolver_id, status: resolved|escalated|deferred|rejected,
                   output, decided_by: resolver|human, corrected_label? }
-Pipeline:       { id, version, scheme: <kos_scheme>, cascade[]: { classifier_id, kind: rule|model|human,
-                  abstain_below }, routes: { concept_id → resolver_id }, unclassified_route: resolver_id }
+Pipeline:       { id, version, scheme: <kos_scheme>,
+                  cascade[]: { classifier_id, kind: rule|observed|model|human,
+                               question_set?: <decision-questions id>,       # required when kind = model
+                               abstain_below? },                             # rule/observed steps; model steps use the question set's bands
+                  fallback: broader|unclassified,
+                  routes: { concept_id → resolver_id }, unclassified_route: resolver_id,
+                  rule_repair_route: resolver_id }
 ```
 
 `corrected_label` on a Resolution is the misroute signal. It is what turns the logs into evaluation cases and KOS evidence.
@@ -147,7 +161,7 @@ Every stage defines entry criteria, allowed artifacts and a promotion gate. Agen
 |---|---|---|
 | 0 — Manual | Items of more than one kind arrive and are handled inconsistently | KOS seed scheme with 3–5 classes + `unclassified`; one `human` cascade step; all resolvers `manual`; every decision logged in the JSONL format |
 | 1 — Rules | ≥1 class has a high-volume, unambiguous signal in the logs | Deterministic `rule` step first in the cascade, written as CNL statements, abstaining on anything else; logs feed a Stage 0–1 evaluation suite via `logs_to_cases.py` |
-| 2 — Model | Rules leave a large abstained remainder and the evaluation suite has holdout cases | `model` cascade step with `abstain_below` tuned on dev only; resolvers may move to `suggest` |
+| 2 — Model | Rules and observed evidence leave a large abstained remainder, and the evaluation suite has holdout cases | A `model` cascade step backed by a `decision-questions` question set, bands tuned on dev only. Resolvers may move to `suggest` only once that question set reaches role `suggester` |
 | 3 — Automate | A resolver's `promotion_gate` passes | That resolver alone moves along the autonomy matrix; other classes are unaffected |
 
 ### Taxonomy feedback loop
@@ -164,7 +178,10 @@ Every class change bumps `Pipeline.version` and re-runs the affected evaluation 
 
 - **Closed set, explicit catch-all.** Every pipeline has exactly one `unclassified_route`, and it must lead to a human or deferred queue, never to discard.
 - **One class, one resolver.** Every class in the scheme routes to exactly one resolver. Fan-out happens inside a resolver, not in the routing table.
-- **Abstain over guess.** A classifier below `abstain_below` passes the item to the next step. The final step is always `human` or `unclassified`.
+- **Abstain over guess.** A classifier below `abstain_below`, or below its question set's review band, passes the item to the next step. The final step is always `human` or `unclassified`.
+- **Broader before unclassified.** With `fallback: broader` and a hierarchical scheme, a low-confidence item is labeled with its `broader` concept (`level: broader`) when that concept has a route, before falling through to `unclassified`. In one project, this turned 40%-accurate unsure answers into 70%-accurate coarser ones.
+- **Disagreement repairs rules first.** When a model step disagrees with a rule or observed-evidence step on the same item, the item goes to `rule_repair_route` as a candidate rule bug, as well as to normal review. In one project, the first batch of such conflicts was a misfiring deterministic test, not wrong labels.
+- **Hard cases stay human.** A model step may only act on hard or disputed items when its question set has role `voter`. In practice this is rarely earned.
 - **Log everything.** Every Classification and Resolution is written in the log schema. A pipeline without logs cannot reach Stage 1.
 - **Evidence before automation.** Autonomy follows the matrix. Gates live in `evaluation-system` and are never re-implemented here.
 - **Drift is a defect.** Routes reference KOS ids. A deprecated concept still routed is an error. A class definition changed without re-running its evaluation suite is an error.
@@ -193,6 +210,10 @@ Every class change bumps `Pipeline.version` and re-runs the affected evaluation 
   - a `promotion_gate` id missing from `gates.yaml`
   - a promoted resolver whose gate status is not `passed`
   - `abstain_below` outside [0, 1]
+  - a `model` step with no `question_set`, or one whose question set fails `validate_questions.py`
+  - a model step's question set role lower than its resolver's autonomy requires (`suggester` for `suggest`)
+  - `fallback: broader` on a scheme with no `broader` links
+  - a missing `rule_repair_route` when the cascade has both a rule or observed step and a model step
 - **Warnings:**
   - a class with no log volume over a configured window (a retirement candidate)
   - `unclassified` share above a configured threshold
@@ -222,7 +243,7 @@ Nothing in SKILL.md may assume a specific runtime or software-only work.
 
 ## Process
 
-1. Read the `knowledge-organization-system`, `controlled-natural-language` and `evaluation-system` schemas, and use their field names exactly.
+1. Read the `knowledge-organization-system`, `controlled-natural-language`, `evaluation-system` and `decision-questions` schemas, and use their field names exactly.
 2. Before writing files, output a one-page spec covering:
    - the typed spine
    - the autonomy matrix

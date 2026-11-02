@@ -54,6 +54,7 @@ The `description` field drives activation, so write it as concrete triggers and 
 - style guides
 - ambiguous, vague or inconsistent phrasing
 - "make this precise / testable / unambiguous"
+- writing or reviewing questions for a decision model (Choice options, Score levels, yes/no propositions)
 
 **Do not trigger on:**
 
@@ -108,6 +109,15 @@ Every stage defines entry criteria, allowed artifacts and a promotion gate. Agen
 1. a software codebase (requirements, ADRs)
 2. an operations or policy corpus (runbook steps, compliance statements)
 3. a research or notes corpus (claims, findings, method statements)
+
+`references/patterns.md` also defines the **decision question** doc type that `decision-questions` governs. It covers question instructions, option descriptions, score levels and propositions. Its patterns are:
+- one proposition per statement
+- no negation or double negation in a proposition
+- instructions and option descriptions aligned, never contradictory
+- boundary cases stated explicitly
+- no arithmetic, counting or date comparison requested
+
+These patterns come from a decision model's documented failure modes: it reads literally and struggles with indirection.
 
 Nothing in SKILL.md may assume software-only work.
 
