@@ -2,7 +2,7 @@
 id: T-0836
 title: "Add the excludes field to knowledge-organization-system"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Do not edit other skills. Existing field names stay unchanged.
+
+## Outcome
+
+2026-11-01 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 07b73dcd85b1
+- Changed: see commits
+- Commits: 7756dce T-0836: excludes field in knowledge-organization-system; 6902079 T-0836: record lane T-0836-t0836
+- Check: 1 Validator on templates/vocabulary.yaml exits 0: pass
+- Check: 2 Validator on fixtures/broken.yaml exits non-zero with one distinct message each for a dangling ex...: pass
+- Check: 3 unittest discover exits 0, check-packaging.py exits 0, git diff --check clean: pass
+- Follow-up: note: references/model.md Exclusions section mentions that... -> notes.md
