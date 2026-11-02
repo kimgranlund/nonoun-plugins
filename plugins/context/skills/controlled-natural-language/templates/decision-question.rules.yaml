@@ -1,0 +1,101 @@
+# Stage 0 rule set for the decision-question doc type: question instructions, option
+# descriptions, score levels, propositions and boundary cases written for a decision model,
+# which reads literally and struggles with indirection. Keep it in its own rules file so its
+# banned words never reach another doc type. Replace every "Replace with" line with the real
+# sentence each pattern came from. Which rules the linter checks and which are checked by eye:
+# references/patterns.md, "Decision model: decision questions". Check:
+#   python3 scripts/lint_cnl.py decision-question.rules.yaml vocabulary.yaml <question docs>
+
+version: 1
+
+docTypes:
+  - id: decision-question
+    description: >-
+      Instructions, option descriptions, score levels, propositions and boundary cases that a
+      decision model reads to answer a choice, score or yes/no question.
+    paths: ["questions/**/*.md"]
+    bannedWords:
+      # One proposition per statement.
+      - {word: and, fix: "One proposition per statement: split it into two statements."}
+      - {word: or, fix: "One proposition per statement: split it, or state each case as its own boundary."}
+      - {word: but, fix: "One proposition per statement: split it into two statements."}
+      - {word: as well as, fix: "One proposition per statement: split it into two statements."}
+      # No negation or double negation.
+      - {word: not, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: "no", fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: never, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: none, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: nor, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: neither, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: without, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: unless, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: except, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: cannot, fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: "can't", fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: "don't", fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: "doesn't", fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: "isn't", fix: "State the positive condition; give the excluded case its own boundary statement."}
+      - {word: "aren't", fix: "State the positive condition; give the excluded case its own boundary statement."}
+      # No arithmetic, counting or date comparison: ask for the parts, compute in code.
+      - {word: how many, fix: "Count in code; ask the model for the item it should count."}
+      - {word: number of, fix: "Count in code; ask the model for the item it should count."}
+      - {word: total, fix: "Do the arithmetic in code; ask the model for each value."}
+      - {word: sum, fix: "Do the arithmetic in code; ask the model for each value."}
+      - {word: average, fix: "Do the arithmetic in code; ask the model for each value."}
+      - {word: percent, fix: "Do the arithmetic in code; ask the model for each value."}
+      - {word: more than, fix: "Compare numbers or dates in code; ask the model for the value."}
+      - {word: less than, fix: "Compare numbers or dates in code; ask the model for the value."}
+      - {word: fewer than, fix: "Compare numbers or dates in code; ask the model for the value."}
+      - {word: at least, fix: "Compare numbers or dates in code; ask the model for the value."}
+      - {word: at most, fix: "Compare numbers or dates in code; ask the model for the value."}
+      - {word: older than, fix: "Compare dates in code; ask the model for the date."}
+      - {word: earlier than, fix: "Compare dates in code; ask the model for the date."}
+      - {word: later than, fix: "Compare dates in code; ask the model for the date."}
+      - {word: before, fix: "Compare dates in code; ask the model for the date."}
+      - {word: after, fix: "Compare dates in code; ask the model for the date."}
+      - {word: days ago, fix: "Compare dates in code; ask the model for the date."}
+
+patterns:
+  - id: question-instruction
+    docType: decision-question
+    template: "Choose the one {kind} that best describes {subject}."
+    slots:
+      kind: {type: text, pattern: '(option|level)'}
+      subject: {type: text, maxWords: 12}
+    sources:
+      - Replace with the real sentence this pattern came from and where, for example questions/triage.md:5.
+
+  - id: option-description
+    docType: decision-question
+    template: "Choose {option} when {condition}."
+    slots:
+      option: {type: concept}
+      condition: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
+
+  - id: score-level
+    docType: decision-question
+    template: "Level {level} means {description}."
+    slots:
+      level: {type: text, pattern: '[1-9]'}
+      description: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
+
+  - id: proposition
+    docType: decision-question
+    template: "Answer yes when {claim}."
+    slots:
+      claim: {type: text, maxWords: 20}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
+
+  - id: boundary-case
+    docType: decision-question
+    template: "If {case}, the answer is {answer}."
+    slots:
+      case: {type: text, maxWords: 20}
+      answer: {type: text, maxWords: 4}
+    sources:
+      - Replace with the real sentence this pattern came from and where.
