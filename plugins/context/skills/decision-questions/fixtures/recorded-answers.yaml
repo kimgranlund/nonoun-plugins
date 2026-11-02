@@ -1,0 +1,33 @@
+# Recorded answers replayed by adapters/fixture.py for templates/question-set.yaml (t01 to t13) and
+# fixtures/needs-human.question-set.yaml (h01 to h06). Probabilities are illustrative, shaped like
+# the evidence base: choices mostly right and confident, a review-band middle, one confusion
+# (t13 picks account-access), and propositions whose margin decides rather than a raw value.
+model_version: example-model-2026-11-01
+answers:
+  - {state: t01, question: team, probabilities: {billing: 0.93, outage: 0.02, account-access: 0.03, none: 0.02}}
+  - {state: t02, question: team, probabilities: {billing: 0.88, outage: 0.03, account-access: 0.04, none: 0.05}}
+  - {state: t02, question: team, order: [none, account-access, outage, billing],
+     probabilities: {billing: 0.41, outage: 0.03, account-access: 0.04, none: 0.52}}
+  - {state: t03, question: team, probabilities: {billing: 0.95, outage: 0.01, account-access: 0.01, none: 0.03}}
+  - {state: t04, question: team, probabilities: {billing: 0.01, outage: 0.96, account-access: 0.02, none: 0.01}}
+  - {state: t05, question: team, probabilities: {billing: 0.04, outage: 0.62, account-access: 0.06, none: 0.28}}
+  - {state: t06, question: team, probabilities: {billing: 0.03, outage: 0.90, account-access: 0.02, none: 0.05}}
+  - {state: t07, question: team, probabilities: {billing: 0.02, outage: 0.03, account-access: 0.91, none: 0.04}}
+  - {state: t08, question: team, probabilities: {billing: 0.03, outage: 0.02, account-access: 0.89, none: 0.06}}
+  - {state: t09, question: team, probabilities: {billing: 0.05, outage: 0.31, account-access: 0.45, none: 0.19}}
+  - {state: t10, question: team, probabilities: {billing: 0.03, outage: 0.02, account-access: 0.02, none: 0.93}}
+  - {state: t11, question: team, probabilities: {billing: 0.06, outage: 0.14, account-access: 0.03, none: 0.77}}
+  - {state: t12, question: team, probabilities: {billing: 0.02, outage: 0.55, account-access: 0.41, none: 0.02}}
+  - {state: t13, question: team, probabilities: {billing: 0.36, outage: 0.02, account-access: 0.58, none: 0.04}}
+  - {state: h01, question: needs-human, probabilities: {yes: 0.81}}
+  - {state: h01, question: self-serve, probabilities: {yes: 0.22}}
+  - {state: h02, question: needs-human, probabilities: {yes: 0.74}}
+  - {state: h02, question: self-serve, probabilities: {yes: 0.31}}
+  - {state: h03, question: needs-human, probabilities: {yes: 0.58}}
+  - {state: h03, question: self-serve, probabilities: {yes: 0.49}}
+  - {state: h04, question: needs-human, probabilities: {yes: 0.12}}
+  - {state: h04, question: self-serve, probabilities: {yes: 0.88}}
+  - {state: h05, question: needs-human, probabilities: {yes: 0.35}}
+  - {state: h05, question: self-serve, probabilities: {yes: 0.79}}
+  - {state: h06, question: needs-human, probabilities: {yes: 0.52}}
+  - {state: h06, question: self-serve, probabilities: {yes: 0.27}}

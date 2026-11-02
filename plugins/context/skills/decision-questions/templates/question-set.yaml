@@ -1,0 +1,40 @@
+# Stage 0 question set: one question, role checker. Its answers are logged and read by a person,
+# never acted on. Replace the support-triage example with your own bounded decision, keep the shape,
+# and pin `model` to the exact version your adapter reports (never an alias such as latest).
+# Field semantics: references/model.md. Check:
+#   python3 scripts/validate_questions.py <this file> [--vocabulary vocabulary.yaml]
+# Instructions follow the controlled-natural-language decision-question patterns: one instruction,
+# then boundary cases as "If <case>, the answer is <option>." Options come from the domain's own
+# concepts (compile them from a KOS scheme with scripts/compile_questions.py), and the general
+# option carries concrete examples.
+id: support-team
+version: 1
+model: example-model-2026-11-01
+shape: single-choice
+role: checker
+gate_ids: []
+questions:
+  - id: team
+    kind: choice
+    instructions: >-
+      Choose the one option that best describes the customer message.
+      If the message reports a failed sign-in during an outage, the answer is outage.
+    options:
+      billing:
+        definition: The customer asks about a charge on an invoice.
+        examples: ["I was charged twice for March."]
+      outage:
+        definition: The customer reports a service that is down.
+        examples: ["The dashboard returns a 503 for everyone on our team."]
+      account-access:
+        definition: The customer reports a failed sign-in to an account.
+        examples: ["My password reset link expired."]
+      none:
+        definition: The message belongs to a team outside this list.
+        examples: ["Can I change the colour of my dashboard?", "Do you sponsor meetups?"]
+decisions:
+  - id: team-flag
+    mode: threshold
+    inputs: [team]
+    bands: {act: 0.85, review: 0.5}
+    outcome: flag

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Decision Questions"
+  short_description: "Design bounded questions for a decision model and act on the answers only as far as evidence allows"
+  default_prompt: "Use $decision-questions to shape this model question, scope its options, pick threshold or compare mode, and keep its role at checker until a per-question gate passes."
