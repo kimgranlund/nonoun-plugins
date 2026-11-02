@@ -6,6 +6,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0836 | [0836-kos-excludes](0836-kos-excludes/handoff.md) | Add the excludes field to knowledge-organization-system | feature | L2 | P2 | none | ⏳ proposed |
+| T-0837 | [0837-cnl-decision-question](0837-cnl-decision-question/handoff.md) | Add the decision-question doc type to controlled-natural-language | feature | L2 | P2 | none | ⏳ proposed |
+| T-0838 | [0838-eval-provenance-calibration](0838-eval-provenance-calibration/handoff.md) | Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system | feature | L2 | P2 | none | ⏳ proposed |
+| T-0839 | [0839-decision-questions](0839-decision-questions/handoff.md) | Add the decision-questions skill to the context plugin | feature | L2 | P2 | none | ⏳ proposed |
+| T-0840 | [0840-car-decision-cascade](0840-car-decision-cascade/handoff.md) | Update the classify-and-resolve cascade for observed evidence and decision-questions | feature | L2 | P2 | none | ⏳ proposed |
 
 Closed: 797 done, 30 dropped (git log or .NNNN-* folders)
 
