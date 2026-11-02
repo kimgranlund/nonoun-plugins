@@ -40,6 +40,8 @@ cascade:
   - classifier_id: replace-with-triage-person-or-desk
     kind: human
 
+fallback: unclassified
+
 routes:
   request: request-desk
   problem-report: problem-desk
