@@ -1,2 +1,0 @@
-# Billing
-Unrelated invoicing details.

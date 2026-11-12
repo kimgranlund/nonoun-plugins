@@ -34,7 +34,7 @@ The context plugin no longer ships `progressive-context`, `knowledge-modeling` o
 
 ## Acceptance criteria
 - `test ! -e plugins/context/skills/progressive-context -a ! -e plugins/context/skills/knowledge-modeling -a ! -e plugins/context/skills/context-routing-review` exits 0.
-- `git grep -nE "skills/(progressive-context|knowledge-modeling|context-routing-review)|\`(progressive-context|knowledge-modeling|context-routing-review)\`" -- ':!docs/reports' ':!docs/work/.[0-9]*' ':!*CHANGELOG.md' ':!plugins/context/skills/context-fog-of-war/updates-log' ':!plugins/context/skills/context-system/README.md'` prints nothing.
+- `git grep -nE "skills/(progressive-context|knowledge-modeling|context-routing-review)|\`(progressive-context|knowledge-modeling|context-routing-review)\`" -- ':!docs/reports' ':!docs/work/.[0-9]*' ':!*CHANGELOG.md' ':!plugins/context/skills/context-fog-of-war/updates-log' ':!plugins/context/skills/context-system/README.md' ':!docs/work/0850-retire-routing-skills' ':!docs/work/0851-retire-kos-cnl'` prints nothing (replan: the open T-0850 and T-0851 handoffs name the skills by design).
 - `python3 -B -m unittest discover -s tests` exits 0 in `plugins/context/skills/context-system` and in `plugins/context/skills/context-fog-of-war`.
 - `python3 scripts/check-packaging.py` and `python3 plugins/sdlc/scripts/docs_check.py` exit 0, and `git diff --check` is clean.
 
