@@ -1,0 +1,26 @@
+{
+  "generated": "fixture generator (tests only)",
+  "entries": [
+    {
+      "id": "button",
+      "kind": "control",
+      "family": "action",
+      "status": "stable",
+      "path": "items/button.json"
+    },
+    {
+      "id": "checkbox",
+      "kind": "control",
+      "family": "choice",
+      "status": "stable",
+      "path": "items/checkbox.json"
+    },
+    {
+      "id": "sign-in",
+      "kind": "pattern",
+      "family": "auth",
+      "status": "stable",
+      "path": "items/sign-in.json"
+    }
+  ]
+}

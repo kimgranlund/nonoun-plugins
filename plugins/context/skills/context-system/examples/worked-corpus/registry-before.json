@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "entry": "ENTRY.md",
+  "artifacts": [
+    {
+      "id": "policy",
+      "location": "policy.md",
+      "kind": "contract",
+      "summary": "Keyboard policy",
+      "revision": "1",
+      "sha256": "761f53e99dbec95a7003089ae652142093c96a1213f72dad74a72c67afb831f1"
+    },
+    {
+      "id": "menu",
+      "location": "menu.md",
+      "kind": "contract",
+      "summary": "Menu contract",
+      "revision": "1",
+      "sha256": "3b08afbe932f47168894e687054502cc8d7fc18744b041dea86bf4f12ee750f0",
+      "aliases": [
+        "legacy-menu"
+      ],
+      "relationships": {}
+    },
+    {
+      "id": "status",
+      "location": "status.md",
+      "kind": "contract",
+      "summary": "Status contract",
+      "revision": "1",
+      "sha256": "686d7dd540375c033b0bb23002dd9813981515008011421760fda46e23515321"
+    },
+    {
+      "id": "billing",
+      "location": "billing.md",
+      "kind": "contract",
+      "summary": "Billing",
+      "revision": "1",
+      "sha256": "c55edf3e62791e4ffaa29636afb5ff541776e31dee9f3bdd7b4bd92459a15b5b"
+    }
+  ],
+  "routes": [
+    {
+      "intent": "edit-menu",
+      "target": "menu"
+    },
+    {
+      "intent": "status",
+      "target": "status"
+    }
+  ]
+}

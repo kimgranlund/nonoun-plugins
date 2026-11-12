@@ -4,6 +4,10 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 ## [Unreleased]
 
+### Added
+
+- `context-system` (T-0849): imported from `/Volumes/kimba/.claude/skills/context-system`. One skill for vocabulary, domain modeling, manifests and registries, entry files and routing, fresh-agent route review and controlled statements, merged from `progressive-context`, `context-routing-review`, `knowledge-modeling`, `knowledge-organization-system` and `controlled-natural-language`, which stay in place for now. Its tests run with `python3 -B -m unittest discover -s tests`.
+
 ## [0.7.0] - 2026-11-12
 
 ### Added

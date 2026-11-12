@@ -1,0 +1,501 @@
+# This skill's trigger suite, in evaluation-system suite format. Run it when you change the skill's
+# description or scope: run each prompt in a fresh session with the plugin installed, record whether
+# the skill activated, which layer it routed to, and whether it behaved as `expected.behavior` says, then run:
+#   python3 ../evaluation-system/scripts/run_suite.py evals/trigger-activation.suite.yaml --human-results <recorded.yaml> --out <dir>
+# A recorded result is {case_id, grader_id: observed-activation, outcome: pass|fail, detail}.
+# Pass means the observed activation equals expected.activates. A description change passes when every case passes.
+# Merged 2026-11-12 from the vocabulary (v-) and statements (s-) suites; the layer tag on each positive case names
+# the section of SKILL.md the request must route to.
+id: context-system-trigger-activation
+version: 1
+target: context-system skill description (SKILL.md frontmatter)
+target_spec:
+- When a prompt asks how a corpus names, models, classifies, phrases, indexes or routes its knowledge (vocabulary, ontology, manifests, registries, entry files, route tests, governed statements), the skill
+  shall activate and name the layer it works in.
+- When a prompt asks for casual prose, marketing copy, ordinary code or UI work, formal OWL or RDF work, translation, trace diagnosis, triage pipelines or evaluation design, the skill shall not activate.
+graders:
+- id: observed-activation
+  kind: human
+slices:
+- should-activate
+- should-not-activate
+cases:
+- id: v-a1
+  input:
+    prompt: We call it a workspace in the API and a project in the UI. Which should the docs use?
+  expected:
+    activates: true
+    behavior: Checks or seeds `vocabulary.yaml`, picks one `prefLabel` with evidence from both files, records the other as `altLabel` or `hiddenLabel`, and rewrites the docs in the same change.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: the same thing named differently across files (docs/specs/new-skills/knowledge-organization-system.md, Frontmatter and triggers)'
+  added_at: 2026-11-01
+- id: v-a2
+  input:
+    prompt: Set up a glossary for our runbooks.
+  expected:
+    activates: true
+    behavior: Asks for (or finds) terms that were disputed or used in two places; creates a Stage 0 file with at most 15 evidenced concepts, not a speculative list.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: glossary, terminology'
+  added_at: 2026-11-01
+- id: v-a3
+  input:
+    prompt: What do we call the thing a customer files when they want their data deleted?
+  expected:
+    activates: true
+    behavior: Looks the concept up in the vocabulary and answers with its `prefLabel` and definition; if it is absent and disputed, proposes adding it with evidence.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: "what do we call X"'
+  added_at: 2026-11-01
+- id: v-a4
+  input:
+    prompt: Half the notes say 'subject' and half say 'participant'. Clean that up.
+  expected:
+    activates: true
+    behavior: 'Stage 1: keeps one `prefLabel`, moves the retired form to `hiddenLabel`, rewrites the notes, and runs the validator with `--corpus`.'
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: synonyms or ambiguous terms'
+  added_at: 2026-11-01
+- id: v-a5
+  input:
+    prompt: Add tags to these research notes so we can filter them by method.
+  expected:
+    activates: true
+    behavior: Reuses existing concepts as tags; adds a concept only for a method used in two notes; adds no hierarchy unless three methods share a parent.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: tagging, categories'
+  added_at: 2026-11-01
+- id: v-a6
+  input:
+    prompt: Design the folder structure for our compliance docs.
+  expected:
+    activates: true
+    behavior: 'Activates for the vocabulary part: folder names use `prefLabel`s of evidenced concepts; does not create one vocabulary per folder.'
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: documentation folder structure'
+  added_at: 2026-11-01
+- id: v-a7
+  input:
+    prompt: New hires keep asking what 'SLO' means versus 'SLA'.
+  expected:
+    activates: true
+    behavior: Onboarding confusion is evidence; seeds or updates both concepts with definitions and a `scopeNote` that separates them.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: onboarding confusion about terms'
+  added_at: 2026-11-01
+- id: v-a8
+  input:
+    prompt: Our naming conventions doc says 'customer' but the code says 'tenant'. Which is right?
+  expected:
+    activates: true
+    behavior: 'Treats it as drift: decides with the owner which label is preferred, fixes the vocabulary or the doc in the same change.'
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: naming conventions'
+  added_at: 2026-11-01
+- id: v-a9
+  input:
+    prompt: Build a taxonomy of incident types for the ops wiki.
+  expected:
+    activates: true
+    behavior: Checks the Stage 2 entry criterion first; builds hierarchy only for a cluster of three evidenced concepts and says what evidence is missing for the rest.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief trigger list: taxonomy, information architecture'
+  added_at: 2026-11-01
+- id: v-a10
+  input:
+    prompt: Run the KOS validator and fix what it finds.
+  expected:
+    activates: true
+    behavior: Runs `validate_kos.py`, fixes each error by rule, and reports warnings it left with the reason.
+  tags:
+  - should-activate
+  - vocabulary
+  source: synthetic
+  added_because: 'brief frontmatter rule: the description includes the acronym KOS'
+  added_at: 2026-11-01
+- id: v-n1
+  input:
+    prompt: Write a friendly paragraph thanking the team for the launch.
+  expected:
+    activates: false
+    behavior: 'Does not activate: casual prose.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: casual prose and one-off answers'
+  added_at: 2026-11-01
+- id: v-n2
+  input:
+    prompt: Punch up this landing page headline.
+  expected:
+    activates: false
+    behavior: 'Does not activate: marketing copy.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: marketing copy'
+  added_at: 2026-11-01
+- id: v-n3
+  input:
+    prompt: Fix the off-by-one error in the pagination loop.
+  expected:
+    activates: false
+    behavior: 'Does not activate: a code change with no naming impact.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: code changes with no naming impact'
+  added_at: 2026-11-01
+- id: v-n4
+  input:
+    prompt: Convert our ontology to OWL and load it into a triple store.
+  expected:
+    activates: false
+    behavior: 'Does not activate: formal ontology and RDF work are out of scope.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: formal ontology or RDF work'
+  added_at: 2026-11-01
+- id: v-n5
+  input:
+    prompt: 'Rewrite this requirement so it is testable: the system should respond quickly.'
+  expected:
+    activates: true
+    behavior: 'Routes to the statements layer: rewrites the requirement to an EARS-style pattern with a measurable response time; a missing term goes to the vocabulary layer first.'
+  tags:
+  - should-activate
+  - statements
+  source: adversarial
+  added_because: 'merge: phrasing and naming are now layers of one skill (was a peer hand-off)'
+  added_at: '2026-11-12'
+- id: s-a1
+  input:
+    prompt: Review these requirements before QA starts on them.
+  expected:
+    activates: true
+    behavior: Checks for a `rules.yaml`; if the requirements doc type is governed, runs `lint_cnl.py` and rewrites each violation to a pattern; if not, reports the ambiguous sentences and asks for the failure
+      that would justify Stage 0.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: writing or reviewing requirements (docs/specs/new-skills/controlled-natural-language.md, Frontmatter and triggers)'
+  added_at: 2026-11-01
+- id: s-a2
+  input:
+    prompt: 'Make this acceptance criterion testable: the page should load fast.'
+  expected:
+    activates: true
+    behavior: Rewrites to a pattern with a measurable slot ("The search page shall render within 2 seconds."), names the banned words it removed, and resolves "search page" against the vocabulary.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: acceptance criteria; "make this precise / testable / unambiguous"'
+  added_at: 2026-11-01
+- id: s-a3
+  input:
+    prompt: Write an ADR for moving sessions to Redis.
+  expected:
+    activates: true
+    behavior: 'Activates for the decision statement only: the decision log line follows the governed pattern if one exists; the ADR''s context and consequences stay narrative.'
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: ADRs'
+  added_at: 2026-11-01
+- id: s-a4
+  input:
+    prompt: Turn this incident write-up into runbook steps.
+  expected:
+    activates: true
+    behavior: One instruction per sentence, conditions first, roles resolved against the vocabulary; proposes Stage 0 for runbooks only if a recorded failure exists.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: runbooks'
+  added_at: 2026-11-01
+- id: s-a5
+  input:
+    prompt: Our privacy policy says requests are handled promptly. Tighten the compliance language.
+  expected:
+    activates: true
+    behavior: Rewrites to an obligation pattern with an actor and a period; a role the vocabulary lacks goes to `knowledge-organization-system` first.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: policies, compliance language'
+  added_at: 2026-11-01
+- id: s-a6
+  input:
+    prompt: Edit this system prompt so the model can't read the instructions two ways.
+  expected:
+    activates: true
+    behavior: Applies one-reading rules (one instruction per sentence, no hedges, vocabulary labels); does not create a rule set for prompts without a recorded failure.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: prompts and system prompts'
+  added_at: 2026-11-01
+- id: s-a7
+  input:
+    prompt: Write a style guide for how we phrase findings in our research notes.
+  expected:
+    activates: true
+    behavior: Proposes patterns only from sentences the notes already contain, each with sources, and a short banned-word list; refuses to write rules for shapes nobody has written.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: style guides'
+  added_at: 2026-11-01
+- id: s-a8
+  input:
+    prompt: Set up CNL for our specs.
+  expected:
+    activates: true
+    behavior: Asks which spec doc type has caused errors; seeds `rules.yaml` from the template for that one type with 3 to 5 patterns from real sentences.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: specs; brief frontmatter rule: the description includes the acronym CNL'
+  added_at: 2026-11-01
+- id: s-a9
+  input:
+    prompt: This SOP says 'contact the on-call as appropriate'. Half the team emails, half pages. Fix the wording.
+  expected:
+    activates: true
+    behavior: 'Treats it as a Stage 1 refinement: bans "as appropriate", rewrites the step, and retires the old step pattern with `replacedBy` if one exists.'
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief trigger list: SOPs; ambiguous, vague or inconsistent phrasing'
+  added_at: 2026-11-01
+- id: s-a10
+  input:
+    prompt: Run the CNL linter on docs/requirements and fix what it finds.
+  expected:
+    activates: true
+    behavior: Runs `lint_cnl.py`, fixes each error by rule, hands unresolved terms to the vocabulary, and reports warnings it left with the reason.
+  tags:
+  - should-activate
+  - statements
+  source: synthetic
+  added_because: 'brief frontmatter rule: the description includes the acronym CNL'
+  added_at: 2026-11-01
+- id: s-n1
+  input:
+    prompt: Write a quick reply thanking Sam for the review.
+  expected:
+    activates: false
+    behavior: 'Does not activate: casual prose and one-off chat.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: casual prose and one-off chat answers'
+  added_at: 2026-11-01
+- id: s-n2
+  input:
+    prompt: Make our product launch blog post more exciting.
+  expected:
+    activates: false
+    behavior: 'Does not activate: marketing or narrative copy.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: marketing or narrative copy'
+  added_at: 2026-11-01
+- id: s-n3
+  input:
+    prompt: Add a comment explaining this regex.
+  expected:
+    activates: false
+    behavior: 'Does not activate: code comments.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief do-not-trigger list: code comments'
+  added_at: 2026-11-01
+- id: s-n4
+  input:
+    prompt: Should we call it a tenant or a workspace?
+  expected:
+    activates: true
+    behavior: 'Routes to the vocabulary layer: looks for evidence of both labels, picks one prefLabel, records the other as altLabel or hiddenLabel.'
+  tags:
+  - should-activate
+  - vocabulary
+  source: adversarial
+  added_because: 'merge: phrasing and naming are now layers of one skill (was a peer hand-off)'
+  added_at: '2026-11-12'
+- id: s-n5
+  input:
+    prompt: Translate the runbook into German.
+  expected:
+    activates: false
+    behavior: 'Does not activate: machine translation is out of scope.'
+  tags:
+  - should-not-activate
+  source: adversarial
+  added_because: 'brief out of scope: machine translation'
+  added_at: 2026-11-01
+- id: r1
+  input:
+    prompt: Agents keep missing our component rules when they build screens. Can you fix how AGENTS.md routes them?
+  expected:
+    activates: true
+    behavior: 'Routing layer: traces the entry to the governing files for a representative task, finds the first broken route, makes the smallest change, verifies the route.'
+  tags:
+  - should-activate
+  - routing
+  source: synthetic
+  added_because: 'merge: routing (was progressive-context)'
+  added_at: '2026-11-12'
+- id: r2
+  input:
+    prompt: Restructure our README and AGENTS.md so they route by task and have a table of contents.
+  expected:
+    activates: true
+    behavior: 'Routing layer, entry files: purpose, contents, a task-to-file route table with load conditions; keeps stable paths or aliases.'
+  tags:
+  - should-activate
+  - routing
+  source: synthetic
+  added_because: entry-file structure request
+  added_at: '2026-11-12'
+- id: rv1
+  input:
+    prompt: Test whether a fresh agent can find how to add a new chart component starting from AGENTS.md.
+  expected:
+    activates: true
+    behavior: 'Review layer: freezes a neutral brief and acceptance, runs a fresh-agent trial with no coaching, reports author and consumer outcomes separately.'
+  tags:
+  - should-activate
+  - review
+  source: synthetic
+  added_because: 'merge: routing review (was context-routing-review)'
+  added_at: '2026-11-12'
+- id: m1
+  input:
+    prompt: Our billing service and our CRM both have a 'customer' but they mean different things. Model how they relate.
+  expected:
+    activates: true
+    behavior: 'Modeling layer: separates identities from labels, scopes each source, records an evidenced mapping and what it permits.'
+  tags:
+  - should-activate
+  - modeling
+  source: synthetic
+  added_because: 'merge: modeling (was knowledge-modeling)'
+  added_at: '2026-11-12'
+- id: k1
+  input:
+    prompt: Each UI component has a manifest.json and there's a registry generated from them. Audit whether the registry and manifests are sound.
+  expected:
+    activates: true
+    behavior: 'Manifests layer: checks one source per fact, closure both ways, lossless registry projection, enforced rules with negative controls; runs check_registry.py where the shapes fit.'
+  tags:
+  - should-activate
+  - manifests
+  source: synthetic
+  added_because: 'new layer: manifests and registries'
+  added_at: '2026-11-12'
+- id: k2
+  input:
+    prompt: Should our component manifests be .ts or .json, and what fields should every manifest have?
+  expected:
+    activates: true
+    behavior: 'Manifests layer: JSON plus JSON Schema as the source with generated types; lists identity, intent, contract, relations, guidance and provenance fields.'
+  tags:
+  - should-activate
+  - manifests
+  source: synthetic
+  added_because: 'new layer: manifests and registries'
+  added_at: '2026-11-12'
+- id: k3
+  input:
+    prompt: Separate the docs for people using our kit from the docs for people changing it.
+  expected:
+    activates: true
+    behavior: 'Manifests and routing layers: an authoring route and a consuming route split in the entry''s first lines; each doc declares its mode.'
+  tags:
+  - should-activate
+  - manifests
+  - routing
+  source: synthetic
+  added_because: 'new: authoring vs consuming modes'
+  added_at: '2026-11-12'
+- id: n6
+  input:
+    prompt: Build the settings page using our existing components.
+  expected:
+    activates: false
+    behavior: 'Does not activate: ordinary UI implementation (use the project''s UI skill).'
+  tags: &id001
+  - should-not-activate
+  source: synthetic
+  added_because: 'boundary: ordinary implementation'
+  added_at: '2026-11-12'
+- id: n7
+  input:
+    prompt: Why did the agent read that file in this session? Here is the trace.
+  expected:
+    activates: false
+    behavior: 'Does not activate: trace-level routing diagnosis belongs to context-fog-of-war.'
+  tags: *id001
+  source: synthetic
+  added_because: 'boundary: sibling skill'
+  added_at: '2026-11-12'
+- id: n8
+  input:
+    prompt: Design a pipeline that triages incoming support tickets to the right team.
+  expected:
+    activates: false
+    behavior: 'Does not activate: classify-and-resolve.'
+  tags: *id001
+  source: synthetic
+  added_because: 'boundary: sibling skill'
+  added_at: '2026-11-12'
+- id: n9
+  input:
+    prompt: Is this prompt good enough to ship? Build me an eval set.
+  expected:
+    activates: false
+    behavior: 'Does not activate: evaluation-system.'
+  tags: *id001
+  source: synthetic
+  added_because: 'boundary: sibling skill'
+  added_at: '2026-11-12'
