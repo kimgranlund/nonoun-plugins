@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Maintainer-only shell rebuild. End users need only fog.py and the shipped shell."""
+"""Maintainer-only shell rebuild. End users need only fog.py and the shipped shell.
+
+Needs a UI kit whose scripts/build.mjs takes FRAGMENT OUT; no skill in this repository ships one now,
+so the shipped shell stays frozen at its last kit build and edits land in its assets by hand."""
 import argparse
 from pathlib import Path
 import subprocess
@@ -7,7 +10,7 @@ import tempfile
 
 root=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
-p.add_argument('--kit',type=Path,required=True,help='Authoritative base-ui skill directory')
+p.add_argument('--kit',type=Path,required=True,help='UI kit directory whose scripts/build.mjs builds FRAGMENT into OUT')
 p.add_argument('--node',default='node')
 a=p.parse_args()
 with tempfile.TemporaryDirectory() as folder:

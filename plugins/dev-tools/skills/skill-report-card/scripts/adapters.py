@@ -5,6 +5,8 @@ from acceptance import audit as audit_acceptance
 LINT_SOURCES=json.loads((Path(__file__).resolve().parents[1]/'references/lint-sources-v1.json').read_text())
 
 PRODUCER = 'b319038a6e92f11ed8c81d0a3260c0daaf3cbbedae5b4cdafefc6642186c0bcb'
+# History: the UI kit id the pinned producer recorded in its artifacts; that kit skill is retired.
+RECORDED_KIT_ID='local.base-ui'
 LINT_SOURCES_V2=json.loads((Path(__file__).resolve().parents[1]/'references/lint-sources-v2.json').read_text())
 ADAPTER = 'wireframe-generation/1.2.0'
 STATIC = ('executable-syntax','manifest','artifact-binding','foundation-binding',
@@ -35,7 +37,7 @@ def qualify(data, evidence_hash, read):
     source=data.get('source');kit=data.get('uiKit')
     if not isinstance(source,dict) or source.get('sha256')!=digest(blobs['source.manifest.json']):
         return reject('source-identity-mismatch')
-    if not isinstance(kit,dict) or kit.get('packageId')!='local.base-ui' or not is_hash(kit.get('contentSHA256')):
+    if not isinstance(kit,dict) or kit.get('packageId')!=RECORDED_KIT_ID or not is_hash(kit.get('contentSHA256')):
         return reject('missing-dependency-identity')
     if data['reports'].get('verification.json')!=digest(blobs['verification.json']):
         return reject('report-identity-mismatch')
@@ -90,7 +92,7 @@ def qualify(data, evidence_hash, read):
     def add(criterion,outcome,pointer,h=evidence_hash):
         o={'schemaVersion':1,'skillId':'wireframe-review','metricContractVersion':1,
            'adapterVersion':ADAPTER,'producerSHA256':PRODUCER,'skillSourceIdentity':None,
-           'dependencyIdentity':{'packageId':'local.base-ui','contentSHA256':kit['contentSHA256'],'origin':'reported'},
+           'dependencyIdentity':{'packageId':RECORDED_KIT_ID,'contentSHA256':kit['contentSHA256'],'origin':'reported'},
            'attemptId':None,'artifactId':ah,'phase':'generation','predecessor':None,
            'criterionId':criterion,'outcome':outcome,'evidence':{'sha256':h,'pointer':pointer},
            'origin':'reported','taskCohort':None,'model':None,'effort':None,'environment':None,
@@ -122,7 +124,7 @@ def validate_observation(o):
     if o['criterionId'] not in allowed or o['adapterVersion']!=ADAPTER or o['producerSHA256']!=PRODUCER or o['metricContractVersion']!=1:raise ValueError('unsupported-observation-contract')
     if set(o['evidence'])!={'sha256','pointer'} or not re.fullmatch(r'/(mode|artifactSHA256|errors|findings|cases|stages/[0-4]/exit|checks/[0-6]/status)',o['evidence']['pointer']):raise ValueError('invalid-selection')
     dep=o['dependencyIdentity']
-    if set(dep)!={'packageId','contentSHA256','origin'} or dep['packageId']!='local.base-ui' or dep['origin']!='reported' or not is_hash(dep['contentSHA256']):raise ValueError('invalid-dependency')
+    if set(dep)!={'packageId','contentSHA256','origin'} or dep['packageId']!=RECORDED_KIT_ID or dep['origin']!='reported' or not is_hash(dep['contentSHA256']):raise ValueError('invalid-dependency')
     if any(o[k] is not None for k in ('attemptId','skillSourceIdentity','predecessor','taskCohort','model','effort','environment','observationTime','telemetry')):raise ValueError('unsupported-attribution')
     if o['applicability']!='current-source-transfer-unverified' or o['acceptedLimitations']!='retained-in-source-not-promoted-to-pass' or o['missingData']!=['author-attempt-identity','full-skill-source-identity','task-cohort','environment','observation-time']:raise ValueError('invalid-coverage-state')
     if o['criterionId']=='delivery-integrity' and o['outcome']!='unverified':raise ValueError('unsupported-performance-claim')

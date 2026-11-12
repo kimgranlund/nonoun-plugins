@@ -2,7 +2,7 @@
 
 ## User intent
 
-Build skill-report-card: automatically discover relevant local samples without forcing users to locate them, then show a hydrated mini-dashboard of skill goals/KPIs. Evidence processing must not pollute the calling session's context. Initial measured skills: base-ui, component-variants, wireframe-review. Each has one primary goal, secondary goals and 3-8 conceptually distinct KPIs. No automatic evaluations, overall grades or fabricated scores.
+Build skill-report-card: automatically discover relevant local samples without forcing users to locate them, then show a hydrated mini-dashboard of skill goals/KPIs. Evidence processing must not pollute the calling session's context. Measured skills: component-variants, wireframe-review (the retired UI-kit skill was dropped). Each has one primary goal, secondary goals and 3-8 conceptually distinct KPIs. No automatic evaluations, overall grades or fabricated scores.
 
 ## Read order
 
@@ -17,7 +17,7 @@ Build skill-report-card: automatically discover relevant local samples without f
 - Python stdlib bounded discovery with prioritized automatic roots, explicit overrides, exclusions, JSON limits and exact-copy deduplication.
 - Fresh output: evidence-index.json, report-card.json, hydrated index.html and local kit.css.
 - Routine stdout is compact metadata; report contents are not sent into conversation context.
-- Verified sibling base-ui CSS is consumed when available; otherwise explicit plain HTML fallback.
+- Plain HTML by default; a supplied UI kit's verified CSS is optional.
 - All performance KPIs intentionally remain Not measured. Candidate evidence is not qualified, denominators are not invented, semantic evaluation is absent.
 - No other skill, original evidence, release archive or peer output was changed by creation.
 
@@ -36,7 +36,7 @@ Build skill-report-card: automatically discover relevant local samples without f
 
 ## Work discipline
 
-Do not recursively read samples into the conversation. Use local processes; open the generated dashboard or request a narrowly scoped summarized finding. Do not write adapters that simply trust a top-level pass flag. Do not rerun or relabel old accepted limitations. Keep build work inside this skill; disposable outputs in /private/tmp. No changes to base-ui/component-variants/wireframe-review are authorized by this handoff. Preserve sealed holdouts and unrelated private data.
+Do not recursively read samples into the conversation. Use local processes; open the generated dashboard or request a narrowly scoped summarized finding. Do not write adapters that simply trust a top-level pass flag. Do not rerun or relabel old accepted limitations. Keep build work inside this skill; disposable outputs in /private/tmp. No changes to component-variants/wireframe-review are authorized by this handoff. Preserve sealed holdouts and unrelated private data.
 
 ## Paste to the next chat
 
@@ -51,7 +51,7 @@ Next: qualify a genuine frozen positive sample from the pinned producer (current
 
 ## Skill-owned performance contracts
 
-A versioned schema, proposed base-ui example, stdlib validator, rejection tests and adoption procedure are now available in performance-contract-adoption.md. Read it before moving the registry into measured skills. Contract discovery is not implemented; references/kpis.json remains the active proposal source. No measured skill was changed by this addition.
+A versioned schema, illustrative UI-kit example, stdlib validator, rejection tests and adoption procedure are now available in performance-contract-adoption.md. Read it before moving the registry into measured skills. Contract discovery is not implemented; references/kpis.json remains the active proposal source. No measured skill was changed by this addition.
 
 ## Continuation update: genuine frozen draft, 2026-10-11
 

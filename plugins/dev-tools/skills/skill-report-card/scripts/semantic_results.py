@@ -105,7 +105,7 @@ def main():
     if out.exists() or SKILL.parent in out.parents: p.error('Fresh output outside skill root required')
     try:
         report,evidence=integrate(json.loads(Path(a.base).read_text()),[json.loads(Path(x).read_text()) for x in a.review])
-        out.mkdir(mode=0o700,parents=True);render(report,out,SKILL.parent/'base-ui')
+        out.mkdir(mode=0o700,parents=True);render(report,out)
         (out/'report-card.json').write_text(json.dumps(report,indent=2)+'\n');(out/'semantic-observations.json').write_text(json.dumps(evidence,indent=2)+'\n')
         (out/'evidence-index.json').write_text(json.dumps({'schemaVersion':1,'reviewFiles':[{'path':x,'sha256':hashlib.sha256(Path(x).read_bytes()).hexdigest()} for x in a.review],'coverage':report['coverage']},indent=2)+'\n')
         print(json.dumps({'dashboard':str(out/'index.html'),'measuredKpis':report['coverage']['measuredPerformanceKpis'],'cases':len(evidence['cases'])}))

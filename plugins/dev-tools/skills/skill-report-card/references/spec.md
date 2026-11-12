@@ -6,7 +6,7 @@ Version 0.2, 2026-10-11. Status: discovery/renderer plus one reported-observatio
 
 Produce a small hydrated local HTML dashboard showing what selected skills accomplish, what local evidence supports that judgment, where evidence is absent and what should be investigated next. Automatically find relevant samples without asking users to curate every path. Do not fill the calling conversation with those samples.
 
-Three initial skill definitions are in kpis.json: base-ui (5 KPIs), component-variants (6), wireframe-review (6). Each has exactly one primary goal and supporting secondary goals. Definitions are versioned proposed contracts, not assertions extracted from the skills. Do not edit the measured skills to install these definitions. Later, skill-owned declarations may supersede defaults only through explicit reconciliation/versioning. Base-ui results may appear as dependencies of review artifacts but must not count twice in a composite score. No overall score in v1.
+Two skill definitions are in kpis.json: component-variants (6 KPIs) and wireframe-review (6). Each has exactly one primary goal and supporting secondary goals. Definitions are versioned proposed contracts, not assertions extracted from the skills. Do not edit the measured skills to install these definitions. Later, skill-owned declarations may supersede defaults only through explicit reconciliation/versioning. No overall score in v1.
 
 ## Implemented pipeline
 
@@ -15,7 +15,7 @@ Three initial skill definitions are in kpis.json: base-ui (5 KPIs), component-va
 3. Relevance uses exact skill path components or selected structured identity fields. Hints do not establish causal use. Unknown schemas remain unqualified. The pinned adapter is described below. No recursive scan of arbitrary string values for commands or instructions.
 4. SHA-256 of complete accepted bytes groups exact duplicate documents. Paths remain aliases. This is document deduplication, not attempt deduplication.
 5. evidence-index.json records candidates, bounds and coverage. observations.json holds versioned reported observations; report-card.json holds goals and unmeasured KPIs. The renderer embeds only this compact aggregate; raw samples never enter HTML or stdout.
-6. HTML uses verified sibling base-ui CSS when available and textContent for dynamic labels. No HTTP service, network request, dependency download or remote analytics. A missing styling kit yields plain HTML with the limitation disclosed.
+6. HTML is plain by default (a supplied UI kit's verified CSS is optional) and uses textContent for dynamic labels. No HTTP service, network request, dependency download or remote analytics. A missing styling kit yields plain HTML with the limitation disclosed.
 
 Default limits: 30 seconds best-effort, 100,000 entries, 3,000 candidate files, 2 MiB per candidate, depth 18. Report skipped/error/limit counts. Bounds are operational limits, not sampling representativeness. Root order and filesystem ordering can bias candidates. A blocked filesystem operation may exceed the soft wall-time budget; hard subprocess supervision is a follow-up.
 

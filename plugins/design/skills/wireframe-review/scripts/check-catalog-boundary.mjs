@@ -6,11 +6,11 @@ function validate(a,b,kit){
  for(const key of ['tokens','components','pairs','counts','fullPageSpecimens'])assert.deepEqual(b[key],a[key],key+' changed across extraction');
  assert.deepEqual(kit.catalog.tokens,b.tokens);assert.deepEqual(kit.catalog.components.families,b.components);
  assert(!('workRegister' in kit.catalog)&&!('generationHistory' in kit.catalog),'Review data leaked into kit catalog');
- for(const s of b.sources){assert(s.owner==='base-ui'||s.owner==='wireframe-review');assert.equal(hash(fs.readFileSync(path.join(after,'sources',s.path))),s.sha256);assert.equal(hash(fs.readFileSync(path.join(b.sourceRoots[s.owner],s.path))),s.sha256);}
+ for(const s of b.sources){assert.equal(s.owner,'wireframe-review','unexpected source owner '+s.owner);assert.equal(hash(fs.readFileSync(path.join(after,'sources',s.path))),s.sha256);assert.equal(hash(fs.readFileSync(path.join(b.sourceRoots[s.owner],s.path))),s.sha256);}
  for(const s of Object.values(b.fullPageSpecimens))assert.equal(hash(fs.readFileSync(path.join(after,s.path))),s.sha256);
 }
 validate(a,b,kit);
 const altered=structuredClone(b);altered.tokens[0].name='--invented-token';assert.throws(()=>validate(a,altered,kit));
 const leak=structuredClone(kit);leak.catalog.workRegister={};assert.throws(()=>validate(a,b,leak));
-const wrongOwner=structuredClone(b);wrongOwner.sources.find(s=>s.path==='scripts/catalog.mjs').owner='wireframe-review';assert.throws(()=>validate(a,wrongOwner,kit));
+const wrongOwner=structuredClone(b);wrongOwner.sources.find(s=>s.path==='scripts/catalog.mjs').owner='other-kit';assert.throws(()=>validate(a,wrongOwner,kit),/unexpected source owner/);
 console.log(JSON.stringify({pass:true,tokens:b.tokens.length,specimens:Object.keys(b.fullPageSpecimens).length,negativeControls:['token mutation','review-data leakage','wrong source owner'],scope:'Extraction and source parity; no new component behavioral certification'}));

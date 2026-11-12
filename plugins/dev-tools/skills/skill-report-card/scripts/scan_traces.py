@@ -59,6 +59,6 @@ def main():
     for s in contracts['skills']:
         traces=[o for o in obs if s['id'] in o['skillHints']]
         cards.append({**s,'candidateDocuments':len(traces),'traceObservations':[{'loggedOutputBytes':o['loggedCommandOutputUtf8Bytes'],'recordedCommands':o['recordedCommands'],'successfulExits':o['recordedSuccessfulExits'],'nonzeroExits':o['recordedNonzeroExits'],'conflicts':o['conflictingCommandIdentities'],'traceSHA256':o['traceSHA256']} for o in traces],'metrics':[{'id':k['id'],'value':None,'status':'not-measured','evidenceState':'insufficient','reason':'Logs supply observations; this performance criterion lacks qualified task/quality applicability.'} for k in s['kpis']]})
-    report={'schemaVersion':1,'status':'log-first-observations','coverage':index['coverage'],'skills':cards,'styling':None};render(report,out,SKILL.parent/'base-ui');(out/'report-card.json').write_text(json.dumps(report,indent=2)+'\n')
+    report={'schemaVersion':1,'status':'log-first-observations','coverage':index['coverage'],'skills':cards,'styling':None};render(report,out);(out/'report-card.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({'status':'log-first-observations','dashboard':str(out/'index.html'),'qualifiedTraceFormats':len(obs),'measuredKpis':0,'stopReason':index['coverage']['stopReason']}))
 if __name__=='__main__':main()

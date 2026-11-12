@@ -20,7 +20,7 @@ function auditRows(obj){const group=el('div',undefined,'wf-flow');const plain=[]
 const isTest=report.population==='controlled-test';
 const measured=report.coverage.measuredPerformanceKpis||report.skills.reduce((n,s)=>n+s.metrics.filter(m=>m.value!==null).length,0);
 document.querySelector('#coverage').textContent=isTest?`Controlled test cohort: ${measured} KPIs have supported measurements. Results are shown separately for each task, version and environment. They do not establish real-use performance.`:measured?`${measured} KPIs have supported measurements. Other results show the evidence still needed.`:'No performance KPI can be measured from this sample. The semantic review found work on the skills and controlled tests, but no qualifying task using them in practice.';
-document.querySelector('#style-state').textContent=report.styling.state==='base-ui'?'Styled with the installed base-ui kit.':'Plain HTML styling: base-ui was unavailable.';
+document.querySelector('#style-state').textContent=report.styling.state==='ui-kit'?'Styled with the supplied UI kit.':'Plain HTML styling: no UI kit was supplied.';
 (report.coverage.limitations||[]).forEach(t=>document.querySelector('#limits').append(el('li',t)));
 const missing={
 'system-fidelity':'A rendered interface checked against the kit’s styles and layout rules.',
@@ -54,7 +54,6 @@ for(const s of report.skills){
   const rows=[['Logs reviewed',count],[isTest?'Qualified test cases':'Qualifying real-use tasks',eligible]];
   if(!isTest&&s.id==='wireframe-review')rows.push(['Excluded',`${c.excludedSourceMaintenance} maintenance logs; ${c.excludedControlledStudy} study logs`],['Older search',`${c.olderMetadataCandidatesSearched} files checked; ${c.olderRelevantStreamsInspected} relevant logs reviewed`]);
   if(!isTest&&s.id==='component-variants')rows.push(['Excluded',`${c.initialExcludedStudyOrMaintenanceStreams} test or maintenance logs`],['Additional search',`${c.additionalRecentMetadataFiles} recent files and ${c.additionalOlderMetadataFiles} older files selected`]);
-  if(!isTest&&s.id==='base-ui')rows.push(['Excluded',`${c.streamsExcludedMaintenanceStudyReporting} maintenance, study or reporting logs`],['Older search',c.olderDateStratifiedPass?`${c.olderDateStratifiedPass.scanned} files read; ${c.olderDateStratifiedPass.oversizedSkipped} too large to read`:undefined]);
   if(s.semanticReview.classificationConfidence?.length)rows.push(['Classification confidence',s.semanticReview.classificationConfidence.join(' / ')+' (reviewer inference)']);
   review.append(facts(rows));
   if(c.boundBreach)review.append(el('p','Read-limit exception: one growing log exceeded the 32 MiB cap. Later searches enforced the limit.','reading'));
