@@ -1,0 +1,62 @@
+{
+  "$comment": "Palette presets for scripts/preset.mjs: each colour seeds one source palette (Base 050–950 + Primes) through scripts/generate.cjs, kept exact as its tagged source. Add a preset by adding an entry; ids become CSS names. A preset's defaults apply to every palette; a request file overrides them.",
+  "field-operator": {
+    "name": "Field + operator (8)",
+    "description": "Eight seeds after Teenage Engineering's published field and operator accent palettes: four muted field colours and four saturated operator primaries.",
+    "defaults": {
+      "base": 100,
+      "prime": 100,
+      "hueBalance": false
+    },
+    "colors": [
+      {
+        "id": "field-blue",
+        "name": "field blue",
+        "hex": "#162032",
+        "group": "field"
+      },
+      {
+        "id": "field-orange",
+        "name": "field orange",
+        "hex": "#dd4b29",
+        "group": "field"
+      },
+      {
+        "id": "field-brown",
+        "name": "field brown",
+        "hex": "#a9875a",
+        "group": "field"
+      },
+      {
+        "id": "field-grey",
+        "name": "field grey",
+        "hex": "#858e8e",
+        "group": "field"
+      },
+      {
+        "id": "op-red",
+        "name": "op red",
+        "hex": "#c0282c",
+        "group": "operator"
+      },
+      {
+        "id": "op-blue",
+        "name": "op blue",
+        "hex": "#0070ba",
+        "group": "operator"
+      },
+      {
+        "id": "op-green",
+        "name": "op green",
+        "hex": "#016937",
+        "group": "operator"
+      },
+      {
+        "id": "op-yellow",
+        "name": "op yellow",
+        "hex": "#fab513",
+        "group": "operator"
+      }
+    ]
+  }
+}

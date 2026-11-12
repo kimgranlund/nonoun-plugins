@@ -13,7 +13,7 @@ Write a UTF-8 JSON object. Natural-language attributes are interpreted by the ag
 | `output` | `"base"` (default), `"base-primes"`, `"primes"` |
 | `system` | Boolean, default false; adds Info, Success, Warning, Danger |
 | `material` | `"none"` (default), `"tinted"`, `"neutral"`; adds at most one palette |
-| `target` | `"srgb"` (default) or `"display-p3"` |
+| `target` | `"srgb"` or `"display-p3"`. The executable defaults to `"srgb"`, but this skill always writes `"target": "display-p3"` into a request unless the user asks for sRGB (see SKILL.md › Gamut) |
 | `base` | Base chroma percentage 0–100, default 60; max mode defaults 100 |
 | `hueBalance` | Boolean, default true; max-chroma requests default false to preserve the boundary. Explicit true applies appearance adjustment after the Base envelope |
 | `primeBrightnessSteps` | Integer 0–2, default 0 (unbiased center); 1 or 2 shifts Prime one or two shared tone intervals brighter |
