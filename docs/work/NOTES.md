@@ -911,3 +911,9 @@
 
 - note: plugins/design/skills/component-variants/scripts/geometry.mjs:11 pins the dials (n 14, kappa 0.75, kappa-card 0.5, card 4) as constants and every px value comes from derive output (geometry.mjs:34-36), matching the "never copied numbers" constraint. Dial values are a design choice the handoff did not specify.
 - note: the head is merge commit b3c44154 (main merged into the lane); the criteria were run on that tree.
+
+## T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12)
+
+- decide: plugins/design/skills/wireframe-review/assets/fonts/ibmplexmono/OFL.txt:1 and assets/fonts/bricolagegrotesque/OFL.txt:21: `git diff --check ab93a573 HEAD` reports about 94 trailing-whitespace lines (CRLF and trailing spaces in vendored licence text; the builder said the file hash is in the font manifest). The criterion's `git diff --check` is clean in the committed tree, so this passes by the letter. decide: add a `.gitattributes` `-whitespace` rule for these files, or accept.
+- decide: plugins/design/skills/wireframe-review/assets/foundation/maison/geometry.css: 72 values carry float noise, e.g. `--m-cell-sm-md-chip-height: 22.000000000000004px`. The file is byte-stable, so criterion 3 holds, but rounding in generate-geometry.mjs would make it cleaner. decide: round derive px to a fixed precision.
+- decide: The builder lists several suites as already red at baseline (implementation-ownership, corpus-graph, component-context, workflow-controller, generate-icons --check, build-sheets, check-shell). I did not re-run them because no criterion names them.

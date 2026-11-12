@@ -6,11 +6,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0844 | [0844-wireframe-own-kit](0844-wireframe-own-kit/handoff.md) | Port wireframe-review off base-ui onto a trimmed own kit | chore | L3 | P2 | T-0841 | 🟡 claimed (branch lane/T-0844-t0844) |
 | T-0845 | [0845-remove-base-ui-mds](0845-remove-base-ui-mds/handoff.md) | Remove base-ui and mathematical-design-system from design | chore | L2 | P2 | T-0842, T-0843, T-0844 | 🔵 ready |
 | T-0846 | [0846-variants-select-caret](0846-variants-select-caret/handoff.md) | Style the component-variants select caret on the compiled select__root wrapper | bug | L1 | P3 | T-0843 | ⏳ proposed |
 
-Closed: 805 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 806 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -131,3 +130,6 @@ Closed: 805 done, 30 dropped (git log or .NNNN-* folders)
 - decide: Live run in the lane tree: `lanes.py who` printed `factory v open fanout lane .../.worktrees/fanout40/v` and `lanes.py list --overlap plugins/sdlc/scripts/lanes.py` printed nothing, both exit 0. (from T-0821: lanes.py who, overlap warning, and ticketless land for live lanes (2026-10-30))
 - decide: plugins/context/skills/evaluation-system/references/model.md: `basis` is a warning rather than the brief's error, and the CHANGELOG records why (logs_to_cases.py writes no basis). This follows the handoff's allowance; the builder's follow-up idea (make logs_to_cases.py write `basis`) is worth a ticket. (from T-0838: Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system (2026-11-01))
 - decide: plugins/context/CHANGELOG.md: gate registries without `pinned_target_version` now fail validation. `git grep` finds no other in-repo registry outside evaluation-system, so nothing else breaks. (from T-0838: Add gold provenance, variants, coverage, calibration and stale gates to evaluation-system (2026-11-01))
+- decide: plugins/design/skills/wireframe-review/assets/fonts/ibmplexmono/OFL.txt:1 and assets/fonts/bricolagegrotesque/OFL.txt:21: `git diff --check ab93a573 HEAD` reports about 94 trailing-whitespace lines (CRLF and trailing spaces in vendored licence text; the builder said the file hash is in the font manifest). The criterion's `git diff --check` is clean in the committed tree, so this passes by the letter. decide: add a `.gitattributes` `-whitespace` rule for these files, or accept. (from T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12))
+- decide: plugins/design/skills/wireframe-review/assets/foundation/maison/geometry.css: 72 values carry float noise, e.g. `--m-cell-sm-md-chip-height: 22.000000000000004px`. The file is byte-stable, so criterion 3 holds, but rounding in generate-geometry.mjs would make it cleaner. decide: round derive px to a fixed precision. (from T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12))
+- decide: The builder lists several suites as already red at baseline (implementation-ownership, corpus-graph, component-context, workflow-controller, generate-icons --check, build-sheets, check-shell). I did not re-run them because no criterion names them. (from T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12))

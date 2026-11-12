@@ -2,7 +2,7 @@
 id: T-0844
 title: "Port wireframe-review off base-ui onto a trimmed own kit"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0841]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,16 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - Do not edit other skills. Geometry values come from `derive.mjs`, never copied numbers.
 
 ## Outcome
+
+## Outcome
+
+2026-11-12 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: ab93a5738ddc
+- Changed: see commits
+- Commits: baa87ac T-0844: wireframe-review builds from its own trimmed kit with ui-geometry geometry
+- Check: 1 Generation without base-ui and mathematical-design-system: pass
+- Check: 2 Forbidden-name grep: pass
+- Check: 3 Geometry regeneration byte-identical and dial-sensitive: pass
+- Check: 4 Packaging and diff hygiene: pass
+- Follow-up: decide: plugins/design/skills/wireframe-review/assets/fonts/ibmplexmono/OFL... -> notes.md
+- Follow-up: decide: plugins/design/skills/wireframe-review/assets/foundation/maison/geo... -> notes.md
+- Follow-up: decide: The builder lists several suites as already red at baseline... -> notes.md
