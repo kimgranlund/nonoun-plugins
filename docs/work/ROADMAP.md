@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0842 | [0842-inspector-on-ui-geometry](0842-inspector-on-ui-geometry/handoff.md) | Port the ui-kit-inspector example onto ui-geometry | chore | L2 | P2 | T-0841 | 🔵 ready |
+| T-0842 | [0842-inspector-on-ui-geometry](0842-inspector-on-ui-geometry/handoff.md) | Port the ui-kit-inspector example onto ui-geometry | chore | L2 | P2 | T-0841 | 🟡 claimed |
 | T-0843 | [0843-variants-own-kit](0843-variants-own-kit/handoff.md) | Port component-variants off base-ui onto a trimmed own kit | chore | L2 | P2 | T-0841 | 🔵 ready |
 | T-0844 | [0844-wireframe-own-kit](0844-wireframe-own-kit/handoff.md) | Port wireframe-review off base-ui onto a trimmed own kit | chore | L3 | P2 | T-0841 | 🔵 ready |
 | T-0845 | [0845-remove-base-ui-mds](0845-remove-base-ui-mds/handoff.md) | Remove base-ui and mathematical-design-system from design | chore | L2 | P2 | T-0842, T-0843, T-0844 | 🔵 ready |
