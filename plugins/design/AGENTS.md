@@ -8,7 +8,8 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 |---|---|
 | `base-ui` | Building UI with Differential Forms components, recipes and appearance rules |
 | `mathematical-design-system` | The Differential Forms geometry model, its frozen snapshot and numerical checks |
-| `hct-palettes` | HCT source palettes, ramps, Primes and balanced color sets |
+| `hct-palettes` | HCT source palettes, ramps, Primes and balanced color sets, and a full light/dark color system (APCA-placed ramps, roles, presets) |
+| `ui-geometry` | UI geometry derived from one font size and unit across four tiers, and fitting an existing project to the nearest system |
 | `ui-kit-inspector` | Jigs: live panels that tune a UI system's constants and export a change set; `examples/inspector-panel/` holds the former `inspector-panels` skill |
 | `component-variants` | Interactive comparison pages for component implementation alternatives |
 | `wireframe-review` | Interactive wireframes with alternatives, annotations and JSON feedback |
@@ -26,4 +27,4 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 
 ## Checks
 
-From the repository root: `python3 scripts/check-packaging.py` (catalogs, manifests, skill names and sizes, cross-skill links). Inside `skills/base-ui`: `node scripts/check-kit.mjs`. Inside `skills/mathematical-design-system`: `node scripts/check-geometry.mjs` and `node scripts/check-curvature.mjs`. Inside `skills/ui-kit-inspector/examples/inspector-panel`: `npm test` (Node 24 or later). Run `git diff --check` for doc edits.
+From the repository root: `python3 scripts/check-packaging.py` (catalogs, manifests, skill names and sizes, cross-skill links). Inside `skills/base-ui`: `node scripts/check-kit.mjs`. Inside `skills/mathematical-design-system`: `node scripts/check-geometry.mjs` and `node scripts/check-curvature.mjs`. Inside `skills/hct-palettes`: `node scripts/check.mjs`. Inside `skills/ui-geometry`: `node --test`. Inside `skills/ui-kit-inspector/examples/inspector-panel`: `npm test` (Node 24 or later). Run `git diff --check` for doc edits.

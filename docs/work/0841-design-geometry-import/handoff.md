@@ -32,7 +32,7 @@ The design plugin ships the MacBook's current `hct-palettes` and a new `ui-geome
 
 ## Acceptance criteria
 - `diff -rq -x .git -x .gitignore -x .DS_Store /Volumes/kimba/.claude/skills/hct-palettes plugins/design/skills/hct-palettes` prints nothing, and the same for `ui-geometry` apart from `agents/` and any shortened SKILL.md description (named in the report).
-- `cd plugins/design/skills/ui-geometry && node --test scripts/` exits 0, and each `hct-palettes` check script the skill names exits 0.
+- `cd plugins/design/skills/ui-geometry && node --test` exits 0, and each `hct-palettes` check script the skill names exits 0.
 - `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean.
 
 ## Constraints

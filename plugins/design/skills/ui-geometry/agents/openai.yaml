@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Geometry"
+  short_description: "Derive or fit a UI size system from one font size and unit"
+  default_prompt: "Use $ui-geometry to derive control heights, radii and gaps at 16px."

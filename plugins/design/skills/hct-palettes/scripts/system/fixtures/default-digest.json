@@ -1,0 +1,5 @@
+{
+  "$description": "sha256 of system.css and system.json for the request {} (check.mjs › byte-identical default). Refresh with check.mjs --update-digest after a deliberate change to the default output.",
+  "system.css": "3c1ee4de585ea255f5610983b5ff203ae25c2c8b7ce65664d6068efe5c5f23af",
+  "system.json": "3df67cb4b663e93231a2088cb3a1b6ad9682c1b0b3a6a1dc34ef570da1ad6354"
+}
