@@ -34,7 +34,7 @@ The `ui-kit-inspector` inspector-panel example takes its geometry from `ui-geome
 
 ## Acceptance criteria
 - `cd plugins/design/skills/ui-kit-inspector/examples/inspector-panel && npm test` exits 0.
-- `! grep -rnE "mathematical-design-system|differential-forms|base-ui" plugins/design/skills/ui-kit-inspector` exits 0.
+- `! grep -rnE "mathematical-design-system|differential-forms|base-ui" --exclude-dir=maison-jig plugins/design/skills/ui-kit-inspector` (the `maison-jig` copy is frozen by its README) exits 0.
 - The geometry test fails when one asserted identity is broken (an observed negative control, named in the report, then reverted).
 - `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean.
 

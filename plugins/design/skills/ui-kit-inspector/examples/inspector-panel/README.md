@@ -98,7 +98,7 @@ These are the guarantees the reference implementation keeps. Keep them if you ad
 - **Desktop:** the panel is a sticky column 280–340px wide, beside the output (`.ip-layout`).
 - **Under 900px:** it stacks above the output.
 - **Collapsible:** the panel is a `<details>`, so it can be closed.
-- **Differential Forms geometry:** consume the current shared typed resolvers through `panel-geometry.js`. Defaults are u4, border0, Soft curvature and label edge1.5u. Controls are 28/32/40px for compact/default/loose; their 24px slots and 14px text remain fixed at u4.
+- **ui-geometry:** `panel-geometry.js` takes every length from [ui-geometry](../../../ui-geometry/SKILL.md)'s calculator, built for the browser into `geometry-runtime/derive.js`. Defaults are the massimo preset at n = 14 (q = 4px), border 0, κ_s for controls and κ ½ for the panel card. Controls are h = S + 2I: 28/32/36px for compact/default/loose, with a 20px slot and 14px text, and their text sits at T = 2I from the edge.
 - **Independent families:** `geometry.controlDensity`, `geometry.collectionDensity`, and `geometry.cardDensity` are separate. Panel geometry is independent of the inspected config. Border is deducted once by the owner; keep its transparent width in all states.
 - **Parts:** action buttons contain `.ip-label`; text/number fields use neutral `.ip-field` wrappers and native editable parts. JSON editing uses content-driven collection geometry. Groups and the panel do not subtract geometry from nested controls.
 - **Focus:** keyboard focus paints a 3px solid ink outline at offset0; text fields paint on the wrapper, other controls individually. Preserve space for outline paint and raise focused siblings without changing dimensions.
@@ -106,7 +106,7 @@ These are the guarantees the reference implementation keeps. Keep them if you ad
 - **Order inside the panel:** status and actions first, then groups, then the Config JSON section last.
 - **Hints** state the formula. Keep them to one or two lines.
 - **Readout:** with Inspect on, a hovered element gets a dashed outline, and the readout repeats its `data-spec`.
-- **Size tokens:** `panelGeometry()` maps resolver pixels once into private `--ip-*` properties. Never connect them to the config being tuned or inherited system tokens.
+- **Size tokens:** `panelGeometry()` maps ui-geometry lengths once into private `--ip-*` properties. Never connect them to the config being tuned or inherited system tokens.
 
 ## 4. Writing good checks and specs
 
@@ -120,7 +120,7 @@ Keep the same schema and the same contract. In React, hold the config in `useRed
 
 ## 6. Reference implementation
 
-Use the bundled [JavaScript](inspector-panel.js) and [CSS](inspector-panel.css). Copy `panel-geometry.js` and `geometry-runtime/` alongside them. There are no third-party runtime dependencies; rebuild the generated browser modules with Node24+ using `npm run build`. The build reads mathematical-design-system’s bundled source in this plugin directly, strips TypeScript and records source hashes. Renderers must use `render(cfg, { root })` and receive a separate `outputRoot` at mount time; migrate older renderers that wrote directly to the live DOM.
+Use the bundled [JavaScript](inspector-panel.js) and [CSS](inspector-panel.css). Copy `panel-geometry.js` and `geometry-runtime/` alongside them. There are no third-party runtime dependencies; rebuild the generated browser module with Node24+ using `npm run build`. The build reads `../../../ui-geometry/scripts/derive.mjs` in this plugin directly, drops its Node-only CLI and imports, writes `geometry-runtime/derive.js` and records the source hash. Renderers must use `render(cfg, { root })` and receive a separate `outputRoot` at mount time; migrate older renderers that wrote directly to the live DOM.
 
 Minimal use:
 
@@ -203,12 +203,12 @@ Run these in a real browser (Playwright or similar) before handing the panel ove
 - At 390px wide there is no horizontal scroll, in both light and dark mode.
 - One update takes under 16ms.
 
-## Differential Forms integration and exceptions
+## ui-geometry mapping and exceptions
 
-Component mapping: the panel is a card; groups are collections; actions are standalone controls; text/number fields are neutral input wrappers; booleans remain native checkbox semantics with 1u artwork curvature. The JSON editor is a content-driven collection surface. Native disclosure summaries retain their keyboard behavior. There are no attached composites, chip adornments, currency selectors, radios or switches in this implementation; do not manufacture them to match the reference specimen.
+Component mapping, with the ui-geometry symbol for each `--ip-*` length: the panel is a card at d = 2I (`card-padding` d − b, `container-radius` R = d + min(r(κ_card), soft)); actions and text/number fields are controls (`height` h = S + 2I, `padding` I − b, `edge-start` and `edge-end` I, so text sits at T = 2I; `radius` r(κ_control)); groups are collections (`collection-padding` and `collection-gap` I at the collection density); booleans remain native checkboxes (`choice-size` a.md, `choice-radius` the checkbox radius q). Type is the body-md line, F = n. Native disclosure summaries retain their keyboard behavior. There are no attached composites, chip adornments, currency selectors, radios or switches in this implementation; do not manufacture them.
 
-Small experimental extensions preserve existing native functionality: select and color inputs use control-family outer geometry with browser-owned popup/swatch internals; ranges retain native track/thumb behavior in a fixed control slot; the JSON textarea uses collection inset and content-driven height; details summaries use control minimum height and allow heading wrapping. Native number steppers remain browser-owned. These internals are not certified Differential Forms parts. Checkbox forced-colors mode delegates artwork to the native control. The demo output is deliberately arbitrary `render(config)` content: its existing padding, shadow and aspect-ratio experiment remains intact, separate from the inspector chrome.
+Small experimental extensions preserve existing native functionality: select and color inputs use control outer geometry with browser-owned popup/swatch internals; ranges retain native track/thumb behavior in a fixed control slot; the JSON textarea uses the collection inset and a content-driven height of at least S + 2I; details summaries use the control minimum height and allow heading wrapping. Native number steppers remain browser-owned. Checkbox forced-colors mode delegates artwork to the native control. The demo output is deliberately arbitrary `render(config)` content: its padding, shadow and aspect-ratio experiment is separate from the inspector chrome.
 
-`geometry` is an optional mount-time object: `{unit:4, border:0, controlDensity:'default', collectionDensity:'default', cardDensity:'default', controlCurvature:'soft', containerCurvature:'soft', labelEdgeUnits:1.5}`. Changing panel geometry requires remounting; reset/import/persistence affect the inspected config only.
+`geometry` is an optional mount-time object: `{n:14, border:0, controlDensity:'default', collectionDensity:'default', cardDensity:'default', controlCurvature:κ_s, containerCurvature:½, preset:PRESETS.massimo}`. Curvatures are κ in [0, 1]; the border must lie in [0, g_c]. Out-of-range values throw `RangeError`. Changing panel geometry requires remounting; reset/import/persistence affect the inspected config only.
 
-Run `npm run build` and `npm test`, then the browser suite above. Verify unit/border/density boundaries, text and label preservation, wrapper versus action focus, pointer/keyboard transitions, light/dark and narrow layouts. Numerical checks, browser assertions, visual inspection and assistive-technology audits are separate evidence. No full screen-reader or contrast audit is claimed. Shared contracts/resolvers are consumed unchanged: this consumer has no `specimens/source.html` or generated `specimens/index.html` to edit. `geometry-runtime/provenance.json` records the baseline and per-source hashes; do not hand-edit generated modules.
+Run `npm run build` and `npm test`, then the browser suite above. `npm test` asserts ui-geometry identities on the panel's lengths (h = S + 2I, text at T = 2I, border deducted once, R − d = min(r(κ_card), soft), r(0) = 0 and r(1) = h/2), with ui-geometry's own `derive()` rows as the oracle, and checks that `geometry-runtime/` matches the current `derive.mjs`. Numerical checks, browser assertions, visual inspection and assistive-technology audits are separate evidence. No full screen-reader or contrast audit is claimed. `geometry-runtime/provenance.json` records the source hash; do not hand-edit the generated module.
