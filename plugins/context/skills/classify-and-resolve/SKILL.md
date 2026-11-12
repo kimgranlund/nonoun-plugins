@@ -10,7 +10,7 @@ description: >
   queues; intent classification; router agents and specialist agents; inbox or document
   processing; escalation paths; human-in-the-loop review queues; corpus cleanup by type; and
   before letting a resolver act on its own. Not for a one-off categorization of a
-  few items in chat, pure taxonomy design with no handling (knowledge-organization-system), pure
+  few items in chat, pure taxonomy design with no handling (context-system's vocabulary layer), pure
   evaluation questions (evaluation-system), or workflow orchestration with no classification step.
 ---
 
@@ -23,7 +23,7 @@ Give every incoming item a class from a closed set, then hand it to the one reso
 Three stages, in order:
 
 1. **Classify.** A cascade of five kinds of step, in order: deterministic `rule` steps (every known convention), `observed` steps (what real data says: usage in shipped code, historical decisions), a decision model and then any expensive model (`model` steps, each a `decision-questions` question set), then a `human` step. Each step sees only what the previous steps abstained on.
-2. **Resolve entities** (optional). Map mentions in the item to canonical concepts by `knowledge-organization-system` label matching: `prefLabel` and `altLabel` resolve, a `hiddenLabel` resolves with a flag.
+2. **Resolve entities** (optional). Map mentions in the item to canonical concepts by the label matching of `context-system`'s vocabulary layer: `prefLabel` and `altLabel` resolve, a `hiddenLabel` resolves with a flag.
 3. **Dispatch.** Each class routes to exactly one resolver. Fan-out happens inside a resolver, never in the routing table.
 
 "Resolve" in this skill means dispatch to a handler; mapping a mention to a concept is entity resolution.
@@ -38,8 +38,8 @@ Three limiting factors matter more than classifier sophistication. Name them whe
 
 ## Hand-offs
 
-- **knowledge-organization-system** owns the label set. The classes are the active concepts of one KOS scheme, referenced by concept id; hierarchical classes use `broader` and `narrower`. Hand off whenever a class is added, split, merged, renamed or redefined, then come back to update routes.
-- **controlled-natural-language** owns how rules and policies are phrased. Classification rules ("If `<condition>`, then the class is `<concept>`.") and resolver policies are CNL statements. Hand off when criteria or policies are written or reviewed.
+- **context-system** (vocabulary layer) owns the label set. The classes are the active concepts of one KOS scheme, referenced by concept id; hierarchical classes use `broader` and `narrower`. Hand off whenever a class is added, split, merged, renamed or redefined, then come back to update routes.
+- **context-system** (statements layer) owns how rules and policies are phrased. Classification rules ("If `<condition>`, then the class is `<concept>`.") and resolver policies are CNL statements. Hand off when criteria or policies are written or reviewed.
 - **decision-questions** owns every `model` step's question: the question set's shape, decision mode, bands, pinned model and role, and the DecisionModel adapter contract. A model step names its set by `question_set`. Hand off whenever a model question is written, tuned or promoted.
 - **evaluation-system** owns "is this good enough?". Logs convert into its Cases; every autonomy promotion is guarded by a gate in its `gates.yaml`; this skill reads gate statuses and never computes a quality metric. Hand off whenever the question is whether a classifier or resolver is good enough.
 - **Without the peers**, classes may be an inline list with one-line definitions and rules plain if/then sentences. Autonomy then stays at `manual` or `suggest`, because no gate can pass, and the validator reports which guarantees are missing (`peer-absent`).
@@ -72,12 +72,12 @@ What each stage leaves behind, the taxonomy feedback loop and the anti-patterns 
 
 ## Procedure
 
-1. **Name the items and the handling.** What arrives, from where, and what different kinds need different handling. If nothing is handled differently, there is no pipeline to build: hand pure taxonomy work to `knowledge-organization-system`.
+1. **Name the items and the handling.** What arrives, from where, and what different kinds need different handling. If nothing is handled differently, there is no pipeline to build: hand pure taxonomy work to `context-system`'s vocabulary layer.
 2. **Find what exists.** Look for a pipeline file, a vocabulary, a gates registry and logs. Run `validate_pipeline.py` on what exists, with `--log` when logs exist.
 3. **Name the evidence.** For a new class: the items that share its shape. For a rule: the log ids that show its signal. For a promotion: the gate and its recorded status. No evidence, no change: say what evidence would justify it and stop.
 4. **Pick the stage** whose entry criterion the evidence meets. Make only the change that stage allows.
-5. **Seed (Stage 0).** Copy `templates/scheme.yaml` (or reuse the project's vocabulary through `knowledge-organization-system`) with 3 to 5 classes defined by meaning, not by who handles them. Copy `templates/pipeline.yaml`: one `human` step, a `manual` resolver per class, the `unclassified_route` to a human queue. Log every Classification and Resolution from the first item, with `#tag` rationale tags on unclassified items.
-6. **Grow.** Each window, run `validate_pipeline.py --log`, then `unclassified_report.py`, and take any candidate class to `knowledge-organization-system`. Route the new class, bump `version`, and correct the backlog in the same change. Add a rule step (Stage 1) only for a signal the logs show, and check it with the suite from `logs_to_cases.py` before it ships.
+5. **Seed (Stage 0).** Copy `templates/scheme.yaml` (or reuse the project's vocabulary through `context-system`'s vocabulary layer) with 3 to 5 classes defined by meaning, not by who handles them. Copy `templates/pipeline.yaml`: one `human` step, a `manual` resolver per class, the `unclassified_route` to a human queue. Log every Classification and Resolution from the first item, with `#tag` rationale tags on unclassified items.
+6. **Grow.** Each window, run `validate_pipeline.py --log`, then `unclassified_report.py`, and take any candidate class to `context-system`'s vocabulary layer. Route the new class, bump `version`, and correct the backlog in the same change. Add a rule step (Stage 1) only for a signal the logs show, and check it with the suite from `logs_to_cases.py` before it ships.
 7. **Promote.** A resolver moves along the matrix only when `evaluation-system` records its gate as passed. Demote without a gate when a gate fails or a sample review finds harm.
 8. **Report** the pipeline id and version, the stage, the classes and their routes, each resolver's side effects, autonomy and gate status, the unclassified share, candidate classes with their evidence ids, and what evidence the next stage needs.
 

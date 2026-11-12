@@ -6,13 +6,18 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 ### Added
 
-- `context-system` (T-0849): imported from `/Volumes/kimba/.claude/skills/context-system`. One skill for vocabulary, domain modeling, manifests and registries, entry files and routing, fresh-agent route review and controlled statements, merged from `progressive-context`, `context-routing-review`, `knowledge-modeling`, `knowledge-organization-system` and `controlled-natural-language`, which stay in place for now. Its tests run with `python3 -B -m unittest discover -s tests`.
+- `context-system` (T-0849): imported from `/Volumes/kimba/.claude/skills/context-system`. One skill for vocabulary, domain modeling, manifests and registries, entry files and routing, fresh-agent route review and controlled statements, merged from `progressive-context`, `context-routing-review`, `knowledge-modeling`, `knowledge-organization-system` and `controlled-natural-language`, all five retired below (T-0850, T-0851). Its tests run with `python3 -B -m unittest discover -s tests`.
+
+### Changed
+
+- `context-system` (T-0851) carries two features its source copies lacked: the vocabulary layer's `excludes` field (T-0836: `validate_kos.py` `excludes-neighbor` and `excludes-statement` errors, fixtures, reference text) and the statements layer's decision-question doc type (T-0837: `templates/decision-question.rules.yaml`, fixtures, the patterns section), each with its tests. `decision-questions`, `evaluation-system` and `classify-and-resolve` now point at `context-system` in their scripts' messages, tests and references; `decision-questions` lints with `context-system`'s `lint_cnl.py` and its tests resolve `validate_kos.py` there.
 
 ### Removed
 
 - `progressive-context` (T-0850): retired; its routing references and `validate.py` and `replay.py` live on in `context-system` under `references/routing/` and `scripts/`.
 - `context-routing-review` (T-0850): retired; fresh-agent route review is `context-system`'s `references/review/`.
 - `knowledge-modeling` (T-0850): retired; domain modeling is `context-system`'s `references/modeling/`.
+- `knowledge-organization-system` and `controlled-natural-language` (T-0851): retired into `context-system`'s vocabulary and statements layers. Their history is in git under their old paths.
 
 ## [0.7.0] - 2026-11-12
 

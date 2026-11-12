@@ -59,7 +59,7 @@ Any key not listed is a `schema` error, so a typo such as `addedBecause` cannot 
 | `id` | string | yes | Stable; gates and runs name it. |
 | `version` | integer or string | yes | Bump it whenever a case or grader is added, retired or changed; gates may pin it. |
 | `target` | string | yes | The name of what is under test (a prompt, an agent, a classifier, a review process). The command that runs it is given to the runner, so the suite stays runtime-agnostic. |
-| `target_spec` | string or list of strings | yes | The behavior under test. Write it as `controlled-natural-language` statements when a rule set exists. |
+| `target_spec` | string or list of strings | yes | The behavior under test. Write it as `context-system` statements when a rule set exists. |
 | `cases` / `cases_path` | list / path | one of them | Inline cases, or a path relative to the suite file to a YAML list or a JSONL file of cases. |
 | `graders` | list | yes, at least one | The graders. |
 | `slices` | list | no | Named case subsets for metrics and gates. A string is a tag slice (its id is the tag). A mapping is `{id, tags: [...]}` (cases with any of the tags) or `{id, cases: [...]}` (named case ids). The slice `all` always exists. |
@@ -112,9 +112,9 @@ A suite whose graders are all `human` needs no target: the runner reads the reco
 `python3 scripts/validate_suite.py SUITE [SUITE ...] [--gates FILE] [--vocabulary FILE] [--tune FILE] [--rules FILE] [--target-version V] [--runs PATH] [--max-validation-age DAYS] [--today YYYY-MM-DD] [--strict]`
 
 - `--gates`: the gate registry. Its gates are checked against the suites named on the command line, so pass every suite a shared registry gates.
-- `--vocabulary`: a `knowledge-organization-system` vocabulary. Expected labels must resolve to an active concept by `id`, `prefLabel` or `altLabel` (case-insensitive, whitespace collapsed); a `hiddenLabel` or a deprecated concept's label does not resolve.
+- `--vocabulary`: a `context-system` vocabulary. Expected labels must resolve to an active concept by `id`, `prefLabel` or `altLabel` (case-insensitive, whitespace collapsed); a `hiddenLabel` or a deprecated concept's label does not resolve.
 - `--tune`: the tuning config, a YAML mapping `cases: [ids]` naming the cases a prompt, rule or threshold is tuned against.
-- `--rules`: the `controlled-natural-language` rules file that governs rubric criteria. Lint the criteria with that skill's linter.
+- `--rules`: the `context-system` statements-layer rules file that governs rubric criteria. Lint the criteria with that skill's linter.
 - `--target-version`: the target's current version. A gate recorded `passed` on another version is an error.
 - `--runs`: a `run.json`, or a folder searched for them; repeatable. The latest run per suite (by `started_at`) is checked for `calibration`. Without it, gates that rely on confidence bands are not checked.
 - `--max-validation-age`: how old `validated_against.measured_at` may be (default 180 days); `--today` fixes the date for reproducible output.
@@ -130,7 +130,7 @@ Each finding is one line, `SEVERITY RULE SUBJECT FIELD: problem. Fix: fix.`, sor
 | `gate-reference` | error | A gate names a suite that was not validated with it, a metric other than `pass_rate`, or a slice the suite does not declare. | Correct the reference, declare the slice, or pass the suite. |
 | `unvalidated-grader` | error | A gate's slice is graded by a `rubric-model` or `reference` grader without `validated_against`. | Measure agreement with human judgment first ([graders.md](graders.md)), or gate a slice that grader does not grade. |
 | `holdout-in-tuning` | error | The tuning config names a `holdout` case. | Tune on `dev` cases only; move the case to `dev` and add a fresh holdout case. |
-| `unresolved-label` | error | With `--vocabulary`, an expected label resolves to no active concept. | Use the `prefLabel` or id, or add the concept through `knowledge-organization-system` first. |
+| `unresolved-label` | error | With `--vocabulary`, an expected label resolves to no active concept. | Use the `prefLabel` or id, or add the concept through `context-system`'s vocabulary layer first. |
 | `missing-variant` | error | An `invariance` or `negation` case has no `variant_of`, or it names no case in the suite. | Name the standard case it permutes or negates. |
 | `convention-in-judgment-gate` | error | A gate reads both `judgment` and `convention` cases. | Set the gate's `basis` to exclude convention. |
 | `uncalibrated-gate` | error | With `--runs`, a gate sets `min_coverage` but the suite's latest run has no `calibration`. | Run on dev with a target that returns `confidence`. |

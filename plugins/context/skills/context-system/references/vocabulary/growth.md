@@ -38,6 +38,7 @@ The validator prints the stage the file's structure implies (`inferred stage N`)
 - Retire, don't delete. A concept leaves the file only if nothing ever referenced its id; a used label leaves only through `hiddenLabel`.
 - Demote structure that loses its evidence. When a cluster drops below three children, remove its hierarchy links in the change that removed the child.
 - Fix drift in the change that finds it. If a doc and the vocabulary disagree, change the doc or the vocabulary, never neither.
+- Add an `excludes` entry only after a confusion is observed (an evaluation run, a review dispute, a misroute), at any stage, and write its statement by hand, never generated. Record the observation in `evidence` in the same change. Shape and rules: [model.md](model.md#exclusions).
 
 ## Anti-patterns
 

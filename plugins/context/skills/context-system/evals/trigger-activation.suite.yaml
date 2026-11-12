@@ -30,7 +30,7 @@ cases:
   - should-activate
   - vocabulary
   source: synthetic
-  added_because: 'brief trigger list: the same thing named differently across files (docs/specs/new-skills/knowledge-organization-system.md, Frontmatter and triggers)'
+  added_because: 'brief trigger list: the same thing named differently across files (the vocabulary brief in docs/specs/new-skills/, Frontmatter and triggers)'
   added_at: 2026-11-01
 - id: v-a2
   input:
@@ -207,7 +207,7 @@ cases:
   - should-activate
   - statements
   source: synthetic
-  added_because: 'brief trigger list: writing or reviewing requirements (docs/specs/new-skills/controlled-natural-language.md, Frontmatter and triggers)'
+  added_because: 'brief trigger list: writing or reviewing requirements (the statements brief in docs/specs/new-skills/, Frontmatter and triggers)'
   added_at: 2026-11-01
 - id: s-a2
   input:
@@ -250,7 +250,7 @@ cases:
     prompt: Our privacy policy says requests are handled promptly. Tighten the compliance language.
   expected:
     activates: true
-    behavior: Rewrites to an obligation pattern with an actor and a period; a role the vocabulary lacks goes to `knowledge-organization-system` first.
+    behavior: Rewrites to an obligation pattern with an actor and a period; a role the vocabulary lacks goes to `context-system`'s vocabulary layer first.
   tags:
   - should-activate
   - statements
@@ -307,15 +307,15 @@ cases:
   added_at: 2026-11-01
 - id: s-a10
   input:
-    prompt: Run the CNL linter on docs/requirements and fix what it finds.
+    prompt: Tighten the option descriptions and score levels our triage model reads; it keeps picking the wrong team.
   expected:
     activates: true
-    behavior: Runs `lint_cnl.py`, fixes each error by rule, hands unresolved terms to the vocabulary, and reports warnings it left with the reason.
+    behavior: 'Applies the decision-question doc type: one proposition per statement, no negation, boundary cases stated, no counting or date comparison; lints with `templates/decision-question.rules.yaml` and names which rules it checked by eye.'
   tags:
   - should-activate
   - statements
   source: synthetic
-  added_because: 'brief frontmatter rule: the description includes the acronym CNL'
+  added_because: 'brief trigger list: writing or reviewing questions for a decision model (T-0837); replaces the CNL-linter prompt'
   added_at: 2026-11-01
 - id: s-n1
   input:

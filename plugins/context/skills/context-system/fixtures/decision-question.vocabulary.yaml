@@ -1,4 +1,4 @@
-# Fixture vocabulary in the knowledge-organization-system format, for the decision-question
+# Fixture vocabulary in the vocabulary layer format, for the decision-question
 # lint tests. It is test data, not a term source: the test runs validate_kos.py on it.
 schemes:
   - id: support

@@ -6,7 +6,7 @@ Usage: validate_questions.py QUESTION_SET [QUESTION_SET ...] [--gates FILE] [--v
 
 Each finding is one line: SEVERITY RULE SUBJECT FIELD: problem. Fix: fix.
 Exit 0 when there are no errors (warnings allowed unless --strict), 1 on errors,
-2 when an input file cannot be read. Phrasing is delegated to controlled-natural-language's
+2 when an input file cannot be read. Phrasing is delegated to context-system's
 lint_cnl.py with the decision-question rules file, as a subprocess. Rule semantics: references/model.md.
 Standard library plus PyYAML; runs on Python 3.9.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 
 import yaml
 
-CNL = Path(__file__).resolve().parents[2] / 'controlled-natural-language'
+CNL = Path(__file__).resolve().parents[2] / 'context-system'
 DEFAULT_RULES = CNL / 'templates' / 'decision-question.rules.yaml'
 DEFAULT_LINT = CNL / 'scripts' / 'lint_cnl.py'
 
@@ -373,7 +373,7 @@ def check(paths, gates_path=None, vocabulary=None, rules=None, lint_script=None)
             missing = rules if not rules.is_file() else lint_script
             checker.add('WARNING', 'peer-absent', 'phrasing',
                         f'{missing} is missing, so instructions and options were not linted.',
-                        'install controlled-natural-language beside this skill or pass --rules and --lint; '
+                        'install context-system beside this skill or pass --rules and --lint; '
                         'until then check the decision-question rules by eye.')
         findings += checker.findings
     return sorted(set(findings), key=Finding.key)
@@ -383,7 +383,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('question_sets', nargs='+', metavar='QUESTION_SET')
     parser.add_argument('--gates', help='evaluation-system gate registry (gates.yaml)')
-    parser.add_argument('--vocabulary', help='knowledge-organization-system vocabulary for option slots')
+    parser.add_argument('--vocabulary', help='context-system vocabulary for option slots')
     parser.add_argument('--rules', help=f'CNL decision-question rules file (default {DEFAULT_RULES})')
     parser.add_argument('--lint', help=f'lint_cnl.py path (default {DEFAULT_LINT})')
     parser.add_argument('--strict', action='store_true', help='exit 1 on warnings too')

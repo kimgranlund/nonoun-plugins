@@ -4,7 +4,8 @@ description: >
   Design, review and repair how a repository or corpus organizes and routes its knowledge: vocabulary
   (glossaries, naming, taxonomy), domain models and mappings, per-item manifests and generated registries,
   entry files (AGENTS.md, CLAUDE.md, README, SKILL.md) and their routes, author versus consumer modes,
-  fresh-agent route tests, and controlled statements for specs, requirements, runbooks, policies and prompts.
+  fresh-agent route tests, and controlled statements for specs, requirements, runbooks, policies, prompts and
+  questions a decision model answers.
   Use for "what do we call X", "make this requirement testable", "audit our manifests and registry",
   "restructure AGENTS.md", "can a fresh agent find this". Not for casual prose or marketing copy, ordinary
   code or UI work, formal OWL/RDF, translation, trace diagnosis (context-fog-of-war), triage pipelines
@@ -41,7 +42,7 @@ Read the row whose question is open, do the work, then stop. A link inside a gui
 | Manifests | Per-item contract, classification and relations; the generated registry | `<id>.manifest.json` plus a registry | `check_registry.py` and the project's lint |
 | Routing | Entries, traversal, delivery and acceptance of required context | Entry files; optional descriptors and registry ([contracts](references/routing/contracts.md)) | `validate.py`, `replay.py` |
 | Review | Author and consumer route trials, static or with fresh agents | A frozen brief and an evidence report | The trial itself |
-| Statements | Sentence patterns per governed document type, banned words | `rules.yaml` ([template](templates/rules.yaml)) | `lint_cnl.py` |
+| Statements | Sentence patterns per governed document type, banned words | `rules.yaml` ([template](templates/rules.yaml); [decision questions](templates/decision-question.rules.yaml)) | `lint_cnl.py` |
 
 Layers reference each other by id and never redefine one another: statements and manifests use vocabulary labels; a term missing from the vocabulary is added there first, with evidence. Domain relations do not become retrieval dependencies unless delivery needs them.
 

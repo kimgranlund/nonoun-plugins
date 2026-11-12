@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile a question set's options from a knowledge-organization-system scheme.
+"""Compile a question set's options from a context-system vocabulary scheme.
 
 Usage: compile_questions.py VOCABULARY --template FILE --shape single-choice|retrieve-then-choose
                             [--scheme ID] [--concepts ID,...] [--max-options N] [--allow-none]
@@ -85,7 +85,7 @@ def compile_set(vocabulary, template, shape, scheme=None, selection=None, max_op
         findings.append(Finding(severity, rule, subject, field, problem, fix))
 
     if not isinstance(vocabulary, dict) or not isinstance(vocabulary.get('concepts'), list):
-        raise InputError('the vocabulary is not a knowledge-organization-system vocabulary (no `concepts:` list)')
+        raise InputError('the vocabulary is not a context-system vocabulary (no `concepts:` list)')
     if not isinstance(template, dict) or not isinstance(template.get('questions'), list) or not template['questions'] \
             or not isinstance(template['questions'][0], dict):
         raise InputError('the template is not a question set with at least one question')
@@ -105,7 +105,7 @@ def compile_set(vocabulary, template, shape, scheme=None, selection=None, max_op
             c = by_id.get(cid)
             if c is None or c.get('scheme') != scheme:
                 add('ERROR', 'unknown-selection', f'concepts.{cid}', f"'{cid}' is not a concept in scheme {scheme}.",
-                    'select concept ids from that scheme, or add the concept through knowledge-organization-system.')
+                    "select concept ids from that scheme, or add the concept through context-system's vocabulary layer.")
             elif c.get('deprecated'):
                 add('ERROR', 'unknown-selection', f'concepts.{cid}', f"'{cid}' is deprecated.",
                     f"select its replacement {c.get('replacedBy')!r} instead.")
@@ -127,7 +127,7 @@ def compile_set(vocabulary, template, shape, scheme=None, selection=None, max_op
         definition = c.get('definition')
         if not isinstance(definition, str) or not definition.strip():
             add('ERROR', 'missing-definition', f'options.{cid}', f"concept '{cid}' has no definition.",
-                'write the definition in the vocabulary first (knowledge-organization-system); '
+                "write the definition in the vocabulary first (context-system's vocabulary layer); "
                 'the compiler never invents option text.')
             continue
         option = {'concept_id': cid, 'definition': definition.strip()}
@@ -168,7 +168,7 @@ def compile_set(vocabulary, template, shape, scheme=None, selection=None, max_op
                     for key, other in ((a, b), (b, a)) for ex in options[key].get('excludes') or []):
                 add('WARNING', 'unaddressed-confusion', f'options.{a}',
                     f"the last evaluation run confused '{a}' and '{b}', and neither option has an excludes entry naming the other.",
-                    'author an excludes entry in the vocabulary (knowledge-organization-system), recompile and re-run.')
+                    "author an excludes entry in the vocabulary (context-system's vocabulary layer), recompile and re-run.")
     if any(f.severity == 'ERROR' for f in findings):
         return None, findings
     question['options'] = options
@@ -182,7 +182,7 @@ def compile_set(vocabulary, template, shape, scheme=None, selection=None, max_op
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('vocabulary', help='knowledge-organization-system vocabulary YAML')
+    parser.add_argument('vocabulary', help='context-system vocabulary YAML')
     parser.add_argument('--template', required=True, help='a question set whose first question receives the options')
     parser.add_argument('--shape', required=True, choices=SHAPES, help='other shapes are written by hand (references/shapes.md)')
     parser.add_argument('--scheme', help='the KOS scheme id (default: the only scheme)')

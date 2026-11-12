@@ -1,5 +1,7 @@
 # Build the `knowledge-organization-system` Agent Skill
 
+> Retired (T-0851): this skill now lives in `context-system` as its vocabulary layer ([plugins/context/skills/context-system](../../../plugins/context/skills/context-system/SKILL.md)). The brief below is kept as written.
+
 > Build order: this skill first. `controlled-natural-language` depends on its schema and validator.
 
 ## Goal

@@ -24,8 +24,8 @@ Ask the model only where deterministic rules and observed data give no answer. C
 
 ## Hand-offs
 
-- **knowledge-organization-system** supplies options. Option keys are concept ids; option text is the concept's `definition` and its authored `excludes`. A missing or confused option is a KOS change: hand off, then recompile.
-- **controlled-natural-language** owns phrasing. Instructions and option text form its decision-question doc type: one proposition per statement, no negation, instructions aligned with options, boundary cases stated, no arithmetic or date comparison. `validate_questions.py` runs its linter.
+- **context-system** (vocabulary layer) supplies options. Option keys are concept ids; option text is the concept's `definition` and its authored `excludes`. A missing or confused option is a KOS change: hand off, then recompile.
+- **context-system** (statements layer) owns phrasing. Instructions and option text form its decision-question doc type: one proposition per statement, no negation, instructions aligned with options, boundary cases stated, no arithmetic or date comparison. `validate_questions.py` runs its linter.
 - **evaluation-system** measures and gates. This skill declares the cases a question set needs and reads per-question gate status (`question_id`, `pinned_target_version`); it never computes a metric.
 - **classify-and-resolve** consumes question sets as its cascade's model step.
 - **The vendor's own skill** owns request and response fields, SDKs and limits. This skill hands off and never restates them.

@@ -28,7 +28,7 @@ QuestionSet:        { id, version, model: <pinned model version>, shape,
                       role: checker|suggester|voter, gate_ids: [] }
 ```
 
-Any key not listed is a `schema` error, so a typo such as `gateIds` cannot silently drop a field. Peer fields keep their owners' names: an option key and `concept_id` are `knowledge-organization-system` concept ids, `excludes` is that skill's `{neighbor, statement}` list copied verbatim, and `gate_ids` name `evaluation-system` gates read by `id`, `question_id`, `status` and `pinned_target_version`.
+Any key not listed is a `schema` error, so a typo such as `gateIds` cannot silently drop a field. Peer fields keep their owners' names: an option key and `concept_id` are concept ids from `context-system`'s vocabulary layer, `excludes` is that skill's `{neighbor, statement}` list copied verbatim, and `gate_ids` name `evaluation-system` gates read by `id`, `question_id`, `status` and `pinned_target_version`.
 
 ## QuestionSet
 
@@ -93,14 +93,14 @@ A recordings file has `model_version` and `answers`, a list of `{state, question
 
 ## Governed text
 
-What the model reads is a `controlled-natural-language` decision-question doc. `validate_questions.py` renders it and runs that skill's `lint_cnl.py` with `templates/decision-question.rules.yaml`.
+What the model reads is a decision-question doc of `context-system`'s statements layer. `validate_questions.py` renders it and runs that skill's `lint_cnl.py` with `templates/decision-question.rules.yaml`.
 
 | Text | Owner | Lint |
 |---|---|---|
 | `instructions` | this file | Every sentence must fit a pattern: the question instruction, `Answer yes when ...`, `Choose <option> when ...` or a boundary case. |
 | `levels[].description` | this file | Rendered as `Level <n> means <description>.` |
 | An option without `concept_id`: `definition` and `excludes[].statement` | this file | Words only: banned conjunctions, negations, counting and date comparison. |
-| An option with `concept_id`: `definition` and `excludes` | `knowledge-organization-system` | Not linted here. Copied verbatim by the compiler; change it in the vocabulary, where `validate_kos.py` checks it. |
+| An option with `concept_id`: `definition` and `excludes` | `context-system`'s vocabulary layer | Not linted here. Copied verbatim by the compiler; change it in the vocabulary, where `validate_kos.py` checks it. |
 | `examples` | the domain | Not linted: examples are real inputs, negations and all. |
 
 Option slots (`Choose {option} when ...`) resolve against `--vocabulary` when given, else against the set's own option keys.
@@ -113,7 +113,7 @@ Standard library plus PyYAML, Python 3.9 or later, deterministic output. Each fi
 
 `python3 scripts/validate_questions.py QUESTION_SET [...] [--gates FILE] [--vocabulary FILE] [--rules FILE] [--lint FILE] [--strict]`
 
-`--rules` and `--lint` default to the `controlled-natural-language` folder beside this skill. Without them the lint is skipped with `peer-absent`.
+`--rules` and `--lint` default to the `context-system` folder beside this skill. Without them the lint is skipped with `peer-absent`.
 
 | Rule | Severity | Fires when | Usual fix |
 |---|---|---|---|
@@ -125,7 +125,7 @@ Standard library plus PyYAML, Python 3.9 or later, deterministic output. Each fi
 | `missing-question` | error | A decision's `inputs` or `rival` names a question the set does not define. | Correct the id or add the question. |
 | `missing-assemble` | error | A decision reads more than one input with no `assemble` validator. | Name the code validator that enforces the label grammar. |
 | `cnl` | error or warning | `lint_cnl.py` reports a finding on governed text; the message carries the lint rule and the offending field. | Rewrite the sentence to a decision-question pattern. |
-| `peer-absent` | warning | The CNL rules file or linter is missing. | Install `controlled-natural-language` beside this skill, or check phrasing by eye knowingly. |
+| `peer-absent` | warning | The CNL rules file or linter is missing. | Install `context-system` beside this skill, or check phrasing by eye knowingly. |
 
 `fixtures/broken-question-set.yaml` trips each error rule except `schema` once, with no companion files.
 

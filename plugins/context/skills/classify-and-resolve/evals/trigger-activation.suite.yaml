@@ -94,7 +94,7 @@ cases:
     added_at: 2026-11-01
   - id: n2
     input: {prompt: "Define our product vocabulary: is a workspace the same thing as a project?"}
-    expected: {activates: false, behavior: "Does not activate: pure taxonomy design with no handling belongs to knowledge-organization-system."}
+    expected: {activates: false, behavior: "Does not activate: pure taxonomy design with no handling belongs to context-system's vocabulary layer."}
     tags: [should-not-activate]
     source: adversarial
     added_because: "brief do-not-trigger list: pure taxonomy design with no handling"
@@ -115,7 +115,7 @@ cases:
     added_at: 2026-11-01
   - id: n5
     input: {prompt: "Rewrite this routing rule so it has one reading: 'urgent stuff should usually go to ops'."}
-    expected: {activates: false, behavior: "Does not activate: how a rule is phrased belongs to controlled-natural-language."}
+    expected: {activates: false, behavior: "Does not activate: how a rule is phrased belongs to context-system's statements layer."}
     tags: [should-not-activate]
     source: adversarial
     added_because: "brief peer hand-off: when criteria or policies are written or reviewed, hand off to CNL"

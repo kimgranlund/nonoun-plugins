@@ -22,7 +22,7 @@ Changes at any stage:
 
 ## Taxonomy feedback loop
 
-The pipeline grows its own label set. Unclassified items and misroutes are the evidence; `knowledge-organization-system` decides the change.
+The pipeline grows its own label set. Unclassified items and misroutes are the evidence; `context-system`'s vocabulary layer decides the change.
 
 1. Run `unclassified_report.py` on the window's logs. `--min-items` is N, the evidence a new class needs (default 3; raise it for high-volume queues).
 2. Read the candidates and the corrections table, and propose one of:
@@ -30,7 +30,7 @@ The pipeline grows its own label set. Unclassified items and misroutes are the e
    - **Split:** one class's corrections show two populations, for example `billing → refund` and `billing → pricing` both recurring. Split the concept (two narrower concepts or two new ones and a deprecation) and route each.
    - **Merge:** the corrections show the classifier confusing two classes back and forth, and their resolvers produce equivalent outputs. Deprecate one with `replacedBy` the other.
    - **Definition or rule fix:** the items fit an existing class (the report flags candidates that match a concept). Fix the definition or the rule; the label set stays.
-3. Hand the proposal to `knowledge-organization-system`, which applies its own growth rules and validator.
+3. Hand the proposal to `context-system`'s vocabulary layer, which applies its own growth rules and validator.
 4. In the same change: route each new class, bump `Pipeline.version`, run `validate_pipeline.py` (it fails with `unrouted-class` until the route exists), work the backlog items with `corrected_label`, and re-run the affected suites.
 5. Retire on evidence too: an `idle-class` warning over several windows is a merge or deprecation candidate. Deprecate, never delete, so old logs still resolve.
 
@@ -54,7 +54,7 @@ The support pipeline has run rules and a model for months. The `stuck-worker` cl
 
 ### Document intake for a policy or legal corpus: a split
 
-Corrections show `contract → nda` six times and `contract → order-form` five times in a quarter. `knowledge-organization-system` adds `nda` and `order-form` as narrower concepts of `contract`; the pipeline routes both, bumps its version, and re-runs the contract suite, whose cases now expect the narrower ids.
+Corrections show `contract → nda` six times and `contract → order-form` five times in a quarter. `context-system`'s vocabulary layer adds `nda` and `order-form` as narrower concepts of `contract`; the pipeline routes both, bumps its version, and re-runs the contract suite, whose cases now expect the narrower ids.
 
 ### Agent routing: a merge
 
@@ -75,7 +75,7 @@ Items of more than one kind arrive and are handled inconsistently: the Stage 0 e
 ### Stage 0: seed a scheme, a manual pipeline and a log
 
 ```text
-triage/vocabulary.yaml      # from templates/scheme.yaml; 3 classes, validated by knowledge-organization-system
+triage/vocabulary.yaml      # from templates/scheme.yaml; 3 classes, validated by context-system's vocabulary layer
 triage/pipeline.yaml        # from templates/pipeline.yaml
 triage/gates.yaml           # evaluation-system's empty registry
 triage/logs/2026-10.jsonl   # one Classification and one Resolution per ticket
@@ -110,7 +110,7 @@ After two weeks the log holds 30 records. The validator, given the log, flags th
 
 ```bash
 python3 scripts/validate_pipeline.py triage/pipeline.yaml --vocabulary triage/vocabulary.yaml --gates triage/gates.yaml --log triage/logs/2026-10.jsonl --today 2026-10-31
-# WARNING unclassified-share support-triage unclassified_route: 6 of 15 items (0.40) ended unclassified, above 0.2. Fix: run unclassified_report.py and propose the missing classes to knowledge-organization-system.
+# WARNING unclassified-share support-triage unclassified_route: 6 of 15 items (0.40) ended unclassified, above 0.2. Fix: run unclassified_report.py and propose the missing classes to context-system's vocabulary layer.
 # triage/pipeline.yaml: 0 error(s), 1 warning(s), inferred stage 0
 ```
 
@@ -135,7 +135,7 @@ python3 scripts/unclassified_report.py triage/logs/2026-10.jsonl --pipeline tria
 | unclassified | billing | i-015 (l-030) |
 ```
 
-Four items share a shape, so a new class meets N = 3. The corrections are single pairs, so no split or merge yet; `#feedback` (i-014) stays ungrouped. The proposal goes to `knowledge-organization-system`, which adds the concept with a definition written from the items:
+Four items share a shape, so a new class meets N = 3. The corrections are single pairs, so no split or merge yet; `#feedback` (i-014) stays ungrouped. The proposal goes to `context-system`'s vocabulary layer, which adds the concept with a definition written from the items:
 
 ```diff
 --- a/triage/vocabulary.yaml
@@ -152,7 +152,7 @@ Four items share a shape, so a new class meets N = 3. The corrections are single
 With only the vocabulary changed, the pipeline no longer validates:
 
 ```text
-ERROR unrouted-class support-triage:data-export routes: class 'data-export' in scheme 'support' has no route. Fix: route it to exactly one resolver, or deprecate the concept through knowledge-organization-system.
+ERROR unrouted-class support-triage:data-export routes: class 'data-export' in scheme 'support' has no route. Fix: route it to exactly one resolver, or deprecate the concept through context-system's vocabulary layer.
 ```
 
 The route, a new manual resolver and the version bump ship in the same change:

@@ -16,11 +16,11 @@ COMPILE = SCRIPTS / 'compile_questions.py'
 MAKE_CASES = SCRIPTS / 'make_eval_cases.py'
 FIXTURE = ROOT / 'adapters' / 'fixture.py'
 PEERS = ROOT.parent
-KOS_TEMPLATE = PEERS / 'knowledge-organization-system' / 'templates' / 'vocabulary.yaml'
-VALIDATE_KOS = PEERS / 'knowledge-organization-system' / 'scripts' / 'validate_kos.py'
+KOS_TEMPLATE = PEERS / 'context-system' / 'templates' / 'vocabulary.yaml'
+VALIDATE_KOS = PEERS / 'context-system' / 'scripts' / 'validate_kos.py'
 VALIDATE_SUITE = PEERS / 'evaluation-system' / 'scripts' / 'validate_suite.py'
 RUN_SUITE = PEERS / 'evaluation-system' / 'scripts' / 'run_suite.py'
-LINT_CNL = PEERS / 'controlled-natural-language' / 'scripts' / 'lint_cnl.py'
+LINT_CNL = PEERS / 'context-system' / 'scripts' / 'lint_cnl.py'
 sys.path.insert(0, str(ROOT / 'adapters'))
 import fixture  # noqa: E402
 
@@ -59,7 +59,7 @@ class ValidateQuestionsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(rules(result.stdout), Counter())
 
-    @unittest.skipUnless(LINT_CNL.exists(), 'controlled-natural-language is not installed beside this skill')
+    @unittest.skipUnless(LINT_CNL.exists(), 'context-system is not installed beside this skill')
     def test_broken_fixture_trips_each_brief_rule_once(self):
         result = run(VALIDATE, 'fixtures/broken-question-set.yaml')
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
@@ -91,7 +91,7 @@ class ValidateQuestionsTests(unittest.TestCase):
             result = run(VALIDATE, write(folder, 'qs.yaml', dict(template(), model=alias)))
             self.assertEqual(rules(result.stdout), Counter({'unpinned-model': 1}), alias)
 
-    @unittest.skipUnless(LINT_CNL.exists(), 'controlled-natural-language is not installed beside this skill')
+    @unittest.skipUnless(LINT_CNL.exists(), 'context-system is not installed beside this skill')
     def test_inline_option_text_is_linted_but_kos_text_is_not(self):
         folder = tempfile.mkdtemp()
         qs = template()
@@ -114,7 +114,7 @@ class ValidateQuestionsTests(unittest.TestCase):
 
 
 class CompileQuestionsTests(unittest.TestCase):
-    @unittest.skipUnless(KOS_TEMPLATE.exists(), 'knowledge-organization-system is not installed beside this skill')
+    @unittest.skipUnless(KOS_TEMPLATE.exists(), 'context-system is not installed beside this skill')
     def test_kos_template_vocabulary_compiles_to_a_valid_set(self):
         out = Path(tempfile.mkdtemp()) / 'compiled.yaml'
         result = run(COMPILE, str(KOS_TEMPLATE), '--template', 'templates/question-set.yaml',
@@ -178,7 +178,7 @@ class CompileQuestionsTests(unittest.TestCase):
         self.assertEqual(rules(result.stderr), Counter({'unaddressed-confusion': 1}), result.stderr)
         self.assertEqual(rules(run(COMPILE, 'fixtures/support.vocabulary.yaml', *args).stderr), Counter())
 
-    @unittest.skipUnless(VALIDATE_KOS.exists(), 'knowledge-organization-system is not installed beside this skill')
+    @unittest.skipUnless(VALIDATE_KOS.exists(), 'context-system is not installed beside this skill')
     def test_fixture_vocabularies_are_kos_files(self):
         self.assertEqual(run(VALIDATE_KOS, 'fixtures/support.vocabulary.yaml').returncode, 0)
         result = run(VALIDATE_KOS, 'fixtures/no-definition.vocabulary.yaml')

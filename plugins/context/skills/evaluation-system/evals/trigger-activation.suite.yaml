@@ -121,7 +121,7 @@ cases:
     added_at: 2026-11-01
   - id: n4
     input: {prompt: "Which label should the triage classifier use for card disputes, 'chargeback' or 'dispute'?"}
-    expected: {activates: false, behavior: "Does not activate: what a label means belongs to knowledge-organization-system."}
+    expected: {activates: false, behavior: "Does not activate: what a label means belongs to context-system's vocabulary layer."}
     tags: [should-not-activate]
     source: adversarial
     basis: owner
@@ -129,7 +129,7 @@ cases:
     added_at: 2026-11-01
   - id: n5
     input: {prompt: "Rewrite this rubric criterion so it has exactly one reading: 'the reply should be helpful'."}
-    expected: {activates: false, behavior: "Does not activate: how a criterion is phrased belongs to controlled-natural-language."}
+    expected: {activates: false, behavior: "Does not activate: how a criterion is phrased belongs to context-system's statements layer."}
     tags: [should-not-activate]
     source: adversarial
     basis: owner

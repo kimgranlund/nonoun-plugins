@@ -26,7 +26,7 @@ id: replace-with-target-name
 version: 1
 target: Replace with the name of the prompt, agent, classifier or process under test.
 target_spec:
-  - Replace with one statement of the behavior under test (a controlled-natural-language statement when a rule set exists).
+  - Replace with one statement of the behavior under test (a context-system statement when a rule set exists).
 
 graders:
   - id: exact-output

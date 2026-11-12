@@ -2,7 +2,7 @@
 
 Load this when you write or change a pipeline file or a log writer, add an entity-resolution stage, read a validator message, or turn logs into cases or a report. It is the authority for the typed spine, cascade semantics, the entity-resolution stage, the pipeline and log file shapes, and the rules of the three scripts. Resolver contracts and the autonomy matrix are in [resolvers.md](resolvers.md); stages, the taxonomy feedback loop and anti-patterns are in [growth.md](growth.md).
 
-Peer schemas are read by their own field names and never redefined here: concepts (`id`, `prefLabel`, `altLabel`, `hiddenLabel`, `scheme`, `deprecated`, `replacedBy`, `broader`, `narrower`) belong to the `knowledge-organization-system` skill's `references/model.md`; Case, Suite and Gate (`gates.yaml`) to the `evaluation-system` skill's `references/model.md`; QuestionSet (`id`, `role`, `decisions`, `bands`, `margin`, `model`) and the DecisionModel adapter contract to the `decision-questions` skill's `references/model.md`; rule statements to the `controlled-natural-language` skill's `references/patterns.md`.
+Peer schemas are read by their own field names and never redefined here: concepts (`id`, `prefLabel`, `altLabel`, `hiddenLabel`, `scheme`, `deprecated`, `replacedBy`, `broader`, `narrower`) belong to the `context-system` skill's `references/vocabulary/model.md`; Case, Suite and Gate (`gates.yaml`) to the `evaluation-system` skill's `references/model.md`; QuestionSet (`id`, `role`, `decisions`, `bands`, `margin`, `model`) and the DecisionModel adapter contract to the `decision-questions` skill's `references/model.md`; rule statements to the `context-system` skill's `references/statements/patterns.md`.
 
 ## Typed spine (stable contract)
 
@@ -28,7 +28,7 @@ Pipeline:       { id, version, scheme: <kos_scheme>,
                   rule_repair_route: resolver_id }
 ```
 
-Three optional fields extend the spine in the pipeline file: `classes` on a Pipeline (the fallback when no vocabulary exists), `rules` on a `rule` cascade step and `policy` on a Resolver (both lists of `controlled-natural-language` statements). Any other key is a `schema` error, so a typo such as `abstainBelow` cannot silently drop a threshold.
+Three optional fields extend the spine in the pipeline file: `classes` on a Pipeline (the fallback when no vocabulary exists), `rules` on a `rule` cascade step and `policy` on a Resolver (both lists of `context-system` statements). Any other key is a `schema` error, so a typo such as `abstainBelow` cannot silently drop a threshold.
 
 | Type | Field | Meaning |
 |---|---|---|
@@ -92,7 +92,7 @@ Between classify and dispatch, a pipeline may map mentions in the item (a party,
 
 - A mention matching a concept's `prefLabel` or `altLabel` resolves, with `matched_via` naming which.
 - A mention matching a `hiddenLabel`, or any label of a deprecated concept, resolves with `matched_via: hiddenLabel`, to the concept itself or to the deprecated concept's `replacedBy`. The flag tells the resolver the source used a retired form.
-- Matching follows the KOS rule: case-insensitive, whitespace collapsed, whole word, a trailing `s` or `es` allowed. A mention that matches nothing stays unresolved and is never guessed; a repeated unresolved mention is evidence for a new `altLabel`, which `knowledge-organization-system` decides.
+- Matching follows the KOS rule: case-insensitive, whitespace collapsed, whole word, a trailing `s` or `es` allowed. A mention that matches nothing stays unresolved and is never guessed; a repeated unresolved mention is evidence for a new `altLabel`, which `context-system`'s vocabulary layer decides.
 
 Write each match as an EntityMatch record in the resolver's input. Entity resolution never changes the item's class.
 
@@ -110,7 +110,7 @@ JSONL, one record per line, shaped by `templates/log.schema.json`. Every record 
 
 `python3 scripts/validate_pipeline.py PIPELINE [PIPELINE ...] [--vocabulary FILE] [--gates FILE] [--question-set FILE ...] [--log FILE ...] [--window-days N] [--max-unclassified-share X] [--today YYYY-MM-DD] [--strict]`
 
-- `--vocabulary`: the `knowledge-organization-system` vocabulary. The classes are the active concepts whose `scheme` is the pipeline's `scheme`.
+- `--vocabulary`: the `context-system` vocabulary. The classes are the active concepts whose `scheme` is the pipeline's `scheme`.
 - `--gates`: the `evaluation-system` gate registry. A gate's `status` there is read as recorded; this skill never computes a metric.
 - `--question-set`: a `decision-questions` question set, once per set a `model` step names. Each is checked by that skill's `validate_questions.py`, run as a subprocess by path (with `--gates` passed on), and its `role` and bands are read from the file.
 - `--log`: JSONL logs, which enable the three volume warnings over the last `--window-days` (default 30) ending `--today`. `--max-unclassified-share` defaults to 0.2.
