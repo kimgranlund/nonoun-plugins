@@ -1,0 +1,7 @@
+{
+  "id": "button",
+  "kind": "control",
+  "family": "action",
+  "status": "stable",
+  "summary": "Fixture button."
+}

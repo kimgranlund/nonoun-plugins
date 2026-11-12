@@ -1,0 +1,7 @@
+{
+  "id": "checkbox",
+  "kind": "control",
+  "family": "choice",
+  "status": "stable",
+  "summary": "Fixture checkbox."
+}

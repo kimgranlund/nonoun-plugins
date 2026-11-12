@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context System"
+  short_description: "Vocabulary, models, manifests, registries, entry files, route tests and controlled statements"
+  default_prompt: "Use $context-system to find the unresolved layer of this corpus's knowledge (vocabulary, model, manifests and registry, routing, or statements), make the smallest evidenced change, and verify it with that layer's check."

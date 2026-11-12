@@ -1,0 +1,7 @@
+{
+  "id": "sign-in",
+  "kind": "pattern",
+  "family": "auth",
+  "status": "stable",
+  "summary": "Fixture sign-in."
+}
