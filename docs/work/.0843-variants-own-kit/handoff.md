@@ -2,7 +2,7 @@
 id: T-0843
 title: "Port component-variants off base-ui onto a trimmed own kit"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0841]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - Do not edit other skills. Geometry values come from `derive.mjs`, never copied numbers.
 
 ## Outcome
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f17a11427538
+- Changed: see commits
+- Commits: ddfa899 T-0843: component-variants builds from its own trimmed kit
+- Check: 1 check-build.mjs exits 0 including negative control: pass
+- Check: 2 passes with base-ui and mathematical-design-system removed: pass
+- Check: 3 forbidden-name grep: pass
+- Check: 4 packaging and diff check: pass
+- Follow-up: note: plugins/design/skills/component-variants/scripts/geometry.mjs:11... -> notes.md
+- Follow-up: note: the head is merge commit b3c44154 main merged into the lane; the... -> notes.md
