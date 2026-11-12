@@ -2,7 +2,7 @@
 id: T-0845
 title: "Remove base-ui and mathematical-design-system from design"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0842, T-0843, T-0844]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ The design plugin no longer ships `base-ui` or `mathematical-design-system`, and
 - Touch only reference lines; no behaviour change.
 
 ## Outcome
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: ea5729f6c605
+- Changed: see commits
+- Commits: 2fc7c0a T-0845: remove base-ui and mathematical-design-system from design
+- Check: 1 both skill folders removed: pass
+- Check: 2 scoped grep prints nothing and context AGENTS.md no longer uses `design:base-ui`: pass
+- Check: 3 component-variants, inspector-panel and ui-geometry checks: pass
+- Check: 4 packaging and diff check: pass
+- Follow-up: note: .sdlc/runtime/tasks/0845-remove-base-ui-mds/0845-solo-L2.md reports... -> notes.md

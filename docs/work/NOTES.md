@@ -917,3 +917,7 @@
 - decide: plugins/design/skills/wireframe-review/assets/fonts/ibmplexmono/OFL.txt:1 and assets/fonts/bricolagegrotesque/OFL.txt:21: `git diff --check ab93a573 HEAD` reports about 94 trailing-whitespace lines (CRLF and trailing spaces in vendored licence text; the builder said the file hash is in the font manifest). The criterion's `git diff --check` is clean in the committed tree, so this passes by the letter. decide: add a `.gitattributes` `-whitespace` rule for these files, or accept.
 - decide: plugins/design/skills/wireframe-review/assets/foundation/maison/geometry.css: 72 values carry float noise, e.g. `--m-cell-sm-md-chip-height: 22.000000000000004px`. The file is byte-stable, so criterion 3 holds, but rounding in generate-geometry.mjs would make it cleaner. decide: round derive px to a fixed precision.
 - decide: The builder lists several suites as already red at baseline (implementation-ownership, corpus-graph, component-context, workflow-controller, generate-icons --check, build-sheets, check-shell). I did not re-run them because no criterion names them.
+
+## T-0845: Remove base-ui and mathematical-design-system from design (2026-11-12)
+
+- note: .sdlc/runtime/tasks/0845-remove-base-ui-mds/0845-solo-L2.md reports a `blocked: plan defect` from before the replan; the handoff's criterion 2 now carries the scoped pathspec and the tree satisfies it. Remaining base-ui hits in records and other plugins are T-0847.
