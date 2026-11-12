@@ -8,6 +8,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0846 | [0846-variants-select-caret](0846-variants-select-caret/handoff.md) | Style the component-variants select caret on the compiled select__root wrapper | bug | L1 | P3 | T-0843 | ⏳ proposed |
 | T-0847 | [0847-drop-base-ui-refs](0847-drop-base-ui-refs/handoff.md) | Drop base-ui and mathematical-design-system references from other plugins and wireframe-review's catalog check | chore | L2 | P3 | T-0845 | ⏳ proposed |
+| T-0848 | [0848-rename-ui-colors](0848-rename-ui-colors/handoff.md) | Rename the design skill hct-palettes to ui-colors | chore | L2 | P2 | none | ⏳ proposed |
 
 Closed: 807 done, 30 dropped (git log or .NNNN-* folders)
 
