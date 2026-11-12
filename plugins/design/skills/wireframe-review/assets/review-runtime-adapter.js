@@ -1,4 +1,4 @@
-/* Review identity and read-only policy; lifecycle is supplied by base-ui. */
+/* Review identity and read-only policy; lifecycle is supplied by assets/ui-runtime.js. */
 const prototypeDefinitions=new Map(),prototypeRuntime=createUIRuntime();
 function registerPrototype(definition){
  if(!definition?.unitId||prototypeDefinitions.has(definition.unitId)||typeof definition.reduce!=='function'||typeof definition.render!=='function')throw Error('Invalid or duplicate prototype definition');

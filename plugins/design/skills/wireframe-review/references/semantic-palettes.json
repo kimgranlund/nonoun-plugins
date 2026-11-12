@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "source": "assets/foundation/semantic-palettes/source.json",
   "sourceFormat": "color-tokens@2",
-  "ownership": "Source values are supplied export; semantic roles and primary alias are base-ui decisions. Export has zero semantic tokens. Existing md-color roles and unannotated components remain compatible.",
+  "ownership": "Source values are supplied export; semantic roles and primary alias are kit decisions. Export has zero semantic tokens. Existing md-color roles and unannotated components remain compatible.",
   "intents": {
     "material": "material",
     "primary": "color-1",
@@ -11,7 +11,7 @@
     "warning": "warning",
     "danger": "danger"
   },
-  "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+  "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit kit alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
   "roles": {
     "solid": {
       "group": "prime",

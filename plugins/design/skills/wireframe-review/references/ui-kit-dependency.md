@@ -1,20 +1,32 @@
-# Base UI dependency
+# Owned UI kit
 
-Install base-ui and wireframe-review as siblings. Generation/build accepts --ui-kit ROOT (or WIREFRAME_UI_KIT for subprocess checks), otherwise resolves ../base-ui. The trusted kit must match ui-kit.lock.json. Missing dependency, incompatible API or changed bytes stops generation before output. No network installation or stale fallback is used.
+This skill owns the UI kit it builds with. `scripts/kit.mjs` is the kit API (`readSource`, `describeKit`, `getAssetBundle`, `compileControls`, `createIndex`, `updateIconCSS`, `collectCatalog` and the sheet renderers), and `scripts/ui-kit.mjs` `loadUI()` returns it with the skill directory as its root. No sibling skill, lock file or mirror check is consulted, and no network installation is used.
 
-UI CSS, tokens, components, recipes and pure sheet renderers are owned by base-ui. ui-compatibility.json lists generated copies retained for historical paths and integration checks. After an intentional UI update: run affected checks in base-ui, seal its descriptor, then node scripts/sync-ui-kit.mjs and node scripts/sync-ui-kit.mjs --check. Do not run sync against an unreviewed kit; it intentionally updates the lock and copies. Do not edit generated copies.
+## What the kit holds
 
-The review build embeds the kit and assets/review-runtime-adapter.js. assets/prototype-runtime.js is a generated compatibility concatenation for old harnesses. registerPrototype, approval helpers, unit/variant keys, read-only host policy and feedback belong to the review tool. Generic state/render/bind, cleanup and heading focus belong to base-ui. Existing controllers keep their API.
+- Foundation CSS: `assets/foundation/` (colors, typography, semantic palettes, Maison geometry and layout) and `assets/wireframe.css`. `scripts/token-index.mjs` lists the six token groups; `references/style/token-index.json` records them.
+- Bundled fonts: `assets/fonts/` (woff2 faces, their OFL licenses and `manifest.json` with each file's hash). `scripts/lib/font-css.mjs` embeds them and fails on a hash mismatch.
+- Icons: `assets/icons/` with `assets/phosphor-license.txt`; `scripts/lib/icon-css.mjs` writes their data URIs.
+- Runtime and markup: `assets/ui-runtime.js`, `assets/control-markup.mjs`, `scripts/compile-controls.mjs`, `scripts/class-names.mjs`, `scripts/token-inspection.mjs`.
+- Recipes and contracts: `assets/recipes/`, `references/style/`, `references/runtime-api.json`, `references/semantic-palettes.json`.
+- Catalog extraction and sheet renderers: `scripts/catalog.mjs`, `scripts/lib/specimen-extraction.mjs`, `scripts/lib/sheets/`.
+- Browser resolution: `scripts/resolve-browser.mjs` (bounded; no install).
 
-component-context.mjs uses base-ui contracts by default; --runtime retains the review adapter contract. Explicit --root retains the previous corpus lookup for frozen evaluation fixtures. It does not change the kit used for building. Generic runtime callers use the base-ui entry.
+`describeKit()` returns `{packageId:'wireframe-review/kit', runtimeApiVersion:1, contentSHA256}`, where the hash covers the token sources, the font manifest, the runtime and the control markup. Every compiled artifact embeds it as `UI_KIT`, and `verify-artifact.mjs` checks that binding and the embedded foundation bytes.
 
-Current sheets keep their canonical destination and deep links. Catalog collection and UI renderers are direct locked-kit API calls; the page shell and ledger/history remain review-owned. Generated source-path views remain for legacy readers. Peer-owned live sheets are not a migration output. Release archives include generated compatibility copies for legacy readers but generation requires the sibling kit. Extract both archives into the same parent. No symlink or machine-specific absolute path is required.
+## Maintaining it
 
-Rollback uses the archived compatible skill pair; never restore one side alone. Accepted limitations and historical evidence keep their original meaning. Old independently frozen evaluation scripts may require their original corpus, never overwrite it to make checks pass.
+Edit kit files here; there is no upstream copy to synchronize. After a change:
 
+- Geometry: `node scripts/generate-geometry.mjs` regenerates `assets/foundation/maison/geometry.{css,json}` from `ui-geometry/scripts/derive.mjs --json`, and `--check` verifies them. See [geometry and spacing](geometry-spacing.md).
+- Token sources: `node scripts/generate-token-index.mjs`, then `--check`.
+- Icons: `node scripts/generate-icons.mjs`, then `--check`.
+- Fonts: update `assets/fonts/manifest.json` hashes with the files.
 
-## UI checks
+The review build embeds the kit runtime and `assets/review-runtime-adapter.js`. `assets/prototype-runtime.js` is their concatenation for older harnesses; keep it in step when either changes. registerPrototype, approval helpers, unit/variant keys, read-only host policy and feedback belong to the review tool; generic state/render/bind, cleanup and heading focus belong to the kit runtime. Existing controllers keep their API.
 
-Standalone UI checks now live in base-ui; references/checks.json there indexes the commands. Existing review-tool command paths forward through scripts/run-ui-check.mjs, preserving arguments, stdout and exit status. Use --describe-route on a forwarding command to inspect its target. scripts/check-ui-check-routing.mjs verifies routing without rerunning all component matrices. Shell icon generation now uses the kit API and replaces the glyph block in place. Review artifacts, controller adapters, sheets and historical-evidence checks remain owned here.
+`component-context.mjs` reads this skill's component contracts; `--runtime` returns the review adapter contract and `--root` reads another corpus for frozen evaluation fixtures. It does not change the kit used for building.
 
-For later removals, follow [compatibility retirement](migration/compatibility-retirement.md). A text-search miss is not proof that a compatibility path is unused.
+## Checks
+
+The component-family browser matrices that used to forward to another skill are not shipped here. Use the checks in [conditional build checks](workflows/build-checks.md), the generation gates in `generate.mjs`, and rendered review of the actual artifact. The retired migration is recorded in [compatibility retirement](migration/compatibility-retirement.md).

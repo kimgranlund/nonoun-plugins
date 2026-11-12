@@ -171,11 +171,11 @@ Colors begins with source palettes and semantic roles; seed JSON stays inside a 
 
 ## Split ownership
 
-UI sources and pure token/color/component renderers are owned by base-ui. The current coordinator consumes synchronized views validated against ui-kit.lock.json and records kit identity in inventory.json. Gap/disposition/history inputs remain review-owned. Preserve the existing canonical destination and peer-owned live components.html.
+UI sources and pure token/color/component renderers belong to this skill's kit (scripts/kit.mjs). The coordinator records the kit identity in inventory.json. Gap/disposition/history inputs remain review-owned. Preserve the existing canonical destination and peer-owned live components.html.
 
 
 ### Split catalog ownership
 
-The builder now calls base-ui `collectCatalog({playwright})` and pure UI renderers through the locked kit API. Kit collection has no review-installation dependency. Keep the review page shell, overview/gaps, demonstration guidance, work register and generation-history ingestion here. Inventory `sourceRoots` resolves each source owner; old inventories without it retain the original sourceRoot behavior. Do not copy review history into the standalone kit catalog.
+The builder calls the kit `collectCatalog({playwright})` and pure UI renderers through scripts/kit.mjs. Kit collection reads no review history. Keep the review page shell, overview/gaps, demonstration guidance, work register and generation-history ingestion here. Inventory `sourceRoots` resolves each source owner; old inventories without it retain the original sourceRoot behavior. Do not copy review history into the standalone kit catalog.
 
-After changing this seam, build into /private/tmp and use `check-catalog-boundary.mjs BEFORE_SHEETS AFTER_SHEETS STANDALONE_JSON` for data/specimen parity, source-owner identities and negative controls, followed by the affected sheet check. The standalone JSON comes from base-ui `build-catalog.mjs`. This does not authorize overwriting canonical or peer-owned live sheets.
+After changing this seam, build into /private/tmp and use `check-catalog-boundary.mjs BEFORE_SHEETS AFTER_SHEETS STANDALONE_JSON` for data/specimen parity, source-owner identities and negative controls, followed by the affected sheet check. The standalone JSON is a catalog collected by `collectCatalog` without the review shell. This does not authorize overwriting canonical or peer-owned live sheets.

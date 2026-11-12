@@ -5,5 +5,5 @@
   "cssSHA256": "4efaf13ecbdd08a1e6a691880863c5c27269b1264d2ed837feabd569a082bb64",
   "tokens": 748,
   "semanticOwner": "references/semantic-palettes.json",
-  "note": "No source semantics provided; role tones and primary=color-1 alias are base-ui mappings."
+  "note": "No source semantics provided; role tones and primary=color-1 alias are kit mappings."
 }

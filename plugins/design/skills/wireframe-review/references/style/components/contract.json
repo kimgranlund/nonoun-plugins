@@ -39,7 +39,6 @@
       "motionReference": "../../apple-smooth-motion.md",
       "scope": "Historical recipe exceptions only; current Control/media slot geometry is in references/geometry-spacing.md."
     },
-    "consumerIntegration": "../../../../mathematical-design-system/references/ui-kit-integration.md",
     "radiusValidation": "Containment noise allowance 0.05 CSS px; physical radius excess allowance 0.001 CSS px. Preserve exact geometry. Group validity reports the whole scope; independently paint each layer from physicalExcess <= 0.001. Containment or sibling errors must not square feasible parent/sibling radii. Report real conflicts separately; consumer owns measurement, binding and cleanup."
   },
   "families": [
@@ -406,7 +405,7 @@
           "Forced-colors uses system colors; palette fidelity is not forced.",
           "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
         ],
-        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit kit alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
         "colorGroupPolicy": {
           "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
           "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
@@ -584,7 +583,7 @@
           "Forced-colors uses system colors; palette fidelity is not forced.",
           "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
         ],
-        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit kit alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
         "colorGroupPolicy": {
           "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
           "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
@@ -1112,7 +1111,7 @@
           "Forced-colors uses system colors; palette fidelity is not forced.",
           "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
         ],
-        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit kit alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
         "colorGroupPolicy": {
           "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
           "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
@@ -1227,7 +1226,7 @@
           "Forced-colors uses system colors; palette fidelity is not forced.",
           "For a neutral component, omit data-intent and use its default or secondary appearance. Explicit material intent is a named source palette, not an unannotated neutral control."
         ],
-        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit base-ui alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
+        "primaryPolicy": "Opt-in primary uses source color-1. This is an explicit kit alias; the export does not name a primary palette. Legacy md-color-primary remains unchanged.",
         "colorGroupPolicy": {
           "prime": "Independent accent samples, not aliases for numbered Base stops. Solid fills and their hover/active states use Prime samples.",
           "base": "Broad tonal support for paired foregrounds, soft containers, soft interaction states and borders.",
@@ -1524,7 +1523,7 @@
         "recipe": "assets/ui-runtime.js#focusWorkflowStep",
         "invalid": "Invalid advancement focuses the invalid field and retains the current stage.",
         "remount": "Focus the new heading after DOM replacement, never a removed node.",
-        "dependency": "base-ui build.mjs supplies focusWorkflowStep before author code; review hosts supply it through their adapter.",
+        "dependency": "build.mjs supplies focusWorkflowStep from assets/ui-runtime.js before author code; review hosts supply it through their adapter.",
         "usage": "After dispatch commits visibility, call focusWorkflowStep(form, destinationIndex). Default ordered panels: [data-step] or [data-stage]. For other anatomy pass {panelSelector: YOUR_SELECTOR}. Return false means no connected visible destination heading; verify actual focus.",
         "activation": "Next and Back require final-artifact activation checks; initial runtime startup does not execute these handlers."
       },
@@ -2434,7 +2433,7 @@
       "pages": "styles/pages/"
     },
     "build": "scripts/build.mjs",
-    "scope": "Paths relative to mathematical-design-system/assets/site; build generated HTML/runtime in place and preserve maintained styles"
+    "scope": "Paths relative to the external ui-kit site (apps/site); build generated HTML/runtime in place and preserve maintained styles"
   },
   "homeHero": {
     "contract": "../../../../../../Projects/ui-kit/apps/site/docs/home-hero.md",
@@ -2449,6 +2448,6 @@
     "selection": "Separate highlight from committed value; aria-expanded/controls/activedescendant and named listbox options",
     "toggle": "Stable accessible name, aria-pressed, initially on; independent favorite state, no chip mode",
     "geometry": "Shared context and maintained slots; ghost changes paint only",
-    "verification": "mathematical-design-system/scripts/check-home-hero.cjs plus site checks and visual review"
+    "verification": "The ui-kit site home-hero check plus site checks and visual review"
   }
 }

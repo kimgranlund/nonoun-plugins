@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "assets/prototype-runtime.js",
-  "scope": "Supplied before --controller code in the assembled module. Lexical controller scope, not a Window API; standalone recipe helpers are separate unless explicitly concatenated. Implementation: base-ui assets/ui-runtime.js plus assets/review-runtime-adapter.js; assets/prototype-runtime.js is a generated compatibility bundle.",
+  "scope": "Supplied before --controller code in the assembled module. Lexical controller scope, not a Window API; standalone recipe helpers are separate unless explicitly concatenated. Implementation: assets/ui-runtime.js plus assets/review-runtime-adapter.js; assets/prototype-runtime.js is their concatenation for older harnesses.",
   "capabilities": [
     {
       "name": "registerPrototype",

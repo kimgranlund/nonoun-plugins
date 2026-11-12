@@ -1,4 +1,4 @@
-// Generated review recipe adapter: scripts/sync-ui-kit.mjs.
+// Review recipe adapter: the kit recipe plus its registerPrototype call.
 // Mount with createUIRuntime().mount; query only the supplied root.
 const titleRequestDefinition={initialState:{title:'',step:0,attempted:false,confirmed:false},
  reduce(state,action){

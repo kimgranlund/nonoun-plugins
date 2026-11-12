@@ -319,5 +319,5 @@
     "brand"
   ],
   "geometryProfile": "../../assets/foundation/maison/geometry.json",
-  "geometrySource": "mathematical-design-system/scripts/lib/scale.mjs"
+  "geometrySource": "ui-geometry/scripts/derive.mjs --json via scripts/generate-geometry.mjs"
 }

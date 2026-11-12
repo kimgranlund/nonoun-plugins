@@ -2,19 +2,16 @@ import fs from 'node:fs';import path from 'node:path';import {fileURLToPath}from
 export function selectChecks(files){
  const checks=new Map(),manual=[];const add=(command,stage,file)=>{if(!checks.has(command))checks.set(command,{command,stage,reasons:[]});checks.get(command).reasons.push(file);};
  for(const file of files){let matched=false;const route=(condition,command,stage)=>{if(condition){matched=true;add(command,stage,file);}};
-  route(/run-ui-check|check-ui-check-routing|references\/checks/.test(file),'node scripts/check-ui-check-routing.mjs','source');
-  route(/ui-kit|ui-runtime|review-runtime-adapter|ui-compatibility|ui-kit.lock/.test(file),'node scripts/check-ui-kit.mjs PLAYWRIGHT NEW_OUTPUT','browser');
+  route(/ui-kit|scripts\/kit\.mjs|ui-runtime|review-runtime-adapter|assets\/fonts\//.test(file),'node scripts/check-generation-pipeline.mjs PLAYWRIGHT','browser-parser');
+  route(/assets\/foundation\/maison\/|generate-geometry/.test(file),'node scripts/generate-geometry.mjs --check','source');
   route(/scripts\/(generate|check-generation-pipeline)\.mjs/.test(file),'node scripts/check-generation-pipeline.mjs PLAYWRIGHT','browser-parser');
-  route(/workflow|assets\/recipes\/components\.(js|html)/.test(file),'node scripts/check-workflow-patterns.mjs PLAYWRIGHT NEW_OUTPUT','browser');
   route(/workflow|assets\/recipes\/components\.js/.test(file),'node scripts/check-workflow-controller.mjs PLAYWRIGHT NEW_OUTPUT','browser');
-  route(/extended|assets\/recipes\/components\.(js|html)/.test(file),'node scripts/check-extended-patterns.mjs PLAYWRIGHT NEW_OUTPUT','browser');
   route(/extended|assets\/recipes\/components\.js/.test(file),'node scripts/check-extended-controller.mjs PLAYWRIGHT NEW_OUTPUT','browser');
   route(file.endsWith('.md'),'node scripts/check-corpus-graph.mjs','source');
   route(/token-(inspection|index)|token-membership|standalone-token-refs|verify-artifact|scripts\/build\.mjs/.test(file),'node scripts/check-token-membership.mjs','source');
   route(/artifact-lint|lint-artifact|select-checks|check-preventive/.test(file),'node scripts/check-preventive-lint.mjs PLAYWRIGHT','browser-parser');
-  route(file.startsWith('assets/foundation/')||file==='assets/wireframe.css','node scripts/check-spacing.mjs PLAYWRIGHT','browser');
-  route(file.startsWith('assets/foundation/')||file==='assets/wireframe.css','node scripts/check-heading-context.mjs PLAYWRIGHT OUTPUT','browser');
-  route(file==='assets/wireframe.css'||file.startsWith('assets/foundation/'),'node scripts/check-components.mjs PLAYWRIGHT OUTPUT','browser');
+  route(file.startsWith('assets/foundation/')||file==='assets/wireframe.css','node scripts/check-native-patterns.mjs PLAYWRIGHT NEW_OUTPUT','browser');
+  route(file.startsWith('assets/foundation/')||file==='assets/wireframe.css','node scripts/check-select-contract.mjs PLAYWRIGHT NEW_OUTPUT','browser');
   route(file.startsWith('assets/recipes/'),'node scripts/lint-artifact.mjs CHANGED_HTML PLAYWRIGHT NEW_REPORT','browser-parser');
   route(file==='references/style/components/contract.json','node scripts/check-implementation-ownership.mjs','source');
   if(file.startsWith('assets/recipes/')||file==='assets/wireframe.css'||file.startsWith('assets/foundation/'))manual.push({file,reason:'Also select affected state/behavior checks from references/workflows/build-checks.md; this selector is not an exhaustive dependency graph.'});

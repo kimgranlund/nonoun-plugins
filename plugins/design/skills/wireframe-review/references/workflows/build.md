@@ -22,7 +22,7 @@ Inspect visible controls as well as declared interactions. Check menus, scope-ch
 
 ## Long collections and persistent actions
 
-For selection followed by a required form, read [bounded selection with an adjacent task](../style/composition.md#bounded-selection-with-an-adjacent-task). Choose document flow, staged tasks or a named bounded collection region according to the task. Keep all content and native keyboard access. Check collapsed, expanded, invalid and enlarged states; measure grouping and task completion separately from shortcut access. Verify that focused controls remain visible and hit-testable above persistent chrome. Do not treat body padding or a full-page capture as proof. Verify the fixed authored recipe with `node scripts/check-bounded-collection-task.mjs PLAYWRIGHT NEW_OUTPUT`; pass a supplied Playwright module path and a fresh output directory. `--help` is read-only. Its synthetic doubled-text cases are not native zoom or generation acceptance.
+For selection followed by a required form, read [bounded selection with an adjacent task](../style/composition.md#bounded-selection-with-an-adjacent-task). Choose document flow, staged tasks or a named bounded collection region according to the task. Keep all content and native keyboard access. Check collapsed, expanded, invalid and enlarged states; measure grouping and task completion separately from shortcut access. Verify that focused controls remain visible and hit-testable above persistent chrome. Do not treat body padding or a full-page capture as proof.
 
 ## Automatic baseline
 
