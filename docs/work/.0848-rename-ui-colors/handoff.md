@@ -2,7 +2,7 @@
 id: T-0848
 title: "Rename the design skill hct-palettes to ui-colors"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,13 @@ The design skill `hct-palettes` is named `ui-colors`, the first of the ui-* set 
 - `cd plugins/design/skills/ui-colors && node scripts/check.mjs` exits 0, `python3 plugins/sdlc/scripts/check.py` and `python3 scripts/check-packaging.py` exit 0, and `git diff --check` is clean.
 
 ## Outcome
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: efbf6cdef12b
+- Changed: see commits
+- Commits: cc2d8f0 T-0848: README design row says UI colors; 009ec5a T-0848: rename hct-palettes to ui-colors
+- Check: 1 Folder renamed and SKILL.md name: pass
+- Check: 2 Remaining `hct-palettes` references are only kept-on-purpose lines: pass
+- Check: 3 Checks green: pass
+- Follow-up: note: docs/README.md:63 still says hct-palettes in the 1.0.6 release... -> notes.md

@@ -925,3 +925,7 @@
 ## T-0846: Style the component-variants select caret on the compiled select__root wrapper (2026-11-12)
 
 - note: redck.py deviations printed no process deviation lines.
+
+## T-0848: Rename the design skill hct-palettes to ui-colors (2026-11-12)
+
+- note: docs/README.md:63 still says `hct-palettes` in the 1.0.6 release line; this is history, kept on purpose.
