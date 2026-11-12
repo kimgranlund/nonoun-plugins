@@ -62,8 +62,8 @@
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
 - [Release 1.0.6](reports/2026-11-12-release-1-0-6.md): `context` 0.7.0 with `decision-questions` and four skill updates; `design` 0.3.0 with `ui-geometry`, the new `hct-palettes`, and `base-ui` and `mathematical-design-system` removed.
 - [Release 1.0.5](reports/2026-11-01-release-1-0-5.md): `context` 0.6.0 with four new skills: knowledge-organization-system, controlled-natural-language, evaluation-system and classify-and-resolve.
-- [Release 1.0.4](reports/2026-10-31-release-1-0-4.md): `context` 0.5.1, a leaner `progressive-context`.
-- [Release 1.0.3](reports/2026-10-31-release-1-0-3.md): `context` 0.5.0 with the `knowledge-modeling` skill and the `progressive-context` rewrite.
+- [Release 1.0.4](reports/2026-10-31-release-1-0-4.md): `context` 0.5.1, a leaner progressive-context skill (now merged into `context-system`).
+- [Release 1.0.3](reports/2026-10-31-release-1-0-3.md): `context` 0.5.0 with the knowledge-modeling skill and the progressive-context rewrite (both now merged into `context-system`).
 - [Release 1.0.2](reports/2026-10-30-release-1-0-2.md): the live session agent picks a branch and a lane and cleans up after a merge.
 - [Release 1.0.1](reports/2026-10-30-release-1-0-1.md): a cross-harness plugin standard, delivery diagnostics in `context-fog-of-war`, and `base-ui` and `mathematical-design-system` updates from the MacBook working copies.
 - [Release 1.0.0](reports/2026-10-30-release-1-0-0.md): the plugin is now `sdlc` in marketplace `nonoun`, with three session modes (factory, hybrid, live), onboarding that declares the mode, and `.sdlc/tickets/` for new repositories.

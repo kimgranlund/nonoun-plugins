@@ -2,11 +2,11 @@
 
 Recorded: 2026-10-05. Ticket T-0247. Method: the generative-systems skill (tier model T0 to T12, review rubric, gap-analysis template). Nothing here changes the plugin or its specs.
 
-Labels on every claim: **[O]** observed in a file read for this analysis (path:line); **[E]** established outside this repository (named; the generative-systems rubric and W3C PROV are cited this way); **[I]** inference. Paths are relative to the repository root. `PC` means `plugins/context/skills/progressive-context`.
+Labels on every claim: **[O]** observed in a file read for this analysis (path:line); **[E]** established outside this repository (named; the generative-systems rubric and W3C PROV are cited this way); **[I]** inference. Paths are relative to the repository root. `PC` means the progressive-context skill folder under `plugins/context/skills/` as it stood then; it merged into `plugins/context/skills/context-system/` on 2026-11-12 (T-0850).
 
 ## Scope
 
-- System: the `progressive-context` plugin 0.1.2 (one skill, six references, one example), its proposal set in `docs/specs/generative-constructs/`, and how SDLC consumes it (`PC/references/sdlc.md`, `plugins/sdlc/scripts/onboard.py`, `.sdlc/AGENTS.md`, the `docs/layout.md` that `onboard.py setup` writes, `docs/planning/docs-schema/design.md`).
+- System: the progressive-context plugin 0.1.2 (since merged into the `context-system` skill) (one skill, six references, one example), its proposal set in `docs/specs/generative-constructs/`, and how SDLC consumes it (`PC/references/sdlc.md`, `plugins/sdlc/scripts/onboard.py`, `.sdlc/AGENTS.md`, the `docs/layout.md` that `onboard.py setup` writes, `docs/planning/docs-schema/design.md`).
 - Harnesses: Claude Code and Codex [O `plugins/context/.codex-plugin/plugin.json:8`]; a browser JavaScript harness exists only as a proposal [O `docs/specs/generative-constructs/04-context-and-harness.md:1-9`].
 - Workflows: author a capability contract, assess it against evidence, qualify it for reuse, leave a navigation route [O `PC/SKILL.md:10-18`].
 - Rendered targets: none ship. A2UI is optional guidance and "the plugin does not supply a renderer" [O `PC/references/a2ui.md:3`].

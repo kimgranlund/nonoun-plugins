@@ -6,7 +6,7 @@ Observed in a cross-host repository routing and hardening study. These are
 analyst checks, not universal requirements. Optional cited delivery contracts automate
 bounded observable portions, as qualified below. Use recorded calls, returned bodies
 and independent acceptance; missing telemetry stays unknown.
-The architecture/refactoring skill progressive-context is complementary when
+The architecture/refactoring skill context-system is complementary when
 available, but is not required to apply these checks.
 
 32. Diagnose route selection by task intent, not merely by target identity.

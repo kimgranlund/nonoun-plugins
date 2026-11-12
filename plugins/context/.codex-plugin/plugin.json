@@ -16,6 +16,6 @@
       "Read",
       "Write"
     ],
-    "defaultPrompt": "Use $progressive-context to help with this project."
+    "defaultPrompt": "Use $context-system to help with this project."
   }
 }
