@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Attach cited workflows, or import a base-ui peer-review evidence directory."""
+"""Attach cited workflows, or import a peer-review evidence directory."""
 import argparse,json
 from pathlib import Path
 from fog import validate

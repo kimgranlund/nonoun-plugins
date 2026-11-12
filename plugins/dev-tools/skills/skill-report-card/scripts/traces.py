@@ -1,6 +1,6 @@
 """Read recorded Codex exec JSONL events; no producer reports required."""
 import json,hashlib,re
-SKILLS=('base-ui','component-variants','wireframe-review')
+SKILLS=('component-variants','wireframe-review')
 def sha(b):return hashlib.sha256(b).hexdigest()
 def parse(raw,max_records=10000,max_line_bytes=2097152):
     thread=None;commands={};started=set();conflicts=set();usage=[];counts={'malformedRecords':0,'unsupportedRecords':0};stop=None

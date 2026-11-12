@@ -4,7 +4,7 @@
 
 Each measured skill owns `references/performance-contract.json`. Its SKILL.md contains only an evaluation/maintenance pointer; ordinary authoring must not load the metric contract. No README or duplicated KPI prose is needed.
 
-This skill owns the format: [schema v1](performance-contract.schema.json), a [proposed base-ui example](../assets/performance-contract.example.json) and `scripts/validate_contract.py`. The validator is a stdlib implementation of the schema vocabulary used here, not a general JSON Schema engine. It fails on unknown schema keywords; extend it or use a qualified Draft 2020-12 validator if the schema expands.
+This skill owns the format: [schema v1](performance-contract.schema.json), an [illustrative UI-kit example](../assets/performance-contract.example.json) and `scripts/validate_contract.py`. The validator is a stdlib implementation of the schema vocabulary used here, not a general JSON Schema engine. It fails on unknown schema keywords; extend it or use a qualified Draft 2020-12 validator if the schema expands.
 
 - Measured skill: goals, metric meaning, applicability, conceptual boundaries.
 - skill-report-card: evidence adapters, qualification and calculation implementation.
@@ -39,7 +39,7 @@ Report snapshots must preserve the exact contract bytes/hash, schemaVersion, con
 
 Look for the exact path beneath an identified skill installation. Apply normal size, symlink and exclusion controls. Validate structure and goal references before using it. An adopted skill-owned contract is the authority for that skill/version; proposed contracts remain visibly proposed. Multiple incompatible installations or contracts are separate identities or a conflict, never an arbitrary first-match choice.
 
-Until discovery is implemented, references/kpis.json remains the working proposal registry. The supplied example demonstrates the schema but does not adopt goals into base-ui. All KPI values remain unmeasured; adopting a definition does not provide evidence.
+Until discovery is implemented, references/kpis.json remains the working proposal registry. The supplied example demonstrates the schema but does not adopt goals into any measured skill. All KPI values remain unmeasured; adopting a definition does not provide evidence.
 
 ## Acceptance checklist
 

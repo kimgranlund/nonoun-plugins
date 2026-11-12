@@ -25,7 +25,7 @@ class SemanticTests(unittest.TestCase):
         packet={'schemaVersion':1,'skillId':'component-variants','cases':[case(cohort={'population':'real-use'}),case(cohort={'population':'controlled-test'})]}
         with self.assertRaisesRegex(ValueError,'populations separately'):integrate(base,[packet])
     def test_telemetry_not_boolean_proportion(self):
-        with self.assertRaisesRegex(ValueError,'unit-specific'):aggregate([case(skillId='base-ui',metricId='context-burden')])
+        with self.assertRaisesRegex(ValueError,'unit-specific'):aggregate([case(skillId='component-variants',metricId='shell-overhead')])
     def test_cohorts_not_pooled(self):
         r=aggregate([case(),case(cohort={'task':'other'},outcome='fail')]);self.assertEqual(len(r),2);self.assertEqual(sorted(x['value'] for x in r),[0,1])
     def test_inference_and_retrospective_distinct(self):

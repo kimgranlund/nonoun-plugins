@@ -68,10 +68,6 @@ def scan(roots, output, selected, *, seconds=30, max_entries=100000, max_candida
                             explicit=set()
                             for key in ['skill','skillId']:
                                 if data.get(key) in selected:explicit.add(data[key])
-                            for key in ['kit','identity']:
-                                value=data.get(key)
-                                if isinstance(value,dict) and value.get('packageId')=='local.base-ui' and 'base-ui' in selected:explicit.add('base-ui')
-                            if data.get('packageId')=='local.base-ui' and 'base-ui' in selected:explicit.add('base-ui')
                             if data.get('pipelineSHA256') == PRODUCER and 'wireframe-review' in selected:explicit.add('wireframe-review')
                             hints={s for s in selected if s in p.parts}
                             related=explicit|hints
@@ -105,14 +101,14 @@ def scan(roots, output, selected, *, seconds=30, max_entries=100000, max_candida
         if rr['errors'] and rr['status']=='visited':rr['status']='visited-with-errors'
     return {'schemaVersion':1,'collectorVersion':'0.2.0','collectedAt':datetime.now(timezone.utc).isoformat(),'roots':root_results,'bounds':dict(seconds=seconds,maxEntries=max_entries,maxCandidates=max_candidates,maxBytesPerFile=max_bytes,depth=depth),'coverage':{'stopReason':stop,'elapsedSeconds':round(time.monotonic()-start,3),'counts':dict(counts),'uniqueCandidateDocuments':len(rows),'completeSystemCoverage':False,'limitations':['Known JSON filenames only; HTML-only samples are not indexed.','Exact bytes deduplicated; reported observations do not establish author attempts or KPI eligibility.','Filesystem order and budgets can bias the observed sample.','Protected directories and symlinks excluded; no unrelated chat stores read.','Same-user live filesystem races are not a hardened security boundary.']},'candidates':rows}
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True);p.add_argument('--root',action='append');p.add_argument('--skill',action='append',choices=['base-ui','component-variants','wireframe-review']);p.add_argument('--seconds',type=float,default=30);p.add_argument('--max-entries',type=int,default=100000);p.add_argument('--max-candidates',type=int,default=3000);p.add_argument('--max-bytes',type=int,default=2097152);p.add_argument('--depth',type=int,default=18)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True);p.add_argument('--root',action='append');p.add_argument('--skill',action='append',choices=['component-variants','wireframe-review']);p.add_argument('--seconds',type=float,default=30);p.add_argument('--max-entries',type=int,default=100000);p.add_argument('--max-candidates',type=int,default=3000);p.add_argument('--max-bytes',type=int,default=2097152);p.add_argument('--depth',type=int,default=18)
     a=p.parse_args()
     if min(a.seconds,a.max_entries,a.max_candidates,a.max_bytes)<=0 or a.depth<0:p.error('Budgets must be positive; depth must be nonnegative')
     out=Path(a.output).expanduser().absolute()
     if out.exists():p.error('Output already exists; choose a fresh directory')
     if out==SKILL.parent or SKILL.parent in out.parents:p.error('Keep run outputs outside installed skills')
     out.mkdir(parents=True,mode=0o700)
-    chosen=a.skill or ['base-ui','component-variants','wireframe-review']
+    chosen=a.skill or ['component-variants','wireframe-review']
     evidence=scan(a.root or default_roots(),out,chosen,seconds=a.seconds,max_entries=a.max_entries,max_candidates=a.max_candidates,max_bytes=a.max_bytes,depth=a.depth)
     evidence['coverage']['adapterStates']=dict(collections.Counter(row.get('adapterResult',{}).get('state','unqualified') for row in evidence['candidates']))
     observations=[o for row in evidence['candidates'] for o in row.get('adapterResult',{}).get('observations',[])]
@@ -124,7 +120,7 @@ def main():
         if s['id'] not in chosen:continue
         cards.append({**s,'candidateDocuments':sum(s['id'] in row['skillHints'] for row in evidence['candidates']),'metrics':[{'id':k['id'],'value':None,'status':'not-measured','evidenceState':'insufficient','reason':'Reported metadata adapter does not establish an eligible KPI denominator.'} for k in s['kpis']]})
     report={'schemaVersion':1,'status':'reported-observations-only','generatedAt':evidence['collectedAt'],'coverage':evidence['coverage'],'skills':cards,'styling':None}
-    render(report,out,SKILL.parent/'base-ui')
+    render(report,out)
     (out/'report-card.json').write_text(json.dumps(report,indent=2)+'\n')
     # Only bounded metadata is returned to the calling conversation, never evidence contents.
     print(json.dumps({'status':'reported-observations-only','dashboard':str(out/'index.html'),'index':str(out/'evidence-index.json'),'uniqueCandidateDocuments':len(evidence['candidates']),'measuredKpis':0,'stopReason':evidence['coverage']['stopReason']}))

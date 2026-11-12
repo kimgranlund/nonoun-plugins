@@ -4,6 +4,7 @@ Newest first. Each row links to its change set's folder; the folder's `changelog
 
 | Date | Change set | Verification |
 |---|---|---|
+| 2026-11-12 | [retired kit references](20261112-retired-kit-references/changelog.md) | 72 tests |
 | 2026-10-29 | [explicit source delivery diagnostics](20261029-explicit-delivery-diagnostics/changelog.md) | 72 tests; independent authored oracle; actual task-packet positive/negative controls; retained compound-read replay |
 | 2026-10-26 | [persisted-output preview detection](20261026-persisted-output-preview/changelog.md) | 53 tests; frozen Claude replay 1/0/1; old-owner and non-preview negative controls |
 | 2026-10-25 | [sync the source project to the installed version](20261025-source-project-sync/changelog.md) | Byte parity across all three copies; project 143 tests and skill 51 tests pass |

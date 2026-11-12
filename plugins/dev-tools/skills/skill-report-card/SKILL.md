@@ -18,7 +18,7 @@ The dashboard surfaces recorded command counts, exit-zero/nonzero results and de
 
 Optional report/manifest audits remain available with `python3 scripts/scan.py --output /private/tmp/skill-report-card-audit-UNUSED`. They supplement trace evidence and retain their existing qualifications. They are not the prerequisite for log analysis. Performance KPIs require criterion-specific evidence and eligible denominators; metadata identity is not a universal measurement prerequisite, and an unset target does not prevent an observed measurement.
 
-Dashboard styling uses sibling base-ui through its verified API when available; otherwise renders accessible plain HTML with the missing styling dependency disclosed. It never installs dependencies. Do not modify the measured skills. Do not launch evaluations merely because logs lack task outcomes.
+The dashboard renders accessible plain HTML; `render` accepts an optional UI kit directory exposing `scripts/api.mjs`, and no kit ships beside this skill. It never installs dependencies. Do not modify the measured skills. Do not launch evaluations merely because logs lack task outcomes.
 
 ## Rules
 

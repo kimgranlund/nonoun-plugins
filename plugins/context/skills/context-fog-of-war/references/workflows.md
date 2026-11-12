@@ -11,7 +11,7 @@ python3 scripts/workflow.py --data session.json --manifest workflows.json --out 
 python3 scripts/library.py publish assessed.json
 ```
 
-For a base-ui peer review containing outcome-map.json, inspection-adjudication.json and trace decision citations:
+For a peer-review evidence directory containing outcome-map.json, inspection-adjudication.json and trace decision citations:
 
 ```
 python3 scripts/workflow.py --data traces/cueforge.json --peer-review /absolute/evidence-directory --app cueforge --out assessed.json

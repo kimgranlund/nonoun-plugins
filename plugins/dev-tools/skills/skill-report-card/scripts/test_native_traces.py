@@ -10,7 +10,7 @@ class NativeTests(unittest.TestCase):
     def test_native_positive_and_privacy(self):
         n=parse(encoded(fixture()));t=n['turns'][0];self.assertEqual(t['category'],'candidate-real-use');self.assertTrue(t['startedAndCompleted']);self.assertEqual(t['pureSkillReadCalls'],1);self.assertEqual(t['loggedToolReturnUtf8Bytes'],len('PRIVATE_MARKER'));self.assertNotIn('PRIVATE_MARKER',json.dumps(n));self.assertNotIn('Build a',json.dumps(n));self.assertFalse(t['performanceEligible'])
     def test_catalog_mention_is_not_use(self):
-        n=parse(encoded([row({'type':'message','role':'user','content':[{'text':'component-variants wireframe-review base-ui'}]},'response_item')]));self.assertEqual(n['turns'],[])
+        n=parse(encoded([row({'type':'message','role':'user','content':[{'text':'component-variants wireframe-review'}]},'response_item')]));self.assertEqual(n['turns'],[])
     def test_mixed_command_is_not_pure_read(self):
         r=fixture();r[3]['payload']['input']='await tools.exec_command({cmd:"cat /skills/component-variants/SKILL.md; node long-file-name.js"})';self.assertEqual(parse(encoded(r))['turns'][0]['pureSkillReadCalls'],0)
     def test_long_mixed_read_does_not_backtrack(self):

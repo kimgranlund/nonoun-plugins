@@ -1,6 +1,6 @@
 """Scoped native-session analysis. Never returns prompts, commands or tool output."""
 import json,re,hashlib,statistics,shlex,ast
-SKILLS=('base-ui','component-variants','wireframe-review')
+SKILLS=('component-variants','wireframe-review')
 def sha(b):return hashlib.sha256(b).hexdigest()
 def command(text):
     try:v=json.loads(text)

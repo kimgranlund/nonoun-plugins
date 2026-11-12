@@ -10,8 +10,6 @@ MISSING={
 'system-fidelity':'No matched rendered geometry/type/color assertions with source bindings were qualified outside the batch.',
 'interaction-correctness':'Action/assertion code hints lack specified operation cases and matched expected/observed outcomes.',
 'environment-resilience':'Required browser/viewport usability cases and clipping/reachability results were not qualified.',
-'standalone-consumption':'No isolated base-ui-only setup/build attempt was identified outside reporting/study activity.',
-'context-burden':'Logged single-skill read returns are measurable below; successful-quality gates and complete retrieval capture are not established.',
 'distinctness':'No predeclared decision-axis human rubric or evaluated contrasts were identified.',
 'fairness':'No explicit controlled-condition audit tied to an artifact/alternative set was qualified.',
 'preview-operability':'Browser action source is present, but preview versus shell scope, required checks and their outcomes remain unqualified.',
@@ -48,10 +46,9 @@ def analyze(index,session_root,out):
         reads=[{'traceSHA256':t['traceSHA256'],'turnIdentityHash':t['turnIdentityHash'],**e} for t in access for e in t['evidence'] if e['skillScope']==s['id']]
         summaries={'candidateUseTurns':len(candidate),'classification':'inferred, not independently confirmed','excludedOrUnclassifiedTurns':len(turns)-len(candidate),'sourceAccessTurnsWithMissingBrief':sum(t['category']=='unclassified' for t in access),'completeCandidateTurns':sum(t['startedAndCompleted'] for t in candidate),'singleSkillReadCalls':len(reads),'loggedSingleSkillReadReturnBytes':sum(e['loggedReturnBytes'] for e in reads),'browserActionSourceHints':sum(t['browserActionHintCalls'] for t in candidate),'assertionSourceHints':sum(t['assertionHintCalls'] for t in candidate),'measuredPerformanceKpis':0}
         metrics=[{'id':k['id'],'value':None,'status':'not-measured','evidenceState':'insufficient','reason':MISSING[k['id']],'missingEvidence':MISSING[k['id']]} for k in s['kpis']]
-        if s['id']=='base-ui':next(m for m in metrics if m['id']=='context-burden')['observedProxy']={'label':'Logged single-skill read returns','value':summaries['loggedSingleSkillReadReturnBytes'],'count':len(reads),'unit':'bytes','qualityQualified':False}
         cards.append({**s,'candidateDocuments':sum(any(s['id'] in t['skillsReferenced'] for t in o['turns']) for o in observations),'traceObservations':[],'useAnalysis':summaries,'readEvidence':reads,'metrics':metrics})
     coverage={'uniqueCandidateDocuments':len(sources),'stopReason':'total-byte-budget' if counts['totalByteBudget'] else None,'counts':dict(counts),'limitations':['The supplied source selection comes from a bounded external search; selection coverage is recorded separately and is not exhaustive.','Native-session access was scoped by explicit user request for relevant real-use logs; unrelated messages are discarded.','User-turn category and source-code action classifications are inferences, not task correctness.','No trial, raw-log copying, instrumentation change or target change.']}
-    report={'schemaVersion':1,'status':'real-use-trace-analysis','coverage':coverage,'skills':cards,'styling':None};render(report,out,SKILL.parent/'base-ui');(out/'report-card.json').write_text(json.dumps(report,indent=2)+'\n');(out/'evidence-index.json').write_text(json.dumps({'schemaVersion':1,'sources':sources,'coverage':coverage},indent=2)+'\n');(out/'native-observations.json').write_text(json.dumps(observations,indent=2)+'\n')
+    report={'schemaVersion':1,'status':'real-use-trace-analysis','coverage':coverage,'skills':cards,'styling':None};render(report,out);(out/'report-card.json').write_text(json.dumps(report,indent=2)+'\n');(out/'evidence-index.json').write_text(json.dumps({'schemaVersion':1,'sources':sources,'coverage':coverage},indent=2)+'\n');(out/'native-observations.json').write_text(json.dumps(observations,indent=2)+'\n')
     return {'status':'real-use-trace-analysis','sessionsAnalyzed':len(sources),'dashboard':str(out/'index.html'),'measuredPerformanceKpis':0,'skills':{s['id']:s['useAnalysis'] for s in cards}}
 
 def main():
