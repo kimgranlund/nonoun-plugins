@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:0ae9b04ebd2d -->
+<!-- sdlc:managed:start v1 sha256:7252aa986af4 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -92,7 +92,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0844 Port wireframe-review off base-ui onto a trimmed own kit (docs/work/0844-wireframe-own-kit)
   - T-0845 Remove base-ui and mathematical-design-system from design (docs/work/0845-remove-base-ui-mds)
 - claimed: 1
-  - T-0841 Import the hct-palettes update and the ui-geometry skill into design (docs/work/0841-design-geometry-import), claimed by nonoun-author 2026-11-12
+  - T-0841 Import the hct-palettes update and the ui-geometry skill into design (docs/work/0841-design-geometry-import), claimed by nonoun-author 2026-11-12, branch lane/T-0841-t0841
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
