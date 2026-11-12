@@ -10,4 +10,5 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Changed
 
+- `ui-kit-inspector` (T-0842): the `inspector-panel` example takes its geometry from `ui-geometry/scripts/derive.mjs` instead of the Differential Forms resolvers. `npm run build` writes a browser copy to `geometry-runtime/derive.js`, `panelGeometry()` takes `n` in place of `unit`, and `npm test` asserts ui-geometry identities. Control heights change to 28/32/36px with a 20px slot at n = 14.
 - `hct-palettes` (T-0841): replaced with the MacBook working copy, which adds a light/dark color system generator (`scripts/system.mjs`, `scripts/system/`), presets (`scripts/preset.mjs`, `scripts/presets.json`), its check (`scripts/check.mjs`), `references/system.md`, `references/system-notice.md`, `references/showcase.md` and `evals/`.
