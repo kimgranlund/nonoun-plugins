@@ -6,8 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0845 | [0845-remove-base-ui-mds](0845-remove-base-ui-mds/handoff.md) | Remove base-ui and mathematical-design-system from design | chore | L2 | P2 | T-0842, T-0843, T-0844 | 🟡 claimed |
+| T-0845 | [0845-remove-base-ui-mds](0845-remove-base-ui-mds/handoff.md) | Remove base-ui and mathematical-design-system from design | chore | L2 | P2 | T-0842, T-0843, T-0844 | 🟡 claimed (branch lane/T-0845-t0845) |
 | T-0846 | [0846-variants-select-caret](0846-variants-select-caret/handoff.md) | Style the component-variants select caret on the compiled select__root wrapper | bug | L1 | P3 | T-0843 | ⏳ proposed |
+| T-0847 | [0847-drop-base-ui-refs](0847-drop-base-ui-refs/handoff.md) | Drop base-ui and mathematical-design-system references from other plugins and wireframe-review's catalog check | chore | L2 | P2 | none | ⏳ proposed |
 
 Closed: 806 done, 30 dropped (git log or .NNNN-* folders)
 
