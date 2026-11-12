@@ -2,7 +2,7 @@
 id: T-0850
 title: "Retire progressive-context, knowledge-modeling and context-routing-review"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0849]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ The context plugin no longer ships `progressive-context`, `knowledge-modeling` o
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Touch only reference lines outside the deleted folders; no behaviour change in other skills.
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 81bbe6563803
+- Changed: see commits
+- Commits: 765198f T-0850: retire progressive-context, knowledge-modeling and context-routing-review
+- Check: 1 the three skill folders are gone: pass
+- Check: 2 no live reference in the old-skill form: pass
+- Check: 3 unit tests: pass
+- Check: 4 packaging, docs check, diff hygiene: pass
+- Follow-up: note: docs/specs/generative-constructs/progressive-context-plugin.md:270... -> notes.md

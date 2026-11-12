@@ -938,3 +938,7 @@
 ## T-0849: Import the context-system skill into context (2026-11-12)
 
 - note: redck.py deviations printed no process deviation lines (no `(red)` criteria).
+
+## T-0850: Retire progressive-context, knowledge-modeling and context-routing-review (2026-11-12)
+
+- note: `docs/specs/generative-constructs/progressive-context-plugin.md:270` and `docs/work/NOTES.md:695,705,707` were reworded to drop the backticks around the old names, which satisfies the grep but leaves the old names in prose; acceptable as dated history, no action.
