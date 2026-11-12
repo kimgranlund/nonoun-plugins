@@ -173,16 +173,16 @@ const regressions = await p.evaluate(async () => {
 });
 for (const [name, pass] of regressions) ok(name, pass);
 
-// Differential Forms consumer boundaries: independently asserted CSS-pixel goldens.
+// ui-geometry consumer boundaries at n = 14 (q = 4): h = S + 2I with S = 20 and I = 4 / 6 / 8 by density.
 // The output root is separate; panel geometry must remain independent of the tuned config.
 await p.evaluate(async () => {
   const { createInspectorPanel } = await import("../inspector-panel.js");
-  window.dfCreateFixture = (geometry) => {
-    window.dfFixture?.destroy(); document.getElementById("df-fixture")?.remove();
-    const host = document.createElement("section"); host.id = "df-fixture"; host.style.width = "360px";
+  window.ugCreateFixture = (geometry) => {
+    window.ugFixture?.destroy(); document.getElementById("ug-fixture")?.remove();
+    const host = document.createElement("section"); host.id = "ug-fixture"; host.style.width = "360px";
     const mount = document.createElement("aside"), outputRoot = document.createElement("main");
     host.append(mount, outputRoot); document.body.append(host);
-    window.dfFixture = createInspectorPanel({ mount, outputRoot, geometry,
+    window.ugFixture = createInspectorPanel({ mount, outputRoot, geometry,
       defaults: { text: "Readable text", number: 12, enabled: true },
       schema: [{ group: "Geometry", params: [
         { type: "text", path: ["text"], label: "Text" },
@@ -191,8 +191,8 @@ await p.evaluate(async () => {
       ] }], render(c, { root }) { root.textContent = c.text; } });
   };
 });
-const dfMetrics = () => p.evaluate(() => {
-  const host = document.getElementById("df-fixture");
+const ugMetrics = () => p.evaluate(() => {
+  const host = document.getElementById("ug-fixture");
   const field = host.querySelector('input[type="text"]'), wrapper = field.closest(".ip-field");
   const button = host.querySelector('[data-act="reset"]'), label = button.querySelector(".ip-label");
   const cs = getComputedStyle(field), bs = getComputedStyle(button), ws = wrapper && getComputedStyle(wrapper);
@@ -208,33 +208,33 @@ const dfMetrics = () => p.evaluate(() => {
 });
 for (const colorScheme of ["light", "dark"]) {
   await p.emulateMedia({ colorScheme });
-  for (const [density, height, inset] of [["compact", 28, 2], ["default", 32, 4], ["loose", 40, 8]]) {
+  for (const [density, height, inset] of [["compact", 28, 4], ["default", 32, 6], ["loose", 36, 8]]) {
     for (const border of [0, 2]) {
-      await p.evaluate((geometry) => window.dfCreateFixture(geometry), { unit: 4, border, controlDensity: density, cardDensity: "loose", collectionDensity: "compact" });
-      const baseline = await dfMetrics();
+      await p.evaluate((geometry) => window.ugCreateFixture(geometry), { n: 14, border, controlDensity: density, cardDensity: "loose", collectionDensity: "compact" });
+      const baseline = await ugMetrics();
       const name = `${colorScheme} ${density} B${border}`;
-      ok(`DF ${name}: independent control height and fixed text`, baseline.button.height === height && baseline.field?.height === height && baseline.font === "14px" && baseline.line === "20px", JSON.stringify(baseline));
-      ok(`DF ${name}: border deducted once, Soft curve, checkbox1u`, baseline.buttonBorder === border && baseline.fieldBorder === border && baseline.buttonPadding === inset - border && baseline.fieldPadding === inset - border && baseline.buttonRadius === 12 && baseline.checkboxRadius === 4);
-      ok(`DF ${name}: preserves label wrapper`, !!baseline.label && baseline.label.height >= 20);
+      ok(`geometry ${name}: independent control height and fixed text`, baseline.button.height === height && baseline.field?.height === height && baseline.font === "14px" && baseline.line === "20px", JSON.stringify(baseline));
+      ok(`geometry ${name}: border deducted once, r(κ_s) = 3q, checkbox radius q`, baseline.buttonBorder === border && baseline.fieldBorder === border && baseline.buttonPadding === inset - border && baseline.fieldPadding === inset - border && baseline.buttonRadius === 12 && baseline.checkboxRadius === 4);
+      ok(`geometry ${name}: preserves label wrapper`, !!baseline.label && baseline.label.height >= 20);
       // Enter keyboard modality through a real Tab event before focusing the field.
       await p.keyboard.press("Tab");
-      await p.focus('#df-fixture input[type="text"]');
-      const focused = await dfMetrics();
-      ok(`DF ${name}: keyboard field focus belongs to wrapper`, focused.fieldOutline?.[0] === "3px" && focused.fieldOutline?.[1] === "solid" && focused.fieldOutline?.[2] === "0px" && focused.fieldOutline?.[3] === focused.ink && focused.innerOutline === "none");
-      ok(`DF ${name}: focus changes no geometry`, JSON.stringify(focused.field) === JSON.stringify(baseline.field) && JSON.stringify(focused.button) === JSON.stringify(baseline.button));
-      await p.focus('#df-fixture [data-act="reset"]');
-      const actionFocused = await dfMetrics();
-      ok(`DF ${name}: sibling action owns its focus ring`, actionFocused.buttonOutline[0] === "3px" && actionFocused.buttonOutline[1] === "solid" && actionFocused.buttonOutline[2] === "0px" && actionFocused.buttonOutline[3] === actionFocused.ink && actionFocused.fieldOutline?.[1] === "none");
-      await p.click('#df-fixture [data-act="reset"]');
-      ok(`DF ${name}: pointer removes keyboard action ring`, (await dfMetrics()).buttonOutline[1] === "none");
+      await p.focus('#ug-fixture input[type="text"]');
+      const focused = await ugMetrics();
+      ok(`geometry ${name}: keyboard field focus belongs to wrapper`, focused.fieldOutline?.[0] === "3px" && focused.fieldOutline?.[1] === "solid" && focused.fieldOutline?.[2] === "0px" && focused.fieldOutline?.[3] === focused.ink && focused.innerOutline === "none");
+      ok(`geometry ${name}: focus changes no geometry`, JSON.stringify(focused.field) === JSON.stringify(baseline.field) && JSON.stringify(focused.button) === JSON.stringify(baseline.button));
+      await p.focus('#ug-fixture [data-act="reset"]');
+      const actionFocused = await ugMetrics();
+      ok(`geometry ${name}: sibling action owns its focus ring`, actionFocused.buttonOutline[0] === "3px" && actionFocused.buttonOutline[1] === "solid" && actionFocused.buttonOutline[2] === "0px" && actionFocused.buttonOutline[3] === actionFocused.ink && actionFocused.fieldOutline?.[1] === "none");
+      await p.click('#ug-fixture [data-act="reset"]');
+      ok(`geometry ${name}: pointer removes keyboard action ring`, (await ugMetrics()).buttonOutline[1] === "none");
       if (density === "compact" && border === 2) {
-        await p.keyboard.press("Tab"); await p.focus('#df-fixture input[type="text"]');
-        await p.locator("#df-fixture").screenshot({ path: process.argv[3] + `/focus-${colorScheme}-compact-border2.png` });
+        await p.keyboard.press("Tab"); await p.focus('#ug-fixture input[type="text"]');
+        await p.locator("#ug-fixture").screenshot({ path: process.argv[3] + `/focus-${colorScheme}-compact-border2.png` });
       }
     }
   }
 }
-await p.evaluate(() => { window.dfFixture.destroy(); document.getElementById("df-fixture").remove(); delete window.dfFixture; delete window.dfCreateFixture; });
+await p.evaluate(() => { window.ugFixture.destroy(); document.getElementById("ug-fixture").remove(); delete window.ugFixture; delete window.ugCreateFixture; });
 await p.emulateMedia({ colorScheme: "light" });
 
 // timing of one update

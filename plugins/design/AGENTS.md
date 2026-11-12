@@ -18,7 +18,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 
 ## Rules
 
-- Skills reach each other by relative paths inside `skills/`, so the plugin ships them together. `base-ui`, `wireframe-review` and the inspector panel read `mathematical-design-system/assets/differential-forms/` or `base-ui/scripts/` as siblings, and `component-variants` reads `ui-geometry/scripts/derive.mjs`; moving a skill breaks them.
+- Skills reach each other by relative paths inside `skills/`, so the plugin ships them together. `base-ui` and `wireframe-review` read `mathematical-design-system/assets/differential-forms/` or `base-ui/scripts/` as siblings, and `component-variants` and the inspector panel read `ui-geometry/scripts/derive.mjs`; moving a skill breaks them.
 - A skill in another plugin is named, never linked: write `dev-tools:closed-loop-run` and the page inside it, not a `../` path that leaves this plugin.
 - `base-ui/kit.json` seals file hashes. After any change under `skills/base-ui/`, run `node scripts/seal.mjs` there, then `node scripts/check-kit.mjs`. The `ui-kit.lock.json` file in `wireframe-review` pins a base-ui identity on purpose; update it only after reviewing a kit change. `component-variants` ships its own trimmed kit in `assets/kit/` and has no lock.
 - Keep `make-figma-agent-connector` script paths under `${CLAUDE_PLUGIN_ROOT}`, never a user-level skills folder.

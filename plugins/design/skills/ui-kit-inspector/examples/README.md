@@ -6,7 +6,7 @@ Three examples ship with the skill. They do different jobs.
 |---|---|---|
 | [minimal-system-jig](minimal-system-jig/jig.html) | The worked example. A small system jig over a small host, and it meets the jig contract. | The shape to build to: the core loop, the contract, the change set |
 | [maison-jig](maison-jig/README.md) | One system jig for one system. It predates the jig contract. | Seeing the larger patterns at work: pick in both directions, before and after, undo and redo, presets, tabs, the actions menu |
-| [inspector-panel](inspector-panel/README.md) | A reusable plain-DOM panel: schema-driven controls, validation, persistence and an element inspector, on Differential Forms geometry. It predates the jig contract. | A tested panel to start from when the host has no components of its own; add the jig markers and change set |
+| [inspector-panel](inspector-panel/README.md) | A reusable plain-DOM panel: schema-driven controls, validation, persistence and an element inspector, on ui-geometry lengths. It predates the jig contract. | A tested panel to start from when the host has no components of its own; add the jig markers and change set |
 
 ## minimal-system-jig
 
