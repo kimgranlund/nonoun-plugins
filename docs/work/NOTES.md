@@ -942,3 +942,8 @@
 ## T-0850: Retire progressive-context, knowledge-modeling and context-routing-review (2026-11-12)
 
 - note: `docs/specs/generative-constructs/progressive-context-plugin.md:270` and `docs/work/NOTES.md:695,705,707` were reworded to drop the backticks around the old names, which satisfies the grep but leaves the old names in prose; acceptable as dated history, no action.
+
+## T-0851: Retire knowledge-organization-system and controlled-natural-language into context-system (2026-11-12)
+
+- note: red-checkpoint deviation check printed no `process deviation:` lines.
+- note: docs/specs/new-skills/{knowledge-organization-system,controlled-natural-language}.md each gained the retired-note line. Their prose mentions of the old names stay as written, as the handoff says. They have no markdown links to the deleted folders.

@@ -2,7 +2,7 @@
 id: T-0851
 title: "Retire knowledge-organization-system and controlled-natural-language into context-system"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0849]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,16 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Keep validator behaviour identical for inputs that passed before, apart from the carried-over features.
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 81bbe6563803
+- Changed: see commits
+- Commits: 8149410 T-0851: retire knowledge-organization-system and controlled-natural-language into context-system
+- Check: 1 both folders absent: pass
+- Check: 2 excludes-neighbor present and tested: pass
+- Check: 3 unit tests in four skills, none skipped: pass
+- Check: 4 git grep for old names empty: pass
+- Check: 5 packaging and diff check: pass
+- Follow-up: note: red-checkpoint deviation check printed no process deviation: lines. -> notes.md
+- Follow-up: note: docs/specs/new-skills/{knowledge-organization-system,controlled-nat... -> notes.md

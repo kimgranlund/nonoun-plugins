@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0851 | [0851-retire-kos-cnl](0851-retire-kos-cnl/handoff.md) | Retire knowledge-organization-system and controlled-natural-language into context-system | chore | L2 | P2 | T-0849 | 🟡 claimed (branch lane/T-0851-t0851) |
 
-Closed: 812 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 813 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
