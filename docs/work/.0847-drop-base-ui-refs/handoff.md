@@ -2,7 +2,7 @@
 id: T-0847
 title: "Drop base-ui and mathematical-design-system references from other plugins and wireframe-review's catalog check"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: [T-0845]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,13 @@ No live skill or check outside the dated records still names `base-ui` or `mathe
 - Each touched skill's own tests exit 0, `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean.
 
 ## Outcome
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: dbe7ac9eae99
+- Changed: see commits
+- Commits: 01ac027 T-0847: drop base-ui and mathematical-design-system references from other plugins
+- Check: 1 grep prints only lines the report names as history: pass
+- Check: 2 touched skills' tests, packaging, diff --check: pass
+- Follow-up: note: plugins/design/skills/wireframe-review/scripts/check-catalog-bounda... -> notes.md
+- Follow-up: note: plugins/context/skills/context-fog-of-war/assets/shell.html cannot... -> notes.md
