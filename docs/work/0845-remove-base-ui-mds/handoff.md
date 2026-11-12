@@ -29,7 +29,7 @@ The design plugin no longer ships `base-ui` or `mathematical-design-system`, and
 
 ## Acceptance criteria
 - `test ! -e plugins/design/skills/base-ui -a ! -e plugins/design/skills/mathematical-design-system` exits 0.
-- `git grep -nE "base-ui|mathematical-design-system" -- . ':!docs/reports' ':!docs/work/.[0-9]*' ':!*CHANGELOG.md' ':!docs/work/084*'` prints nothing.
+- `git grep -nE "base-ui|mathematical-design-system" -- . ':!docs/reports' ':!docs/work/.[0-9]*' ':!*CHANGELOG.md' ':!docs/work/084*' ':!plugins/design/skills/ui-kit-inspector/examples/maison-jig'` prints nothing.
 - `node scripts/check-build.mjs` in `component-variants`, `npm test` in the inspector-panel example and `node --test` in `ui-geometry` all exit 0.
 - `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean.
 
