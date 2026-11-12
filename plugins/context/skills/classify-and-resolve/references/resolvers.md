@@ -15,7 +15,7 @@ A resolver is whatever handles one class: a person, a runbook, a script, a speci
 | `autonomy` | yes | `manual` (a person does it), `suggest` (it proposes, a person approves or corrects), `auto` (it acts alone). Every new resolver starts at `manual`. |
 | `promotion_gate` | per the matrix | The id of a gate in `evaluation-system`'s `gates.yaml` that guards this resolver's autonomy. |
 | `review_sample_rate` | per the matrix | The share of `auto` decisions a person reviews after the fact, 0 to 1. |
-| `policy` | no | What it must and must not do, as `controlled-natural-language` statements: "The refund desk shall not refund more than the disputed charge." |
+| `policy` | no | What it must and must not do, as `context-system` statements: "The refund desk shall not refund more than the disputed charge." |
 
 Judge `side_effects` by the worst thing the resolver can do, not the usual case. A resolver that drafts replies but can send them is `irreversible`.
 

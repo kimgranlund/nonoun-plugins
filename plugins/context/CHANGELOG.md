@@ -8,6 +8,14 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 - `context-system` (T-0849): imported from `/Volumes/kimba/.claude/skills/context-system`. One skill for vocabulary, domain modeling, manifests and registries, entry files and routing, fresh-agent route review and controlled statements, merged from `progressive-context`, `context-routing-review`, `knowledge-modeling`, `knowledge-organization-system` and `controlled-natural-language`, which stay in place for now. Its tests run with `python3 -B -m unittest discover -s tests`.
 
+### Changed
+
+- `context-system` (T-0851) carries two features its source copies lacked: the vocabulary layer's `excludes` field (T-0836: `validate_kos.py` `excludes-neighbor` and `excludes-statement` errors, fixtures, reference text) and the statements layer's decision-question doc type (T-0837: `templates/decision-question.rules.yaml`, fixtures, the patterns section), each with its tests. `decision-questions`, `evaluation-system` and `classify-and-resolve` now point at `context-system` in their scripts' messages, tests and references; `decision-questions` lints with `context-system`'s `lint_cnl.py` and its tests resolve `validate_kos.py` there.
+
+### Removed
+
+- `knowledge-organization-system` and `controlled-natural-language` (T-0851): retired into `context-system`'s vocabulary and statements layers. Their history is in git under their old paths.
+
 ## [0.7.0] - 2026-11-12
 
 ### Added

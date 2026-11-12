@@ -1,4 +1,4 @@
-# Companion of broken-suite.yaml: a knowledge-organization-system vocabulary.
+# Companion of broken-suite.yaml: a context-system vocabulary.
 schemes:
   - id: triage
     definition: Queues a support ticket can be routed to.

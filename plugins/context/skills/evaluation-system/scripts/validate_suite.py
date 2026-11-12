@@ -103,7 +103,7 @@ def expected_labels(expected):
 
 
 class Vocabulary:
-    """Resolve labels against a knowledge-organization-system vocabulary (read by its published field names)."""
+    """Resolve labels against a context-system vocabulary (read by its published field names)."""
 
     def __init__(self, data):
         self.active, self.retired = {}, {}
@@ -435,7 +435,7 @@ def _check_gates(suites, gates, findings, target_version=None, runs=None):
                        f"declare it under `slices`, or use one of: {', '.join([ALL] + sorted(suite.slices))}.", 'slice')
         elif gate.get('question_id') and not any(gate['question_id'] in c['tags'] for c in suite.active_cases()):
             problem = (f"no active case in suite '{suite.id}' is tagged with question '{gate['question_id']}'.",
-                       'tag the question\'s cases with its id, or correct `question_id`.', 'question_id')
+                       "tag the question's cases with its id, or correct `question_id`.", 'question_id')
         if problem:
             findings.append(Finding('ERROR', 'gate-reference', gate['id'], problem[2], problem[0], problem[1]))
             continue
@@ -459,7 +459,7 @@ def _check_gates(suites, gates, findings, target_version=None, runs=None):
             findings.append(Finding('ERROR', 'convention-in-judgment-gate', gate['id'], 'basis',
                                     f"the gate reads judgment cases and {sum(c['basis'] == 'convention' for c in members)} "
                                     'convention case(s), whose rule-derived gold inflates measured accuracy.',
-                                    'set the gate\'s `basis` to exclude convention, for example [owner, judgment].'))
+                                    "set the gate's `basis` to exclude convention, for example [owner, judgment]."))
         if runs is not None and 'min_coverage' in gate:
             latest = runs.get(suite.id)
             if not (latest and isinstance(latest.get('calibration'), dict)):
@@ -489,17 +489,17 @@ def _check_suite(suite, vocabulary, rules_given, max_age, today, findings):
                 if vocabulary.resolve(label) is None:
                     successor = vocabulary.retired.get(normalize(label))
                     hint = f"write '{successor}' (the label is retired)." if successor else \
-                        'use a concept id, prefLabel or altLabel, or add the concept through knowledge-organization-system first.'
+                        "use a concept id, prefLabel or altLabel, or add the concept through context-system's vocabulary layer first."
                     findings.append(Finding('ERROR', 'unresolved-label', case['id'], 'expected',
                                             f"label '{label}' resolves to no active concept.", hint))
     elif labelled:
         findings.append(Finding('WARNING', 'peer-absent', suite.id, 'expected',
                                 f'{len(labelled)} case(s) have expected labels but no vocabulary is configured; labels are unchecked strings.',
-                                'pass --vocabulary with the knowledge-organization-system vocabulary, or accept plain labels knowingly.'))
+                                'pass --vocabulary with the context-system vocabulary, or accept plain labels knowingly.'))
     if not rules_given and any(g['kind'] == 'rubric-model' and g['config'].get('criteria') for g in suite.graders.values()):
         findings.append(Finding('WARNING', 'peer-absent', suite.id, 'criteria',
-                                'rubric criteria are plain sentences with no controlled-natural-language rules file.',
-                                'pass --rules and lint the criteria with controlled-natural-language, or accept plain criteria knowingly.'))
+                                'rubric criteria are plain sentences with no context-system statements-layer rules file.',
+                                "pass --rules and lint the criteria with context-system's statements layer, or accept plain criteria knowingly."))
     ids = {c['id'] for c in suite.cases}
     for case in suite.cases:
         if case['kind'] in VARIANT_KINDS and case['variant_of'] not in ids:
@@ -585,7 +585,7 @@ def check(suite_paths, gates_path=None, vocabulary_path=None, tune_path=None, ru
     suites = [Suite(p, parse(p, 'suite'), findings) for p in suite_paths]
     vocabulary = Vocabulary(parse(vocabulary_path, 'vocabulary')) if vocabulary_path else None
     if rules_path:
-        read_yaml(rules_path)  # must exist and be readable; linting criteria belongs to controlled-natural-language
+        read_yaml(rules_path)  # must exist and be readable; linting criteria belongs to context-system's statements layer
     for suite in suites:
         _check_suite(suite, vocabulary, bool(rules_path), max_age, today, findings)
     gates = {}
@@ -607,7 +607,7 @@ def check(suite_paths, gates_path=None, vocabulary_path=None, tune_path=None, ru
 def add_input_arguments(parser):
     """The inputs the validator and the runner share."""
     parser.add_argument('--gates', metavar='FILE', help='gate registry (gates.yaml)')
-    parser.add_argument('--vocabulary', metavar='FILE', help='knowledge-organization-system vocabulary for expected labels')
+    parser.add_argument('--vocabulary', metavar='FILE', help='context-system vocabulary for expected labels')
     parser.add_argument('--tune', metavar='FILE', help='tuning config: `cases: [ids]` tuned against')
 
 
@@ -615,7 +615,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('suites', nargs='+', metavar='SUITE', help='suite YAML file(s)')
     add_input_arguments(parser)
-    parser.add_argument('--rules', metavar='FILE', help='controlled-natural-language rules file for rubric criteria')
+    parser.add_argument('--rules', metavar='FILE', help='context-system statements-layer rules file for rubric criteria')
     parser.add_argument('--target-version', metavar='V', help="the target's current version, for stale gates")
     parser.add_argument('--runs', action='append', metavar='PATH',
                         help='a run.json or a folder of them (repeatable); the latest per suite is checked for calibration')

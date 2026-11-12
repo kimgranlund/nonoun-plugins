@@ -3,7 +3,7 @@
 # and pin `model` to the exact version your adapter reports (never an alias such as latest).
 # Field semantics: references/model.md. Check:
 #   python3 scripts/validate_questions.py <this file> [--vocabulary vocabulary.yaml]
-# Instructions follow the controlled-natural-language decision-question patterns: one instruction,
+# Instructions follow the decision-question patterns of context-system's statements layer: one instruction,
 # then boundary cases as "If <case>, the answer is <option>." Options come from the domain's own
 # concepts (compile them from a KOS scheme with scripts/compile_questions.py), and the general
 # option carries concrete examples.

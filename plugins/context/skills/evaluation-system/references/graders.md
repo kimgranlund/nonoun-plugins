@@ -32,7 +32,7 @@ When a target call fails (non-zero exit, timeout, output that is not JSON), ever
 
 ## Rubric criteria
 
-A criterion is one checkable statement, written as a `controlled-natural-language` statement when the project has a rule set: "The reply shall link the refund policy." "The reply shall not promise a date the ticket does not give." Check each criterion separately, never a holistic 1 to 10 score: a single number hides which criterion failed and cannot be validated per criterion. When the problem is how a criterion is worded (two readings, a vague adjective), hand it to `controlled-natural-language`; when it is what a term in it means, to `knowledge-organization-system`.
+A criterion is one checkable statement, written as a `context-system` statement when the project has a rule set: "The reply shall link the refund policy." "The reply shall not promise a date the ticket does not give." Check each criterion separately, never a holistic 1 to 10 score: a single number hides which criterion failed and cannot be validated per criterion. When the problem is how a criterion is worded (two readings, a vague adjective), hand it to `context-system`'s statements layer; when it is what a term in it means, to `context-system`'s vocabulary layer.
 
 A judge adapter receives one criterion and returns `{"outcome": "pass" | "fail", "detail": "<one-line reason>"}`. Keep the model, its prompt and its temperature in the adapter, version them, and re-measure agreement when any of them changes.
 

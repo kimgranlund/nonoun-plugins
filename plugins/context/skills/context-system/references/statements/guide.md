@@ -29,7 +29,7 @@ Add the term there with evidence, then come back. A term never goes into `rules.
 - A **banned word** list names words and phrases that caused misreadings, each with its fix.
 - A retired pattern keeps `deprecated: true` and `replacedBy` until no governed doc uses it.
 
-Start from `templates/rules.yaml`. Field tables, slot rules, how the linter reads a doc, and a pattern catalog for requirements, decision logs, runbooks, compliance statements, findings and methods are in [patterns.md](patterns.md).
+Start from `templates/rules.yaml`, or `templates/decision-question.rules.yaml` for questions a decision model answers. Field tables, slot rules, how the linter reads a doc, and a pattern catalog for requirements, decision logs, runbooks, compliance statements, findings, methods and decision questions are in [patterns.md](patterns.md).
 
 ## Stages
 

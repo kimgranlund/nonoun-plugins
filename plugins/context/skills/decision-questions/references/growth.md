@@ -115,7 +115,7 @@ The second warning comes from `t02-perm1`, an invariance failure: the answer mov
 +    evidence: [questions/triage.md:11, "eval run support-team-cases v1: t13, a locked-for-payment message, picked account-access in all three option orders"]
 ```
 
-Check it with `knowledge-organization-system`'s `validate_kos.py`, then recompile. The option gains the entry verbatim and the first warning is gone:
+Check it with `context-system`'s `validate_kos.py`, then recompile. The option gains the entry verbatim and the first warning is gone:
 
 ```diff
      account-access:

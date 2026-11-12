@@ -21,7 +21,7 @@ Decide whether something is good enough, with evidence a second person can check
 
 Call something an evaluation only when all five exist. If one is missing, say which, and build that part before quoting any number.
 
-1. **Target.** The behavior under test, stated as a spec (`target_spec`), as `controlled-natural-language` statements where a rule set exists.
+1. **Target.** The behavior under test, stated as a spec (`target_spec`), as `context-system` statements where a rule set exists.
 2. **Case set.** Inputs with expected outcomes, each traceable to the evidence that produced it (`added_because`).
 3. **Grader.** Decides pass, fail or a score for each case: `exact`, `programmatic`, `reference`, `rubric-model` or `human`.
 4. **Metric.** `pass_rate` per slice, always reported with `n` and a Wilson interval.
@@ -35,8 +35,8 @@ Three limiting factors matter more than the choice of metric. Name them when the
 
 ## Hand-offs
 
-- **knowledge-organization-system** owns what a label means. Expected labels, tags and slice keys are concept ids from its `vocabulary.yaml`. When a dispute is about what a label means or which label to use, hand it off, then come back.
-- **controlled-natural-language** owns how a statement is phrased. Target specs and rubric criteria are CNL statements. When a criterion has two readings or a vague word, hand it off.
+- **context-system** (vocabulary layer) owns what a label means. Expected labels, tags and slice keys are concept ids from its `vocabulary.yaml`. When a dispute is about what a label means or which label to use, hand it off, then come back.
+- **context-system** (statements layer) owns how a statement is phrased. Target specs and rubric criteria are CNL statements. When a criterion has two readings or a vague word, hand it off.
 - **decision-questions** consumes this skill: it declares which cases a question set needs (invariance, negation and balanced cases, tagged by basis) and reads per-question gate outcomes before any role promotion. The dependency is one-way: a `rubric-model` grader reaches a decision model only through its command adapter (the `DecisionModel` contract), and this skill never imports that skill's schemas.
 - **classify-and-resolve** consumes this skill: its logs become cases, it names the gates that guard each autonomy promotion, and it reads gate outcomes. This skill owns the Case, Grader, Suite, Run and Gate schemas; consumers never redefine them.
 - **Without the peers**, labels may be plain strings and criteria plain sentences. The validator warns (`peer-absent`) that those guarantees are lost.

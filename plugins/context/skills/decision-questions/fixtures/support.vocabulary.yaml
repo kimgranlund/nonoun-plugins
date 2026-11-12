@@ -1,4 +1,4 @@
-# Support-triage vocabulary in the knowledge-organization-system format, used by the compile tests
+# Support-triage vocabulary in the context-system vocabulary format, used by the compile tests
 # and the growth.md walkthrough. The excludes entry on account-access was authored after an
 # evaluation run confused it with billing (references/growth.md, Stage 1).
 schemes:

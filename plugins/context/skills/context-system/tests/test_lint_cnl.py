@@ -15,6 +15,7 @@ from lint_cnl import ERROR_RULES, WARNING_RULES  # noqa: E402
 BRIEF_ERRORS = {'hidden-label', 'no-pattern', 'unresolved-slot', 'banned-word', 'unknown-concept'}
 BRIEF_WARNINGS = {'alt-label', 'no-source'}
 FAIL_RUN = ('fixtures/rules.yaml', 'fixtures/vocabulary.yaml', 'fixtures/violations.md')
+DQ_RUN = ('templates/decision-question.rules.yaml', 'fixtures/decision-question.vocabulary.yaml')
 
 
 def run(*args, cwd=ROOT):
@@ -106,6 +107,35 @@ class LintCnlTests(unittest.TestCase):
             result = run('templates/rules.yaml', str(vocab), str(doc))
             self.assertEqual(rules(result.stdout), Counter({'hidden-label': 1}), result.stdout)
             self.assertIn("Fix: write 'defect'.", result.stdout)
+
+    def test_decision_question_clean_fixture_passes(self):
+        result = run(*DQ_RUN, 'fixtures/decision-question.md')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(rules(result.stdout), Counter())
+        self.assertIn('1 governed doc(s)', result.stdout)
+
+    def test_decision_question_violations_name_negation_and_two_propositions(self):
+        result = run(*DQ_RUN, 'fixtures/decision-question-violations.md')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(rules(result.stdout), Counter({'banned-word': 4, 'no-pattern': 1, 'unresolved-slot': 1}))
+        for expected in ("ERROR banned-word fixtures/decision-question-violations.md:10: banned word 'not'.",
+                         "ERROR banned-word fixtures/decision-question-violations.md:11: banned word 'not'.",
+                         "ERROR banned-word fixtures/decision-question-violations.md:12: banned word 'and'. "
+                         "Fix: One proposition per statement",
+                         "ERROR banned-word fixtures/decision-question-violations.md:13: banned word 'more than'."):
+            self.assertIn(expected, result.stdout)
+
+    def test_decision_question_rules_stay_out_of_other_doc_types(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            doc = Path(tmp) / 'doc.md'
+            doc.write_text('---\ncnl: requirement\n---\nThe checkout service shall store each order and refund.\n')
+            result = run('templates/rules.yaml', 'fixtures/vocabulary.yaml', str(doc))
+            self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_decision_question_fixture_vocabulary_is_valid_kos(self):
+        result = subprocess.run([sys.executable, '-B', str(KOS / 'scripts' / 'validate_kos.py'),
+                                 str(ROOT / 'fixtures' / 'decision-question.vocabulary.yaml')], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_unreadable_vocabulary_exits_2(self):
         result = run('templates/rules.yaml', 'fixtures/violations.md')

@@ -104,7 +104,7 @@ def load_yaml(path, what):
 def load_vocabulary(path):
     data = load_yaml(path, 'vocabulary')
     if not isinstance(data, dict) or not isinstance(data.get('concepts'), list):
-        raise InputError(f'{path}: not a knowledge-organization-system vocabulary (no `concepts:` list)')
+        raise InputError(f'{path}: not a context-system vocabulary (no `concepts:` list)')
     schemes = {s.get('id') for s in data.get('schemes') or [] if isinstance(s, dict)}
     concepts = {c['id']: c for c in data['concepts'] if isinstance(c, dict) and isinstance(c.get('id'), str)}
     return {'schemes': schemes, 'concepts': concepts}
@@ -258,7 +258,7 @@ def _classes(pipeline, pid, vocab, findings):
         if scheme not in vocab['schemes']:
             findings.append(Finding('ERROR', 'schema', pid, 'scheme',
                                     f'scheme {scheme!r} is not declared in the vocabulary.',
-                                    'name a scheme the vocabulary declares, or add it through knowledge-organization-system.'))
+                                    "name a scheme the vocabulary declares, or add it through context-system's vocabulary layer."))
         classes = {cid: c for cid, c in vocab['concepts'].items()
                    if c.get('scheme') == scheme and not c.get('deprecated') and cid != UNCLASSIFIED}
         return classes, vocab['concepts']
@@ -317,7 +317,7 @@ def _check_shape(pipeline, pid, findings):
             schema(subject, 'abstain_below', '`abstain_below` is not a number.', 'write a confidence between 0 and 1.')
         if 'rules' in step and not (isinstance(step['rules'], list) and all(isinstance(r, str) for r in step['rules'])):
             schema(subject, 'rules', '`rules` is not a list of statements.',
-                   'write each rule as one controlled-natural-language statement.')
+                   'write each rule as one context-system statement.')
     if 'fallback' in pipeline and pipeline['fallback'] not in FALLBACKS:
         schema(pid, 'fallback', f'fallback {pipeline["fallback"]!r} is not one of {", ".join(FALLBACKS)}.',
                'use broader or unclassified.')
@@ -375,7 +375,7 @@ def validate_pipeline(pipeline, vocab, gates, findings, question_sets=None):
     for cid in sorted(set(classes) - set(routes)):
         findings.append(Finding('ERROR', 'unrouted-class', f'{pid}:{cid}', 'routes',
                                 f'class {cid!r} in scheme {scheme!r} has no route.',
-                                'route it to exactly one resolver, or deprecate the concept through knowledge-organization-system.'))
+                                "route it to exactly one resolver, or deprecate the concept through context-system's vocabulary layer."))
     for key in sorted(routes, key=str):
         target = routes[key]
         subject = f'{pid}:{key}'
@@ -397,7 +397,7 @@ def validate_pipeline(pipeline, vocab, gates, findings, question_sets=None):
                                + [normalize(a) for a in c.get('altLabel') or []])
                 problem = f'route key {key!r} does not resolve to a concept id in the vocabulary.'
                 fix = (f'write the concept id {match[0]!r}, not a label.' if match
-                       else 'use a concept id, or add the class through knowledge-organization-system first.')
+                       else "use a concept id, or add the class through context-system's vocabulary layer first.")
             findings.append(Finding('ERROR', 'unresolved-route', subject, 'routes', problem, fix))
         if not isinstance(target, str) or target not in resolvers:
             findings.append(Finding('ERROR', 'unknown-resolver', subject, 'routes',
@@ -455,7 +455,7 @@ def validate_pipeline(pipeline, vocab, gates, findings, question_sets=None):
         findings.append(Finding('ERROR', 'broader-fallback', pid, 'fallback',
                                 f'fallback is broader, but scheme {scheme!r} has no `broader` links, so no item '
                                 'can fall back to a coarser class.',
-                                'use `fallback: unclassified`, or add the hierarchy through knowledge-organization-system.'))
+                                "use `fallback: unclassified`, or add the hierarchy through context-system's vocabulary layer."))
 
     promoted = False
     for rid in sorted(resolvers):
@@ -490,7 +490,7 @@ def validate_pipeline(pipeline, vocab, gates, findings, question_sets=None):
     if vocab is None:
         findings.append(Finding('WARNING', 'peer-absent', pid, 'scheme',
                                 'no vocabulary was given, so classes are an inline list and route keys are not checked against a KOS scheme.',
-                                'pass --vocabulary with the knowledge-organization-system vocabulary.'))
+                                'pass --vocabulary with the context-system vocabulary.'))
     if question_sets is None and any(s.get('kind') == 'model' and s.get('question_set') for s in cascade):
         findings.append(Finding('WARNING', 'peer-absent', pid, 'question_set',
                                 'no question set was given, so model steps were not checked against decision-questions.',
@@ -573,11 +573,11 @@ def log_warnings(pid, classes, resolvers, records, window, today, max_share, fin
     for cid in sorted(c for c, n in volume.items() if n == 0):
         findings.append(Finding('WARNING', 'idle-class', f'{pid}:{cid}', 'routes',
                                 f'class {cid!r} has no log volume in the {window} days to {end}.',
-                                'treat it as a retirement candidate: merge or deprecate it through knowledge-organization-system.'))
+                                "treat it as a retirement candidate: merge or deprecate it through context-system's vocabulary layer."))
     if classified and unclassified / classified > max_share:
         findings.append(Finding('WARNING', 'unclassified-share', pid, 'unclassified_route',
                                 f'{unclassified} of {classified} items ({unclassified / classified:.2f}) ended unclassified, above {max_share}.',
-                                'run unclassified_report.py and propose the missing classes to knowledge-organization-system.'))
+                                "run unclassified_report.py and propose the missing classes to context-system's vocabulary layer."))
     corrected = {r['resolver_id'] for r in scoped if r['record'] == 'resolution' and r.get('corrected_label')}
     for rid in sorted(r for r, res in resolvers.items() if res.get('autonomy') == 'suggest' and r not in corrected):
         findings.append(Finding('WARNING', 'unreviewed-suggest', f'{pid}:{rid}', 'autonomy',
@@ -590,7 +590,7 @@ def log_warnings(pid, classes, resolvers, records, window, today, max_share, fin
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('pipelines', nargs='+', metavar='PIPELINE', help='pipeline YAML file(s)')
-    parser.add_argument('--vocabulary', help='knowledge-organization-system vocabulary.yaml')
+    parser.add_argument('--vocabulary', help='context-system vocabulary.yaml')
     parser.add_argument('--gates', help='evaluation-system gates.yaml')
     parser.add_argument('--question-set', action='append', default=[], metavar='FILE', dest='question_sets',
                         help='decision-questions question set a model step names (repeatable)')

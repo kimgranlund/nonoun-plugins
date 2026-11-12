@@ -1,7 +1,7 @@
-# Stage 0 starter scheme: a knowledge-organization-system vocabulary holding the pipeline's classes.
+# Stage 0 starter scheme: a context-system vocabulary holding the pipeline's classes.
 # Three classes; `unclassified` is a reserved label, never a concept. Replace each class with the kinds
 # your items actually arrive as, defined by meaning, not by who handles them. Concept fields and the
-# validator belong to knowledge-organization-system (its references/model.md and validate_kos.py).
+# validator belong to context-system's vocabulary layer (its references/vocabulary/model.md and scripts/validate_kos.py).
 # Check the pipeline against it:
 #   python3 scripts/validate_pipeline.py templates/pipeline.yaml --vocabulary templates/scheme.yaml
 

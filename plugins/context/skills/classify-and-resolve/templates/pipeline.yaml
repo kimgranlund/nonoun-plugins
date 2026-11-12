@@ -9,7 +9,7 @@
 #   cascade:
 #     - classifier_id: keyword-rules     # Stage 1: deterministic rules and known conventions first
 #       kind: rule                       # rule | observed | model | human
-#       rules:                           # controlled-natural-language statements
+#       rules:                           # context-system statements
 #         - If the subject contains "invoice", then the class is request.
 #     - classifier_id: past-decisions    # what real data says: shipped usage, historical decisions
 #       kind: observed

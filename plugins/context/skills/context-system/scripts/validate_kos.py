@@ -19,13 +19,15 @@ import yaml
 TOP_FIELDS = ('title', 'schemes', 'concepts')
 SCHEME_FIELDS = ('id', 'definition', 'scopeNote')
 CONCEPT_FIELDS = ('id', 'prefLabel', 'altLabel', 'hiddenLabel', 'definition', 'scopeNote',
-                  'broader', 'narrower', 'related', 'scheme', 'evidence', 'deprecated', 'replacedBy')
+                  'excludes', 'broader', 'narrower', 'related', 'scheme', 'evidence', 'deprecated', 'replacedBy')
 LIST_FIELDS = ('altLabel', 'hiddenLabel', 'broader', 'narrower', 'related', 'evidence')
 TEXT_FIELDS = ('prefLabel', 'definition', 'scopeNote', 'scheme', 'replacedBy')
 LINK_FIELDS = ('broader', 'narrower', 'related', 'replacedBy')
+EXCLUDES_FIELDS = ('neighbor', 'statement')
 
 ERROR_RULES = ('schema', 'duplicate-preflabel', 'label-collision', 'missing-definition',
-               'circular-definition', 'dangling-link', 'broader-cycle', 'unknown-scheme')
+               'circular-definition', 'dangling-link', 'excludes-neighbor', 'excludes-statement',
+               'broader-cycle', 'unknown-scheme')
 WARNING_RULES = ('stage-gate', 'unreferenced', 'retired-label-used')
 RULE_ORDER = {rule: i for i, rule in enumerate(ERROR_RULES + WARNING_RULES)}
 
@@ -83,6 +85,26 @@ def _read_schemes(data, findings):
     return ids
 
 
+def _read_excludes(cid, value, findings):
+    """Return the well-formed `excludes` entries as {neighbor, statement} dicts; a missing statement reads as ''."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        _schema(findings, cid, 'excludes', 'must be a list of {neighbor, statement} entries.',
+                'write `excludes: [{neighbor: <id>, statement: <what this concept is not>}]`.')
+        return []
+    entries = []
+    for entry in value:
+        if not isinstance(entry, dict) or set(entry) - set(EXCLUDES_FIELDS) \
+                or not isinstance(entry.get('neighbor'), str) or not entry['neighbor'].strip() \
+                or not isinstance(entry.get('statement', ''), (str, type(None))):
+            _schema(findings, cid, 'excludes', 'each entry needs a `neighbor` id and a `statement`, and nothing else.',
+                    'write `{neighbor: <id>, statement: <what this concept is not>}`.')
+            continue
+        entries.append({'neighbor': entry['neighbor'], 'statement': entry.get('statement') or ''})
+    return entries
+
+
 def _read_concepts(data, findings):
     """Return {id: concept dict with every field present and list fields as lists of strings}."""
     raw = data.get('concepts')
@@ -121,6 +143,7 @@ def _read_concepts(data, findings):
                 _schema(findings, cid, field, 'must be a string.', f'write `{field}` as text.')
                 value = None
             concept[field] = value
+        concept['excludes'] = _read_excludes(cid, item.get('excludes'), findings)
         concept['scheme'] = concept['scheme'] or ''  # missing: reported as unknown-scheme
         if not concept['prefLabel'] or not concept['prefLabel'].strip():
             _schema(findings, cid, 'prefLabel', 'concept has no prefLabel.', 'give it exactly one preferred label.')
@@ -215,6 +238,28 @@ def _cycles(parents):
     return groups
 
 
+def _check_excludes(concepts, findings):
+    for cid, c in sorted(concepts.items()):
+        for entry in c['excludes']:
+            neighbor = entry['neighbor']
+            if neighbor not in concepts:
+                findings.append(Finding('ERROR', 'excludes-neighbor', cid, 'excludes',
+                                        f"neighbor '{neighbor}' is not a concept id.",
+                                        'name the existing concept this one is confused with, or remove the entry.'))
+            if not entry['statement'].strip():
+                findings.append(Finding('ERROR', 'excludes-statement', cid, 'excludes',
+                                        f"the entry for neighbor '{neighbor}' has an empty statement.",
+                                        f"write by hand what '{cid}' is not, as observed in the confusion with '{neighbor}'."))
+            elif neighbor == cid:
+                findings.append(Finding('ERROR', 'excludes-statement', cid, 'excludes',
+                                        'the entry names the concept itself as its neighbor.',
+                                        'name the other concept it is confused with, or remove the entry.'))
+            elif c['prefLabel'] and restates_label(entry['statement'], c['prefLabel']):
+                findings.append(Finding('ERROR', 'excludes-statement', cid, 'excludes',
+                                        f"the statement for neighbor '{neighbor}' only names the concept itself.",
+                                        f"say what '{cid}' is not, in words that tell it apart from '{neighbor}'."))
+
+
 def _check_links(concepts, findings):
     for cid, c in sorted(concepts.items()):
         for field in LINK_FIELDS:
@@ -224,6 +269,7 @@ def _check_links(concepts, findings):
                     findings.append(Finding('ERROR', 'dangling-link', cid, field,
                                             f"'{target}' is not a concept id.",
                                             'correct the id, add the concept with evidence, or remove the link.'))
+    _check_excludes(concepts, findings)
     parents = _hierarchy(concepts)
     cyclic = set()
     for group in _cycles(parents):

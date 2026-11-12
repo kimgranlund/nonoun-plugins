@@ -16,7 +16,7 @@ TO_CASES = SCRIPTS / 'logs_to_cases.py'
 REPORT = SCRIPTS / 'unclassified_report.py'
 PEERS = ROOT.parent
 VALIDATE_SUITE = PEERS / 'evaluation-system' / 'scripts' / 'validate_suite.py'
-VALIDATE_KOS = PEERS / 'knowledge-organization-system' / 'scripts' / 'validate_kos.py'
+VALIDATE_KOS = PEERS / 'context-system' / 'scripts' / 'validate_kos.py'
 sys.path.insert(0, str(SCRIPTS))
 import validate_pipeline as vp  # noqa: E402
 from logs_to_cases import split_for  # noqa: E402
@@ -79,7 +79,7 @@ class ValidatePipelineTests(unittest.TestCase):
         self.assertEqual(rules(result.stdout), Counter())
         self.assertIn('inferred stage 0', result.stdout)
 
-    @unittest.skipUnless(VALIDATE_KOS.exists(), 'knowledge-organization-system is not installed beside this skill')
+    @unittest.skipUnless(VALIDATE_KOS.exists(), 'context-system is not installed beside this skill')
     def test_starter_scheme_is_a_valid_kos_vocabulary(self):
         for path in ('templates/scheme.yaml', 'fixtures/sample-vocabulary.yaml'):
             result = run(VALIDATE_KOS, path)
@@ -384,7 +384,7 @@ class UnclassifiedReportTests(unittest.TestCase):
             '  - {id: data-export, prefLabel: data export, definition: Records delivered as a file., scheme: support}\n')
         result = run(REPORT, *SAMPLE, '--vocabulary', write(folder, 'v.yaml', vocab))
         self.assertIn('Matches the existing concept `data-export`', result.stdout)
-        self.assertNotIn('Proposed `knowledge-organization-system` change', result.stdout)
+        self.assertNotIn('Proposed `context-system` vocabulary change', result.stdout)
 
 
 class PackagingTests(unittest.TestCase):

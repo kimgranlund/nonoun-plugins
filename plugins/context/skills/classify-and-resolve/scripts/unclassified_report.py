@@ -123,7 +123,7 @@ def render(pipeline, logs, outcomes, min_items, vocab):
             lines += [f'- Matches the existing concept `{known[normalize(label)]}`: a definition or rule gap, '
                       'not a new class. Fix the definition or the rule before adding anything.', '']
             continue
-        lines += ['', 'Proposed `knowledge-organization-system` change (write the definition before adding it):', '',
+        lines += ['', 'Proposed `context-system` vocabulary change (write the definition before adding it):', '',
                   '```yaml', f'  - id: {cid}', f'    prefLabel: {label}',
                   '    definition: Replace with what these items have in common, in words other than the label.',
                   f'    scheme: {scheme}',
