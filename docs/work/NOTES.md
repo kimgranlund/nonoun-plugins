@@ -921,3 +921,7 @@
 ## T-0845: Remove base-ui and mathematical-design-system from design (2026-11-12)
 
 - note: .sdlc/runtime/tasks/0845-remove-base-ui-mds/0845-solo-L2.md reports a `blocked: plan defect` from before the replan; the handoff's criterion 2 now carries the scoped pathspec and the tree satisfies it. Remaining base-ui hits in records and other plugins are T-0847.
+
+## T-0846: Style the component-variants select caret on the compiled select__root wrapper (2026-11-12)
+
+- note: redck.py deviations printed no process deviation lines.
