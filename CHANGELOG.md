@@ -2,6 +2,12 @@
 
 SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) form. Each entry is built from the `T-NNNN:` commit subjects since the previous tag (`git log --format=%s <last tag>..HEAD`); the dated release report in `docs/reports/` holds the upgrade notes and the verification record. Releases before 0.23.0 are recorded only in those reports. The context plugin (formerly Progressive Context) is versioned separately in [plugins/context/CHANGELOG.md](plugins/context/CHANGELOG.md).
 
+## [Unreleased]
+
+### Removed
+
+- `design`: the `base-ui` and `mathematical-design-system` skills (T-0845); `ui-geometry` and the skills' own trimmed kits replace them.
+
 ## [1.0.5] - 2026-11-01
 
 Report: [docs/reports/2026-11-01-release-1-0-5.md](docs/reports/2026-11-01-release-1-0-5.md). Marketplace release: `context` 0.6.0; `sdlc` 1.0.2, `design` 0.2.0 and `dev-tools` 0.1.0 are unchanged. 5 tickets (T-0831 to T-0835).
