@@ -896,3 +896,8 @@
 ## T-0840: Update the classify-and-resolve cascade for observed evidence and decision-questions (2026-11-01)
 
 - note: `templates/log.schema.json:36` makes `level` required on Classification records, so older logs without it now fail the schema check. The builder flagged this; it matches the brief spine, and `fixtures/sample-log.jsonl` was updated.
+
+## T-0841: Import the hct-palettes update and the ui-geometry skill into design (2026-11-12)
+
+- note: CHANGELOG.md:1 plugins/design/CHANGELOG.md is a new file, and the root CHANGELOG.md does not link to it. The builder deferred this to the release ticket.
+- note: the builder's report shows the earlier `node --test scripts/` span failing on Node 24. The handoff already carries the amended `node --test` span, which passes.

@@ -2,7 +2,7 @@
 id: T-0841
 title: "Import the hct-palettes update and the ui-geometry skill into design"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ The design plugin ships the MacBook's current `hct-palettes` and a new `ui-geome
 - Do not edit other skills.
 
 ## Outcome
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: fe7d9cec7339
+- Changed: see commits
+- Commits: 8f458db T-0841: import hct-palettes update and ui-geometry
+- Check: 1 diff of both skills against the MacBook sources: pass
+- Check: 2 ui-geometry tests and hct-palettes check script: pass
+- Check: 3 packaging and whitespace: pass
+- Follow-up: note: CHANGELOG.md:1 plugins/design/CHANGELOG.md is a new file, and the... -> notes.md
+- Follow-up: note: the builder's report shows the earlier node --test scripts/ span... -> notes.md
