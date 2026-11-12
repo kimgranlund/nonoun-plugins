@@ -8,7 +8,7 @@ import sys
 
 SKILL_LIMIT = 18000
 # A plugin whose entry skill is not named after it (the context plugin kept its skill name, T-0793).
-ENTRY_SKILL = {'context': 'progressive-context', 'dev-tools': None, 'design': None}
+ENTRY_SKILL = {'context': 'context-system', 'dev-tools': None, 'design': None}
 
 
 def check(root):

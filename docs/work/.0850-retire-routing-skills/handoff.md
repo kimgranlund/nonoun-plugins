@@ -2,14 +2,12 @@
 id: T-0850
 title: "Retire progressive-context, knowledge-modeling and context-routing-review"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0849]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-12
 claimed_by: nonoun-author 2026-11-12
-branch: lane/T-0850-t0850
-worktree: ../sdlc-lite.worktrees/T-0850-t0850
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -34,10 +32,21 @@ The context plugin no longer ships `progressive-context`, `knowledge-modeling` o
 
 ## Acceptance criteria
 - `test ! -e plugins/context/skills/progressive-context -a ! -e plugins/context/skills/knowledge-modeling -a ! -e plugins/context/skills/context-routing-review` exits 0.
-- `git grep -nE "skills/(progressive-context|knowledge-modeling|context-routing-review)|\`(progressive-context|knowledge-modeling|context-routing-review)\`" -- ':!docs/reports' ':!docs/work/.[0-9]*' ':!*CHANGELOG.md' ':!plugins/context/skills/context-fog-of-war/updates-log' ':!plugins/context/skills/context-system/README.md'` prints nothing.
+- `git grep -nE "skills/(progressive-context|knowledge-modeling|context-routing-review)|\`(progressive-context|knowledge-modeling|context-routing-review)\`" -- ':!docs/reports' ':!docs/work/.[0-9]*' ':!*CHANGELOG.md' ':!plugins/context/skills/context-fog-of-war/updates-log' ':!plugins/context/skills/context-system/README.md' ':!docs/work/0850-retire-routing-skills' ':!docs/work/0851-retire-kos-cnl'` prints nothing (replan: the open T-0850 and T-0851 handoffs name the skills by design).
 - `python3 -B -m unittest discover -s tests` exits 0 in `plugins/context/skills/context-system` and in `plugins/context/skills/context-fog-of-war`.
 - `python3 scripts/check-packaging.py` and `python3 plugins/sdlc/scripts/docs_check.py` exit 0, and `git diff --check` is clean.
 
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Touch only reference lines outside the deleted folders; no behaviour change in other skills.
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 81bbe6563803
+- Changed: see commits
+- Commits: 765198f T-0850: retire progressive-context, knowledge-modeling and context-routing-review
+- Check: 1 the three skill folders are gone: pass
+- Check: 2 no live reference in the old-skill form: pass
+- Check: 3 unit tests: pass
+- Check: 4 packaging, docs check, diff hygiene: pass
+- Follow-up: note: docs/specs/generative-constructs/progressive-context-plugin.md:270... -> notes.md

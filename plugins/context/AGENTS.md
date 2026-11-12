@@ -4,21 +4,18 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 
 | Skill | Use | Source (2026-10-25) |
 |---|---|---|
-| `context-system` | Vocabulary, domain models, manifests and registries, entry files and routes, fresh-agent route tests and controlled statements, merged from progressive-context, context-routing-review, knowledge-modeling and the retired vocabulary (KOS) and statements (CNL) skills (added 2026-11-12) | `/Volumes/kimba/.claude/skills/context-system` (2026-11-12) |
-| `progressive-context` | Context-system design: traversal, tier model, review rubric, semantic handoff and route evaluation; earlier contract, evidence and reuse references kept | `/Volumes/kimba/.codex/skills/progressive-context` (2026-10-31) |
+| `context-system` | Vocabulary, domain models, manifests and registries, entry files and routes, fresh-agent route tests and controlled statements; replaces the retired progressive-context, context-routing-review, knowledge-modeling, knowledge-organization-system (vocabulary layer) and controlled-natural-language (statements layer) skills (added 2026-11-12) | `/Volumes/kimba/.claude/skills/context-system` (2026-11-12), plus T-0836 `excludes` and T-0837 decision-question doc type carried over from this repo |
 | `context-fog-of-war` | Explain context-routing decisions from traces; audit guidance contracts | `~/.claude/skills/context-fog-of-war` |
-| `context-routing-review` | Review and test repository context routes with fresh-agent trials | `/Volumes/kimba/.codex/skills/context-routing-review` |
 | `generative-systems` | Generative systems grounded in authoritative kits, contracts and assets | `~/.claude/skills/generative-systems` |
 | `system-atlas` | Whole-system workflow diagrams, machinery inventory and enforcement matrix | `~/.claude/skills/system-atlas` |
 | `icm-architect` | ICM workspaces: folder structure as agent architecture | `~/.claude/skills/icm-architect` (upstream in its `SOURCE`) |
-| `knowledge-modeling` | Domain concepts, typed relationships, evidence-backed mappings and semantic change (added 2026-10-31) | `/Volumes/kimba/.codex/skills/knowledge-modeling` |
 | `evaluation-system` | Evidence-gated evaluation: case sets with gold provenance and variants, graders, per-slice metrics with intervals, coverage, per-direction accuracy and calibration, and version-pinned gates; `validate_suite.py` and `run_suite.py`, owning the Case, Grader, Suite, Run and Gate schemas (added 2026-11-01) | Authored here (T-0833) from `docs/specs/new-skills/evaluation-system.md` |
 | `classify-and-resolve` | Typed classify-and-dispatch pipelines: a rule, observed-evidence, decision-model and human cascade (model steps are `decision-questions` question sets) with an unclassified route, resolver contracts under an autonomy matrix guarded by evaluation gates, and a taxonomy feedback loop; `validate_pipeline.py`, `logs_to_cases.py` and `unclassified_report.py` (added 2026-11-01) | Authored here (T-0835) from `docs/specs/new-skills/classify-and-resolve.md` |
 | `decision-questions` | Bounded questions for a decision model: shapes, domain-scoped options with authored KOS contrast, threshold and compare decision modes, a checker, suggester, voter role ladder behind per-question gates; `validate_questions.py`, `compile_questions.py`, `make_eval_cases.py` and a fixture adapter (added 2026-11-01) | Authored here (T-0839) from `docs/specs/new-skills/decision-questions.md` |
 
-## progressive-context
+## context-system
 
-- Keep `skills/progressive-context/SKILL.md` and its references domain-neutral. The earlier `capability-contracts`, `evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages` and `performance-contract` references stay reachable from the one SKILL.md line that links them; live docs link into them.
+- Keep `skills/context-system/SKILL.md` and its references domain-neutral. The earlier `capability-contracts`, `evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages` and `performance-contract` references under `references/routing/` stay reachable from the routing guide line that links them; live docs link into them.
 - Preserve evidence-bound assessments and qualification for a named reuse scope. Do not turn descriptive lifecycle views into mandatory stored states.
 - Use existing project records; avoid duplicate tickets, plans, registries, or assessments. Keep examples explicitly illustrative and project decisions in repository design docs.
 - Add a reference only when it has a distinct retrieval purpose. Link it from the skill with a clear loading condition.
@@ -30,5 +27,5 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 - Do not ship `.DS_Store`, `__pycache__`, `node_modules`, symlinks or dated evidence trees. `generative-systems/resources/reports/` stays in the user-level folder; links into it are code spans.
 - Keep host manifests consistent. This plugin requires no model mapping, subagents, hooks, or SDLC dependency.
 
-For any change, inspect changed links, run `python3 scripts/check-packaging.py` from the repository root (identity, skill sizes, relative links), validate the skill with the available skill validator, and run `git diff --check`. Run a skill's own tests when its scripts change: `python3 -B -m unittest discover -s tests` in `context-fog-of-war`, `context-system`, `progressive-context`, `evaluation-system`, `classify-and-resolve` and `decision-questions`, `python3 -B scripts/test_atlas_renderer.py` in `system-atlas`. The SDLC runner/hook suite is unnecessary unless that implementation also changes.
+For any change, inspect changed links, run `python3 scripts/check-packaging.py` from the repository root (identity, skill sizes, relative links), validate the skill with the available skill validator, and run `git diff --check`. Run a skill's own tests when its scripts change: `python3 -B -m unittest discover -s tests` in `context-fog-of-war`, `context-system`, `evaluation-system`, `classify-and-resolve` and `decision-questions`, `python3 -B scripts/test_atlas_renderer.py` in `system-atlas`. The SDLC runner/hook suite is unnecessary unless that implementation also changes.
 For substantive workflow changes, evaluate a realistic request against the revised guidance and report observed behavior separately from structural validation.
