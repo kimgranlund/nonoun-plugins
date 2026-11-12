@@ -4,7 +4,7 @@ Links that stay unresolved on purpose. `scripts/check.py` item 32 fails when a t
 
 | File | Target | Why it stays |
 |---|---|---|
-| `plugins/design/skills/hct-palettes/references/engine.md` | `../recipes/HCT-PRIME-TONE.md` | Design skill (T-0791): already broken in the source skill; carried over unchanged |
+| `plugins/design/skills/ui-colors/references/engine.md` | `../recipes/HCT-PRIME-TONE.md` | Design skill (T-0791): already broken in the source skill; carried over unchanged |
 | `plugins/design/skills/wireframe-review/references/style/components/README.md` | `../../apple-smooth-motion.md` | Design skill (T-0791): already broken in the source skill; carried over unchanged |
 | `plugins/design/skills/wireframe-review/references/style/composition.md` | `../../../../../Projects/ui-kit/docs/system/geometry-contract.md` | Design skill (T-0791): a UI-KIT checkout on the author's machine, linked from the user-level skill folder; not shipped |
 | `plugins/design/skills/wireframe-review/references/style/composition.md` | `../../assets/recipes/control-rail.html` | Design skill (T-0791): already broken in the source skill; carried over unchanged |
