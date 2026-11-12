@@ -8,39 +8,39 @@
   "sources": [
     {
       "path": "assets/recipes/native-select.html",
-      "sha256": "aac78bc2beb7680ea22e22dc55e17a29912c366b884cdea1c3f335fa86e0bbed"
+      "sha256": "4816862615116fa25baff317345d849512274448375211e03df2f68970bc8ee5"
     },
     {
       "path": "references/style/select/contract.json",
-      "sha256": "2bc9578e696b504c6831920a5a79e552ed86e27823906476f73f32763df81b28"
+      "sha256": "fa6d77ea71d06ea500f86cc36221e5cb77c7b9c6c4b74ac5fec184c8a967528d"
     },
     {
       "path": "references/style/bootstrap.md",
-      "sha256": "ec34a88349ae28daa04594e78718ebbb280637a021b4b4f2e5c84cb93da0afdd"
+      "sha256": "e485f0c6a6b4bd98c28633b93fbda8bdd0d5c666b3dc84d6356d9b31d5debddb"
     },
     {
       "path": "assets/control-markup.mjs",
-      "sha256": "d0d961ba64fc7e8db1daeda8c6bf691d4042a3ffd95501da4a34f0d7416ba46d"
+      "sha256": "f2dee41dc7f58ca219c5e798b7572800058dc7272ed2166422ebf14aaf104217"
     },
     {
       "path": "scripts/compile-controls.mjs",
-      "sha256": "2e70d66fe48db09906acce1400ff35426994850607f8b51316b378d67c743883"
+      "sha256": "90ddc0034be4680444ad23da02b70b91e12e072baee12fdd4e1ace638250f556"
     },
     {
       "path": "assets/wireframe.css",
-      "sha256": "7f75030f2bce0e15c80e459a3e5d6c7a358c774695aa82f16aac63f3d77934f7"
+      "sha256": "fc694a883a2f831485f77a63a156c3099560c8c2ab28ffed7e32f5f82cad548a"
     },
     {
       "path": "assets/foundation/maison/geometry.css",
-      "sha256": "7bef1b330cc17ee1ae3c7dbd1077c790767222b4e52b7080b89300426835799f"
+      "sha256": "ce8a5371754f2e253304f74dba09b711a08d31610fdce7f0dbd32d5fc6d0b96b"
     },
     {
       "path": "assets/foundation/maison/layout.css",
-      "sha256": "c1c52634fb5a4e5bfa9165ea41345e636e7bb8ec23b4c39c04111188489e5584"
+      "sha256": "66032a724aa6a9e145526096072557bfbf76c945bbb1aae5eb2e9e431eebed70"
     },
     {
       "path": "assets/foundation/ultimate-tokens/colors.css",
-      "sha256": "3d5b3c5d55a3a9823bab09e64d54301375863964c1066e50295d9f7f4b3f5af6"
+      "sha256": "1e39d0c3d15e13664c1e038a0a4a57638248122c540654b57088ec841b9b4b28"
     }
   ],
   "bindings": {

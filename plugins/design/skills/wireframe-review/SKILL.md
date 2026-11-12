@@ -4,7 +4,7 @@ description: Create and revise interactive wireframes with meaningful alternativ
 ---
 # Wireframe review
 
-UI source is owned by the sibling [base-ui](../base-ui/SKILL.md) skill. This tool consumes it directly; invoke base-ui context explicitly for used UI families. Existing recipe__slot APIs remain stable. Read [the dependency boundary](references/ui-kit-dependency.md) for installation, version locking and maintenance. Generated compatibility files listed in ui-compatibility.json must be edited at their base-ui source and synchronized, never patched here.
+This skill owns its UI kit: foundation CSS, bundled fonts and icons, runtime, control markup, recipes and component contracts live here, and the geometry foundation is generated from the `ui-geometry` skill. No other skill needs to be installed beside it to generate. Existing recipe__slot APIs remain stable. Read [the kit boundary](references/ui-kit-dependency.md) for what the kit holds and how to regenerate it.
 
 Deliver a reviewable design artifact. Default to three competing design hypotheses per decision unit, with short rationale and tradeoff. For multiple proposals, read the [variant contract](references/design/intent-contract.md#preserve-room-for-alternatives); keep design language consistent while varying how the task is understood or completed. A page, section, component or coherent task surface can be a unit. The bundled shell supports one, two or three proposals per unit, with ordered IDs A, A/B or A/B/C. Honor the requested count; different units may use different counts.
 

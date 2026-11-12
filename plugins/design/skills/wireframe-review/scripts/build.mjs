@@ -2,18 +2,18 @@
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import vm from 'node:vm';
 import {staticReview} from './static-review.mjs';
-import {loadUI,takeKitOption} from './ui-kit.mjs';
+import {loadUI} from './ui-kit.mjs';
 import {dirname,resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {authoredStyles,inspectStyles} from './token-inspection.mjs';
 import {validateManifest,validateReview} from '../assets/model.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const args=process.argv.slice(2), kitPath=takeKitOption(args), ci=args.indexOf('--controller');
+const args=process.argv.slice(2), ci=args.indexOf('--controller');
 let controllerPath=null;if(ci>=0){controllerPath=args[ci+1];if(!controllerPath)throw Error('--controller requires a JavaScript file');args.splice(ci,2);}
 const [source,destination,reviewPath]=args;
 if(!source||!destination){console.error('Usage: node build.mjs manifest.json wireframes.html [review.json] [--controller controller.js]');process.exit(2);}
 try{
-  const kit=await loadUI(kitPath),bundle=kit.api.getAssetBundle(),compileControls=kit.api.compileControls; 
+  const kit=await loadUI(),bundle=kit.api.getAssetBundle(),compileControls=kit.api.compileControls;
   const read=p=>readFileSync(join(root,p),'utf8'),manifestSchema=JSON.parse(read('references/manifest.schema.json')),feedbackSchema=JSON.parse(read('references/feedback.schema.json'));
   const manifest=validateManifest(JSON.parse(readFileSync(source,'utf8')),manifestSchema);
   const unknown=inspectStyles([manifest.css||'',...manifest.units.flatMap(u=>u.variants.flatMap(v=>authoredStyles(v.html||'')))],kit.api.createIndex());if(unknown.length)throw Error(`Unresolved token references: ${unknown.join(', ')}. Read scripts/generate-token-index.mjs --group before rebuilding.`);

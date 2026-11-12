@@ -6,7 +6,7 @@ const run=(id,fn)=>{try{fn();checks.push({id,status:'pass',detail:'Passed'})}cat
 run('executable-syntax',()=>{const scripts=[...artifactBytes.toString().matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];if(!scripts.length)throw Error('No executable script');for(const [,script] of scripts)new vm.Script(script);});
 run('manifest',()=>validateManifest(m,JSON.parse(fs.readFileSync(path.join(root,'references/manifest.schema.json')))));
 run('artifact-binding',()=>{const line=artifactBytes.toString().match(/const MANIFEST=(.*);\n/);if(!line||JSON.stringify(JSON.parse(line[1]))!==JSON.stringify(m))throw Error('HTML does not embed the supplied manifest');});
-run('foundation-binding',()=>{const line=artifactBytes.toString().match(/const WIREFRAME_CSS=(.*);\n/);const expected=Object.values(index.groups).map(g=>kit.api.readSource(g.source)).join('\n');if(!line||JSON.parse(line[1])!==expected)throw Error('Artifact foundation bytes differ from current source');});
+run('foundation-binding',()=>{const line=artifactBytes.toString().match(/const WIREFRAME_CSS=(.*);\n/);const expected=kit.api.getAssetBundle().css;if(!line||JSON.parse(line[1])!==expected)throw Error('Artifact foundation bytes differ from current source');});
 run('token-index-freshness',()=>{if(JSON.stringify(index)!==JSON.stringify(JSON.parse(fs.readFileSync(path.join(root,'references/style/token-index.json')))))throw Error('Stale token index')});
 run('kit-binding',()=>{const line=artifactBytes.toString().match(/const UI_KIT=(.*);\n/);if(!line||JSON.stringify(JSON.parse(line[1]))!==JSON.stringify(kit.identity))throw Error('Kit identity mismatch');});
 run('token-references',()=>{const missing=tokenCheck(m,index);if(missing.length)throw Error(missing.join(', '))});

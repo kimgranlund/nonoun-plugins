@@ -1,4 +1,4 @@
-// Review-owned application recipe. UI primitives remain owned by base-ui.
+// Review-owned application recipe built on the kit UI primitives.
 // Adapt the snapshot fields and unit ID to the task; do not include view preferences.
 const compoundSnapshot = state => ({
   title: state.title,

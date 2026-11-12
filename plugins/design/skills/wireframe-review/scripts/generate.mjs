@@ -6,15 +6,15 @@ const usage='Usage: generate.mjs MANIFEST NEW_OUTPUT_DIRECTORY PLAYWRIGHT [--con
 if(process.argv.length===3&&['--help','-h'].includes(process.argv[2])){console.log(usage);process.exit(0);}
 const args=process.argv.slice(2),[input,destination,requestedPW]=args.splice(0,3),options={};
 if(!input||!destination||!requestedPW)throw Error('Usage: generate.mjs MANIFEST NEW_OUTPUT_DIRECTORY PLAYWRIGHT [--controller JS] [--review JSON] [--policy JSON] [--acceptance EVALUATOR_JSON] [--preserve BASELINE_JSON] [--mode draft|delivery]');
-while(args.length){const key=args.shift(),value=args.shift();if(!['--controller','--review','--policy','--acceptance','--preserve','--mode','--ui-kit'].includes(key)||!value||options[key])throw Error('Invalid or duplicate option: '+key);options[key]=value;}
+while(args.length){const key=args.shift(),value=args.shift();if(!['--controller','--review','--policy','--acceptance','--preserve','--mode'].includes(key)||!value||options[key])throw Error('Invalid or duplicate option: '+key);options[key]=value;}
 const mode=options['--mode']||(options['--acceptance']?'delivery':'draft');if(!['draft','delivery'].includes(mode))throw Error('Unknown generation mode');if(mode==='delivery'&&!options['--acceptance'])throw Error('Delivery mode requires evaluator --acceptance; use draft for incomplete emission');
-const kit=await loadUI(options['--ui-kit']);
-let pw=requestedPW;if(pw==='auto'){const resolved=spawnSync(process.execPath,[path.join(kit.root,'scripts/resolve-browser.mjs')],{encoding:'utf8'});if(resolved.status!==0)throw Error('Browser routing failed: '+resolved.stderr);pw=JSON.parse(resolved.stdout).modulePath;}
+const kit=await loadUI();
+let pw=requestedPW;if(pw==='auto'){const resolved=spawnSync(process.execPath,[path.join(root,'scripts/resolve-browser.mjs')],{encoding:'utf8'});if(resolved.status!==0)throw Error('Browser routing failed: '+resolved.stderr);pw=JSON.parse(resolved.stdout).modulePath;}
 
 const output=path.resolve(destination);if(fs.existsSync(output))throw Error('Preserve delivered output; choose a new directory');
 fs.mkdirSync(path.dirname(output),{recursive:true});const stage=fs.mkdtempSync(path.join(path.dirname(output),'.wireframe-generation-'));
 const stages=[],summary={uiKit:kit.identity,mode,status:'running',stages,limitations:['Compile, structural verification, executed startup and lint establish artifact emission; task delivery needs independent acceptance. Named accepted limitations remain separate.']};
-function run(name,script,params){const r=spawnSync(process.execPath,[path.join(root,'scripts',script),...params],{encoding:'utf8',env:{...process.env,WIREFRAME_UI_KIT:kit.root}});stages.push({name,exit:r.status,signal:r.signal,stdout:r.stdout,stderr:r.stderr});if(r.error||r.status!==0)throw Error(name+' failed: '+(r.error?.message||r.stderr||r.stdout));}
+function run(name,script,params){const r=spawnSync(process.execPath,[path.join(root,'scripts',script),...params],{encoding:'utf8'});stages.push({name,exit:r.status,signal:r.signal,stdout:r.stdout,stderr:r.stderr});if(r.error||r.status!==0)throw Error(name+' failed: '+(r.error?.message||r.stderr||r.stdout));}
 try{
  if(options['--preserve'])summary.preservation=verifySource(options['--preserve']);
  const source=fs.readFileSync(input);fs.writeFileSync(path.join(stage,'source.manifest.json'),source);summary.source={path:path.resolve(input),sha256:sha(source)};

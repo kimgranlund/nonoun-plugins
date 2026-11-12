@@ -1,4 +1,4 @@
-// Generated compatibility bundle: scripts/sync-ui-kit.mjs. Do not edit.
+// Concatenation of assets/ui-runtime.js and assets/review-runtime-adapter.js for older harnesses; keep in step with both.
 /* Trusted caller code; this lifecycle is not a sandbox. */
 function createUIRuntime(){
  const states=new Map(),views=new Set();
@@ -83,7 +83,7 @@ function bindFocusModality(doc=document){
  },true);
 }
 
-/* Review identity and read-only policy; lifecycle is supplied by base-ui. */
+/* Review identity and read-only policy; lifecycle is supplied by assets/ui-runtime.js. */
 const prototypeDefinitions=new Map(),prototypeRuntime=createUIRuntime();
 function registerPrototype(definition){
  if(!definition?.unitId||prototypeDefinitions.has(definition.unitId)||typeof definition.reduce!=='function'||typeof definition.render!=='function')throw Error('Invalid or duplicate prototype definition');
