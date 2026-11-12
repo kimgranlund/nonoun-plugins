@@ -26,7 +26,7 @@ Outputs, in a new directory:
 | `figma-variables.json` | `figma: true` | A `Color` collection with one column per mode and a single-mode `Palette` collection; roles are aliases (Figma) |
 
 ```sh
-node /absolute/path/to/hct-palettes/scripts/system.mjs --request request.json --out NEW_OUTPUT_DIRECTORY
+node /absolute/path/to/ui-colors/scripts/system.mjs --request request.json --out NEW_OUTPUT_DIRECTORY
 ```
 
 The summary line names the modes, the weakest solid per mode (its APCA Lc against its label, the family and the floor), the number of contrast pairs under their APCA threshold per mode, and the series' smallest ΔE under colour-vision deficiency per mode, with a `WARNING` when any is under 10.
@@ -310,7 +310,7 @@ For the Variables REST API, create the variables with these ids as temporary ids
 ## Checks
 
 ```sh
-node /absolute/path/to/hct-palettes/scripts/check.mjs [--keep]
+node /absolute/path/to/ui-colors/scripts/check.mjs [--keep]
 ```
 
 Runs `system.mjs` on `{}`, on a light-dark request (`brightHues: false`, `lightDark`, `split`, `figma`, `tonalRoles`, `showcase`, dim and both contrast modes), on `{ "showcase": true }`, on a scoped attribute-selector sRGB showcase request with an out-of-order and a clipped anchor, on an APCA-override request with anchors at step 9 (both schemes) and 11, and on three neutrals requests (Sand ground and Slate surface crossed, with the showcase; generated tinted ground, surface and ink with `lightDark`, `split`, `figma` and dim; ground, ink and surface anchors whose card is too close to the page), in a temporary directory, then checks, with its own colour maths (APCA through the vendored `apcaLc`):

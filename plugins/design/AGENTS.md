@@ -6,7 +6,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 
 | Skill | Owns |
 |---|---|
-| `hct-palettes` | HCT source palettes, ramps, Primes and balanced color sets, and a full light/dark color system (APCA-placed ramps, roles, presets) |
+| `ui-colors` | HCT source palettes, ramps, Primes and balanced color sets, and a full light/dark color system (APCA-placed ramps, roles, presets) |
 | `ui-geometry` | UI geometry derived from one font size and unit across four tiers, and fitting an existing project to the nearest system |
 | `ui-kit-inspector` | Jigs: live panels that tune a UI system's constants and export a change set; `examples/inspector-panel/` holds the former `inspector-panels` skill |
 | `component-variants` | Interactive comparison pages for component implementation alternatives |
@@ -25,4 +25,4 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 
 ## Checks
 
-From the repository root: `python3 scripts/check-packaging.py` (catalogs, manifests, skill names and sizes, cross-skill links). Inside `skills/hct-palettes`: `node scripts/check.mjs`. Inside `skills/ui-geometry`: `node --test`. Inside `skills/wireframe-review`: `node scripts/generate-geometry.mjs --check` and `node scripts/selftest.mjs`. Inside `skills/ui-kit-inspector/examples/inspector-panel`: `npm test` (Node 24 or later). Run `git diff --check` for doc edits.
+From the repository root: `python3 scripts/check-packaging.py` (catalogs, manifests, skill names and sizes, cross-skill links). Inside `skills/ui-colors`: `node scripts/check.mjs`. Inside `skills/ui-geometry`: `node --test`. Inside `skills/wireframe-review`: `node scripts/generate-geometry.mjs --check` and `node scripts/selftest.mjs`. Inside `skills/ui-kit-inspector/examples/inspector-panel`: `npm test` (Node 24 or later). Run `git diff --check` for doc edits.
