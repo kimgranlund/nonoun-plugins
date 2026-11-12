@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-12
+
 ### Added
 
 - `ui-geometry` (T-0841): derives every UI length from a root font size and one unit across four tiers (controls, collections, containers, layout) and fits an existing project to the nearest system. Imported from the MacBook working copy at `1d96fbc`, with a new `agents/openai.yaml`; tests run with `node --test`.

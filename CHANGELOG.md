@@ -4,6 +4,20 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-11-12
+
+Report: [docs/reports/2026-11-12-release-1-0-6.md](docs/reports/2026-11-12-release-1-0-6.md). Marketplace release: `context` 0.7.0 and `design` 0.3.0; `sdlc` 1.0.2 and `dev-tools` 0.1.0 are unchanged. 10 tickets (T-0836 to T-0845). Details are in [the context changelog](plugins/context/CHANGELOG.md) and [the design changelog](plugins/design/CHANGELOG.md).
+
+### Added
+
+- `context` 0.7.0: `decision-questions` designs bounded questions for a decision model and acts on the answers only as far as evidence allows (T-0839).
+- `design` 0.3.0: `ui-geometry` derives every UI length from a root font size and one unit, in four tiers, and fits an existing project to the nearest system (T-0841).
+
+### Changed
+
+- `context`: `knowledge-organization-system` concepts take `excludes` (T-0836); `controlled-natural-language` governs a decision-question doc type (T-0837); `evaluation-system` gold has provenance, calibration and target-pinned gates (T-0838); `classify-and-resolve` cascades take observed evidence and question sets (T-0840).
+- `design`: `hct-palettes` gains a light/dark system generator, presets and its own check (T-0841). `component-variants`, `wireframe-review` and the `ui-kit-inspector` example own trimmed kits and take geometry from `ui-geometry` (T-0842 to T-0844).
+
 ### Removed
 
 - `design`: the `base-ui` and `mathematical-design-system` skills (T-0845); `ui-geometry` and the skills' own trimmed kits replace them.
