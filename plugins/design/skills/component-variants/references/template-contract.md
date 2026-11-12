@@ -8,7 +8,7 @@ The maintained `assets/review.html`, `assets/shell.css` and `assets/review-suppo
 node /path/to/component-variants/scripts/build.mjs SOURCE_DIRECTORY NEW_OUTPUT_DIRECTORY
 ```
 
-Serve output over local HTTP. The builder copies source files without changing them, supplies `index.html` and the byte-for-byte helper, supplies `preview.css`, and records `ui-kit.lock.json`. Those four names are reserved at source-root level. Do not copy unrelated project files into the source directory. Keep source/output separate; earlier artifacts are never overwritten.
+Serve output over local HTTP. The builder copies source files without changing them, supplies `index.html` and the byte-for-byte helper, and supplies `preview.css`. Those three names are reserved at source-root level. Do not copy unrelated project files into the source directory. Keep source/output separate; earlier artifacts are never overwritten.
 
 `review.mjs` exports a default configuration:
 
@@ -49,7 +49,7 @@ The shell accepts an API already exposed at frame load, or waits up to 10 second
 
 The helper sets the preview root's `color-scheme` and calls optional `setTheme` with resolved `light` or `dark`. System follows OS changes; manual choices override both shell and frames. A CSS `prefers-color-scheme` query still describes the OS: use scheme-aware tokens or the callback for explicit overrides. Open standalone starts a separate instance using the preview's own defaults; it does not transfer live state or feedback.
 
-Previews fit body content automatically; avoid viewport-relative body heights. An optional finite positive `previewHeight` sets a minimum, not a fixed viewport; inspect scrolling rather than hiding overflow to make it pass. Dialogs stay inside their frame, so also test Open standalone when full-page modality matters. Preview width controls belong to the component document and must change the component being measured. No parent styles or full base-ui CSS are injected into previews. Same-origin frames are trusted local code, not a security sandbox.
+Previews fit body content automatically; avoid viewport-relative body heights. An optional finite positive `previewHeight` sets a minimum, not a fixed viewport; inspect scrolling rather than hiding overflow to make it pass. Dialogs stay inside their frame, so also test Open standalone when full-page modality matters. Preview width controls belong to the component document and must change the component being measured. No parent styles or shell kit CSS are injected into previews. Same-origin frames are trusted local code, not a security sandbox.
 
 ## Shared behavior and context
 
@@ -59,11 +59,11 @@ The component owns selection, keyboard behavior, focus and reset. `element` is t
 
 The helper owns preferences, feedback persistence and snapshots. Notes retain their edit-time context; export separately includes current context. A dismissed overlay is closed by the time a note is typed. Use Part or state to describe an earlier view; do not substitute historical facts for live state. Component state is not persisted by the shell.
 
-## Base-ui dependency
+## Kit and geometry
 
-Install base-ui beside this skill. `scripts/build.mjs` verifies its descriptor, source integrity and the committed `ui-kit.lock.json` identity before output. It consumes `foundationCSS` and `compileControls()` through the kit API. The full component stylesheet is not used. Review feedback semantics and shell-specific styling remain owned here.
+The shell's kit ships inside this skill. `scripts/kit.mjs` embeds `assets/kit/` (colour and type tokens, one hash-checked IBM Plex Mono face) and compiles `review.html` (class normalization and the native select wrapper). `scripts/geometry.mjs` generates the shell's geometry custom properties at build time from the sibling `ui-geometry/scripts/derive.mjs --json` with pinned dials; run it alone to print them. Lengths are never hand-typed. `build.mjs` rejects any `var(--name)` in `shell.css` that the kit does not declare. Review feedback semantics and shell-specific styling remain owned here.
 
-For an intentional base-ui update, inspect changes and run affected shell checks, then update this skill's lock with the reviewed `describeKit()` identity. Run `node scripts/check-build.mjs` for build/dependency/preservation guards; rendered checks remain separate. Generation never updates the lock, installs packages or copies compatibility files. No changes to base-ui or wireframe-review are required for normal variant authoring.
+Run `node scripts/check-build.mjs` for build/dependency/preservation guards; it also fails the build with `ui-geometry` or the vendored kit removed. Rendered checks remain separate. Generation never installs packages or copies compatibility files.
 
 ## Integration proof
 

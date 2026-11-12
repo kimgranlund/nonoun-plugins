@@ -1,0 +1,35 @@
+{
+  "sourceRepository": "https://github.com/google/fonts",
+  "revision": "67bc647ce1910e92f461bcc82aae30f21d21a9cc",
+  "faces": [
+    {
+      "family": "IBM Plex Mono",
+      "weight": "400",
+      "style": "normal",
+      "file": "ibmplexmono/IBMPlexMono-Regular.woff2",
+      "format": "woff2",
+      "sha256": "13b16cd770a73f60304510221c3e7186d396ba6ca5d64c52b5c6fb983d0e900a",
+      "bytes": 39176,
+      "source": {
+        "file": "ibmplexmono/IBMPlexMono-Regular.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/67bc647ce1910e92f461bcc82aae30f21d21a9cc/ofl/ibmplexmono/IBMPlexMono-Regular.ttf",
+        "sha256": "6a3412f058c7d8dfd9170c41e85ade48e5156ecb89356110ca57a0a27734af46",
+        "bytes": 135580
+      }
+    }
+  ],
+  "licenses": [
+    {
+      "file": "ibmplexmono/OFL.txt",
+      "url": "https://raw.githubusercontent.com/google/fonts/67bc647ce1910e92f461bcc82aae30f21d21a9cc/ofl/ibmplexmono/OFL.txt",
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+      "bytes": 4456
+    }
+  ],
+  "conversion": {
+    "tool": "fontTools.ttLib.woff2.compress",
+    "fontTools": "4.60.2",
+    "brotli": "1.2.0",
+    "subset": false
+  }
+}

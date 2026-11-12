@@ -901,3 +901,13 @@
 
 - note: CHANGELOG.md:1 plugins/design/CHANGELOG.md is a new file, and the root CHANGELOG.md does not link to it. The builder deferred this to the release ticket.
 - note: the builder's report shows the earlier `node --test scripts/` span failing on Node 24. The handoff already carries the amended `node --test` span, which passes.
+
+## T-0842: Port the ui-kit-inspector example onto ui-geometry (2026-11-12)
+
+- note: examples/inspector-panel/examples/test.mjs (browser suite, goldens moved to n = 14) was not run; playwright-core is not installed here. I only ran `node --check` on it (ok). No criterion names it.
+- note: geometry.test.mjs compares panelGeometry to derive() rows, and panel-geometry.js uses the same crisp/system functions, so the oracle is not fully independent. The identity asserts (h = S + 2I, T = 2I, d = 2I) and the negative control still bite.
+
+## T-0843: Port component-variants off base-ui onto a trimmed own kit (2026-11-12)
+
+- note: plugins/design/skills/component-variants/scripts/geometry.mjs:11 pins the dials (n 14, kappa 0.75, kappa-card 0.5, card 4) as constants and every px value comes from derive output (geometry.mjs:34-36), matching the "never copied numbers" constraint. Dial values are a design choice the handoff did not specify.
+- note: the head is merge commit b3c44154 (main merged into the lane); the criteria were run on that tree.
