@@ -1,7 +1,7 @@
 {
   "name": "design",
   "version": "0.3.0",
-  "description": "UI construction, UI geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique.",
+  "description": "UI construction, UI geometry, UI colors, inspector jigs, component variants, wireframe review and design critique.",
   "author": {
     "name": "Kim Granlund"
   }

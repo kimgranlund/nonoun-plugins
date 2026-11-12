@@ -4,6 +4,10 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Changed
+
+- `ui-colors` (T-0848): renamed from `hct-palettes`, the first of the ui-* skills. Invoke it as `$ui-colors`; the generator id `hct-palettes@4` in output manifests is unchanged.
+
 ## [0.3.0] - 2026-11-12
 
 ### Added
