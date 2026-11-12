@@ -27,7 +27,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 ## All skills
 
 - Each skill keeps its own maintenance notes where it has them (`context-fog-of-war/AGENTS.md` and its `updates-log/`).
-- A link to a skill in another plugin is written by name (`design:base-ui` and the file path), never as a relative link.
+- A link to a skill in another plugin is written by name (`design:ui-geometry` and the file path), never as a relative link.
 - Do not ship `.DS_Store`, `__pycache__`, `node_modules`, symlinks or dated evidence trees. `generative-systems/resources/reports/` stays in the user-level folder; links into it are code spans.
 - Keep host manifests consistent. This plugin requires no model mapping, subagents, hooks, or SDLC dependency.
 

@@ -22,7 +22,7 @@
     {
       "name": "design",
       "source": "./plugins/design",
-      "description": "UI construction, Differential Forms geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique."
+      "description": "UI construction, UI geometry, HCT palettes, inspector jigs, component variants, wireframe review and design critique."
     }
   ],
   "metadata": {
