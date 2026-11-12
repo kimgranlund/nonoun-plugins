@@ -1,4 +1,4 @@
-/* Review chrome only. The locked base-ui foundations are embedded before this. */
+/* Review chrome only. The skill's own kit foundations (assets/kit, geometry from ui-geometry) are embedded before this. */
 :root{color-scheme:light dark;--cv-bg:var(--md-color-neutral-background);--cv-panel:var(--md-color-neutral-surface);--cv-ink:var(--md-color-neutral-on-surface);--cv-muted:var(--md-color-neutral-on-surface-variant);--cv-line:var(--md-color-neutral-outline-variant);--cv-focus:var(--md-color-primary)}
 *{box-sizing:border-box;scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}body{max-width:1280px;margin:auto;padding:var(--m-inset-page);font:var(--g-text)/1.5 var(--font-ui);color:var(--cv-ink);background:var(--cv-bg)}
 h1,h2,p{margin:0}h1{font-size:var(--type-title-md-size);line-height:1.2}h2{font-size:var(--type-body-lg-size)}p{color:var(--cv-muted)}
