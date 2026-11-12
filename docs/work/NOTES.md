@@ -934,3 +934,7 @@
 
 - note: plugins/design/skills/wireframe-review/scripts/check-catalog-boundary.mjs:9 and :14 were not run on real built sheets (the selftest does not cover this script). The diff is a small owner-equality change with a regex-asserted negative control; I read it but did not execute it. The builder reported the same limitation.
 - note: plugins/context/skills/context-fog-of-war/assets/shell.html cannot be rebuilt from build_shell.py (builder report), so the `base-ui-source` stamp at :3638 stays as frozen history.
+
+## T-0849: Import the context-system skill into context (2026-11-12)
+
+- note: redck.py deviations printed no process deviation lines (no `(red)` criteria).

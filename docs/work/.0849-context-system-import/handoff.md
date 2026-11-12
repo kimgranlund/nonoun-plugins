@@ -2,7 +2,7 @@
 id: T-0849
 title: "Import the context-system skill into context"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,14 @@ The context plugin ships the `context-system` skill, copied from the user's MacB
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Do not edit other skills.
+
+## Outcome
+
+2026-11-12 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 179ff1d8d196
+- Changed: see commits
+- Commits: eecac17 T-0849: import the context-system skill into context
+- Check: 1 skill copied, no .DS_Store or __pycache__: pass
+- Check: 2 skill tests: pass
+- Check: 3 registration: pass
+- Check: 4 packaging and whitespace: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines no red... -> notes.md
