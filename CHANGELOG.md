@@ -4,6 +4,29 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-11-15
+
+Report: [docs/reports/2026-11-15-release-1-0-7.md](docs/reports/2026-11-15-release-1-0-7.md). Marketplace release: `context` 0.8.0, `design` 0.4.0 and `dev-tools` 0.1.1 and `sdlc` 1.0.3. 9 tickets (T-0846 to T-0854). Details are in [the context changelog](plugins/context/CHANGELOG.md) and [the design changelog](plugins/design/CHANGELOG.md).
+
+### Added
+
+- `context` 0.8.0: `context-system`, one skill for vocabulary, domain modeling, manifests and profiles, entry files and routing, fresh-agent route review and controlled statements (T-0849, updated in T-0854).
+- `design` 0.4.0: six skills, `ui-materials`, `ui-content`, `ui-interaction-dev`, `ui-frameworks`, `ui-explore-variants` and `ui-showcase-bento` (T-0853).
+
+### Changed
+
+- `design`: `hct-palettes` is renamed `ui-colors` (T-0848); `ui-geometry` and `ui-colors` are updated from their sources, and the built-in geometry preset `massimo` is now `standard` (T-0852); the `component-variants` select caret is styled (T-0846).
+- `context`: `decision-questions`, `evaluation-system` and `classify-and-resolve` point at `context-system` for vocabulary and statement checks (T-0851, T-0854).
+- `dev-tools` 0.1.1: `skill-report-card` no longer names removed design skills (T-0847).
+
+### Fixed
+
+- `sdlc` 1.0.3: the broken-link scan no longer reads a `[label]:` line followed by a table as a link definition (`rename_refs.py` `LINK` matches a definition on one line only).
+
+### Removed
+
+- `context`: `progressive-context`, `knowledge-modeling` and `context-routing-review` (T-0850), and `knowledge-organization-system` and `controlled-natural-language` (T-0851); `context-system` replaces all five.
+
 ## [1.0.6] - 2026-11-12
 
 Report: [docs/reports/2026-11-12-release-1-0-6.md](docs/reports/2026-11-12-release-1-0-6.md). Marketplace release: `context` 0.7.0 and `design` 0.3.0; `sdlc` 1.0.2 and `dev-tools` 0.1.0 are unchanged. 10 tickets (T-0836 to T-0845). Details are in [the context changelog](plugins/context/CHANGELOG.md) and [the design changelog](plugins/design/CHANGELOG.md).

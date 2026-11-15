@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-15
+
 ### Added
 
 - `ui-materials` (T-0853): paints UI parts in any material and builds components that render in all of them. Imported from the MacBook copy at `ec1743a`; checks run with `node scripts/check.mjs`.

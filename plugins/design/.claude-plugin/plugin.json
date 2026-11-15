@@ -1,6 +1,6 @@
 {
   "name": "design",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "UI construction, UI geometry, UI colors, UI materials, content, interactions, UI kits, variant exploration, bento showcases, inspector jigs, component variants, wireframe review and design critique.",
   "author": {
     "name": "Kim Granlund"

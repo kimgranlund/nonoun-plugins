@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 TEXT_SUFFIXES = ('.md', '.py', '.sh', '.json', '.toml', '.txt', '.yml', '.yaml', '.mjs', '.js', '.ts')
-LINK = re.compile(r'(\]\()([^)\s]+)(\s*(?:"[^"]*")?\))|(^\s*\[[^\]]+\]:\s*)(\S+)', re.M)
+LINK = re.compile(r'(\]\()([^)\s]+)(\s*(?:"[^"]*")?\))|(^[ \t]*\[[^\]]+\]:[ \t]*)(\S+)', re.M)
 PRE_OK = r'(?<![A-Za-z0-9_.:\-])'
 
 
