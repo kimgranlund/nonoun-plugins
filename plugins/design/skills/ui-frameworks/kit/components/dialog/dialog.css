@@ -15,7 +15,7 @@
       --_face: var(--dialog-panel-face, var(--overlay-face));
       --_shadow: var(--overlay-shadow);
       --_ink: var(--dialog-panel-ink, var(--ink));
-      --_inset: var(--dialog-panel-inset, var(--containers-frame-region-inset));
+      --_inset: var(--dialog-panel-inset, var(--containers-frame-page-inset));
       --_radius: var(--dialog-panel-radius, var(--containers-curvature-r-card-4));
       --_width: var(--containers-width-dialog);
       --_margin: var(--containers-frame-panel-inset);

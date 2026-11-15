@@ -1,0 +1,158 @@
+{
+  "negative": true,
+  "engines": [
+    {
+      "engine": "chromium 156.0.8078.4",
+      "cases": [
+        {
+          "name": "two joined buttons: the focused button rises (reset)",
+          "focused": true,
+          "joined": true,
+          "ring": [
+            53,
+            68,
+            161
+          ],
+          "sample": [
+            248,
+            248,
+            248
+          ],
+          "face": [
+            248,
+            248,
+            248
+          ],
+          "discriminates": true,
+          "ringOnTop": false,
+          "holds": true
+        },
+        {
+          "name": "a text field joined to a button: the field rises on :focus-within",
+          "focused": true,
+          "joined": true,
+          "ring": [
+            53,
+            68,
+            161
+          ],
+          "sample": [
+            248,
+            248,
+            248
+          ],
+          "face": [
+            248,
+            248,
+            248
+          ],
+          "discriminates": true,
+          "ringOnTop": false,
+          "holds": true
+        }
+      ]
+    },
+    {
+      "engine": "firefox 157.0",
+      "cases": [
+        {
+          "name": "two joined buttons: the focused button rises (reset)",
+          "focused": true,
+          "joined": true,
+          "ring": [
+            53,
+            68,
+            161
+          ],
+          "sample": [
+            248,
+            248,
+            248
+          ],
+          "face": [
+            248,
+            248,
+            248
+          ],
+          "discriminates": true,
+          "ringOnTop": false,
+          "holds": true
+        },
+        {
+          "name": "a text field joined to a button: the field rises on :focus-within",
+          "focused": true,
+          "joined": true,
+          "ring": [
+            53,
+            68,
+            161
+          ],
+          "sample": [
+            248,
+            248,
+            248
+          ],
+          "face": [
+            248,
+            248,
+            248
+          ],
+          "discriminates": true,
+          "ringOnTop": false,
+          "holds": true
+        }
+      ]
+    },
+    {
+      "engine": "webkit 27.2",
+      "cases": [
+        {
+          "name": "two joined buttons: the focused button rises (reset)",
+          "focused": true,
+          "joined": true,
+          "ring": [
+            53,
+            68,
+            161
+          ],
+          "sample": [
+            248,
+            248,
+            248
+          ],
+          "face": [
+            248,
+            248,
+            248
+          ],
+          "discriminates": true,
+          "ringOnTop": false,
+          "holds": true
+        },
+        {
+          "name": "a text field joined to a button: the field rises on :focus-within",
+          "focused": true,
+          "joined": true,
+          "ring": [
+            53,
+            68,
+            161
+          ],
+          "sample": [
+            248,
+            248,
+            248
+          ],
+          "face": [
+            248,
+            248,
+            248
+          ],
+          "discriminates": true,
+          "ringOnTop": false,
+          "holds": true
+        }
+      ]
+    }
+  ]
+}

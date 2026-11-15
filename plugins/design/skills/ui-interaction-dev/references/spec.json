@@ -1911,7 +1911,8 @@
         "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html",
         "https://www.w3.org/WAI/WCAG22/Techniques/general/G89",
         "https://html.spec.whatwg.org/multipage/input.html#the-placeholder-attribute",
-        "https://design-system.service.gov.uk/components/text-input/"
+        "https://design-system.service.gov.uk/components/text-input/",
+        "https://www.w3.org/WAI/tutorials/forms/instructions/"
       ],
       "validated": [
         {

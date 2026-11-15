@@ -515,8 +515,8 @@ test("rhythm 'line' puts text lines, gaps, control boxes and rows on half of the
   // What was drawn: product rows of 40 in place of 32, civic boxes of 48 for 40; civic's heading 41px (36 × 1.15) where the formula gives 43.5; editorial's module is its running text.
   const v = (name, sym) => derive(applyArchetype(name)).find((r) => r.group === 'rhythm' && r.symbol === sym).px
   assert.equal(v('product', 'row on the grid'), 40); assert.equal(v('civic', 'control box'), 48); assert.equal(v('civic', 'heading-lg line on the grid'), 41); assert.equal(v('civic', 'around a field group'), 24)
-  // The floor of 1.3: product's 17px title is tipped onto 30px; civic's 19.75px title would need 36px, over 1.8 × its size, so it takes its own 30px line, padded. Toy was kept off the grid.
-  assert.equal(v('product', 'title-lg line on the grid'), 30); assert.equal(v('product', 'body-sm line on the grid'), 20); assert.equal(v('civic', 'title-lg line on the grid'), 30); assert.equal(v('calm', 'L'), 28); assert.equal(v('marketing', 'control box'), 56)
+  // The floor of 1.15 (1.3 was tried and dropped): product's 17px title stays on the 20px body line; civic's 19.75px title takes 24px. Toy was kept off the grid.
+  assert.equal(v('product', 'title-lg line on the grid'), 20); assert.equal(v('product', 'body-sm line on the grid'), 20); assert.equal(v('civic', 'title-lg line on the grid'), 24); assert.equal(v('calm', 'L'), 28); assert.equal(v('marketing', 'control box'), 56)
   assert.equal(derive(applyArchetype('toy')).filter((r) => r.group === 'rhythm').length, 0)
   assert.equal(v('editorial', 'L'), 36); assert.equal(v('editorial', 'heading-sm line on the grid'), 36); assert.equal(v('editorial', 'body-md line on the grid'), 24)
   assert.throws(() => validatePreset({ rhythm: 'baseline' }), /rhythm is 'formula' or 'line'/)

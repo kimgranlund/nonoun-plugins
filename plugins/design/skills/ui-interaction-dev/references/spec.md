@@ -1077,7 +1077,7 @@ An example of a field's expected format SHOULD be help text tied to the field wi
 
 - Validated 2026-11-15, a single text field taking one format, a static page driven by real mouse and keyboard input in Chromium and WebKit (Playwright): After one typed character the example can be read as help text and cannot as placeholder text. With a placeholder, an error message that repeats the example puts it back on screen and in the field's description while the value is corrected. An engine's own placeholder colour on a white field measured 2.35:1 in WebKit and 4.61:1 in Chromium; given the help text's colour it is 7.07:1 in both. Check: browser test: type one character; send a wrong value and type on; read the placeholder's computed colour. The typing check fails with the example as a placeholder, and the two error checks fail with the repeat or the `aria-describedby` tie removed, in both engines.
 
-Sources: <https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html>, <https://www.w3.org/WAI/WCAG22/Techniques/general/G89>, <https://html.spec.whatwg.org/multipage/input.html#the-placeholder-attribute>, <https://design-system.service.gov.uk/components/text-input/>
+Sources: <https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html>, <https://www.w3.org/WAI/WCAG22/Techniques/general/G89>, <https://html.spec.whatwg.org/multipage/input.html#the-placeholder-attribute>, <https://design-system.service.gov.uk/components/text-input/>, <https://www.w3.org/WAI/tutorials/forms/instructions/>
 
 ## mode
 

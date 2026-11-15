@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feedback module check</title>
+<style>
+:root{--bg:#f1f1f4;--panel:#fdfdfc;--ink:#1c2024;--muted:#5b606a;--quiet:#868a94;--fill:#e9e9ee;--focus:#3d4fc9}
+body{background:var(--bg);color:var(--ink);font:14px/1.4 system-ui;margin:16px}
+.stage{padding:12px;background:var(--panel)}
+/*@feedback.css*/
+</style>
+</head>
+<body>
+<!-- The fixture for scripts/check.mjs. A round 2 page with two moments:
+     "meter": three variants in a wrapper with its own aspects, where one is picked (data-pick="one").
+     "tally": two variants of this round that take the container's aspects, one kept from round 1, and round 1's table.
+     The script before the module ends without a semicolon, as a page's own script may. -->
+<main data-explore data-question="Does the module do what SKILL.md says?" data-round="2" data-aspects="Fits,Reads">
+  <div class="control"><label for="w">Width</label><input id="w" type="range" min="1" max="3" value="2" data-fb-control="width"></div>
+  <div data-aspects="Lit,Narrow" data-pick="one">
+    <section data-variant="m-a" data-moment="meter"><h2>Meter A</h2><div class="stage">A</div></section>
+    <section data-variant="m-b" data-moment="meter"><h2>Meter B</h2><div class="stage">B</div></section>
+    <section data-variant="m-c" data-moment="meter"><h2>Meter C</h2><div class="stage">C</div></section>
+  </div>
+  <section data-variant="t-a" data-moment="tally"><h2>Tally A</h2><div class="stage">A</div></section>
+  <section data-variant="t-b" data-moment="tally"><h2>Tally B</h2><div class="stage">B</div></section>
+  <div id="old-table" data-round="1"><h2>Round 1, side by side</h2></div>
+  <section data-variant="old-a" data-moment="tally" data-round="1"><h2>Old A</h2><div class="stage">old</div></section>
+</main>
+<script>
+window.__pageScript = [1, 2].map((x) => x)
+/*@feedback.js*/
+</script>
+</body>
+</html>
