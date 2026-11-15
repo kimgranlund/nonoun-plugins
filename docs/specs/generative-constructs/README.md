@@ -24,7 +24,7 @@ The initial authoring plugin is now implemented; see [shipped scope and validati
 
 ## Vocabulary: proposal and shipped skill
 
-The numbered documents use the proposal's words. The shipped skill ([SKILL.md](../../../plugins/context/skills/context-system/SKILL.md), [contracts](../../../plugins/context/skills/context-system/references/routing/capability-contracts.md), [evidence](../../../plugins/context/skills/context-system/references/routing/evidence.md)) uses fewer, plainer ones. The mapping below is this repository's reading of both texts; where the skill has no counterpart it says so.
+The numbered documents use the proposal's words. The shipped skill ([SKILL.md](../../../plugins/context/skills/context-system/SKILL.md), [contracts](../../../plugins/context/skills/context-system/references/routing/earlier/capability-contracts.md), [evidence](../../../plugins/context/skills/context-system/references/routing/earlier/evidence.md)) uses fewer, plainer ones. The mapping below is this repository's reading of both texts; where the skill has no counterpart it says so.
 
 | Proposal term (document 2) | Shipped term | Note |
 | --- | --- | --- |

@@ -13,7 +13,7 @@ Use relevant T0-T11 responsibilities only; explain omitted or combined layers.
 Declare governing scope and conflict resolution within actual harness authority.
 
 ## Metadata, if needed
-Canonical descriptors, optional generated registry, path base, IDs/aliases,
+Canonical descriptors, optional generated profile, path base, IDs/aliases,
 relationships, revision/hash provenance, owner, generated-source ownership and
 freshness checks. Use the JSON profile or document an equivalent adapter.
 

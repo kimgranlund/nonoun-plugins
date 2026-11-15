@@ -5,9 +5,9 @@ Usage: lint_cnl.py RULES VOCABULARY [DOC_OR_FOLDER ...] [--strict]
 
 Each finding is one line: SEVERITY RULE FILE:LINE: problem Fix: fix.
 Exit 0 when there are no errors (warnings allowed unless --strict), 1 on errors,
-2 when an input cannot be read. Rule semantics: references/patterns.md.
+2 when an input cannot be read. Rule semantics: references/statements/patterns.md.
 The vocabulary is read with the field names of the vocabulary layer
-(references/model.md there). Standard library plus PyYAML; runs on Python 3.9.
+(references/vocabulary/model.md there). Standard library only; runs on Python 3.9. Both files are JSON (scripts/datafile.py also reads an earlier .yaml file where PyYAML is installed).
 """
 import argparse
 import re
@@ -15,7 +15,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-import yaml
+from datafile import LINE_KEY, DataError, front_matter, load as load_data
 
 TOP_FIELDS = ('version', 'bannedWords', 'docTypes', 'patterns')
 DOCTYPE_FIELDS = ('id', 'description', 'paths', 'bannedWords')
@@ -30,7 +30,6 @@ RULE_ORDER = {rule: i for i, rule in enumerate(ERROR_RULES + WARNING_RULES)}
 
 SKIP_DIRS = {'.git', '.hg', '.svn', 'node_modules', '__pycache__', '.venv', 'venv', 'dist', 'build'}
 MAX_FILE_BYTES = 2000000
-LINE_KEY = '__line__'
 SLOT_RE = re.compile(r'\{(\w+)\}')
 SENTENCE_END = re.compile(r'(?<=[.!?])\s+(?=[A-Z0-9"\'(\[`])')
 LIST_MARKER = re.compile(r'^\s*(?:[-*+]|\d+[.)])\s+')
@@ -43,15 +42,6 @@ class Finding(namedtuple('Finding', 'severity rule path line problem fix')):
 
     def key(self):
         return (self.severity != 'ERROR', self.path, self.line, RULE_ORDER[self.rule], self.problem)
-
-
-class LineLoader(yaml.SafeLoader):
-    """SafeLoader that records each mapping's 1-based start line under LINE_KEY."""
-
-    def construct_mapping(self, node, deep=False):
-        mapping = super().construct_mapping(node, deep=deep)
-        mapping[LINE_KEY] = node.start_mark.line + 1
-        return mapping
 
 
 def normalize(label):
@@ -167,7 +157,7 @@ def _read_slot(findings, path, pattern_id, name, slot, vocab):
             if cid not in vocab.concepts:
                 findings.append(Finding('ERROR', 'unknown-concept', path, line,
                                         f"pattern '{pattern_id}' slot '{name}' names concept id '{cid}', which the vocabulary does not define.",
-                                        'add the concept to vocabulary.yaml first (the vocabulary layer), or correct the id.'))
+                                        'add the concept to vocabulary.json first (the vocabulary layer), or correct the id.'))
         scheme = slot.get('scheme')
         if scheme is not None and scheme not in vocab.schemes:
             findings.append(Finding('ERROR', 'unknown-concept', path, line,
@@ -194,12 +184,12 @@ def _read_slot(findings, path, pattern_id, name, slot, vocab):
 def load_rules(path, vocab, findings):
     """Return (doc types, patterns) from the rules file; problems go to findings."""
     try:
-        data = yaml.load(Path(path).read_text(encoding='utf-8'), Loader=LineLoader)
-    except yaml.YAMLError as exc:
-        _schema(findings, path, 1, f"not valid YAML: {' '.join(str(exc).split())}.", 'fix the YAML syntax.')
+        data = load_data(path, lines=True)
+    except DataError as exc:
+        _schema(findings, path, 1, f'not valid {exc.kind}: {exc.problem}.', f'fix the {exc.kind} syntax.')
         return {}, []
     if not isinstance(data, dict):
-        _schema(findings, path, 1, 'the file is empty or not a mapping.', 'start from templates/rules.yaml.')
+        _schema(findings, path, 1, 'the file is empty or not a mapping.', 'start from templates/rules.json.')
         return {}, []
     _unknown_keys(findings, path, data, TOP_FIELDS, 'the rules file')
     shared = _banned(findings, path, data.get('bannedWords'), 'the rules file')
@@ -301,11 +291,7 @@ def split_frontmatter(lines):
         return {}, 0
     for i in range(1, len(lines)):
         if lines[i].strip() in ('---', '...'):
-            try:
-                data = yaml.safe_load('\n'.join(lines[1:i]))
-            except yaml.YAMLError:
-                data = None
-            return (data if isinstance(data, dict) else {}), i + 1
+            return front_matter(lines[1:i]), i + 1
     return {}, 0
 
 
@@ -455,7 +441,7 @@ def check_sentence(path, line, sentence, doc_type, vocab, findings):
         for name, value in unresolved:
             findings.append(Finding('ERROR', 'unresolved-slot', path, line,
                                     f"slot '{name}' of pattern '{pattern['id']}' holds '{value}', which resolves to no vocabulary concept.",
-                                    'use a concept id, prefLabel or altLabel from vocabulary.yaml; if the term is new, add it there first (the vocabulary layer).'))
+                                    'use a concept id, prefLabel or altLabel from vocabulary.json; if the term is new, add it there first (the vocabulary layer).'))
         return
     active = [f'"{p["template"]}"' for p in doc_type['patterns'] if not p['deprecated']]
     reason = ''
@@ -537,8 +523,8 @@ def lint(rules_path, vocab, docs):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('rules', help='the CNL rules YAML file')
-    parser.add_argument('vocabulary', help='the KOS vocabulary YAML file (the vocabulary layer)')
+    parser.add_argument('rules', help='the rules file (JSON)')
+    parser.add_argument('vocabulary', help='the vocabulary file (JSON; the vocabulary layer)')
     parser.add_argument('docs', nargs='*', metavar='DOC', help='governed docs or folders; none checks the rules alone')
     parser.add_argument('--strict', action='store_true', help='exit 1 on warnings too')
     args = parser.parse_args(argv)
@@ -547,8 +533,8 @@ def main(argv=None):
             print(f'{path}: not found', file=sys.stderr)
             return 2
     try:
-        vocab = Vocabulary(yaml.safe_load(Path(args.vocabulary).read_text(encoding='utf-8')))
-    except (OSError, yaml.YAMLError, ValueError) as exc:
+        vocab = Vocabulary(load_data(args.vocabulary))
+    except (OSError, ValueError) as exc:
         print(f'{args.vocabulary}: cannot read vocabulary: {" ".join(str(exc).split())}. '
               'Check it with scripts/validate_kos.py.', file=sys.stderr)
         return 2

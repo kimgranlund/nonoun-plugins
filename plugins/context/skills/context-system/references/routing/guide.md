@@ -6,7 +6,7 @@ Start with the task and the authoritative context it needs. Change discovery or
 delivery only where the task exposes a problem. When using an existing corpus,
 follow its local entry and governing sources; if they suffice, complete the task.
 Reading this guide does not make an architecture review or benchmark necessary.
-A short entry and links may suffice; descriptors and registries are optional.
+A short entry and links may suffice; descriptors and a profile are optional.
 
 ## Choose the work
 
@@ -20,9 +20,11 @@ an explicit unknown, rather than more generic methodology.
 | What discovery or delivery responsibility is failing? | [Review workflow](review-rubric.md) |
 | What architecture or migration serves the task routes? | [Architecture](tier-model.md), relevant tiers only |
 | How should intent, required context, reuse or incomplete delivery work? | [Traversal](traversal.md) |
-| What must an executable descriptor or registry contain? | [Contracts](contracts.md) |
+| What must an executable descriptor or profile contain? | [Contracts](contracts.md) |
+| Does this rule or fact belong in the corpus, the entry, a skill or memory? | [Placement](entry-files.md#placement) |
 | Does unresolved domain meaning change which authority must be delivered, or its order? | [Semantic handoff](semantic-handoff.md) |
 | How should a route/delivery experiment be designed, or bundled replay results interpreted? | [Evaluation](evaluation.md) |
+| Did the host deliver what the corpus relies on it to load (entry, nested entry, import, skill listing, delegated agent)? | [Host adapter: Claude Code](hosts/claude-code.md) |
 
 Keep the project's output format. If none fits a new artifact, the
 [gap analysis](../../templates/gap-analysis.md) and
@@ -51,7 +53,15 @@ Keep the project's output format. If none fits a new artifact, the
    contract. Check alternative explanations before naming a cause. A domain model
    or semantic decision alone does not imply a broken retrieval mechanism.
 3. Make the smallest authorized change. Preserve stable IDs and entry points;
-   migrate callers or retain aliases when moving content. Repair the shared cause
+   migrate callers or retain aliases when moving content. Around a move, run
+   `python3 scripts/check_links.py --root CORPUS` before and after: every link and
+   written path that resolved before the move must resolve after it. Write the move down first as a map of old path to new path,
+   name the folders outside the corpus that read it by path, and run
+   `python3 scripts/check_move.py --before CORPUS --map MAP.json --consumers DIR` before anything moves and
+   again with `--after`: a destination that differs only by case from a file that stays, an outside file that
+   names a moved file, and a file count that does not add up each fail. A consumer that no searched folder
+   holds cannot be found by a check: ask the owner which jobs, configs and tools read the corpus by path.
+   Repair the shared cause
    without imposing registries, a directory tree or new governance. For a review-only
    request, report findings without changing the corpus.
 4. Verify governing context arrives before action against unchanged task acceptance,
@@ -69,9 +79,9 @@ missing evidence is explicit; do not expand unrelated mechanisms or tiers.
 The optional JSON contract and offline tools require Python 3.9+ only. Run them by
 absolute path beneath this skill; they never execute corpus code or use a network.
 
-- `python3 scripts/validate.py --root CORPUS --registry REGISTRY`
+- `python3 scripts/validate.py --root CORPUS --profile PROFILE`
 - `python3 scripts/validate.py --root CORPUS --descriptor DESCRIPTOR`
-- `python3 scripts/replay.py --root CORPUS --registry REGISTRY --suite SUITE --out NEW.json`
+- `python3 scripts/replay.py --root CORPUS --profile PROFILE --suite SUITE --out NEW.json`
 - `python3 scripts/replay.py compare --before BEFORE.json --after AFTER.json`
 
 For bundled replay, read the evaluation reference's suite and result semantics
@@ -85,4 +95,4 @@ The modeling layer can supply methods when a domain-modeling question remains.
 Neither companion is required: local domain authority governs meaning, and domain
 relationships do not automatically become retrieval dependencies.
 
-Earlier references, kept for existing links and read only when the topic applies: [capability contracts](capability-contracts.md), [evidence and reuse](evidence.md), [SDLC links](sdlc.md), [A2UI](a2ui.md) and [browser harness](browser-harness.md) representations, [workflow stages](workflow-stages.md), and the [performance contract](performance-contract.json).
+Earlier references, kept in `earlier/` and read only when the topic applies: [capability contracts](earlier/capability-contracts.md), [evidence and reuse](earlier/evidence.md), [SDLC links](earlier/sdlc.md), [A2UI](earlier/a2ui.md) and [browser harness](earlier/browser-harness.md) representations, [workflow stages](earlier/workflow-stages.md).

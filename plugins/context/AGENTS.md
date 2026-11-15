@@ -4,7 +4,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 
 | Skill | Use | Source (2026-10-25) |
 |---|---|---|
-| `context-system` | Vocabulary, domain models, manifests and registries, entry files and routes, fresh-agent route tests and controlled statements; replaces the retired progressive-context, context-routing-review, knowledge-modeling, knowledge-organization-system (vocabulary layer) and controlled-natural-language (statements layer) skills (added 2026-11-12) | `/Volumes/kimba/.claude/skills/context-system` (2026-11-12), plus T-0836 `excludes` and T-0837 decision-question doc type carried over from this repo |
+| `context-system` | Vocabulary, domain models, manifests and registries, entry files and routes, fresh-agent route tests and controlled statements; replaces the retired progressive-context, context-routing-review, knowledge-modeling, knowledge-organization-system (vocabulary layer) and controlled-natural-language (statements layer) skills (added 2026-11-12) | `/Volumes/kimba/.claude/skills/context-system` (2026-11-15) |
 | `context-fog-of-war` | Explain context-routing decisions from traces; audit guidance contracts | `~/.claude/skills/context-fog-of-war` |
 | `generative-systems` | Generative systems grounded in authoritative kits, contracts and assets | `~/.claude/skills/generative-systems` |
 | `system-atlas` | Whole-system workflow diagrams, machinery inventory and enforcement matrix | `~/.claude/skills/system-atlas` |
@@ -15,7 +15,8 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships context ski
 
 ## context-system
 
-- Keep `skills/context-system/SKILL.md` and its references domain-neutral. The earlier `capability-contracts`, `evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages` and `performance-contract` references under `references/routing/` stay reachable from the routing guide line that links them; live docs link into them.
+- Keep `skills/context-system/SKILL.md` and its references domain-neutral. The earlier `capability-contracts`, `evidence`, `sdlc`, `a2ui`, `browser-harness`, `workflow-stages` and `performance-contract` references live under `references/routing/earlier/` and stay reachable from the routing guide line that links them; live docs link into them. Host adapters live under `references/routing/hosts/`.
+- Fixtures and templates are JSON (`vocabulary.json`, `rules.json`, `decision-question.rules.json`); `scripts/datafile.py` still reads a YAML file when PyYAML is installed. The registry is a profile (`profile.json`, `schemas/profile.schema.json`).
 - Preserve evidence-bound assessments and qualification for a named reuse scope. Do not turn descriptive lifecycle views into mandatory stored states.
 - Use existing project records; avoid duplicate tickets, plans, registries, or assessments. Keep examples explicitly illustrative and project decisions in repository design docs.
 - Add a reference only when it has a distinct retrieval purpose. Link it from the skill with a clear loading condition.

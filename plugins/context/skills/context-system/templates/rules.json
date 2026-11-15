@@ -1,0 +1,143 @@
+{
+  "$comment": [
+    "Stage 0 rule set: one governed doc type, 3 to 5 patterns, a short banned-word list.",
+    "Copy it next to the corpus's vocabulary.json (the vocabulary layer) and replace every \"Replace with\" line with real sentences from the doc type that caused the trouble.",
+    "Every key, and the optional ones a stage allows: references/statements/patterns.md.",
+    "Check: python3 scripts/lint_cnl.py rules.json vocabulary.json <governed docs>"
+  ],
+  "version": 1,
+  "docTypes": [
+    {
+      "id": "requirement",
+      "description": "Replace with the doc type that caused errors or ambiguity, and who reads it.",
+      "paths": [
+        "requirements/**/*.md"
+      ],
+      "bannedWords": [
+        {
+          "word": "should",
+          "fix": "Write \"shall\" for a requirement; move a wish or rationale out of the requirement."
+        },
+        {
+          "word": "as appropriate",
+          "fix": "Name the condition or the value."
+        },
+        {
+          "word": "and/or",
+          "fix": "Write \"and\" or \"or\", or split the statement."
+        },
+        {
+          "word": "quickly",
+          "fix": "State a measurable limit, for example \"within 2 seconds\"."
+        },
+        {
+          "word": "user-friendly",
+          "fix": "State the observable behavior a reader can test."
+        }
+      ]
+    }
+  ],
+  "patterns": [
+    {
+      "id": "ears-ubiquitous",
+      "docType": "requirement",
+      "template": "The {system} shall {response}.",
+      "slots": {
+        "system": {
+          "type": "concept"
+        },
+        "response": {
+          "type": "text",
+          "maxWords": 20
+        }
+      },
+      "sources": [
+        "Replace with the real sentence this pattern came from and where, for example requirements/login.md:4."
+      ]
+    },
+    {
+      "id": "ears-event",
+      "docType": "requirement",
+      "template": "When {trigger}, the {system} shall {response}.",
+      "slots": {
+        "trigger": {
+          "type": "text",
+          "maxWords": 12
+        },
+        "system": {
+          "type": "concept"
+        },
+        "response": {
+          "type": "text",
+          "maxWords": 20
+        }
+      },
+      "sources": [
+        "Replace with the real sentence this pattern came from and where."
+      ]
+    },
+    {
+      "id": "ears-state",
+      "docType": "requirement",
+      "template": "While {state}, the {system} shall {response}.",
+      "slots": {
+        "state": {
+          "type": "text",
+          "maxWords": 12
+        },
+        "system": {
+          "type": "concept"
+        },
+        "response": {
+          "type": "text",
+          "maxWords": 20
+        }
+      },
+      "sources": [
+        "Replace with the real sentence this pattern came from and where."
+      ]
+    },
+    {
+      "id": "ears-unwanted",
+      "docType": "requirement",
+      "template": "If {condition}, then the {system} shall {response}.",
+      "slots": {
+        "condition": {
+          "type": "text",
+          "maxWords": 12
+        },
+        "system": {
+          "type": "concept"
+        },
+        "response": {
+          "type": "text",
+          "maxWords": 20
+        }
+      },
+      "sources": [
+        "Replace with the real sentence this pattern came from and where."
+      ]
+    },
+    {
+      "id": "ears-optional",
+      "docType": "requirement",
+      "template": "Where {feature}, the {system} shall {response}.",
+      "slots": {
+        "feature": {
+          "type": "text",
+          "maxWords": 12
+        },
+        "system": {
+          "type": "concept"
+        },
+        "response": {
+          "type": "text",
+          "maxWords": 20
+        }
+      },
+      "sources": [
+        "Replace with the real sentence this pattern came from and where."
+      ]
+    }
+  ]
+}

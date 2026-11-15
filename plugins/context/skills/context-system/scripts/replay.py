@@ -6,13 +6,13 @@ from pathlib import Path
 from validate import validate, local, digest
 
 
-def route(root, registry, case):
-    check=validate(root,registry)
+def route(root, profile, case):
+    check=validate(root,profile)
     result=dict(status='blocked',reason='',ledger=[],batches=[],stages=[],contextReads=0,contextBytes=0,
                 coverage={},verificationBytes=0,validationBytes=check['validationBytes'],validationIssues=check['issues'])
     if not check['valid']:
         result['reason']='Invalid corpus contract';return result
-    artifacts={a['id']:a for a in registry['artifacts']}
+    artifacts={a['id']:a for a in profile['artifacts']}
     aliases={alias:a['id'] for a in artifacts.values() for alias in a.get('aliases',[])}
     budget=case.get('budget',{})
     if not isinstance(budget,dict) or set(budget)-{'reads','bytes','itemBytes','batchBytes'}:raise ValueError('Unknown budget field')
@@ -28,7 +28,7 @@ def route(root, registry, case):
     bodies={};directives={};visited=set()
     def resolve(stage):
         target=stage.get('target')
-        if target is None:target=next((r['target'] for r in registry.get('routes',[]) if r['intent']==stage.get('intent')),None)
+        if target is None:target=next((r['target'] for r in profile.get('routes',[]) if r['intent']==stage.get('intent')),None)
         return aliases.get(target,target)
     def load(identity, target, batch, stage):
         a=artifacts[identity]
@@ -115,9 +115,9 @@ def route(root, registry, case):
     return result
 
 
-def run(root, registry_path, suite_path):
-    registry_bytes=Path(registry_path).read_bytes();suite_bytes=Path(suite_path).read_bytes()
-    registry=json.loads(registry_bytes);suite=json.loads(suite_bytes)
+def run(root, profile_path, suite_path):
+    profile_bytes=Path(profile_path).read_bytes();suite_bytes=Path(suite_path).read_bytes()
+    profile=json.loads(profile_bytes);suite=json.loads(suite_bytes)
     if not isinstance(suite,dict) or suite.get('version')!=1 or not isinstance(suite.get('cases'),list):raise ValueError('Invalid suite')
     ids=set();cases=[]
     for case in suite['cases']:
@@ -128,7 +128,7 @@ def run(root, registry_path, suite_path):
             if not isinstance(clauses,list) or not clauses or any(not isinstance(x,str) or not x for x in clauses):raise ValueError('Expected nonempty acceptance clause arrays')
         if 'forbidden' in expected and (not isinstance(expected['forbidden'],list) or any(not isinstance(x,str) for x in expected['forbidden'])):raise ValueError('Invalid forbidden IDs')
         if 'acceptablePaths' in expected and (not isinstance(expected['acceptablePaths'],list) or not expected['acceptablePaths'] or any(not isinstance(p,list) or any(not isinstance(x,str) for x in p) for p in expected['acceptablePaths'])):raise ValueError('Invalid acceptable paths')
-        result=route(root,registry,case);bodies=result.pop('returnedBodies',{})
+        result=route(root,profile,case);bodies=result.pop('returnedBodies',{})
         path=list(dict.fromkeys(x['id'] for x in result['ledger']));failures=[]
         if result['status']!='complete':failures.append(result['reason'])
         for identity,clauses in expected['required'].items():
@@ -141,7 +141,7 @@ def run(root, registry_path, suite_path):
         if expected.get('acceptablePaths') and path not in expected['acceptablePaths']:failures.append('Route is not an accepted alternative')
         result.update(id=case['id'],passed=not failures,acceptanceFailures=failures)
         cases.append(result)
-    return dict(version=2,kind='authored-route-replay',suiteSha256=digest(suite_bytes),registrySha256=digest(registry_bytes),
+    return dict(version=2,kind='authored-route-replay',suiteSha256=digest(suite_bytes),profileSha256=digest(profile_bytes),
                 cases=cases,passed=sum(c['passed'] for c in cases),total=len(cases),
                 limits=['No model was run. This tests routing mechanics and literal acceptance clauses, not semantic correctness.',
                         'Returned bytes are not evidence of actual model submission, understanding, influence or retention.',
@@ -169,8 +169,8 @@ def main():
     if len(sys.argv)>1 and sys.argv[1]=='compare':
         p=argparse.ArgumentParser();p.add_argument('--before',type=Path,required=True);p.add_argument('--after',type=Path,required=True);a=p.parse_args(sys.argv[2:])
         result=compare(json.loads(a.before.read_text()),json.loads(a.after.read_text()));print(json.dumps(result,indent=2));return int(result['regressions']>0)
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--root',type=Path,required=True);p.add_argument('--registry',type=Path,required=True);p.add_argument('--suite',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
-    result=run(a.root,a.registry,a.suite);a.out.parent.mkdir(parents=True,exist_ok=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--root',type=Path,required=True);p.add_argument('--profile','--profile',dest='profile',type=Path,required=True,help='the routing profile (JSON); --profile is its earlier name');p.add_argument('--suite',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+    result=run(a.root,a.profile,a.suite);a.out.parent.mkdir(parents=True,exist_ok=True)
     with a.out.open('x') as f:json.dump(result,f,indent=2);f.write('\n')
     print(json.dumps(dict(passed=result['passed'],total=result['total'],out=str(a.out)),indent=2));return int(result['passed']!=result['total'])
 

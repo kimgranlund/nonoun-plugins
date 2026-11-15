@@ -18,4 +18,4 @@ Required and optional semantics: [contracts](../references/routing/contracts.md)
 ```
 
 Keep IDs stable across moves. A standalone check cannot resolve relationship IDs;
-validate the registry as well. Do not copy canonical bodies into summaries.
+validate the profile as well. Do not copy canonical bodies into summaries.

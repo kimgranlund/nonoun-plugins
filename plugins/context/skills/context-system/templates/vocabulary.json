@@ -1,0 +1,25 @@
+{
+  "$comment": [
+    "Stage 0 vocabulary: one flat file per corpus, at most 15 concepts, each defined.",
+    "Field names are a stable contract (the statements layer reads them).",
+    "Every field and when a stage allows it: references/vocabulary/model.md.",
+    "Check: python3 scripts/validate_kos.py <this file>"
+  ],
+  "schemes": [
+    {
+      "id": "main",
+      "definition": "Replace with one sentence naming the corpus this vocabulary covers."
+    }
+  ],
+  "concepts": [
+    {
+      "id": "example-term",
+      "prefLabel": "example term",
+      "definition": "Replace with what this term means in this corpus, without repeating the label.",
+      "scheme": "main",
+      "evidence": [
+        "Replace with where the term is used or disputed, for example docs/setup.md:12."
+      ]
+    }
+  ]
+}

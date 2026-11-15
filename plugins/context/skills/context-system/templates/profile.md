@@ -1,4 +1,4 @@
-# Registry template
+# Profile template
 
 Optional local JSON profile. Inline descriptors have the same requirements as the
 [descriptor template](descriptor.md); ownership and relationships are optional.
@@ -19,6 +19,6 @@ Optional local JSON profile. Inline descriptors have the same requirements as th
 }
 ```
 
-Resolve every path relative to the corpus root. Prefer generating a registry from
+Resolve every path relative to the corpus root. Prefer generating a profile from
 canonical descriptors when scale warrants it. Record generator inputs and their
 hashes; never silently update fingerprints to conceal stale generated summaries.

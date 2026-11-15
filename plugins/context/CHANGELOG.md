@@ -10,6 +10,7 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 ### Changed
 
+- `context-system` (T-0854): synced from `/Volumes/kimba/.claude/skills/context-system` (2026-11-15). Fixtures and templates moved from YAML to JSON (`vocabulary.json`, `rules.json`, `decision-question.rules.json`, read through `scripts/datafile.py`), the registry became a profile (`profile.json`, `schemas/profile.schema.json`, `templates/profile.md`), new `check.py`, `check_links.py`, `check_move.py`, `package.py` and `refresh_profile.py` scripts, and the earlier routing references moved to `references/routing/earlier/` with a Claude Code adapter in `references/routing/hosts/`. `decision-questions` now lints with `templates/decision-question.rules.json` and its tests compile `templates/vocabulary.json`; `evaluation-system` names `vocabulary.json`; three spec links point into `earlier/`.
 - `context-system` (T-0851) carries two features its source copies lacked: the vocabulary layer's `excludes` field (T-0836: `validate_kos.py` `excludes-neighbor` and `excludes-statement` errors, fixtures, reference text) and the statements layer's decision-question doc type (T-0837: `templates/decision-question.rules.yaml`, fixtures, the patterns section), each with its tests. `decision-questions`, `evaluation-system` and `classify-and-resolve` now point at `context-system` in their scripts' messages, tests and references; `decision-questions` lints with `context-system`'s `lint_cnl.py` and its tests resolve `validate_kos.py` there.
 
 ### Removed

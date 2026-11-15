@@ -74,6 +74,7 @@ timestamps or a successful example. Operational conflict handling lives in
 These are design criteria for systems that perform those operations, not a mandate
 to add a generator, parser, cache or registry. Keep provider conventions in adapters;
 the core should work from its declared distribution without personal paths or a
-source checkout. See [evaluation](evaluation.md#practical-evaluation-criteria) for
+source checkout. A host adapter is a dated reference under `hosts/`, one per harness, whose table of steering
+surfaces is checked by a probe on the running host: [Claude Code](hosts/claude-code.md). See [evaluation](evaluation.md#practical-evaluation-criteria) for
 observable tests, [contracts](contracts.md) for the optional JSON profile, and
 [layout example](../../examples/universal-layout.md) only when a layout is useful.
