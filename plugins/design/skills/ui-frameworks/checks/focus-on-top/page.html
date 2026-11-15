@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Focus on top (C20)</title>
+<link rel="stylesheet" href="../../kit/styles/kit.css">
+<style>
+  /* Unlayered page rules: a plain ground, and rows whose parts are joined (gap 0), so each ring reaches into its neighbour. */
+  body { margin: 0; padding: 24px; background: #fff; font-family: system-ui, sans-serif; }
+  .row { display: flex; gap: 0; margin-block-end: 24px; }
+</style>
+</head>
+<body>
+  <!-- Case A: two joined buttons. The reset raises the one on the focus-visible condition. -->
+  <div class="row" id="a"><ui-button id="a-focus">First</ui-button><ui-button id="a-next">Second</ui-button></div>
+  <!-- Case B: a text field joined to a button. Focus is on the inner input; the root raises itself on :focus-within. -->
+  <div class="row" id="b"><ui-text-field id="b-focus"><input data-part="input" id="b-input" aria-label="Query"></ui-text-field><ui-button id="b-next">Go</ui-button></div>
+  <script type="module">
+    import '../../kit/components/button/button.js';
+    import '../../kit/components/text-field/text-field.js';
+    await customElements.whenDefined('ui-button');
+    await customElements.whenDefined('ui-text-field');
+    document.documentElement.dataset.ready = '';
+  </script>
+</body>
+</html>

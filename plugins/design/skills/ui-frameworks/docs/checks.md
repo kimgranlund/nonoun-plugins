@@ -341,6 +341,14 @@ For check 7:
 node checks/recipes/run.mjs <project-with-playwright>
 ```
 
+For the C20 stacking rule:
+
+```bash
+node checks/focus-on-top/run.mjs <project-with-playwright>
+```
+
+Then the same with `--negative`.
+
 For check 3, generate Panda's output twice, build the pages, then read them in one engine:
 
 ```bash

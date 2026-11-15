@@ -8,13 +8,17 @@
 // round, its own data-round. A corner button, the key C and a "Compare all" button in each variant open a modal dialog
 // that holds every variant of one moment side by side, live: the variant's `.stage` is moved into its card and put back
 // on close, with a placeholder of the same height left in the page. Compare is a view; the JSON gains nothing.
-(function () {
+// Rounds: when the page holds anything marked with a data-round lower than the container's (a variant kept from an
+// earlier round, or that round's table or reading), a control above the first variant shows the current round only,
+// or all rounds. The page opens on the current round. Hidden variants stay in the JSON with the verdicts they hold.
+// The leading semicolon ends a page script's last statement, so the module is never read as a call on it.
+;(function () {
   const root = document.querySelector('[data-explore]');
   if (!root) return;
   const sections = [...root.querySelectorAll('section[data-variant]')];
   if (!sections.length) return;
   const KEY = 'ui-explore-variants:' + document.title + ':' + (root.dataset.round || '1');
-  const VERDICTS = [['pursue', 'Pursue'], ['parts', 'Keep parts'], ['drop', 'Drop']];
+  const DEFAULT_VERDICTS = [['pursue', 'Pursue'], ['parts', 'Keep parts'], ['drop', 'Drop']];
   const NEXT = [['refine', 'Refine the picks'], ['combine', 'Combine the picks'], ['more', 'Explore further'], ['build', 'Build it']];
   const DEFAULT_ASPECTS = 'Layout,Density,Readability,Interaction,Fits the system';
   // the nearest data-aspects wins: the variant's own, a wrapper around one moment's variants, then the container's
@@ -23,13 +27,25 @@
     return ((host && root.contains(host) ? host : root).dataset.aspects || DEFAULT_ASPECTS).split(',').map((a) => a.trim()).filter(Boolean);
   };
   const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  // data-verdicts on the container names the page's own verdicts: a comma list of labels, or key:Label pairs
+  // ("keep:Keep,revert:Go back"). The first is the positive one. Fewer than two leaves the default three.
+  const OWN_VERDICTS = (root.dataset.verdicts || '').split(',').map((x) => x.trim()).filter(Boolean)
+    .map((x) => { const i = x.indexOf(':'); return i < 0 ? [slug(x), x] : [slug(x.slice(0, i)), x.slice(i + 1).trim()]; });
+  const VERDICTS = OWN_VERDICTS.length >= 2 ? OWN_VERDICTS : DEFAULT_VERDICTS;
   let state = { variants: {}, overall: {} };
+  let roundsNote = ''; // set by the rounds control: how many variants are hidden
   try { state = JSON.parse(localStorage.getItem(KEY)) || state; } catch (e) { /* no storage: start empty */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* draft not kept */ } refresh(); };
   const nameOf = (s) => s.dataset.name || (s.querySelector('h2') || {}).textContent || s.dataset.variant;
 
   const pill = (type, name, value, label, checked) =>
     `<label class="fb-pill"><input type="${type}" name="${name}" value="${value}" id="${name}-${slug(value)}"${checked ? ' checked' : ''}><span>${label}</span></label>`;
+
+  // data-pick="one" on the container, a wrapper or a variant (the nearest wins): in that moment the first verdict
+  // goes to one variant only. Giving it to one moves every other variant of the moment that is not judged, or that
+  // held it, to the last verdict; a middle verdict is left alone.
+  const pickOne = (s) => { const h = s.closest('[data-pick]'); return !!h && root.contains(h) && h.dataset.pick === 'one'; };
+  const FIRST = VERDICTS[0][0], LAST = VERDICTS[VERDICTS.length - 1][0];
 
   for (const s of sections) {
     const id = s.dataset.variant, v = (state.variants[id] = state.variants[id] || { verdict: null, works: [], doesnt: [], note: '' });
@@ -42,8 +58,16 @@
       `<div class="fb-row"><span class="fb-l">Does not</span><div class="fb-set">${ASPECTS.map((a) => pill('checkbox', `fb-${id}-doesnt`, a, a, v.doesnt.includes(a))).join('')}</div></div>` +
       `<div class="fb-row"><label class="fb-l" for="fb-${id}-note">Note</label><textarea id="fb-${id}-note" rows="2" placeholder="What to change, keep or try">${(v.note || '').replace(/</g, '&lt;')}</textarea></div>`;
     f.addEventListener('submit', (e) => e.preventDefault());
-    f.addEventListener('input', () => {
+    f.addEventListener('input', (e) => {
       v.verdict = (f.querySelector(`[name="fb-${id}-verdict"]:checked`) || {}).value || null;
+      if (e.target.name === `fb-${id}-verdict` && v.verdict === FIRST && pickOne(s)) {
+        for (const other of sections) {
+          const oid = other.dataset.variant, ov = state.variants[oid];
+          if (other === s || (other.dataset.moment || '') !== (s.dataset.moment || '') || !pickOne(other) || !ov || (ov.verdict && ov.verdict !== FIRST)) continue;
+          ov.verdict = LAST;
+          other.querySelectorAll(`.fb [name="fb-${oid}-verdict"]`).forEach((r) => { r.checked = r.value === LAST; });
+        }
+      }
       v.works = [...f.querySelectorAll(`[name="fb-${id}-works"]:checked`)].map((i) => i.value);
       v.doesnt = [...f.querySelectorAll(`[name="fb-${id}-doesnt"]:checked`)].map((i) => i.value);
       v.note = f.querySelector('textarea').value;
@@ -77,7 +101,9 @@
       skill: 'ui-explore-variants', schema: 1,
       exploration: document.title, question: root.dataset.question || null, round: Number(root.dataset.round || 1),
       controls,
-      variants: sections.map((s) => Object.assign({ id: s.dataset.variant, name: nameOf(s).trim() }, state.variants[s.dataset.variant])),
+      ...(VERDICTS === OWN_VERDICTS ? { verdicts: VERDICTS.map(([k]) => k) } : {}), // only when the page named its own
+      // offered: the aspects this variant showed, so a reader can tell one not ticked from one never asked
+      variants: sections.map((s) => Object.assign({ id: s.dataset.variant, name: nameOf(s).trim(), offered: aspectsOf(s) }, state.variants[s.dataset.variant])),
       overall: { next: o.next, note: o.note },
       capturedAt: new Date().toISOString(),
     };
@@ -87,8 +113,9 @@
     const by = (k) => p.variants.filter((v) => v.verdict === k).map((v) => v.name);
     const judged = p.variants.filter((v) => v.verdict).length;
     sum.textContent = judged
-      ? `${judged} of ${p.variants.length} judged. Pursue: ${by('pursue').join(', ') || 'none'}. Keep parts: ${by('parts').join(', ') || 'none'}. Drop: ${by('drop').join(', ') || 'none'}.`
+      ? `${judged} of ${p.variants.length} judged. ${VERDICTS.map(([k, l]) => `${l}: ${by(k).join(', ') || 'none'}`).join('. ')}.`
       : `Give each variant a verdict above, then copy the JSON and paste it in the chat.`;
+    sum.textContent += roundsNote;
   }
   box.querySelector('.fb-copy').addEventListener('click', () => {
     refresh();
@@ -107,6 +134,36 @@
   document.addEventListener('input', (e) => { if (e.target.matches && e.target.matches('[data-fb-control]')) refresh(); });
   document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-fb-control-group]')) setTimeout(refresh, 0); });
   refresh();
+
+  // ---- Rounds ----
+  const curRound = Number(root.dataset.round || 1);
+  const older = [...root.querySelectorAll('[data-round]')].filter((el) => Number(el.dataset.round) < curRound);
+  if (older.length) {
+    const RKEY = KEY + ':rounds';
+    let all = false;
+    try { all = localStorage.getItem(RKEY) === 'all'; } catch (e) { /* no storage: open on the current round */ }
+    for (const el of older) el.setAttribute('data-fb-older', '');
+    const hiddenVariants = older.filter((el) => el.matches('section[data-variant]')).length;
+    const bar = document.createElement('div');
+    bar.className = 'fb-rounds'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Rounds shown');
+    bar.innerHTML = `<span class="fb-l">Showing</span><div class="fb-set">${pill('radio', 'fb-rounds', 'current', `Round ${curRound}`, !all)}${pill('radio', 'fb-rounds', 'all', 'All rounds', all)}</div><span class="fb-rounds-n" aria-live="polite"></span>`;
+    let top = sections.find((s) => !older.includes(s)) || sections[0];
+    while (top.parentNode !== root && root.contains(top.parentNode)) top = top.parentNode;
+    top.parentNode.insertBefore(bar, top);
+    const show = () => {
+      root.classList.toggle('fb-this-round', !all);
+      const n = hiddenVariants === 1 ? '1 variant' : `${hiddenVariants} variants`;
+      bar.querySelector('.fb-rounds-n').textContent = all ? '' : `${n} from earlier rounds hidden.`;
+      roundsNote = all || !hiddenVariants ? '' : ` ${n} from earlier rounds ${hiddenVariants === 1 ? 'is' : 'are'} hidden and ${hiddenVariants === 1 ? 'keeps its verdict' : 'keep their verdicts'}.`;
+      refresh();
+    };
+    bar.addEventListener('change', (e) => {
+      all = e.target.value === 'all';
+      try { localStorage.setItem(RKEY, all ? 'all' : 'current'); } catch (err) { /* choice not kept */ }
+      show();
+    });
+    show();
+  }
 
   // ---- Compare ----
   if (sections.length < 2 || !window.HTMLDialogElement) return;

@@ -17,7 +17,9 @@ The page is a thinking tool: it is finished when the user can say which way to g
 | A request for a different number of variants, or a named axis | Step 3 with that number or axis fixed |
 
 Files, relative to this folder: `assets/template.html` (page skeleton), `assets/feedback.css` and
-`assets/feedback.js` (the feedback module), `scripts/inline.mjs` (puts the module into a page).
+`assets/feedback.js` (the feedback module), `scripts/inline.mjs` (puts the module into a page),
+`scripts/check.mjs` (the skill's own check: `node scripts/check.mjs <project-with-playwright>`; run it before and
+after any change to the module).
 
 ## Procedure
 
@@ -64,6 +66,8 @@ Start from `assets/template.html`. Each variant is a `section[data-variant="<slu
 say work or do not; make them specific to the problem, such as "Shows duration", "Readable at a glance").
 A page with several moments gives each its own aspects: `data-aspects` on a wrapper around that moment's variants,
 or on a variant. The nearest one wins, then the container's.
+From round 2 the page opens on the current round; "All rounds" shows the earlier ones. Mark an earlier round's own
+table or reading with its `data-round`, so it hides with its variants.
 Then run `node <skill>/scripts/inline.mjs <page.html>` and publish.
 
 The module reads `--fb-ink`, `--fb-panel`, `--fb-fill`, `--fb-muted`, `--fb-quiet`, `--fb-focus` and `--fb-bg`,
@@ -92,11 +96,19 @@ aspects, and a note. After the last section it adds "Send feedback": what to do 
 the picks, Explore further, Build it), an overall note, **Copy feedback JSON**, and a preview. Answers are kept
 as a draft in the reader's browser. Where the clipboard is refused, the JSON is selected for copying by hand.
 
+A page that asks another kind of question names its own verdicts: `data-verdicts` on the container, as labels or
+`key:Label` pairs with the positive one first (a review of what is already built: `data-verdicts="keep:Keep,revert:Go back"`).
+The JSON then carries `verdicts`, the keys offered. Where a moment's variants are alternatives and only one can win
+(a pair of before and after, three candidates for one slot), put `data-pick="one"` on the container, on a wrapper
+around that moment or on its variants: giving one variant the first verdict moves the moment's other variants that
+are not judged, or that held it, to the last verdict, so one click answers the moment. A middle verdict is left alone.
+
 ```json
 { "skill": "ui-explore-variants", "schema": 1,
   "exploration": "Calendar Event Layouts", "question": "…", "round": 2,
   "controls": { "width": "440", "now": "560", "view": "Week" },
   "variants": [ { "id": "dots", "name": "Dots, with the day spelled out below",
+                  "offered": ["Layout", "Shows duration"],
                   "verdict": "pursue", "works": ["Layout"], "doesnt": [], "note": "…" } ],
   "overall": { "next": "combine", "note": "…" },
   "capturedAt": "2026-11-13T14:02:11.000Z" }
@@ -104,17 +116,19 @@ as a draft in the reader's browser. Where the clipboard is refused, the JSON is 
 
 ## Reading the feedback
 
-The JSON is the user's answer; treat its notes as their words. Then:
+The JSON is the user's answer; treat its notes as their words. Save it beside the page as
+`feedback.round-<n>.json` before acting on it, so what was decided can be checked later. Then:
 
 1. Restate it in two lines: what is pursued, kept in part and dropped, and the next step they chose.
 2. A `null` verdict is "not judged", not "dropped". A note outranks a choice when they disagree; quote it.
+   An aspect in `offered` and in neither list was not ticked; one absent from `offered` was never asked.
    When every verdict is `null` and there is no note, the JSON carries no answer (`overall.next` is then only the
    form's remembered value): do not run a round on it. Ask the user for the pick directly, with your recommendation
    first.
 3. Every question in a note gets an answer that is **built** on the page where it can be, not only described.
 4. Act on `overall.next`:
    - `refine` or `combine`: a round 2 on the same artifact. Add a "Direction" section above the variants that
-     joins the picks, increment `data-round`, keep the earlier variants below it for reference, and take what
+     joins the picks, increment `data-round`, keep the earlier variants on the page, hidden until asked for, and take what
      "Works" from dropped variants only where a note asks. Where the picks conflict, or a note asks for "more" or
      "stronger", the Direction holds judgeable sub-variants (each its own `section[data-variant]`): two honest
      combinations, or two or three strengths side by side with the computed figure for each. Never blur a conflict
@@ -135,6 +149,10 @@ The JSON is the user's answer; treat its notes as their words. Then:
 - State the cost of each variant, and your own recommendation, even when the user has a favourite.
 - State by shape as well as colour (hollow and filled, size, weight), so a variant is judged without colour.
 - An estimate is labelled an estimate. An unverified page is reported as unverified.
+- A specimen that stands for a system takes that system's own values (its label on a solid, its ramp steps, its
+  lengths), in both schemes. Where a value is the page's own stand-in, the page says so.
+- A page built from values derived at build time (a size system's rows, a palette) keeps each round's derived
+  values with that round's file. Rebuilding an earlier round must not redraw it with today's values.
 - Republish to the same artifact across rounds; label each publish with what the round added. Keep the previous
   round's file beside the page, so a later round can be diffed against what the user judged.
 - When a round fixes something the user pointed at, say whether the fix was looked at in a render, and in which

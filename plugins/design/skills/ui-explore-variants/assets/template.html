@@ -51,7 +51,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
 </style>
 
 <!-- data-question: the one question in the reader's words. data-round: 1, then 2 after feedback.
-     data-aspects: the things a reader can say work or do not, specific to this problem (comma list). -->
+     data-aspects: the things a reader can say work or do not, specific to this problem (comma list).
+     Optional: data-verdicts="keep:Keep,revert:Go back" names the page's own verdicts (the positive one first);
+     data-pick="one" here or on a wrapper around one moment makes the first verdict exclusive in that moment. -->
 <div class="page" data-explore data-round="1"
      data-question="STATE THE QUESTION"
      data-aspects="Layout,Density,Readability,Interaction,Fits the system">
@@ -71,7 +73,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
 
   <!-- Repeat once per variant. id and data-variant are short, stable slugs. data-moment names the component or UI
        moment the variant answers (one per question on the page); it stays the same across rounds, so Compare can lay
-       every answer to it side by side. A variant kept from an earlier round also carries its own data-round. -->
+       every answer to it side by side. A variant kept from an earlier round also carries its own data-round,
+       and so does that round's table or reading: the page opens on the current round and hides the earlier ones
+       until the reader chooses "All rounds". -->
   <section class="opt" id="variant-a" data-variant="variant-a" data-moment="NAME-THE-MOMENT">
     <div class="opt-head"><span class="kicker">Option A</span><h2>NAME IT BY ITS MECHANISM</h2>
       <p class="lede">How it works, in one or two sentences, with no reference to the other variants.</p></div>

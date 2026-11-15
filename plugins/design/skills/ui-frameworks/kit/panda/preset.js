@@ -211,6 +211,9 @@ export default {
             "critical-solid": {
               "value": "var(--colors-critical-solid)"
             },
+            "critical-solid-active": {
+              "value": "var(--colors-critical-solid-active)"
+            },
             "critical-solid-hover": {
               "value": "var(--colors-critical-solid-hover)"
             },
@@ -481,6 +484,9 @@ export default {
             "info-solid": {
               "value": "var(--colors-info-solid)"
             },
+            "info-solid-active": {
+              "value": "var(--colors-info-solid-active)"
+            },
             "info-solid-hover": {
               "value": "var(--colors-info-solid-hover)"
             },
@@ -612,6 +618,9 @@ export default {
             },
             "neutral-solid": {
               "value": "var(--colors-neutral-solid)"
+            },
+            "neutral-solid-active": {
+              "value": "var(--colors-neutral-solid-active)"
             },
             "neutral-solid-hover": {
               "value": "var(--colors-neutral-solid-hover)"
@@ -745,6 +754,9 @@ export default {
             "primary-solid": {
               "value": "var(--colors-primary-solid)"
             },
+            "primary-solid-active": {
+              "value": "var(--colors-primary-solid-active)"
+            },
             "primary-solid-hover": {
               "value": "var(--colors-primary-solid-hover)"
             },
@@ -804,6 +816,9 @@ export default {
             },
             "secondary-solid": {
               "value": "var(--colors-secondary-solid)"
+            },
+            "secondary-solid-active": {
+              "value": "var(--colors-secondary-solid-active)"
             },
             "secondary-solid-hover": {
               "value": "var(--colors-secondary-solid-hover)"
@@ -867,6 +882,9 @@ export default {
             },
             "success-solid": {
               "value": "var(--colors-success-solid)"
+            },
+            "success-solid-active": {
+              "value": "var(--colors-success-solid-active)"
             },
             "success-solid-hover": {
               "value": "var(--colors-success-solid-hover)"
@@ -1000,6 +1018,9 @@ export default {
             "warning-solid": {
               "value": "var(--colors-warning-solid)"
             },
+            "warning-solid-active": {
+              "value": "var(--colors-warning-solid-active)"
+            },
             "warning-solid-hover": {
               "value": "var(--colors-warning-solid-hover)"
             },
@@ -1090,6 +1111,9 @@ export default {
             "solid-face": {
               "value": "var(--solid-face)"
             },
+            "solid-pressed-face": {
+              "value": "var(--solid-pressed-face)"
+            },
             "tint-face": {
               "value": "var(--tint-face)"
             }
@@ -1167,11 +1191,11 @@ export default {
             "containers-frame-nest-f-0-depth": {
               "value": "var(--containers-frame-nest-f-0-depth)"
             },
+            "containers-frame-page-inset": {
+              "value": "var(--containers-frame-page-inset)"
+            },
             "containers-frame-panel-inset": {
               "value": "var(--containers-frame-panel-inset)"
-            },
-            "containers-frame-region-inset": {
-              "value": "var(--containers-frame-region-inset)"
             },
             "containers-gap-blocks-in-a-group-card-4": {
               "value": "var(--containers-gap-blocks-in-a-group-card-4)"
@@ -1333,11 +1357,11 @@ export default {
             "containers-frame-nest-f-0-depth": {
               "value": "var(--containers-frame-nest-f-0-depth)"
             },
+            "containers-frame-page-inset": {
+              "value": "var(--containers-frame-page-inset)"
+            },
             "containers-frame-panel-inset": {
               "value": "var(--containers-frame-panel-inset)"
-            },
-            "containers-frame-region-inset": {
-              "value": "var(--containers-frame-region-inset)"
             },
             "containers-gap-blocks-in-a-group-card-4": {
               "value": "var(--containers-gap-blocks-in-a-group-card-4)"

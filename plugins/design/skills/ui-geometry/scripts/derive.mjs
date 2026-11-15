@@ -216,8 +216,8 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
     const bodyLine = text ? (text.line ?? 1.5) * size(text.role) : size('body-md') + P.type['body-md'][1] * u, g = lineGrid({ bodyLine }), hpx = (S + 2 * i) * uT('controls')
     add('rhythm', 'L', text ? `the ${text.role} line, to an even px that divides by 4` : 'the body-md line, to an even px that divides by 4', g.L / u)
     add('rhythm', 'half-line', 'L/2', g.half / u)
-    for (const id of Object.keys(P.type)) { const z = size(id), module = id === (text?.role ?? 'body-md'), head = /^(display|heading)/.test(id) && !module, upv = g.up(z * 1.3), small = !module && !head && upv > 1.8 * z
-      add('rhythm', `${id} line on the grid`, module ? 'L' : head ? '1.15 · size, to a px; the block is padded below to the next half-line' : small ? 'small text under a large module: 1.5 · size, to a px; the block is padded below to the next half-line' : 'the next half-line at or above 1.3 · size', (module ? g.L : head ? g.heading(z) : small ? Math.round(z * 1.5) : upv) / u) }
+    for (const id of Object.keys(P.type)) { const z = size(id), module = id === (text?.role ?? 'body-md'), head = /^(display|heading)/.test(id) && !module, upv = g.up(z * 1.15), small = !module && !head && upv > 1.8 * z
+      add('rhythm', `${id} line on the grid`, module ? 'L' : head ? '1.15 · size, to a px; the block is padded below to the next half-line' : small ? 'small text under a large module: 1.5 · size, to a px; the block is padded below to the next half-line' : 'the next half-line at or above 1.15 · size', (module ? g.L : head ? g.heading(z) : small ? Math.round(z * 1.5) : upv) / u) }
     add('rhythm', 'gap floor', 'a gap is rounded to the half-line and is never under one', g.half / u)
     add('rhythm', 'control box', 'the next half-line at or above h; the control is centred in it', g.up(hpx) / u)
     add('rhythm', 'row on the grid', 'the control box', g.up(hpx) / u)

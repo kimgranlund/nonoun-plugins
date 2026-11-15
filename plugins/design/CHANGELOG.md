@@ -4,6 +4,13 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Changed
+
+- `ui-geometry` (T-0855): synced from the MacBook copy at `2b1500a`. The floor for a text line on the line grid is 1.15 again (`references/equations.md`, `scripts/derive.mjs` and its tests); the inspector panel's `geometry-runtime/derive.js` and `provenance.json` are rebuilt with `npm run build`.
+- `ui-frameworks` (T-0855): synced from the MacBook copy at `2cf5ee1`. Adds `checks/focus-on-top`, a keyboard check of the focus ring over a joined neighbour, named in `docs/checks.md` and the CSS contract.
+- `ui-explore-variants` (T-0855): synced from the MacBook copy at `6e5d784`. Pages can name their own verdicts (`data-verdicts`) and pick one variant per moment (`data-pick="one"`); adds its own check, `scripts/check.mjs` with `scripts/check.page.html`, which tests the feedback module in Chromium and WebKit.
+- `ui-interaction-dev` (T-0855): synced from the MacBook copy at `ba2f4c4`. The rule spec cites the W3C WAI forms tutorial on placeholder text.
+
 ## [0.4.0] - 2026-11-15
 
 ### Added
