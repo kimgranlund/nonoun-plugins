@@ -1,0 +1,60 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the badge: a native <span data-ui="badge">. Its rules: J66 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A pill as tall as ui-geometry's badge, in the neutral solid; data-variant re-points the face and the ink to the solid and
+   the on-solid ink of the ui-colors role of its name. */
+@layer recipes {
+  @scope ([data-ui="badge"]) {
+    :where(:scope) {
+      --_face: var(--badge-face, var(--colors-neutral-solid));
+      --_ink: var(--badge-ink, var(--colors-neutral-on-solid));
+      --_height: var(--badge-height, var(--controls-mark-badge));
+      --_inset: var(--badge-inset, var(--controls-control-i));
+      --_radius: var(--badge-radius, calc(var(--_height) / 2));
+      --_text: var(--unit-type-label);
+      --_border: var(--unit-border-b);
+    }
+    :where(:scope[data-variant="info"]) {
+      --_face: var(--badge-face, var(--colors-info-solid));
+      --_ink: var(--badge-ink, var(--colors-info-on-solid));
+    }
+    :where(:scope[data-variant="success"]) {
+      --_face: var(--badge-face, var(--colors-success-solid));
+      --_ink: var(--badge-ink, var(--colors-success-on-solid));
+    }
+    :where(:scope[data-variant="warning"]) {
+      --_face: var(--badge-face, var(--colors-warning-solid));
+      --_ink: var(--badge-ink, var(--colors-warning-on-solid));
+    }
+    :where(:scope[data-variant="critical"]) {
+      --_face: var(--badge-face, var(--colors-critical-solid));
+      --_ink: var(--badge-ink, var(--colors-critical-on-solid));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      color: var(--_ink);
+      font-size: var(--_text);
+      white-space: nowrap;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

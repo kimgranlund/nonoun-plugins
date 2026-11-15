@@ -1,0 +1,19 @@
+{
+ "$description": "Trigger cases for the description: prompts that should load ui-showcase-bento, and near misses that belong to a sibling skill. Run them with an evaluation runner when the description or the skill's scope changes.",
+ "should_trigger": [
+  "Make a showcase of our design system on one page",
+  "Generate a specimen sheet for the colour system and the geometry together",
+  "Build a bento of our shadcn components with light and dark mode",
+  "Show our component kit in Flat, Glass and Outline on one sheet and check nothing moves"
+ ],
+ "should_not_trigger": [
+  { "prompt": "What is the control height at 16px?", "owner": "ui-geometry" },
+  { "prompt": "Generate a dark mode palette with APCA contrast", "owner": "ui-colors" },
+  { "prompt": "How should a frosted glass menu be painted?", "owner": "ui-materials" },
+  { "prompt": "Give me a tweak panel to tune our spacing constants live", "owner": "ui-kit-inspector" },
+  { "prompt": "Show me three alternative implementations of this button to compare", "owner": "component-variants" },
+  { "prompt": "Wireframe the onboarding flow with annotations", "owner": "wireframe-review" },
+  { "prompt": "Make a one-page specimen sheet of just our colour system", "owner": "ui-colors" },
+  { "prompt": "Document our brand system as a set of sheets, built from the real source and audited", "owner": "brand-system-sheets" }
+ ]
+}

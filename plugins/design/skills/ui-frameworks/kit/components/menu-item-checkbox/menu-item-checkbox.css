@@ -1,0 +1,85 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-menu-item-checkbox>, a menu item that is on or off. Its shape and rules: docs/specs/css-contract.md.
+   Its conditions: references/states.json. The menu item's recipe, with room at the start for the mark: ::before,
+   a box of the icon size that is always there and shows its glyph only while checked, so that a column of items
+   keeps its labels aligned. The mark is Phosphor "check", regular weight (MIT, phosphoricons.com), as checkbox.css embeds it, drawn as a mask in the ink, so it
+   follows the ink in every state and in forced colours. The kit's icon glyphs cannot be read from another
+   element's rule, hence the copy here.
+   ui-materials: no face at rest. The item that has focus is the one marked row (D76): the keys and the pointer
+   both move focus, so there is no hover rule.
+   ui-geometry: a row inside the menu's frame, with its text at T from the frame's edge and its focus ring drawn
+   inside it. */
+@layer recipes {
+  @scope (ui-menu-item-checkbox) {
+    :where(:scope) {
+      --_face-focus: var(--menu-item-checkbox-face-focus, var(--colors-bg-muted-hover));
+      --_face-active: var(--menu-item-checkbox-face-active, var(--pressed-face));
+      --_ink: var(--menu-item-checkbox-ink, var(--ink));
+      --_ink-disabled: var(--menu-item-checkbox-ink-disabled, var(--ink-faint));
+      --_height: var(--menu-item-checkbox-height, var(--collections-rows-menu-row));
+      --_inset: var(--menu-item-checkbox-inset, calc(var(--controls-control-t) - var(--collections-frame-d_c)));
+      --_gap: var(--menu-item-checkbox-gap, var(--controls-control-i));
+      --_radius: var(--menu-item-checkbox-radius, var(--collections-curvature-r_row));
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_mark-size: var(--controls-icon-a-md);
+      --_mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      align-items: center;
+      gap: var(--_gap);
+      min-block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      color: var(--_ink);
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before {
+      content: "";
+      flex: none;
+      inline-size: var(--_mark-size);
+      block-size: var(--_mark-size);
+      visibility: hidden;
+      background-color: currentColor;
+      mask: var(--_mark) center / contain no-repeat;
+    }
+
+    :scope:where(:is(:focus, [data-focus])) { background-color: var(--_face-focus); }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: calc(var(--_ring-width) * -1);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
+    :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::before { visibility: visible; }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) { transition: background-color 100ms; }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face-focus: Highlight;
+        --_face-active: Highlight;
+        --_ink: CanvasText;
+        --_ink-disabled: GrayText;
+        --_ring: HighlightText; /* Chromium and Firefox already draw the ring in the ink; WebKit 27.2 needs it said */
+      }
+      /* The mark keeps its fill: currentColor, which forced colours have already made a system colour. */
+      :scope::before { forced-color-adjust: none; }
+      :scope:where(:is(:focus, [data-focus])) { color: HighlightText; }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-feed>, a list of articles that grows as the user reads. Its shape and rules:
+   docs/specs/css-contract.md. It stacks its child elements, the articles, with a gap, and draws the focus
+   ring on the article that has focus, outside it, in the gap (J73). It paints nothing else; the articles'
+   own look is the author's, a card for instance. */
+@layer recipes {
+  @scope (ui-feed) {
+    :where(:scope) {
+      --_gap: var(--feed-gap, var(--layout-gap-card));
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > *:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) { --_ring: Highlight; }
+    }
+  }
+}

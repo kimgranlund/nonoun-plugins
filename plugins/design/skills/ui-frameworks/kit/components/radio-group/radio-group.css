@@ -1,0 +1,26 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-radio-group>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   It stacks its radios, or puts them in a row when horizontal, and paints nothing, so it has no forced-colours block. */
+@layer recipes {
+  @scope (ui-radio-group) {
+    :where(:scope) {
+      --_gap: var(--radio-group-gap, var(--controls-gap-grouped));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope:where(:is([aria-orientation="horizontal"], [orientation="horizontal"])) {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+}

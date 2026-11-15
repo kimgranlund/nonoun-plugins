@@ -1,0 +1,22 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-toolbar>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-geometry: the gap for grouped controls. It paints nothing, so it has no forced-colours block and no ring. */
+@layer recipes {
+  @scope (ui-toolbar) {
+    :where(:scope) {
+      --_gap: var(--toolbar-gap, var(--controls-gap-grouped));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) { flex-direction: column; }
+  }
+}

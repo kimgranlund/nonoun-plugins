@@ -1,0 +1,103 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "splitter",
+  "kind": "component",
+  "family": "splitter",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/",
+  "summary": "Two panes side by side with a bar between them that the user drags, or moves with the arrow keys, to give one more room.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "number",
+      "description": "The share of the room the first pane takes, from 0 to 100.",
+      "default": 50
+    },
+    "min": {
+      "type": "number",
+      "description": "The least share the first pane may take.",
+      "default": 0
+    },
+    "max": {
+      "type": "number",
+      "description": "The most share the first pane may take.",
+      "default": 100
+    },
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "horizontal",
+        "vertical"
+      ],
+      "default": "horizontal",
+      "state": "vertical",
+      "description": "vertical stacks the panes, with the bar lying between them."
+    }
+  },
+  "resets": [],
+  "states": [
+    "vertical"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A grid of the first pane, the bar and the second pane."
+    },
+    "start": {
+      "kind": "author",
+      "material": null,
+      "note": "The first pane, marked data-part=\"start\"."
+    },
+    "end": {
+      "kind": "author",
+      "material": null,
+      "note": "The second pane, marked data-part=\"end\"."
+    },
+    "bar": {
+      "kind": "element",
+      "tag": "div",
+      "at": "end",
+      "attrs": {
+        "role": "separator",
+        "tabindex": "0"
+      },
+      "material": null,
+      "note": "The bar the user moves. The recipe places it between the panes."
+    }
+  },
+  "tokens": [
+    "--splitter-bar-face",
+    "--splitter-bar-face-hover",
+    "--splitter-bar-height"
+  ],
+  "behaviours": [],
+  "keys": {
+    "ArrowLeft, ArrowRight": "In a horizontal splitter: move the bar one step.",
+    "ArrowUp, ArrowDown": "In a vertical splitter: move the bar one step.",
+    "Home, End": "Give the first pane its least or its most.",
+    "Enter": "Collapses the first pane, or brings it back to where it was."
+  },
+  "events": {
+    "input": "Dispatched while the user moves the bar.",
+    "change": "Dispatched when the user has finished."
+  },
+  "messages": {
+    "bar": "Resize"
+  },
+  "notYet": [
+    "More than two panes.",
+    "A share that is not a whole number, or outside its limits, is laid out only once the element is defined.",
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

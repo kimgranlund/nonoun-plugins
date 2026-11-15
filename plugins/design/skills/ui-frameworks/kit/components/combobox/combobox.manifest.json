@@ -1,0 +1,111 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "combobox",
+  "kind": "component",
+  "family": "combobox",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+  "summary": "A text field with a list of suggestions that narrows as the user types.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "It is showing. A script adds and removes it."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open",
+    "focus-within",
+    "read-only",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The field: a recessed box around the input. It is the anchor the popup is placed against."
+    },
+    "input": {
+      "kind": "author",
+      "material": null,
+      "note": "A native input the author writes and marks with data-part=\"input\" (D14). It gets the combobox role and carries the form value under its own name. While it carries readonly the list does not open, an open list closes, and the component does not change its value."
+    },
+    "popup": {
+      "kind": "author",
+      "material": null,
+      "note": "The element marked data-part=\"popup\" that holds the listbox. It shows in the top layer while open."
+    }
+  },
+  "tokens": [
+    "--combobox-face",
+    "--combobox-face-read-only",
+    "--combobox-ink",
+    "--combobox-ink-disabled",
+    "--combobox-height",
+    "--combobox-inset",
+    "--combobox-radius",
+    "--combobox-popup-gap"
+  ],
+  "behaviours": [
+    "active-descendant",
+    "dismiss"
+  ],
+  "keys": {
+    "ArrowDown, ArrowUp": "Open the list, and move the highlight among the options that match.",
+    "Enter": "Takes the highlighted option's text as the value and closes the list; with none highlighted, submits the form.",
+    "Escape": "Closes the list; pressed again, clears the field.",
+    "Typing": "Opens the list and keeps only the options whose text contains what was typed."
+  },
+  "events": {
+    "input": "The input's own event.",
+    "change": "Dispatched after the user takes an option."
+  },
+  "uses": [
+    "listbox",
+    "option"
+  ],
+  "writes": {
+    "listbox": [
+      "id",
+      "tabindex"
+    ],
+    "option": [
+      "hidden",
+      "selected",
+      "data-highlighted",
+      "data-focus",
+      "id"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author labels the input, with a label element or aria-label."
+    },
+    {
+      "topic": "first paint",
+      "text": "Write readonly on the input for a value that cannot be changed: the field takes the etched fill from the first paint, before the element is defined. Disabled wins over read-only."
+    }
+  ],
+  "notYet": [
+    "Completing the text in the field as the user types (inline autocomplete).",
+    "A button that opens the list.",
+    "Options loaded while the user types."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

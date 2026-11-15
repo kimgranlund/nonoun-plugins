@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "table",
+  "kind": "recipe",
+  "family": "table",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/table/",
+  "summary": "Rows and columns of data: the browser's own table, in the kit's geometry.",
+  "element": "table",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [
+    "hover"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Full width, rows as tall as ui-geometry's row, a hairline under each row, header cells in the muted ink."
+    }
+  },
+  "tokens": [
+    "--table-ink",
+    "--table-line",
+    "--table-height",
+    "--table-inset"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "A native table with data-ui=\"table\", with thead, tbody, th and td as in plain HTML, and a caption or aria-label as its name."
+    }
+  ],
+  "notYet": [
+    "Sorting by a column.",
+    "A header that stays in view while the body scrolls."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

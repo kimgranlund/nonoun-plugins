@@ -1,0 +1,70 @@
+{
+  "$description": "The paint roles of ui-materials as data: every shade, lit and glass colour a lit or transmissive table paints with, named by use. scripts/request.mjs turns this file into a ui-colors request fragment (key `translucent`), and ui-colors generates each role as a literal --colors-paint-<use> in every mode, so no table derives a colour in the browser. A role is a base colour at an alpha. The dark scheme's alpha is the light one times the base's scheme multiplier (capped at 1), unless the role is `fixed` or sets `darkAlpha` itself. Cast roles take their alphas from ui-geometry's elevation layers, never from this file. scripts/check.mjs keeps this file, the references and the generated system in step.",
+  "version": 1,
+  "prefix": "paint-",
+  "bases": {
+    "shade": { "of": "neutral-12", "darkOf": "#000000", "darkScale": 3, "is": "the shadow colour: the near-black of the neutral in the light scheme, black in the dark one" },
+    "lit": { "of": "#ffffff", "darkScale": 0.25, "is": "the highlight colour: white" },
+    "face": { "of": ["surface", "bg"], "darkOf": "bg-muted", "is": "the raised and overlay neutral face (the --element input: its default and fallback, and its dark-scheme role)" },
+    "ground": { "of": "bg", "is": "the base ground's fill (the --bg input)" },
+    "signal": { "of": "primary-solid", "is": "the emissive colour (the --signal input's default; name another role here when a system remaps that input)" }
+  },
+  "cast": { "base": "shade", "layers": 4, "level": "popup", "source": "ui-geometry: derive.mjs --elevation <level> --json, per scheme; the alphas are the same at every level" },
+  "roles": {
+    "face-top": { "base": "lit", "alpha": 0.4, "darkAlpha": 0.03, "for": "face shading, neutral faces: the top stop of the gradient", "basis": "white at 0.4 over a face at L 0.95 adds about +0.02 lightness, and nothing over a white face; tuned by eye" },
+    "face-bottom": { "base": "shade", "alpha": 0.015, "darkAlpha": 0.055, "for": "face shading, neutral faces: the bottom stop", "basis": "about -0.01 lightness on the default face; tuned by eye" },
+    "face-top-solid": { "base": "lit", "alpha": 0.065, "darkAlpha": 0.07, "for": "face shading, solid faces: the top stop", "basis": "about +0.025 lightness on the default primary solid; tuned by eye" },
+    "face-bottom-solid": { "base": "shade", "alpha": 0.03, "darkAlpha": 0.015, "for": "face shading, solid faces: the bottom stop", "basis": "about -0.01 lightness on the default primary solid; tuned by eye" },
+
+    "bevel-top": { "base": "lit", "alpha": 0.5, "for": "bevel: the lit inset on top of a raised part" },
+    "bevel-top-solid": { "base": "lit", "alpha": 0.22, "for": "bevel: the weaker lit inset on a solid face" },
+    "bevel-bottom": { "base": "shade", "alpha": 0.05, "for": "bevel: the shade inset at the bottom" },
+    "bevel-ring": { "base": "shade", "alpha": 0.06, "for": "bevel: the half-pixel shade ring" },
+
+    "recess-1": { "base": "shade", "alpha": 0.12, "for": "recess: the near inner shadow" },
+    "recess-2": { "base": "shade", "alpha": 0.06, "for": "recess: the far inner shadow" },
+    "recess-ring": { "base": "shade", "alpha": 0.05, "for": "recess and pressed: the half-pixel shade ring" },
+    "recess-lip": { "base": "lit", "alpha": 0.45, "for": "recess and pressed: the lit lower lip" },
+    "pressed-1": { "base": "shade", "alpha": 0.1, "for": "pressed: the inner shadow, shallower than a recess" },
+
+    "etch-top": { "base": "shade", "alpha": 0.08, "darkAlpha": 0.3, "for": "etched: the faint shade inside the top edge", "basis": "a starting value from an exploration (2026-11-13); not yet confirmed in a build" },
+    "etch-ledge": { "base": "lit", "alpha": 1, "darkAlpha": 0.14, "for": "etched: the lit line inside the bottom edge", "basis": "a starting value from an exploration (2026-11-13); not yet confirmed in a build" },
+    "etch-edge": { "base": "shade", "alpha": 0.16, "darkAlpha": 0, "for": "etched: the shade hairline above the ledge, light scheme only", "basis": "a starting value from an exploration (2026-11-13); not yet confirmed in a build" },
+
+    "display-1": { "base": "shade", "alpha": 0.3, "for": "display: the inner shadow, deeper than a recess" },
+    "display-ring": { "base": "shade", "alpha": 0.2, "for": "display: the shade ring" },
+    "display-lip": { "base": "lit", "alpha": 0.3, "for": "display: the lit lower lip" },
+    "display-sheen": { "base": "lit", "alpha": 0.1, "for": "display cover when lit: the pane's reflection" },
+
+    "hole-wall": { "base": "shade", "alpha": 0.45, "for": "hole: the shaded upper wall" },
+    "hole-lip": { "base": "lit", "alpha": 0.75, "for": "hole: the lit line on the lower inner wall" },
+    "lamp-glow": { "base": "signal", "alpha": 0.6, "for": "emissive: the glow around a lamp that is on" },
+
+    "cast-1": { "base": "shade", "cast": 1, "for": "cast: layer k = 0, the contact layer" },
+    "cast-2": { "base": "shade", "cast": 2, "for": "cast: layer k = 1" },
+    "cast-3": { "base": "shade", "cast": 3, "for": "cast: layer k = 2" },
+    "cast-4": { "base": "shade", "cast": 4, "for": "cast: layer k = 3, the far halo" },
+
+    "glass-frosted-top": { "base": "face", "alpha": 0.62, "for": "frosted glass body: the top stop of the face" },
+    "glass-frosted-bottom": { "base": "face", "alpha": 0.46, "for": "frosted glass body: the bottom stop" },
+    "glass-clear-top": { "base": "face", "alpha": 0.66, "for": "clear glass body: the top stop" },
+    "glass-clear-bottom": { "base": "face", "alpha": 0.54, "for": "clear glass body: the bottom stop" },
+    "glass-frosted-top-line": { "base": "ground", "alpha": 0.62, "for": "frosted glass body under delineation line: the top stop" },
+    "glass-frosted-bottom-line": { "base": "ground", "alpha": 0.46, "for": "frosted glass body under delineation line: the bottom stop" },
+    "glass-clear-top-line": { "base": "ground", "alpha": 0.66, "for": "clear glass body under delineation line: the top stop" },
+    "glass-clear-bottom-line": { "base": "ground", "alpha": 0.54, "for": "clear glass body under delineation line: the bottom stop" },
+
+    "rim-frosted-top": { "base": "lit", "alpha": 0.75, "for": "frosted rim: the lit top line" },
+    "rim-frosted-ring": { "base": "lit", "alpha": 0.4, "for": "frosted rim: the lit half-pixel ring" },
+    "rim-frosted-bottom": { "base": "shade", "alpha": 0.06, "for": "frosted rim: the shade bottom line" },
+    "rim-frosted-outer": { "base": "shade", "alpha": 0.1, "for": "frosted rim: the outer shade ring" },
+    "rim-clear-ring": { "base": "lit", "alpha": 0.45, "for": "clear rim: the lit ring" },
+    "rim-clear-top": { "base": "lit", "alpha": 0.9, "for": "clear rim: the lit top line" },
+    "rim-clear-glow": { "base": "lit", "alpha": 0.14, "for": "clear rim: the inner glow" },
+    "rim-clear-outer": { "base": "shade", "alpha": 0.12, "for": "clear rim: the outer shade ring" },
+
+    "cover-bottom": { "base": "lit", "alpha": 0.16, "fixed": true, "for": "cover pane: the bottom highlight" },
+    "cover-reflection-1": { "base": "lit", "alpha": 0.1, "fixed": true, "for": "display cover under glass: the bright band" },
+    "cover-reflection-2": { "base": "lit", "alpha": 0.03, "fixed": true, "for": "display cover under glass: the faint band" }
+  }
+}

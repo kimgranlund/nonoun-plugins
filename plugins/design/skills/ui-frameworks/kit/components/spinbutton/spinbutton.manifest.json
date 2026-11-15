@@ -1,0 +1,129 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "spinbutton",
+  "kind": "component",
+  "family": "spinbutton",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/",
+  "summary": "A number the user types or steps up and down, in a field with two small buttons.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "min": {
+      "type": "number",
+      "description": "The lowest value. With none, there is no lower limit."
+    },
+    "max": {
+      "type": "number",
+      "description": "The highest value. With none, there is no upper limit."
+    },
+    "step": {
+      "type": "number",
+      "description": "The distance between two values the user can reach.",
+      "default": 1
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The field cannot be changed or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-within",
+    "invalid",
+    "read-only",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The field around the input and the two buttons. While the input is read-only it has the etched face and the buttons are hidden, in the same room."
+    },
+    "input": {
+      "kind": "author",
+      "material": null,
+      "note": "A native text input the author writes and marks with data-part=\"input\" (D14). It gets the spinbutton role and carries the form value under its own name."
+    },
+    "decrease": {
+      "kind": "element",
+      "tag": "span",
+      "at": "end",
+      "attrs": {
+        "role": "button",
+        "tabindex": "-1"
+      },
+      "material": null,
+      "note": "One step down. Not a Tab stop: the keys do the same."
+    },
+    "increase": {
+      "kind": "element",
+      "tag": "span",
+      "at": "end",
+      "attrs": {
+        "role": "button",
+        "tabindex": "-1"
+      },
+      "material": null,
+      "note": "One step up."
+    }
+  },
+  "tokens": [
+    "--spinbutton-face",
+    "--spinbutton-face-read-only",
+    "--spinbutton-ink",
+    "--spinbutton-ink-disabled",
+    "--spinbutton-line-invalid",
+    "--spinbutton-height",
+    "--spinbutton-inset",
+    "--spinbutton-radius"
+  ],
+  "behaviours": [],
+  "keys": {
+    "ArrowUp, ArrowDown": "One step up or down.",
+    "PageUp, PageDown": "Ten steps up or down.",
+    "Home, End": "The minimum or the maximum, when there is one."
+  },
+  "events": {
+    "input": "The input's own event, also dispatched after a step.",
+    "change": "The input's own event, also dispatched after a step."
+  },
+  "messages": {
+    "increase": "Increase",
+    "decrease": "Decrease",
+    "notANumber": "Enter a number.",
+    "rangeUnderflow": "Enter a number of {min} or more.",
+    "rangeOverflow": "Enter a number of {max} or less."
+  },
+  "writes": {
+    "spinbutton": [
+      "invalid"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "first paint",
+      "text": "Write readonly on the input to make the field read-only: the recipe reads it there, so the etched face and the hidden buttons show before the element is defined. The keys and the buttons then do not step. A disabled field wins over read-only."
+    }
+  ],
+  "notYet": [
+    "A value that is not a plain number, such as a time.",
+    "Stepping faster while a button is held.",
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

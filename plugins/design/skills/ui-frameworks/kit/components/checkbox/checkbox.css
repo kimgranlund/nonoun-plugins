@@ -1,0 +1,134 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-checkbox>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   The mark is two pseudo-elements of the root (D57): ::before is the box, ::after is the glyph on it.
+   The glyphs are Phosphor "check" and "minus", regular weight (MIT, phosphoricons.com), drawn as masks so they take a token colour. */
+@layer recipes {
+  @scope (ui-checkbox) {
+    :where(:scope) {
+      --_face: var(--checkbox-face, var(--recessed-face));
+      --_face-hover: var(--checkbox-face-hover, var(--checkbox-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--checkbox-face-active, var(--checkbox-face, var(--pressed-face)));
+      --_face-checked: var(--checkbox-face-checked, var(--solid-face));
+      --_shadow: var(--field-shadow);
+      --_shadow-checked: var(--solid-shadow);
+      --_ink: var(--checkbox-ink, var(--ink));
+      --_mark: var(--checkbox-mark-ink, var(--on-solid));
+      --_ink-disabled: var(--checkbox-ink-disabled, var(--ink-faint));
+      --_fade-disabled: 0.5;
+      --_line-invalid: var(--checkbox-line-invalid, var(--colors-critical-solid));
+      --_height: var(--checkbox-height, var(--controls-mark-choice-row));
+      --_inset: var(--checkbox-inset, var(--controls-control-i));
+      --_start: var(--controls-mark-choice-label);
+      --_size: var(--controls-mark-checkbox-box);
+      --_radius: var(--checkbox-radius, var(--controls-mark-checkbox-radius));
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_reach: var(--controls-target-expansion-of-h-touch);
+      --_check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+      --_dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z'/%3E%3C/svg%3E");
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-block;
+      position: relative;
+      min-block-size: var(--_height);
+      padding-block: var(--_inset);
+      padding-inline-start: var(--_start);
+      border-radius: var(--_radius);
+      color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+      cursor: pointer;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before,
+    :scope::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      margin-block: auto;
+      inline-size: var(--_size);
+      block-size: var(--_size);
+    }
+    :scope::before {
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+    }
+    :scope::after {
+      visibility: hidden;
+      background-color: var(--_mark);
+      mask: var(--_check) center / contain no-repeat;
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before { background-color: var(--_face-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]))))::before { background-color: var(--_face-active); }
+    :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::before {
+      background-color: var(--_face-checked);
+      box-shadow: var(--_shadow-checked);
+    }
+    :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::after { visibility: visible; }
+    :scope:where(:is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]))::before {
+      background-color: var(--_face-checked);
+      box-shadow: var(--_shadow-checked);
+    }
+    :scope:where(:is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]))::after {
+      visibility: visible;
+      mask-image: var(--_dash);
+    }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid]))::before { box-shadow: inset 0 0 0 var(--_border) var(--_line-invalid); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before,
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { opacity: var(--_fade-disabled); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready])::before { transition: background-color 100ms; }
+    }
+    @media (pointer: coarse) {
+      :scope {
+        padding-block: calc(var(--_inset) + var(--_reach));
+        margin-block: calc(var(--_reach) * -1);
+      }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_face-hover: Canvas;
+        --_face-active: Canvas;
+        --_face-checked: Highlight;
+        --_shadow: none;
+        --_shadow-checked: none;
+        --_ink: CanvasText;
+        --_mark: HighlightText;
+        --_ink-disabled: GrayText;
+        --_fade-disabled: 1;
+        --_line-invalid: Mark;
+        --_ring: Highlight;
+      }
+      :scope::before {
+        outline: var(--_border) solid ButtonText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid]))::before { outline-color: var(--_line-invalid); }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { outline-color: GrayText; }
+    }
+  }
+}

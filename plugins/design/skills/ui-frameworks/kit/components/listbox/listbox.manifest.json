@@ -1,0 +1,116 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "listbox",
+  "kind": "component",
+  "family": "listbox",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/listbox/",
+  "summary": "A list from which one option, or several, can be chosen. It is a form control and one stop in the Tab order.",
+  "role": "listbox",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": true,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The value of the selected option. With multiple, the selected values separated by commas."
+    },
+    "multiple": {
+      "type": "boolean",
+      "description": "More than one option can be selected."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under; with multiple, once per selected option."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while nothing is selected."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be chosen or focused."
+    }
+  },
+  "resets": [
+    "value"
+  ],
+  "states": [
+    "focus-visible",
+    "required",
+    "invalid",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "A frame padded like a menu, with its options stacked inside."
+    }
+  },
+  "tokens": [
+    "--listbox-face",
+    "--listbox-ink",
+    "--listbox-ink-disabled",
+    "--listbox-inset",
+    "--listbox-radius",
+    "--listbox-line-invalid"
+  ],
+  "behaviours": [
+    "active-descendant",
+    "typeahead"
+  ],
+  "keys": {
+    "ArrowDown, ArrowUp": "Move to the next or the previous option. In a single listbox that selects it.",
+    "Home, End": "Move to the first or the last option.",
+    "Space": "With multiple: selects the option, or clears it.",
+    "A letter": "Moves to the next option that starts with it."
+  },
+  "events": {
+    "input": "Dispatched when the user changes the selection.",
+    "change": "Dispatched after input."
+  },
+  "messages": {
+    "valueMissing": "Please choose an option"
+  },
+  "writes": {
+    "option": [
+      "selected",
+      "data-highlighted",
+      "data-focus",
+      "id"
+    ],
+    "listbox": [
+      "aria-activedescendant",
+      "aria-multiselectable"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the listbox with aria-label or aria-labelledby."
+    },
+    {
+      "topic": "first paint",
+      "text": "Write `selected` on the selected option, so that it is painted before the listbox is defined."
+    }
+  ],
+  "notYet": [
+    "Selecting a range with Shift, and all with Control+A.",
+    "Options in groups.",
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

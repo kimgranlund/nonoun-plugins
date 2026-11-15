@@ -1,0 +1,74 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menu-item-checkbox",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "A menu item that is on or off.",
+  "role": "menuitemcheckbox",
+  "focus": "roving",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "checked": {
+      "type": "boolean",
+      "state": "checked",
+      "description": "The item is on."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be chosen or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "focus",
+    "focus-visible",
+    "active",
+    "checked",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A menu row with room at its start for the mark."
+    },
+    "mark": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": null,
+      "note": "The check icon, shown while checked."
+    }
+  },
+  "tokens": [
+    "--menu-item-checkbox-face-focus",
+    "--menu-item-checkbox-face-active",
+    "--menu-item-checkbox-ink",
+    "--menu-item-checkbox-ink-disabled",
+    "--menu-item-checkbox-height",
+    "--menu-item-checkbox-inset",
+    "--menu-item-checkbox-gap",
+    "--menu-item-checkbox-radius"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Enter, Space": "Turn the item on or off. The menu stays open on Space and closes on Enter."
+  },
+  "events": {
+    "change": "Dispatched, and bubbles, when the user turns the item on or off.",
+    "click": "Dispatched once per activation."
+  },
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

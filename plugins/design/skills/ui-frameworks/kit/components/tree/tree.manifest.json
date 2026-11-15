@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tree",
+  "kind": "component",
+  "family": "tree",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/treeview/",
+  "summary": "A list whose items can hold more items, which the user opens and closes. It is one stop in the Tab order.",
+  "role": "tree",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The value of the selected item."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks its items. It paints nothing."
+    }
+  },
+  "tokens": [],
+  "behaviours": [
+    "roving-focus",
+    "typeahead"
+  ],
+  "keys": {
+    "ArrowDown, ArrowUp": "Move focus to the next or the previous item that shows, without wrapping.",
+    "ArrowRight": "On a closed item: open it. On an open one: move focus to its first child. ArrowLeft in a right-to-left scope.",
+    "ArrowLeft": "On an open item: close it. Otherwise: move focus to its parent. ArrowRight in a right-to-left scope.",
+    "Home, End": "Move focus to the first or the last item that shows.",
+    "Enter, Space": "Select the item.",
+    "A letter": "Moves focus to the next item that shows and starts with it."
+  },
+  "events": {
+    "change": "Dispatched after the user selects another item."
+  },
+  "writes": {
+    "tree-item": [
+      "selected",
+      "expanded",
+      "tabindex",
+      "aria-level",
+      "aria-setsize",
+      "aria-posinset"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the tree with aria-label or aria-labelledby."
+    }
+  ],
+  "notYet": [
+    "Selecting several items.",
+    "Loading children when an item opens."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

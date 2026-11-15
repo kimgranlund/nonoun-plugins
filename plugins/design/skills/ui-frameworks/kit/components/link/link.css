@@ -1,0 +1,53 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the link: a native <a href data-ui="link">. Its rules: J64 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   The accent ink, underlined; the plain ink for the current link. An anchor without data-ui is left alone. */
+@layer recipes {
+  @scope ([data-ui="link"]) {
+    :where(:scope) {
+      --_ink: var(--link-ink, var(--colors-primary-fg));
+      --_ink-hover: var(--link-ink-hover, var(--link-ink, var(--ink)));
+      --_ink-active: var(--link-ink-active, var(--link-ink, var(--ink)));
+      --_ink-current: var(--ink);
+      --_radius: var(--link-radius, var(--controls-curvature-r_s));
+      --_thickness: var(--unit-border-b);
+      --_underline-offset: var(--controls-focus-ring-offset-o);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      border-radius: var(--_radius);
+      color: var(--_ink);
+      text-decoration-line: underline;
+      text-decoration-thickness: var(--_thickness);
+      text-underline-offset: var(--_underline-offset);
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { color: var(--_ink-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { color: var(--_ink-active); }
+    :scope:where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])) {
+      color: var(--_ink-current);
+      text-decoration-line: none;
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_ink: LinkText;
+        --_ink-hover: LinkText;
+        --_ink-active: LinkText;
+        --_ink-current: CanvasText;
+        --_ring: Highlight;
+      }
+    }
+  }
+}

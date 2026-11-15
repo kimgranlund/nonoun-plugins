@@ -1,0 +1,93 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "radio",
+  "kind": "component",
+  "family": "radio-group",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/radio/",
+  "summary": "One choice of a radio group.",
+  "role": "radio",
+  "focus": "roving",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "What the group's value becomes when this radio is chosen."
+    },
+    "checked": {
+      "type": "boolean",
+      "state": "checked",
+      "description": "This is the chosen radio. The group keeps at most one; a script that sets it chooses the radio."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be changed or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "checked",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Holds the author's label text and draws no face of its own."
+    },
+    "well": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "Round."
+    },
+    "bead": {
+      "kind": "pseudo",
+      "pseudo": "::after",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "solid"
+      },
+      "note": "Shown while checked."
+    }
+  },
+  "tokens": [
+    "--radio-face",
+    "--radio-face-hover",
+    "--radio-face-active",
+    "--radio-face-checked",
+    "--radio-ink",
+    "--radio-ink-disabled",
+    "--radio-height",
+    "--radio-inset"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Space": "Chooses the radio at key up."
+  },
+  "events": {
+    "click": "Dispatched once per activation."
+  },
+  "notYet": [
+    "A disabled radio still dispatches click to a listener the author adds; the group ignores it."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

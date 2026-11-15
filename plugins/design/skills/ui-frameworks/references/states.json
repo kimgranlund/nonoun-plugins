@@ -1,0 +1,896 @@
+{
+  "$description": "The state matrix of ui-frameworks as data. Each state has one id and one condition: the selector a recipe uses for it in every target, and the value of the same-named condition in the Panda preset. `author` is the author attribute on a custom-element root, `componentWrites` the managed attribute the component keeps in step, `native` what a native element offers. A state with `base` and `excludes` holds when its base selector matches and none of the excluded states does; its `condition` is composed from those and `node scripts/docs.mjs --check` refuses one that differs. `fixtures` are elements the condition must match and must not match; `node checks/states/run.mjs` tests them in three browser engines. A fixture is an HTML string, or an object with `html`, an optional `script` run with the target as `el`, and a `note`. The target is the element marked `data-t`, or else the first element. `pandaBase` is the selector Panda's own preset-base gives the same name, read from the v2 branch on 2026-11-12, and `pandaSame` says whether it equals the condition once quotes and the leading `&` are ignored. The tables in docs/specs/state-matrix.md are generated from this file.",
+  "version": 1,
+  "testElements": {
+    "x-undefined": "a custom element name that is never defined: the root before its script has loaded",
+    "x-plain": "a defined custom element that is not form-associated",
+    "x-face": "a defined, form-associated custom element"
+  },
+  "states": [
+    {
+      "id": "hover",
+      "group": "interaction",
+      "holdsWhen": "The pointer is over the element, and the element is neither disabled nor holding a state: checked, indeterminate, pressed, selected, current, expanded or open.",
+      "condition": ":is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled=\"true\"]), :is(:checked, [aria-checked=\"true\"], [checked]:not(input, option)), :is(input[type=\"checkbox\"]:indeterminate, [aria-checked=\"mixed\"], [indeterminate]), :is([aria-pressed=\"true\"], [pressed]), :is([aria-selected=\"true\"], [selected]:not(option)), :is([aria-current]:not([aria-current=\"false\"], [aria-current=\"\"]), [current]), :is([aria-expanded=\"true\"], [expanded]), :is([open], :popover-open)))",
+      "base": ":is(:hover, [data-hover])",
+      "excludes": [
+        "disabled",
+        "checked",
+        "indeterminate",
+        "pressed",
+        "selected",
+        "current",
+        "expanded",
+        "open"
+      ],
+      "author": null,
+      "componentWrites": null,
+      "native": ":hover",
+      "forced": "data-hover",
+      "panda": "hover",
+      "pandaBase": "&:is(:hover, [data-hover])",
+      "pandaSame": false,
+      "materials": "hover",
+      "usedBy": [
+        "every interactive component"
+      ],
+      "basis": "A disabled form-associated root still matches :hover, and a hover paint over a held state hides that state (ui-interaction-dev, hover.face-only). So the condition carries both guards (D34, D63).",
+      "fixtures": {
+        "match": [
+          "<x-plain data-hover></x-plain>",
+          "<button data-hover></button>",
+          "<x-plain data-hover aria-checked=\"false\"></x-plain>",
+          "<x-plain data-hover aria-pressed=\"false\"></x-plain>",
+          "<x-plain data-hover aria-expanded=\"false\"></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain data-hover aria-disabled=\"true\"></x-plain>",
+          "<x-undefined data-hover disabled></x-undefined>",
+          "<button data-hover disabled></button>",
+          "<x-undefined data-hover checked></x-undefined>",
+          "<x-plain data-hover aria-checked=\"true\"></x-plain>",
+          "<x-plain data-hover aria-checked=\"mixed\"></x-plain>",
+          "<x-plain data-hover aria-pressed=\"true\"></x-plain>",
+          "<x-plain data-hover aria-selected=\"true\"></x-plain>",
+          "<x-plain data-hover aria-current=\"page\"></x-plain>",
+          "<x-plain data-hover aria-expanded=\"true\"></x-plain>",
+          "<x-undefined data-hover open></x-undefined>"
+        ]
+      },
+      "interactive": "hover"
+    },
+    {
+      "id": "active",
+      "group": "interaction",
+      "holdsWhen": "The element is being activated right now: the pointer is down on it, or Space or Enter is held on it. It is not disabled.",
+      "condition": ":is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled=\"true\"])))",
+      "base": ":is(:active, [data-active])",
+      "excludes": [
+        "disabled"
+      ],
+      "author": null,
+      "componentWrites": "data-active, while Space or Enter is held",
+      "native": ":active",
+      "forced": "data-active",
+      "panda": "active",
+      "pandaBase": "&:is(:active, [data-active])",
+      "pandaSame": false,
+      "materials": "pressed",
+      "usedBy": [
+        "button",
+        "link",
+        "checkbox",
+        "radio",
+        "switch",
+        "tab",
+        "menu item",
+        "option"
+      ],
+      "basis": "Check 1: on a custom root, Space and Enter never make :active match.",
+      "fixtures": {
+        "match": [
+          "<x-plain data-active></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-face data-active disabled></x-face>",
+          "<x-plain data-active aria-disabled=\"true\"></x-plain>"
+        ]
+      },
+      "interactive": "active"
+    },
+    {
+      "id": "focus",
+      "group": "interaction",
+      "holdsWhen": "The element has focus, however it got it.",
+      "condition": ":is(:focus, [data-focus])",
+      "author": null,
+      "componentWrites": null,
+      "native": ":focus",
+      "forced": "data-focus",
+      "panda": "focus",
+      "pandaBase": "&:is(:focus, [data-focus])",
+      "pandaSame": true,
+      "materials": null,
+      "usedBy": [
+        "text field",
+        "menu item"
+      ],
+      "basis": "Rarely styled. A focus ring belongs to focus-visible.",
+      "fixtures": {
+        "match": [
+          "<x-plain data-focus></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "focus-visible",
+      "group": "interaction",
+      "holdsWhen": "The element has focus and the browser judges that a focus ring should show.",
+      "condition": ":is(:focus-visible, [data-focus-visible])",
+      "author": null,
+      "componentWrites": null,
+      "native": ":focus-visible",
+      "forced": "data-focus-visible",
+      "panda": "focusVisible",
+      "pandaBase": "&:is(:focus-visible, [data-focus-visible])",
+      "pandaSame": true,
+      "materials": "focus",
+      "usedBy": [
+        "every focusable component"
+      ],
+      "basis": "Check 1: a custom root with tabindex matches :focus-visible after keyboard focus in all three engines.",
+      "fixtures": {
+        "match": [
+          "<x-plain data-focus-visible></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain tabindex=\"0\"></x-plain>"
+        ]
+      },
+      "interactive": "focus-visible"
+    },
+    {
+      "id": "focus-within",
+      "group": "interaction",
+      "holdsWhen": "The element or one of its descendants has focus.",
+      "condition": ":focus-within",
+      "author": null,
+      "componentWrites": null,
+      "native": ":focus-within",
+      "forced": null,
+      "panda": "focusWithin",
+      "pandaBase": "&:focus-within",
+      "pandaSame": true,
+      "materials": null,
+      "usedBy": [
+        "text field",
+        "form field",
+        "toolbar",
+        "menu"
+      ],
+      "basis": "The root of a text field is not the focused element; its native input part is.",
+      "fixtures": {
+        "match": [],
+        "noMatch": [
+          "<x-plain><input></x-plain>"
+        ]
+      },
+      "interactive": "focus-within"
+    },
+    {
+      "id": "highlighted",
+      "group": "interaction",
+      "holdsWhen": "Keyboard or pointer navigation currently points at this item while focus stays on its container.",
+      "condition": "[data-highlighted]",
+      "author": null,
+      "componentWrites": "data-highlighted, on the item `aria-activedescendant` names",
+      "native": null,
+      "forced": null,
+      "panda": "highlighted",
+      "pandaBase": "&[data-highlighted]",
+      "pandaSame": true,
+      "materials": null,
+      "usedBy": [
+        "option",
+        "tree item"
+      ],
+      "basis": "With `aria-activedescendant` the item is not focused, so no pseudo-class marks it.",
+      "fixtures": {
+        "match": [
+          "<x-plain data-highlighted></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "disabled",
+      "group": "availability",
+      "holdsWhen": "The element cannot be operated.",
+      "condition": ":is(:disabled, [disabled], [aria-disabled=\"true\"])",
+      "author": "disabled",
+      "componentWrites": "aria-disabled=\"true\"",
+      "native": ":disabled",
+      "forced": null,
+      "panda": "disabled",
+      "pandaBase": "&:is(:disabled, [disabled], [data-disabled], [aria-disabled=true])",
+      "pandaSame": false,
+      "materials": "disabled",
+      "usedBy": [
+        "every interactive component and item"
+      ],
+      "basis": "Check 1: :disabled matches a form-associated root, also inside a disabled fieldset, and never a plain or not-yet-defined custom element. `[disabled]` covers those two.",
+      "fixtures": {
+        "match": [
+          "<x-undefined disabled></x-undefined>",
+          "<x-face disabled></x-face>",
+          "<x-plain disabled></x-plain>",
+          "<x-plain aria-disabled=\"true\"></x-plain>",
+          "<button disabled></button>",
+          "<fieldset disabled><x-face data-t></x-face></fieldset>",
+          "<fieldset disabled><button data-t></button></fieldset>"
+        ],
+        "noMatch": [
+          "<x-face></x-face>",
+          "<x-plain aria-disabled=\"false\"></x-plain>",
+          "<button></button>",
+          {
+            "html": "<fieldset disabled><x-plain data-t></x-plain></fieldset>",
+            "note": "A fieldset disables only form-associated roots. This is the limit D20 answers."
+          }
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "read-only",
+      "group": "availability",
+      "holdsWhen": "The value can be read and focused but not changed.",
+      "condition": ":is([readonly], [aria-readonly=\"true\"], :has(> [data-part=\"input\"][readonly]))",
+      "author": "readonly",
+      "componentWrites": "aria-readonly=\"true\"",
+      "native": "the `readonly` attribute",
+      "forced": null,
+      "panda": "readOnly",
+      "pandaBase": "&:is(:read-only, [data-read-only], [aria-readonly=true])",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "text field",
+        "combobox",
+        "spinbutton",
+        "slider",
+        "checkbox",
+        "switch"
+      ],
+      "basis": "Check 1: :read-only matches every element that is not editable, so it carries no information.",
+      "fixtures": {
+        "match": [
+          "<x-undefined readonly></x-undefined>",
+          "<x-plain aria-readonly=\"true\"></x-plain>",
+          "<input readonly>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-readonly=\"false\"></x-plain>",
+          "<input>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "required",
+      "group": "availability",
+      "holdsWhen": "A value must be given before the form can be submitted.",
+      "condition": ":is([required], [aria-required=\"true\"])",
+      "author": "required",
+      "componentWrites": "aria-required=\"true\"",
+      "native": "the `required` attribute",
+      "forced": null,
+      "panda": "required",
+      "pandaBase": "&:is(:required, [data-required], [aria-required=true])",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "text field",
+        "checkbox",
+        "radio group",
+        "combobox",
+        "listbox",
+        "spinbutton",
+        "switch"
+      ],
+      "basis": "Check 1: :required never matches a custom element, even with the attribute.",
+      "fixtures": {
+        "match": [
+          "<x-undefined required></x-undefined>",
+          "<x-face required></x-face>",
+          "<x-plain aria-required=\"true\"></x-plain>",
+          "<input required>"
+        ],
+        "noMatch": [
+          "<x-face></x-face>",
+          "<x-plain aria-required=\"false\"></x-plain>",
+          "<input>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "checked",
+      "group": "value",
+      "holdsWhen": "The choice is on.",
+      "condition": ":is(:checked, [aria-checked=\"true\"], [checked]:not(input, option))",
+      "author": "checked",
+      "componentWrites": "aria-checked=\"true\" or \"false\"",
+      "native": ":checked",
+      "forced": null,
+      "panda": "checked",
+      "pandaBase": "&:is(:checked, [data-checked], [aria-checked=true], [data-state=\"checked\"])",
+      "pandaSame": false,
+      "materials": "selected / latched",
+      "usedBy": [
+        "checkbox",
+        "radio",
+        "switch",
+        "menu item checkbox",
+        "menu item radio"
+      ],
+      "basis": "Check 1: :checked never matches a custom element. On a native input the `checked` attribute is only the default, so `[checked]` excludes native inputs and options.",
+      "fixtures": {
+        "match": [
+          "<x-undefined checked></x-undefined>",
+          "<x-plain aria-checked=\"true\"></x-plain>",
+          "<input type=\"checkbox\" checked>",
+          {
+            "html": "<input type=\"checkbox\">",
+            "script": "el.checked = true",
+            "note": "checked by the user, no attribute"
+          }
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-checked=\"false\"></x-plain>",
+          "<x-plain aria-checked=\"mixed\"></x-plain>",
+          "<input type=\"checkbox\">",
+          {
+            "html": "<input type=\"checkbox\" checked>",
+            "script": "el.checked = false",
+            "note": "unchecked by the user; the default attribute is still there"
+          }
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "indeterminate",
+      "group": "value",
+      "holdsWhen": "The choice is neither on nor off, because it stands for a group that is partly on.",
+      "condition": ":is(input[type=\"checkbox\"]:indeterminate, [aria-checked=\"mixed\"], [indeterminate])",
+      "author": "indeterminate",
+      "componentWrites": "aria-checked=\"mixed\"",
+      "native": ":indeterminate, on a checkbox only",
+      "forced": null,
+      "panda": "indeterminate",
+      "pandaBase": "&:is(:indeterminate, [data-indeterminate], [aria-checked=mixed], [data-state=\"indeterminate\"])",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "checkbox",
+        "menu item checkbox"
+      ],
+      "basis": ":indeterminate also matches a radio whose group has nothing checked and a progress bar with no value, so the native arm is limited to checkboxes.",
+      "fixtures": {
+        "match": [
+          "<x-undefined indeterminate></x-undefined>",
+          "<x-plain aria-checked=\"mixed\"></x-plain>",
+          {
+            "html": "<input type=\"checkbox\">",
+            "script": "el.indeterminate = true",
+            "note": "set from script, as the platform requires"
+          }
+        ],
+        "noMatch": [
+          "<x-plain aria-checked=\"true\"></x-plain>",
+          "<input type=\"checkbox\">",
+          {
+            "html": "<input type=\"radio\" name=\"states-check-group\">",
+            "note": "an unchecked radio group matches :indeterminate natively"
+          },
+          {
+            "html": "<progress></progress>",
+            "note": "a progress bar with no value matches :indeterminate natively"
+          }
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "pressed",
+      "group": "value",
+      "holdsWhen": "A toggle button is on.",
+      "condition": ":is([aria-pressed=\"true\"], [pressed])",
+      "author": "pressed",
+      "componentWrites": "aria-pressed=\"true\" or \"false\"",
+      "native": null,
+      "forced": null,
+      "panda": "pressed",
+      "pandaBase": "&:is([aria-pressed=true], [data-pressed])",
+      "pandaSame": false,
+      "materials": "selected / latched",
+      "usedBy": [
+        "button"
+      ],
+      "basis": "ARIA's pressed is the latched state of a toggle. The moment of pressing is the active state.",
+      "fixtures": {
+        "match": [
+          "<x-undefined pressed></x-undefined>",
+          "<x-plain aria-pressed=\"true\"></x-plain>",
+          "<button aria-pressed=\"true\"></button>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-pressed=\"false\"></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "selected",
+      "group": "value",
+      "holdsWhen": "The item is the chosen one, or one of the chosen ones, in its collection.",
+      "condition": ":is([aria-selected=\"true\"], [selected]:not(option))",
+      "author": "selected",
+      "componentWrites": "aria-selected=\"true\" or \"false\"",
+      "native": null,
+      "forced": null,
+      "panda": "selected",
+      "pandaBase": "&:is([aria-selected=true], [data-selected])",
+      "pandaSame": false,
+      "materials": "selected / latched",
+      "usedBy": [
+        "tab",
+        "option",
+        "row",
+        "grid cell",
+        "tree item"
+      ],
+      "basis": "On a native option the `selected` attribute is only the default, so `[selected]` excludes it. The kit renders options as elements with the option role.",
+      "fixtures": {
+        "match": [
+          "<x-undefined selected></x-undefined>",
+          "<x-plain aria-selected=\"true\"></x-plain>",
+          "<div role=\"tab\" aria-selected=\"true\"></div>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-selected=\"false\"></x-plain>",
+          {
+            "html": "<select><option selected data-t>a</option></select>",
+            "note": "a native option is outside the kit's contract"
+          }
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "current",
+      "group": "value",
+      "holdsWhen": "The item stands for the current page, step, location, date or time within its set.",
+      "condition": ":is([aria-current]:not([aria-current=\"false\"], [aria-current=\"\"]), [current])",
+      "author": "current",
+      "componentWrites": "aria-current, with the author's value or \"true\"",
+      "native": null,
+      "forced": null,
+      "panda": "current",
+      "pandaBase": "&:is([aria-current=true], [data-current])",
+      "pandaSame": false,
+      "materials": "selected / latched",
+      "usedBy": [
+        "link",
+        "breadcrumb"
+      ],
+      "basis": "`aria-current` takes page, step, location, date, time or true; false and the empty string both mean not current.",
+      "fixtures": {
+        "match": [
+          "<x-undefined current></x-undefined>",
+          "<x-undefined current=\"page\"></x-undefined>",
+          "<x-plain aria-current=\"page\"></x-plain>",
+          "<a aria-current=\"true\"></a>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-current=\"false\"></x-plain>",
+          "<x-plain aria-current=\"\"></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "expanded",
+      "group": "disclosure",
+      "holdsWhen": "The element controls something that is currently shown. It is a state of the controlling element, not of what it shows.",
+      "condition": ":is([aria-expanded=\"true\"], [expanded])",
+      "author": "expanded",
+      "componentWrites": "aria-expanded=\"true\" or \"false\"",
+      "native": null,
+      "forced": null,
+      "panda": "expanded",
+      "pandaBase": "&:is([aria-expanded=true], [data-expanded], [data-state=\"expanded\"])",
+      "pandaSame": false,
+      "materials": "open",
+      "usedBy": [
+        "disclosure",
+        "accordion",
+        "menu button",
+        "combobox",
+        "tree item"
+      ],
+      "basis": "ARIA puts expanded on the control and nothing on the thing it shows.",
+      "fixtures": {
+        "match": [
+          "<x-undefined expanded></x-undefined>",
+          "<x-plain aria-expanded=\"true\"></x-plain>",
+          "<button aria-expanded=\"true\"></button>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-expanded=\"false\"></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "open",
+      "group": "disclosure",
+      "holdsWhen": "The element is itself the thing that opens, and it is showing.",
+      "condition": ":is([open], :popover-open)",
+      "author": "open",
+      "componentWrites": null,
+      "native": "the `open` attribute of dialog and details; :popover-open",
+      "forced": null,
+      "panda": "open",
+      "pandaBase": "&:is([open], [data-open], [data-state=\"open\"], :popover-open)",
+      "pandaSame": false,
+      "materials": "open",
+      "usedBy": [
+        "dialog",
+        "alert dialog",
+        "menu",
+        "listbox popup",
+        "tooltip",
+        "disclosure panel"
+      ],
+      "basis": "Check 4: a custom element with the popover attribute opens with showPopover() and matches :popover-open.",
+      "fixtures": {
+        "match": [
+          "<x-undefined open></x-undefined>",
+          "<dialog open></dialog>",
+          "<details open></details>",
+          {
+            "html": "<x-plain popover=\"manual\"></x-plain>",
+            "script": "el.showPopover()",
+            "note": "a custom element opened as a popover"
+          }
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain popover=\"manual\"></x-plain>",
+          "<dialog></dialog>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "invalid",
+      "group": "validity",
+      "holdsWhen": "The value fails validation and the user is due to be told: after they have changed or left the field, after a submit attempt, or when the author says so.",
+      "condition": ":is([aria-invalid]:not([aria-invalid=\"false\"]), :is(input, select, textarea):user-invalid, [invalid])",
+      "author": "invalid",
+      "componentWrites": "aria-invalid=\"true\", once the user has interacted",
+      "native": ":user-invalid, on input, select and textarea only",
+      "forced": null,
+      "panda": "invalid",
+      "pandaBase": "&:is(:invalid, [data-invalid], [aria-invalid=true])",
+      "pandaSame": false,
+      "materials": "invalid",
+      "usedBy": [
+        "text field",
+        "checkbox",
+        "radio group",
+        "combobox",
+        "listbox",
+        "slider",
+        "spinbutton",
+        "switch",
+        "form field"
+      ],
+      "basis": "Raw :invalid matches a required field before the user has touched it. Check 1: :user-invalid is defined for native controls only, and Firefox matches it early on a form-associated custom element, so the native arm is limited to native controls.",
+      "fixtures": {
+        "match": [
+          "<x-undefined invalid></x-undefined>",
+          "<x-plain aria-invalid=\"true\"></x-plain>",
+          "<x-plain aria-invalid=\"spelling\"></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-invalid=\"false\"></x-plain>",
+          {
+            "html": "<input required>",
+            "note": "invalid, but the user has not touched it"
+          },
+          {
+            "html": "<x-face></x-face>",
+            "script": "el.internals.setValidity({ customError: true }, 'bad')",
+            "note": "a form-associated root made invalid from script; Firefox matches :user-invalid here"
+          }
+        ]
+      },
+      "interactive": "invalid"
+    },
+    {
+      "id": "loading",
+      "group": "progress",
+      "holdsWhen": "The element is waiting on work it started, or its content is being updated.",
+      "condition": ":is([aria-busy=\"true\"], [loading])",
+      "author": "loading",
+      "componentWrites": "aria-busy=\"true\"",
+      "native": null,
+      "forced": null,
+      "panda": "loading",
+      "pandaBase": "&:is([data-loading], [aria-busy=true])",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "button",
+        "feed"
+      ],
+      "basis": "ARIA's name is busy; the author attribute follows the word kits and Panda use.",
+      "fixtures": {
+        "match": [
+          "<x-undefined loading></x-undefined>",
+          "<x-plain aria-busy=\"true\"></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-busy=\"false\"></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "horizontal",
+      "group": "orientation",
+      "holdsWhen": "The component's items run along the inline axis, and that is not its default.",
+      "condition": ":is([aria-orientation=\"horizontal\"], [orientation=\"horizontal\"])",
+      "author": "orientation=\"horizontal\"",
+      "componentWrites": "aria-orientation=\"horizontal\"",
+      "native": null,
+      "forced": null,
+      "panda": "horizontal",
+      "pandaBase": "&[data-orientation=horizontal]",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "menu",
+        "listbox",
+        "tree",
+        "radio group"
+      ],
+      "basis": "A recipe writes its default orientation with no condition, and uses this one only for the other axis.",
+      "fixtures": {
+        "match": [
+          "<x-undefined orientation=\"horizontal\"></x-undefined>",
+          "<x-plain aria-orientation=\"horizontal\"></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-orientation=\"vertical\"></x-plain>",
+          "<x-undefined orientation=\"vertical\"></x-undefined>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "vertical",
+      "group": "orientation",
+      "holdsWhen": "The component's items run along the block axis, and that is not its default.",
+      "condition": ":is([aria-orientation=\"vertical\"], [orientation=\"vertical\"])",
+      "author": "orientation=\"vertical\"",
+      "componentWrites": "aria-orientation=\"vertical\"",
+      "native": null,
+      "forced": null,
+      "panda": "vertical",
+      "pandaBase": "&[data-orientation=vertical]",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "tabs",
+        "toolbar",
+        "slider",
+        "window splitter",
+        "menubar"
+      ],
+      "basis": "As for horizontal.",
+      "fixtures": {
+        "match": [
+          "<x-undefined orientation=\"vertical\"></x-undefined>",
+          "<x-plain aria-orientation=\"vertical\"></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain aria-orientation=\"horizontal\"></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "hidden",
+      "group": "presence",
+      "holdsWhen": "The element is not to be shown at all.",
+      "condition": "[hidden]:not([hidden=\"until-found\"])",
+      "author": "hidden",
+      "componentWrites": null,
+      "native": "the `hidden` attribute",
+      "forced": null,
+      "panda": "hidden",
+      "pandaBase": "&:is([hidden], [data-hidden])",
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "every component"
+      ],
+      "basis": "A recipe's `display` rule defeats the browser's own rule for `hidden`, so every recipe restates it. `until-found` stays findable.",
+      "fixtures": {
+        "match": [
+          "<x-plain hidden></x-plain>",
+          "<x-undefined hidden></x-undefined>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-plain hidden=\"until-found\"></x-plain>"
+        ]
+      },
+      "interactive": null
+    },
+    {
+      "id": "ready",
+      "group": "presence",
+      "holdsWhen": "The component has started and painted once.",
+      "condition": "[data-ready]",
+      "author": null,
+      "componentWrites": "data-ready, one frame after it starts",
+      "native": null,
+      "forced": null,
+      "panda": null,
+      "pandaBase": null,
+      "pandaSame": false,
+      "materials": null,
+      "usedBy": [
+        "every component that has a transition"
+      ],
+      "basis": "Transitions run only once this holds, so the first paint does not animate from the un-upgraded look.",
+      "fixtures": {
+        "match": [
+          "<x-plain data-ready></x-plain>"
+        ],
+        "noMatch": [
+          "<x-plain></x-plain>",
+          "<x-undefined></x-undefined>"
+        ]
+      },
+      "interactive": null
+    }
+  ],
+  "environment": [
+    {
+      "id": "forced-colors",
+      "query": "@media (forced-colors: active)",
+      "meaning": "The system has replaced the page's colours with its own palette.",
+      "panda": "highContrast",
+      "basis": "D15: required in every recipe."
+    },
+    {
+      "id": "reduced-motion",
+      "query": "@media (prefers-reduced-motion: reduce)",
+      "meaning": "The user asked for less motion.",
+      "panda": "motionReduce",
+      "basis": "gen-ui-kit left 62 sheets with transitions unguarded."
+    },
+    {
+      "id": "more-contrast",
+      "query": "@media (prefers-contrast: more)",
+      "meaning": "The user asked for more contrast.",
+      "panda": "moreContrast",
+      "basis": "ui-colors serves its contrast modes under this query."
+    },
+    {
+      "id": "coarse-pointer",
+      "query": "@media (pointer: coarse)",
+      "meaning": "The main pointer is a finger.",
+      "panda": "pointerCoarse",
+      "basis": "ui-geometry's hit target is 44px for touch and 24px for a pointer."
+    },
+    {
+      "id": "can-hover",
+      "query": "@media (hover: hover)",
+      "meaning": "The main pointer can hover.",
+      "panda": null,
+      "basis": "On touch, :hover sticks after a tap."
+    },
+    {
+      "id": "rtl",
+      "query": ":dir(rtl)",
+      "meaning": "The element's text runs right to left.",
+      "panda": "rtl",
+      "basis": "A recipe uses logical properties first; this is for what they cannot express."
+    }
+  ],
+  "reserved": [
+    {
+      "id": "placeholder-shown",
+      "for": "text field, wave 4",
+      "note": "A state of the native input part, or of an empty select value."
+    },
+    {
+      "id": "autofill",
+      "for": "text field, wave 4",
+      "note": "A state of the native input part."
+    },
+    {
+      "id": "dragging",
+      "for": "slider and window splitter, wave 4",
+      "note": "`aria-grabbed` is deprecated, so it will be a `data-*` state."
+    },
+    {
+      "id": "ascending, descending",
+      "for": "table, wave 5",
+      "note": "From `aria-sort` on a column header."
+    },
+    {
+      "id": "valid",
+      "for": "none yet",
+      "note": "Check 1: engines disagree on :valid for a disabled or read-only form-associated root."
+    }
+  ],
+  "mutations": [
+    {
+      "state": "checked",
+      "condition": ":is([checked], [aria-checked=\"true\"], :checked)",
+      "why": "the union written in D26; it keeps matching a native checkbox the user unchecked"
+    },
+    {
+      "state": "indeterminate",
+      "condition": ":is(:indeterminate, [aria-checked=\"mixed\"], [indeterminate])",
+      "why": "unqualified :indeterminate matches an unchecked radio group and an empty progress bar"
+    },
+    {
+      "state": "invalid",
+      "condition": ":is(:invalid, [data-invalid], [aria-invalid=true])",
+      "why": "Panda's own `invalid`; raw :invalid matches a required field nobody has touched"
+    },
+    {
+      "state": "hover",
+      "condition": ":is(:hover, [data-hover])",
+      "why": "Panda's own `hover`; it has no guard for a disabled element"
+    },
+    {
+      "state": "disabled",
+      "condition": ":disabled",
+      "why": "the pseudo-class alone misses a custom element that is not yet defined"
+    },
+    {
+      "state": "hover",
+      "condition": ":is(:hover, [data-hover]):where(:not(:disabled, [disabled], [aria-disabled=\"true\"]))",
+      "why": "the condition as first confirmed in D34; it still answers on a checked, pressed, selected or open part"
+    }
+  ]
+}

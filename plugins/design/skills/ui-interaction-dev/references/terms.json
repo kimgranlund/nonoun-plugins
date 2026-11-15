@@ -1,0 +1,22 @@
+{
+  "$description": "ui-interaction-dev's words: one meaning each. A spec rule and the guides use these terms in these senses only.",
+  "version": 1,
+  "concepts": [
+    { "id": "draggable", "term": "draggable (item)", "definition": "An element a pointer press can turn into a drag.", "avoid": ["drag source, when the item is the thing moved"] },
+    { "id": "drop-target", "term": "drop target (container)", "definition": "An element that accepts a dragged item: a list, a lane, a well, or an item for a combine.", "avoid": ["droppable, as a noun for an item"] },
+    { "id": "activation-constraint", "term": "activation constraint", "definition": "The test a press must pass before it becomes a drag: a distance for mouse and pen, a delay with a tolerance for touch.", "aliases": ["threshold"] },
+    { "id": "pending", "term": "pending", "definition": "A press on a draggable that has not yet met its activation constraint; nothing on screen has changed." },
+    { "id": "live", "term": "live (drag)", "definition": "A drag past its activation constraint: the pointer is captured and the item follows it." },
+    { "id": "lifted", "term": "lifted", "definition": "The paint of an item being carried: raised, offset up, following the pointer. Not a box change.", "avoid": ["grabbed, which echoes the deprecated aria-grabbed"] },
+    { "id": "drop-indicator", "term": "drop indicator", "definition": "The 2px line, with a terminal ring, that marks where a dragged item will land." },
+    { "id": "target-tint", "term": "target tint", "definition": "The hover tint over a container that would take the dragged item, when it is not the item's own." },
+    { "id": "single-pointer-alternative", "term": "single-pointer alternative", "definition": "A way to reach every drag outcome with taps or clicks and no path (WCAG 2.5.7), such as the Move menu.", "avoid": ["keyboard alternative, which is a separate requirement"] },
+    { "id": "move-control", "term": "Move control", "definition": "The control on an item, named Move <item>, that opens the menu of where it can go." },
+    { "id": "hit-area", "term": "hit area", "definition": "The region that takes the pointer for a part: its box, or a transparent ::before around a smaller part.", "avoid": ["target size, when the painted box is meant"] },
+    { "id": "face", "term": "face", "definition": "A part's paint (fill, gradient, text colour) as distinct from its box; hover changes the face only." },
+    { "id": "negative-control", "term": "negative control", "definition": "The same check run against the code without the change, which must fail." },
+    { "id": "validated", "term": "validated", "definition": "Of a spec rule: an implementation's test proved it, with a negative control, and the record says where and how." },
+    { "id": "sourced", "term": "sourced", "definition": "Of a spec rule: a primary source states it; no test here has proved it yet." },
+    { "id": "contested", "term": "contested", "definition": "Of a spec rule: primary sources disagree; both positions are recorded and the rule says what is safe either way." }
+  ]
+}

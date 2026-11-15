@@ -1,0 +1,85 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "dialog",
+  "kind": "component",
+  "family": "dialog",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/",
+  "summary": "A window over the page that holds focus until it is closed. It wraps the browser's own dialog element.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "It is showing. A script adds and removes it."
+    },
+    "alert": {
+      "type": "boolean",
+      "description": "The dialog interrupts with a message that needs an answer: it gets the alertdialog role."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Takes no room; the panel part shows in the top layer."
+    },
+    "panel": {
+      "kind": "author",
+      "material": {
+        "layer": "overlay",
+        "relief": "ground",
+        "face": "neutral"
+      },
+      "note": "A native dialog element the author writes and marks with data-part=\"panel\". The browser makes the rest of the page inert, keeps focus inside, and closes on Escape."
+    },
+    "title": {
+      "kind": "author",
+      "material": null,
+      "note": "Inside the dialog: the heading the dialog is named after."
+    },
+    "description": {
+      "kind": "author",
+      "material": null,
+      "note": "Inside the dialog: the text the dialog is described by. An alert dialog needs one."
+    }
+  },
+  "tokens": [
+    "--dialog-panel-face",
+    "--dialog-panel-ink",
+    "--dialog-panel-inset",
+    "--dialog-panel-radius"
+  ],
+  "behaviours": [],
+  "keys": {
+    "Escape": "Closes the dialog (the browser does this).",
+    "Tab": "Moves among the dialog's controls and stays inside it (the browser does this)."
+  },
+  "events": {
+    "close": "The dialog element's own event, dispatched when it closes; its returnValue says which button closed it."
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "A button inside a form with method=\"dialog\" closes the dialog, as in plain HTML. When it opens, focus goes to the element the author marked with autofocus, or else to the first control; when it closes, focus returns to where it was."
+    }
+  ],
+  "notYet": [
+    "Closing on a press outside the dialog.",
+    "A dialog that is not modal."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

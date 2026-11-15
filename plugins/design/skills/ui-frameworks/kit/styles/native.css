@@ -1,0 +1,22 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* For the framework targets, whose roots are native elements (docs/specs/targets.md, X11). A recipe is written
+   for a custom element, which brings nothing of its own; a native root brings the browser's border, padding,
+   font and appearance, and a checkbox or radio holds a native input that takes focus and is not seen.
+   The Web Components target does not load this file. */
+@layer reset {
+  button[data-ui] {
+    all: unset;
+    box-sizing: border-box;
+  }
+  [data-ui] > input[data-part="input"]:where([type="checkbox"], [type="radio"]) {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+}

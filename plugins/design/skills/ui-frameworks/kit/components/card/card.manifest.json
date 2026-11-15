@@ -1,0 +1,64 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "card",
+  "kind": "recipe",
+  "family": "card",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/tutorials/page-structure/content/",
+  "summary": "A framed group of content, such as one item of a set.",
+  "element": "div",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "raised",
+        "outline"
+      ],
+      "default": "raised",
+      "kind": "variant",
+      "description": "raised sits on the ground as a face of its own; outline is the ground with a line around it."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "A frame with ui-geometry's card depth as padding and its content stacked inside."
+    }
+  },
+  "tokens": [
+    "--card-face",
+    "--card-ink",
+    "--card-line",
+    "--card-inset",
+    "--card-gap",
+    "--card-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "Any sectioning or grouping element with data-ui=\"card\": article, section, li or div. A card that is one link wraps its heading's text in the anchor."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

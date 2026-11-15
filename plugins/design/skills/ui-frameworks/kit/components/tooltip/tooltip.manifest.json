@@ -1,0 +1,78 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tooltip",
+  "kind": "component",
+  "family": "tooltip",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/",
+  "summary": "A short description that appears beside an element while the pointer rests on it or it has focus.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "It is showing. A script adds and removes it."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "An inline box around the element it describes; it is the anchor the content is placed against."
+    },
+    "content": {
+      "kind": "author",
+      "material": {
+        "layer": "overlay",
+        "relief": "ground",
+        "face": "neutral"
+      },
+      "note": "The description: the author marks it with data-part=\"content\". It gets the tooltip role and shows in the top layer while open."
+    }
+  },
+  "tokens": [
+    "--tooltip-content-face",
+    "--tooltip-content-ink",
+    "--tooltip-content-inset",
+    "--tooltip-content-radius",
+    "--tooltip-content-gap"
+  ],
+  "behaviours": [
+    "dismiss"
+  ],
+  "keys": {
+    "Escape": "Hides the tooltip while its element keeps focus. The Escape goes no further, so a layer around the tooltip stays open."
+  },
+  "events": {},
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "The element it describes is its first child that is not the content. That element gets aria-describedby only when the author wrote none."
+    },
+    {
+      "topic": "naming",
+      "text": "A tooltip describes; it does not name. An icon-only button still needs aria-label."
+    },
+    {
+      "topic": "coordination",
+      "text": "It opens after the pointer rests on it for UITooltip.delay milliseconds (500) and closes UITooltip.closeDelay milliseconds (100) after the pointer leaves both the element and the content. Both are static fields read from the element's own class, so a subclass or a test can change them. A touch pointer opens nothing; keyboard focus opens it at once."
+    }
+  ],
+  "notYet": [
+    "A tooltip on a disabled control, which takes no pointer and no focus."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

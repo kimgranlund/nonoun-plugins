@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manifest.schema.json",
+  "title": "Component manifest, schema 1",
+  "description": "One file per component, kit/components/<id>/<id>.manifest.json. It is the source of the component's contract (D13): the prop schema, the registry and the checks are generated from it or held against it. Rules: docs/specs/manifest.md. Checked by scripts/manifests.mjs, which reads this subset of JSON Schema: type, enum, const, required, properties, additionalProperties, propertyNames, items, pattern, minLength, minItems, uniqueItems and $ref.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "kind",
+    "family",
+    "tier",
+    "pattern",
+    "summary",
+    "role",
+    "focus",
+    "tabindex",
+    "formAssociated",
+    "attributes",
+    "resets",
+    "states",
+    "parts",
+    "tokens",
+    "behaviours",
+    "keys",
+    "events",
+    "notYet",
+    "targets"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema": {
+      "const": 1,
+      "description": "The version of this schema the manifest is written to."
+    },
+    "id": {
+      "$ref": "#/$defs/id",
+      "description": "Identity. Stable, and the name of the folder and of every file of the component."
+    },
+    "kind": {
+      "enum": [
+        "component",
+        "recipe"
+      ],
+      "description": "Identity. component: a custom element with a class. recipe: a style-only item, a recipe for a native element that carries data-<prefix>=\"<id>\"; it has no class and no script."
+    },
+    "family": {
+      "$ref": "#/$defs/id",
+      "description": "Identity. The pattern the component belongs to, named by the id of the component that leads it. A component alone is its own family."
+    },
+    "tier": {
+      "enum": [
+        "controls",
+        "collections",
+        "containers",
+        "layout"
+      ],
+      "description": "Identity. ui-geometry's tier."
+    },
+    "pattern": {
+      "type": "string",
+      "pattern": "^https://",
+      "description": "Provenance. The pattern the behaviour follows, usually an APG page."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Intent. What it is and what it is for."
+    },
+    "role": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Contract. The ARIA role the root gets when the author wrote none, or null."
+    },
+    "focus": {
+      "enum": [
+        "own",
+        "roving",
+        "none"
+      ],
+      "description": "Contract. own: the root is a Tab stop of its own. roving: a list gives it its tabindex. none: it never takes focus."
+    },
+    "tabindex": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Contract. The tabindex the root gets when focus is own; null otherwise."
+    },
+    "formAssociated": {
+      "type": "boolean",
+      "description": "Contract. The class extends UIFormElement."
+    },
+    "attributes": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/attribute"
+      },
+      "description": "Contract. The author attributes."
+    },
+    "resets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "description": "Contract. The attributes a form reset restores."
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "description": "Contract. Ids of the state matrix the recipe paints."
+    },
+    "parts": {
+      "type": "object",
+      "required": [
+        "root"
+      ],
+      "propertyNames": {
+        "pattern": "^[a-z][a-z-]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/part"
+      },
+      "description": "Contract. The root and the other parts. kind element: the component creates it. kind pseudo: the recipe draws it. kind author: the author writes it and marks it with data-part."
+    },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^--[a-z][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Contract. The public component tokens the recipe reads."
+    },
+    "behaviours": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true,
+      "description": "Contract. The behaviours the class mounts, by file name."
+    },
+    "keys": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Contract. What each key does."
+    },
+    "events": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Contract. The events an author listens for."
+    },
+    "messages": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Contract. Text the component shows or hands to the browser."
+    },
+    "uses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "description": "Relation. Components outside the family that the author's markup needs with this one."
+    },
+    "writes": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-z][a-z-]*$"
+        },
+        "minItems": 1,
+        "uniqueItems": true
+      },
+      "description": "Relation. Attributes this component writes on the root of another component, by that component's id, or on its own root beyond its role, tabindex and state attributes."
+    },
+    "guidance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/guidance"
+      },
+      "description": "Guidance for the author who uses the component."
+    },
+    "notYet": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 10
+      },
+      "description": "Guidance. What the component does not do yet."
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "web-components",
+        "react",
+        "svelte",
+        "solid"
+      ],
+      "properties": {
+        "web-components": {
+          "$ref": "#/$defs/status"
+        },
+        "react": {
+          "$ref": "#/$defs/status"
+        },
+        "svelte": {
+          "$ref": "#/$defs/status"
+        },
+        "solid": {
+          "$ref": "#/$defs/status"
+        }
+      },
+      "description": "Provenance. Per target: planned, or built. built means the target's files exist and its tests pass."
+    },
+    "element": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Contract, for kind recipe: the native element the recipe is written for, such as a or table."
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "built"
+      ]
+    },
+    "attribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "description"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "boolean",
+            "string",
+            "number",
+            "enum"
+          ]
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "default": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "variant"
+          ]
+        },
+        "state": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        }
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "material",
+        "note"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "root",
+            "element",
+            "pseudo",
+            "author"
+          ]
+        },
+        "material": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "layer",
+            "relief",
+            "face"
+          ],
+          "properties": {
+            "layer": {
+              "enum": [
+                "base",
+                "overlay"
+              ]
+            },
+            "relief": {
+              "type": "string",
+              "minLength": 1
+            },
+            "face": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*$"
+        },
+        "at": {
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "lazy": {
+          "type": "boolean"
+        },
+        "attrs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "when": {
+          "type": "string"
+        },
+        "pseudo": {
+          "enum": [
+            "::before",
+            "::after"
+          ]
+        }
+      }
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topic",
+        "text"
+      ],
+      "properties": {
+        "topic": {
+          "enum": [
+            "coordination",
+            "first paint",
+            "naming"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 20
+        }
+      }
+    }
+  }
+}

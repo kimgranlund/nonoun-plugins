@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "alert",
+  "kind": "component",
+  "family": "alert",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/alert/",
+  "summary": "A short message that assistive technology announces as soon as it appears.",
+  "role": "alert",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "neutral",
+        "info",
+        "success",
+        "warning",
+        "critical"
+      ],
+      "default": "neutral",
+      "kind": "variant",
+      "description": "What kind of message it is, which sets its colours."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "A row of an optional icon and the message. A variant tints the face, the ink and the line."
+    }
+  },
+  "tokens": [
+    "--alert-face",
+    "--alert-ink",
+    "--alert-line",
+    "--alert-inset",
+    "--alert-gap",
+    "--alert-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "An author who wants the message announced politely writes role=\"status\"; the alert keeps a role the author wrote."
+    }
+  ],
+  "notYet": [
+    "A close button."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

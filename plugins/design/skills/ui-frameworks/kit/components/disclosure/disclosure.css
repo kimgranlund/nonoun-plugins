@@ -1,0 +1,31 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-disclosure>, the element that holds a trigger and its panel. Its shape and rules:
+   docs/specs/css-contract.md. Its conditions: references/states.json. It stacks the trigger and the panel
+   with ui-geometry's gap between a caption and its content. The panel is displayed exactly while the root has
+   `open`: the recipe alone decides, so the state is right before the element is defined (J10). It paints
+   nothing, so it has no forced-colours block. */
+@layer recipes {
+  @scope (ui-disclosure) {
+    :where(:scope) {
+      --_gap: var(--disclosure-gap, var(--containers-gap-group-caption-content));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part=panel] {
+      display: none;
+      justify-self: stretch;
+    }
+
+    :scope:where(:is([open], :popover-open)) > [data-part=panel] { display: block; }
+  }
+}

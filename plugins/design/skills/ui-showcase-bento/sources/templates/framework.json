@@ -1,0 +1,14 @@
+{
+ "id": "framework-name",
+ "title": "Framework showcase",
+ "brief": "{spec}/brief.md",
+ "groups": { "catalogue": "aria-24" },
+ "chrome": { "margin": 24, "gutter": 16, "pad": 24, "radius": 12 },
+ "axes": [ { "name": "theme", "attr": "class", "values": ["light", "dark"] } ],
+ "tokens": { "css": ["{work}/framework.css"], "commands": ["copy the framework's built stylesheet (its theme and component CSS) to {work}/framework.css"] },
+ "acceptance": [
+  "Specimens are the framework's own components or their rendered markup and classes, never restyled copies.",
+  "Chrome lengths are read from the framework's tokens (container padding, card radius, gap), not chosen.",
+  "Missing patterns get a labelled empty state naming the closest component, not a hand-built stand-in."
+ ]
+}

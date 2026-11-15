@@ -1,0 +1,128 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-slider>. Its rules: J56 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   The root is the hit area, ui-geometry's slider hit area tall, and draws no face. ::before is the track, centred in
+   it; the fill is the track's second layer, its content box, which ends where the padding at the inline end begins.
+   ::after is the thumb. Both are placed from --_share, which the class writes on the root's inline style (0 until
+   the element is defined), so a change of value moves no box of the root. Everything is placed on the inline axis,
+   so it follows the writing direction. A vertical slider turns the root's writing mode, with its inline start at
+   the bottom, so the same rules run the track upwards. */
+@layer recipes {
+  @scope (ui-slider) {
+    :where(:scope) {
+      --_share: 0;
+      --_track-face: var(--slider-track-face, var(--recessed-face));
+      --_fill-face: var(--slider-fill-face, var(--solid-face));
+      --_thumb-face: var(--slider-thumb-face, var(--raised-face));
+      --_thumb-face-active: var(--pressed-face);
+      --_track-shadow: var(--recessed-shadow);
+      --_thumb-shadow: var(--raised-shadow-1);
+      --_thumb-shadow-hover: var(--raised-shadow-2);
+      --_height: var(--slider-height, var(--controls-track-slider-hit-area));
+      --_track: var(--controls-track-progress-slider-track);
+      --_radius: var(--slider-track-radius, calc(var(--_track) / 2));
+      --_thumb: var(--controls-track-slider-thumb);
+      --_thumb-radius: calc(var(--_thumb) / 2);
+      --_root-radius: calc(var(--_height) / 2);
+      --_length: var(--controls-track-slider-minimum-length);
+      --_tall: calc(var(--_length) * 4);
+      --_touch: max(var(--_height), var(--controls-target-t_hit-touch));
+      --_stop: calc(var(--_thumb) / 2 + var(--_share) * (100% - var(--_thumb)));
+      --_fade-disabled: 0.5;
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      position: relative;
+      block-size: var(--_height);
+      min-inline-size: var(--_length);
+      border-radius: var(--_root-radius);
+      cursor: pointer;
+      touch-action: pan-y;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before,
+    :scope::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      margin-block: auto;
+    }
+    :scope::before {
+      inset-inline: 0;
+      block-size: var(--_track);
+      padding-inline-end: calc(100% - var(--_stop));
+      border-radius: var(--_radius);
+      background-color: var(--_track-face);
+      background-image: linear-gradient(var(--_fill-face), var(--_fill-face)), none;
+      background-clip: content-box, border-box;
+      box-shadow: var(--_track-shadow);
+    }
+    :scope::after {
+      inset-inline-start: calc(var(--_share) * (100% - var(--_thumb)));
+      inline-size: var(--_thumb);
+      block-size: var(--_thumb);
+      border-radius: var(--_thumb-radius);
+      background-color: var(--_thumb-face);
+      box-shadow: var(--_thumb-shadow);
+    }
+
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      inline-size: var(--_tall);
+      touch-action: pan-x;
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::after { box-shadow: var(--_thumb-shadow-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]))))::after { background-color: var(--_thumb-face-active); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { cursor: default; }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before,
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { opacity: var(--_fade-disabled); }
+
+    @media (pointer: coarse) {
+      :scope {
+        block-size: var(--_touch);
+        margin-block: calc((var(--_height) - var(--_touch)) / 2);
+      }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_track-face: Canvas;
+        --_fill-face: Highlight;
+        --_thumb-face: ButtonText;
+        --_thumb-face-active: ButtonText;
+        --_track-shadow: none;
+        --_thumb-shadow: none;
+        --_thumb-shadow-hover: none;
+        --_fade-disabled: 1;
+        --_ring: Highlight;
+      }
+      :scope::before {
+        forced-color-adjust: none;
+        outline: var(--_border) solid ButtonText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before {
+        outline-color: GrayText;
+        background-image: linear-gradient(GrayText, GrayText), none;
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: GrayText; }
+    }
+  }
+}

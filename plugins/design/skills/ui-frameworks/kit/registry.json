@@ -1,0 +1,1581 @@
+{
+  "generated": "By scripts/manifests.mjs from kit/components/*/*.manifest.json. Do not edit; run node scripts/manifests.mjs.",
+  "schema": 1,
+  "prefix": "ui",
+  "shared": {
+    "styles": [
+      "kit/styles/reset.css",
+      "kit/styles/tokens.css"
+    ],
+    "index": "kit/styles/kit.css"
+  },
+  "families": {
+    "accordion": [
+      "accordion"
+    ],
+    "alert": [
+      "alert"
+    ],
+    "badge": [
+      "badge"
+    ],
+    "breadcrumb": [
+      "breadcrumb"
+    ],
+    "button": [
+      "button"
+    ],
+    "card": [
+      "card"
+    ],
+    "carousel": [
+      "carousel"
+    ],
+    "checkbox": [
+      "checkbox"
+    ],
+    "combobox": [
+      "combobox"
+    ],
+    "dialog": [
+      "dialog"
+    ],
+    "disclosure": [
+      "disclosure"
+    ],
+    "feed": [
+      "feed"
+    ],
+    "form-field": [
+      "form-field"
+    ],
+    "grid": [
+      "grid"
+    ],
+    "icon": [
+      "icon"
+    ],
+    "link": [
+      "link"
+    ],
+    "listbox": [
+      "listbox",
+      "option"
+    ],
+    "menu-button": [
+      "menu",
+      "menu-button",
+      "menu-group",
+      "menu-item",
+      "menu-item-checkbox",
+      "menu-item-radio",
+      "submenu"
+    ],
+    "menubar": [
+      "menubar"
+    ],
+    "meter": [
+      "meter"
+    ],
+    "radio-group": [
+      "radio",
+      "radio-group"
+    ],
+    "range-slider": [
+      "range-slider"
+    ],
+    "slider": [
+      "slider"
+    ],
+    "spinbutton": [
+      "spinbutton"
+    ],
+    "splitter": [
+      "splitter"
+    ],
+    "switch": [
+      "switch"
+    ],
+    "tabs": [
+      "tab",
+      "tab-list",
+      "tab-panel",
+      "tabs"
+    ],
+    "table": [
+      "table"
+    ],
+    "text-field": [
+      "text-field"
+    ],
+    "toolbar": [
+      "toolbar"
+    ],
+    "tooltip": [
+      "tooltip"
+    ],
+    "tree": [
+      "tree",
+      "tree-item"
+    ]
+  },
+  "components": [
+    {
+      "id": "accordion",
+      "kind": "component",
+      "family": "accordion",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A stack of disclosures, of which it can keep only one open.",
+      "tag": "ui-accordion",
+      "path": "kit/components/accordion/accordion.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "disclosure",
+        "button"
+      ],
+      "styles": [
+        "kit/components/accordion/accordion.css"
+      ],
+      "modules": [
+        "kit/components/accordion/accordion.class.js",
+        "kit/components/accordion/accordion.js",
+        "kit/components/accordion/accordion.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "alert",
+      "kind": "component",
+      "family": "alert",
+      "tier": "containers",
+      "role": "alert",
+      "focus": "none",
+      "summary": "A short message that assistive technology announces as soon as it appears.",
+      "tag": "ui-alert",
+      "path": "kit/components/alert/alert.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/alert/alert.css"
+      ],
+      "modules": [
+        "kit/components/alert/alert.class.js",
+        "kit/components/alert/alert.js",
+        "kit/components/alert/alert.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "badge",
+      "kind": "recipe",
+      "family": "badge",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A short label or count beside something, such as New or 12.",
+      "element": "span",
+      "selector": "[data-ui=\"badge\"]",
+      "path": "kit/components/badge/badge.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/badge/badge.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "breadcrumb",
+      "kind": "component",
+      "family": "breadcrumb",
+      "tier": "collections",
+      "role": "navigation",
+      "focus": "none",
+      "summary": "The trail of links from the top of a site to the current page.",
+      "tag": "ui-breadcrumb",
+      "path": "kit/components/breadcrumb/breadcrumb.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/breadcrumb/breadcrumb.css"
+      ],
+      "modules": [
+        "kit/components/breadcrumb/breadcrumb.class.js",
+        "kit/components/breadcrumb/breadcrumb.js",
+        "kit/components/breadcrumb/breadcrumb.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "button",
+      "kind": "component",
+      "family": "button",
+      "tier": "controls",
+      "role": "button",
+      "focus": "own",
+      "summary": "Runs one action when activated, or submits or resets the form it belongs to.",
+      "tag": "ui-button",
+      "path": "kit/components/button/button.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "writtenBy": {
+        "carousel": [
+          "aria-controls",
+          "aria-disabled"
+        ],
+        "disclosure": [
+          "aria-expanded",
+          "aria-controls"
+        ],
+        "menu-button": [
+          "aria-haspopup",
+          "aria-controls",
+          "aria-expanded",
+          "id"
+        ],
+        "menubar": [
+          "tabindex"
+        ],
+        "toolbar": [
+          "tabindex"
+        ]
+      },
+      "styles": [
+        "kit/components/button/button.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/button/button.class.js",
+        "kit/components/button/button.js",
+        "kit/components/button/button.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "card",
+      "kind": "recipe",
+      "family": "card",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A framed group of content, such as one item of a set.",
+      "element": "div",
+      "selector": "[data-ui=\"card\"]",
+      "path": "kit/components/card/card.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/card/card.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "carousel",
+      "kind": "component",
+      "family": "carousel",
+      "tier": "containers",
+      "role": "region",
+      "focus": "none",
+      "summary": "A row of slides of which one shows at a time, with buttons to go to the next and the previous.",
+      "tag": "ui-carousel",
+      "path": "kit/components/carousel/carousel.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "button"
+      ],
+      "styles": [
+        "kit/components/carousel/carousel.css"
+      ],
+      "modules": [
+        "kit/components/carousel/carousel.class.js",
+        "kit/components/carousel/carousel.js",
+        "kit/components/carousel/carousel.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "checkbox",
+      "kind": "component",
+      "family": "checkbox",
+      "tier": "controls",
+      "role": "checkbox",
+      "focus": "own",
+      "summary": "A choice that is on, off, or partly on, and that a form submits when it is on.",
+      "tag": "ui-checkbox",
+      "path": "kit/components/checkbox/checkbox.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/checkbox/checkbox.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/checkbox/checkbox.class.js",
+        "kit/components/checkbox/checkbox.js",
+        "kit/components/checkbox/checkbox.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "combobox",
+      "kind": "component",
+      "family": "combobox",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A text field with a list of suggestions that narrows as the user types.",
+      "tag": "ui-combobox",
+      "path": "kit/components/combobox/combobox.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "listbox",
+        "option"
+      ],
+      "styles": [
+        "kit/components/combobox/combobox.css"
+      ],
+      "modules": [
+        "kit/behaviours/active-descendant.js",
+        "kit/behaviours/dismiss.js",
+        "kit/components/combobox/combobox.class.js",
+        "kit/components/combobox/combobox.js",
+        "kit/components/combobox/combobox.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "dialog",
+      "kind": "component",
+      "family": "dialog",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A window over the page that holds focus until it is closed. It wraps the browser's own dialog element.",
+      "tag": "ui-dialog",
+      "path": "kit/components/dialog/dialog.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/dialog/dialog.css"
+      ],
+      "modules": [
+        "kit/components/dialog/dialog.class.js",
+        "kit/components/dialog/dialog.js",
+        "kit/components/dialog/dialog.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "disclosure",
+      "kind": "component",
+      "family": "disclosure",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A button that shows and hides a panel of content.",
+      "tag": "ui-disclosure",
+      "path": "kit/components/disclosure/disclosure.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "button"
+      ],
+      "writtenBy": {
+        "accordion": [
+          "open"
+        ]
+      },
+      "styles": [
+        "kit/components/disclosure/disclosure.css"
+      ],
+      "modules": [
+        "kit/components/disclosure/disclosure.class.js",
+        "kit/components/disclosure/disclosure.js",
+        "kit/components/disclosure/disclosure.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "feed",
+      "kind": "component",
+      "family": "feed",
+      "tier": "collections",
+      "role": "feed",
+      "focus": "none",
+      "summary": "A list of articles that grows as the user reads, such as a timeline. Page keys move from article to article.",
+      "tag": "ui-feed",
+      "path": "kit/components/feed/feed.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/feed/feed.css"
+      ],
+      "modules": [
+        "kit/components/feed/feed.class.js",
+        "kit/components/feed/feed.js",
+        "kit/components/feed/feed.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "form-field",
+      "kind": "component",
+      "family": "form-field",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A control with its label, its help text and its error message, wired to each other.",
+      "tag": "ui-form-field",
+      "path": "kit/components/form-field/form-field.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/form-field/form-field.css"
+      ],
+      "modules": [
+        "kit/components/form-field/form-field.class.js",
+        "kit/components/form-field/form-field.js",
+        "kit/components/form-field/form-field.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "grid",
+      "kind": "component",
+      "family": "grid",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "A table whose cells the user moves among with the arrow keys, to read, select or act on them. It wraps the browser's own table.",
+      "tag": "ui-grid",
+      "path": "kit/components/grid/grid.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/grid/grid.css"
+      ],
+      "modules": [
+        "kit/behaviours/grid-focus.js",
+        "kit/components/grid/grid.class.js",
+        "kit/components/grid/grid.js",
+        "kit/components/grid/grid.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "icon",
+      "kind": "component",
+      "family": "icon",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "One icon from the kit's set, drawn by CSS in the ink of whatever it sits in.",
+      "tag": "ui-icon",
+      "path": "kit/components/icon/icon.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/icon/icon.css"
+      ],
+      "modules": [
+        "kit/components/icon/icon.class.js",
+        "kit/components/icon/icon.js",
+        "kit/components/icon/icon.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "link",
+      "kind": "recipe",
+      "family": "link",
+      "tier": "controls",
+      "role": null,
+      "focus": "own",
+      "summary": "A link: the browser's own anchor, in the kit's ink.",
+      "element": "a",
+      "selector": "[data-ui=\"link\"]",
+      "path": "kit/components/link/link.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/link/link.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "listbox",
+      "kind": "component",
+      "family": "listbox",
+      "tier": "collections",
+      "role": "listbox",
+      "focus": "own",
+      "summary": "A list from which one option, or several, can be chosen. It is a form control and one stop in the Tab order.",
+      "tag": "ui-listbox",
+      "path": "kit/components/listbox/listbox.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "option"
+      ],
+      "writtenBy": {
+        "combobox": [
+          "id",
+          "tabindex"
+        ]
+      },
+      "styles": [
+        "kit/components/listbox/listbox.css"
+      ],
+      "modules": [
+        "kit/behaviours/active-descendant.js",
+        "kit/behaviours/typeahead.js",
+        "kit/components/listbox/listbox.class.js",
+        "kit/components/listbox/listbox.js",
+        "kit/components/listbox/listbox.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menu",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "collections",
+      "role": "menu",
+      "focus": "none",
+      "summary": "A list of actions that opens over the page. It shows in the top layer while it has the open attribute.",
+      "tag": "ui-menu",
+      "path": "kit/components/menu/menu.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu-button",
+        "menu-group",
+        "menu-item",
+        "menu-item-checkbox",
+        "menu-item-radio",
+        "submenu"
+      ],
+      "writtenBy": {
+        "menu-button": [
+          "open",
+          "aria-labelledby",
+          "id"
+        ],
+        "menubar": [
+          "open"
+        ],
+        "submenu": [
+          "open",
+          "aria-labelledby",
+          "id"
+        ]
+      },
+      "styles": [
+        "kit/components/menu/menu.css"
+      ],
+      "modules": [
+        "kit/behaviours/dismiss.js",
+        "kit/behaviours/roving-focus.js",
+        "kit/behaviours/typeahead.js",
+        "kit/components/menu/menu.class.js",
+        "kit/components/menu/menu.js",
+        "kit/components/menu/menu.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menu-button",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A button that opens a menu. It holds the button and the menu, and keeps them in step.",
+      "tag": "ui-menu-button",
+      "path": "kit/components/menu-button/menu-button.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu",
+        "menu-group",
+        "menu-item",
+        "menu-item-checkbox",
+        "menu-item-radio",
+        "submenu",
+        "button"
+      ],
+      "styles": [
+        "kit/components/menu-button/menu-button.css"
+      ],
+      "modules": [
+        "kit/components/menu-button/menu-button.class.js",
+        "kit/components/menu-button/menu-button.js",
+        "kit/components/menu-button/menu-button.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menu-group",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "collections",
+      "role": "group",
+      "focus": "none",
+      "summary": "A set of menu items that belong together, such as the radio items of one choice.",
+      "tag": "ui-menu-group",
+      "path": "kit/components/menu-group/menu-group.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu",
+        "menu-button",
+        "menu-item",
+        "menu-item-checkbox",
+        "menu-item-radio",
+        "submenu"
+      ],
+      "styles": [
+        "kit/components/menu-group/menu-group.css"
+      ],
+      "modules": [
+        "kit/components/menu-group/menu-group.class.js",
+        "kit/components/menu-group/menu-group.js",
+        "kit/components/menu-group/menu-group.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menu-item",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "collections",
+      "role": "menuitem",
+      "focus": "roving",
+      "summary": "One action in a menu.",
+      "tag": "ui-menu-item",
+      "path": "kit/components/menu-item/menu-item.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu",
+        "menu-button",
+        "menu-group",
+        "menu-item-checkbox",
+        "menu-item-radio",
+        "submenu"
+      ],
+      "writtenBy": {
+        "menu": [
+          "tabindex"
+        ],
+        "submenu": [
+          "aria-haspopup",
+          "aria-controls",
+          "aria-expanded",
+          "id"
+        ]
+      },
+      "styles": [
+        "kit/components/menu-item/menu-item.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/menu-item/menu-item.class.js",
+        "kit/components/menu-item/menu-item.js",
+        "kit/components/menu-item/menu-item.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menu-item-checkbox",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "collections",
+      "role": "menuitemcheckbox",
+      "focus": "roving",
+      "summary": "A menu item that is on or off.",
+      "tag": "ui-menu-item-checkbox",
+      "path": "kit/components/menu-item-checkbox/menu-item-checkbox.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu",
+        "menu-button",
+        "menu-group",
+        "menu-item",
+        "menu-item-radio",
+        "submenu"
+      ],
+      "writtenBy": {
+        "menu": [
+          "tabindex"
+        ]
+      },
+      "styles": [
+        "kit/components/menu-item-checkbox/menu-item-checkbox.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/menu-item-checkbox/menu-item-checkbox.class.js",
+        "kit/components/menu-item-checkbox/menu-item-checkbox.js",
+        "kit/components/menu-item-checkbox/menu-item-checkbox.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menu-item-radio",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "collections",
+      "role": "menuitemradio",
+      "focus": "roving",
+      "summary": "A menu item that is one choice of a group in a menu.",
+      "tag": "ui-menu-item-radio",
+      "path": "kit/components/menu-item-radio/menu-item-radio.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu",
+        "menu-button",
+        "menu-group",
+        "menu-item",
+        "menu-item-checkbox",
+        "submenu"
+      ],
+      "writtenBy": {
+        "menu": [
+          "tabindex"
+        ],
+        "menu-group": [
+          "checked"
+        ]
+      },
+      "styles": [
+        "kit/components/menu-item-radio/menu-item-radio.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/menu-item-radio/menu-item-radio.class.js",
+        "kit/components/menu-item-radio/menu-item-radio.js",
+        "kit/components/menu-item-radio/menu-item-radio.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "menubar",
+      "kind": "component",
+      "family": "menubar",
+      "tier": "collections",
+      "role": "menubar",
+      "focus": "none",
+      "summary": "A row of menus, such as File, Edit and View. It is one stop in the Tab order.",
+      "tag": "ui-menubar",
+      "path": "kit/components/menubar/menubar.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu-button",
+        "menu",
+        "menu-item",
+        "button"
+      ],
+      "styles": [
+        "kit/components/menubar/menubar.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/components/menubar/menubar.class.js",
+        "kit/components/menubar/menubar.js",
+        "kit/components/menubar/menubar.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "meter",
+      "kind": "component",
+      "family": "meter",
+      "tier": "controls",
+      "role": "meter",
+      "focus": "none",
+      "summary": "A value within a known range, such as disk use, shown as a filled track.",
+      "tag": "ui-meter",
+      "path": "kit/components/meter/meter.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/meter/meter.css"
+      ],
+      "modules": [
+        "kit/components/meter/meter.class.js",
+        "kit/components/meter/meter.js",
+        "kit/components/meter/meter.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "option",
+      "kind": "component",
+      "family": "listbox",
+      "tier": "collections",
+      "role": "option",
+      "focus": "none",
+      "summary": "One option of a listbox.",
+      "tag": "ui-option",
+      "path": "kit/components/option/option.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "listbox"
+      ],
+      "writtenBy": {
+        "combobox": [
+          "hidden",
+          "selected",
+          "data-highlighted",
+          "data-focus",
+          "id"
+        ],
+        "listbox": [
+          "selected",
+          "data-highlighted",
+          "data-focus",
+          "id"
+        ]
+      },
+      "styles": [
+        "kit/components/option/option.css"
+      ],
+      "modules": [
+        "kit/components/option/option.class.js",
+        "kit/components/option/option.js",
+        "kit/components/option/option.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "radio",
+      "kind": "component",
+      "family": "radio-group",
+      "tier": "controls",
+      "role": "radio",
+      "focus": "roving",
+      "summary": "One choice of a radio group.",
+      "tag": "ui-radio",
+      "path": "kit/components/radio/radio.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "radio-group"
+      ],
+      "writtenBy": {
+        "radio-group": [
+          "checked",
+          "tabindex"
+        ]
+      },
+      "styles": [
+        "kit/components/radio/radio.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/radio/radio.class.js",
+        "kit/components/radio/radio.js",
+        "kit/components/radio/radio.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "radio-group",
+      "kind": "component",
+      "family": "radio-group",
+      "tier": "controls",
+      "role": "radiogroup",
+      "focus": "none",
+      "summary": "A set of choices of which one can be chosen. It is one form control and one stop in the Tab order.",
+      "tag": "ui-radio-group",
+      "path": "kit/components/radio-group/radio-group.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "radio"
+      ],
+      "styles": [
+        "kit/components/radio-group/radio-group.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/components/radio-group/radio-group.class.js",
+        "kit/components/radio-group/radio-group.js",
+        "kit/components/radio-group/radio-group.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "range-slider",
+      "kind": "component",
+      "family": "range-slider",
+      "tier": "controls",
+      "role": "group",
+      "focus": "none",
+      "summary": "A low and a high value in one range, each with its own thumb.",
+      "tag": "ui-range-slider",
+      "path": "kit/components/range-slider/range-slider.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/range-slider/range-slider.css"
+      ],
+      "modules": [
+        "kit/components/range-slider/range-slider.class.js",
+        "kit/components/range-slider/range-slider.js",
+        "kit/components/range-slider/range-slider.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "slider",
+      "kind": "component",
+      "family": "slider",
+      "tier": "controls",
+      "role": "slider",
+      "focus": "own",
+      "summary": "A value in a range, set by dragging a thumb along a track or with the arrow keys. It is a form control.",
+      "tag": "ui-slider",
+      "path": "kit/components/slider/slider.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/slider/slider.css"
+      ],
+      "modules": [
+        "kit/components/slider/slider.class.js",
+        "kit/components/slider/slider.js",
+        "kit/components/slider/slider.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "spinbutton",
+      "kind": "component",
+      "family": "spinbutton",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A number the user types or steps up and down, in a field with two small buttons.",
+      "tag": "ui-spinbutton",
+      "path": "kit/components/spinbutton/spinbutton.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/spinbutton/spinbutton.css"
+      ],
+      "modules": [
+        "kit/components/spinbutton/spinbutton.class.js",
+        "kit/components/spinbutton/spinbutton.js",
+        "kit/components/spinbutton/spinbutton.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "splitter",
+      "kind": "component",
+      "family": "splitter",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "Two panes side by side with a bar between them that the user drags, or moves with the arrow keys, to give one more room.",
+      "tag": "ui-splitter",
+      "path": "kit/components/splitter/splitter.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/splitter/splitter.css"
+      ],
+      "modules": [
+        "kit/components/splitter/splitter.class.js",
+        "kit/components/splitter/splitter.js",
+        "kit/components/splitter/splitter.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "submenu",
+      "kind": "component",
+      "family": "menu-button",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "A menu item that opens another menu beside it.",
+      "tag": "ui-submenu",
+      "path": "kit/components/submenu/submenu.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "menu",
+        "menu-button",
+        "menu-group",
+        "menu-item",
+        "menu-item-checkbox",
+        "menu-item-radio"
+      ],
+      "styles": [
+        "kit/components/submenu/submenu.css"
+      ],
+      "modules": [
+        "kit/components/submenu/submenu.class.js",
+        "kit/components/submenu/submenu.js",
+        "kit/components/submenu/submenu.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "switch",
+      "kind": "component",
+      "family": "switch",
+      "tier": "controls",
+      "role": "switch",
+      "focus": "own",
+      "summary": "A setting that is on or off, and that a form submits while it is on.",
+      "tag": "ui-switch",
+      "path": "kit/components/switch/switch.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/switch/switch.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/switch/switch.class.js",
+        "kit/components/switch/switch.js",
+        "kit/components/switch/switch.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "tab",
+      "kind": "component",
+      "family": "tabs",
+      "tier": "collections",
+      "role": "tab",
+      "focus": "roving",
+      "summary": "One tab of a tab list. Selecting it shows its panel.",
+      "tag": "ui-tab",
+      "path": "kit/components/tab/tab.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "tab-list",
+        "tab-panel",
+        "tabs"
+      ],
+      "writtenBy": {
+        "tab-list": [
+          "tabindex"
+        ],
+        "tabs": [
+          "selected",
+          "aria-controls",
+          "id"
+        ]
+      },
+      "styles": [
+        "kit/components/tab/tab.css"
+      ],
+      "modules": [
+        "kit/behaviours/press.js",
+        "kit/components/tab/tab.class.js",
+        "kit/components/tab/tab.js",
+        "kit/components/tab/tab.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "tab-list",
+      "kind": "component",
+      "family": "tabs",
+      "tier": "collections",
+      "role": "tablist",
+      "focus": "none",
+      "summary": "The row or column of tabs. It is one stop in the Tab order, and the arrow keys move among its tabs.",
+      "tag": "ui-tab-list",
+      "path": "kit/components/tab-list/tab-list.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "tab",
+        "tab-panel",
+        "tabs"
+      ],
+      "styles": [
+        "kit/components/tab-list/tab-list.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/components/tab-list/tab-list.class.js",
+        "kit/components/tab-list/tab-list.js",
+        "kit/components/tab-list/tab-list.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "tab-panel",
+      "kind": "component",
+      "family": "tabs",
+      "tier": "containers",
+      "role": "tabpanel",
+      "focus": "own",
+      "summary": "The content one tab shows.",
+      "tag": "ui-tab-panel",
+      "path": "kit/components/tab-panel/tab-panel.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "tab",
+        "tab-list",
+        "tabs"
+      ],
+      "writtenBy": {
+        "tabs": [
+          "hidden",
+          "aria-labelledby",
+          "id"
+        ]
+      },
+      "styles": [
+        "kit/components/tab-panel/tab-panel.css"
+      ],
+      "modules": [
+        "kit/components/tab-panel/tab-panel.class.js",
+        "kit/components/tab-panel/tab-panel.js",
+        "kit/components/tab-panel/tab-panel.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "table",
+      "kind": "recipe",
+      "family": "table",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "Rows and columns of data: the browser's own table, in the kit's geometry.",
+      "element": "table",
+      "selector": "[data-ui=\"table\"]",
+      "path": "kit/components/table/table.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/table/table.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "tabs",
+      "kind": "component",
+      "family": "tabs",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "Shows one of several panels at a time. It holds a tab list and the panels, and keeps the selected tab and the shown panel in step.",
+      "tag": "ui-tabs",
+      "path": "kit/components/tabs/tabs.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "tab",
+        "tab-list",
+        "tab-panel"
+      ],
+      "styles": [
+        "kit/components/tabs/tabs.css"
+      ],
+      "modules": [
+        "kit/components/tabs/tabs.class.js",
+        "kit/components/tabs/tabs.js",
+        "kit/components/tabs/tabs.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "text-field",
+      "kind": "component",
+      "family": "text-field",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "One line of text entry: the kit's field around the browser's own input.",
+      "tag": "ui-text-field",
+      "path": "kit/components/text-field/text-field.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/text-field/text-field.css"
+      ],
+      "modules": [
+        "kit/components/text-field/text-field.class.js",
+        "kit/components/text-field/text-field.js",
+        "kit/components/text-field/text-field.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "toolbar",
+      "kind": "component",
+      "family": "toolbar",
+      "tier": "collections",
+      "role": "toolbar",
+      "focus": "none",
+      "summary": "A row of controls that is one stop in the Tab order; the arrow keys move among them.",
+      "tag": "ui-toolbar",
+      "path": "kit/components/toolbar/toolbar.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "button"
+      ],
+      "styles": [
+        "kit/components/toolbar/toolbar.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/components/toolbar/toolbar.class.js",
+        "kit/components/toolbar/toolbar.js",
+        "kit/components/toolbar/toolbar.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "tooltip",
+      "kind": "component",
+      "family": "tooltip",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "A short description that appears beside an element while the pointer rests on it or it has focus.",
+      "tag": "ui-tooltip",
+      "path": "kit/components/tooltip/tooltip.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/tooltip/tooltip.css"
+      ],
+      "modules": [
+        "kit/behaviours/dismiss.js",
+        "kit/components/tooltip/tooltip.class.js",
+        "kit/components/tooltip/tooltip.js",
+        "kit/components/tooltip/tooltip.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "tree",
+      "kind": "component",
+      "family": "tree",
+      "tier": "collections",
+      "role": "tree",
+      "focus": "none",
+      "summary": "A list whose items can hold more items, which the user opens and closes. It is one stop in the Tab order.",
+      "tag": "ui-tree",
+      "path": "kit/components/tree/tree.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "tree-item"
+      ],
+      "styles": [
+        "kit/components/tree/tree.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/behaviours/typeahead.js",
+        "kit/components/tree/tree.class.js",
+        "kit/components/tree/tree.js",
+        "kit/components/tree/tree.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "tree-item",
+      "kind": "component",
+      "family": "tree",
+      "tier": "collections",
+      "role": "treeitem",
+      "focus": "roving",
+      "summary": "One item of a tree. It may hold a group of items of its own.",
+      "tag": "ui-tree-item",
+      "path": "kit/components/tree-item/tree-item.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "tree"
+      ],
+      "writtenBy": {
+        "tree": [
+          "selected",
+          "expanded",
+          "tabindex",
+          "aria-level",
+          "aria-setsize",
+          "aria-posinset"
+        ]
+      },
+      "styles": [
+        "kit/components/tree-item/tree-item.css"
+      ],
+      "modules": [
+        "kit/components/tree-item/tree-item.class.js",
+        "kit/components/tree-item/tree-item.js",
+        "kit/components/tree-item/tree-item.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    }
+  ]
+}

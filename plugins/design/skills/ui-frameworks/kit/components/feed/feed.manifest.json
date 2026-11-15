@@ -1,0 +1,65 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "feed",
+  "kind": "component",
+  "family": "feed",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/feed/",
+  "summary": "A list of articles that grows as the user reads, such as a timeline. Page keys move from article to article.",
+  "role": "feed",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "loading": {
+      "type": "boolean",
+      "state": "loading",
+      "description": "More articles are being added; assistive technology waits before reading the change."
+    }
+  },
+  "resets": [],
+  "states": [
+    "loading"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks its articles with a gap."
+    }
+  },
+  "tokens": [
+    "--feed-gap"
+  ],
+  "behaviours": [],
+  "keys": {
+    "PageDown, PageUp": "Move focus to the next or the previous article.",
+    "Control+End, Control+Home": "Move focus to the first focusable element after or before the feed."
+  },
+  "events": {
+    "more": "Dispatched when focus reaches the last article, so that the page can add more."
+  },
+  "writes": {
+    "feed": [
+      "aria-busy"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Its articles are its child elements with the article role, native article elements among them. The feed makes each focusable and numbers them with aria-posinset and aria-setsize."
+    },
+    {
+      "topic": "naming",
+      "text": "The author names the feed, and each article with aria-labelledby pointing at its heading."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

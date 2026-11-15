@@ -1,0 +1,110 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-button>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json. */
+@layer recipes {
+  @scope (ui-button) {
+    :where(:scope) {
+      --_face: var(--button-face, var(--raised-face));
+      --_face-hover: var(--button-face-hover, var(--button-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--button-face-active, var(--button-face, var(--pressed-face)));
+      --_shadow: var(--raised-shadow-1);
+      --_ink: var(--button-ink, var(--ink));
+      --_ink-disabled: var(--button-ink-disabled, var(--ink-faint));
+      --_fade-disabled: 1;
+      --_height: var(--button-height, var(--controls-control-h));
+      --_inset: var(--button-inset, var(--controls-control-t));
+      --_gap: var(--button-gap, var(--controls-control-i));
+      --_radius: var(--button-radius, var(--controls-curvature-r));
+      --_text: var(--unit-scale-f);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_reach: var(--controls-target-expansion-of-h-touch);
+    }
+    :where(:scope[variant="primary"]) {
+      --_face: var(--button-face, var(--solid-face));
+      --_face-hover: var(--button-face-hover, var(--button-face, var(--colors-primary-solid-hover)));
+      --_face-active: var(--button-face-active, var(--button-face, var(--solid-face)));
+      --_shadow: var(--solid-shadow);
+      --_ink: var(--button-ink, var(--on-solid));
+      --_ink-disabled: var(--button-ink-disabled, var(--on-solid));
+      --_fade-disabled: 0.5;
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--_gap);
+      position: relative;
+      block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      opacity: var(--_fade-disabled);
+      cursor: default;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) { transition: background-color 100ms; }
+    }
+    @media (pointer: coarse) {
+      :scope::before {
+        content: "";
+        position: absolute;
+        inset-block: calc(var(--_reach) * -1);
+        inset-inline: 0;
+      }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: ButtonFace;
+        --_face-hover: ButtonFace;
+        --_face-active: ButtonFace;
+        --_shadow: none;
+        --_ink: ButtonText;
+        --_ink-disabled: GrayText;
+        --_fade-disabled: 1;
+        --_ring: Highlight;
+      }
+      :where(:scope[variant="primary"]) {
+        --_face: Highlight;
+        --_face-hover: Highlight;
+        --_face-active: Highlight;
+        --_ink: HighlightText;
+      }
+      :scope {
+        outline: var(--_border) solid ButtonBorder;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { outline-color: GrayText; }
+    }
+  }
+}

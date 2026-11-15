@@ -1,0 +1,89 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "grid",
+  "kind": "component",
+  "family": "grid",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/grid/",
+  "summary": "A table whose cells the user moves among with the arrow keys, to read, select or act on them. It wraps the browser's own table.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "tree": {
+      "type": "boolean",
+      "description": "Rows can hold child rows that the user opens and closes: the table gets the treegrid role."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A block around the table; it scrolls when the table is wider."
+    },
+    "table": {
+      "kind": "author",
+      "material": null,
+      "note": "A native table the author writes and marks with data-part=\"table\". It gets the grid role, or treegrid, and is one stop in the Tab order."
+    }
+  },
+  "tokens": [
+    "--grid-ink",
+    "--grid-line",
+    "--grid-height",
+    "--grid-inset",
+    "--grid-face-hover"
+  ],
+  "behaviours": [
+    "grid-focus"
+  ],
+  "keys": {
+    "Arrow keys": "Move focus one cell.",
+    "Home, End": "The first or the last cell of the row.",
+    "Control+Home, Control+End": "The first cell of the first row, or the last cell of the last row.",
+    "PageDown, PageUp": "Several rows down or up.",
+    "ArrowRight, ArrowLeft on a row (tree)": "Open or close the row, or move to its first cell or its parent row.",
+    "Enter, F2 on a cell with several controls or a text field": "Move focus to the cell's first control.",
+    "Tab, Shift+Tab inside such a cell": "Move to the cell's next or previous control, wrapping; the arrow keys, Home, End, PageUp and PageDown are the control's.",
+    "Escape, F2 inside such a cell": "Move focus back to the cell; the grid's keys work again."
+  },
+  "events": {},
+  "writes": {
+    "grid": [
+      "role",
+      "tabindex",
+      "aria-rowcount",
+      "aria-colcount",
+      "aria-level",
+      "aria-expanded",
+      "aria-rowindex",
+      "hidden",
+      "data-editing"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the table with a caption, aria-label or aria-labelledby."
+    },
+    {
+      "topic": "coordination",
+      "text": "A cell that holds one plain control, such as a link, a button or a checkbox, hands focus to that control. A cell with several controls, or with one that takes text or uses the arrow keys, takes focus itself: Enter or F2 moves into it, Escape or F2 back out, and it carries data-editing while focus is inside. With tree, a row's level is its data-level attribute, and a row with child rows carries aria-expanded as the author wrote it."
+    }
+  ],
+  "notYet": [
+    "Selecting cells or rows.",
+    "Editing a cell's own text in place: the grid moves focus into a cell's controls, but does not turn a cell into a field.",
+    "Sorting by a column."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

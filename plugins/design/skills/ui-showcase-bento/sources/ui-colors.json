@@ -1,0 +1,52 @@
+{
+ "id": "ui-colors",
+ "owns": [
+  "colors"
+ ],
+ "title": "Colour showcase",
+ "brief": "{skills}/ui-colors/references/showcase.md",
+ "groups": {
+  "catalogue": "colour-24"
+ },
+ "chrome": {
+  "margin": 12,
+  "colors": {
+   "bg": "var(--colors-bg)",
+   "tile": "var(--colors-bg-subtle)",
+   "fg": "var(--colors-fg)",
+   "muted": "var(--colors-fg-muted)",
+   "line": "var(--colors-border)",
+   "slot": "var(--colors-bg-muted)"
+  },
+  "colorsNote": "Tiles are on step 2 (bg-subtle) and the page on step 1 (bg), so a tile is one step off a step-1 face. Which role paints each face is ui-materials' rule (ui-materials/references/fills.md), not this source's."
+ },
+ "axes": [
+  {
+   "name": "theme",
+   "label": "mode",
+   "attr": "class",
+   "values": [
+    "light",
+    "dark",
+    "dim"
+   ],
+   "invariant": true
+  }
+ ],
+ "tokens": {
+  "css": [
+   "{work}/colors/system.css"
+  ],
+  "commands": [
+   "[ -f {work}/colors-request.json ] || echo '{}' > {work}/colors-request.json",
+   "node {skills}/ui-colors/scripts/system.mjs --request {work}/colors-request.json --out {work}/colors"
+  ]
+ },
+ "acceptance": [
+  "Every colour is a variable of the run's system.css or a value read from system.json; the specimens' CSS names no colour.",
+  "Every failure in system.json is shown (APCA misses, CVD minima, key-run deviations, anchor flags), and nothing else.",
+  "Numbers are read from system.json, never recomputed.",
+  "As a layer under another content source, ui-colors gives only the chrome colours and the mode switch."
+ ],
+ "note": "The mode axis lists the modes ui-colors forces with one class: light, dark and dim. Its two contrast modes are not on the axis: ui-colors applies them under prefers-contrast: more and forces them with two classes (.light.contrast-more, .dark.contrast-more), which a class axis, swapping one class, cannot set. Whether to add them is an open decision."
+}

@@ -1,0 +1,147 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "range-slider",
+  "kind": "component",
+  "family": "range-slider",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/slider-multithumb/",
+  "summary": "A low and a high value in one range, each with its own thumb.",
+  "role": "group",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": true,
+  "attributes": {
+    "low": {
+      "type": "number",
+      "description": "The low value."
+    },
+    "high": {
+      "type": "number",
+      "description": "The high value."
+    },
+    "min": {
+      "type": "number",
+      "description": "The low end of the range.",
+      "default": 0
+    },
+    "max": {
+      "type": "number",
+      "description": "The high end of the range.",
+      "default": 100
+    },
+    "step": {
+      "type": "number",
+      "description": "The distance between two values the user can reach.",
+      "default": 1
+    },
+    "name": {
+      "type": "string",
+      "description": "The name both values are submitted under, the low one first."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be changed or focused."
+    }
+  },
+  "resets": [
+    "low",
+    "high"
+  ],
+  "states": [
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "The hit area, with the track centred in it."
+    },
+    "low": {
+      "kind": "element",
+      "tag": "span",
+      "at": "end",
+      "attrs": {
+        "role": "slider",
+        "tabindex": "0"
+      },
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "The thumb of the low value: a slider that cannot pass the high one."
+    },
+    "high": {
+      "kind": "element",
+      "tag": "span",
+      "at": "end",
+      "attrs": {
+        "role": "slider",
+        "tabindex": "0"
+      },
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "The thumb of the high value: a slider that cannot pass the low one."
+    },
+    "track": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The share between the two thumbs is solid."
+    },
+    "fill": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "solid"
+      },
+      "note": "The share of the track up to the value, or between the two thumbs. The recipe may draw it as a second layer of the track."
+    }
+  },
+  "tokens": [
+    "--range-slider-track-face",
+    "--range-slider-fill-face",
+    "--range-slider-low-face",
+    "--range-slider-high-face",
+    "--range-slider-height"
+  ],
+  "behaviours": [],
+  "keys": {
+    "Arrow keys, PageUp, PageDown, Home, End": "On a thumb: as on a slider, within what the other thumb allows."
+  },
+  "events": {
+    "input": "Dispatched while the user changes a value.",
+    "change": "Dispatched when the user has finished."
+  },
+  "messages": {
+    "low": "Minimum",
+    "high": "Maximum"
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the group with aria-label or aria-labelledby. Each thumb is named Minimum or Maximum unless the author writes the thumb and names it."
+    }
+  ],
+  "notYet": [
+    "A vertical range slider.",
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

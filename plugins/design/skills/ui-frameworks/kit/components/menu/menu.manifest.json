@@ -1,0 +1,87 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menu",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "A list of actions that opens over the page. It shows in the top layer while it has the open attribute.",
+  "role": "menu",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "The menu is showing. A script, or the menu button, adds and removes it."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "overlay",
+        "relief": "ground",
+        "face": "neutral"
+      },
+      "note": "A frame padded like a listbox. Flat gives it a ring, set in kit.config.json, because its fill is the ground's."
+    }
+  },
+  "tokens": [
+    "--menu-face",
+    "--menu-ink",
+    "--menu-inset",
+    "--menu-radius",
+    "--menu-gap"
+  ],
+  "behaviours": [
+    "roving-focus",
+    "typeahead",
+    "dismiss"
+  ],
+  "keys": {
+    "ArrowDown, ArrowUp": "Move focus to the next or the previous item, and wrap.",
+    "Home, End": "Move focus to the first or the last item.",
+    "A letter": "Moves focus to the next item that starts with it.",
+    "Escape": "Closes the menu and returns focus to where it was when the menu opened.",
+    "Tab": "Closes the menu; focus goes on to the next element."
+  },
+  "events": {
+    "toggle": "The platform's own event, dispatched when the menu shows and hides."
+  },
+  "writes": {
+    "menu": [
+      "popover"
+    ],
+    "menu-item": [
+      "tabindex"
+    ],
+    "menu-item-checkbox": [
+      "tabindex"
+    ],
+    "menu-item-radio": [
+      "tabindex"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "It writes popover=\"manual\" on itself when the author wrote no popover attribute."
+    }
+  ],
+  "notYet": [
+    "A menu taller than the viewport scrolls, but does not yet keep the focused item in view by itself beyond what the browser does."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

@@ -1,0 +1,39 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-carousel>, a row of slides of which one shows at a time. Its shape and rules:
+   docs/specs/css-contract.md. The root stacks the author's slides part and controls with a gap. The slides
+   part is the view: a row that scrolls sideways, with no scrollbar showing, and snaps to a slide, each slide
+   as wide as the view (J76). Going to another slide scrolls smoothly once the root is ready, and at once when
+   the user asks for reduced motion: the class names no behaviour, so this recipe decides. The buttons are the
+   author's, painted by their own recipe. It paints nothing, so it has no forced-colours block. */
+@layer recipes {
+  @scope (ui-carousel) {
+    :where(:scope) {
+      --_gap: var(--carousel-gap, var(--containers-gap-blocks-in-a-group-card-4));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="slides"] {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 100%;
+      overflow-x: auto;
+      scroll-snap-type: inline mandatory;
+      scrollbar-width: none;
+    }
+    :scope > [data-part="slides"] > * {
+      scroll-snap-align: start;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) > [data-part="slides"] { scroll-behavior: smooth; }
+    }
+  }
+}

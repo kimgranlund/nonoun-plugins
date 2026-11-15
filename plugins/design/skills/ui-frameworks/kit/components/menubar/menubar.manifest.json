@@ -1,0 +1,69 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menubar",
+  "kind": "component",
+  "family": "menubar",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "A row of menus, such as File, Edit and View. It is one stop in the Tab order.",
+  "role": "menubar",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A row of menu buttons. It paints nothing."
+    }
+  },
+  "tokens": [
+    "--menubar-gap"
+  ],
+  "behaviours": [
+    "roving-focus"
+  ],
+  "keys": {
+    "ArrowRight, ArrowLeft": "Move focus to the next or the previous menu's button, and wrap. While a menu is open, close it and open the next or the previous one.",
+    "ArrowDown, Enter, Space": "On a button: open its menu.",
+    "Home, End": "Move focus to the first or the last button."
+  },
+  "events": {},
+  "uses": [
+    "menu-button",
+    "menu",
+    "menu-item",
+    "button"
+  ],
+  "writes": {
+    "button": [
+      "tabindex"
+    ],
+    "menu": [
+      "open"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Its menus are menu buttons the author writes inside it."
+    },
+    {
+      "topic": "naming",
+      "text": "The author names the menubar with aria-label or aria-labelledby."
+    }
+  ],
+  "notYet": [
+    "Menu items written straight into the menubar, with no menu of their own."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

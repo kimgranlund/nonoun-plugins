@@ -1,0 +1,121 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-radio>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   The mark is two pseudo-elements of the root, as on the checkbox (D57): ::before is the round recessed well,
+   ::after is the solid bead, shown while checked. Both are centred on the row; the label text follows the well. */
+@layer recipes {
+  @scope (ui-radio) {
+    :where(:scope) {
+      --_face: var(--radio-face, var(--recessed-face));
+      --_face-hover: var(--radio-face-hover, var(--radio-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--radio-face-active, var(--radio-face, var(--pressed-face)));
+      --_face-checked: var(--radio-face-checked, var(--solid-face));
+      --_shadow: var(--field-shadow);
+      --_shadow-checked: var(--solid-shadow);
+      --_ink: var(--radio-ink, var(--ink));
+      --_ink-disabled: var(--radio-ink-disabled, var(--ink-faint));
+      --_fade-disabled: 0.5;
+      --_height: var(--radio-height, var(--controls-mark-choice-row));
+      --_inset: var(--radio-inset, var(--controls-control-i));
+      --_start: var(--controls-mark-choice-label);
+      --_size: var(--controls-mark-radio-box);
+      --_dot: var(--controls-mark-radio-dot);
+      --_radius: var(--controls-mark-checkbox-radius);
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_reach: var(--controls-target-expansion-of-h-touch);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-block;
+      position: relative;
+      min-block-size: var(--_height);
+      padding-block: var(--_inset);
+      padding-inline-start: var(--_start);
+      border-radius: var(--_radius);
+      color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+      cursor: pointer;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before,
+    :scope::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      margin-block: auto;
+    }
+    :scope::before {
+      inset-inline-start: 0;
+      inline-size: var(--_size);
+      block-size: var(--_size);
+      border-radius: calc(var(--_size) / 2);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+    }
+    :scope::after {
+      visibility: hidden;
+      inset-inline-start: calc((var(--_size) - var(--_dot)) / 2);
+      inline-size: var(--_dot);
+      block-size: var(--_dot);
+      border-radius: calc(var(--_dot) / 2);
+      background-color: var(--_face-checked);
+      box-shadow: var(--_shadow-checked);
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before { background-color: var(--_face-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]))))::before { background-color: var(--_face-active); }
+    :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::after { visibility: visible; }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before,
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { opacity: var(--_fade-disabled); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready])::before { transition: background-color 100ms; }
+    }
+    @media (pointer: coarse) {
+      :scope {
+        padding-block: calc(var(--_inset) + var(--_reach));
+        margin-block: calc(var(--_reach) * -1);
+      }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_face-hover: Canvas;
+        --_face-active: Canvas;
+        --_face-checked: Highlight;
+        --_shadow: none;
+        --_shadow-checked: none;
+        --_ink: CanvasText;
+        --_ink-disabled: GrayText;
+        --_fade-disabled: 1;
+        --_ring: Highlight;
+      }
+      :scope::before {
+        outline: var(--_border) solid ButtonText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::before { outline-color: Highlight; }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { outline-color: GrayText; }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: GrayText; }
+    }
+  }
+}

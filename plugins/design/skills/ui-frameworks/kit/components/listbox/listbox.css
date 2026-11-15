@@ -1,0 +1,68 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-listbox>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-materials: base layer, recessed relief, neutral face, like a field, with its options stacked inside.
+   ui-geometry: a frame padded like a menu, its radius concentric with its rows. The focus ring is an outline
+   outside the frame, as the button draws it; the invalid ring is the line the checkbox draws.
+   The highlight on an option is painted by the option's recipe, on the condition the listbox writes while it has focus. */
+@layer recipes {
+  @scope (ui-listbox) {
+    :where(:scope) {
+      --_face: var(--listbox-face, var(--recessed-face));
+      --_shadow: var(--field-shadow);
+      --_ink: var(--listbox-ink, var(--ink));
+      --_ink-disabled: var(--listbox-ink-disabled, var(--ink-faint));
+      --_line-invalid: var(--listbox-line-invalid, var(--colors-critical-solid));
+      --_inset: var(--listbox-inset, var(--collections-frame-d_c));
+      --_radius: var(--listbox-radius, var(--collections-curvature-r_frame));
+      --_text: var(--unit-scale-f);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      align-content: start;
+      padding: var(--_inset);
+      border-radius: var(--_radius);
+      overflow: auto;
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { box-shadow: inset 0 0 0 var(--_border) var(--_line-invalid); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_shadow: none;
+        --_ink: CanvasText;
+        --_ink-disabled: GrayText;
+        --_line-invalid: Mark;
+        --_ring: Highlight;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { outline-color: var(--_line-invalid); }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { outline-color: GrayText; }
+    }
+  }
+}

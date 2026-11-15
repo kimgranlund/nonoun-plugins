@@ -1,0 +1,75 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tab-list",
+  "kind": "component",
+  "family": "tabs",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/",
+  "summary": "The row or column of tabs. It is one stop in the Tab order, and the arrow keys move among its tabs.",
+  "role": "tablist",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "horizontal",
+        "vertical"
+      ],
+      "default": "horizontal",
+      "state": "vertical",
+      "description": "vertical stacks the tabs, and the up and down arrows move among them."
+    }
+  },
+  "resets": [],
+  "states": [
+    "vertical"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "A tray: the same paint as a switch's off track."
+    }
+  },
+  "tokens": [
+    "--tab-list-face",
+    "--tab-list-height",
+    "--tab-list-inset",
+    "--tab-list-radius"
+  ],
+  "behaviours": [
+    "roving-focus"
+  ],
+  "keys": {
+    "ArrowRight, ArrowLeft": "In a horizontal list, move focus to the next or the previous tab, following the writing direction, and wrap at the ends.",
+    "ArrowDown, ArrowUp": "In a vertical list, the same.",
+    "Home, End": "Move focus to the first or the last tab.",
+    "Tab": "Enters the list at the selected tab and leaves it with the next press."
+  },
+  "events": {},
+  "writes": {
+    "tab": [
+      "tabindex"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the list with aria-label or aria-labelledby."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

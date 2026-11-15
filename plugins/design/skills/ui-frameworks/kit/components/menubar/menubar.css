@@ -1,0 +1,23 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-menubar>, a row of menus. Its shape and rules: docs/specs/css-contract.md. Its conditions:
+   references/states.json. A row of menu buttons with ui-geometry's gap for grouped controls, as the toolbar
+   lays out its controls. It paints nothing, so it has no forced-colours block, and it takes no focus, so it
+   has no ring: its buttons draw their own. */
+@layer recipes {
+  @scope (ui-menubar) {
+    :where(:scope) {
+      --_gap: var(--menubar-gap, var(--controls-gap-grouped));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+  }
+}

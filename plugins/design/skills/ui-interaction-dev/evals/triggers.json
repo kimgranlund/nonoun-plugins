@@ -1,0 +1,21 @@
+{
+  "$comment": "Routing cases for the ui-interaction-dev skill. label: run = the skill should load; none = it should not. Run by hand with a fresh model.",
+  "labels": ["run", "none"],
+  "cases": [
+    { "id": "kanban-drag", "prompt": "Cards on our kanban board can only be moved with the keyboard. Add mouse and touch drag.", "label": "run", "why": "pointer drag on a board" },
+    { "id": "sortable", "prompt": "Make this list sortable by dragging, and keep it accessible.", "label": "run", "why": "drag reorder plus accessibility" },
+    { "id": "touch-scroll", "prompt": "On iPhone, dragging an item scrolls the page instead of moving it.", "label": "run", "why": "touch-action and activation delay" },
+    { "id": "wcag-257", "prompt": "Does our drag and drop pass WCAG 2.5.7?", "label": "run", "why": "single-pointer alternative" },
+    { "id": "hover-states", "prompt": "Define hover states for our buttons, rows and menus so they never look pressed.", "label": "run", "why": "hover rules" },
+    { "id": "hit-area", "prompt": "Our slider thumbs are 18px; how do we meet the 24px target size without making them bigger?", "label": "run", "why": "hit areas, WCAG 2.5.8" },
+    { "id": "shadow-menu", "prompt": "Our menu works on its own but ignores Enter when it is inside another web component.", "label": "run", "why": "shadow DOM active element" },
+    { "id": "dialog-escape", "prompt": "Pressing Escape in a menu inside our drawer closes the whole drawer.", "label": "run", "why": "overlay.escape-innermost" },
+    { "id": "date-typing", "prompt": "On iPhone our date field will not accept a typed date, and Thai users see the year 2569.", "label": "run", "why": "date entry: digits only, Gregorian calendar" },
+    { "id": "form-reset", "prompt": "Our custom date picker keeps its value when the form is reset.", "label": "run", "why": "form.reset" },
+    { "id": "drawer-layout", "prompt": "Make the drawer's header and footer stick while its body scrolls, with the right insets.", "label": "none", "why": "ui-geometry: frame lengths, not behaviour" },
+    { "id": "colours", "prompt": "Generate a light and dark palette from brand blue.", "label": "none", "why": "ui-colors" },
+    { "id": "radius", "prompt": "What radius should a card have at 16px with κ 0.4?", "label": "none", "why": "ui-geometry" },
+    { "id": "glass", "prompt": "Make the toolbar frosted glass in dark mode.", "label": "none", "why": "ui-materials" },
+    { "id": "bento", "prompt": "Make a bento showcase of our components.", "label": "none", "why": "ui-showcase-bento" }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "toolbar",
+  "kind": "component",
+  "family": "toolbar",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/",
+  "summary": "A row of controls that is one stop in the Tab order; the arrow keys move among them.",
+  "role": "toolbar",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "horizontal",
+        "vertical"
+      ],
+      "default": "horizontal",
+      "state": "vertical",
+      "description": "vertical stacks the controls, and the up and down arrows move among them."
+    }
+  },
+  "resets": [],
+  "states": [
+    "vertical"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A row of the author's controls with ui-geometry's gap for grouped controls. It paints nothing."
+    }
+  },
+  "tokens": [
+    "--toolbar-gap"
+  ],
+  "behaviours": [
+    "roving-focus"
+  ],
+  "keys": {
+    "ArrowRight, ArrowLeft": "Move focus to the next or the previous control, following the writing direction, and wrap.",
+    "Home, End": "Move focus to the first or the last control.",
+    "Tab": "Enters at the control that last had focus, and leaves with the next press."
+  },
+  "events": {},
+  "uses": [
+    "button"
+  ],
+  "writes": {
+    "button": [
+      "tabindex"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the toolbar with aria-label or aria-labelledby."
+    },
+    {
+      "topic": "coordination",
+      "text": "Its controls are the elements inside it that have the button, checkbox, switch or link role, a native button or a native link among them. A control that uses the arrow keys itself, such as a radio group or a text field, does not belong in a toolbar yet."
+    }
+  ],
+  "notYet": [
+    "A control inside it that uses the arrow keys itself."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

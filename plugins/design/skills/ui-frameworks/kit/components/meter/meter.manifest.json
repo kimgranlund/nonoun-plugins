@@ -1,0 +1,77 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "meter",
+  "kind": "component",
+  "family": "meter",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/meter/",
+  "summary": "A value within a known range, such as disk use, shown as a filled track.",
+  "role": "meter",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "number",
+      "description": "The value. It is held between min and max."
+    },
+    "min": {
+      "type": "number",
+      "default": 0,
+      "description": "The low end of the range."
+    },
+    "max": {
+      "type": "number",
+      "default": 100,
+      "description": "The high end of the range."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The track."
+    },
+    "fill": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "solid"
+      },
+      "note": "As long as the value's share of the range."
+    }
+  },
+  "tokens": [
+    "--meter-face",
+    "--meter-fill-face",
+    "--meter-height",
+    "--meter-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the meter with aria-label or aria-labelledby, and may give aria-valuetext for a value that is not a plain number."
+    }
+  ],
+  "notYet": [
+    "The fill is painted when the element is defined, not before: CSS cannot yet read a number from an attribute in every browser."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

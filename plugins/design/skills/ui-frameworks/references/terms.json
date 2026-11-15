@@ -1,0 +1,265 @@
+{
+  "$description": "The vocabulary of ui-frameworks as data: what each concept means, what it is for, what it is not, and which names it owns. One term, one meaning. `aliases` are accepted spellings; `avoid` are words not to use for the concept, each with the reason; `avoidExact` lists exact phrases that are always wrong in this project's governed documents, which `node scripts/docs.mjs --check` refuses. `foreign` lists words a sibling skill owns and how this skill says the nearby thing. `sets` are the closed sets. The tables in docs/specs/vocabulary.md are generated from this file.",
+  "version": 1,
+  "principles": [
+    {
+      "id": "one-term-one-meaning",
+      "rule": "A word names one concept, and a word a sibling skill owns keeps that skill's meaning.",
+      "why": "ui-geometry owns host, slot, tier and item; ui-materials owns layer, relief, face and material; ui-colors owns role, mode, theme and surface. An agent that loads two of these skills reads one word one way."
+    },
+    {
+      "id": "one-name-every-target",
+      "rule": "A part, a state, a condition and a component token each have one name in all four targets.",
+      "why": "The manifest, the recipe and the four implementations meet only through these names. A second name is a second contract."
+    },
+    {
+      "id": "qualify-borrowed-words",
+      "rule": "ARIA role, cascade layer, Panda preset and Panda recipe always carry their qualifier.",
+      "why": "Role, layer, preset and recipe each mean something else in this family of skills."
+    }
+  ],
+  "concepts": [
+    {
+      "id": "kit",
+      "term": "Kit",
+      "group": "system",
+      "definition": "The set of components, recipes, tokens and behaviours this skill writes into one project, in one target with one styling system.",
+      "intent": "The unit a project adopts, restyles and extends.",
+      "not": "Not the skill, which produces kits. Not the core set, which is what the skill ships before a project adds to it.",
+      "aliases": ["UI kit"],
+      "avoid": [],
+      "names": [],
+      "related": ["target", "component", "recipe"],
+      "evidence": ["docs/plan.md: What this is", "docs/plan.md: B2, B3", "docs/decisions.md: D3"]
+    },
+    {
+      "id": "target",
+      "term": "Target",
+      "group": "system",
+      "definition": "One of the four frameworks a kit can be implemented in: Web Components, React, Svelte or Solid.",
+      "intent": "The one axis along which behaviour code is written more than once.",
+      "not": "Not a styling system. Plain CSS or Panda is chosen separately.",
+      "aliases": [],
+      "avoid": [
+        { "word": "renderer", "why": "maison-ui's word for the same thing" },
+        { "word": "framework", "why": "it also names the libraries themselves; use target for the choice a kit makes" }
+      ],
+      "names": ["web-components", "react", "svelte", "solid"],
+      "related": ["kit"],
+      "evidence": ["docs/plan.md: B1, Frame", "docs/decisions.md: D2, D17", "docs/prior-art.md: maison-ui manifest key `renderers`"]
+    },
+    {
+      "id": "component",
+      "term": "Component",
+      "group": "contract",
+      "definition": "A unit of a kit that has behaviour: a root, named parts, author attributes, states and keyboard handling, described by one manifest and styled by one recipe.",
+      "intent": "What a consumer places in markup and what each target implements.",
+      "not": "Not a recipe. A card or a badge has styles and no behaviour, so it is a recipe with no component.",
+      "aliases": [],
+      "avoid": [
+        { "word": "control", "why": "ui-geometry's first tier; a dialog or a table is a component and not a control" },
+        { "word": "owner", "why": "maison-ui's word" },
+        { "word": "widget", "why": "APG's word for the pattern, not for the kit's unit" }
+      ],
+      "names": ["<component id>"],
+      "related": ["recipe", "root", "part", "manifest"],
+      "evidence": ["docs/plan.md: B4", "docs/decisions.md: D7", "docs/prior-art.md: agent-ui `controls/`, maison-ui owners"]
+    },
+    {
+      "id": "recipe",
+      "term": "Recipe",
+      "group": "contract",
+      "definition": "The style definition of one component or of one style-only item: a hand-written CSS file that reads component tokens and holds the rules for the root, the parts, the variants and the conditions.",
+      "intent": "The one place a component's appearance is written, for every target.",
+      "not": "Not a Panda recipe, which is a class-generating object in a Panda config. The kit authors none.",
+      "aliases": [],
+      "avoid": [
+        { "word": "component recipe", "why": "in instrumental-modernism and massimo-ui it means a construction pattern" },
+        { "word": "stylesheet", "why": "reset.css and tokens.css are stylesheets and not recipes" }
+      ],
+      "names": ["<component id>.css"],
+      "related": ["component", "component-token", "condition", "cascade-layer"],
+      "evidence": ["docs/plan.md: B4, Frame", "docs/decisions.md: D7, D16"]
+    },
+    {
+      "id": "root",
+      "term": "Root",
+      "group": "contract",
+      "definition": "The outermost element of a component: the custom element in the Web Components target, a native element in the other three. It carries the author attributes, the ARIA role and the states.",
+      "intent": "The element a recipe scopes to and a consumer writes attributes on.",
+      "not": "Not ui-geometry's host, which is a segmented control or a tab list.",
+      "aliases": [],
+      "avoid": [
+        { "word": "host", "why": "ui-geometry owns it, and there is no host in the React, Svelte or Solid targets" }
+      ],
+      "avoidExact": ["the host", "custom host", "custom hosts", "host element", "host-is-the-control", "interactive host", "form-associated host", "scoped host", "light-DOM host"],
+      "names": ["part name `root`"],
+      "related": ["component", "part", "author-attribute"],
+      "evidence": ["docs/decisions.md: D9, D18, D20", "massimo-ui markup contract: component root"]
+    },
+    {
+      "id": "part",
+      "term": "Part",
+      "group": "contract",
+      "definition": "A named element of a component's anatomy. The manifest lists a component's parts, every target renders them under the same names, and the recipe selects them by name.",
+      "intent": "The shared anatomy that lets one recipe style four implementations.",
+      "not": "Wider than in ui-materials, where a part is a painted element with a layer, a relief and a face. An anatomy part that is only ink, such as a label or an icon, is a mark there and has none of the three.",
+      "aliases": [],
+      "avoid": [
+        { "word": "slot", "why": "ui-geometry's S, the 5q box; also the HTML element, which light DOM does not use" }
+      ],
+      "names": ["data-part=\"<part name>\""],
+      "related": ["root", "component", "manifest"],
+      "evidence": ["docs/decisions.md: D4, D8", "docs/prior-art.md: gen-ui-kit `[slot]`, agent-ui `[data-part]`"]
+    },
+    {
+      "id": "author-attribute",
+      "term": "Author attribute",
+      "group": "api",
+      "definition": "An attribute on the root that a component declares as its public API and that the person writing the markup sets: a variant, a value, or a state such as `disabled` or `checked`.",
+      "intent": "Attributes are the API. A component is fully usable from markup.",
+      "not": "Not a managed attribute. Naming attributes such as `aria-label` also belong to the author, but they are platform API and not declared by the component.",
+      "aliases": [],
+      "avoid": [
+        { "word": "prop", "why": "props are how the React, Svelte and Solid targets receive the same values; the contract is the attribute" }
+      ],
+      "names": [],
+      "related": ["managed-attribute", "variant", "state"],
+      "evidence": ["docs/plan.md: B11", "docs/decisions.md: D9, D26", "massimo-ui dom/manifest.ts: attributes are the whole public API"]
+    },
+    {
+      "id": "managed-attribute",
+      "term": "Managed attribute",
+      "group": "api",
+      "definition": "An attribute a component writes on its own root or parts after it starts: the ARIA role, `tabindex`, the ARIA states that mirror author attributes, and the `data-*` states that have no ARIA name.",
+      "intent": "Makes the accessibility tree and the recipe see the same state.",
+      "not": "The author does not write a managed state attribute. A `role`, a `tabindex` or a naming attribute the author did write is left as written.",
+      "aliases": [],
+      "avoid": [],
+      "names": ["role", "tabindex", "aria-*", "data-<state id>"],
+      "related": ["author-attribute", "state"],
+      "evidence": ["docs/decisions.md: D9", "massimo-ui dom/manifest.ts: `managed`", "docs/prior-art.md: gen-ui-kit core/a11y.js"]
+    },
+    {
+      "id": "variant",
+      "term": "Variant",
+      "group": "api",
+      "definition": "An author attribute that selects one of a closed set of appearances for a component and changes neither its behaviour nor its ARIA state.",
+      "intent": "Lets one component cover several looks without new components.",
+      "not": "Not a state. A variant does not change through interaction.",
+      "aliases": [],
+      "avoid": [],
+      "names": [],
+      "related": ["author-attribute", "recipe"],
+      "evidence": ["docs/prior-art.md: gen-ui-kit `[variant]`, maison-ui `data-appearance`", "docs/decisions.md: D16 open point"]
+    },
+    {
+      "id": "state",
+      "term": "State",
+      "group": "state",
+      "definition": "Something true of a root or a part for a while, through interaction, validation or the author, that a recipe may style: checked, disabled, expanded, hover.",
+      "intent": "The closed list of things a recipe may react to.",
+      "not": "Not a variant. Not a custom state set through `ElementInternals`, which the kit does not use for styling.",
+      "aliases": [],
+      "avoid": [],
+      "names": ["<state id>"],
+      "related": ["condition", "author-attribute", "managed-attribute"],
+      "evidence": ["docs/plan.md: B7", "docs/decisions.md: D9, D26", "docs/checks.md: Check 1"]
+    },
+    {
+      "id": "condition",
+      "term": "Condition",
+      "group": "state",
+      "definition": "The one selector that says a state holds, written as a union of the author attribute, the managed attribute and the native pseudo-class. A recipe selects a state only through its condition.",
+      "intent": "One selector per state for every target, and the `conditions` of the Panda preset.",
+      "not": "An environment condition, such as reduced motion or forced colours, is a query about the device and not about an element. The state matrix lists those apart.",
+      "aliases": [],
+      "avoid": [],
+      "names": [],
+      "related": ["state", "recipe"],
+      "evidence": ["docs/decisions.md: D26, D16"]
+    },
+    {
+      "id": "component-token",
+      "term": "Component token",
+      "group": "style",
+      "definition": "A custom property a recipe reads to paint or size a component. A public token (`--button-color`) is only ever read by the kit, with a fallback, so anyone may set it on the root or an ancestor. A private token (`--_bg`) is set by the recipe's own variant and condition rules.",
+      "intent": "Makes a component restylable from outside without the override losing to a variant or a state.",
+      "not": "Not a ui-materials material token and not a ui-colors role. Those are the global values a component token falls back to.",
+      "aliases": ["public token", "private token"],
+      "avoid": [],
+      "names": ["--<component id>-<property>", "--_<name>"],
+      "related": ["recipe"],
+      "evidence": ["docs/plan.md: B13", "docs/decisions.md: D10, D23"]
+    },
+    {
+      "id": "behaviour",
+      "term": "Behaviour",
+      "group": "behaviour",
+      "definition": "A framework-free function `(root, options) => cleanup` that adds one interaction the browser does not supply: roving focus, typeahead, dismissal, positioning.",
+      "intent": "Written once, mounted by every target.",
+      "not": "Not a component and not a base class. A behaviour holds no markup and no styles.",
+      "aliases": [],
+      "avoid": [
+        { "word": "trait", "why": "gen-ui-kit's and agent-ui's word; in gen-ui-kit it also means attachment by attribute, which the kit does not do" },
+        { "word": "binding", "why": "maison-ui's word" },
+        { "word": "controller", "why": "gen-ui-kit uses it for external state objects" }
+      ],
+      "names": [],
+      "related": ["component", "target"],
+      "evidence": ["docs/decisions.md: D12", "docs/prior-art.md: gen-ui-kit traits, agent-ui traits, maison-ui `bindX`"]
+    },
+    {
+      "id": "manifest",
+      "term": "Manifest",
+      "group": "contract",
+      "definition": "The JSON file that states the contract of one component or one recipe (parts, author attributes, states, keys, component tokens, icons, behaviours, readiness per target) and from which props, the registry and the exports are generated.",
+      "intent": "The single source the recipe, the four implementations and an agent all read.",
+      "not": "Not documentation written after the fact. A manifest that only describes the code is a defect.",
+      "aliases": [],
+      "avoid": [
+        { "word": "descriptor", "why": "agent-ui's word" }
+      ],
+      "names": ["<component id>.manifest.json"],
+      "related": ["component", "recipe"],
+      "evidence": ["docs/plan.md: B4", "docs/decisions.md: D13"]
+    },
+    {
+      "id": "cascade-layer",
+      "term": "Cascade layer",
+      "group": "style",
+      "definition": "One of the five CSS `@layer` names that every kit stylesheet declares in order before its rules.",
+      "intent": "Fixes the kit's place in the cascade whatever order its files load in.",
+      "not": "Never shortened to layer where ui-materials could be meant. There, a layer is a part attribute: base or overlay.",
+      "aliases": [],
+      "avoid": [],
+      "names": ["reset", "base", "tokens", "recipes", "utilities"],
+      "related": ["recipe"],
+      "evidence": ["docs/decisions.md: D11, D27, D28", "docs/checks.md: Check 3"]
+    }
+  ],
+  "foreign": [
+    { "word": "host", "owner": "ui-geometry", "meaning": "a segmented control or a tab list that holds joined items", "here": "root" },
+    { "word": "slot", "owner": "ui-geometry", "meaning": "S, the 5q box that holds a label line or an icon", "here": "part" },
+    { "word": "tier", "owner": "ui-geometry", "meaning": "controls, collections, containers or layout", "here": "a manifest names a component's tier and takes ui-geometry's meaning" },
+    { "word": "item", "owner": "ui-geometry", "meaning": "an entry in a frame or a host, such as a menu row or a tab", "here": "used with ui-geometry's meaning" },
+    { "word": "preset", "owner": "ui-geometry", "meaning": "a set of geometry constants", "here": "Panda preset, always qualified, for the file a Panda consumer adds" },
+    { "word": "layer", "owner": "ui-materials", "meaning": "a part attribute: base or overlay", "here": "cascade layer" },
+    { "word": "part", "owner": "ui-materials", "meaning": "a painted element with a layer, a relief and a face", "here": "part is wider here: it includes marks" },
+    { "word": "mark", "owner": "ui-materials", "meaning": "ink or data printed on a face", "here": "a part with no layer, relief or face" },
+    { "word": "material", "owner": "ui-materials", "meaning": "a preset of lighting, transmission, delineation and chroma", "here": "the kit ships the Flat material only" },
+    { "word": "role", "owner": "ui-colors", "meaning": "a `--colors-<role>` variable", "here": "ARIA role, always qualified" },
+    { "word": "mode", "owner": "ui-colors", "meaning": "light, dark, dim and the contrast modes", "here": "used with ui-colors' meaning" },
+    { "word": "theme", "owner": "ui-colors", "meaning": "a named request that produces one colour system", "here": "used with ui-colors' meaning" },
+    { "word": "surface", "owner": "ui-colors", "meaning": "the neutral family of cards, panels and floating layers", "here": "not used for a part" },
+    { "word": "recipe", "owner": "Panda CSS", "meaning": "a class-generating style object in a Panda config", "here": "Panda recipe, always qualified" }
+  ],
+  "sets": {
+    "targets": ["web-components", "react", "svelte", "solid"],
+    "stylingSystems": ["css", "panda"],
+    "cascadeLayers": ["reset", "base", "tokens", "recipes", "utilities"]
+  },
+  "retired": [
+    { "label": "host", "replacedBy": "root", "note": "Used in docs/decisions.md and docs/plan.md before this vocabulary; rewritten on 2026-11-12." }
+  ]
+}

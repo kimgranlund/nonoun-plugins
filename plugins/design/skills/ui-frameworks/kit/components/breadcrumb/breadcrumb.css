@@ -1,0 +1,40 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-breadcrumb>. Its rules: J14 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A row of the author's links that wraps. A separator is drawn before each child but the first; its alternative
+   text is empty, so assistive technology does not read it. The current page is in the ink, the others muted. */
+@layer recipes {
+  @scope (ui-breadcrumb) {
+    :where(:scope) {
+      --_ink: var(--breadcrumb-ink, var(--ink-muted));
+      --_ink-current: var(--ink);
+      --_gap: var(--breadcrumb-gap, var(--controls-control-i));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > * { color: var(--_ink); }
+    :scope > * + *::before {
+      content: "/" / "";
+      margin-inline-end: var(--_gap);
+    }
+
+    :scope > :where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])) { color: var(--_ink-current); }
+
+    /* Forced colours: the links keep the system's link colour and the current page the text colour. A breadcrumb has no boundary of its own to keep. */
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_ink: LinkText;
+        --_ink-current: CanvasText;
+      }
+    }
+  }
+}

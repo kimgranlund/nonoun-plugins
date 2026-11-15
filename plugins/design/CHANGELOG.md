@@ -4,6 +4,15 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Added
+
+- `ui-materials` (T-0853): paints UI parts in any material and builds components that render in all of them. Imported from the MacBook copy at `ec1743a`; checks run with `node scripts/check.mjs`.
+- `ui-content` (T-0853): prints values and labels so they read and line up. Imported from the MacBook copy at `1aafd92`; ships no tests.
+- `ui-interaction-dev` (T-0853): builds UI interactions that work for every input from a rule spec. Imported from the MacBook copy at `de8f3a9`; tests run with `node --test`.
+- `ui-frameworks` (T-0853): creates a UI kit of light-DOM custom elements (or React) with plain CSS recipes. Imported from the MacBook copy (no git); checks run with `node scripts/manifests.mjs --check` and `node scripts/lint-recipes.mjs`.
+- `ui-explore-variants` (T-0853): explores a UI problem as distinct live variants on one page with per-variant feedback. Imported from the MacBook copy at `c7d3ac9`; ships no tests.
+- `ui-showcase-bento` (T-0853): generates bento showcases packed to fit, with an in-page checker. Imported from the MacBook copy at `f3fbd78`; tests run with `node --test`.
+
 ### Changed
 
 - `ui-geometry` (T-0852): synced from the MacBook copy at `62d0cda`. Adds measured archetypes, dimensions and terms (`references/{archetypes,dimensions,terms}.json`) with their scripts and tests (`archetypes`, `dimensions`, `docs`, `observe`, `terms`, `knowledge.test.mjs`). The built-in preset `massimo` is now `standard` with the same values, so the inspector panel (`PRESETS.standard`, rebuilt `geometry-runtime/derive.js`) and `wireframe-review` (`generate-geometry.mjs` dial, regenerated `geometry.json` and its provenance hash) follow the new name.

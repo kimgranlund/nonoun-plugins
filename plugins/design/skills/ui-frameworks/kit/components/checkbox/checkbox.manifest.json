@@ -1,0 +1,114 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "checkbox",
+  "kind": "component",
+  "family": "checkbox",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/",
+  "summary": "A choice that is on, off, or partly on, and that a form submits when it is on.",
+  "role": "checkbox",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": true,
+  "attributes": {
+    "checked": {
+      "type": "boolean",
+      "state": "checked",
+      "description": "The choice is on."
+    },
+    "indeterminate": {
+      "type": "boolean",
+      "state": "indeterminate",
+      "description": "The choice stands for a group that is partly on. The user's next activation clears it."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while the choice is off."
+    },
+    "value": {
+      "type": "string",
+      "default": "on",
+      "description": "Submitted with the name while the choice is on."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The choice cannot be changed or focused."
+    }
+  },
+  "resets": [
+    "checked"
+  ],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "checked",
+    "indeterminate",
+    "required",
+    "invalid",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "The root holds the author's label text and draws no face of its own."
+    },
+    "mark": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "checked: face solid. Drawn as a pseudo-element, so it exists before the component is defined (D57)."
+    }
+  },
+  "tokens": [
+    "--checkbox-face",
+    "--checkbox-face-hover",
+    "--checkbox-face-active",
+    "--checkbox-face-checked",
+    "--checkbox-ink",
+    "--checkbox-ink-disabled",
+    "--checkbox-mark-ink",
+    "--checkbox-line-invalid",
+    "--checkbox-height",
+    "--checkbox-inset",
+    "--checkbox-radius"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Space": "Toggles at key up.",
+    "Enter": "Toggles at key down."
+  },
+  "events": {
+    "input": "Dispatched when the user toggles the choice.",
+    "change": "Dispatched after input, when the user toggles the choice.",
+    "click": "Dispatched once per activation."
+  },
+  "messages": {
+    "valueMissing": "Please tick this box"
+  },
+  "notYet": [
+    "A read-only checkbox.",
+    "Translated messages.",
+    "A public token for the glyph's ink. The token grammar has no segment for a part, so it cannot be told from the label's ink."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

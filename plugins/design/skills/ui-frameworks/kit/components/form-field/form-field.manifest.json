@@ -1,0 +1,73 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "form-field",
+  "kind": "component",
+  "family": "form-field",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/tutorials/forms/labels/",
+  "summary": "A control with its label, its help text and its error message, wired to each other.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [
+    "invalid",
+    "required",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks the label, the control, the help and the error."
+    },
+    "label": {
+      "kind": "author",
+      "material": null,
+      "note": "A native label element the author marks with data-part=\"label\"."
+    },
+    "help": {
+      "kind": "author",
+      "material": null,
+      "note": "Optional text marked data-part=\"help\" that describes the control."
+    },
+    "error": {
+      "kind": "author",
+      "material": null,
+      "note": "Optional text marked data-part=\"error\". It shows only while the control is invalid and the user is due to be told."
+    }
+  },
+  "tokens": [
+    "--form-field-gap",
+    "--form-field-ink",
+    "--form-field-ink-invalid"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "writes": {
+    "form-field": [
+      "invalid",
+      "required",
+      "disabled"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "The control is the first element inside it that is a native input, select or textarea, or has the checkbox, switch, radiogroup, listbox, combobox, slider or spinbutton role. The label is pointed at it with for, and the control is described by the help and, while it shows, the error. Ids are given only where there is none."
+    }
+  ],
+  "notYet": [
+    "A group of controls under one legend."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}
