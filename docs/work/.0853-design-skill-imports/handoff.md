@@ -2,7 +2,7 @@
 id: T-0853
 title: "Import six ui-* skills into design"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0852]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,16 @@ The design plugin ships six new skills copied from the user's MacBook share: `ui
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Do not edit other skills.
+
+## Outcome
+
+2026-11-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: fac8e3cda3d5
+- Changed: see commits
+- Commits: 4e170a5 T-0853: import six ui-* skills into design
+- Check: 1 six SKILL.md present and no .git/.DS_Store/node_modules/.gitignore: pass
+- Check: 2 diff -rq against /Volumes/kimba per skill: pass
+- Check: 3 AGENTS.md count and CHANGELOG names: pass
+- Check: 5 packaging exits 0 and `git diff --check` clean: pass
+- Follow-up: decide: plugins/design/skills/ui-frameworks/kit/icons/phosphor/LICENSE:1... -> notes.md
+- Follow-up: decide: plugins/design/skills/ui-interaction-dev/SKILL.md and... -> notes.md
+- Follow-up: decide: plugins/design/skills/ui-frameworks/scripts/tokens.mjs and... -> notes.md

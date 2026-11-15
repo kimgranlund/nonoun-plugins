@@ -955,3 +955,9 @@
 ## T-0852: Update ui-geometry and ui-colors from the MacBook copies (2026-11-15)
 
 - note: `git grep massimo -- plugins` finds only the changelog line that explains the rename; no stale preset references remain.
+
+## T-0853: Import six ui-* skills into design (2026-11-15)
+
+- decide: plugins/design/skills/ui-frameworks/kit/icons/phosphor/LICENSE:1: imported CRLF line endings make `git diff --check <base>` exit 2 (see #5); note: a future range-based whitespace gate would need a `.gitattributes` exemption for this path.
+- decide: plugins/design/skills/ui-interaction-dev/SKILL.md and ui-showcase-bento/SKILL.md: note: say `node --test scripts/`, which exits 1 on Node 24; plain `node --test` is green; imported text left as authored, the builder named the working form in AGENTS.md.
+- decide: plugins/design/skills/ui-frameworks/scripts/tokens.mjs and icons.mjs: note: read sibling skills from `~/.claude/skills` or `SKILLS_DIR`, not the plugin tree; imported behaviour, unchanged.

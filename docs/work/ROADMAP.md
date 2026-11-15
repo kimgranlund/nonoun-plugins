@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0853 | [0853-design-skill-imports](0853-design-skill-imports/handoff.md) | Import six ui-* skills into design | chore | L2 | P2 | T-0852 | 🟡 claimed (branch lane/T-0853-t0853) |
 
-Closed: 815 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 816 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -132,3 +131,6 @@ Closed: 815 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/design/skills/wireframe-review/assets/fonts/ibmplexmono/OFL.txt:1 and assets/fonts/bricolagegrotesque/OFL.txt:21: `git diff --check ab93a573 HEAD` reports about 94 trailing-whitespace lines (CRLF and trailing spaces in vendored licence text; the builder said the file hash is in the font manifest). The criterion's `git diff --check` is clean in the committed tree, so this passes by the letter. decide: add a `.gitattributes` `-whitespace` rule for these files, or accept. (from T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12))
 - decide: plugins/design/skills/wireframe-review/assets/foundation/maison/geometry.css: 72 values carry float noise, e.g. `--m-cell-sm-md-chip-height: 22.000000000000004px`. The file is byte-stable, so criterion 3 holds, but rounding in generate-geometry.mjs would make it cleaner. decide: round derive px to a fixed precision. (from T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12))
 - decide: The builder lists several suites as already red at baseline (implementation-ownership, corpus-graph, component-context, workflow-controller, generate-icons --check, build-sheets, check-shell). I did not re-run them because no criterion names them. (from T-0844: Port wireframe-review off base-ui onto a trimmed own kit (2026-11-12))
+- decide: plugins/design/skills/ui-frameworks/kit/icons/phosphor/LICENSE:1: imported CRLF line endings make `git diff --check <base>` exit 2 (see #5); note: a future range-based whitespace gate would need a `.gitattributes` exemption for this path. (from T-0853: Import six ui-* skills into design (2026-11-15))
+- decide: plugins/design/skills/ui-interaction-dev/SKILL.md and ui-showcase-bento/SKILL.md: note: say `node --test scripts/`, which exits 1 on Node 24; plain `node --test` is green; imported text left as authored, the builder named the working form in AGENTS.md. (from T-0853: Import six ui-* skills into design (2026-11-15))
+- decide: plugins/design/skills/ui-frameworks/scripts/tokens.mjs and icons.mjs: note: read sibling skills from `~/.claude/skills` or `SKILLS_DIR`, not the plugin tree; imported behaviour, unchanged. (from T-0853: Import six ui-* skills into design (2026-11-15))
