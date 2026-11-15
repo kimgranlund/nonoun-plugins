@@ -1,11 +1,15 @@
 # Optional local JSON contract
 
-Use this profile when deterministic discovery is useful. Small corpora may keep
+A **profile** is the routing layer's index in one fixed JSON shape: inline descriptors and routes, read by
+`validate.py` and `replay.py`. It is not the registry of the manifests layer, which is an index of any shape
+generated from per-item manifests and checked by `check_registry.py` ([manifests](../manifests.md#registries)).
+Use a profile when deterministic discovery is useful. Small corpora may keep
 ordinary Markdown indexes. YAML, databases and remote APIs need explicit adapters;
 the supplied tools implement local UTF-8 files and JSON only.
 
 Canonical schemas: [descriptor](../../schemas/descriptor.schema.json) and
-[registry](../../schemas/registry.schema.json). `validate.py` checks required fields,
+[profile](../../schemas/profile.schema.json). Starting points: the
+[descriptor template](../../templates/descriptor.md) and the [profile template](../../templates/profile.md). `validate.py` checks required fields,
 identity, file/hash integrity, aliases, references, dependency cycles and routes.
 It is a focused validator for this profile, not a general JSON Schema interpreter.
 
@@ -15,7 +19,7 @@ Required: `id`, `location`, `kind`, `summary`, `revision`, `sha256`, all nonempt
 strings. SHA256 is lowercase hex of the exact referenced file bytes. A revision
 is a publisher-supplied identifier; a hash detects byte drift, not conceptual age.
 `location` is relative to the explicitly supplied corpus root, never cwd or the
-registry file. Absolute paths and symlink escapes outside that root are rejected.
+profile file. Absolute paths and symlink escapes outside that root are rejected.
 
 Optional: `aliases` (previous IDs), `owner`, `authority` (corpus-local declaration),
 `status` (active or deprecated), `relationships`, `directives`, `sourceDigests`.
@@ -39,11 +43,11 @@ field grants precedence over actual harness instructions.
 `sourceDigests` maps root-relative source paths to SHA256 for generated artifacts.
 Its check detects changed declared inputs. It does not prove generator correctness
 or that all inputs were declared. The generator must be separately tested. Prefer
-authored descriptors as the source of truth and a generated registry; record the
+authored descriptors as the source of truth and a generated profile; record the
 generator/owner in extension metadata. Refresh by regenerating, never copying stale
 hashes merely to silence a check. Keep stable IDs and aliases across moves.
 
-## Registry fields
+## Profile fields
 
 `schemaVersion: 1`, `entry` (root-relative entry path), `artifacts` (inline canonical
 descriptors), and optional `routes` (`intent`, `target` pairs). Exact intent keys
@@ -51,7 +55,7 @@ are for deterministic routing; ambiguous natural-language requests need a resolv
 outside this tool. A task may also supply a known ID/alias directly.
 
 A standalone descriptor check validates its own shape and bytes; relationship
-resolution requires registry validation. Registry validation is deliberately global
+resolution requires profile validation. Profile validation is deliberately global
 and fails closed on a broken declared contract. Interactive discovery can instead
 review the relevant local scope under the traversal workflow.
 

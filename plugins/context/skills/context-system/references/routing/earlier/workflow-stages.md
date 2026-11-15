@@ -1,6 +1,6 @@
 # Optional workflow stages
 
-Read when a recurring process needs explicit handoffs between kinds of work. A workflow definition is reusable guidance; a task handoff and its run records describe one occurrence. Keep the definition outside the task's run directory and link it from the handoff. Start with an existing project process when one exists. [Small repository change](examples/small-repository-change.md) is an example, not a required layout or sequence.
+Read when a recurring process needs explicit handoffs between kinds of work. A workflow definition is reusable guidance; a task handoff and its run records describe one occurrence. Keep the definition outside the task's run directory and link it from the handoff. Start with an existing project process when one exists. [Small repository change](../examples/small-repository-change.md) is an example, not a required layout or sequence.
 
 Use these distinctions when selecting records:
 

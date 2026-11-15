@@ -3,8 +3,8 @@ cnl: decision-question
 ---
 # Support triage questions
 
-<!-- Fail case for lint_cnl.py with templates/decision-question.rules.yaml and
-     fixtures/decision-question.vocabulary.yaml. Each numbered sentence trips one rule,
+<!-- Fail case for lint_cnl.py with templates/decision-question.rules.json and
+     fixtures/decision-question.vocabulary.json. Each numbered sentence trips one rule,
      named in its trailing comment. -->
 
 1. Choose billing when the message is not about an outage. <!-- banned-word: negation -->

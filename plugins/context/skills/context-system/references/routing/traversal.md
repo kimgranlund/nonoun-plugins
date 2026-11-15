@@ -15,7 +15,7 @@ Depth L0-L5 is a description, not a mandatory sequence of six reads.
 
 | Condition | Response |
 |---|---|
-| No registry | Use a known local entry or targeted search; do not create a registry automatically |
+| No profile | Use a known local entry or targeted search; do not create a profile automatically |
 | Missing target or inaccessible dependency | Stop the affected route; request the exact missing item or permission |
 | Stale summary or source hash | Mark freshness unverified; inspect the source within budget, then refresh metadata only with authorization |
 | Duplicate IDs or aliases | Resolve ownership/identity before choosing a target |

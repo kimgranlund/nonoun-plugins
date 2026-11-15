@@ -124,7 +124,7 @@ routes and blocked reasons. It refuses to overwrite an output file.
 Run using absolute script paths beneath the skill:
 
 ```sh
-python3 scripts/replay.py --root CORPUS --registry REGISTRY --suite SUITE --out NEW.json
+python3 scripts/replay.py --root CORPUS --profile PROFILE --suite SUITE --out NEW.json
 python3 scripts/replay.py compare --before BEFORE.json --after AFTER.json
 ```
 
@@ -139,7 +139,7 @@ Include stale indexes, misleading summaries, duplicate IDs/aliases, missing and
 inaccessible dependencies, cycles, conflicting declarations, empty/ambiguous routes,
 known-source entry, budget exhaustion and previously passing neighbors. Add seeded
 cases where a short route is wrong and a longer route is necessary. Do not change
-labels to make a new route pass. Preserve source and registry hashes with results.
+labels to make a new route pass. Preserve source and profile hashes with results.
 
 The [worked corpus](../../examples/worked-corpus/README.md) demonstrates before/after
 mechanics with a missing governing edge, a known-ID entry and a stable passing
@@ -177,7 +177,7 @@ replay version instead of comparing new byte totals to old all-or-nothing totals
   and hash, returned hash, exact byte range, page, continuation offset, bytes and
   limiting budgets. Complete coverage requires all source bytes. Multibyte splits
   count exact bytes; displayed text uses replacement characters if incomplete.
-- `summary` returns only registry summary bytes and is discovery evidence. It
+- `summary` returns only the profile's summary bytes and is discovery evidence. It
   cannot satisfy full-contract acceptance even if a required phrase appears there.
 - `projection` selects JSON object `fields` (names) or array `records` (zero-based
   indices), exactly one. Receipts record the selection. Byte offsets describe the
@@ -188,7 +188,7 @@ replay version instead of comparing new byte totals to old all-or-nothing totals
   separate from submitted/retained, which remain unknown. Static metadata directives
   are checked only after the complete required source has arrived.
 - Later stages traverse governing and dependency edges again and verify source
-  hashes before reuse. They cannot mutate the registry mid-run; changed revisions
+  hashes before reuse. They cannot mutate the profile mid-run; changed revisions
   need a new frozen replay input. Results list reused identities per stage.
 
 Regression coverage includes aggregate clipping despite individually small items,

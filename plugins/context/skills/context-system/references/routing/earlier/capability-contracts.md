@@ -25,7 +25,7 @@ Constraints: read-only; no network mutation.
 - Selecting a row emits that row's ID.
 
 ## Implementation and evidence
-Implementation: [view](./src/review.ts).
+Implementation: `src/review.ts` (a path in the example project, not a file of this skill).
 Assessment: none yet; this is an intent-only draft.
 
 ## Open questions

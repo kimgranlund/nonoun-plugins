@@ -93,7 +93,7 @@ A recordings file has `model_version` and `answers`, a list of `{state, question
 
 ## Governed text
 
-What the model reads is a decision-question doc of `context-system`'s statements layer. `validate_questions.py` renders it and runs that skill's `lint_cnl.py` with `templates/decision-question.rules.yaml`.
+What the model reads is a decision-question doc of `context-system`'s statements layer. `validate_questions.py` renders it and runs that skill's `lint_cnl.py` with `templates/decision-question.rules.json`.
 
 | Text | Owner | Lint |
 |---|---|---|

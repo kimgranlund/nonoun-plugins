@@ -3,7 +3,7 @@ cnl: requirement
 ---
 # Sample requirements
 
-<!-- Pass case for lint_cnl.py: templates/rules.yaml with the vocabulary
+<!-- Pass case for lint_cnl.py: templates/rules.json with the vocabulary
      template vocabulary, whose one concept is "example term". -->
 
 1. The example term shall record each failed sign-in attempt.

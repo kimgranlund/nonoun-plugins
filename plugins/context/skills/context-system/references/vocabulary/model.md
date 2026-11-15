@@ -4,7 +4,7 @@ Load this when you add or change a field, a label or a link, when a validator me
 
 ## File shape (stable contract)
 
-One YAML file per corpus, usually `vocabulary.yaml` at the corpus root. The top level has three keys:
+One JSON file per corpus, usually `vocabulary.json` at the corpus root. The top level has three keys:
 
 | Key | Required | Content |
 |---|---|---|
@@ -83,7 +83,7 @@ Each finding is one line, `SEVERITY RULE CONCEPT FIELD: problem. Fix: fix.`, sor
 
 | Rule | Severity | Fires when | Usual fix |
 |---|---|---|---|
-| `schema` | error | The file is not YAML, a required key is missing, a field is unknown or has the wrong type, an id repeats, or `deprecated` lacks `replacedBy`. | Correct the shape against the tables above. |
+| `schema` | error | The file is not valid JSON, a required key is missing, a field is unknown or has the wrong type, an id repeats, or `deprecated` lacks `replacedBy`. | Correct the shape against the tables above. |
 | `duplicate-preflabel` | error | Two active concepts in one scheme share a `prefLabel`. | Merge them (deprecate one) or give one a distinct label. |
 | `label-collision` | error | An `altLabel` or `hiddenLabel` equals another concept's `prefLabel` or `altLabel` in the scheme. | Keep the label on one concept. |
 | `missing-definition` | error | `definition` is absent or blank. | Write it. |
@@ -97,7 +97,7 @@ Each finding is one line, `SEVERITY RULE CONCEPT FIELD: problem. Fix: fix.`, sor
 | `unreferenced` | warning | With `--corpus`: no file uses the concept's id, `prefLabel` or any `altLabel`. | Deprecate or drop it, or point `--corpus` at where it is used. |
 | `retired-label-used` | warning | With `--corpus`: a `hiddenLabel`, or any label of a deprecated concept, appears in a file. | Rewrite the line to the `prefLabel` (of the replacement, for a deprecated concept). |
 
-`fixtures/broken.yaml` trips every rule once; `fixtures/corpus/` supplies the two corpus warnings.
+The skill's own tests hold a vocabulary that trips every rule once, and a small corpus that supplies the two corpus warnings.
 
 ## Worked examples
 

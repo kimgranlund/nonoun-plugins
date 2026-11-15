@@ -21,7 +21,7 @@ from pathlib import Path
 import yaml
 
 CNL = Path(__file__).resolve().parents[2] / 'context-system'
-DEFAULT_RULES = CNL / 'templates' / 'decision-question.rules.yaml'
+DEFAULT_RULES = CNL / 'templates' / 'decision-question.rules.json'
 DEFAULT_LINT = CNL / 'scripts' / 'lint_cnl.py'
 
 SET_FIELDS = ('id', 'version', 'model', 'shape', 'questions', 'decisions', 'role', 'gate_ids')

@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "name-a-term",
+      "intent": "name-a-term",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "vocabulary-guide": [
+            "# Vocabulary: a lightweight KOS"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "vocabulary-guide"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "read-the-vocabulary-rules",
+      "intent": "read-the-vocabulary-rules",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "vocabulary-model": [
+            "# Vocabulary model"
+          ],
+          "vocabulary-guide": [
+            "# Vocabulary: a lightweight KOS"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "vocabulary-guide",
+            "vocabulary-model"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "model-a-concept",
+      "intent": "model-a-concept",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "modeling-guide": [
+            "# Modeling: concepts, relationships and mappings"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "modeling-guide"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "audit-manifests-and-registry",
+      "intent": "audit-manifests-and-registry",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "manifests": [
+            "# Manifests, registries and modes"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "manifests"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "structure-an-entry-file",
+      "intent": "structure-an-entry-file",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "entry-files": [
+            "# Entry files"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "entry-files"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "repair-a-missed-route",
+      "intent": "repair-a-missed-route",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "routing-guide": [
+            "# Routing: progressive context"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "routing-guide"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "write-a-profile",
+      "intent": "write-a-profile",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "routing-contracts": [
+            "# Optional local JSON contract"
+          ],
+          "routing-guide": [
+            "# Routing: progressive context"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "routing-guide",
+            "routing-contracts"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "run-a-fresh-agent-trial",
+      "intent": "run-a-fresh-agent-trial",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "review-guide": [
+            "# Review: author and consumer routing trials"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "review-guide"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "phrase-a-statement",
+      "intent": "phrase-a-statement",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "statements-guide": [
+            "# Statements: controlled natural language"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "statements-guide"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "write-a-pattern",
+      "intent": "write-a-pattern",
+      "budget": {
+        "reads": 3,
+        "bytes": 32768
+      },
+      "acceptance": {
+        "required": {
+          "statements-patterns": [
+            "# Patterns"
+          ],
+          "statements-guide": [
+            "# Statements: controlled natural language"
+          ]
+        },
+        "acceptablePaths": [
+          [
+            "statements-guide",
+            "statements-patterns"
+          ]
+        ]
+      }
+    }
+  ]
+}

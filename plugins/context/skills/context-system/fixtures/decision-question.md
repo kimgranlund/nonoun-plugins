@@ -3,8 +3,8 @@ cnl: decision-question
 ---
 # Support triage questions
 
-<!-- Pass case for lint_cnl.py: templates/decision-question.rules.yaml with
-     fixtures/decision-question.vocabulary.yaml. One choice, one score, one proposition. -->
+<!-- Pass case for lint_cnl.py: templates/decision-question.rules.json with
+     fixtures/decision-question.vocabulary.json. One choice, one score, one proposition. -->
 
 ## Team
 

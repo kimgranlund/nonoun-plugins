@@ -25,7 +25,7 @@ cases:
     prompt: We call it a workspace in the API and a project in the UI. Which should the docs use?
   expected:
     activates: true
-    behavior: Checks or seeds `vocabulary.yaml`, picks one `prefLabel` with evidence from both files, records the other as `altLabel` or `hiddenLabel`, and rewrites the docs in the same change.
+    behavior: Checks or seeds `vocabulary.json`, picks one `prefLabel` with evidence from both files, records the other as `altLabel` or `hiddenLabel`, and rewrites the docs in the same change.
   tags:
   - should-activate
   - vocabulary
@@ -201,7 +201,7 @@ cases:
     prompt: Review these requirements before QA starts on them.
   expected:
     activates: true
-    behavior: Checks for a `rules.yaml`; if the requirements doc type is governed, runs `lint_cnl.py` and rewrites each violation to a pattern; if not, reports the ambiguous sentences and asks for the failure
+    behavior: Checks for a `rules.json`; if the requirements doc type is governed, runs `lint_cnl.py` and rewrites each violation to a pattern; if not, reports the ambiguous sentences and asks for the failure
       that would justify Stage 0.
   tags:
   - should-activate
@@ -286,7 +286,7 @@ cases:
     prompt: Set up CNL for our specs.
   expected:
     activates: true
-    behavior: Asks which spec doc type has caused errors; seeds `rules.yaml` from the template for that one type with 3 to 5 patterns from real sentences.
+    behavior: Asks which spec doc type has caused errors; seeds `rules.json` from the template for that one type with 3 to 5 patterns from real sentences.
   tags:
   - should-activate
   - statements
@@ -310,7 +310,7 @@ cases:
     prompt: Tighten the option descriptions and score levels our triage model reads; it keeps picking the wrong team.
   expected:
     activates: true
-    behavior: 'Applies the decision-question doc type: one proposition per statement, no negation, boundary cases stated, no counting or date comparison; lints with `templates/decision-question.rules.yaml` and names which rules it checked by eye.'
+    behavior: 'Applies the decision-question doc type: one proposition per statement, no negation, boundary cases stated, no counting or date comparison; lints with `templates/decision-question.rules.json` and names which rules it checked by eye.'
   tags:
   - should-activate
   - statements
