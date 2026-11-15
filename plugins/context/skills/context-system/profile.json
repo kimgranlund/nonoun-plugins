@@ -1,0 +1,152 @@
+{
+  "$comment": "The skill's own routing profile: its entry, its layer guides and the references they lead to. Hashes are refreshed with scripts/refresh_profile.py, never by hand.",
+  "schemaVersion": 1,
+  "entry": "SKILL.md",
+  "artifacts": [
+    {
+      "id": "skill-entry",
+      "location": "SKILL.md",
+      "kind": "entry",
+      "summary": "Route table, layers, invariants, procedure and tools",
+      "revision": "1",
+      "sha256": "20f1f5aabf8125f475b0a0f3964755efec515ada65eb8991c6efcb164f3a3a6d"
+    },
+    {
+      "id": "vocabulary-guide",
+      "location": "references/vocabulary/guide.md",
+      "kind": "guide",
+      "summary": "When and how to name, define and retire terms",
+      "revision": "1",
+      "sha256": "9aa07426e250f4018246f5bea5d52720155b1c6993ab7d4162690cb4a1450ad4"
+    },
+    {
+      "id": "vocabulary-model",
+      "location": "references/vocabulary/model.md",
+      "kind": "reference",
+      "summary": "Fields, rules and stages of the vocabulary file",
+      "revision": "1",
+      "sha256": "e541fff31099ae422b219a0bb4239bef9e365c270826e4dba7f6cd19df7ab31f",
+      "relationships": {
+        "governed_by": [
+          "vocabulary-guide"
+        ]
+      }
+    },
+    {
+      "id": "modeling-guide",
+      "location": "references/modeling/guide.md",
+      "kind": "guide",
+      "summary": "Identity, typed relationships, mappings and semantic change",
+      "revision": "1",
+      "sha256": "263543abebdd7c31d62999b6199159b275cef307b426ba719cd683a6bf1e2cd3"
+    },
+    {
+      "id": "manifests",
+      "location": "references/manifests.md",
+      "kind": "reference",
+      "summary": "Per-item manifests, generated registries, author and consumer modes",
+      "revision": "1",
+      "sha256": "21b1641e77eb52e3d1c25f3cff55b95f77c01ef71769831f2546a41c54923932"
+    },
+    {
+      "id": "entry-files",
+      "location": "references/routing/entry-files.md",
+      "kind": "reference",
+      "summary": "How to structure a file readers open first",
+      "revision": "1",
+      "sha256": "eb19fcef6715e24c5e0ca4fdf7bf9c373e2249d980c707bee27cd821997ce4b9"
+    },
+    {
+      "id": "routing-guide",
+      "location": "references/routing/guide.md",
+      "kind": "guide",
+      "summary": "Why a task misses its governing context and how to repair the route",
+      "revision": "1",
+      "sha256": "ca114bd01782268ac7bc5bc84c79916f7a3ac9d21f015c4760bc311a74d941f5"
+    },
+    {
+      "id": "routing-contracts",
+      "location": "references/routing/contracts.md",
+      "kind": "reference",
+      "summary": "The optional JSON descriptors and profile",
+      "revision": "1",
+      "sha256": "7074b1d02f3b13579347573b144b5a5c347cc15844e540960e1d3408de3a0b46",
+      "relationships": {
+        "governed_by": [
+          "routing-guide"
+        ]
+      }
+    },
+    {
+      "id": "review-guide",
+      "location": "references/review/guide.md",
+      "kind": "guide",
+      "summary": "Fresh-agent route trials for authors and consumers",
+      "revision": "1",
+      "sha256": "698e09e29197cd3869aa244980e0c808f079fd38afc0762cc0c82d09396877eb"
+    },
+    {
+      "id": "statements-guide",
+      "location": "references/statements/guide.md",
+      "kind": "guide",
+      "summary": "Phrasing governed statements so they have one reading",
+      "revision": "1",
+      "sha256": "48a2f660bbb42358202f71ca0f13ba264e70458b60368cf85870890fa635c60b"
+    },
+    {
+      "id": "statements-patterns",
+      "location": "references/statements/patterns.md",
+      "kind": "reference",
+      "summary": "The rules file, slot types and the linter rules",
+      "revision": "1",
+      "sha256": "77bc5bd2d448e76f82e311b36c6a035c89b8b3de7d7836b7eabb787d886dfd9d",
+      "relationships": {
+        "governed_by": [
+          "statements-guide"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "intent": "name-a-term",
+      "target": "vocabulary-guide"
+    },
+    {
+      "intent": "read-the-vocabulary-rules",
+      "target": "vocabulary-model"
+    },
+    {
+      "intent": "model-a-concept",
+      "target": "modeling-guide"
+    },
+    {
+      "intent": "audit-manifests-and-registry",
+      "target": "manifests"
+    },
+    {
+      "intent": "structure-an-entry-file",
+      "target": "entry-files"
+    },
+    {
+      "intent": "repair-a-missed-route",
+      "target": "routing-guide"
+    },
+    {
+      "intent": "write-a-profile",
+      "target": "routing-contracts"
+    },
+    {
+      "intent": "run-a-fresh-agent-trial",
+      "target": "review-guide"
+    },
+    {
+      "intent": "phrase-a-statement",
+      "target": "statements-guide"
+    },
+    {
+      "intent": "write-a-pattern",
+      "target": "statements-patterns"
+    }
+  ]
+}

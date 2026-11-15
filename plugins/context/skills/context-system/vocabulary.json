@@ -1,0 +1,121 @@
+{
+  "$comment": [
+    "The skill's own vocabulary: the words its entry and references use with one meaning each.",
+    "Check: python3 scripts/validate_kos.py vocabulary.json --corpus SKILL.md --corpus references"
+  ],
+  "schemes": [
+    {
+      "id": "main",
+      "definition": "The context-system skill: its entry file, references, templates and tools."
+    }
+  ],
+  "concepts": [
+    {
+      "id": "corpus",
+      "prefLabel": "corpus",
+      "definition": "The body of files a task draws its knowledge from: a repository, a document set or a skill.",
+      "scheme": "main",
+      "evidence": [
+        "SKILL.md: \"How a corpus names, models, describes, indexes and routes the knowledge a task needs\""
+      ]
+    },
+    {
+      "id": "entry-file",
+      "prefLabel": "entry file",
+      "definition": "The file a reader opens first, which routes to everything else and holds little itself.",
+      "scheme": "main",
+      "evidence": [
+        "references/routing/entry-files.md"
+      ]
+    },
+    {
+      "id": "layer",
+      "prefLabel": "layer",
+      "definition": "One of the six kinds of question the skill separates: vocabulary, modeling, manifests, routing, review and statements.",
+      "scheme": "main",
+      "evidence": [
+        "SKILL.md, Layers"
+      ]
+    },
+    {
+      "id": "manifest",
+      "prefLabel": "manifest",
+      "definition": "The per-item file that is the one source of an item's contract, classification and relations.",
+      "scheme": "main",
+      "evidence": [
+        "references/manifests.md, Manifests"
+      ]
+    },
+    {
+      "id": "registry",
+      "prefLabel": "registry",
+      "definition": "An index generated from the manifests, of any shape, that lets a reader choose an item without opening its manifest.",
+      "scopeNote": "Checked by check_registry.py. The routing layer's fixed JSON shape is a profile, not a registry.",
+      "scheme": "main",
+      "evidence": [
+        "references/manifests.md, Registries",
+        "scripts/check_registry.py"
+      ]
+    },
+    {
+      "id": "profile",
+      "prefLabel": "profile",
+      "hiddenLabel": [
+        "routing registry"
+      ],
+      "definition": "The routing layer's optional JSON file of inline descriptors and routes, read by validate.py and replay.py.",
+      "scopeNote": "Called a registry before 2026-11-13, when the word named two shapes.",
+      "scheme": "main",
+      "evidence": [
+        "references/routing/contracts.md",
+        "two scripts took --registry for two different shapes"
+      ]
+    },
+    {
+      "id": "descriptor",
+      "prefLabel": "descriptor",
+      "definition": "One artifact's record in a profile: its id, location, kind, summary, revision and hash.",
+      "scheme": "main",
+      "evidence": [
+        "references/routing/contracts.md, Descriptor fields"
+      ]
+    },
+    {
+      "id": "route",
+      "prefLabel": "route",
+      "definition": "The path from an entry file to the sources that govern one task.",
+      "scheme": "main",
+      "evidence": [
+        "references/routing/guide.md"
+      ]
+    },
+    {
+      "id": "route-trial",
+      "prefLabel": "route trial",
+      "definition": "A recorded attempt, by a fresh agent or by replay, to reach what a task needs from the entry file alone.",
+      "scheme": "main",
+      "evidence": [
+        "references/review/guide.md",
+        "scripts/replay.py"
+      ]
+    },
+    {
+      "id": "governed-statement",
+      "prefLabel": "governed statement",
+      "definition": "A sentence in a document type whose wording the rules file constrains to a pattern.",
+      "scheme": "main",
+      "evidence": [
+        "references/statements/guide.md"
+      ]
+    },
+    {
+      "id": "pattern",
+      "prefLabel": "pattern",
+      "definition": "A sentence template with typed slots that a governed statement must fit.",
+      "scheme": "main",
+      "evidence": [
+        "references/statements/patterns.md"
+      ]
+    }
+  ]
+}

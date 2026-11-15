@@ -8,7 +8,7 @@ Contents: [Layers](#layers) · [Manifests](#manifests) · [Registries](#registri
 
 | Layer | Holds | Source or generated |
 |---|---|---|
-| Vocabulary | Terms: one meaning each, aliases, retired labels | Source (`vocabulary.yaml`, `terms.json`) |
+| Vocabulary | Terms: one meaning each, aliases, retired labels | Source (`vocabulary.json`, `terms.json`) |
 | Taxonomy | Closed classifications: kinds, families, levels, statuses | Source (enums in the schema) |
 | Ontology | Typed relations and the constraints on them (`composes`, `family`, "never upward") | Source (schema plus lint) |
 | Manifest | One item: identity, intent, contract, relations, guidance, provenance | Source, one file per item |

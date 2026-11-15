@@ -5,8 +5,8 @@ Usage: validate_kos.py VOCABULARY [--corpus PATH ...] [--strict]
 
 Each finding is one line: SEVERITY RULE CONCEPT FIELD: problem. Fix: fix.
 Exit 0 when there are no errors (warnings allowed unless --strict), 1 on errors,
-2 when the vocabulary file cannot be read. Rule semantics: references/model.md.
-Standard library plus PyYAML; runs on Python 3.9.
+2 when the vocabulary file cannot be read. Rule semantics: references/vocabulary/model.md.
+Standard library only; runs on Python 3.9. The file is JSON (scripts/datafile.py also reads an earlier .yaml file where PyYAML is installed).
 """
 import argparse
 import re
@@ -14,7 +14,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-import yaml
+from datafile import DataError, load as load_data
 
 TOP_FIELDS = ('title', 'schemes', 'concepts')
 SCHEME_FIELDS = ('id', 'definition', 'scopeNote')
@@ -56,8 +56,8 @@ def restates_label(definition, label):
 
 
 def load(path):
-    """Parse a vocabulary file. Raises OSError (unreadable) or yaml.YAMLError (not YAML)."""
-    return yaml.safe_load(Path(path).read_text(encoding='utf-8'))
+    """Parse a vocabulary file. Raises OSError (unreadable) or DataError (not valid JSON or YAML)."""
+    return load_data(path)
 
 
 def _schema(findings, concept, field, problem, fix):
@@ -128,7 +128,7 @@ def _read_concepts(data, findings):
         for field in sorted(set(item) - set(CONCEPT_FIELDS)):
             hint = ' (synonyms go in altLabel)' if field.casefold() in ('synonyms', 'aliases', 'alias') else ''
             _schema(findings, cid, field, f"unknown field '{field}'{hint}.",
-                    'use only the fields listed in references/model.md.')
+                    'use only the fields listed in references/vocabulary/model.md.')
         for field in LIST_FIELDS:
             value = item.get(field)
             if value is None:
@@ -371,7 +371,7 @@ def validate(data, corpus=(), vocabulary_path=None):
     findings = []
     if not isinstance(data, dict):
         _schema(findings, '-', '-', 'the file is empty or not a mapping.',
-                'start from templates/vocabulary.yaml (top-level `schemes` and `concepts`).')
+                'start from templates/vocabulary.json (top-level `schemes` and `concepts`).')
         return findings, 0
     for field in sorted(set(data) - set(TOP_FIELDS)):
         _schema(findings, '-', field, f"unknown top-level field '{field}'.", f"use only {', '.join(TOP_FIELDS)}.")
@@ -389,7 +389,7 @@ def validate(data, corpus=(), vocabulary_path=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('vocabulary', help='the vocabulary YAML file')
+    parser.add_argument('vocabulary', help='the vocabulary file (JSON)')
     parser.add_argument('--corpus', action='append', default=[], metavar='PATH',
                         help='file or folder the vocabulary governs; enables corpus warnings (repeatable)')
     parser.add_argument('--strict', action='store_true', help='exit 1 on warnings too')
@@ -399,9 +399,8 @@ def main(argv=None):
     except OSError as exc:
         print(f'{args.vocabulary}: cannot read: {exc.strerror or exc}', file=sys.stderr)
         return 2
-    except yaml.YAMLError as exc:
-        problem = ' '.join(str(exc).split())
-        findings, stage = [Finding('ERROR', 'schema', '-', '-', f'not valid YAML: {problem}.', 'fix the YAML syntax.')], 0
+    except DataError as exc:
+        findings, stage = [Finding('ERROR', 'schema', '-', '-', f'not valid {exc.kind}: {exc.problem}.', f'fix the {exc.kind} syntax.')], 0
     else:
         missing = [p for p in args.corpus if not Path(p).exists()]
         if missing:

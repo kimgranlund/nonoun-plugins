@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "registry.schema.json",
+  "$id": "profile.schema.json",
   "type": "object",
   "required": [
     "schemaVersion",

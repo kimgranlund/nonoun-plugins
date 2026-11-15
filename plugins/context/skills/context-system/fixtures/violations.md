@@ -3,9 +3,9 @@ cnl: requirement
 ---
 # Checkout requirements
 
-<!-- Fail case for lint_cnl.py with fixtures/rules.yaml and fixtures/vocabulary.yaml.
+<!-- Fail case for lint_cnl.py with fixtures/rules.json and fixtures/vocabulary.json.
      Each numbered sentence trips exactly one rule, named in its trailing comment.
-     fixtures/rules.yaml supplies the schema, unknown-concept and no-source findings. -->
+     fixtures/rules.json supplies the schema, unknown-concept and no-source findings. -->
 
 1. The cart service shall store each order. <!-- hidden-label -->
 2. Orders are kept for audit. <!-- no-pattern -->

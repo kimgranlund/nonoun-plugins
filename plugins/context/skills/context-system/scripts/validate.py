@@ -120,14 +120,14 @@ def validate(root, value, descriptor=False):
             if route['target'] not in ids:issue('missing-reference',route['intent'],route['target'])
     return dict(valid=not issues, issues=issues, validationBytes=checked,
                 limits=['Byte identity is not semantic freshness.', 'Corpus authority never overrides harness instructions.',
-                        'Standalone descriptor checks cannot resolve relationships without a registry.'] if descriptor else ['Byte identity is not semantic freshness.', 'Static validation does not establish runtime delivery or correct summaries.'])
+                        'Standalone descriptor checks cannot resolve relationships without a profile.'] if descriptor else ['Byte identity is not semantic freshness.', 'Static validation does not establish runtime delivery or correct summaries.'])
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--root',type=Path,required=True)
-    group=p.add_mutually_exclusive_group(required=True);group.add_argument('--registry',type=Path);group.add_argument('--descriptor',type=Path)
+    group=p.add_mutually_exclusive_group(required=True);group.add_argument('--profile','--registry',dest='profile',type=Path,help='the routing profile (JSON); --registry is its earlier name');group.add_argument('--descriptor',type=Path)
     args=p.parse_args()
-    try:result=validate(args.root,json.loads((args.registry or args.descriptor).read_text()),bool(args.descriptor))
+    try:result=validate(args.root,json.loads((args.profile or args.descriptor).read_text()),bool(args.descriptor))
     except (OSError,ValueError) as e:result=dict(valid=False,issues=[dict(code='input',detail=str(e))])
     print(json.dumps(result,indent=2));return 0 if result['valid'] else 1
 

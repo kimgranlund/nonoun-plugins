@@ -8,7 +8,7 @@ Grow the vocabulary only when the corpus shows a need. Start with almost nothing
 
 ## The model
 
-One `vocabulary.yaml` per corpus, with `schemes` (the domains) and `concepts`. Each concept has:
+One `vocabulary.json` per corpus, with `schemes` (the domains) and `concepts`. Each concept has:
 
 - `id`: stable, never reused; labels may change, the id does not
 - `prefLabel`: the one preferred label, unique within its scheme
@@ -18,7 +18,7 @@ One `vocabulary.yaml` per corpus, with `schemes` (the domains) and `concepts`. E
 - `scheme`: the declared scheme it belongs to
 - `evidence`: where it is used or disputed; `deprecated` and `replacedBy` to retire it
 
-These field names are a stable contract that other tools read. Start from `templates/vocabulary.yaml`. Field semantics, label and relation rules, the validator's rules and examples from three domains are in [model.md](model.md).
+These field names are a stable contract that other tools read. Start from `templates/vocabulary.json`. Field semantics, label and relation rules, the validator's rules and examples from three domains are in [model.md](model.md).
 
 ## Stages
 
@@ -26,7 +26,7 @@ The vocabulary moves along a spectrum: flat glossary, then taxonomy (hierarchy),
 
 | Stage | Entry criterion | Allowed change |
 |---|---|---|
-| 0 Seed | A term has caused confusion or appears under conflicting names | One flat `vocabulary.yaml`, at most 15 concepts, each defined |
+| 0 Seed | A term has caused confusion or appears under conflicting names | One flat `vocabulary.json`, at most 15 concepts, each defined |
 | 1 Synonyms | A drifted or duplicate term is observed in the corpus | Add `altLabel` or `hiddenLabel`; rewrite affected docs to the `prefLabel` in the same change |
 | 2 Hierarchy | Three or more existing concepts share an obvious parent | `broader`/`narrower` links for that cluster only |
 | 3 Schemes | Two domains use one label with different meanings | Split into schemes; disambiguate both definitions |
@@ -35,7 +35,7 @@ Allowed artifacts and the gate to leave each stage are in [growth.md](growth.md)
 
 ## Procedure
 
-1. Look for an existing `vocabulary.yaml` (or a glossary, terms file or wiki page that plays its role). There is one per corpus. If several exist, merging them is the first change. If none exists, Stage 0 starts from `templates/vocabulary.yaml` once step 2 finds evidence.
+1. Look for an existing `vocabulary.json` (or a glossary, terms file or wiki page that plays its role). There is one per corpus. If several exist, merging them is the first change. If none exists, Stage 0 starts from `templates/vocabulary.json` once step 2 finds evidence.
 2. Name the term, where it is used (`path:line`, at least two places) or where it was disputed (a review comment, a question, two docs that contradict). No evidence, no change: say what evidence would justify one and stop.
 3. Run the validator; its last line prints the inferred stage. Check which entry criterion the evidence meets. Make only the change that stage allows. If the evidence meets a later stage's criterion, still finish the earlier stage's cleanup first.
 4. Make the change the stage allows:
@@ -43,7 +43,7 @@ Allowed artifacts and the gate to leave each stage are in [growth.md](growth.md)
    - Drift: choose the `prefLabel` (prefer, in order: the label in the published contract readers already depend on, such as an API field or UI text; the label with more uses in the evidence; the label no other concept already uses; record the reason in `evidence`); record the other form as `altLabel` (still acceptable) or `hiddenLabel` (must stop), then rewrite the docs that use a hidden form in the same change.
    - Rename: change `prefLabel`, keep `id`, move the old label to `hiddenLabel`, rewrite the corpus.
    - Merge or retire: `deprecated: true` and `replacedBy`; keep the entry.
-5. Run `python3 scripts/validate_kos.py vocabulary.yaml --corpus <corpus root>`. Fix every error. Fix or explain every warning.
+5. Run `python3 scripts/validate_kos.py vocabulary.json --corpus <corpus root>`. Fix every error. Fix or explain every warning.
 6. Report the concepts and labels changed, the evidence for each, the docs rewritten, and the validator's last line.
 
 ## Rules
@@ -72,7 +72,7 @@ How to spot and fix each is in [growth.md](growth.md).
 python3 scripts/validate_kos.py VOCABULARY [--corpus PATH ...] [--strict]
 ```
 
-Standard library plus PyYAML. Deterministic output, one finding per line naming the rule, concept id, field and fix. Exit 1 on any error, so it can run in CI; warnings fail only with `--strict`. Without `--corpus` it checks the file alone; with it, it also reports unreferenced concepts and uses of retired labels. Rule meanings are in [model.md](model.md).
+Standard library only; the vocabulary file is JSON. Deterministic output, one finding per line naming the rule, concept id, field and fix. Exit 1 on any error, so it can run in CI; warnings fail only with `--strict`. Without `--corpus` it checks the file alone; with it, it also reports unreferenced concepts and uses of retired labels. Rule meanings are in [model.md](model.md).
 
 ## Hand-off
 
@@ -86,4 +86,3 @@ RDF, OWL, axioms and triple stores; automatic term extraction; generating a full
 
 - [model.md](model.md): load when adding or changing fields, labels or links, reading a validator message, or building a tool that reads the vocabulary.
 - [growth.md](growth.md): load before moving to a new stage, renaming, merging or retiring, or when an anti-pattern is suspected. It ends with an empty-repo to Stage 1 walkthrough.
-- [evals/trigger-activation.suite.yaml](../../evals/trigger-activation.suite.yaml): run when changing the skill description or this layer's scope; the suite format belongs to `evaluation-system`.

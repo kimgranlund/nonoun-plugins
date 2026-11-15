@@ -8,6 +8,7 @@ The evaluator fills these fields before dispatch. Unresolved required environmen
 - Mode: static / fresh planning / end-to-end:
 - Author task and Consumer task:
 - Participant writable scopes and separate report destinations:
+- What a fresh participant receives on this host (agent kind, entry files loaded at start, skills listing, no inherited conversation) and how that was observed:
 - Existing build/test/browser tooling, command scopes, automatic example discovery and output ownership:
 - Final source-ready handoff, shared-build owner and handling of edits after verification starts:
 - Required platforms/views and unavailable environments:

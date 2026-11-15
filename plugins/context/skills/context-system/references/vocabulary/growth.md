@@ -8,7 +8,7 @@ The validator prints the stage the file's structure implies (`inferred stage N`)
 
 ### Stage 0 (Seed)
 
-- Allowed artifacts: one `vocabulary.yaml` for the whole corpus, copied from `templates/vocabulary.yaml`; one scheme; at most 15 concepts with `id`, `prefLabel`, `definition`, `scheme` and `evidence`. Nothing else.
+- Allowed artifacts: one `vocabulary.json` for the whole corpus, copied from `templates/vocabulary.json`; one scheme; at most 15 concepts with `id`, `prefLabel`, `definition`, `scheme` and `evidence`. Nothing else.
 - Not allowed: synonyms, hierarchy, a second scheme, concepts nobody has used or disputed.
 - Gate to leave: the validator exits 0, every concept's `evidence` names two uses or a dispute, and `--corpus` reports no `unreferenced` concept.
 
@@ -47,7 +47,7 @@ The validator prints the stage the file's structure implies (`inferred stage N`)
 | Speculative taxonomy | A tree of categories drafted before the content exists ("we will need these"). | `stage-gate`, `unreferenced` | Delete the unused branches; let concepts enter one at a time with evidence. |
 | Circular or restating definition | "A pager is a pager." "A change request is a request for a change." Two concepts defined by each other. | `circular-definition` (the whole-label case only) | Name the kind of thing and what distinguishes it. |
 | Hierarchy deeper than evidence | Three levels where the corpus shows one cluster of three. | `stage-gate` per parent | Keep only the level whose cluster has three evidenced children. |
-| Duplicate vocabularies | `docs/glossary.md`, `api/terms.yaml` and a wiki page, each partly right. | Not by the validator; search for other glossaries | Merge into the one `vocabulary.yaml`; leave the others as a link to it. |
+| Duplicate vocabularies | `docs/glossary.md`, `api/terms.yaml` and a wiki page, each partly right. | Not by the validator; search for other glossaries | Merge into the one `vocabulary.json`; leave the others as a link to it. |
 | Glossary entries nobody references | Terms added for completeness, defined once, never used. | `unreferenced` | Drop never-used entries; deprecate entries the corpus stopped using. |
 
 ## Examples across domains
@@ -56,13 +56,22 @@ The validator prints the stage the file's structure implies (`inferred stage N`)
 
 `payment method` already has evidence, and the code and docs use `card`, `bank transfer` and `wallet` as kinds of it. Three evidenced concepts share an obvious parent, so the cluster gets `broader` links, and nothing else does.
 
-```yaml
-  - id: card
-    prefLabel: card
-    definition: A payment method charged through a card network at checkout.
-    broader: [payment-method]
-    scheme: product
-    evidence: [api/payments.py:40, docs/payments.md:12]
+```json
+[
+  {
+    "id": "card",
+    "prefLabel": "card",
+    "definition": "A payment method charged through a card network at checkout.",
+    "broader": [
+      "payment-method"
+    ],
+    "scheme": "product",
+    "evidence": [
+      "api/payments.py:40",
+      "docs/payments.md:12"
+    ]
+  }
+]
 ```
 
 `bank transfer` and `wallet` get the same `broader` line. A fourth kind proposed for next quarter waits until it appears in the corpus.
@@ -71,24 +80,42 @@ The validator prints the stage the file's structure implies (`inferred stage N`)
 
 `incident` means an outage in the ops runbooks and a possible data breach in the security policy, with legal reporting duties. Two domains use one label with different meanings, so the vocabulary gets two schemes:
 
-```yaml
-schemes:
-  - id: ops
-    definition: Runbooks for keeping production available.
-  - id: security
-    definition: Security policy and breach handling.
-concepts:
-  - id: ops-incident
-    prefLabel: incident
-    definition: An unplanned loss or degradation of service that on-call must restore.
-    scopeNote: Excludes suspected data exposure, which is a security incident.
-    scheme: ops
-    evidence: [runbooks/incident.md:1, runbooks/escalation.md:4]
-  - id: security-incident
-    prefLabel: incident
-    definition: A suspected or confirmed exposure of protected data that starts the breach-notification clock.
-    scheme: security
-    evidence: [policies/security.md:30, "audit finding 2026-07: runbook used the ops meaning"]
+```json
+{
+  "schemes": [
+    {
+      "id": "ops",
+      "definition": "Runbooks for keeping production available."
+    },
+    {
+      "id": "security",
+      "definition": "Security policy and breach handling."
+    }
+  ],
+  "concepts": [
+    {
+      "id": "ops-incident",
+      "prefLabel": "incident",
+      "definition": "An unplanned loss or degradation of service that on-call must restore.",
+      "scopeNote": "Excludes suspected data exposure, which is a security incident.",
+      "scheme": "ops",
+      "evidence": [
+        "runbooks/incident.md:1",
+        "runbooks/escalation.md:4"
+      ]
+    },
+    {
+      "id": "security-incident",
+      "prefLabel": "incident",
+      "definition": "A suspected or confirmed exposure of protected data that starts the breach-notification clock.",
+      "scheme": "security",
+      "evidence": [
+        "policies/security.md:30",
+        "audit finding 2026-07: runbook used the ops meaning"
+      ]
+    }
+  ]
+}
 ```
 
 ### Research or notes corpus: retiring a label
@@ -123,7 +150,7 @@ Every production change needs an approved change request.
 A maintenance window is booked one week ahead.
 ```
 
-In review of PR 14 someone asks whether a maintenance window is the same as an outage window. A term was disputed, so the Stage 0 entry criterion holds. Both terms in the dispute's neighborhood are used in two places. Copy the template to `vocabulary.yaml` and replace its placeholder:
+In review of PR 14 someone asks whether a maintenance window is the same as an outage window. A term was disputed, so the Stage 0 entry criterion holds. Both terms in the dispute's neighborhood are used in two places. Copy the template to `vocabulary.json` and replace its placeholder:
 
 ```diff
  schemes:
@@ -159,8 +186,8 @@ In review of PR 14 someone asks whether a maintenance window is the same as an o
 (The header comment block copied from the template is unchanged and omitted here.)
 
 ```text
-$ python3 validate_kos.py vocabulary.yaml --corpus .
-vocabulary.yaml: 0 error(s), 0 warning(s), inferred stage 0
+$ python3 validate_kos.py vocabulary.json --corpus .
+vocabulary.json: 0 error(s), 0 warning(s), inferred stage 0
 ```
 
 "Outage window" is not added: it was asked about once and appears in no doc.
@@ -199,9 +226,9 @@ The validator still passes, because it cannot know an unlisted word is a synonym
 The validator now points at the drift:
 
 ```text
-$ python3 validate_kos.py vocabulary.yaml --corpus .
+$ python3 validate_kos.py vocabulary.json --corpus .
 WARNING retired-label-used maintenance-window hiddenLabel: retired label 'change window' appears at runbooks/db-failover.md:3. Fix: write 'maintenance window' instead.
-vocabulary.yaml: 0 error(s), 1 warning(s), inferred stage 1
+vocabulary.json: 0 error(s), 1 warning(s), inferred stage 1
 ```
 
 In the same change, rewrite the doc:
@@ -214,8 +241,8 @@ In the same change, rewrite the doc:
 ```
 
 ```text
-$ python3 validate_kos.py vocabulary.yaml --corpus .
-vocabulary.yaml: 0 error(s), 0 warning(s), inferred stage 1
+$ python3 validate_kos.py vocabulary.json --corpus .
+vocabulary.json: 0 error(s), 0 warning(s), inferred stage 1
 ```
 
-The change ships as one commit: `vocabulary.yaml` and `runbooks/db-failover.md` together. `CR` stays in the runbook; it is an accepted `altLabel`. Adding `--strict` to CI from here on keeps the corpus at zero retired-label uses.
+The change ships as one commit: `vocabulary.json` and `runbooks/db-failover.md` together. `CR` stays in the runbook; it is an accepted `altLabel`. Adding `--strict` to CI from here on keeps the corpus at zero retired-label uses.

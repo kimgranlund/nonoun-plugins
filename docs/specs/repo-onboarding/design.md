@@ -185,7 +185,7 @@ An empty section is valid.
 An `NN-` prefix is optional and expresses order only. It may be used for:
 
 - Documents in a topic that have a real reading order, as in `docs/specs/generative-constructs/`.
-- Stage folders in a reusable workflow definition, following the optional [workflow stage guidance](../../../plugins/context/skills/context-system/references/routing/workflow-stages.md).
+- Stage folders in a reusable workflow definition, following the optional [workflow stage guidance](../../../plugins/context/skills/context-system/references/routing/earlier/workflow-stages.md).
 
 A number never expresses maturity or status. Whether a capability is intended, implemented, or accepted is derived from its contract and evidence, and a folder name that stored that claim would go stale when the code or criteria change. A document does not move between numbered folders as its state changes. The one status-triggered move the docs schema allows is a planning document that has been superseded, which moves to `archive/` ([docs schema](../../planning/docs-schema/design.md), Planning versus specs).
 

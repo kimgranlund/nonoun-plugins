@@ -1,10 +1,10 @@
 # Patterns
 
-Load this when you write or change `rules.yaml`, add a pattern, read a linter message, or need a pattern for a doc type you are about to govern. It is the authority for the rules file shape, slot types, how the linter reads a doc, and the linter's rules. Stage gates and change rules are in [growth.md](growth.md). Concept fields (`id`, `prefLabel`, `altLabel`, `hiddenLabel`, `deprecated`, `replacedBy`) mean what the `context-system` skill's `references/vocabulary/model.md` says; this file never redefines them.
+Load this when you write or change `rules.json`, add a pattern, read a linter message, or need a pattern for a doc type you are about to govern. It is the authority for the rules file shape, slot types, how the linter reads a doc, and the linter's rules. Stage gates and change rules are in [growth.md](growth.md). Concept fields (`id`, `prefLabel`, `altLabel`, `hiddenLabel`, `deprecated`, `replacedBy`) mean what the `context-system` skill's `references/vocabulary/model.md` says; this file never redefines them.
 
 ## Rules file shape
 
-One `rules.yaml` per corpus, next to the corpus's `vocabulary.yaml`. Start from `templates/rules.yaml`. Any key not listed here is a `schema` error.
+One `rules.json` per corpus, next to the corpus's `vocabulary.json`. Start from `templates/rules.json`. Any key not listed here is a `schema` error.
 
 | Key | Where | Required | Meaning |
 |---|---|---|---|
@@ -42,11 +42,11 @@ A slot never holds a definition. A term the slot needs that is missing from the 
 
 `python3 scripts/lint_cnl.py RULES VOCABULARY [DOC_OR_FOLDER ...] [--strict]`
 
-Each finding is one line, `SEVERITY RULE FILE:LINE: problem Fix: fix`, sorted errors first, then by file and line. Rules-file findings point at the line in `rules.yaml`. The last line counts errors, warnings, governed docs and ungoverned files. Exit 0 with no errors, 1 with errors (or warnings under `--strict`), 2 when an input is missing or the vocabulary cannot be read. With no docs it checks the rules file alone.
+Each finding is one line, `SEVERITY RULE FILE:LINE: problem Fix: fix`, sorted errors first, then by file and line. Rules-file findings point at the line in `rules.json`. The last line counts errors, warnings, governed docs and ungoverned files. Exit 0 with no errors, 1 with errors (or warnings under `--strict`), 2 when an input is missing or the vocabulary cannot be read. With no docs it checks the rules file alone.
 
 | Rule | Severity | Fires when | Usual fix |
 |---|---|---|---|
-| `schema` | error | The rules file is not YAML, a key is unknown, a pattern names an undeclared doc type, template and slots disagree, a retired pattern lacks a valid `replacedBy`, or front matter names an undeclared doc type. | Correct the shape against the tables above. |
+| `schema` | error | The rules file is not valid JSON, a key is unknown, a pattern names an undeclared doc type, template and slots disagree, a retired pattern lacks a valid `replacedBy`, or front matter names an undeclared doc type. | Correct the shape against the tables above. |
 | `unknown-concept` | error | A slot's `concepts` names an id, or its `scheme` a scheme, that the vocabulary does not have. | Add the concept to the vocabulary first, or correct the id. |
 | `hidden-label` | error | A retired label appears in governed prose. | Write the `prefLabel` the message names. |
 | `banned-word` | error | A banned word or phrase appears in governed prose. | Apply the word's `fix`. |
@@ -56,45 +56,76 @@ Each finding is one line, `SEVERITY RULE FILE:LINE: problem Fix: fix`, sorted er
 | `deprecated-pattern` | warning | A sentence fits only a retired pattern. | Rewrite it to the `replacedBy` pattern; delete the retired pattern once no doc uses it. |
 | `no-source` | warning | A pattern records no source sentence. | Record the sentence it came from, or remove the pattern. |
 
-`fixtures/violations.md`, with `fixtures/rules.yaml` and `fixtures/vocabulary.yaml`, trips every rule once; `fixtures/clean.md` passes with `templates/rules.yaml` and the KOS template vocabulary. For the decision-question doc type, `fixtures/decision-question.md` passes and `fixtures/decision-question-violations.md` fails with `templates/decision-question.rules.yaml` and `fixtures/decision-question.vocabulary.yaml`.
+The skill's own tests hold a document that trips every rule once and a clean one that passes with `templates/rules.json`; the decision-question doc type has the same pair with `templates/decision-question.rules.json`.
 
 ## Catalog by doc type
 
-Each entry is a pattern as it would appear in `rules.yaml`, a source sentence it could come from, and a sentence it rejects. Take a pattern from here only when your own docs show its shape; copy the shape, then record your own sentence in `sources`.
+Each entry is a pattern as it would appear in `rules.json`, a source sentence it could come from, and a sentence it rejects. Take a pattern from here only when your own docs show its shape; copy the shape, then record your own sentence in `sources`.
 
 ### Software codebase: requirements
 
-The five EARS forms ship in `templates/rules.yaml`: ubiquitous (`The {system} shall {response}.`), event-driven (`When {trigger}, ...`), state-driven (`While {state}, ...`), unwanted behavior (`If {condition}, then ...`) and optional feature (`Where {feature}, ...`). Each has a concept slot for the system and text slots for the rest.
+The five EARS forms ship in `templates/rules.json`: ubiquitous (`The {system} shall {response}.`), event-driven (`When {trigger}, ...`), state-driven (`While {state}, ...`), unwanted behavior (`If {condition}, then ...`) and optional feature (`Where {feature}, ...`). Each has a concept slot for the system and text slots for the rest.
 
 - Source: "When a webhook delivery fails, the delivery service shall retry it 3 times."
 - Rejected: "The system should handle failures gracefully." (`should` is a banned word, and the sentence fits no `shall` template.)
 
 A response that names a limit can be tightened with a second pattern rather than a looser one:
 
-```yaml
-  - id: ears-latency
-    docType: requirement
-    template: "The {system} shall {response} within {limit}."
-    slots:
-      system: {type: concept}
-      response: {type: text, maxWords: 12}
-      limit: {type: text, pattern: '\d+ (milliseconds|seconds|minutes)'}
-    sources: ["requirements/search.md:8: The search service shall return results within 300 milliseconds."]
+```json
+[
+  {
+    "id": "ears-latency",
+    "docType": "requirement",
+    "template": "The {system} shall {response} within {limit}.",
+    "slots": {
+      "system": {
+        "type": "concept"
+      },
+      "response": {
+        "type": "text",
+        "maxWords": 12
+      },
+      "limit": {
+        "type": "text",
+        "pattern": "\\d+ (milliseconds|seconds|minutes)"
+      }
+    },
+    "sources": [
+      "requirements/search.md:8: The search service shall return results within 300 milliseconds."
+    ]
+  }
+]
 ```
 
 ### Software codebase: decision log
 
 ADR bodies (context, options, consequences) stay ungoverned narrative. Govern the one-line decision log that indexes them, where ambiguity costs most:
 
-```yaml
-  - id: decision
-    docType: decision-log
-    template: "{adr}: We will {decision} because {reason}."
-    slots:
-      adr: {type: text, pattern: 'ADR-\d{3}'}
-      decision: {type: text, maxWords: 15}
-      reason: {type: text, maxWords: 20}
-    sources: ["docs/decisions.md:4: ADR-012: We will store sessions in Redis because restarts drop in-memory sessions."]
+```json
+[
+  {
+    "id": "decision",
+    "docType": "decision-log",
+    "template": "{adr}: We will {decision} because {reason}.",
+    "slots": {
+      "adr": {
+        "type": "text",
+        "pattern": "ADR-\\d{3}"
+      },
+      "decision": {
+        "type": "text",
+        "maxWords": 15
+      },
+      "reason": {
+        "type": "text",
+        "maxWords": 20
+      }
+    },
+    "sources": [
+      "docs/decisions.md:4: ADR-012: We will store sessions in Redis because restarts drop in-memory sessions."
+    ]
+  }
+]
 ```
 
 - Rejected: "ADR-013: We might move to Postgres later." (no pattern; a possibility is not a decision).
@@ -103,35 +134,71 @@ ADR bodies (context, options, consequences) stay ungoverned narrative. Govern th
 
 One instruction per sentence (STE). The step names the action and its object; conditions come first.
 
-```yaml
-  - id: step-run
-    docType: runbook
-    template: "Run {command}."
-    slots:
-      command: {type: text, pattern: '`[^`]+`'}
-    sources: ["runbooks/db-failover.md:6: Run `pg_ctl promote`."]
-  - id: step-conditional
-    docType: runbook
-    template: "If {condition}, page the {role}."
-    slots:
-      condition: {type: text, maxWords: 12}
-      role: {type: concept, scheme: ops}
-    sources: ["runbooks/db-failover.md:9: If replication lag exceeds 60 seconds, page the database on-call."]
+```json
+[
+  {
+    "id": "step-run",
+    "docType": "runbook",
+    "template": "Run {command}.",
+    "slots": {
+      "command": {
+        "type": "text",
+        "pattern": "`[^`]+`"
+      }
+    },
+    "sources": [
+      "runbooks/db-failover.md:6: Run `pg_ctl promote`."
+    ]
+  },
+  {
+    "id": "step-conditional",
+    "docType": "runbook",
+    "template": "If {condition}, page the {role}.",
+    "slots": {
+      "condition": {
+        "type": "text",
+        "maxWords": 12
+      },
+      "role": {
+        "type": "concept",
+        "scheme": "ops"
+      }
+    },
+    "sources": [
+      "runbooks/db-failover.md:9: If replication lag exceeds 60 seconds, page the database on-call."
+    ]
+  }
+]
 ```
 
 - Rejected: "Run the promote command and then check replication and page someone if needed." (three instructions; split it).
 
 ### Operations or policy corpus: compliance statements
 
-```yaml
-  - id: obligation
-    docType: policy
-    template: "The {role} shall {action} within {period}."
-    slots:
-      role: {type: concept}
-      action: {type: text, maxWords: 15}
-      period: {type: text, pattern: '\d+ (hours|days|business days)'}
-    sources: ["policies/privacy.md:22: The privacy officer shall answer each data subject request within 30 days."]
+```json
+[
+  {
+    "id": "obligation",
+    "docType": "policy",
+    "template": "The {role} shall {action} within {period}.",
+    "slots": {
+      "role": {
+        "type": "concept"
+      },
+      "action": {
+        "type": "text",
+        "maxWords": 15
+      },
+      "period": {
+        "type": "text",
+        "pattern": "\\d+ (hours|days|business days)"
+      }
+    },
+    "sources": [
+      "policies/privacy.md:22: The privacy officer shall answer each data subject request within 30 days."
+    ]
+  }
+]
 ```
 
 - Rejected: "Requests are answered promptly." (no actor, no period).
@@ -141,30 +208,62 @@ One instruction per sentence (STE). The step names the action and its object; co
 
 A claim names what was found, in whom, and the evidence, so a reader can check it.
 
-```yaml
-  - id: finding
-    docType: findings
-    template: "In {sample}, {result} ({evidence})."
-    slots:
-      sample: {type: text, maxWords: 8}
-      result: {type: text, maxWords: 20}
-      evidence: {type: text, pattern: '(interview|survey|log) [A-Z]?\d+(, (interview|survey|log) [A-Z]?\d+)*'}
-    sources: ["findings.md:3: In 9 of 12 participants, onboarding took longer than one week (interview P3, interview P7)."]
+```json
+[
+  {
+    "id": "finding",
+    "docType": "findings",
+    "template": "In {sample}, {result} ({evidence}).",
+    "slots": {
+      "sample": {
+        "type": "text",
+        "maxWords": 8
+      },
+      "result": {
+        "type": "text",
+        "maxWords": 20
+      },
+      "evidence": {
+        "type": "text",
+        "pattern": "(interview|survey|log) [A-Z]?\\d+(, (interview|survey|log) [A-Z]?\\d+)*"
+      }
+    },
+    "sources": [
+      "findings.md:3: In 9 of 12 participants, onboarding took longer than one week (interview P3, interview P7)."
+    ]
+  }
+]
 ```
 
 - Rejected: "Most users struggle with onboarding." (no sample, no evidence).
 
 ### Research or notes corpus: method statements
 
-```yaml
-  - id: method
-    docType: methods
-    template: "We {procedure} each {unit} using {instrument}."
-    slots:
-      procedure: {type: text, pattern: '(interviewed|surveyed|coded|observed)'}
-      unit: {type: concept, scheme: study}
-      instrument: {type: text, maxWords: 8}
-    sources: ["methods.md:14: We interviewed each participant using the semi-structured guide in appendix A."]
+```json
+[
+  {
+    "id": "method",
+    "docType": "methods",
+    "template": "We {procedure} each {unit} using {instrument}.",
+    "slots": {
+      "procedure": {
+        "type": "text",
+        "pattern": "(interviewed|surveyed|coded|observed)"
+      },
+      "unit": {
+        "type": "concept",
+        "scheme": "study"
+      },
+      "instrument": {
+        "type": "text",
+        "maxWords": 8
+      }
+    },
+    "sources": [
+      "methods.md:14: We interviewed each participant using the semi-structured guide in appendix A."
+    ]
+  }
+]
 ```
 
 - "We interviewed each subject using ..." resolves `subject` to `participant` (its `hiddenLabel` in the KOS research example), so the shape passes and the line gets a `hidden-label` error naming `participant`.
@@ -181,22 +280,36 @@ A decision question is what a decision model reads to answer a choice, a score o
 | Boundary cases stated explicitly. | By eye. The `boundary-case` pattern gives a boundary its shape; the linter cannot tell that a boundary is missing. |
 | No arithmetic, counting or date comparison requested. | The linter, partly: `how many`, `number of`, `total`, `sum`, `average`, `percent`, the comparison phrases (`more than`, `at least`, `older than`, ...) and `before`, `after` and `days ago` are banned words. Other phrasings are checked by eye. Ask for the parts (a Choice over months) and compute in code. |
 
-The doc type ships as its own rules file, `templates/decision-question.rules.yaml`, so its banned words never reach another doc type. Its five patterns:
+The doc type ships as its own rules file, `templates/decision-question.rules.json`, so its banned words never reach another doc type. Its five patterns:
 
-```yaml
-  - id: question-instruction
-    template: "Choose the one {kind} that best describes {subject}."   # kind: option | level
-  - id: option-description
-    template: "Choose {option} when {condition}."                      # option: concept slot
-  - id: score-level
-    template: "Level {level} means {description}."
-  - id: proposition
-    template: "Answer yes when {claim}."
-  - id: boundary-case
-    template: "If {case}, the answer is {answer}."
+```json
+[
+  {
+    "id": "question-instruction",
+    "template": "Choose the one {kind} that best describes {subject}."
+  },
+  {
+    "id": "option-description",
+    "template": "Choose {option} when {condition}."
+  },
+  {
+    "id": "score-level",
+    "template": "Level {level} means {description}."
+  },
+  {
+    "id": "proposition",
+    "template": "Answer yes when {claim}."
+  },
+  {
+    "id": "boundary-case",
+    "template": "If {case}, the answer is {answer}."
+  }
+]
 ```
 
-- Source: "Choose billing when the message asks about a charge on an invoice." (`fixtures/decision-question.md`)
+In the first template `kind` is the word "option" or "level"; in the second, `option` is a concept slot.
+
+- Source: "Choose billing when the message asks about a charge on an invoice."
 - Rejected: "Choose billing when the message is not about an outage." (`banned-word` `not`: state the positive case, and give the outage case its own boundary.)
 - Rejected: "Choose outage when the service is down and the status page is red." (`banned-word` `and`: two propositions; split them.)
 - Known limits: an option label that contains a banned word, such as "terms and conditions", trips `banned-word`; treat it as a sign the option names two concepts and take it to the vocabulary. In YAML, quote a banned word that YAML reads as a boolean (`"no"`, `"yes"`, `"on"`, `"off"`), or the rules file gets a `schema` error.

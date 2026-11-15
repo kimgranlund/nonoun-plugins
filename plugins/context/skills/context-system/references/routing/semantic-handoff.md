@@ -15,7 +15,7 @@ select sources but cannot replace required contracts.
 
 - Domain concept IDs and retrievable artifact IDs have different scopes and a
   many-to-many relationship. Preserve references between them rather than copying
-  definitions into the discovery registry.
+  definitions into the discovery profile.
 - Domain synonyms are not the local JSON profile's `aliases` (previous artifact IDs).
   Disambiguate source/language/model scope before selecting a governing document.
 - A domain relation does not automatically become a required retrieval edge.

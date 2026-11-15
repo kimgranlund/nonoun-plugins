@@ -16,4 +16,4 @@ Freshness/revision source:
 If an entry is missing or stale:
 
 Summarize, do not duplicate child contents. For small corpora this file may be the
-entire navigation system; no registry or descriptor is required merely for formality.
+entire navigation system; no profile or descriptor is required merely for formality.

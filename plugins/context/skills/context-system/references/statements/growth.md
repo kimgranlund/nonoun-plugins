@@ -9,9 +9,9 @@ Each governed doc type moves through the stages on its own. A corpus can have on
 ### Stage 0 (Seed)
 
 - Entry evidence: a named failure in one doc type: a defect, a review dispute, a misread instruction, two readers acting differently on one sentence. Record it (ticket, review link, `path:line`).
-- Allowed artifacts: one `rules.yaml` copied from `templates/rules.yaml`, with one doc type, 3 to 5 patterns whose shapes appear in that doc type's sentences, each with its source sentences, and a short banned-word list (the words that caused or nearly caused the failure, plus the template's). The vocabulary terms the slots need exist in `vocabulary.yaml` first.
+- Allowed artifacts: one `rules.json` copied from `templates/rules.json`, with one doc type, 3 to 5 patterns whose shapes appear in that doc type's sentences, each with its source sentences, and a short banned-word list (the words that caused or nearly caused the failure, plus the template's). The vocabulary terms the slots need exist in `vocabulary.json` first.
 - Not allowed: a second doc type, patterns for shapes nobody has written yet, a banned word nobody misread.
-- Gate to leave: `lint_cnl.py rules.yaml vocabulary.yaml` (no docs) reports no `schema`, `unknown-concept` or `no-source` finding.
+- Gate to leave: `lint_cnl.py rules.json vocabulary.json` (no docs) reports no `schema`, `unknown-concept` or `no-source` finding.
 
 ### Stage 1 (Enforce)
 
@@ -38,14 +38,14 @@ Each governed doc type moves through the stages on its own. A corpus can have on
 - **Promote** a recurring shape (Stage 2) by adding a pattern, never by widening a slot until the shape fits; a wider slot also accepts the sentences the old limit caught.
 - **Retire, don't delete.** A pattern that should no longer be written gets `deprecated: true` and `replacedBy: <pattern id>`. The linter warns on each sentence that still uses it. Delete the retired pattern in the change that rewrites the last such sentence.
 - **Rename** a pattern by retiring it and adding the new id; ids are never reused.
-- **Terms go to the vocabulary.** A slot value that fails to resolve is a vocabulary question. Add the term there (with evidence, through the vocabulary layer) or use an existing label. Never add a term, synonym or definition to `rules.yaml`.
+- **Terms go to the vocabulary.** A slot value that fails to resolve is a vocabulary question. Add the term there (with evidence, through the vocabulary layer) or use an existing label. Never add a term, synonym or definition to `rules.json`.
 - **Drift is a defect.** When a governed doc and the rules disagree, the change that finds it fixes the doc or the rules, never neither.
 
 ## Anti-patterns
 
 | Anti-pattern | Looks like | Caught by | Fix |
 |---|---|---|---|
-| Rules that redefine terms | A banned word whose fix is a definition, a slot comment that explains a term, a doc type description that is a glossary. | Review; `unknown-concept` and `unresolved-slot` when the term is missing from the vocabulary | Move the term to `vocabulary.yaml`; make the rule point at it. |
+| Rules that redefine terms | A banned word whose fix is a definition, a slot comment that explains a term, a doc type description that is a glossary. | Review; `unknown-concept` and `unresolved-slot` when the term is missing from the vocabulary | Move the term to `vocabulary.json`; make the rule point at it. |
 | Patterns before examples | A full EARS set for a doc type whose docs use two shapes. | `no-source` | Delete patterns with no source sentence; add them back at Stage 2. |
 | Governing every doc type at once | `docTypes` lists requirements, runbooks, ADRs and policies on day one. | Review: count doc types against recorded Stage 0 failures | Keep the one with the failure; drop the rest until each has its own. |
 | Catch-all patterns | `"{anything}."`, or a text slot with no limit that covers most of the sentence. | Review: a pattern whose template has fewer literal words than slots | Split it into the specific shapes the sources show, each with literal words. |
@@ -61,15 +61,25 @@ Requirements for an import job use the five EARS forms. Three sentences in `requ
 
 The runbooks used "Contact the {role}." for escalation. An incident review found "contact" let responders send an email to a paging rotation. The team adds `If {condition}, page the {role}.` and retires the old pattern:
 
-```yaml
-  - id: step-contact
-    docType: runbook
-    template: "Contact the {role}."
-    slots:
-      role: {type: concept, scheme: ops}
-    sources: ["runbooks/db-failover.md:9: Contact the database on-call."]
-    deprecated: true
-    replacedBy: step-conditional
+```json
+[
+  {
+    "id": "step-contact",
+    "docType": "runbook",
+    "template": "Contact the {role}.",
+    "slots": {
+      "role": {
+        "type": "concept",
+        "scheme": "ops"
+      }
+    },
+    "sources": [
+      "runbooks/db-failover.md:9: Contact the database on-call."
+    ],
+    "deprecated": true,
+    "replacedBy": "step-conditional"
+  }
+]
 ```
 
 The linter now warns `deprecated-pattern` on each remaining "Contact the ..." step. The pattern entry is deleted in the change that rewrites the last one.
@@ -84,7 +94,7 @@ A team keeps product requirements in `requirements/` and a vocabulary at the rep
 
 ### Step 1: ungoverned, with a failure
 
-`vocabulary.yaml` (maintained with the vocabulary layer) already defines `auth service` (with `login service` as its `hiddenLabel`) and `account`.
+`vocabulary.json` (maintained with the vocabulary layer) already defines `auth service` (with `login service` as its `hiddenLabel`) and `account`.
 
 `requirements/sign-in.md`:
 
@@ -101,7 +111,7 @@ QA tested a lock after 3 failures, the build locked after 5, and the release sli
 
 ### Step 2: seed the rules (Stage 0)
 
-Copy `templates/rules.yaml` to `rules.yaml`. The requirements show three shapes: ubiquitous (line 5), event-driven (line 3) and unwanted behavior (line 4). Keep those three patterns with their source sentences; drop state-driven and optional-feature, which no sentence uses. A source records the shape, so line 5 counts even though its wording will be rewritten.
+Copy `templates/rules.json` to `rules.json`. The requirements show three shapes: ubiquitous (line 5), event-driven (line 3) and unwanted behavior (line 4). Keep those three patterns with their source sentences; drop state-driven and optional-feature, which no sentence uses. A source records the shape, so line 5 counts even though its wording will be rewritten.
 
 ```diff
  docTypes:
@@ -152,20 +162,20 @@ Copy `templates/rules.yaml` to `rules.yaml`. The requirements show three shapes:
 (The header comment block and banned-word list copied from the template are unchanged and omitted.) The rules alone pass:
 
 ```text
-$ python3 lint_cnl.py rules.yaml vocabulary.yaml
-rules.yaml: 0 error(s), 0 warning(s), 0 governed doc(s), 0 ungoverned file(s)
+$ python3 lint_cnl.py rules.json vocabulary.json
+rules.json: 0 error(s), 0 warning(s), 0 governed doc(s), 0 ungoverned file(s)
 ```
 
 ### Step 3: enforce (Stage 1)
 
 ```text
-$ python3 lint_cnl.py rules.yaml vocabulary.yaml requirements
+$ python3 lint_cnl.py rules.json vocabulary.json requirements
 ERROR banned-word requirements/sign-in.md:2: banned word 'should'. Fix: Write "shall" for a requirement; move a wish or rationale out of the requirement.
 ERROR no-pattern requirements/sign-in.md:2: sentence matches no pattern: "The auth service should lock an account after repeated failures." Fix: rewrite it to one of "The {system} shall {response}." | "When {trigger}, the {system} shall {response}." | "If {condition}, then the {system} shall {response}.", or add a pattern once this shape recurs 3 times (Stage 2).
 ERROR hidden-label requirements/sign-in.md:3: 'login service' is a retired label of concept 'auth-service'. Fix: write 'auth service'.
 ERROR banned-word requirements/sign-in.md:5: banned word 'quickly'. Fix: State a measurable limit, for example "within 2 seconds".
 ERROR no-pattern requirements/sign-in.md:6: sentence matches no pattern: "Accounts are unlocked by support." Fix: rewrite it to one of "The {system} shall {response}." | "When {trigger}, the {system} shall {response}." | "If {condition}, then the {system} shall {response}.", or add a pattern once this shape recurs 3 times (Stage 2).
-rules.yaml: 5 error(s), 0 warning(s), 1 governed doc(s), 0 ungoverned file(s)
+rules.json: 5 error(s), 0 warning(s), 1 governed doc(s), 0 ungoverned file(s)
 ```
 
 Line 2 is the sentence behind bug 212. `should` was only half of it: QA and the developer also read "repeated" as different counts. That is a real failure, so Stage 1 refines the rules with it:
@@ -193,8 +203,8 @@ Then rewrite the doc in the same change. The product owner confirms the count (5
 ```
 
 ```text
-$ python3 lint_cnl.py rules.yaml vocabulary.yaml requirements
-rules.yaml: 0 error(s), 0 warning(s), 1 governed doc(s), 0 ungoverned file(s)
+$ python3 lint_cnl.py rules.json vocabulary.json requirements
+rules.json: 0 error(s), 0 warning(s), 1 governed doc(s), 0 ungoverned file(s)
 ```
 
-The change ships as one commit: `rules.yaml` and `requirements/sign-in.md` together, with bug 212 in the message. A CI step running the linter on `requirements/` keeps the doc type at Stage 1. "Accounts are unlocked by support" was rewritten, not given a passive-voice pattern: it was seen once, and Stage 2 needs three.
+The change ships as one commit: `rules.json` and `requirements/sign-in.md` together, with bug 212 in the message. A CI step running the linter on `requirements/` keeps the doc type at Stage 1. "Accounts are unlocked by support" was rewritten, not given a passive-voice pattern: it was seen once, and Stage 2 needs three.

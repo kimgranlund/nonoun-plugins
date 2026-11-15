@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import sys
@@ -8,14 +9,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts' / 'lint_cnl.py'
-KOS = ROOT  # validate_kos.py and templates/vocabulary.yaml live in this skill
+KOS = ROOT  # validate_kos.py and templates/vocabulary.json live in this skill
 sys.path.insert(0, str(ROOT / 'scripts'))
 from lint_cnl import ERROR_RULES, WARNING_RULES  # noqa: E402
 
 BRIEF_ERRORS = {'hidden-label', 'no-pattern', 'unresolved-slot', 'banned-word', 'unknown-concept'}
 BRIEF_WARNINGS = {'alt-label', 'no-source'}
-FAIL_RUN = ('fixtures/rules.yaml', 'fixtures/vocabulary.yaml', 'fixtures/violations.md')
-DQ_RUN = ('templates/decision-question.rules.yaml', 'fixtures/decision-question.vocabulary.yaml')
+FAIL_RUN = ('fixtures/rules.json', 'fixtures/vocabulary.json', 'fixtures/violations.md')
+DQ_RUN = ('templates/decision-question.rules.json', 'fixtures/decision-question.vocabulary.json')
 
 
 def run(*args, cwd=ROOT):
@@ -28,7 +29,7 @@ def rules(stdout):
 
 class LintCnlTests(unittest.TestCase):
     def test_clean_sample_passes_with_template_rules_and_kos_template_vocabulary(self):
-        result = run('templates/rules.yaml', str(KOS / 'templates' / 'vocabulary.yaml'), 'fixtures/clean.md')
+        result = run('templates/rules.json', str(KOS / 'templates' / 'vocabulary.json'), 'fixtures/clean.md')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(rules(result.stdout), Counter())
         self.assertIn('1 governed doc(s)', result.stdout)
@@ -52,23 +53,23 @@ class LintCnlTests(unittest.TestCase):
 
     def test_fixture_vocabulary_is_valid_kos(self):
         result = subprocess.run([sys.executable, '-B', str(KOS / 'scripts' / 'validate_kos.py'),
-                                 str(ROOT / 'fixtures' / 'vocabulary.yaml')], capture_output=True, text=True)
+                                 str(ROOT / 'fixtures' / 'vocabulary.json')], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_warnings_fail_only_under_strict(self):
         with tempfile.TemporaryDirectory() as tmp:
             doc = Path(tmp) / 'doc.md'
             doc.write_text('---\ncnl: requirement\n---\nThe checkout shall email a receipt.\n')
-            args = ('fixtures/vocabulary.yaml', str(doc))
-            rules_file = Path(tmp) / 'rules.yaml'
-            rules_file.write_text((ROOT / 'templates' / 'rules.yaml').read_text())
+            args = ('fixtures/vocabulary.json', str(doc))
+            rules_file = Path(tmp) / 'rules.json'
+            rules_file.write_text((ROOT / 'templates' / 'rules.json').read_text())
             self.assertEqual(run(str(rules_file), *args).returncode, 0)
             self.assertEqual(run(str(rules_file), *args, '--strict').returncode, 1)
 
     def test_glob_wrapped_paragraph_code_and_text_limits(self):
         with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp) / 'rules.yaml').write_text((ROOT / 'templates' / 'rules.yaml').read_text())
-            (Path(tmp) / 'vocabulary.yaml').write_text((ROOT / 'fixtures' / 'vocabulary.yaml').read_text())
+            (Path(tmp) / 'rules.json').write_text((ROOT / 'templates' / 'rules.json').read_text())
+            (Path(tmp) / 'vocabulary.json').write_text((ROOT / 'fixtures' / 'vocabulary.json').read_text())
             req = Path(tmp) / 'requirements' / 'pay'
             req.mkdir(parents=True)
             (req / 'checkout.md').write_text(
@@ -78,7 +79,7 @@ class LintCnlTests(unittest.TestCase):
                 '- The checkout service shall retry once for each one of the many many many many many many many '
                 'many many many many many many failed payments.\n')
             (Path(tmp) / 'notes.md').write_text('Free prose is not governed.\n')
-            result = run('rules.yaml', 'vocabulary.yaml', '.', cwd=tmp)
+            result = run('rules.json', 'vocabulary.json', '.', cwd=tmp)
             self.assertEqual(rules(result.stdout), Counter({'no-pattern': 1}), result.stdout)
             self.assertIn('requirements/pay/checkout.md:10:', result.stdout)
             self.assertIn('limit 20', result.stdout)
@@ -88,23 +89,19 @@ class LintCnlTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             doc = Path(tmp) / 'doc.md'
             doc.write_text('---\ncnl: runbook\n---\nRestart the service.\n')
-            result = run('templates/rules.yaml', 'fixtures/vocabulary.yaml', str(doc))
+            result = run('templates/rules.json', 'fixtures/vocabulary.json', str(doc))
             self.assertEqual(result.returncode, 1)
             self.assertEqual(rules(result.stdout), Counter({'schema': 1}))
 
     def test_deprecated_concept_labels_are_retired(self):
         with tempfile.TemporaryDirectory() as tmp:
-            vocab = Path(tmp) / 'vocabulary.yaml'
-            vocab.write_text(
-                'schemes: [{id: main, definition: Docs.}]\n'
-                'concepts:\n'
-                '  - {id: defect, prefLabel: defect, scheme: main,\n'
-                '     definition: Behavior that differs from the agreed specification.}\n'
-                '  - {id: bug, prefLabel: bug, deprecated: true, replacedBy: defect, scheme: main,\n'
-                '     definition: Former name for a defect.}\n')
+            vocab = Path(tmp) / 'vocabulary.json'
+            vocab.write_text(json.dumps({'schemes': [{'id': 'main', 'definition': 'Docs.'}], 'concepts': [
+                {'id': 'defect', 'prefLabel': 'defect', 'scheme': 'main', 'definition': 'Behavior that differs from the agreed specification.'},
+                {'id': 'bug', 'prefLabel': 'bug', 'deprecated': True, 'replacedBy': 'defect', 'scheme': 'main', 'definition': 'Former name for a defect.'}]}))
             doc = Path(tmp) / 'doc.md'
             doc.write_text('---\ncnl: requirement\n---\nThe defect shall block the release of bugs.\n')
-            result = run('templates/rules.yaml', str(vocab), str(doc))
+            result = run('templates/rules.json', str(vocab), str(doc))
             self.assertEqual(rules(result.stdout), Counter({'hidden-label': 1}), result.stdout)
             self.assertIn("Fix: write 'defect'.", result.stdout)
 
@@ -129,17 +126,33 @@ class LintCnlTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             doc = Path(tmp) / 'doc.md'
             doc.write_text('---\ncnl: requirement\n---\nThe checkout service shall store each order and refund.\n')
-            result = run('templates/rules.yaml', 'fixtures/vocabulary.yaml', str(doc))
+            result = run('templates/rules.json', 'fixtures/vocabulary.json', str(doc))
             self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_decision_question_fixture_vocabulary_is_valid_kos(self):
         result = subprocess.run([sys.executable, '-B', str(KOS / 'scripts' / 'validate_kos.py'),
-                                 str(ROOT / 'fixtures' / 'decision-question.vocabulary.yaml')], capture_output=True, text=True)
+                                 str(ROOT / 'fixtures' / 'decision-question.vocabulary.json')], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_unreadable_vocabulary_exits_2(self):
-        result = run('templates/rules.yaml', 'fixtures/violations.md')
+        result = run('templates/rules.json', 'fixtures/violations.md')
         self.assertEqual(result.returncode, 2)
+
+    def test_a_rule_file_finding_points_at_the_line_of_its_pattern(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rules_file = Path(tmp) / 'rules.json'
+            text = (ROOT / 'templates' / 'rules.json').read_text()
+            rules_file.write_text(text.replace('"docType": "requirement",\n      "template": "When', '"docType": "nowhere",\n      "template": "When'))
+            result = run(str(rules_file), 'fixtures/vocabulary.json')
+            line = next(n for n, row in enumerate(text.splitlines(), 1) if '"id": "ears-event"' in row) - 1
+            self.assertIn(f'ERROR schema {rules_file}:{line}: pattern \'ears-event\' names doc type \'nowhere\'', result.stdout)
+
+    def test_front_matter_is_read_without_a_yaml_parser(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            doc = Path(tmp) / 'doc.md'
+            doc.write_text('---\ntitle: "Checkout"\ntags:\n  - pay\ncnl: \'requirement\'\n---\nThe checkout service shall email a receipt.\n')
+            result = run('templates/rules.json', 'fixtures/vocabulary.json', str(doc))
+            self.assertIn('1 governed doc(s)', result.stdout)
 
 
 if __name__ == '__main__':

@@ -3,17 +3,17 @@
 This authored UI corpus has two tasks: edit a menu and look up status. The menu
 must preserve keyboard navigation; that acceptance rule is fixed in suite.json.
 
-registry-before.json omits the menu's governing edge. Its one-read menu route looks
-cheap but fails acceptance. registry.json adds the required policy without changing
+profile-before.json omits the menu's governing edge. Its one-read menu route looks
+cheap but fails acceptance. profile.json adds the required policy without changing
 the files or suite. A separate status lookup must stay passing without reading the
 menu, policy or billing branch. A known-ID alias exercises direct entry.
 
 From the skill root (replace output paths with fresh destinations):
 
 ```sh
-python3 scripts/validate.py --root examples/worked-corpus --registry examples/worked-corpus/registry.json
-python3 scripts/replay.py --root examples/worked-corpus --registry examples/worked-corpus/registry-before.json --suite examples/worked-corpus/suite.json --out /tmp/pc-before.json
-python3 scripts/replay.py --root examples/worked-corpus --registry examples/worked-corpus/registry.json --suite examples/worked-corpus/suite.json --out /tmp/pc-after.json
+python3 scripts/validate.py --root examples/worked-corpus --profile examples/worked-corpus/profile.json
+python3 scripts/replay.py --root examples/worked-corpus --profile examples/worked-corpus/profile-before.json --suite examples/worked-corpus/suite.json --out /tmp/pc-before.json
+python3 scripts/replay.py --root examples/worked-corpus --profile examples/worked-corpus/profile.json --suite examples/worked-corpus/suite.json --out /tmp/pc-after.json
 python3 scripts/replay.py compare --before /tmp/pc-before.json --after /tmp/pc-after.json
 ```
 
