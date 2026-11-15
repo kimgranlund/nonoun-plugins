@@ -947,3 +947,7 @@
 
 - note: red-checkpoint deviation check printed no `process deviation:` lines.
 - note: docs/specs/new-skills/{knowledge-organization-system,controlled-natural-language}.md each gained the retired-note line. Their prose mentions of the old names stay as written, as the handoff says. They have no markdown links to the deleted folders.
+
+## T-0854: Update context-system from the MacBook copy (2026-11-15)
+
+- note: plugins/context/skills/classify-and-resolve/references/growth.md:78 and the other `vocabulary.yaml` examples still use YAML names; the builder says datafile.py reads YAML, so it works, but the docs lag the source's JSON convention.

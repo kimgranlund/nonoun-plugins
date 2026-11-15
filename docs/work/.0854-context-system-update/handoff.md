@@ -2,7 +2,7 @@
 id: T-0854
 title: "Update context-system from the MacBook copy"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Do not hand-edit the synced skill.
+
+## Outcome
+
+2026-11-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 992037cfca8c
+- Changed: see commits
+- Commits: ad2882c T-0854: update context-system from the MacBook copy
+- Check: 1 diff -rq of the source against the target prints nothing: pass
+- Check: 2 unittest discover exits 0 in the five skills, no skips in classify-and-resolve or decision-questions: pass
+- Check: 3 check-packaging exits 0, docs_check 0 errors, git diff --check clean: pass
+- Check: 4 no live link to a missing path under plugins/context/skills/context-system/: pass
+- Follow-up: note: plugins/context/skills/classify-and-resolve/references/growth.md:78... -> notes.md
