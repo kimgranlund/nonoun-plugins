@@ -2,7 +2,7 @@
 id: T-0855
 title: "Resync four ui-* skills from the MacBook copies"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Do not hand-edit synced files.
+
+## Outcome
+
+2026-11-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 95dfe4fb28b4
+- Changed: see commits
+- Commits: 046f2e3 T-0855: resync four ui-* skills from the MacBook copies
+- Check: 1 diff of the four skills against /Volumes/kimba and ui-geometry/agents/openai.yaml: pass
+- Check: 2 `node --test` in ui-geometry and ui-interaction-dev, `manifests.mjs --check` and `lint-recipes.mj...: pass
+- Check: 3 component-variants, inspector-panel and wireframe-review checks: pass
+- Check: 4 `SDLC_ALLOW_STALE_PLUGIN=1 python3 plugins/sdlc/scripts/check.py`, `python3 scripts/check-packagi...: pass
+- Follow-up: note: plugins/design/AGENTS.md ui-explore-variants row names 6e5d784, not... -> notes.md

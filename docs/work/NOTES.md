@@ -961,3 +961,7 @@
 - decide: plugins/design/skills/ui-frameworks/kit/icons/phosphor/LICENSE:1: imported CRLF line endings make `git diff --check <base>` exit 2 (see #5); note: a future range-based whitespace gate would need a `.gitattributes` exemption for this path.
 - decide: plugins/design/skills/ui-interaction-dev/SKILL.md and ui-showcase-bento/SKILL.md: note: say `node --test scripts/`, which exits 1 on Node 24; plain `node --test` is green; imported text left as authored, the builder named the working form in AGENTS.md.
 - decide: plugins/design/skills/ui-frameworks/scripts/tokens.mjs and icons.mjs: note: read sibling skills from `~/.claude/skills` or `SKILLS_DIR`, not the plugin tree; imported behaviour, unchanged.
+
+## T-0855: Resync four ui-* skills from the MacBook copies (2026-11-15)
+
+- note: `plugins/design/AGENTS.md` ui-explore-variants row names `6e5d784`, not the ticket's `79ce3f9`; the source moved during the build. The diff criterion passes against the live source today, and a later source commit would turn it red.
