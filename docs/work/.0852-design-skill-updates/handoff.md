@@ -2,7 +2,7 @@
 id: T-0852
 title: "Update ui-geometry and ui-colors from the MacBook copies"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Model and geometry values come from the synced source; do not hand-edit them.
+
+## Outcome
+
+2026-11-15 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: c40effdd9dec
+- Changed: see commits
+- Commits: 10b52c8 T-0852: update ui-geometry and ui-colors from the MacBook copies
+- Check: 1 source parity: pass
+- Check: 2 own tests: pass
+- Check: 3 dependents: pass
+- Check: 4 packaging and whitespace: pass
+- Follow-up: note: git grep massimo -- plugins finds only the changelog line that... -> notes.md

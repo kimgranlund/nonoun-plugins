@@ -951,3 +951,7 @@
 ## T-0854: Update context-system from the MacBook copy (2026-11-15)
 
 - note: plugins/context/skills/classify-and-resolve/references/growth.md:78 and the other `vocabulary.yaml` examples still use YAML names; the builder says datafile.py reads YAML, so it works, but the docs lag the source's JSON convention.
+
+## T-0852: Update ui-geometry and ui-colors from the MacBook copies (2026-11-15)
+
+- note: `git grep massimo -- plugins` finds only the changelog line that explains the rename; no stale preset references remain.
